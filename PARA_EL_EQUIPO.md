@@ -35,12 +35,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=[PEGA AQUÍ LA KEY QUE TE DOY ABAJO]
 
 ```
 URL de Supabase:
-[EL LÍDER DEBE PEGAR AQUÍ SU NEXT_PUBLIC_SUPABASE_URL]
-Ejemplo: https://abcdefghijk.supabase.co
+https://uhsslexvmoecwvcjiwit.supabase.co
 
 API Key (Anon/Public):
-[EL LÍDER DEBE PEGAR AQUÍ SU NEXT_PUBLIC_SUPABASE_ANON_KEY]
-Ejemplo: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3M...
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoc3NsZXh2bW9lY3d2Y2ppd2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzEyNDgsImV4cCI6MjA4NTc0NzI0OH0.BrG3JYlWDmyJ0YLEhPLx3B2E9m8Xz16qLLidLEtuN5w
 ```
 
 **¿Dónde encontrar estas credenciales?**
@@ -56,8 +54,8 @@ El líder del proyecto las tiene. Si eres el líder:
 Para acceder al panel de admin (`http://localhost:3000/admin/login`):
 
 ```
-Email: [EL LÍDER DEBE PONER EL EMAIL DE ADMIN AQUÍ]
-Password: [EL LÍDER DEBE PONER LA PASSWORD AQUÍ]
+Email: admin@uninorte.edu.co
+Password: admin123!
 ```
 
 ---
