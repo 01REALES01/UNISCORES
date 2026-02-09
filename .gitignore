@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# team credentials (keep local only)
+TEAM_CREDENTIALS.md
