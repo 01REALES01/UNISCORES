@@ -140,25 +140,84 @@ Después de configurar todo:
 
 ## 🔄 Para Colaboradores del Equipo
 
-### Opción A: Compartir el Mismo Proyecto de Supabase
+### ✅ ESTRATEGIA RECOMENDADA: Una Sola Base de Datos Compartida
 
-**Ventajas**: Una sola base de datos, todos ven los mismos datos.
+**Ventajas**:
 
-1. El líder del proyecto comparte:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-2. Todos crean su propio `.env.local` con esos valores
-3. **IMPORTANTE**: Solo una persona ejecuta los scripts SQL (la primera vez)
+- ✅ **Tiempo real verdadero**: Todos ven los mismos datos actualizados
+- ✅ **Colaboración efectiva**: Pueden trabajar en el mismo partido simultáneamente
+- ✅ **Realismo**: Simula un entorno de producción real
+- ✅ **Simplicidad**: No hay que sincronizar datos entre bases diferentes
 
-### Opción B: Cada Uno con su Propio Proyecto
+**Cómo implementarlo**:
 
-**Ventajas**: Desarrollo independiente, sin conflictos.
+1. **El líder del proyecto** (quien creó el proyecto de Supabase primero):
+   - Comparte las credenciales de Supabase con el equipo:
+     - `NEXT_PUBLIC_SUPABASE_URL`
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - **⚠️ SOLO el líder ejecuta los scripts SQL** (una sola vez)
 
-1. Cada miembro crea su propio proyecto en Supabase
-2. Cada uno ejecuta los scripts SQL en su proyecto
-3. Cada uno usa sus propias credenciales en `.env.local`
+2. **Los demás miembros del equipo**:
 
-**Recomendación**: Opción A para producción, Opción B para desarrollo individual.
+   ```bash
+   # 1. Clonar el repo
+   git clone https://github.com/01REALES01/project_olympics.git
+   cd project_olympics
+   
+   # 2. Instalar dependencias
+   npm install
+   
+   # 3. Crear .env.local con las credenciales compartidas
+   # Copia .env.local.example como .env.local
+   # Pega las credenciales que te compartió el líder
+   
+   # 4. Listo! Ejecutar
+   npm run dev
+   ```
+
+3. **Seguridad de las Credenciales**:
+   - ✅ Compártanlas por un canal seguro (Slack, Discord privado, WhatsApp)
+   - ❌ **NUNCA** las suban a GitHub (ya está protegido por `.gitignore`)
+   - ✅ Si alguien nuevo se une, pídele al líder las credenciales
+
+### 🔐 Gestión de Credenciales para el Equipo
+
+**Opción 1: Documento Compartido (Recomendado para equipos pequeños)**
+
+- Crea un documento en Google Docs o Notion (privado)
+- Título: "Credenciales del Proyecto Olympics"
+- Contenido:
+
+  ```
+  NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
+  
+  Admin Login:
+  Email: admin@olympics.com
+  Password: [tu password]
+  ```
+
+- Comparte el link solo con miembros del equipo
+
+**Opción 2: Variable de Entorno en Repositorio Privado**
+
+- Si tu repo es privado, puede crear un archivo `CREDENTIALS.md` (agrégalo a `.gitignore` por seguridad extra)
+- Solo compártelo verbalmente o por mensaje directo
+
+### 🧪 Alternativa: Base de Datos Personal (Solo para desarrollo aislado)
+
+**Solo usa esta opción si**:
+
+- Quieres experimentar sin afectar a otros
+- Estás desarrollando una feature muy experimental
+- El proyecto aún está en fase de prototipo individual
+
+**Pasos**:
+
+1. Crea tu propio proyecto en Supabase
+2. Ejecuta los scripts SQL en tu proyecto
+3. Usa tus propias credenciales en `.env.local`
+4. **Nota**: Tus datos no se verán en el proyecto del equipo
 
 ## ❗ Troubleshooting
 

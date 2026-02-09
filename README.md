@@ -54,6 +54,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_supabase_anon_key_aqui
 ```
 
 **¿Dónde obtener estos valores?**
+
 1. Ve a tu proyecto de Supabase: [https://supabase.com/dashboard](https://supabase.com/dashboard)
 2. Ve a `Settings` → `API`
 3. Copia `Project URL` y `anon/public` key
@@ -132,16 +133,44 @@ project_olympics/
 
 ## 🔄 Colaboración en Equipo
 
-### Para nuevos desarrolladores:
+### ✅ Estrategia Recomendada: Base de Datos Compartida
 
-1. Clona el repo
-2. Sigue los pasos de "Configuración Inicial"
-3. **NO compartas** tu `.env.local` (cada uno usa sus propias credenciales de Supabase)
-4. Si todos usan el mismo proyecto de Supabase, compartan la URL y Key del proyecto
+**Todos los miembros del equipo deben usar el MISMO proyecto de Supabase** para colaborar efectivamente.
 
-### Recomendación:
-- **Desarrollo**: Cada miembro puede usar su propio proyecto de Supabase (gratuito)
-- **Producción**: Un solo proyecto de Supabase compartido
+### Para el líder del proyecto
+
+1. Crea el proyecto en Supabase (si no lo has hecho)
+2. Ejecuta los scripts SQL (`supabase/schema.sql` y `db_setup.sql`)
+3. **Comparte con el equipo** (por canal seguro):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - Credenciales de admin (email y password)
+
+### Para nuevos miembros del equipo
+
+1. Clona el repositorio:
+
+   ```bash
+   git clone https://github.com/01REALES01/project_olympics.git
+   cd project_olympics
+   npm install
+   ```
+
+2. Crea `.env.local` con las credenciales compartidas por el líder
+
+3. Ejecuta el proyecto:
+
+   ```bash
+   npm run dev
+   ```
+
+4. ¡Listo! Todos verán los mismos datos en tiempo real 🔴
+
+### Seguridad
+
+- ✅ Las credenciales están en `.gitignore` (no se suben a GitHub)
+- ✅ Compártelas solo con tu equipo por canales privados
+- ✅ Si alguien nuevo se une, el líder le comparte las credenciales
 
 ## 🚢 Deployment (Vercel)
 
@@ -156,12 +185,15 @@ project_olympics/
 ## 🐛 Troubleshooting
 
 ### "Could not find the table 'public.olympics_jugadores'"
+
 → Ejecuta `db_setup.sql` en Supabase SQL Editor
 
 ### "Invalid API key"
+
 → Verifica que `.env.local` tenga las credenciales correctas
 
 ### El cronómetro no avanza
+
 → Asegúrate de que `marcador_detalle` contenga `ultimo_update` (revisa que hayas guardado cambios en admin)
 
 ## 📝 Tareas Futuras
