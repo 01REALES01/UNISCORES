@@ -1,101 +1,119 @@
--- ============================================
--- SCRIPT DE CONFIGURACIÓN DE AUTENTICACIÓN
--- ============================================
-
--- Este script crea un usuario administrador de prueba
--- IMPORTANTE: Ejecutar esto en Supabase SQL Editor
-
--- 1. Primero, crea el usuario en Supabase Dashboard:
---    - Ve a Authentication > Users > Add User
---    - Email: admin@uninorte.edu.co
---    - Password: Admin123! (cambiar en producción)
---    - Confirmar email automáticamente
-
--- 2. Luego ejecuta este SQL para asignar el rol:
--- Nota: Reemplaza 'USER_ID_AQUI' con el ID del usuario que acabas de crear
-
--- Ejemplo de cómo insertar el perfil de admin:
--- insert into profiles (id, email, role, created_at)
--- values (
---   'USER_ID_AQUI',  -- Copiar desde Authentication > Users
---   'admin@uninorte.edu.co',
---   'admin',
---   now()
--- );
+-- =====================================================
+-- SCRIPT DE AUTH - OLIMPIADAS UNINORTE
+-- =====================================================
+-- INSTRUCCIONES:
+-- 1. Ve a tu Supabase Dashboard → SQL Editor
+-- 2. Crea una nueva Query
+-- 3. Copia y pega TODO este contenido
+-- 4. Click "Run"
+-- 5. ¡Listo! El primer usuario en iniciar sesión será admin
+-- =====================================================
 
 -- ============================================
--- TRIGGER AUTOMÁTICO PARA NUEVOS USUARIOS
+-- PARTE 1: ASEGURAR TABLA PROFILES
 -- ============================================
 
--- Este trigger crea automáticamente un perfil cuando se registra un usuario
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  insert into public.profiles (id, email, role, created_at)
-  values (
-    new.id,
-    new.email,
-    'public', -- Por defecto todos son público
-    now()
-  );
-  return new;
-end;
-$$;
+-- Crear tabla profiles si no existe
+-- (Si ya la creaste con schema.sql, esto no hará nada)
+CREATE TABLE IF NOT EXISTS profiles (
+    id uuid REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
+    email text,
+    role text DEFAULT 'public',
+    full_name text,
+    avatar_url text,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
 
--- Eliminar trigger si existe
-drop trigger if exists on_auth_user_created on auth.users;
-
--- Crear el trigger
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+-- Agregar columnas que podrían faltar si la tabla ya existía
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'updated_at') THEN
+        ALTER TABLE profiles ADD COLUMN updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'avatar_url') THEN
+        ALTER TABLE profiles ADD COLUMN avatar_url text;
+    END IF;
+END $$;
 
 -- ============================================
--- FUNCIÓN PARA PROMOVER USUARIO A ADMIN
+-- PARTE 2: TRIGGER AUTO-CREAR PROFILE
+-- ============================================
+-- Cuando alguien se registra en auth.users, 
+-- automáticamente se crea un perfil en profiles
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+    INSERT INTO public.profiles (id, email, full_name, role, created_at, updated_at)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+        'public',
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        email = EXCLUDED.email,
+        updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ============================================
+-- PARTE 3: POLÍTICAS RLS
 -- ============================================
 
-create or replace function promote_to_admin(user_email text)
-returns void
-language plpgsql
-security definer
-as $$
-begin
-  update profiles
-  set role = 'admin'
-  where email = user_email;
-end;
-$$;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- Uso: select promote_to_admin('admin@uninorte.edu.co');
+-- Eliminar políticas anteriores (por si acaso)
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Admins can update all profiles" ON profiles;
+DROP POLICY IF EXISTS "Anyone can insert profile" ON profiles;
+
+-- Todos pueden ver perfiles
+CREATE POLICY "Public profiles are viewable by everyone" 
+    ON profiles FOR SELECT USING (true);
+
+-- Usuarios pueden actualizar su propio perfil
+CREATE POLICY "Users can update own profile" 
+    ON profiles FOR UPDATE 
+    USING (auth.uid() = id);
+
+-- Permitir insertar perfiles (necesario para crear el primer admin)
+CREATE POLICY "Anyone can insert profile" 
+    ON profiles FOR INSERT 
+    WITH CHECK (true);
 
 -- ============================================
--- FUNCIÓN PARA ASIGNAR DATA ENTRY
+-- PARTE 4: SINCRONIZAR USUARIOS EXISTENTES
 -- ============================================
+-- Si ya tienes usuarios en auth.users pero no en profiles,
+-- esto les crea un perfil
 
-create or replace function assign_data_entry(user_email text, discipline_name text)
-returns void
-language plpgsql
-security definer
-as $$
-declare
-  user_id uuid;
-  disc_id int;
-begin
-  -- Obtener ID del usuario
-  select id into user_id from profiles where email = user_email;
-  
-  -- Obtener ID de la disciplina
-  select id into disc_id from disciplinas where name = discipline_name;
-  
-  -- Actualizar rol
-  update profiles
-  set role = 'data_entry',
-      assigned_discipline_id = disc_id
-  where id = user_id;
-end;
-$$;
+INSERT INTO public.profiles (id, email, full_name, role, created_at, updated_at)
+SELECT 
+    u.id,
+    u.email,
+    COALESCE(u.raw_user_meta_data->>'full_name', u.email),
+    'public',
+    u.created_at,
+    NOW()
+FROM auth.users u
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.profiles p WHERE p.id = u.id
+)
+ON CONFLICT (id) DO NOTHING;
 
--- Uso: select assign_data_entry('estudiante@uninorte.edu.co', 'Fútbol');
+-- ============================================
+-- VERIFICACIÓN
+-- ============================================
+-- Muestra todos los perfiles creados
+SELECT id, email, role, full_name, created_at FROM profiles ORDER BY created_at;

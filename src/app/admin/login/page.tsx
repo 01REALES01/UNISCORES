@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button, Input } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { Lock, Trophy, Mail, Loader2, ArrowRight, UserPlus, LogIn, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 
 type AuthMode = 'login' | 'register';
@@ -20,6 +21,14 @@ export default function LoginPage() {
     const [success, setSuccess] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
+    const { user, profile, loading: authLoading, isStaff } = useAuth();
+
+    // If already logged in as staff, redirect to admin
+    useEffect(() => {
+        if (!authLoading && user && isStaff) {
+            router.push("/admin");
+        }
+    }, [authLoading, user, isStaff, router]);
 
     const resetForm = () => {
         setError(null);
@@ -33,27 +42,91 @@ export default function LoginPage() {
         setMode(newMode);
     };
 
+    // Get the user's role from profiles table
+    const getUserRole = async (userId: string): Promise<{ role: string | null; error: string | null; debug: string }> => {
+        try {
+            const { data, error, status } = await supabase
+                .from('profiles')
+                .select('id, email, role')
+                .eq('id', userId)
+                .single();
+
+            console.log('getUserRole result:', { data, error, status, userId });
+
+            if (error) {
+                return {
+                    role: null,
+                    error: error.message,
+                    debug: `Query error (status ${status}): ${error.message} | userId: ${userId}`
+                };
+            }
+
+            if (!data) {
+                return {
+                    role: null,
+                    error: 'No profile found',
+                    debug: `No profile row for userId: ${userId}`
+                };
+            }
+
+            return {
+                role: data.role,
+                error: null,
+                debug: `Found profile: email=${data.email}, role=${data.role}, id=${data.id}`
+            };
+        } catch (err: any) {
+            if (err?.name === 'AbortError' || err?.message?.includes('abort')) {
+                return { role: null, error: 'aborted', debug: 'Request aborted' };
+            }
+            return { role: null, error: err.message, debug: `Exception: ${err.message}` };
+        }
+    };
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error: authError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
-            if (error) {
-                if (error.message.includes('Invalid login credentials')) {
+            if (authError) {
+                if (authError.message.includes('Invalid login credentials')) {
                     throw new Error('Email o contraseña incorrectos');
                 }
-                throw error;
+                if (authError.message.includes('Email not confirmed') || authError.message.includes('email_not_confirmed')) {
+                    throw new Error('Tu email no está confirmado. Ve a Supabase Dashboard → Authentication → Providers → Email → Desactiva "Confirm email" y vuelve a intentar.');
+                }
+                throw new Error(authError.message);
             }
 
-            router.push("/admin");
-            router.refresh();
+            if (data.user) {
+                // Check user role
+                const result = await getUserRole(data.user.id);
+
+                if (result.error === 'aborted') {
+                    // Navigation in progress, ignore
+                    return;
+                }
+
+                if (!result.role || result.role === 'public') {
+                    setError('Tu cuenta no tiene permisos de administrador. Contacta a un admin para obtener acceso.');
+                    await supabase.auth.signOut();
+                    setLoading(false);
+                    return;
+                }
+
+                // Role is admin or data_entry — redirect
+                window.location.href = '/admin';
+            }
         } catch (err: any) {
+            // Ignore abort errors caused by navigation
+            if (err?.name === 'AbortError' || err?.message?.includes('abort')) {
+                return;
+            }
             setError(err.message || "Error al iniciar sesión");
         } finally {
             setLoading(false);
@@ -67,7 +140,6 @@ export default function LoginPage() {
         setSuccess(null);
 
         try {
-            // Validaciones
             if (password.length < 6) {
                 throw new Error('La contraseña debe tener al menos 6 caracteres');
             }
@@ -78,7 +150,7 @@ export default function LoginPage() {
                 throw new Error('Ingresa tu nombre completo');
             }
 
-            const { data, error } = await supabase.auth.signUp({
+            const { data, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -88,17 +160,21 @@ export default function LoginPage() {
                 }
             });
 
-            if (error) {
-                if (error.message.includes('already registered')) {
+            if (authError) {
+                if (authError.message.includes('already registered') || authError.message.includes('already been registered')) {
                     throw new Error('Este email ya está registrado. Intenta iniciar sesión.');
                 }
-                throw error;
+                throw authError;
             }
 
-            setSuccess('¡Cuenta creada exitosamente! Puedes iniciar sesión ahora.');
-            setTimeout(() => {
-                switchMode('login');
-            }, 2000);
+            if (data.user) {
+                // Sign out after registration — admin must approve
+                await supabase.auth.signOut();
+                setSuccess('¡Cuenta creada exitosamente! Un administrador debe asignarte permisos para acceder al panel.');
+                setTimeout(() => {
+                    switchMode('login');
+                }, 4000);
+            }
 
         } catch (err: any) {
             setError(err.message || "Error al registrar usuario");
@@ -106,6 +182,15 @@ export default function LoginPage() {
             setLoading(false);
         }
     };
+
+    // Show loading if checking existing auth
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 size={32} className="animate-spin text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
@@ -115,8 +200,6 @@ export default function LoginPage() {
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-to-b from-primary/15 to-transparent rounded-full blur-[100px]" />
                 <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-gradient-to-t from-orange-500/10 to-transparent rounded-full blur-[80px]" />
                 <div className="absolute top-1/3 right-0 w-[300px] h-[300px] bg-gradient-to-l from-blue-500/10 to-transparent rounded-full blur-[80px]" />
-
-                {/* Subtle grid pattern */}
                 <div className="absolute inset-0 opacity-[0.03]" style={{
                     backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
                     backgroundSize: '60px 60px'
@@ -138,13 +221,15 @@ export default function LoginPage() {
                     </p>
                 </div>
 
+
+
                 {/* Mode Toggle */}
                 <div className="flex bg-slate-800/50 p-1.5 rounded-2xl border border-border/30 mb-6 backdrop-blur-sm">
                     <button
                         onClick={() => switchMode('login')}
                         className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'login'
-                                ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                                : 'text-muted-foreground hover:text-foreground'
+                            ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                            : 'text-muted-foreground hover:text-foreground'
                             }`}
                     >
                         <LogIn size={16} />
@@ -153,8 +238,8 @@ export default function LoginPage() {
                     <button
                         onClick={() => switchMode('register')}
                         className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'register'
-                                ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                                : 'text-muted-foreground hover:text-foreground'
+                            ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                            : 'text-muted-foreground hover:text-foreground'
                             }`}
                     >
                         <UserPlus size={16} />
@@ -168,17 +253,17 @@ export default function LoginPage() {
 
                         {/* Error */}
                         {error && (
-                            <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                                <AlertCircle size={18} className="shrink-0" />
-                                {error}
+                            <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                                <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                                <span>{error}</span>
                             </div>
                         )}
 
                         {/* Success */}
                         {success && (
-                            <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                                <CheckCircle size={18} className="shrink-0" />
-                                {success}
+                            <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                                <CheckCircle size={18} className="shrink-0 mt-0.5" />
+                                <span>{success}</span>
                             </div>
                         )}
 
@@ -276,6 +361,14 @@ export default function LoginPage() {
                                         <AlertCircle size={12} /> Las contraseñas no coinciden
                                     </p>
                                 )}
+                            </div>
+                        )}
+
+                        {/* Info text for register */}
+                        {mode === 'register' && (
+                            <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 text-blue-400/80 text-xs flex items-start gap-2">
+                                <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                                <span>Después de registrarte, un administrador debe aprobar tu acceso al panel.</span>
                             </div>
                         )}
 

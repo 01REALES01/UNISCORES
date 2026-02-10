@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { Button, Badge, Avatar } from "@/components/ui-primitives";
+import { useParams, useRouter } from "next/navigation";
+import { Badge, Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { ArrowLeft, Clock, MapPin, Trophy, Users } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 type Partido = {
     id: number;
@@ -15,6 +16,7 @@ type Partido = {
     fecha: string;
     estado: string;
     marcador_detalle: any;
+    lugar?: string;
     disciplinas: { name: string };
 };
 
@@ -29,6 +31,7 @@ type Evento = {
 
 export default function PublicMatchDetail() {
     const params = useParams();
+    const router = useRouter();
     const matchId = params.id as string;
 
     const [match, setMatch] = useState<Partido | null>(null);
@@ -74,120 +77,222 @@ export default function PublicMatchDetail() {
         return () => { supabase.removeChannel(channel); };
     }, [matchId]);
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
-    if (!match) return <div className="p-8 text-center">Partido no encontrado</div>;
+    const getSportEmoji = (name: string) => {
+        const map: Record<string, string> = {
+            'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
+            'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',
+        };
+        return map[name] || '🏅';
+    };
+
+    if (loading) return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#030711] text-white">
+            <div className="w-16 h-16 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 animate-spin mb-4" />
+            <p className="text-sm font-medium text-indigo-300 animate-pulse">Cargando estadio...</p>
+        </div>
+    );
+
+    if (!match) return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#030711] text-white p-8 text-center">
+            <Trophy size={48} className="text-slate-700 mb-4" />
+            <h1 className="text-2xl font-bold mb-2">Partido no encontrado</h1>
+            <Link href="/" className="text-indigo-400 hover:text-indigo-300 transition-colors">Volver al inicio</Link>
+        </div>
+    );
 
     const scoreA = match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0;
     const scoreB = match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0;
     const isLive = match.estado === 'en_vivo';
+    const isFinished = match.estado === 'finalizado';
+    const sportName = match.disciplinas?.name || 'Deporte';
+    const sportEmoji = getSportEmoji(sportName);
 
     return (
-        <div className="min-h-screen pb-12 bg-background">
-            {/* Header / Scoreboard */}
-            <div className="relative bg-slate-900 border-b border-white/10 overflow-hidden">
-                {/* Background Effects */}
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-background to-purple-500/10" />
+        <div className="min-h-screen bg-[#030711] text-slate-200 font-sans selection:bg-indigo-500/30">
+            {/* Ambient Background */}
+            <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-indigo-600/10 rounded-full blur-[120px] mix-blend-screen" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen" />
+            </div>
 
-                <div className="relative max-w-lg mx-auto px-4 py-6">
-                    <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-white mb-6">
-                        <ArrowLeft size={16} className="mr-1" /> Volver
-                    </Link>
+            {/* Navigation Header */}
+            <div className="fixed top-0 left-0 right-0 z-50 px-4 py-4 flex justify-between items-center pointer-events-none">
+                <Link
+                    href="/"
+                    className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all text-sm font-medium text-white group"
+                >
+                    <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                    <span className="hidden sm:inline">Volver</span>
+                </Link>
 
-                    {/* Match Status */}
-                    <div className="flex justify-center mb-6">
-                        {isLive ? (
-                            <Badge variant="live" className="px-3 py-1 bg-red-500/20 border-red-500/30 text-red-400">
-                                <span className="relative flex h-2 w-2 mr-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                                </span>
-                                EN VIVO
-                            </Badge>
-                        ) : (
-                            <Badge variant="outline">{match.estado === 'finalizado' ? 'Finalizado' : 'Programado'}</Badge>
-                        )}
-                    </div>
-
-                    {/* Teams & Score */}
-                    <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
-                        <div className="flex flex-col items-center gap-3">
-                            <Avatar name={match.equipo_a} size="lg" className="w-20 h-20 text-2xl border-4 border-white/5" />
-                            <h2 className="font-bold text-lg text-center leading-tight">{match.equipo_a}</h2>
-                        </div>
-
-                        <div className="flex flex-col items-center">
-                            <div className="text-6xl font-black tabular-nums tracking-tighter text-white">
-                                {scoreA}-{scoreB}
-                            </div>
-                            <div className="mt-2 text-primary font-mono font-bold text-lg px-4 py-1 bg-primary/10 rounded-full border border-primary/20">
-                                <PublicLiveTimer detalle={match.marcador_detalle || {}} />
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col items-center gap-3">
-                            <Avatar name={match.equipo_b} size="lg" className="w-20 h-20 text-2xl border-4 border-white/5" />
-                            <h2 className="font-bold text-lg text-center leading-tight">{match.equipo_b}</h2>
-                        </div>
-                    </div>
-
-                    <p className="text-center text-xs text-muted-foreground mt-6 flex items-center justify-center gap-1">
-                        <MapPin size={12} /> Coliseo Central • {match.disciplinas?.name}
-                    </p>
+                <div className="pointer-events-auto flex gap-2">
+                    <button className="p-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all text-white">
+                        <Share2 size={18} />
+                    </button>
                 </div>
             </div>
 
-            {/* Content */}
-            <div className="max-w-lg mx-auto px-4 py-8 space-y-8">
+            {/* Main Content */}
+            <div className="relative z-10 w-full max-w-2xl mx-auto px-4 pb-20 pt-24 sm:pt-32">
 
-                {/* Timeline */}
-                <section>
-                    <h3 className="flex items-center gap-2 font-bold text-lg mb-4">
-                        <Clock className="text-primary" size={20} /> Eventos
-                    </h3>
+                {/* Match Card */}
+                <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0a0f1c]/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 mb-8">
+                    {/* Header Strip */}
+                    <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none" />
 
-                    <div className="space-y-4 relative pl-4 border-l-2 border-border/50 ml-2">
-                        {eventos.length === 0 && <p className="text-muted-foreground italic pl-4">El partido está comenzando...</p>}
-
-                        {eventos.map((e) => (
-                            <div key={e.id} className="relative pl-6 animate-in slide-in-from-left-2 fade-in duration-500">
-                                {/* Dot */}
-                                <div className="absolute -left-[21px] top-1 w-4 h-4 rounded-full bg-background border-2 border-primary flex items-center justify-center">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-center">
+                        {/* Status Badge */}
+                        <div className="flex justify-center mb-8">
+                            {isLive ? (
+                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-black tracking-widest uppercase shadow-[0_0_15px_rgba(244,63,94,0.3)] animate-pulse">
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+                                    </span>
+                                    En Vivo
                                 </div>
+                            ) : isFinished ? (
+                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-400 text-xs font-bold tracking-widest uppercase">
+                                    Finalizado
+                                </div>
+                            ) : (
+                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold tracking-widest uppercase">
+                                    <Calendar size={12} />
+                                    {new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                </div>
+                            )}
+                        </div>
 
-                                <div className="glass p-3 rounded-xl border border-white/5 bg-muted/20">
-                                    <div className="flex justify-between items-start mb-1">
-                                        <span className="font-bold text-sm text-primary">{e.minuto}'</span>
-                                        <Badge variant="secondary" className="text-[10px] h-5">{e.equipo === 'sistema' ? 'Juez' : e.equipo === 'equipo_a' ? match.equipo_a : match.equipo_b}</Badge>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xl">
-                                            {e.tipo_evento === 'gol' && '⚽'}
-                                            {e.tipo_evento === 'tarjeta_amarilla' && '🟨'}
-                                            {e.tipo_evento === 'tarjeta_roja' && '🟥'}
-                                            {e.tipo_evento === 'inicio' && '🚀'}
-                                            {e.tipo_evento === 'fin' && '🏁'}
-                                        </span>
-                                        <div>
-                                            <p className="font-semibold text-sm capitalize">{e.tipo_evento.replace('_', ' ')}</p>
-                                            {e.jugadores && <p className="text-xs text-muted-foreground">{e.jugadores.nombre} (#{e.jugadores.numero})</p>}
-                                        </div>
-                                    </div>
+                        {/* Scoreboard Layout */}
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-8">
+                            {/* Team A */}
+                            <div className="flex flex-col items-center gap-4 group">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    <Avatar name={match.equipo_a} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#0a0f1c]" />
+                                </div>
+                                <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
+                                    {match.equipo_a}
+                                </h2>
+                            </div>
+
+                            {/* Score Display */}
+                            <div className="flex flex-col items-center relative z-20">
+                                <div className={cn(
+                                    "flex items-center justify-center gap-2 sm:gap-4 font-black text-6xl sm:text-8xl tabular-nums tracking-tighter transition-all duration-300",
+                                    isLive ? "text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.3)]" : "text-white/50"
+                                )}>
+                                    <span>{scoreA}</span>
+                                    <span className="text-white/20 text-4xl sm:text-6xl -mt-2 sm:-mt-4">:</span>
+                                    <span>{scoreB}</span>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </section>
 
-                {/* Stats (Placeholder for now) */}
-                <section>
-                    <h3 className="flex items-center gap-2 font-bold text-lg mb-4">
-                        <Trophy className="text-yellow-500" size={20} /> Estadísticas
-                    </h3>
-                    <div className="glass p-4 rounded-xl text-center text-sm text-muted-foreground">
-                        Próximamente
+                            {/* Team B */}
+                            <div className="flex flex-col items-center gap-4 group">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    <Avatar name={match.equipo_b} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#0a0f1c]" />
+                                </div>
+                                <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
+                                    {match.equipo_b}
+                                </h2>
+                            </div>
+                        </div>
+
+                        {/* Metadata Footer */}
+                        <div className="mt-8 sm:mt-10 flex flex-wrap justify-center items-center gap-3 sm:gap-6 text-xs sm:text-sm font-medium text-slate-400">
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
+                                <span className="text-lg">{sportEmoji}</span>
+                                <span className="uppercase tracking-wide">{sportName}</span>
+                            </div>
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
+                                <MapPin size={14} className="text-indigo-400" />
+                                <span>{match.lugar || 'Coliseo Central'}</span>
+                            </div>
+                            {isLive && (
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300">
+                                    <Clock size={14} />
+                                    <PublicLiveTimer detalle={match.marcador_detalle || {}} />
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </section>
+                </div>
+
+                {/* Timeline Section */}
+                <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-200">
+                    <div className="flex items-center gap-3 mb-6 px-2">
+                        <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+                            <AlignLeft size={20} />
+                        </div>
+                        <h3 className="text-xl font-bold text-white tracking-tight">Minuto a Minuto</h3>
+                    </div>
+
+                    <div className="relative space-y-0 pl-8 sm:pl-10 before:absolute before:top-4 before:bottom-4 before:left-[19px] sm:before:left-[23px] before:w-[2px] before:bg-gradient-to-b before:from-indigo-500/50 before:to-transparent before:z-0">
+                        {eventos.length === 0 ? (
+                            <div className="py-12 text-center text-slate-500 bg-white/5 rounded-3xl border border-white/5 border-dashed">
+                                <p>El partido está por comenzar...</p>
+                            </div>
+                        ) : (
+                            eventos.map((e, idx) => (
+                                <div key={e.id} className="relative pb-8 group last:pb-0">
+                                    {/* Timeline Dot */}
+                                    <div className={cn(
+                                        "absolute top-0 -left-[27px] sm:-left-[31px] z-10 flex items-center justify-center w-8 h-8 rounded-full border-4 border-[#030711] transition-transform duration-300 group-hover:scale-110",
+                                        e.tipo_evento === 'gol' ? "bg-amber-400 text-amber-900" :
+                                            e.tipo_evento.includes('tarjeta') ? "bg-rose-500 text-white" :
+                                                "bg-indigo-500 text-white"
+                                    )}>
+                                        <span className="text-[10px] font-black">{e.minuto}'</span>
+                                    </div>
+
+                                    {/* Event Card */}
+                                    <div className="relative p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all duration-300 hover:translate-x-1">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xl">
+                                                    {e.tipo_evento === 'gol' && '⚽ GOL'}
+                                                    {e.tipo_evento === 'tarjeta_amarilla' && '🟨 Tarjeta Amarilla'}
+                                                    {e.tipo_evento === 'tarjeta_roja' && '🟥 Tarjeta Roja'}
+                                                    {e.tipo_evento === 'inicio' && '🚀 Inicio del Partido'}
+                                                    {e.tipo_evento === 'fin' && '🏁 Final del Partido'}
+                                                    {e.tipo_evento === 'cambio' && '🔄 Cambio'}
+                                                    {!['gol', 'tarjeta_amarilla', 'tarjeta_roja', 'inicio', 'fin', 'cambio'].includes(e.tipo_evento) && '📌 Evento'}
+                                                </span>
+                                            </div>
+                                            <Badge variant="outline" className="w-fit text-[10px] bg-white/5 border-white/10 text-slate-400">
+                                                {e.equipo === 'sistema' ? 'Juez' : e.equipo === 'equipo_a' ? match.equipo_a : match.equipo_b}
+                                            </Badge>
+                                        </div>
+
+                                        {e.jugadores && (
+                                            <div className="flex items-center gap-3 mt-1 pl-1">
+                                                <div className="w-1 h-8 bg-white/10 rounded-full" />
+                                                <div>
+                                                    <p className="font-bold text-white text-sm">{e.jugadores.nombre}</p>
+                                                    <p className="text-xs text-slate-500 font-mono">#{e.jugadores.numero}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {e.descripcion && (
+                                            <p className="text-sm text-slate-400 mt-2 italic border-t border-white/5 pt-2">
+                                                "{e.descripcion}"
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="mt-20 text-center">
+                    <p className="text-slate-600 text-xs uppercase tracking-widest font-bold">
+                        Olimpiadas UNINORTE 2026
+                    </p>
+                </div>
             </div>
         </div>
     );

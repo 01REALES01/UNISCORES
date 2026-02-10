@@ -136,101 +136,108 @@ export default function AdminDashboard() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 {stats.map((stat) => (
-                    <Card
+                    <div
                         key={stat.name}
-                        className={`relative overflow-hidden flex items-center p-5 space-x-4 border-border/30 hover:border-border/60 transition-all duration-300 group hover:shadow-lg ${stat.pulse ? 'ring-2 ' + stat.ring : ''}`}
+                        className={`relative group overflow-hidden rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/10 border border-white/5 bg-[#0a0f1c]/40 backdrop-blur-md`}
                     >
-                        {/* Glow effect */}
-                        <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full ${stat.bg} blur-2xl opacity-30 group-hover:opacity-50 transition-opacity`} />
+                        {/* Glow Gradient Background */}
+                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${stat.pulse ? 'from-rose-500 to-orange-500' : 'from-indigo-500 to-cyan-500'}`} />
 
-                        <div className={`relative p-3.5 rounded-2xl ${stat.bg} ${stat.color} ring-1 ${stat.ring}`}>
-                            <stat.icon size={22} />
-                            {stat.pulse && (
-                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
-                                </span>
-                            )}
+                        <div className="relative flex items-center justify-between z-10">
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.name}</p>
+                                <h3 className="text-4xl font-black text-white tracking-tight">{stat.value}</h3>
+                            </div>
+
+                            <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color} ring-1 ${stat.ring} shadow-lg`}>
+                                <stat.icon size={24} />
+                                {stat.pulse && (
+                                    <span className="absolute top-4 right-4 flex h-3 w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500" />
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <div className="relative">
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{stat.name}</p>
-                            <h3 className="text-3xl font-black mt-0.5">{stat.value}</h3>
-                        </div>
-                    </Card>
+                    </div>
                 ))}
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Live Matches */}
-                <Card className="p-6 border-border/30">
-                    <div className="flex items-center justify-between mb-5">
-                        <h3 className="text-lg font-bold flex items-center gap-2">
-                            <Zap size={18} className="text-red-500" />
+                <div className="rounded-3xl border border-white/5 bg-[#0a0f1c]/40 backdrop-blur-md p-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+                    <div className="flex items-center justify-between mb-6 relative z-10">
+                        <h3 className="text-lg font-bold flex items-center gap-3 text-white">
+                            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500">
+                                <Zap size={18} />
+                            </div>
                             En Vivo Ahora
                         </h3>
                         {enVivo.length > 0 && (
-                            <span className="flex items-center gap-1.5 text-xs font-bold text-red-500 bg-red-500/10 px-3 py-1.5 rounded-full">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-                                </span>
+                            <span className="flex items-center gap-2 text-[10px] font-black tracking-wider text-rose-400 bg-rose-500/10 px-3 py-1.5 rounded-full border border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.2)] animate-pulse">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                                 LIVE
                             </span>
                         )}
                     </div>
-                    <div className="space-y-3">
-                        {enVivo.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground/50">
-                                <Activity size={32} className="mx-auto mb-3 opacity-30" />
-                                <p className="text-sm font-medium">No hay partidos en vivo</p>
-                                <p className="text-xs mt-1">Inicia un partido desde la sección de Partidos</p>
-                            </div>
-                        ) : (
+
+                    <div className="space-y-3 relative z-10">
+                        {enVivo.length > 0 ? (
                             enVivo.map(p => {
                                 const score = getScore(p);
                                 return (
                                     <Link
                                         key={p.id}
                                         href={`/admin/partidos/${p.id}`}
-                                        className="flex items-center gap-3 p-4 rounded-2xl bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 transition-all group"
+                                        className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-rose-500/30 transition-all group"
                                     >
-                                        <span className="text-2xl">{getSportEmoji(p.disciplinas?.name)}</span>
+                                        <span className="text-3xl filter drop-shadow-md">{getSportEmoji(p.disciplinas?.name)}</span>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-bold truncate">{p.equipo_a}</span>
-                                                <span className="text-lg font-black text-primary mx-2">{score.a}</span>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-sm font-bold text-slate-200 truncate">{p.equipo_a}</span>
+                                                <span className="text-xl font-black text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]">{score.a}</span>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm font-medium text-muted-foreground truncate">{p.equipo_b}</span>
-                                                <span className="text-lg font-black text-muted-foreground mx-2">{score.b}</span>
+                                                <span className="text-sm font-bold text-slate-400 truncate">{p.equipo_b}</span>
+                                                <span className="text-xl font-black text-slate-500">{score.b}</span>
                                             </div>
                                         </div>
-                                        <ArrowUpRight size={16} className="text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                                        <div className="h-8 w-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-all">
+                                            <ArrowUpRight size={16} />
+                                        </div>
                                     </Link>
                                 );
                             })
+                        ) : (
+                            <div className="text-center py-12 rounded-2xl border border-dashed border-white/10">
+                                <div className="inline-flex p-4 rounded-full bg-white/5 mb-3">
+                                    <Activity size={24} className="text-slate-500" />
+                                </div>
+                                <p className="text-sm font-medium text-slate-400">No hay partidos en vivo</p>
+                            </div>
                         )}
                     </div>
-                </Card>
+                </div>
 
-                {/* Recent / Upcoming */}
-                <Card className="p-6 border-border/30">
-                    <div className="flex items-center justify-between mb-5">
-                        <h3 className="text-lg font-bold flex items-center gap-2">
-                            <Clock size={18} className="text-blue-500" />
+                {/* Activity Feed */}
+                <div className="rounded-3xl border border-white/5 bg-[#0a0f1c]/40 backdrop-blur-md p-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+                    <div className="flex items-center justify-between mb-6 relative z-10">
+                        <h3 className="text-lg font-bold flex items-center gap-3 text-white">
+                            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+                                <Clock size={18} />
+                            </div>
                             Actividad Reciente
                         </h3>
                     </div>
-                    <div className="space-y-2">
-                        {[...finalizados.slice(0, 3), ...programados.slice(0, 3)].length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground/50">
-                                <Calendar size={32} className="mx-auto mb-3 opacity-30" />
-                                <p className="text-sm font-medium">No hay actividad reciente</p>
-                                <p className="text-xs mt-1">Crea un partido para empezar</p>
-                            </div>
-                        ) : (
+
+                    <div className="space-y-2 relative z-10">
+                        {finalizados.concat(programados).length > 0 ? (
                             [...finalizados.slice(0, 3), ...programados.slice(0, 3)].map(p => {
                                 const score = getScore(p);
                                 const isFinal = p.estado === 'finalizado';
@@ -238,67 +245,77 @@ export default function AdminDashboard() {
                                     <Link
                                         key={p.id}
                                         href={`/admin/partidos/${p.id}`}
-                                        className="flex items-center gap-3 p-3.5 rounded-xl hover:bg-muted/30 transition-all group"
+                                        className="flex items-center gap-4 p-3.5 rounded-2xl hover:bg-white/5 transition-all group border border-transparent hover:border-white/5"
                                     >
-                                        <span className="text-xl">{getSportEmoji(p.disciplinas?.name)}</span>
+                                        <span className="text-2xl opacity-80">{getSportEmoji(p.disciplinas?.name)}</span>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold truncate">
-                                                {p.equipo_a} vs {p.equipo_b}
+                                            <p className="text-sm font-semibold text-slate-200 truncate">
+                                                {p.equipo_a} <span className="text-slate-500 mx-1">vs</span> {p.equipo_b}
                                             </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {p.disciplinas?.name} · {new Date(p.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+                                            <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide mt-0.5">
+                                                {p.disciplinas?.name} • {new Date(p.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
                                             </p>
                                         </div>
                                         {isFinal ? (
-                                            <span className="text-sm font-bold font-mono bg-muted/50 px-2.5 py-1 rounded-lg">
+                                            <span className="text-xs font-bold font-mono bg-white/5 text-slate-300 px-3 py-1.5 rounded-lg border border-white/5">
                                                 {score.a} - {score.b}
                                             </span>
                                         ) : (
-                                            <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400">
+                                            <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                                 Programado
                                             </span>
                                         )}
                                     </Link>
                                 );
                             })
+                        ) : (
+                            <div className="text-center py-12 rounded-2xl border border-dashed border-white/10">
+                                <p className="text-sm font-medium text-slate-400">Sin actividad reciente</p>
+                            </div>
                         )}
                     </div>
-                </Card>
+                </div>
             </div>
 
             {/* Disciplines Overview */}
-            <Card className="p-6 border-border/30">
-                <h3 className="text-lg font-bold mb-5 flex items-center gap-2">
-                    <Trophy size={18} className="text-amber-500" />
-                    Disciplinas Activas
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            {/* Disciplines Overview */}
+            <div className="rounded-3xl border border-white/5 bg-[#0a0f1c]/40 backdrop-blur-md p-8 relative overflow-hidden">
+                <div className="flex items-center gap-3 mb-6 relative z-10">
+                    <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+                        <Trophy size={18} />
+                    </div>
+                    <h3 className="text-lg font-bold text-white">Disciplinas Activas</h3>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 relative z-10">
                     {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'].map(sport => {
                         const count = partidos.filter(p => p.disciplinas?.name === sport).length;
                         const liveCount = partidos.filter(p => p.disciplinas?.name === sport && p.estado === 'en_vivo').length;
                         return (
                             <div
                                 key={sport}
-                                className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${count > 0
-                                        ? 'border-border/40 bg-muted/20 hover:bg-muted/40'
-                                        : 'border-border/20 bg-muted/5 opacity-50'
+                                className={`relative group flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${count > 0
+                                    ? 'border-white/10 bg-white/5 hover:bg-white/10 hover:shadow-lg hover:shadow-indigo-500/10'
+                                    : 'border-white/5 bg-transparent opacity-40 hover:opacity-100'
                                     }`}
                             >
                                 {liveCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+                                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
                                     </span>
                                 )}
-                                <span className="text-3xl">{getSportEmoji(sport)}</span>
-                                <span className="text-[10px] font-bold text-center leading-tight">{sport}</span>
-                                <span className="text-lg font-black">{count}</span>
-                                <span className="text-[9px] text-muted-foreground">partidos</span>
+                                <span className="text-3xl filter drop-shadow-lg transition-transform group-hover:scale-110 duration-300">{getSportEmoji(sport)}</span>
+                                <span className="text-[10px] font-bold text-center leading-tight text-slate-300 uppercase tracking-wider">{sport}</span>
+                                <div className="mt-1 flex items-baseline gap-1">
+                                    <span className={`text-xl font-black ${liveCount > 0 ? 'text-rose-400' : 'text-indigo-400'}`}>{count}</span>
+                                    <span className="text-[8px] font-medium text-slate-500">parts</span>
+                                </div>
                             </div>
                         );
                     })}
                 </div>
-            </Card>
+            </div>
         </div>
     );
 }

@@ -136,8 +136,8 @@ export default function PartidosPage() {
                         key={stat.label}
                         onClick={stat.onClick}
                         className={`relative p-4 rounded-2xl border text-left transition-all duration-300 group overflow-hidden ${stat.active
-                                ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/20 shadow-lg shadow-primary/10'
-                                : 'border-border/20 bg-muted/10 hover:border-border/40 hover:bg-muted/20'
+                            ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/20 shadow-lg shadow-primary/10'
+                            : 'border-border/20 bg-muted/10 hover:border-border/40 hover:bg-muted/20'
                             }`}
                     >
                         <div className="flex items-center gap-2 mb-1">
@@ -174,8 +174,8 @@ export default function PartidosPage() {
                     <button
                         onClick={() => setSportFilter('todos')}
                         className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${sportFilter === 'todos'
-                                ? 'bg-primary text-white shadow-md'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                            ? 'bg-primary text-white shadow-md'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
                             }`}
                     >
                         Todos
@@ -185,8 +185,8 @@ export default function PartidosPage() {
                             key={sport}
                             onClick={() => setSportFilter(sportFilter === sport ? 'todos' : sport)}
                             className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${sportFilter === sport
-                                    ? 'bg-primary text-white shadow-md'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                                ? 'bg-primary text-white shadow-md'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
                                 }`}
                         >
                             <span>{SPORT_EMOJI[sport] || '🏅'}</span>
@@ -235,8 +235,8 @@ export default function PartidosPage() {
                                 key={partido.id}
                                 onClick={() => router.push(`/admin/partidos/${partido.id}`)}
                                 className={`relative group rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 ${isLive
-                                        ? 'border-red-500/30 shadow-lg shadow-red-500/10 ring-1 ring-red-500/10'
-                                        : `${accent} hover:border-primary/40`
+                                    ? 'border-red-500/30 shadow-lg shadow-red-500/10 ring-1 ring-red-500/10'
+                                    : `${accent} hover:border-primary/40`
                                     }`}
                             >
                                 {/* Sport gradient background */}
@@ -304,13 +304,18 @@ export default function PartidosPage() {
 
                                     {/* Bottom bar */}
                                     <div className="flex justify-between items-center pt-4 border-t border-white/5">
-                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                            <Clock size={12} />
-                                            <span>
-                                                {new Date(partido.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
-                                                {' · '}
-                                                {new Date(partido.fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
+                                        <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                                            <div className="flex items-center gap-1.5">
+                                                <Clock size={12} />
+                                                <span>
+                                                    {new Date(partido.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+                                                    {' · '}
+                                                    {new Date(partido.fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] font-semibold text-muted-foreground/60">{partido.lugar || 'Coliseo Central'}</span>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <button

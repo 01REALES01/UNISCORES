@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button, Input, Badge } from "@/components/ui-primitives";
-import { X, Save, Trophy, Loader2, Calendar, Users, Activity } from "lucide-react";
+import { X, Save, Trophy, Loader2, Calendar, Users, Activity, MapPin, Clock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type CreateMatchModalProps = {
@@ -26,6 +26,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
     const [equipoA, setEquipoA] = useState("");
     const [equipoB, setEquipoB] = useState("");
     const [estado, setEstado] = useState("programado");
+    const [lugar, setLugar] = useState("");
+    const [fecha, setFecha] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
 
     if (!isOpen) return null;
@@ -66,8 +68,9 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                 disciplina_id: disc.id,
                 equipo_a: equipoA,
                 equipo_b: equipoB,
-                fecha: new Date().toISOString(),
+                fecha: fecha ? new Date(fecha).toISOString() : new Date().toISOString(),
                 estado: estado,
+                lugar: lugar || 'Coliseo Central',
                 marcador_detalle: marcadorInicial
             });
 
@@ -78,6 +81,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
             setEquipoB("");
             setDisciplina("Fútbol");
             setEstado("programado");
+            setLugar("");
+            setFecha("");
             onClose();
         } catch (e: any) {
             setErrorMsg(e.message);
@@ -170,6 +175,34 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                 className="bg-muted/30 border-border/50 focus:bg-background transition-all"
                             />
                         </div>
+                    </div>
+
+                    {/* 3. Lugar y Fecha */}
+                    <div className={`grid gap-4 ${estado === 'programado' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                        <div className="space-y-2 group">
+                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 group-focus-within:text-primary transition-colors">
+                                <MapPin size={14} /> Lugar / Cancha
+                            </label>
+                            <Input
+                                placeholder="Ej: Coliseo Central"
+                                value={lugar}
+                                onChange={e => setLugar(e.target.value)}
+                                className="bg-muted/30 border-border/50 focus:bg-background transition-all"
+                            />
+                        </div>
+                        {estado === 'programado' && (
+                            <div className="space-y-2 group animate-in slide-in-from-left-2 fade-in duration-300">
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 group-focus-within:text-primary transition-colors">
+                                    <Clock size={14} /> Fecha y Hora
+                                </label>
+                                <Input
+                                    type="datetime-local"
+                                    value={fecha}
+                                    onChange={e => setFecha(e.target.value)}
+                                    className="bg-muted/30 border-border/50 focus:bg-background transition-all [color-scheme:dark]"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* 3. Estado Inicial */}
