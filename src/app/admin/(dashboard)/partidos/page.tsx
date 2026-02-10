@@ -38,6 +38,7 @@ export default function PartidosPage() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('todos');
     const [sportFilter, setSportFilter] = useState('todos');
+    const [genderFilter, setGenderFilter] = useState('todos');
     const [searchQuery, setSearchQuery] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -82,6 +83,8 @@ export default function PartidosPage() {
         if (filter === 'finalizados' && p.estado !== 'finalizado') return false;
         // Sport filter
         if (sportFilter !== 'todos' && p.disciplinas?.name !== sportFilter) return false;
+        // Gender filter
+        if (genderFilter !== 'todos' && (p.genero || 'masculino') !== genderFilter) return false;
         // Search
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
@@ -194,6 +197,28 @@ export default function PartidosPage() {
                         </button>
                     ))}
                 </div>
+
+                {/* Gender Filter */}
+                <div className="flex gap-1.5 bg-muted/10 p-1.5 rounded-xl border border-border/20">
+                    {[
+                        { value: 'todos', label: 'Todos', icon: '🏅' },
+                        { value: 'masculino', label: 'M', icon: '♂', color: 'bg-blue-500' },
+                        { value: 'femenino', label: 'F', icon: '♀', color: 'bg-pink-500' },
+                        { value: 'mixto', label: 'Mix', icon: '⚤', color: 'bg-purple-500' },
+                    ].map(g => (
+                        <button
+                            key={g.value}
+                            onClick={() => setGenderFilter(genderFilter === g.value ? 'todos' : g.value)}
+                            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${genderFilter === g.value
+                                ? `${g.color || 'bg-primary'} text-white shadow-md`
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                                }`}
+                        >
+                            <span>{g.icon}</span>
+                            <span>{g.label}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Matches Grid */}
@@ -249,6 +274,13 @@ export default function PartidosPage() {
                                         <div className="flex items-center gap-2.5">
                                             <span className="text-2xl drop-shadow-sm">{emoji}</span>
                                             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{sportName}</span>
+                                            {/* Gender Badge */}
+                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${(partido.genero || 'masculino') === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
+                                                    (partido.genero || 'masculino') === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
+                                                        'bg-blue-500/20 text-blue-400'
+                                                }`}>
+                                                {(partido.genero || 'masculino') === 'femenino' ? '♀ F' : (partido.genero || 'masculino') === 'mixto' ? '⚤ Mix' : '♂ M'}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {isLive && <LiveIndicator />}

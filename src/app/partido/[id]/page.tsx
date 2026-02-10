@@ -8,6 +8,7 @@ import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft } from "l
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { getCurrentScore } from "@/lib/sport-scoring";
 
 type Partido = {
     id: number;
@@ -17,6 +18,7 @@ type Partido = {
     estado: string;
     marcador_detalle: any;
     lugar?: string;
+    genero?: string;
     disciplinas: { name: string };
 };
 
@@ -100,12 +102,12 @@ export default function PublicMatchDetail() {
         </div>
     );
 
-    const scoreA = match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0;
-    const scoreB = match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0;
     const isLive = match.estado === 'en_vivo';
     const isFinished = match.estado === 'finalizado';
     const sportName = match.disciplinas?.name || 'Deporte';
     const sportEmoji = getSportEmoji(sportName);
+    const { scoreA, scoreB, subScoreA, subScoreB, extra, subLabel } = getCurrentScore(sportName, match.marcador_detalle || {});
+    const generoMatch = match.genero || 'masculino';
 
     return (
         <div className="min-h-screen bg-[#030711] text-slate-200 font-sans selection:bg-indigo-500/30">
@@ -186,6 +188,22 @@ export default function PublicMatchDetail() {
                                     <span className="text-white/20 text-4xl sm:text-6xl -mt-2 sm:-mt-4">:</span>
                                     <span>{scoreB}</span>
                                 </div>
+
+                                {/* Sub-score del período/set actual */}
+                                {subScoreA !== undefined && subScoreB !== undefined && (
+                                    <div className="flex items-center gap-3 mt-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10">
+                                        <span className="text-sm sm:text-base font-bold tabular-nums text-white">{subScoreA}</span>
+                                        <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">{subLabel || 'Pts'}</span>
+                                        <span className="text-sm sm:text-base font-bold tabular-nums text-white">{subScoreB}</span>
+                                    </div>
+                                )}
+
+                                {/* Period indicator */}
+                                {extra && (
+                                    <span className="mt-1.5 text-[10px] font-bold text-indigo-300 bg-indigo-500/10 px-3 py-0.5 rounded-full">
+                                        {extra}
+                                    </span>
+                                )}
                             </div>
 
                             {/* Team B */}
@@ -205,6 +223,13 @@ export default function PublicMatchDetail() {
                             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
                                 <span className="text-lg">{sportEmoji}</span>
                                 <span className="uppercase tracking-wide">{sportName}</span>
+                            </div>
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${generoMatch === 'femenino' ? 'bg-pink-500/10 border-pink-500/20 text-pink-300' :
+                                generoMatch === 'mixto' ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' :
+                                    'bg-blue-500/10 border-blue-500/20 text-blue-300'
+                                }`}>
+                                <span>{generoMatch === 'femenino' ? '♀' : generoMatch === 'mixto' ? '⚤' : '♂'}</span>
+                                <span className="uppercase tracking-wide">{generoMatch === 'femenino' ? 'Femenino' : generoMatch === 'mixto' ? 'Mixto' : 'Masculino'}</span>
                             </div>
                             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
                                 <MapPin size={14} className="text-indigo-400" />

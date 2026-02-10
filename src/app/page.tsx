@@ -7,6 +7,7 @@ import { Trophy, Clock, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, S
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { getCurrentScore } from "@/lib/sport-scoring";
 
 type Partido = {
   id: number;
@@ -15,6 +16,7 @@ type Partido = {
   fecha: string;
   estado: string;
   lugar?: string;
+  genero?: string;
   marcador_detalle: any;
   disciplinas: {
     name: string;
@@ -313,10 +315,9 @@ export default function Home() {
 // ==========================================
 
 function LiveMatchCard({ partido }: { partido: Partido }) {
-  const md = partido.marcador_detalle || {};
-  const scoreA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
-  const scoreB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
   const sportName = partido.disciplinas?.name || 'Deporte';
+  const { scoreA, scoreB, subScoreA, subScoreB, subLabel, extra } = getCurrentScore(sportName, partido.marcador_detalle || {});
+  const genero = partido.genero || 'masculino';
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block h-full">
@@ -333,7 +334,13 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
               </div>
               <div className="flex flex-col">
                 <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest leading-tight">{sportName}</span>
-                <span className="text-[10px] font-medium text-white/80 leading-tight truncate max-w-[100px] sm:max-w-[150px]">{partido.lugar || 'Coliseo Central'}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-medium text-white/80 leading-tight truncate max-w-[100px] sm:max-w-[150px]">{partido.lugar || 'Coliseo Central'}</span>
+                  <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${genero === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
+                      genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
+                        'bg-blue-500/20 text-blue-400'
+                    }`}>{genero === 'femenino' ? '♀' : genero === 'mixto' ? '⚤' : '♂'}</span>
+                </div>
               </div>
             </div>
             <div className="px-2 py-1 rounded-md bg-rose-500/20 border border-rose-500/30">
@@ -356,6 +363,16 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
                 <span className="text-white/20 text-2xl -mt-2">:</span>
                 <span>{scoreB}</span>
               </div>
+              {subScoreA !== undefined && subScoreB !== undefined && (
+                <div className="flex items-center gap-2 mt-1.5 text-[10px] font-bold text-white/50">
+                  <span className="text-white/80">{subScoreA}</span>
+                  <span className="text-white/30">{subLabel}</span>
+                  <span className="text-white/80">{subScoreB}</span>
+                </div>
+              )}
+              {extra && (
+                <span className="mt-1 text-[9px] font-bold text-indigo-300/60 bg-indigo-500/10 px-2 py-0.5 rounded-full">{extra}</span>
+              )}
             </div>
 
             {/* Team B */}
@@ -378,6 +395,7 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
 function UpcomingMatchCard({ partido }: { partido: Partido }) {
   const sportName = partido.disciplinas?.name || 'Deporte';
   const accentColor = SPORT_ACCENT[sportName] || 'text-slate-400';
+  const genero = partido.genero || 'masculino';
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block">
@@ -400,6 +418,10 @@ function UpcomingMatchCard({ partido }: { partido: Partido }) {
             <span className={cn("text-[9px] font-black uppercase tracking-wider", accentColor)}>
               {sportName}
             </span>
+            <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${genero === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
+                genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
+                  'bg-blue-500/20 text-blue-400'
+              }`}>{genero === 'femenino' ? '♀ F' : genero === 'mixto' ? '⚤ Mix' : '♂ M'}</span>
             <span className="w-1 h-1 rounded-full bg-slate-600" />
             <span className="text-[9px] text-slate-500 truncate">{partido.lugar || 'Por definir'}</span>
           </div>
@@ -429,17 +451,22 @@ function UpcomingMatchCard({ partido }: { partido: Partido }) {
 }
 
 function ResultCard({ partido }: { partido: Partido }) {
-  const md = partido.marcador_detalle || {};
-  const scoreA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
-  const scoreB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
   const sportName = partido.disciplinas?.name || 'Deporte';
+  const { scoreA, scoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
   const winnerA = scoreA > scoreB;
+  const genero = partido.genero || 'masculino';
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block">
       <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/5 transition-all duration-300 p-3 sm:p-4">
         <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{sportName}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{sportName}</span>
+            <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${genero === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
+                genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
+                  'bg-blue-500/20 text-blue-400'
+              }`}>{genero === 'femenino' ? '♀' : genero === 'mixto' ? '⚤' : '♂'}</span>
+          </div>
           <span className="text-[10px] text-slate-600">Finalizado</span>
         </div>
 
