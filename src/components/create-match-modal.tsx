@@ -11,11 +11,13 @@ type CreateMatchModalProps = {
 };
 
 const DISCIPLINES = [
-    { name: 'Fútbol', emoji: '⚽', color: 'from-emerald-500 to-green-600' },
-    { name: 'Baloncesto', emoji: '🏀', color: 'from-orange-500 to-amber-600' },
-    { name: 'Voleibol', emoji: '🏐', color: 'from-blue-500 to-cyan-600' },
-    { name: 'Tenis', emoji: '🎾', color: 'from-lime-500 to-green-500' },
-    { name: 'Tenis de Mesa', emoji: '🏓', color: 'from-red-500 to-pink-600' },
+    { name: 'Fútbol', emoji: '⚽', color: 'from-emerald-500 to-green-600', individual: false },
+    { name: 'Baloncesto', emoji: '🏀', color: 'from-orange-500 to-amber-600', individual: false },
+    { name: 'Voleibol', emoji: '🏐', color: 'from-blue-500 to-cyan-600', individual: false },
+    { name: 'Tenis', emoji: '🎾', color: 'from-lime-500 to-green-500', individual: true },
+    { name: 'Tenis de Mesa', emoji: '🏓', color: 'from-red-500 to-pink-600', individual: true },
+    { name: 'Ajedrez', emoji: '♟️', color: 'from-slate-600 to-zinc-800', individual: true },
+    { name: 'Natación', emoji: '🏊', color: 'from-cyan-500 to-blue-600', individual: true },
 ];
 
 export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
@@ -28,12 +30,15 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
 
     if (!isOpen) return null;
 
+    const isIndividual = DISCIPLINES.find(d => d.name === disciplina)?.individual || false;
+
     const handleCreate = async () => {
         setLoading(true);
         setErrorMsg("");
 
         try {
-            if (!equipoA || !equipoB) throw new Error("Por favor completa los nombres de los equipos");
+            const labelParticipante = isIndividual ? 'participantes' : 'equipos';
+            if (!equipoA || !equipoB) throw new Error(`Por favor completa los nombres de los ${labelParticipante}`);
 
             const { data: disc, error: discError } = await supabase
                 .from('disciplinas')
@@ -43,12 +48,16 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
 
             if (discError || !disc) throw new Error("Error seleccionando disciplina. ¿Existen en la DB?");
 
-            // Marcador inicial
-            let marcadorInicial = {};
+            // Marcador inicial según deporte
+            let marcadorInicial: Record<string, any> = {};
             if (disciplina === 'Fútbol') {
                 marcadorInicial = { goles_a: 0, goles_b: 0 };
             } else if (disciplina === 'Baloncesto') {
                 marcadorInicial = { total_a: 0, total_b: 0, cuartos: {} };
+            } else if (disciplina === 'Ajedrez') {
+                marcadorInicial = { resultado: null }; // 'blancas', 'negras', 'empate'
+            } else if (disciplina === 'Natación') {
+                marcadorInicial = { posiciones: {} }; // posiciones finales
             } else {
                 marcadorInicial = { total_a: 0, total_b: 0 };
             }
@@ -120,14 +129,14 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                         <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                             <Trophy size={14} /> Disciplina
                         </label>
-                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                             {DISCIPLINES.map((d) => (
                                 <button
                                     key={d.name}
                                     onClick={() => setDisciplina(d.name)}
                                     className={`relative group flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all duration-200 ${disciplina === d.name
-                                            ? `border-transparent bg-muted ring-2 ring-offset-2 ring-primary bg-gradient-to-br ${d.color} text-white shadow-lg scale-105`
-                                            : 'border-border/40 bg-muted/20 hover:border-primary/30 hover:bg-muted/50'
+                                        ? `border-transparent bg-muted ring-2 ring-offset-2 ring-primary bg-gradient-to-br ${d.color} text-white shadow-lg scale-105`
+                                        : 'border-border/40 bg-muted/20 hover:border-primary/30 hover:bg-muted/50'
                                         }`}
                                 >
                                     <span className="text-2xl mb-1 filter drop-shadow-sm group-hover:scale-110 transition-transform">{d.emoji}</span>
@@ -137,14 +146,14 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                         </div>
                     </div>
 
-                    {/* 2. Equipos */}
+                    {/* 2. Participantes */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2 group">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 group-focus-within:text-primary transition-colors">
-                                <Users size={14} /> Equipo Local
+                                <Users size={14} /> {isIndividual ? 'Jugador / Participante A' : 'Equipo Local'}
                             </label>
                             <Input
-                                placeholder="Ej: Ingeniería"
+                                placeholder={isIndividual ? 'Ej: Carlos Pérez' : 'Ej: Ingeniería'}
                                 value={equipoA}
                                 onChange={e => setEquipoA(e.target.value)}
                                 className="bg-muted/30 border-border/50 focus:bg-background transition-all"
@@ -152,10 +161,10 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                         </div>
                         <div className="space-y-2 group">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 group-focus-within:text-primary transition-colors">
-                                <Users size={14} /> Equipo Visitante
+                                <Users size={14} /> {isIndividual ? 'Jugador / Participante B' : 'Equipo Visitante'}
                             </label>
                             <Input
-                                placeholder="Ej: Medicina"
+                                placeholder={isIndividual ? 'Ej: María López' : 'Ej: Medicina'}
                                 value={equipoB}
                                 onChange={e => setEquipoB(e.target.value)}
                                 className="bg-muted/30 border-border/50 focus:bg-background transition-all"
@@ -177,8 +186,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                     key={st.id}
                                     onClick={() => setEstado(st.id)}
                                     className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${estado === st.id
-                                            ? 'bg-white text-black shadow-md'
-                                            : 'text-muted-foreground hover:text-foreground hover:bg-white/10'
+                                        ? 'bg-white text-black shadow-md'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-white/10'
                                         }`}
                                 >
                                     {st.label}

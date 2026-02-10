@@ -30,36 +30,68 @@ const DISCIPLINES_COLORS: Record<string, string> = {
     'Voleibol': 'from-blue-600 to-indigo-800',
     'Tenis': 'from-lime-600 to-green-700',
     'Tenis de Mesa': 'from-red-600 to-rose-800',
+    'Ajedrez': 'from-slate-700 to-zinc-900',
+    'Natación': 'from-cyan-500 to-blue-700',
 };
 
 // Configuración de Acciones por Deporte
 const GET_SPORT_ACTIONS = (sport: string) => {
-    const common = [
-        { value: 'tarjeta_amarilla', label: 'Amarilla', icon: '🟨', style: 'card-yellow' },
-        { value: 'tarjeta_roja', label: 'Roja', icon: '🟥', style: 'card-red' },
-        { value: 'cambio', label: 'Cambio', icon: '🔄', style: 'pill-neutral' },
-    ];
+    // Solo Fútbol tiene tarjetas y cambios
+    if (sport === 'Fútbol') {
+        return [
+            { value: 'gol', label: 'GOL', icon: '⚽', style: 'pill-green' },
+            { value: 'tarjeta_amarilla', label: 'Amarilla', icon: '🟨', style: 'card-yellow' },
+            { value: 'tarjeta_roja', label: 'Roja', icon: '🟥', style: 'card-red' },
+            { value: 'cambio', label: 'Cambio', icon: '🔄', style: 'pill-neutral' },
+        ];
+    }
 
+    // Baloncesto tiene puntos y faltas 
     if (sport === 'Baloncesto') {
         return [
             { value: 'punto_1', label: '+1', icon: '1️⃣', style: 'circle-orange' },
             { value: 'punto_2', label: '+2', icon: '2️⃣', style: 'circle-orange' },
             { value: 'punto_3', label: '+3', icon: '3️⃣', style: 'circle-orange-fire' },
-            ...common
+            { value: 'falta', label: 'Falta', icon: '⛔', style: 'pill-neutral' },
+            { value: 'cambio', label: 'Cambio', icon: '🔄', style: 'pill-neutral' },
         ];
     }
 
-    if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
+    // Voleibol solo puntos
+    if (sport === 'Voleibol') {
         return [
             { value: 'punto', label: 'Punto', icon: '🏐', style: 'pill-blue' },
-            ...common
         ];
     }
 
-    // Default (Fútbol)
+    // Tenis y Tenis de Mesa - puntos/sets
+    if (sport === 'Tenis' || sport === 'Tenis de Mesa') {
+        return [
+            { value: 'punto', label: 'Punto', icon: '🎾', style: 'pill-lime' },
+            { value: 'set', label: 'Set', icon: '🏆', style: 'pill-gold' },
+        ];
+    }
+
+    // Ajedrez - solo resultado final
+    if (sport === 'Ajedrez') {
+        return [
+            { value: 'victoria', label: 'Victoria', icon: '👑', style: 'pill-gold' },
+            { value: 'empate', label: 'Empate', icon: '🤝', style: 'pill-neutral' },
+        ];
+    }
+
+    // Natación - solo resultado final
+    if (sport === 'Natación') {
+        return [
+            { value: 'victoria', label: '1er Lugar', icon: '🥇', style: 'pill-gold' },
+            { value: 'segundo', label: '2do Lugar', icon: '🥈', style: 'pill-silver' },
+            { value: 'tercero', label: '3er Lugar', icon: '🥉', style: 'pill-bronze' },
+        ];
+    }
+
+    // Default fallback
     return [
-        { value: 'gol', label: 'GOL', icon: '⚽', style: 'pill-green' },
-        ...common
+        { value: 'punto', label: 'Punto', icon: '➕', style: 'pill-blue' },
     ];
 };
 
@@ -396,6 +428,10 @@ export default function MatchControlPage() {
                                     else if (action.style === 'circle-orange') baseClass += isSelected ? "bg-orange-500 border-orange-400 text-white shadow-lg" : "bg-orange-500/10 border-orange-500/20 text-orange-500 hover:bg-orange-500/20";
                                     else if (action.style === 'circle-orange-fire') baseClass += isSelected ? "bg-orange-600 border-orange-500 text-white shadow-lg shadow-orange-500/20" : "bg-orange-600/10 border-orange-600/20 text-orange-600 hover:bg-orange-600/20";
                                     else if (action.style === 'pill-blue') baseClass += isSelected ? "bg-blue-500 border-blue-400 text-white shadow-lg" : "bg-blue-500/10 border-blue-500/20 text-blue-500 hover:bg-blue-500/20";
+                                    else if (action.style === 'pill-lime') baseClass += isSelected ? "bg-lime-500 border-lime-400 text-white shadow-lg shadow-lime-500/20" : "bg-lime-500/10 border-lime-500/20 text-lime-500 hover:bg-lime-500/20";
+                                    else if (action.style === 'pill-gold') baseClass += isSelected ? "bg-amber-500 border-amber-400 text-white shadow-lg shadow-amber-500/20" : "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20";
+                                    else if (action.style === 'pill-silver') baseClass += isSelected ? "bg-slate-400 border-slate-300 text-white shadow-lg shadow-slate-400/20" : "bg-slate-400/10 border-slate-400/20 text-slate-400 hover:bg-slate-400/20";
+                                    else if (action.style === 'pill-bronze') baseClass += isSelected ? "bg-orange-700 border-orange-600 text-white shadow-lg shadow-orange-700/20" : "bg-orange-700/10 border-orange-700/20 text-orange-700 hover:bg-orange-700/20";
                                     else if (action.style === 'card-yellow') baseClass += isSelected ? "bg-yellow-400 border-yellow-300 text-black shadow-lg" : "bg-yellow-400/10 border-yellow-400/20 text-yellow-400 hover:bg-yellow-400/20";
                                     else if (action.style === 'card-red') baseClass += isSelected ? "bg-red-500 border-red-400 text-white shadow-lg" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20";
                                     else baseClass += isSelected ? "bg-slate-100 border-white text-black" : "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700";
@@ -428,8 +464,8 @@ export default function MatchControlPage() {
                                             key={team.id}
                                             onClick={() => setNuevoEvento({ ...nuevoEvento, equipo: team.id, jugador_id: null })}
                                             className={`p-4 rounded-xl border-2 font-bold transition-all flex items-center justify-between group ${nuevoEvento.equipo === team.id
-                                                    ? 'border-primary bg-primary/10 text-primary shadow-inner'
-                                                    : 'border-border/30 bg-muted/20 hover:border-primary/30'
+                                                ? 'border-primary bg-primary/10 text-primary shadow-inner'
+                                                : 'border-border/30 bg-muted/20 hover:border-primary/30'
                                                 }`}
                                         >
                                             {team.name}
@@ -484,8 +520,8 @@ export default function MatchControlPage() {
                                                         key={j.id}
                                                         onClick={() => setNuevoEvento({ ...nuevoEvento, jugador_id: j.id })}
                                                         className={`p-2.5 rounded-lg text-sm border transition-all text-left flex items-center gap-2 ${nuevoEvento.jugador_id === j.id
-                                                                ? 'border-primary bg-primary text-white shadow-md'
-                                                                : 'border-border/30 bg-muted/20 hover:bg-muted/40'
+                                                            ? 'border-primary bg-primary text-white shadow-md'
+                                                            : 'border-border/30 bg-muted/20 hover:bg-muted/40'
                                                             }`}
                                                     >
                                                         <Badge variant="secondary" className={`text-[10px] w-6 h-6 flex items-center justify-center ${nuevoEvento.jugador_id === j.id ? 'bg-white/20 text-white' : ''}`}>
