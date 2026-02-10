@@ -69,7 +69,8 @@ export default function PublicMatchDetail() {
         const channel = supabase
             .channel(`match:${matchId}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos', filter: `id=eq.${matchId}` }, (payload) => {
-                setMatch(payload.new as Partido);
+                // Merge para preservar datos del join (disciplinas) que realtime no envía
+                setMatch(prev => prev ? { ...prev, ...payload.new, disciplinas: prev.disciplinas } as Partido : prev);
             })
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'olympics_eventos', filter: `partido_id=eq.${matchId}` }, () => {
                 fetchData(); // Recargar eventos si hay nuevos
