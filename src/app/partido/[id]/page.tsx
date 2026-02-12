@@ -167,57 +167,113 @@ export default function PublicMatchDetail() {
                         </div>
 
                         {/* Scoreboard Layout */}
-                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-8">
-                            {/* Team A */}
-                            <div className="flex flex-col items-center gap-4 group">
-                                <div className="relative">
-                                    <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                    <Avatar name={match.equipo_a} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#0a0f1c]" />
+                        {/* Scoreboard Layout */}
+                        {match.marcador_detalle?.tipo === 'carrera' ? (
+                            <div className="w-full max-w-3xl mx-auto animate-in fade-in zoom-in-95 duration-500 my-4">
+                                <div className="text-center mb-8">
+                                    <h1 className="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 uppercase tracking-tighter drop-shadow-sm leading-tight mb-2">
+                                        {match.equipo_a}
+                                    </h1>
+                                    <Badge variant="outline" className="border-white/10 text-slate-400 uppercase tracking-widest text-[10px]">
+                                        {sportName} • {generoMatch}
+                                    </Badge>
                                 </div>
-                                <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
-                                    {match.equipo_a}
-                                </h2>
+
+                                <div className="flex flex-col gap-2 relative">
+                                    {(match.marcador_detalle?.participantes || [])
+                                        .sort((a: any, b: any) => {
+                                            if (a.posicion && b.posicion) return a.posicion - b.posicion;
+                                            if (a.posicion) return -1;
+                                            if (b.posicion) return 1;
+                                            return (a.tiempo || "").localeCompare(b.tiempo || "");
+                                        })
+                                        .map((p: any, idx: number) => (
+                                            <div key={idx} className={cn(
+                                                "flex items-center gap-4 p-3 sm:p-4 rounded-xl border backdrop-blur-md transition-all",
+                                                p.posicion === 1 ? "bg-gradient-to-r from-yellow-500/20 to-yellow-900/5 border-yellow-500/30 text-yellow-100 shadow-[0_0_20px_rgba(234,179,8,0.2)] scale-[1.02] z-10" :
+                                                    p.posicion === 2 ? "bg-gradient-to-r from-slate-400/20 to-slate-800/5 border-slate-400/30 text-slate-200" :
+                                                        p.posicion === 3 ? "bg-gradient-to-r from-orange-700/20 to-orange-900/5 border-orange-600/30 text-orange-200" :
+                                                            "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10"
+                                            )}>
+                                                <div className="text-2xl sm:text-3xl font-black italic w-8 sm:w-12 text-center opacity-80 flex-shrink-0">
+                                                    {p.posicion === 1 ? '🥇' : p.posicion === 2 ? '🥈' : p.posicion === 3 ? '🥉' : (p.posicion || idx + 1)}
+                                                </div>
+
+                                                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                    <div className="font-bold text-base sm:text-xl truncate leading-tight text-white/90">
+                                                        {p.nombre}
+                                                    </div>
+                                                    <div className="text-xs sm:text-sm font-medium opacity-60 uppercase tracking-wide truncate mt-0.5 text-white/70">
+                                                        {p.equipo}
+                                                        {p.carril && <span className="ml-2 px-1.5 py-0.5 rounded bg-white/10 text-[10px]">CARRIL {p.carril}</span>}
+                                                    </div>
+                                                </div>
+
+                                                <div className="text-right font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-indigo-300 drop-shadow-md">
+                                                    {p.tiempo || '--:--'}
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                    {(match.marcador_detalle?.participantes || []).length === 0 && (
+                                        <div className="text-center py-12 px-4 rounded-2xl border border-dashed border-white/10 bg-white/5">
+                                            <p className="text-slate-500 italic text-sm">Esperando lista de participantes...</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-
-                            {/* Score Display */}
-                            <div className="flex flex-col items-center relative z-20">
-                                <div className={cn(
-                                    "flex items-center justify-center gap-2 sm:gap-4 font-black text-6xl sm:text-8xl tabular-nums tracking-tighter transition-all duration-300",
-                                    isLive ? "text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.3)]" : "text-white/50"
-                                )}>
-                                    <span>{scoreA}</span>
-                                    <span className="text-white/20 text-4xl sm:text-6xl -mt-2 sm:-mt-4">:</span>
-                                    <span>{scoreB}</span>
-                                </div>
-
-                                {/* Sub-score del período/set actual */}
-                                {subScoreA !== undefined && subScoreB !== undefined && (
-                                    <div className="flex items-center gap-3 mt-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10">
-                                        <span className="text-sm sm:text-base font-bold tabular-nums text-white">{subScoreA}</span>
-                                        <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">{subLabel || 'Pts'}</span>
-                                        <span className="text-sm sm:text-base font-bold tabular-nums text-white">{subScoreB}</span>
+                        ) : (
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-8">
+                                {/* Team A */}
+                                <div className="flex flex-col items-center gap-4 group">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                        <Avatar name={match.equipo_a} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#0a0f1c]" />
                                     </div>
-                                )}
-
-                                {/* Period indicator */}
-                                {extra && (
-                                    <span className="mt-1.5 text-[10px] font-bold text-indigo-300 bg-indigo-500/10 px-3 py-0.5 rounded-full">
-                                        {extra}
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Team B */}
-                            <div className="flex flex-col items-center gap-4 group">
-                                <div className="relative">
-                                    <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                    <Avatar name={match.equipo_b} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#0a0f1c]" />
+                                    <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
+                                        {match.equipo_a}
+                                    </h2>
                                 </div>
-                                <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
-                                    {match.equipo_b}
-                                </h2>
+
+                                <div className="flex flex-col items-center relative z-20 min-w-[140px]">
+                                    <div className={cn(
+                                        "flex items-center justify-center gap-2 sm:gap-4 font-black text-6xl sm:text-8xl tabular-nums tracking-tighter transition-all duration-300",
+                                        isLive ? "text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.3)]" : "text-white/50"
+                                    )}>
+                                        <span>{scoreA}</span>
+                                        <span className="text-white/20 text-4xl sm:text-6xl -mt-2 sm:-mt-4">:</span>
+                                        <span>{scoreB}</span>
+                                    </div>
+
+                                    {/* Sub-score del período/set actual */}
+                                    {subScoreA !== undefined && subScoreB !== undefined && (
+                                        <div className="flex items-center gap-3 mt-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 shadow-lg backdrop-blur-sm">
+                                            <span className="text-sm sm:text-base font-bold tabular-nums text-white">{subScoreA}</span>
+                                            <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">{subLabel || 'Pts'}</span>
+                                            <span className="text-sm sm:text-base font-bold tabular-nums text-white">{subScoreB}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Period indicator */}
+                                    {extra && (
+                                        <span className="mt-2 text-[10px] font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-3 py-0.5 rounded-full uppercase tracking-wider">
+                                            {extra}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Team B */}
+                                <div className="flex flex-col items-center gap-4 group">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                        <Avatar name={match.equipo_b} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#0a0f1c]" />
+                                    </div>
+                                    <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
+                                        {match.equipo_b}
+                                    </h2>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Metadata Footer */}
                         <div className="mt-8 sm:mt-10 flex flex-wrap justify-center items-center gap-3 sm:gap-6 text-xs sm:text-sm font-medium text-slate-400">

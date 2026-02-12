@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button, Badge, Avatar, Card } from "@/components/ui-primitives";
-import { ArrowLeft, Clock, Play, Pause, Square, AlertCircle, Plus, Save, Users, Trophy, ChevronRight, Activity, Check } from "lucide-react";
+import { ArrowLeft, Clock, Play, Pause, Square, AlertCircle, Plus, Save, Users, Trophy, ChevronRight, Activity, Check, Trash2, Edit2, RotateCcw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { addPoints, getCurrentScore, cambiarTiempoFutbol, cambiarCuartoBasket } from "@/lib/sport-scoring";
+import { addPoints, removePoints, getCurrentScore, cambiarTiempoFutbol, cambiarCuartoBasket } from "@/lib/sport-scoring";
+import { RaceControl } from "@/components/race-control";
 
 // Tipos
 type Jugador = {
@@ -124,6 +125,9 @@ export default function MatchControlPage() {
     const [addingPlayerTeam, setAddingPlayerTeam] = useState<string | null>(null);
     const [newPlayerForm, setNewPlayerForm] = useState({ nombre: '', numero: '' });
     const [isEndingMatch, setIsEndingMatch] = useState(false);
+    const [isEditingScore, setIsEditingScore] = useState(false);
+    const [confirmingDeletion, setConfirmingDeletion] = useState<Evento | null>(null);
+    const [deletingEventId, setDeletingEventId] = useState<number | null>(null);
 
     // 1. Cargar Datos Iniciales
     useEffect(() => {
@@ -244,21 +248,27 @@ export default function MatchControlPage() {
         const disciplinaName = match.disciplinas?.name || 'Deporte';
         let nuevoMarcador = { ...match.marcador_detalle };
         let mensaje = '';
+        let nuevoMinuto = minutoActual;
 
         if (disciplinaName === 'Fútbol') {
             nuevoMarcador = cambiarTiempoFutbol(nuevoMarcador);
             mensaje = 'Cambio al 2º tiempo';
+            // Iniciar 2º tiempo en 45'
+            if (nuevoMarcador.tiempo_actual === 2) nuevoMinuto = 45;
         } else if (disciplinaName === 'Baloncesto') {
             const cuartoActual = nuevoMarcador.cuarto_actual || 1;
             if (cuartoActual < 4) {
                 nuevoMarcador = cambiarCuartoBasket(nuevoMarcador);
                 mensaje = `Cambio al ${nuevoMarcador.cuarto_actual}º cuarto`;
+                nuevoMinuto = 0; // Reiniciar cronómetro por cuarto
             }
         }
 
         if (mensaje) {
+            nuevoMarcador.minuto_actual = nuevoMinuto;
             await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
             setMatch({ ...match, marcador_detalle: nuevoMarcador });
+            setMinutoActual(nuevoMinuto);
             registrarEventoSistema('periodo', mensaje);
         }
     };
@@ -308,23 +318,57 @@ export default function MatchControlPage() {
         fetchEventos();
     };
 
-    const handleNuevoEvento = async () => {
-        if (!nuevoEvento.tipo || !nuevoEvento.equipo || !nuevoEvento.jugador_id) return;
+    const handleNuevoEvento = async (eventOverride?: any) => {
+        const stateToUse = eventOverride || nuevoEvento;
+        const disciplinaName = match.disciplinas?.name || 'Deporte';
+
+        // Jugador es opcional en Tenis, Ping Pong, Voleibol o eventos de equipo
+        const isPlayerRequired = !['Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName);
+
+        if (!stateToUse.tipo || !stateToUse.equipo || (isPlayerRequired && !stateToUse.jugador_id)) return;
+
+        // Use stateToUse instead of nuevoEvento for values below
+        const equipo = stateToUse.equipo;
+        const tipo = stateToUse.tipo;
+        const jugador_id = stateToUse.jugador_id;
 
         const { error } = await supabase.from('olympics_eventos').insert({
             partido_id: matchId,
-            tipo_evento: nuevoEvento.tipo,
+            tipo_evento: tipo,
             minuto: minutoActual,
-            equipo: nuevoEvento.equipo,
-            jugador_id: nuevoEvento.jugador_id
+            equipo: equipo,
+            jugador_id: jugador_id
         });
 
         if (!error) {
-            // Lógica de Puntos usando sport-scoring
-            const tipo = nuevoEvento.tipo;
-            const disciplinaName = match.disciplinas?.name || 'Deporte';
+            // Lógica de Puntos / Resultados
 
-            if (tipo.startsWith('gol') || tipo.startsWith('punto')) {
+            if (disciplinaName === 'Natación') {
+                // Lógica especial para deportes de Ranking/Tiempo
+                const puesto = tipo === 'victoria' ? 1 : tipo === 'segundo' ? 2 : tipo === 'tercero' ? 3 : 0;
+                if (puesto > 0) {
+                    const nuevosResultados = match.marcador_detalle?.resultados || [];
+
+                    // Find player name for display
+                    const isTeamA = equipo === 'equipo_a';
+                    const playerList = isTeamA ? jugadoresA : jugadoresB;
+                    const playerObj = playerList.find(p => p.id === jugador_id);
+                    const playerName = playerObj?.nombre || null;
+
+                    nuevosResultados.push({
+                        puesto,
+                        equipo: equipo,
+                        jugador_id: jugador_id,
+                        jugador_nombre: playerName,
+                        timestamp: new Date().toISOString()
+                    });
+
+                    const nuevoMarcador = { ...match.marcador_detalle, resultados: nuevosResultados };
+                    await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
+                    setMatch({ ...match, marcador_detalle: nuevoMarcador });
+                }
+            }
+            else if (tipo.startsWith('gol') || tipo.startsWith('punto') || tipo.startsWith('set')) {
                 let puntos = 1;
                 if (tipo === 'punto_2') puntos = 2;
                 if (tipo === 'punto_3') puntos = 3;
@@ -333,7 +377,7 @@ export default function MatchControlPage() {
                 const nuevoMarcador = addPoints(
                     disciplinaName,
                     match.marcador_detalle || {},
-                    nuevoEvento.equipo as 'equipo_a' | 'equipo_b',
+                    equipo as 'equipo_a' | 'equipo_b',
                     puntos
                 );
 
@@ -343,6 +387,55 @@ export default function MatchControlPage() {
             setNuevoEvento({ tipo: '', equipo: '', jugador_id: null });
             fetchEventos();
         }
+    };
+
+    const requestDeleteEvento = (evento: Evento) => {
+        setConfirmingDeletion(evento);
+    };
+
+    const ejecutarEliminacion = async () => {
+        if (!confirmingDeletion) return;
+        const evento = confirmingDeletion;
+        setConfirmingDeletion(null);
+        setDeletingEventId(evento.id);
+        const disciplinaName = match.disciplinas?.name || 'Deporte';
+
+        // 1. Revertir Puntos si aplica
+        const tipo = evento.tipo_evento;
+        if (tipo.startsWith('gol') || tipo.startsWith('punto')) {
+            let puntos = 1;
+            if (tipo === 'punto_2') puntos = 2;
+            if (tipo === 'punto_3') puntos = 3;
+
+            const equipoKey = match.equipo_a === evento.equipo || evento.equipo === 'equipo_a' ? 'equipo_a' : 'equipo_b';
+            const nuevoMarcador = removePoints(
+                disciplinaName,
+                match.marcador_detalle || {},
+                equipoKey as 'equipo_a', // Type assertion safe here
+                puntos
+            );
+
+            await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
+            setMatch({ ...match, marcador_detalle: nuevoMarcador });
+        }
+
+        // 2. Eliminar de DB
+        const { error } = await supabase.from('olympics_eventos').delete().eq('id', evento.id);
+
+        if (!error) {
+            fetchEventos();
+        } else {
+            alert("Error al eliminar evento: " + error.message);
+        }
+        setDeletingEventId(null);
+    };
+
+    const handleManualScoreUpdate = async (field: string, value: number) => {
+        const nuevoMarcador = { ...(match.marcador_detalle || {}) };
+        nuevoMarcador[field] = value;
+
+        await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
+        setMatch({ ...match, marcador_detalle: nuevoMarcador });
     };
 
     const handleSavePlayer = async () => {
@@ -398,8 +491,8 @@ export default function MatchControlPage() {
                                 {disciplinaName}
                             </Badge>
                             <Badge className={`border-none ${(match.genero || 'masculino') === 'femenino' ? 'bg-pink-500/80 text-white' :
-                                    (match.genero || 'masculino') === 'mixto' ? 'bg-purple-500/80 text-white' :
-                                        'bg-blue-500/80 text-white'
+                                (match.genero || 'masculino') === 'mixto' ? 'bg-purple-500/80 text-white' :
+                                    'bg-blue-500/80 text-white'
                                 }`}>
                                 {(match.genero || 'masculino') === 'femenino' ? '♀ Femenino' : (match.genero || 'masculino') === 'mixto' ? '⚤ Mixto' : '♂ Masculino'}
                             </Badge>
@@ -411,103 +504,159 @@ export default function MatchControlPage() {
                     </div>
 
                     {/* Scoreboard Control Center */}
-                    <div className="grid grid-cols-3 md:grid-cols-[1fr_auto_1fr] gap-2 md:gap-8 items-center max-w-4xl mx-auto">
-
-                        {/* Team A */}
-                        <div className="flex flex-col items-center group order-1">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <div className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/10 flex items-center justify-center text-xl md:text-3xl font-bold border-2 md:border-4 border-white/10 shadow-xl relative z-10 backdrop-blur-sm">
-                                    {match.equipo_a.charAt(0)}
-                                </div>
-                            </div>
-                            <h2 className="text-sm md:text-2xl font-bold mt-2 md:mt-4 text-center leading-tight drop-shadow-md break-words max-w-[100px] md:max-w-none line-clamp-2">
-                                {match.equipo_a}
-                            </h2>
+                    {match.marcador_detalle?.tipo === 'carrera' ? (
+                        <div className="w-full max-w-4xl mx-auto py-4 animate-in fade-in slide-in-from-bottom-4">
+                            <RaceControl
+                                matchId={matchId}
+                                detalle={match.marcador_detalle}
+                                onUpdate={fetchMatchDetails}
+                                isLocked={match.estado === 'finalizado'}
+                            />
                         </div>
+                    ) : (
+                        <div className="grid grid-cols-3 md:grid-cols-[1fr_auto_1fr] gap-2 md:gap-8 items-center max-w-4xl mx-auto">
 
-                        {/* Center: Timer & Controls */}
-                        <div className="flex flex-col items-center gap-2 md:gap-6 z-10 order-2 col-span-1">
-                            <div className="flex items-center justify-center gap-2 md:gap-4 leading-none">
-                                <span className="text-5xl md:text-8xl font-black tabular-nums tracking-tighter drop-shadow-xl">{scoreA}</span>
-                                <span className="text-2xl md:text-4xl font-bold text-white/40">-</span>
-                                <span className="text-5xl md:text-8xl font-black tabular-nums tracking-tighter drop-shadow-xl">{scoreB}</span>
+                            {/* Team A */}
+                            <div className="flex flex-col items-center group order-1">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/10 flex items-center justify-center text-xl md:text-3xl font-bold border-2 md:border-4 border-white/10 shadow-xl relative z-10 backdrop-blur-sm">
+                                        <Avatar name={match.equipo_a} size="lg" className="h-full w-full" />
+                                    </div>
+                                </div>
+                                <h2 className="text-sm md:text-2xl font-bold mt-2 md:mt-4 text-center leading-tight drop-shadow-md break-words max-w-[100px] md:max-w-none line-clamp-2">
+                                    {match.equipo_a}
+                                </h2>
                             </div>
 
-                            {/* Sub-score del período actual (puntos set, goles tiempo, etc.) */}
-                            {subScoreA !== undefined && subScoreB !== undefined && (
-                                <div className="flex items-center gap-3 bg-black/20 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/10">
-                                    <span className="text-sm md:text-lg font-bold tabular-nums">{subScoreA}</span>
-                                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">{subLabel || 'Pts'}</span>
-                                    <span className="text-sm md:text-lg font-bold tabular-nums">{subScoreB}</span>
-                                </div>
-                            )}
-
-                            {/* Period/Quarter/Set Indicator */}
-                            {extra && (
-                                <div className="bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold">
-                                    {extra}
-                                </div>
-                            )}
-
-                            {/* THE MAGIC TIMER (Visual matches Public) */}
-                            <div className="scale-75 md:scale-100 bg-black/30 backdrop-blur-md px-3 md:px-6 py-1 md:py-2 rounded-xl md:rounded-2xl border border-white/10 flex items-center justify-center min-w-[100px] md:min-w-[140px]">
-                                <PublicLiveTimer detalle={match.marcador_detalle || {}} />
-                            </div>
-
-                            {/* Quick Actions */}
-                            <div className="flex gap-2 md:gap-3 mt-1 md:mt-0">
-                                <Button
-                                    onClick={toggleCronometro}
-                                    size="sm"
-                                    className={`h-10 w-12 md:h-12 md:w-auto md:px-6 rounded-lg md:rounded-xl font-bold md:text-lg shadow-lg border-2 ${cronometroActivo
-                                        ? 'bg-amber-500 hover:bg-amber-600 border-amber-400 text-white'
-                                        : 'bg-emerald-500 hover:bg-emerald-600 border-emerald-400 text-white'
-                                        }`}
-                                >
-                                    {cronometroActivo ? <Pause className="fill-current w-4 h-4 md:w-5 md:h-5" /> : <Play className="fill-current w-4 h-4 md:w-5 md:h-5" />}
-                                </Button>
-                                {match.estado !== 'finalizado' && (
-                                    <Button
-                                        onClick={handleFinalizarClick}
-                                        title="Finalizar Partido"
-                                        size="sm"
-                                        className="h-10 w-10 md:h-12 md:w-12 rounded-lg md:rounded-xl bg-white/10 hover:bg-red-500/80 border-2 border-white/20 text-white transition-colors"
+                            {/* Center: Timer & Controls */}
+                            <div className="flex flex-col items-center gap-2 md:gap-6 z-10 order-2 col-span-1">
+                                {/* STANDARD SCOREBOARD */}
+                                <div className="flex items-center justify-center gap-2 md:gap-4 leading-none relative group/score">
+                                    <button
+                                        onClick={() => setIsEditingScore(true)}
+                                        className="absolute -top-6 bg-white/10 hover:bg-white/20 p-1.5 rounded-full opacity-0 group-hover/score:opacity-100 transition-opacity"
+                                        title="Ajuste Manual de Marcador"
                                     >
-                                        <Square className="fill-current w-4 h-4 md:w-5 md:h-5" />
-                                    </Button>
-                                )}
-                                {/* Botón para cambiar período (solo deportes con períodos) */}
-                                {match.estado === 'en_vivo' && (disciplinaName === 'Fútbol' || disciplinaName === 'Baloncesto') && (
-                                    <Button
-                                        onClick={handleCambiarPeriodo}
-                                        size="sm"
-                                        disabled={
-                                            (disciplinaName === 'Fútbol' && (match.marcador_detalle?.tiempo_actual || 1) >= 2) ||
-                                            (disciplinaName === 'Baloncesto' && (match.marcador_detalle?.cuarto_actual || 1) >= 4)
-                                        }
-                                        className="h-10 md:h-12 px-3 md:px-4 rounded-lg md:rounded-xl bg-blue-500/20 hover:bg-blue-500/40 border-2 border-blue-400/40 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm font-bold whitespace-nowrap"
-                                        title={disciplinaName === 'Fútbol' ? 'Cambiar a 2º Tiempo' : 'Siguiente Cuarto'}
-                                    >
-                                        <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
+                                        <Edit2 size={12} />
+                                    </button>
+                                    <span className="text-5xl md:text-8xl font-black tabular-nums tracking-tighter drop-shadow-xl">{scoreA}</span>
+                                    <span className="text-2xl md:text-4xl font-bold text-white/40">-</span>
+                                    <span className="text-5xl md:text-8xl font-black tabular-nums tracking-tighter drop-shadow-xl">{scoreB}</span>
+                                </div>
 
-                        {/* Team B */}
-                        <div className="flex flex-col items-center group order-3">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <div className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/10 flex items-center justify-center text-xl md:text-3xl font-bold border-2 md:border-4 border-white/10 shadow-xl relative z-10 backdrop-blur-sm">
-                                    {match.equipo_b.charAt(0)}
+                                {/* Sub-score del período actual (puntos set, goles tiempo, etc.) */}
+                                {subScoreA !== undefined && subScoreB !== undefined && (
+                                    <div className="flex items-center gap-3 bg-black/20 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/10">
+                                        <span className="text-sm md:text-lg font-bold tabular-nums">{subScoreA}</span>
+                                        <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">{subLabel || 'Pts'}</span>
+                                        <span className="text-sm md:text-lg font-bold tabular-nums">{subScoreB}</span>
+                                    </div>
+                                )}
+
+                                {/* Period/Quarter/Set Indicator */}
+                                {disciplinaName === 'Baloncesto' ? (
+                                    <select
+                                        className="bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold appearance-none text-center cursor-pointer hover:bg-white/20 outline-none focus:ring-2 focus:ring-primary/50"
+                                        value={match.marcador_detalle?.cuarto_actual || 1}
+                                        onChange={async (e) => {
+                                            const newQ = parseInt(e.target.value);
+                                            const newDetalle = { ...match.marcador_detalle, cuarto_actual: newQ };
+                                            await supabase.from('partidos').update({ marcador_detalle: newDetalle }).eq('id', matchId);
+                                            setMatch({ ...match, marcador_detalle: newDetalle });
+                                            // registrarEventoSistema is available in scope
+                                            registrarEventoSistema('periodo', `Corrección Manual: ${newQ}º Cuarto`);
+                                        }}
+                                    >
+                                        <option value={1} className="bg-zinc-900">1º Cuarto</option>
+                                        <option value={2} className="bg-zinc-900">2º Cuarto</option>
+                                        <option value={3} className="bg-zinc-900">3º Cuarto</option>
+                                        <option value={4} className="bg-zinc-900">4º Cuarto</option>
+                                        <option value={5} className="bg-zinc-900">Prórroga 1</option>
+                                        <option value={6} className="bg-zinc-900">Prórroga 2</option>
+                                    </select>
+                                ) : ['Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName) ? (
+                                    <select
+                                        className="bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold appearance-none text-center cursor-pointer hover:bg-white/20 outline-none focus:ring-2 focus:ring-primary/50 uppercase"
+                                        value={extra || 'Set 1'}
+                                        onChange={async (e) => {
+                                            // Lógica simple para sets, idealmente usaríamos algo más robusto
+                                            const setNum = parseInt(e.target.value.replace(/\D/g, ''));
+                                            const newDetalle = { ...match.marcador_detalle, set_actual: setNum };
+                                            await supabase.from('partidos').update({ marcador_detalle: newDetalle }).eq('id', matchId);
+                                            setMatch({ ...match, marcador_detalle: newDetalle });
+                                        }}
+                                    >
+                                        <option value="Set 1" className="bg-zinc-900">Set 1</option>
+                                        <option value="Set 2" className="bg-zinc-900">Set 2</option>
+                                        <option value="Set 3" className="bg-zinc-900">Set 3</option>
+                                        <option value="Set 4" className="bg-zinc-900">Set 4</option>
+                                        <option value="Set 5" className="bg-zinc-900">Set 5</option>
+                                    </select>
+                                ) : (
+                                    <div className="bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold">
+                                        {extra || (match.marcador_detalle?.tiempo_actual ? `${match.marcador_detalle.tiempo_actual}º Tiempo` : 'Tiempo Regular')}
+                                    </div>
+                                )}
+
+                                {/* Timer */}
+                                <PublicLiveTimer detalle={match.marcador_detalle} />
+
+                                {/* Quick Actions */}
+                                <div className="flex items-center gap-2 sm:gap-4 mt-2">
+                                    <Button
+                                        onClick={toggleCronometro}
+                                        title={cronometroActivo ? "Pausar" : "Iniciar"}
+                                        size="sm"
+                                        className={`h-10 w-12 md:h-12 md:w-auto md:px-6 rounded-lg md:rounded-xl font-bold md:text-lg shadow-lg border-2 ${cronometroActivo
+                                            ? 'bg-amber-500 hover:bg-amber-600 border-amber-400 text-white'
+                                            : 'bg-emerald-500 hover:bg-emerald-600 border-emerald-400 text-white'
+                                            }`}
+                                    >
+                                        {cronometroActivo ? <Pause className="fill-current w-4 h-4 md:w-5 md:h-5" /> : <Play className="fill-current w-4 h-4 md:w-5 md:h-5" />}
+                                    </Button>
+                                    {match.estado !== 'finalizado' && (
+                                        <Button
+                                            onClick={handleFinalizarClick}
+                                            title="Finalizar Partido"
+                                            size="sm"
+                                            className="h-10 w-10 md:h-12 md:w-12 rounded-lg md:rounded-xl bg-white/10 hover:bg-red-500/80 border-2 border-white/20 text-white transition-colors"
+                                        >
+                                            <Square className="fill-current w-4 h-4 md:w-5 md:h-5" />
+                                        </Button>
+                                    )}
+                                    {/* Botón para cambiar período (solo deportes con períodos) */}
+                                    {match.estado === 'en_vivo' && (disciplinaName === 'Fútbol' || disciplinaName === 'Baloncesto') && (
+                                        <Button
+                                            onClick={handleCambiarPeriodo}
+                                            size="sm"
+                                            disabled={
+                                                (disciplinaName === 'Fútbol' && (match.marcador_detalle?.tiempo_actual || 1) >= 2) ||
+                                                (disciplinaName === 'Baloncesto' && (match.marcador_detalle?.cuarto_actual || 1) >= 4)
+                                            }
+                                            className="h-10 md:h-12 px-3 md:px-4 rounded-lg md:rounded-xl bg-blue-500/20 hover:bg-blue-500/40 border-2 border-blue-400/40 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm font-bold whitespace-nowrap"
+                                            title={disciplinaName === 'Fútbol' ? 'Cambiar a 2º Tiempo' : 'Siguiente Cuarto'}
+                                        >
+                                            <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
-                            <h2 className="text-sm md:text-2xl font-bold mt-2 md:mt-4 text-center leading-tight drop-shadow-md break-words max-w-[100px] md:max-w-none line-clamp-2">
-                                {match.equipo_b}
-                            </h2>
+
+                            {/* Team B */}
+                            <div className="flex flex-col items-center group order-3">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/10 flex items-center justify-center text-xl md:text-3xl font-bold border-2 md:border-4 border-white/10 shadow-xl relative z-10 backdrop-blur-sm">
+                                        <Avatar name={match.equipo_b} size="lg" className="h-full w-full" />
+                                    </div>
+                                </div>
+                                <h2 className="text-sm md:text-2xl font-bold mt-2 md:mt-4 text-center leading-tight drop-shadow-md break-words max-w-[100px] md:max-w-none line-clamp-2">
+                                    {match.equipo_b}
+                                </h2>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
 
@@ -752,7 +901,18 @@ export default function MatchControlPage() {
                                                 return (
                                                     <button
                                                         key={team.id}
-                                                        onClick={() => setNuevoEvento({ ...nuevoEvento, equipo: team.id, jugador_id: null })}
+                                                        onClick={() => {
+                                                            const isPlayerRequired = !['Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName);
+
+                                                            if (!isPlayerRequired) {
+                                                                // AUTO SUBMIT para deportes rápidos
+                                                                const eventState = { ...nuevoEvento, equipo: team.id, jugador_id: null };
+                                                                setNuevoEvento(eventState);
+                                                                handleNuevoEvento(eventState);
+                                                            } else {
+                                                                setNuevoEvento({ ...nuevoEvento, equipo: team.id, jugador_id: null });
+                                                            }
+                                                        }}
                                                         className={`relative h-20 rounded-2xl border-2 transition-all duration-200 overflow-hidden flex items-center px-4 gap-4 ${isSelected
                                                             ? 'border-primary bg-primary/10 shadow-[0_0_15px_-3px_rgba(var(--primary),0.3)]'
                                                             : 'border-white/5 bg-zinc-900/40 hover:bg-white/5 hover:border-white/10'
@@ -781,91 +941,93 @@ export default function MatchControlPage() {
                                         </div>
                                     </div>
 
-                                    {/* PLAYER SELECTOR */}
-                                    <div className={`transition-all duration-500 delay-100 ${nuevoEvento.equipo ? 'opacity-100 translate-x-0' : 'opacity-50 translate-x-4 pointer-events-none'}`}>
-                                        <div className="flex justify-between items-center mb-3">
-                                            <p className="text-xs font-bold uppercase text-muted-foreground tracking-wider ml-1">3. Selecciona Jugador</p>
-                                            {!addingPlayerTeam && (
-                                                <button
-                                                    onClick={() => setAddingPlayerTeam(nuevoEvento.equipo)}
-                                                    className="text-[10px] font-bold uppercase flex items-center gap-1.5 text-primary hover:text-white px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary transition-all border border-primary/20"
-                                                >
-                                                    <Plus size={12} strokeWidth={3} /> Nuevo Jugador
-                                                </button>
+                                    {/* PLAYER SELECTOR - Only show if required */}
+                                    {(!['Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName)) && (
+                                        <div className={`transition-all duration-500 delay-100 ${nuevoEvento.equipo ? 'opacity-100 translate-x-0' : 'opacity-50 translate-x-4 pointer-events-none'}`}>
+                                            <div className="flex justify-between items-center mb-3">
+                                                <p className="text-xs font-bold uppercase text-muted-foreground tracking-wider ml-1">3. Selecciona Jugador</p>
+                                                {!addingPlayerTeam && (
+                                                    <button
+                                                        onClick={() => setAddingPlayerTeam(nuevoEvento.equipo)}
+                                                        className="text-[10px] font-bold uppercase flex items-center gap-1.5 text-primary hover:text-white px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary transition-all border border-primary/20"
+                                                    >
+                                                        <Plus size={12} /> Nuevo Jugador
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {addingPlayerTeam ? (
+                                                <div className="bg-zinc-900 border border-primary/50 p-4 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+                                                    <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
+                                                    <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
+                                                        <Users size={14} /> Crear Nuevo Jugador
+                                                    </h4>
+                                                    <div className="flex gap-3 mb-3">
+                                                        <input
+                                                            autoFocus
+                                                            placeholder="Nombre del Jugador"
+                                                            className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                                                            value={newPlayerForm.nombre}
+                                                            onChange={e => setNewPlayerForm({ ...newPlayerForm, nombre: e.target.value })}
+                                                        />
+                                                        <input
+                                                            placeholder="#"
+                                                            type="number"
+                                                            className="w-20 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-center font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                                                            value={newPlayerForm.numero}
+                                                            onChange={e => setNewPlayerForm({ ...newPlayerForm, numero: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="flex gap-3">
+                                                        <Button size="sm" variant="ghost" onClick={() => setAddingPlayerTeam(null)} className="flex-1 rounded-xl h-9 hover:bg-white/10">Cancelar</Button>
+                                                        <Button size="sm" onClick={handleSavePlayer} className="flex-1 rounded-xl h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-bold">Guardar Jugador</Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[240px] overflow-y-auto custom-scrollbar p-1">
+                                                        {(nuevoEvento.equipo === 'equipo_a' ? jugadoresA : jugadoresB).map(j => {
+                                                            const isSelected = nuevoEvento.jugador_id === j.id;
+                                                            return (
+                                                                <button
+                                                                    key={j.id}
+                                                                    onClick={() => setNuevoEvento({ ...nuevoEvento, jugador_id: j.id })}
+                                                                    className={`group relative p-3 rounded-xl border text-left transition-all duration-200 flex items-center gap-3 ${isSelected
+                                                                        ? 'bg-white text-black border-white shadow-[0_0_15px_-5px_rgba(255,255,255,0.5)] scale-[1.02] z-10'
+                                                                        : 'bg-zinc-900/40 border-white/5 hover:bg-white/10 hover:border-white/10 text-muted-foreground hover:text-white'
+                                                                        }`}
+                                                                >
+                                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm border ${isSelected ? 'bg-black text-white border-black' : 'bg-white/5 border-white/10 text-white/50 group-hover:bg-white/10 group-hover:text-white'
+                                                                        }`}>
+                                                                        {j.numero || <Users size={14} />}
+                                                                    </div>
+                                                                    <span className="truncate text-xs font-bold leading-tight">{j.nombre}</span>
+                                                                </button>
+                                                            )
+                                                        })}
+                                                    </div>
+
+                                                    <div className="mt-6 pt-4 border-t border-white/5">
+                                                        <Button
+                                                            size="lg"
+                                                            className={`w-full h-14 rounded-xl text-lg font-black tracking-wide shadow-lg transition-all duration-300 ${nuevoEvento.jugador_id
+                                                                ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black shadow-emerald-500/20 translate-y-0 opacity-100'
+                                                                : 'bg-white/5 text-muted-foreground border border-white/5 translate-y-2 opacity-50 cursor-not-allowed'
+                                                                }`}
+                                                            disabled={!nuevoEvento.jugador_id}
+                                                            onClick={() => handleNuevoEvento()}
+                                                        >
+                                                            {nuevoEvento.jugador_id ? (
+                                                                <span className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+                                                                    <Check strokeWidth={3} className="w-5 h-5" /> CONFIRMAR EVENTO
+                                                                </span>
+                                                            ) : 'Completa los pasos...'}
+                                                        </Button>
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
-
-                                        {addingPlayerTeam ? (
-                                            <div className="bg-zinc-900 border border-primary/50 p-4 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
-                                                <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
-                                                <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
-                                                    <Users size={14} /> Crear Nuevo Jugador
-                                                </h4>
-                                                <div className="flex gap-3 mb-3">
-                                                    <input
-                                                        autoFocus
-                                                        placeholder="Nombre del Jugador"
-                                                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
-                                                        value={newPlayerForm.nombre}
-                                                        onChange={e => setNewPlayerForm({ ...newPlayerForm, nombre: e.target.value })}
-                                                    />
-                                                    <input
-                                                        placeholder="#"
-                                                        type="number"
-                                                        className="w-20 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-center font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
-                                                        value={newPlayerForm.numero}
-                                                        onChange={e => setNewPlayerForm({ ...newPlayerForm, numero: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div className="flex gap-3">
-                                                    <Button size="sm" variant="ghost" onClick={() => setAddingPlayerTeam(null)} className="flex-1 rounded-xl h-9 hover:bg-white/10">Cancelar</Button>
-                                                    <Button size="sm" onClick={handleSavePlayer} className="flex-1 rounded-xl h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-bold">Guardar Jugador</Button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[240px] overflow-y-auto custom-scrollbar p-1">
-                                                    {(nuevoEvento.equipo === 'equipo_a' ? jugadoresA : jugadoresB).map(j => {
-                                                        const isSelected = nuevoEvento.jugador_id === j.id;
-                                                        return (
-                                                            <button
-                                                                key={j.id}
-                                                                onClick={() => setNuevoEvento({ ...nuevoEvento, jugador_id: j.id })}
-                                                                className={`group relative p-3 rounded-xl border text-left transition-all duration-200 flex items-center gap-3 ${isSelected
-                                                                    ? 'bg-white text-black border-white shadow-[0_0_15px_-5px_rgba(255,255,255,0.5)] scale-[1.02] z-10'
-                                                                    : 'bg-zinc-900/40 border-white/5 hover:bg-white/10 hover:border-white/10 text-muted-foreground hover:text-white'
-                                                                    }`}
-                                                            >
-                                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm border ${isSelected ? 'bg-black text-white border-black' : 'bg-white/5 border-white/10 text-white/50 group-hover:bg-white/10 group-hover:text-white'
-                                                                    }`}>
-                                                                    {j.numero || <Users size={14} />}
-                                                                </div>
-                                                                <span className="truncate text-xs font-bold leading-tight">{j.nombre}</span>
-                                                            </button>
-                                                        )
-                                                    })}
-                                                </div>
-
-                                                <div className="mt-6 pt-4 border-t border-white/5">
-                                                    <Button
-                                                        size="lg"
-                                                        className={`w-full h-14 rounded-xl text-lg font-black tracking-wide shadow-lg transition-all duration-300 ${nuevoEvento.jugador_id
-                                                            ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black shadow-emerald-500/20 translate-y-0 opacity-100'
-                                                            : 'bg-white/5 text-muted-foreground border border-white/5 translate-y-2 opacity-50 cursor-not-allowed'
-                                                            }`}
-                                                        disabled={!nuevoEvento.jugador_id}
-                                                        onClick={handleNuevoEvento}
-                                                    >
-                                                        {nuevoEvento.jugador_id ? (
-                                                            <span className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
-                                                                <Check strokeWidth={3} className="w-5 h-5" /> CONFIRMAR EVENTO
-                                                            </span>
-                                                        ) : 'Completa los pasos...'}
-                                                    </Button>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         </Card>
@@ -910,83 +1072,206 @@ export default function MatchControlPage() {
                                                         </p>
                                                     )}
                                                 </div>
+
+                                                <button
+                                                    onClick={() => requestDeleteEvento(e)}
+                                                    className={`ml-2 p-2 rounded-lg hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors ${deletingEventId === e.id ? 'animate-pulse text-red-500' : ''}`}
+                                                    title="Eliminar evento (Revertir cambios)"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                </div>
+                    </div >
+                </div >
                 {/* --- PREMIUM END MATCH MODAL --- */}
-                {isEndingMatch && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        {/* Backdrop with Blur */}
-                        <div
-                            className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
-                            onClick={() => setIsEndingMatch(false)}
-                        />
+                {
+                    isEndingMatch && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            {/* Backdrop with Blur */}
+                            <div
+                                className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
+                                onClick={() => setIsEndingMatch(false)}
+                            />
 
-                        {/* Modal Content */}
-                        <div className="relative bg-zinc-900 border border-white/10 rounded-3xl p-0 max-w-sm w-full shadow-2xl shadow-black/50 scale-100 animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden">
+                            {/* Modal Content */}
+                            <div className="relative bg-zinc-900 border border-white/10 rounded-3xl p-0 max-w-sm w-full shadow-2xl shadow-black/50 scale-100 animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden">
 
-                            {/* Decorative Header Background */}
-                            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-red-600/20 to-transparent pointer-events-none" />
-                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-red-500/20 rounded-full blur-3xl pointer-events-none" />
+                                {/* Decorative Header Background */}
+                                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-red-600/20 to-transparent pointer-events-none" />
+                                <div className="absolute -top-10 -right-10 w-40 h-40 bg-red-500/20 rounded-full blur-3xl pointer-events-none" />
 
-                            <div className="p-6 relative z-10 text-center">
-                                {/* Icon */}
-                                <div className="w-20 h-20 mx-auto mb-5 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg shadow-red-500/30 border-4 border-zinc-900 ring-1 ring-white/20">
-                                    <Trophy size={36} className="text-white drop-shadow-md" />
-                                </div>
+                                <div className="p-6 relative z-10 text-center">
+                                    {/* Icon */}
+                                    <div className="w-20 h-20 mx-auto mb-5 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg shadow-red-500/30 border-4 border-zinc-900 ring-1 ring-white/20">
+                                        <Trophy size={36} className="text-white drop-shadow-md" />
+                                    </div>
 
-                                <h3 className="text-2xl font-black text-white mb-2 tracking-tight">
-                                    ¿Finalizar Partido?
-                                </h3>
-                                <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
-                                    El cronómetro se detendrá y el marcador actual se guardará como resultado definitivo.
-                                </p>
+                                    <h3 className="text-2xl font-black text-white mb-2 tracking-tight">
+                                        ¿Finalizar Partido?
+                                    </h3>
+                                    <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
+                                        El cronómetro se detendrá y el marcador actual se guardará como resultado definitivo.
+                                    </p>
 
-                                {/* Score Preview Card */}
-                                <div className="bg-white/5 rounded-2xl p-4 mb-8 border border-white/10 relative overflow-hidden group">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:animate-shimmer" />
+                                    {/* Score Preview Card */}
+                                    <div className="bg-white/5 rounded-2xl p-4 mb-8 border border-white/10 relative overflow-hidden group">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:animate-shimmer" />
 
-                                    <div className="flex items-center justify-between px-2">
-                                        <div className="flex flex-col items-center w-1/3">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 truncate max-w-full">{match.equipo_a}</span>
-                                            <span className="text-4xl font-black text-white tracking-tighter">{scoreA}</span>
+                                        <div className="flex items-center justify-between px-2">
+                                            <div className="flex flex-col items-center w-1/3">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 truncate max-w-full">{match.equipo_a}</span>
+                                                <span className="text-4xl font-black text-white tracking-tighter">{scoreA}</span>
+                                            </div>
+
+                                            <div className="h-8 w-px bg-white/10 mx-2" />
+
+                                            <div className="flex flex-col items-center w-1/3">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 truncate max-w-full">{match.equipo_b}</span>
+                                                <span className="text-4xl font-black text-white tracking-tighter">{scoreB}</span>
+                                            </div>
                                         </div>
+                                    </div>
 
-                                        <div className="h-8 w-px bg-white/10 mx-2" />
+                                    {/* Actions */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Button
+                                            variant="ghost"
+                                            className="h-12 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10"
+                                            onClick={() => setIsEndingMatch(false)}
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <Button
+                                            className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-bold shadow-lg shadow-orange-900/20 border-t border-white/20"
+                                            onClick={confirmarFinalizar}
+                                        >
+                                            Confirmar Final
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
 
-                                        <div className="flex flex-col items-center w-1/3">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 truncate max-w-full">{match.equipo_b}</span>
-                                            <span className="text-4xl font-black text-white tracking-tighter">{scoreB}</span>
+                {/* --- MANUAL SCORE EDIT MODAL --- */}
+                {
+                    isEditingScore && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsEditingScore(false)} />
+                            <div className="relative bg-zinc-900 border border-white/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95">
+                                <h3 className="text-xl font-bold text-white mb-6 text-center flex items-center justify-center gap-2">
+                                    <Edit2 size={20} className="text-primary" /> Ajuste Manual
+                                </h3>
+
+                                <div className="flex items-center justify-between gap-4 mb-8">
+                                    {/* Team A */}
+                                    <div className="flex flex-col items-center gap-2">
+                                        <span className="text-xs font-bold uppercase text-muted-foreground">{match.equipo_a}</span>
+                                        <div className="flex items-center gap-2 bg-black/40 rounded-xl p-1 border border-white/5">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/10" onClick={() => handleManualScoreUpdate(disciplinaName === 'Fútbol' ? 'goles_a' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_a' : 'total_a'), Math.max(0, (match.marcador_detalle?.[disciplinaName === 'Fútbol' ? 'goles_a' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_a' : 'total_a')] || 0) - 1))}>
+                                                <span className="text-xl">-</span>
+                                            </Button>
+                                            <span className="text-2xl font-black tabular-nums w-8 text-center">
+                                                {match.marcador_detalle?.[disciplinaName === 'Fútbol' ? 'goles_a' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_a' : 'total_a')] || 0}
+                                            </span>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/10" onClick={() => handleManualScoreUpdate(disciplinaName === 'Fútbol' ? 'goles_a' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_a' : 'total_a'), (match.marcador_detalle?.[disciplinaName === 'Fútbol' ? 'goles_a' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_a' : 'total_a')] || 0) + 1)}>
+                                                <Plus size={16} />
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {/* Team B */}
+                                    <div className="flex flex-col items-center gap-2">
+                                        <span className="text-xs font-bold uppercase text-muted-foreground">{match.equipo_b}</span>
+                                        <div className="flex items-center gap-2 bg-black/40 rounded-xl p-1 border border-white/5">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/10" onClick={() => handleManualScoreUpdate(disciplinaName === 'Fútbol' ? 'goles_b' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_b' : 'total_b'), Math.max(0, (match.marcador_detalle?.[disciplinaName === 'Fútbol' ? 'goles_b' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_b' : 'total_b')] || 0) - 1))}>
+                                                <span className="text-xl">-</span>
+                                            </Button>
+                                            <span className="text-2xl font-black tabular-nums w-8 text-center">
+                                                {match.marcador_detalle?.[disciplinaName === 'Fútbol' ? 'goles_b' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_b' : 'total_b')] || 0}
+                                            </span>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/10" onClick={() => handleManualScoreUpdate(disciplinaName === 'Fútbol' ? 'goles_b' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_b' : 'total_b'), (match.marcador_detalle?.[disciplinaName === 'Fútbol' ? 'goles_b' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_b' : 'total_b')] || 0) + 1)}>
+                                                <Plus size={16} />
+                                            </Button>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Actions */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <Button
-                                        variant="ghost"
-                                        className="h-12 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10"
-                                        onClick={() => setIsEndingMatch(false)}
-                                    >
-                                        Cancelar
-                                    </Button>
-                                    <Button
-                                        className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-bold shadow-lg shadow-orange-900/20 border-t border-white/20"
-                                        onClick={confirmarFinalizar}
-                                    >
-                                        Confirmar Final
-                                    </Button>
+                                <p className="text-xs text-zinc-500 text-center mb-6 max-w-[200px] mx-auto">
+                                    * Esto modifica el marcador final directament. Úsalo para corregir errores manuales.
+                                </p>
+
+                                <Button className="w-full bg-white/10 hover:bg-white/20" onClick={() => setIsEditingScore(false)}>
+                                    Cerrar Panel
+                                </Button>
+                            </div>
+                        </div>
+                    )
+                }
+
+                {/* --- DELETE CONFIRMATION MODAL --- */}
+                {
+                    confirmingDeletion && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setConfirmingDeletion(null)} />
+
+                            <div className="relative bg-zinc-900 border border-red-500/30 rounded-3xl p-6 max-w-sm w-full shadow-[0_0_50px_-12px_rgba(239,68,68,0.3)] animate-in zoom-in-95 overflow-hidden">
+                                {/* Decorative Background */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
+
+                                <div className="flex flex-col items-center text-center relative z-10">
+                                    <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4 border border-red-500/20 shadow-lg shadow-red-500/10">
+                                        <AlertCircle size={32} className="text-red-500" />
+                                    </div>
+
+                                    <h3 className="text-xl font-black text-white mb-2">¿Eliminar Evento?</h3>
+
+                                    <div className="bg-white/5 rounded-xl p-4 w-full mb-6 border border-white/5">
+                                        <div className="flex justify-between items-center text-sm mb-2">
+                                            <Badge variant="outline" className="border-white/10 text-zinc-400">Min {confirmingDeletion.minuto}'</Badge>
+                                            <Badge variant="secondary" className="bg-white/10 text-white hover:bg-white/10">
+                                                {confirmingDeletion.tipo_evento.replace(/_/g, ' ').toUpperCase()}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-zinc-300 font-medium">
+                                            {confirmingDeletion.jugadores ? confirmingDeletion.jugadores.nombre : 'Evento de equipo'}
+                                        </p>
+                                        <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wider">
+                                            {confirmingDeletion.equipo === 'equipo_a' ? match.equipo_a : match.equipo_b}
+                                        </p>
+                                    </div>
+
+                                    <p className="text-zinc-400 text-xs mb-6 px-4">
+                                        Esta acción es irreversible. Si el evento otorgó puntos (goles, sets), <span className="text-red-400 font-bold">se restarán automáticamente</span> del marcador.
+                                    </p>
+
+                                    <div className="grid grid-cols-2 gap-3 w-full">
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => setConfirmingDeletion(null)}
+                                            className="rounded-xl hover:bg-white/5 text-zinc-400 hover:text-white"
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <Button
+                                            onClick={ejecutarEliminacion}
+                                            className="rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-lg shadow-red-900/20 border-t border-white/10"
+                                        >
+                                            Sí, Eliminar
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
-        </div>
+                    )
+                }
+            </div >
+        </div >
     );
 }

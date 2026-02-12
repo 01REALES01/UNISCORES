@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { Trophy, Clock, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, Activity } from "lucide-react";
+import { Trophy, Clock, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, Activity, TrendingUp, Tv, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -137,20 +137,43 @@ export default function Home() {
             </div>
           </div>
 
-          <Link href="/admin/login">
-            <Button
-              variant="outline"
-              size="sm"
-              className="hidden sm:flex rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold hover:text-white transition-all hover:border-indigo-500/50"
-            >
-              Area Administrativa
-            </Button>
-            <Button size="icon" variant="ghost" className="sm:hidden text-muted-foreground p-0">
-              <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                <Activity size={16} />
-              </div>
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/mapa">
+              <Button variant="ghost" size="sm" className="hidden sm:flex rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-bold border border-blue-500/20 gap-2 transition-all">
+                <MapPin size={14} /> Mapa Campus
+              </Button>
+            </Link>
+
+            <div className="flex items-center gap-2">
+              <Link href="/medallero">
+                <Button variant="ghost" size="sm" className="hidden sm:flex items-center gap-2 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10 transition-colors rounded-full font-bold uppercase tracking-wider text-[10px] border border-yellow-500/20">
+                  <Trophy size={14} />
+                  Medallería
+                </Button>
+              </Link>
+
+              <Link href="/tv" target="_blank">
+                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-white/10 rounded-full" title="Modo TV">
+                  <Tv size={18} />
+                </Button>
+              </Link>
+
+              <Link href="/admin/login">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hidden sm:flex rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold hover:text-white transition-all hover:border-indigo-500/50"
+                >
+                  Area Administrativa
+                </Button>
+                <Button size="icon" variant="ghost" className="sm:hidden text-muted-foreground p-0">
+                  <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Activity size={16} />
+                  </div>
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -210,6 +233,8 @@ export default function Home() {
             })}
           </div>
         </div>
+
+        {/* Global Leaderboard Removed from here */}
 
         {/* Live Section */}
         {liveMatches.length > 0 && (
@@ -337,8 +362,8 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-medium text-white/80 leading-tight truncate max-w-[100px] sm:max-w-[150px]">{partido.lugar || 'Coliseo Central'}</span>
                   <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${genero === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
-                      genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
-                        'bg-blue-500/20 text-blue-400'
+                    genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
+                      'bg-blue-500/20 text-blue-400'
                     }`}>{genero === 'femenino' ? '♀' : genero === 'mixto' ? '⚤' : '♂'}</span>
                 </div>
               </div>
@@ -419,8 +444,8 @@ function UpcomingMatchCard({ partido }: { partido: Partido }) {
               {sportName}
             </span>
             <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${genero === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
-                genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
-                  'bg-blue-500/20 text-blue-400'
+              genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
+                'bg-blue-500/20 text-blue-400'
               }`}>{genero === 'femenino' ? '♀ F' : genero === 'mixto' ? '⚤ Mix' : '♂ M'}</span>
             <span className="w-1 h-1 rounded-full bg-slate-600" />
             <span className="text-[9px] text-slate-500 truncate">{partido.lugar || 'Por definir'}</span>
@@ -463,8 +488,8 @@ function ResultCard({ partido }: { partido: Partido }) {
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{sportName}</span>
             <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${genero === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
-                genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
-                  'bg-blue-500/20 text-blue-400'
+              genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
+                'bg-blue-500/20 text-blue-400'
               }`}>{genero === 'femenino' ? '♀' : genero === 'mixto' ? '⚤' : '♂'}</span>
           </div>
           <span className="text-[10px] text-slate-600">Finalizado</span>
