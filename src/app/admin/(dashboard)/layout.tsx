@@ -228,6 +228,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     })}
                 </nav>
 
+                {/* View Site Button */}
+                <div className="px-4 pb-4">
+                    <Link
+                        href="/"
+                        target="_blank"
+                        className="group flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/5 hover:from-emerald-500/20 hover:to-teal-500/10 border border-emerald-500/20 transition-all duration-300 shadow-lg shadow-emerald-900/5 hover:shadow-emerald-900/10"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+                                <Zap size={16} fill="currentColor" />
+                            </div>
+                            <span className="text-sm font-bold text-emerald-100 group-hover:text-white">Ver Sitio Web</span>
+                        </div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
+                    </Link>
+                </div>
+
                 {/* User Info + Logout */}
                 <div className="p-4 border-t border-white/5 space-y-3 relative overflow-hidden">
                     {/* Glow effect at bottom */}
