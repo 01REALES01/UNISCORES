@@ -28,28 +28,109 @@ export function addPoints(
 ): ScoreDetail {
     const nuevo = JSON.parse(JSON.stringify(detalle)); // Deep copy to avoid mutations
 
+    // Aplicar cambio específico del deporte
+    let resultado = nuevo;
     if (deporte === 'Fútbol') {
-        return addGoalFutbol(nuevo, equipo);
+        resultado = addGoalFutbol(nuevo, equipo);
     } else if (deporte === 'Baloncesto') {
-        return addPointsBasket(nuevo, equipo, puntos);
+        resultado = addPointsBasket(nuevo, equipo, puntos);
     } else if (deporte === 'Voleibol') {
-        return addPointVolley(nuevo, equipo);
+        resultado = addPointVolley(nuevo, equipo);
     } else if (deporte === 'Tenis de Mesa') {
-        return addPointTableTennis(nuevo, equipo);
+        resultado = addPointTableTennis(nuevo, equipo);
     } else if (deporte === 'Tenis') {
-        return addGameTennis(nuevo, equipo); // Asumimos que sumamos GAMES, no puntos 15-30
+        resultado = addGameTennis(nuevo, equipo);
     } else {
-        // Genérico (Natación, Atletismo, etc. no suman puntos A vs B aquí)
-        // Para Natación, la lógica de 'puntos' no aplica al marcador global
-        if (deporte === 'Natación') return nuevo;
-
-        const field = equipo === 'equipo_a' ? 'total_a' : 'total_b';
-        nuevo[field] = (nuevo[field] || 0) + puntos;
-        return nuevo;
+        // Genérico (Natación, etc.)
+        if (deporte !== 'Natación') {
+            const field = equipo === 'equipo_a' ? 'total_a' : 'total_b';
+            nuevo[field] = (nuevo[field] || 0) + puntos;
+        }
+        resultado = nuevo;
     }
+
+    // SIEMPRE Recalcular Totales para asegurar consistencia
+    return recalculateTotals(deporte, resultado);
 }
 
-// ... (Fútbol, Basket, Volley functions restored) ...
+/**
+ * Recalcular totales basados en los detalles (Sets, Tiempos, Cuartos)
+ * Esto corrige inconsistencias si se editaron los parciales manualmente
+ */
+function recalculateTotals(deporte: string, detalle: ScoreDetail): ScoreDetail {
+    const d = JSON.parse(JSON.stringify(detalle));
+
+    if (deporte === 'Fútbol') {
+        let totalA = 0;
+        let totalB = 0;
+        if (d.tiempos) {
+            Object.values(d.tiempos).forEach((t: any) => {
+                totalA += (t.goles_a || 0);
+                totalB += (t.goles_b || 0);
+            });
+        }
+        // Si hay tiempos, sobreescribir totales
+        if (d.tiempos && Object.keys(d.tiempos).length > 0) {
+            d.goles_a = totalA;
+            d.goles_b = totalB;
+        }
+    }
+    else if (deporte === 'Baloncesto') {
+        let totalA = 0;
+        let totalB = 0;
+        if (d.cuartos) {
+            Object.values(d.cuartos).forEach((c: any) => {
+                totalA += (c.puntos_a || 0);
+                totalB += (c.puntos_b || 0);
+            });
+        }
+        if (d.cuartos && Object.keys(d.cuartos).length > 0) {
+            d.total_a = totalA;
+            d.total_b = totalB;
+        }
+    }
+    else if (deporte === 'Voleibol' || deporte === 'Tenis de Mesa') {
+        let setsA = 0;
+        let setsB = 0;
+
+        if (d.sets) {
+            Object.entries(d.sets).forEach(([key, set]: [string, any]) => {
+                const setNum = parseInt(key);
+                const pA = set.puntos_a || 0;
+                const pB = set.puntos_b || 0;
+
+                // Lógica de Ganador de Set
+                let minPts = 25;
+                if (deporte === 'Voleibol' && setNum === 5) minPts = 15;
+                if (deporte === 'Tenis de Mesa') minPts = 11;
+
+                if (pA >= minPts && (pA - pB) >= 2) setsA++;
+                else if (pB >= minPts && (pB - pA) >= 2) setsB++;
+            });
+        }
+
+        d.sets_a = setsA;
+        d.sets_b = setsB;
+    }
+    else if (deporte === 'Tenis') {
+        let setsA = 0;
+        let setsB = 0;
+        if (d.sets) {
+            Object.values(d.sets).forEach((set: any) => {
+                const jA = set.juegos_a || 0;
+                const jB = set.juegos_b || 0;
+
+                // Lógica simplificada Tenis (6-x, 7-5, 7-6)
+                if ((jA === 6 && jB <= 4) || (jA === 7 && jB <= 5)) setsA++;
+                else if ((jB === 6 && jA <= 4) || (jB === 7 && jA <= 5)) setsB++;
+            });
+        }
+        d.sets_a = setsA;
+        d.sets_b = setsB;
+    }
+
+    return d;
+}
 
 /**
  * Fútbol: Añadir gol al tiempo actual
@@ -302,67 +383,56 @@ export function removePoints(
     const nuevo = JSON.parse(JSON.stringify(detalle)); // Deep copy
 
     if (deporte === 'Fútbol') {
-        return removeGoalFutbol(nuevo, equipo);
+        removeGoalFutbol(nuevo, equipo);
     } else if (deporte === 'Baloncesto') {
-        return removePointsBasket(nuevo, equipo, puntos);
+        removePointsBasket(nuevo, equipo, puntos);
     } else if (deporte === 'Voleibol') {
-        return removePointVolley(nuevo, equipo);
+        removePointVolley(nuevo, equipo);
     } else if (deporte === 'Tenis' || deporte === 'Tenis de Mesa') {
-        return removePointTenis(nuevo, equipo);
+        removePointTenis(nuevo, equipo);
     } else {
         const field = equipo === 'equipo_a' ? 'total_a' : 'total_b';
         nuevo[field] = Math.max(0, (nuevo[field] || 0) - puntos);
-        return nuevo;
     }
+
+    // SIEMPRE Recalcular Totales
+    return recalculateTotals(deporte, nuevo);
 }
 
-function removeGoalFutbol(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b'): ScoreDetail {
+function removeGoalFutbol(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b') {
     const tiempo = detalle.tiempo_actual || 1;
     const field = equipo === 'equipo_a' ? 'goles_a' : 'goles_b';
+    const totalField = field;
 
-    // Decrementar total
-    detalle[field] = Math.max(0, (detalle[field] || 0) - 1);
-
-    // Decrementar del tiempo actual
+    // Solo modificamos parciales, total se recalcula luego
     if (detalle.tiempos && detalle.tiempos[tiempo]) {
         detalle.tiempos[tiempo][field] = Math.max(0, (detalle.tiempos[tiempo][field] || 0) - 1);
     }
-
-    return detalle;
 }
 
-function removePointsBasket(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b', puntos: number): ScoreDetail {
+function removePointsBasket(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b', puntos: number) {
     const cuarto = detalle.cuarto_actual || 1;
-    const fieldTotal = equipo === 'equipo_a' ? 'total_a' : 'total_b';
     const fieldCuarto = equipo === 'equipo_a' ? 'puntos_a' : 'puntos_b';
-
-    detalle[fieldTotal] = Math.max(0, (detalle[fieldTotal] || 0) - puntos);
 
     if (detalle.cuartos && detalle.cuartos[cuarto]) {
         detalle.cuartos[cuarto][fieldCuarto] = Math.max(0, (detalle.cuartos[cuarto][fieldCuarto] || 0) - puntos);
     }
-
-    return detalle;
 }
 
-function removePointVolley(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b'): ScoreDetail {
+function removePointVolley(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b') {
     const setActual = detalle.set_actual || 1;
     const field = equipo === 'equipo_a' ? 'puntos_a' : 'puntos_b';
 
-    if (!detalle.sets) return detalle;
-    if (detalle.sets[setActual]) {
+    if (detalle.sets && detalle.sets[setActual]) {
         detalle.sets[setActual][field] = Math.max(0, (detalle.sets[setActual][field] || 0) - 1);
     }
-    return detalle;
 }
 
-function removePointTenis(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b'): ScoreDetail {
+function removePointTenis(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b') {
     const setActual = detalle.set_actual || 1;
     const field = equipo === 'equipo_a' ? 'juegos_a' : 'juegos_b';
 
-    if (!detalle.sets) return detalle;
-    if (detalle.sets[setActual]) {
+    if (detalle.sets && detalle.sets[setActual]) {
         detalle.sets[setActual][field] = Math.max(0, (detalle.sets[setActual][field] || 0) - 1);
     }
-    return detalle;
 }

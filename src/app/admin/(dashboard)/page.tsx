@@ -5,6 +5,7 @@ import { Card } from "@/components/ui-primitives";
 import { Activity, Calendar, Trophy, Users, TrendingUp, Zap, Clock, ArrowUpRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { getCurrentScore } from "@/lib/sport-scoring";
 
 type Partido = {
     id: number;
@@ -92,11 +93,21 @@ export default function AdminDashboard() {
         return map[name] || '🏅';
     };
 
+    // Importar al inicio del archivo (nota: esto requiere mover el import arriba, lo haré en el bloque diff completo)
+
     const getScore = (p: Partido) => {
-        const md = p.marcador_detalle || {};
-        const a = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
-        const b = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
-        return { a, b };
+        // Usar la lógica centralizada que maneja sets, cuartos, y goles
+        const scoreInfo = getCurrentScore(p.disciplinas?.name, p.marcador_detalle || {});
+        // Para la vista de lista, mostramos el score principal (Goles en fútbol, Puntos de Set en Volley)
+        // O tal vez prefieran ver Sets en Volley? 
+        // getCurrentScore para Volley devuelve: scoreA=PuntosSet, subScoreA=SetsGanados
+        // En la lista dashboard, espacio es pequeño.
+
+        // Si es Volley/Tenis, mostramos Sets si no están jugando (o resumen), 
+        // pero "En Vivo" queremos ver qué está pasando.
+        // getCurrentScore ya decide qué es lo "importante".
+
+        return { a: scoreInfo.scoreA, b: scoreInfo.scoreB };
     };
 
     if (loading) {

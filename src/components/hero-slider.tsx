@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Calendar, MapPin, Zap } from "lucide-react";
 import { Badge, Button } from "@/components/ui-primitives";
 import Link from "next/link";
 import { SPORT_EMOJI } from "@/lib/constants";
+import { getCurrentScore } from "@/lib/sport-scoring";
 
 // Helper para obtener iniciales
 const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
@@ -19,7 +20,8 @@ export function HeroSlider({ matches }: { matches: any[] }) {
         .sort((a, b) => {
             if (a.estado === 'en_vivo' && b.estado !== 'en_vivo') return -1;
             if (b.estado === 'en_vivo' && a.estado !== 'en_vivo') return 1;
-            return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
+            // Newest first (Descending)
+            return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
         })
         .slice(0, 5); // Top 5
 
@@ -73,9 +75,14 @@ export function HeroSlider({ matches }: { matches: any[] }) {
     const nextSlide = () => setCurrentIndex((prev) => (prev + 1) % featuredMatches.length);
     const prevSlide = () => setCurrentIndex((prev) => (prev - 1 + featuredMatches.length) % featuredMatches.length);
 
-    const currentMatch = featuredMatches[currentIndex];
+    // FIX: Ensure index is always valid even if matches list shrinks
+    const safeIndex = currentIndex % featuredMatches.length;
+    const currentMatch = featuredMatches[safeIndex];
 
     if (!currentMatch) return null;
+
+    // Calculate score using shared logic
+    const scoreInfo = getCurrentScore(currentMatch.disciplinas?.name, currentMatch.marcador_detalle || {});
 
     return (
         <div className="relative w-full h-[400px] md:h-[450px] rounded-3xl overflow-hidden mb-8 group">
@@ -133,15 +140,23 @@ export function HeroSlider({ matches }: { matches: any[] }) {
                             {/* VS / Score */}
                             <div className="flex flex-col items-center gap-2 z-20 mx-4">
                                 {currentMatch.estado === 'en_vivo' ? (
-                                    <div className="text-5xl md:text-7xl font-black font-mono tracking-tighter flex items-center gap-4">
-                                        <span className="text-white">{currentMatch.marcador_detalle?.goles_a || currentMatch.marcador_detalle?.total_a || 0}</span>
-                                        <span className="text-white/20">-</span>
-                                        <span className="text-white">{currentMatch.marcador_detalle?.goles_b || currentMatch.marcador_detalle?.total_b || 0}</span>
+                                    <div className="flex flex-col items-center">
+                                        <div className="text-5xl md:text-7xl font-black font-mono tracking-tighter flex items-center gap-4">
+                                            <span className="text-white">{scoreInfo.scoreA}</span>
+                                            <span className="text-white/20">-</span>
+                                            <span className="text-white">{scoreInfo.scoreB}</span>
+                                        </div>
+                                        {/* Show Sub-score (Sets, Quarters) if available */}
+                                        {(scoreInfo.subScoreA !== undefined || scoreInfo.extra) && (
+                                            <Badge variant="outline" className="mt-2 bg-black/50 border-white/10 text-xs text-slate-300">
+                                                {scoreInfo.extra || scoreInfo.subLabel}: {scoreInfo.subScoreA} - {scoreInfo.subScoreB}
+                                            </Badge>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="text-4xl md:text-6xl font-black text-white/10 italic">VS</div>
                                 )}
-                                <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full border border-white/5 hover:bg-white/10 transition-colors">
+                                <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full border border-white/5 hover:bg-white/10 transition-colors mt-2">
                                     <span>{SPORT_EMOJI[currentMatch.disciplinas?.name] || '🏅'}</span>
                                     <span>{currentMatch.disciplinas?.name}</span>
                                 </div>

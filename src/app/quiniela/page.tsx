@@ -219,6 +219,17 @@ export default function QuinielaPage() {
 
         toast.promise(
             async () => {
+                // FIX: Ensure user profile exists to satisfy FK constraint
+                const { error: profileError } = await supabase.from('public_profiles').upsert(
+                    { id: user.id, email: user.email },
+                    { onConflict: 'id' }
+                );
+
+                if (profileError) {
+                    console.error("Profile auto-creation failed:", profileError);
+                    // Don't throw here, try to proceed, maybe it exists
+                }
+
                 const existing = predictions.find(p => p.match_id === matchId);
                 const payload = {
                     user_id: user.id,
@@ -235,7 +246,10 @@ export default function QuinielaPage() {
                     error = e;
                 }
 
-                if (error) throw error;
+                if (error) {
+                    console.error("Betting error:", error);
+                    throw error;
+                }
 
                 const { data: newData } = await supabase.from('pronosticos').select('*').eq('user_id', user.id);
                 if (newData) setPredictions(newData);

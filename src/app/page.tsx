@@ -61,8 +61,8 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState("todos");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchPartidos = async () => {
-    setLoading(true);
+  const fetchPartidos = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     const { data, error } = await supabase
       .from('partidos')
       .select(`*, disciplinas ( name, icon )`)
@@ -78,7 +78,7 @@ export default function Home() {
       });
       setPartidos(sorted);
     }
-    setLoading(false);
+    if (!isBackground) setLoading(false);
   };
 
   const getSortScore = (p: Partido) => {
@@ -89,11 +89,25 @@ export default function Home() {
 
   useEffect(() => {
     fetchPartidos();
+
+    // Realtime subscription
     const subscription = supabase
       .channel('public:partidos')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => fetchPartidos())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, (payload) => {
+        console.log("Realtime update received:", payload);
+        fetchPartidos(true); // Silent update
+      })
       .subscribe();
-    return () => { supabase.removeChannel(subscription); };
+
+    // Polling backup (every 10s) to ensure carousel updates
+    const interval = setInterval(() => {
+      fetchPartidos(true); // Silent update
+    }, 10000);
+
+    return () => {
+      supabase.removeChannel(subscription);
+      clearInterval(interval);
+    };
   }, []);
 
   const filteredPartidos = partidos.filter(p => {
@@ -146,6 +160,10 @@ export default function Home() {
             {/* Navigation Items */}
             <div className="flex items-center gap-2 mr-auto md:mr-0">
               <Link href="/mapa">
+                {/* Mobile: Icon only. Desktop: Full button */}
+                <Button variant="ghost" size="icon" className="md:hidden text-blue-400 hover:bg-blue-500/10 rounded-full">
+                  <MapPin size={18} />
+                </Button>
                 <Button variant="ghost" size="sm" className="hidden md:flex rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-bold border border-blue-500/20 gap-2 transition-all">
                   <MapPin size={14} /> Mapa
                 </Button>
@@ -180,10 +198,14 @@ export default function Home() {
                   <UserIcon size={16} />
                   Ingresar
                 </Button>
+                {/* Mobile Login Icon */}
+                <Button variant="ghost" size="icon" className="sm:hidden text-indigo-300">
+                  <UserIcon size={20} />
+                </Button>
               </Link>
             ) : (
               <Link href="/quiniela">
-                <div className="flex items-center gap-3 pl-4 border-l border-white/10">
+                <div className="flex items-center gap-3 pl-2 sm:pl-4 sm:border-l border-white/10">
                   <div className="text-right hidden sm:block">
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Hola,</p>
                     <p className="text-xs font-bold text-white">{user.email?.split('@')[0]}</p>

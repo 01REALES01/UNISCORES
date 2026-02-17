@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button, Input, Badge, Avatar } from "@/components/ui-primitives";
-import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle } from "lucide-react";
+import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle, Minus } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { addPoints, removePoints, getCurrentScore, ScoreDetail } from "@/lib/sport-scoring";
 
 type EditMatchModalProps = {
     match: any;
@@ -125,19 +126,98 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
 
     const fetchEventos = async () => {
         console.log('📋 Cargando eventos...');
-        // USANDO NUEVA TABLA
         const { data, error } = await supabase
             .from('olympics_eventos')
-            .select('*, jugadores:olympics_jugadores(*)') // Join corregido
+            .select('*, jugadores:olympics_jugadores(*)')
             .eq('partido_id', match.id)
             .order('minuto', { ascending: false });
 
         if (error) {
             console.error('❌ Error cargando eventos:', error);
         } else if (data) {
-            console.log('✅ Eventos cargados:', data.length);
             setEventos(data);
         }
+    };
+
+    // --- SCORING FUNCTIONS ---
+
+    const handleUpdateScore = async (equipo: 'equipo_a' | 'equipo_b', puntos: number = 1) => {
+        const detalleActual = match.marcador_detalle || {};
+        const deporte = match.disciplinas?.name || 'Genérico';
+
+        // Calcular nuevo estado usando la librería compartida
+        const nuevoDetalle = addPoints(deporte, detalleActual, equipo, puntos);
+
+        // Optimistic UI update (opcional, pero mejor esperar a DB para consistencia crítica)
+        // Por ahora guardamos directo
+
+        const { error } = await supabase
+            .from('partidos')
+            .update({ marcador_detalle: nuevoDetalle })
+            .eq('id', match.id);
+
+        if (error) {
+            console.error('Error updating score:', error);
+            alert('Error actualizando marcador');
+        } else {
+            // Si es Fútbol, preguntamos si queremos crear evento
+            if (deporte === 'Fútbol') {
+                // Opcional: Podríamos auto-crear evento o dejar que el usuario lo haga
+                // Por simplicidad, dejamos que la funcionalidad de "Evento" maneje el log, 
+                // pero esta función maneja el marcador RAW.
+            }
+        }
+    };
+
+    const handleUndoScore = async (equipo: 'equipo_a' | 'equipo_b', puntos: number = 1) => {
+        const detalleActual = match.marcador_detalle || {};
+        const deporte = match.disciplinas?.name || 'Genérico';
+        const nuevoDetalle = removePoints(deporte, detalleActual, equipo, puntos);
+
+        await supabase.from('partidos').update({ marcador_detalle: nuevoDetalle }).eq('id', match.id);
+    };
+
+    // Renderizado de controles de puntuación según deporte
+    const renderScoreControls = (equipo: 'equipo_a' | 'equipo_b') => {
+        const deporte = match.disciplinas?.name;
+
+        if (deporte === 'Voleibol' || deporte === 'Tenis' || deporte === 'Tenis de Mesa') {
+            return (
+                <div className="flex gap-2 justify-center mt-2">
+                    <Button size="sm" variant="outline" onClick={() => handleUndoScore(equipo)} disabled={!match.marcador_detalle} className="h-8 w-8 p-0">
+                        <Minus size={14} />
+                    </Button>
+                    <Button size="sm" onClick={() => handleUpdateScore(equipo, 1)} className="bg-indigo-600 hover:bg-indigo-700 h-8 px-3">
+                        +1 Punto
+                    </Button>
+                </div>
+            );
+        }
+
+        if (deporte === 'Baloncesto') {
+            return (
+                <div className="flex gap-1 justify-center mt-2">
+                    <Button size="sm" variant="outline" onClick={() => handleUpdateScore(equipo, 1)} className="h-8 px-2 text-xs">+1</Button>
+                    <Button size="sm" variant="outline" onClick={() => handleUpdateScore(equipo, 2)} className="h-8 px-2 text-xs">+2</Button>
+                    <Button size="sm" variant="outline" onClick={() => handleUpdateScore(equipo, 3)} className="h-8 px-2 text-xs">+3</Button>
+                </div>
+            );
+        }
+
+        // Fútbol y otros (Solo mostrar si es Admin manual, pero fútbol usa eventos)
+        if (deporte === 'Fútbol') {
+            return (
+                <div className="flex justify-center mt-2">
+                    <span className="text-[10px] text-slate-500">Usa "Nuevo Evento" para Goles</span>
+                </div>
+            );
+        }
+
+        return (
+            <div className="flex justify-center mt-2">
+                <Button size="sm" onClick={() => handleUpdateScore(equipo, 1)}>+1</Button>
+            </div>
+        );
     };
 
     const actualizarMinutoEnDB = async (minuto: number) => {
@@ -276,17 +356,22 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
         // Si es gol, actualizar marcador
         if (nuevoEvento.tipo === 'gol') {
             console.log('⚽ Actualizando marcador...');
-            const detalle = match.marcador_detalle || {};
-            const campo = nuevoEvento.equipo === 'equipo_a' ? 'goles_a' : 'goles_b';
-            const nuevoMarcador = {
-                ...detalle,
-                [campo]: (detalle[campo] || 0) + 1
-            };
+            // Si es gol, actualizar marcador usando la lógica centralizada
+            if (nuevoEvento.tipo === 'gol') {
+                console.log('⚽ Actualizando marcador (Fútbol)...');
+                const detalleActual = match.marcador_detalle || {};
+                const deporte = match.disciplinas?.name || 'Fútbol';
 
-            const { error: scoreError } = await supabase
-                .from('partidos')
-                .update({ marcador_detalle: nuevoMarcador })
-                .eq('id', match.id);
+                // Usar addPoints con equipo correcto
+                const nuevoDetalle = addPoints(deporte, detalleActual, nuevoEvento.equipo as any, 1);
+
+                const { error: scoreError } = await supabase
+                    .from('partidos')
+                    .update({ marcador_detalle: nuevoDetalle })
+                    .eq('id', match.id);
+
+                if (scoreError) console.error('❌ Error actualizando marcador:', scoreError);
+            }
 
             if (scoreError) {
                 console.error('❌ Error actualizando marcador:', scoreError);
@@ -307,9 +392,6 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
 
         const numeroStr = prompt('Número de camiseta (opcional):');
 
-        console.log('👤 Agregando jugador:', { nombre, equipo });
-
-        // USANDO NUEVA TABLA
         const { error } = await supabase
             .from('olympics_jugadores')
             .insert({
@@ -320,18 +402,21 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
             });
 
         if (error) {
-            console.error('❌ Error agregando jugador:', error);
-            alert('Error al agregar jugador: ' + error.message + ' (Revisa que ejecutaste el SQL y refrescaste la página)');
+            alert('Error al agregar jugador: ' + error.message);
         } else {
-            console.log('✅ Jugador agregado correctamente');
             fetchJugadores();
         }
     };
 
     if (!isOpen || !match) return null;
 
-    const scoreA = match.marcador_detalle?.goles_a ?? 0;
-    const scoreB = match.marcador_detalle?.goles_b ?? 0;
+    // Calcular score visual usando la librería
+    const currentScore = getCurrentScore(match.disciplinas?.name, match.marcador_detalle || {});
+    const scoreA = currentScore.scoreA;
+    const scoreB = currentScore.scoreB;
+    const subScoreA = currentScore.subScoreA;
+    const subScoreB = currentScore.subScoreB;
+    const extraInfo = currentScore.extra;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
@@ -355,52 +440,97 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                         <div className="text-center space-y-2">
                             <Avatar name={match.equipo_a} size="lg" />
                             <p className="font-bold text-lg">{match.equipo_a}</p>
-                            <p className="text-5xl font-black">{scoreA}</p>
+                            <div className="flex flex-col items-center">
+                                <p className="text-5xl font-black">{scoreA}</p>
+                                {/* Subscore (Sets/Cuartos/Tiempos) */}
+                                {subScoreA !== undefined && (
+                                    <Badge variant="secondary" className="mt-1 text-xs">
+                                        {currentScore.subLabel}: {subScoreA}
+                                    </Badge>
+                                )}
+                            </div>
+                            {renderScoreControls('equipo_a')}
                         </div>
 
-                        {/* Cronómetro */}
-                        <div className="text-center space-y-3 min-w-[200px]">
-                            <div className="text-6xl font-black font-mono text-primary">
-                                {minutoActual}'
-                            </div>
+                        {/* Cronómetro / Info Central - Solo si el deporte tiene tiempo */}
+                        {['Fútbol', 'Baloncesto', 'Futsal'].includes(match.disciplinas?.name) ? (
+                            <div className="text-center space-y-3 min-w-[200px]">
+                                {extraInfo && (
+                                    <Badge className="bg-indigo-500/10 text-indigo-400 mb-2">{extraInfo}</Badge>
+                                )}
 
-                            {match.estado === 'programado' && (
-                                <Button onClick={iniciarPartido} className="w-full">
-                                    <Play size={16} />
-                                    Iniciar Partido
-                                </Button>
-                            )}
+                                <div className="text-6xl font-black font-mono text-primary">
+                                    {minutoActual}'
+                                </div>
 
-                            {match.estado === 'en_vivo' && (
-                                <div className="flex gap-2">
-                                    {cronometroActivo ? (
-                                        <Button onClick={pausarCronometro} variant="secondary" className="flex-1">
-                                            <Pause size={16} />
-                                            Pausar
+                                {match.estado === 'programado' && (
+                                    <Button onClick={iniciarPartido} className="w-full">
+                                        <Play size={16} />
+                                        Iniciar Partido
+                                    </Button>
+                                )}
+
+                                {match.estado === 'en_vivo' && (
+                                    <div className="flex gap-2">
+                                        {cronometroActivo ? (
+                                            <Button onClick={pausarCronometro} variant="secondary" className="flex-1">
+                                                <Pause size={16} />
+                                                Pausar
+                                            </Button>
+                                        ) : (
+                                            <Button onClick={reanudarCronometro} variant="secondary" className="flex-1">
+                                                <Play size={16} />
+                                                Reanudar
+                                            </Button>
+                                        )}
+                                        <Button onClick={finalizarPartido} variant="ghost" className="flex-1">
+                                            <Square size={16} />
+                                            Finalizar
                                         </Button>
-                                    ) : (
-                                        <Button onClick={reanudarCronometro} variant="secondary" className="flex-1">
-                                            <Play size={16} />
-                                            Reanudar
+                                    </div>
+                                )}
+
+                                {match.estado === 'finalizado' && (
+                                    <Badge variant="outline" className="text-sm">Partido Finalizado</Badge>
+                                )}
+                            </div>
+                        ) : (
+                            /* Vista simplificada para deportes sin reloj (Volley, Tenis) */
+                            <div className="text-center space-y-3 min-w-[200px] flex flex-col justify-center">
+                                {extraInfo && (
+                                    <Badge className="bg-indigo-500/10 text-indigo-400 mb-2 mx-auto">{extraInfo}</Badge>
+                                )}
+                                <div className="text-sm text-slate-500 mb-2">Marcador de Sets</div>
+
+                                <div className="flex justify-center gap-4 mb-4">
+                                    {match.estado === 'programado' && (
+                                        <Button onClick={iniciarPartido}>
+                                            <Play size={16} /> Iniciar
                                         </Button>
                                     )}
-                                    <Button onClick={finalizarPartido} variant="ghost" className="flex-1">
-                                        <Square size={16} />
-                                        Finalizar
-                                    </Button>
+                                    {match.estado === 'en_vivo' && (
+                                        <Button onClick={finalizarPartido} variant="ghost" className="text-red-400 hover:text-red-500 hover:bg-red-500/10">
+                                            <Square size={16} /> Finalizar Partido
+                                        </Button>
+                                    )}
+                                    {match.estado === 'finalizado' && <Badge variant="outline">Finalizado</Badge>}
                                 </div>
-                            )}
-
-                            {match.estado === 'finalizado' && (
-                                <Badge variant="outline" className="text-sm">Partido Finalizado</Badge>
-                            )}
-                        </div>
+                            </div>
+                        )}
 
                         {/* Equipo B */}
                         <div className="text-center space-y-2">
                             <Avatar name={match.equipo_b} size="lg" />
                             <p className="font-bold text-lg">{match.equipo_b}</p>
-                            <p className="text-5xl font-black text-muted-foreground">{scoreB}</p>
+                            <div className="flex flex-col items-center">
+                                <p className="text-5xl font-black text-muted-foreground">{scoreB}</p>
+                                {subScoreB !== undefined && (
+                                    <Badge variant="secondary" className="mt-1 text-xs">
+                                        {currentScore.subLabel}: {subScoreB}
+                                    </Badge>
+                                )}
+                            </div>
+                            {renderScoreControls('equipo_b')}
                         </div>
                     </div>
 
@@ -440,8 +570,8 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                                         setNuevoEvento({ ...nuevoEvento, tipo: tipo.value });
                                                     }}
                                                     className={`flex-1 py-3 px-3 rounded-xl text-sm font-semibold border-2 transition-all ${nuevoEvento.tipo === tipo.value
-                                                            ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
-                                                            : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
+                                                        ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
+                                                        : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
                                                         }`}
                                                 >
                                                     {tipo.label}
@@ -462,8 +592,8 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                                     setNuevoEvento({ ...nuevoEvento, equipo: 'equipo_a', jugador_id: null });
                                                 }}
                                                 className={`py-3 rounded-xl font-semibold border-2 transition-all ${nuevoEvento.equipo === 'equipo_a'
-                                                        ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
-                                                        : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
+                                                    ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
+                                                    : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
                                                     }`}
                                             >
                                                 {match.equipo_a}
@@ -474,8 +604,8 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                                     setNuevoEvento({ ...nuevoEvento, equipo: 'equipo_b', jugador_id: null });
                                                 }}
                                                 className={`py-3 rounded-xl font-semibold border-2 transition-all ${nuevoEvento.equipo === 'equipo_b'
-                                                        ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
-                                                        : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
+                                                    ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
+                                                    : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
                                                     }`}
                                             >
                                                 {match.equipo_b}
@@ -498,8 +628,8 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                                             setNuevoEvento({ ...nuevoEvento, jugador_id: jugador.id });
                                                         }}
                                                         className={`p-3 rounded-xl text-sm font-medium border-2 transition-all ${nuevoEvento.jugador_id === jugador.id
-                                                                ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
-                                                                : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
+                                                            ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
+                                                            : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
                                                             }`}
                                                     >
                                                         {jugador.numero && `#${jugador.numero} `}{jugador.nombre}
