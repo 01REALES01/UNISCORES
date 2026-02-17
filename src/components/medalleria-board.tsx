@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Trophy, Medal, Crown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MedalSkeleton } from "@/components/skeletons";
+
 
 type MedalEntry = {
     id: number;
@@ -122,7 +124,7 @@ export function MedalLeaderboard() {
     };
 
     if (loading && medallero.length === 0) return (
-        <div className="w-full h-96 animate-pulse bg-white/5 rounded-[3rem]" />
+        <MedalSkeleton />
     );
 
     // Separar top 3

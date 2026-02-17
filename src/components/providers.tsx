@@ -3,9 +3,12 @@
 import { AuthProvider } from "@/hooks/useAuth";
 import { ReactNode } from "react";
 
-export function Providers({ children }: { children: ReactNode }) {
+import { ToastProvider } from "@/components/toast-provider";
+
+export function Providers({ children }: { children: React.ReactNode }) {
     return (
         <AuthProvider>
+            <ToastProvider />
             {children}
         </AuthProvider>
     );

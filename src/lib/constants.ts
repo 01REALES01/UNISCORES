@@ -41,3 +41,8 @@ export const CARRERAS_UNINORTE = [
     'Funcionarios',
     'Egresados'
 ];
+
+export const SPORT_EMOJI: Record<string, string> = {
+    'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
+    'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',
+};

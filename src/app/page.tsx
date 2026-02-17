@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
+import { MatchCardSkeleton } from "@/components/skeletons";
+import { HeroSlider } from "@/components/hero-slider";
+import { useAuth } from "@/hooks/useAuth";
+import { User as UserIcon } from "lucide-react";
 import { Trophy, Clock, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, Activity, TrendingUp, Tv, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -51,6 +55,7 @@ const SPORT_ACCENT: Record<string, string> = {
 };
 
 export default function Home() {
+  const { user } = useAuth();
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("todos");
@@ -111,7 +116,7 @@ export default function Home() {
   const recentFinished = [...finishedMatches].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
   return (
-    <div className="min-h-screen bg-[#030711] text-slate-200 font-sans selection:bg-indigo-500/30 overflow-x-hidden">
+    <div className="min-h-screen bg-[#030711] text-white font-sans selection:bg-indigo-500/30">
       {/* Background Ambient Effects */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[100px] mix-blend-screen opacity-50" />
@@ -137,16 +142,17 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link href="/mapa">
-              <Button variant="ghost" size="sm" className="hidden sm:flex rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-bold border border-blue-500/20 gap-2 transition-all">
-                <MapPin size={14} /> Mapa Campus
-              </Button>
-            </Link>
+          <div className="flex items-center gap-3 w-full justify-end">
+            {/* Navigation Items */}
+            <div className="flex items-center gap-2 mr-auto md:mr-0">
+              <Link href="/mapa">
+                <Button variant="ghost" size="sm" className="hidden md:flex rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-bold border border-blue-500/20 gap-2 transition-all">
+                  <MapPin size={14} /> Mapa
+                </Button>
+              </Link>
 
-            <div className="flex items-center gap-2">
               <Link href="/medallero">
-                <Button variant="ghost" size="sm" className="hidden sm:flex items-center gap-2 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10 transition-colors rounded-full font-bold uppercase tracking-wider text-[10px] border border-yellow-500/20">
+                <Button variant="ghost" size="sm" className="hidden md:flex items-center gap-2 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10 transition-colors rounded-full font-bold uppercase tracking-wider text-[10px] border border-yellow-500/20">
                   <Trophy size={14} />
                   Medallería
                 </Button>
@@ -159,20 +165,35 @@ export default function Home() {
               </Link>
 
               <Link href="/admin/login">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="hidden sm:flex rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold hover:text-white transition-all hover:border-indigo-500/50"
-                >
-                  Area Administrativa
-                </Button>
-                <Button size="icon" variant="ghost" className="sm:hidden text-muted-foreground p-0">
-                  <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                    <Activity size={16} />
-                  </div>
+                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-white/10 rounded-full" title="Admin">
+                  <Activity size={18} />
                 </Button>
               </Link>
             </div>
+
+            <div className="flex-1" /> {/* Spacer if needed, but justify-end handles it if container is flex */}
+
+            {/* User / Login Section (Far Right) */}
+            {!user ? (
+              <Link href="/login">
+                <Button variant="outline" className="rounded-full border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 gap-2 hidden sm:flex">
+                  <UserIcon size={16} />
+                  Ingresar
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/quiniela">
+                <div className="flex items-center gap-3 pl-4 border-l border-white/10">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Hola,</p>
+                    <p className="text-xs font-bold text-white">{user.email?.split('@')[0]}</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold border-2 border-white/10 shadow-lg cursor-pointer hover:scale-105 transition-transform">
+                    {user.email?.substring(0, 2).toUpperCase()}
+                  </div>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -234,7 +255,35 @@ export default function Home() {
           </div>
         </div>
 
+        {/* HERO SLIDER */}
+        {!loading && <HeroSlider matches={partidos} />}
+
+        {/* QUINIELA CTA BANNER */}
+        <div className="relative rounded-3xl overflow-hidden border border-yellow-500/20 shadow-[0_0_40px_rgba(234,179,8,0.1)] group cursor-pointer mb-8">
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-900/20 via-black to-black" />
+          <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay" />
+
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 gap-6">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center text-black shadow-lg transform rotate-3 group-hover:rotate-6 transition-transform">
+                <TrendingUp size={32} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black italic text-white mb-1 tracking-tight">HAGAN SUS APUESTAS</h3>
+                <p className="text-yellow-200/60 text-sm font-medium">Predice resultados y gana premios exclusivos.</p>
+              </div>
+            </div>
+
+            <Link href="/quiniela" className="w-full md:w-auto">
+              <Button className="w-full md:w-auto bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase tracking-widest px-8 py-6 rounded-xl shadow-lg transform group-hover:scale-105 transition-all">
+                Jugar Ahora <ArrowRight size={18} className="ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+
         {/* Global Leaderboard Removed from here */}
+
 
         {/* Live Section */}
         {liveMatches.length > 0 && (
@@ -253,7 +302,7 @@ export default function Home() {
               </span>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {liveMatches.map(partido => (
                 <LiveMatchCard key={partido.id} partido={partido} />
               ))}
@@ -261,41 +310,41 @@ export default function Home() {
           </section>
         )}
 
-        {/* Upcoming Section */}
-        {upcomingMatches.length > 0 && (
-          <section className="animate-in slide-in-from-bottom-10 fade-in duration-700 delay-100">
-            <div className="flex items-center gap-3 mb-5 px-1">
-              <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                <Calendar size={18} />
-              </div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Próximos Encuentros</h2>
-            </div>
+        {/* Upcoming / Recent Section */}
+        <section className="animate-in slide-in-from-bottom-8 fade-in duration-1000 delay-100">
+          <div className="flex items-center justify-between mb-6 px-1">
+            <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+              <Calendar className="text-indigo-500" size={20} />
+              {activeFilter === 'todos' ? 'Encuentros' : activeFilter}
+            </h2>
+          </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map(i => <MatchCardSkeleton key={i} />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Mostrar Upcoming y Recent juntos si no hay filtro, o filtrados si hay */}
+              {/* Nota: la lógica original separaba upcoming y recent. Aquí simplificamos para mostrar la grilla unificada */}
+
               {upcomingMatches.map(partido => (
                 <UpcomingMatchCard key={partido.id} partido={partido} />
               ))}
-            </div>
-          </section>
-        )}
-
-        {/* Recent Results Section */}
-        {recentFinished.length > 0 && (
-          <section className="animate-in slide-in-from-bottom-10 fade-in duration-700 delay-200">
-            <div className="flex items-center gap-3 mb-5 px-1">
-              <div className="p-2 rounded-xl bg-slate-500/10 text-slate-400 border border-slate-500/20">
-                <Activity size={18} />
-              </div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Resultados Recientes</h2>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {recentFinished.map(partido => (
                 <ResultCard key={partido.id} partido={partido} />
               ))}
+
+              {/* Si no hay nada */}
+              {upcomingMatches.length === 0 && recentFinished.length === 0 && (
+                <div className="col-span-full flex flex-col items-center justify-center py-12 text-center opacity-50">
+                  <Trophy size={32} className="mb-2" />
+                  <p>No hay partidos encontrados.</p>
+                </div>
+              )}
             </div>
-          </section>
-        )}
+          )}
+        </section>
 
         {/* Empty State */}
         {!loading && filteredPartidos.length === 0 && (

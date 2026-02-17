@@ -12,6 +12,14 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Olimpiadas Universitarias | UNINORTE 2026",
   description: "Resultados en tiempo real de las Olimpiadas Universitarias UNINORTE",
+  manifest: "/manifest.json",
+  themeColor: "#030711",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Olimpiadas",
+  },
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
 };
 
 export default function RootLayout({
