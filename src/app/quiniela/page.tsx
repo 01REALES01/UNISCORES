@@ -275,7 +275,7 @@ export default function QuinielaPage() {
                 </Link>
                 <div className="text-center">
                     <h1 className="text-xl font-black italic tracking-tighter text-white">
-                        QUINIELLA
+                        PREDICCIONES
                     </h1>
                     <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Olimpiadas 2026</p>
                 </div>

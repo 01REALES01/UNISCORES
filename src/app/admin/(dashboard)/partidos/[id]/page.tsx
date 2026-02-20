@@ -200,43 +200,61 @@ export default function MatchControlPage() {
     // Funciones de Acción
     const actualizarMinutoEnDB = async (minuto: number) => {
         if (!match) return;
-        const detalle = match.marcador_detalle || {};
+        // IMPORTANT: Fetch the LATEST marcador_detalle from DB to avoid
+        // overwriting score changes made between timer ticks (stale closure bug)
+        const { data: freshMatch } = await supabase
+            .from('partidos')
+            .select('marcador_detalle')
+            .eq('id', matchId)
+            .single();
+
+        const detalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
+        const nuevoDetalle = {
+            ...detalle,
+            minuto_actual: minuto,
+            estado_cronometro: 'corriendo',
+            ultimo_update: new Date().toISOString()
+        };
         await supabase.from('partidos')
-            .update({
-                marcador_detalle: {
-                    ...detalle,
-                    minuto_actual: minuto,
-                    estado_cronometro: cronometroActivo ? 'corriendo' : 'pausado',
-                    ultimo_update: new Date().toISOString()
-                }
-            })
+            .update({ marcador_detalle: nuevoDetalle })
             .eq('id', matchId);
+        // Keep local state in sync
+        setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoDetalle }));
     };
 
     const toggleCronometro = async () => {
         const nuevoEstado = !cronometroActivo;
         setCronometroActivo(nuevoEstado);
 
+        // Fetch latest from DB to avoid overwriting score
+        const { data: freshMatch } = await supabase
+            .from('partidos')
+            .select('marcador_detalle, estado')
+            .eq('id', matchId)
+            .single();
+        const freshDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
+
         // Update DB
         const nuevoDetalle = {
-            ...(match.marcador_detalle || {}),
+            ...freshDetalle,
             estado_cronometro: nuevoEstado ? 'corriendo' : 'pausado',
             ultimo_update: new Date().toISOString()
         };
 
         // Si inicia por primera vez
-        if (nuevoEstado && match.estado === 'programado') {
+        const currentEstado = freshMatch?.estado || match.estado;
+        if (nuevoEstado && currentEstado === 'programado') {
             nuevoDetalle.tiempo_inicio = new Date().toISOString();
             nuevoDetalle.minuto_actual = 0;
             await supabase.from('partidos').update({
                 estado: 'en_vivo',
                 marcador_detalle: nuevoDetalle
             }).eq('id', matchId);
-            setMatch({ ...match, estado: 'en_vivo', marcador_detalle: nuevoDetalle });
+            setMatch((prev: any) => ({ ...prev, estado: 'en_vivo', marcador_detalle: nuevoDetalle }));
             registrarEventoSistema('inicio', 'Inicio del partido');
         } else {
             await supabase.from('partidos').update({ marcador_detalle: nuevoDetalle }).eq('id', matchId);
-            setMatch({ ...match, marcador_detalle: nuevoDetalle });
+            setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoDetalle }));
         }
     };
 
@@ -246,7 +264,14 @@ export default function MatchControlPage() {
 
     const handleCambiarPeriodo = async () => {
         const disciplinaName = match.disciplinas?.name || 'Deporte';
-        let nuevoMarcador = { ...match.marcador_detalle };
+
+        // Fetch latest from DB to avoid overwriting score
+        const { data: freshMatch } = await supabase
+            .from('partidos')
+            .select('marcador_detalle')
+            .eq('id', matchId)
+            .single();
+        let nuevoMarcador = { ...(freshMatch?.marcador_detalle || match.marcador_detalle || {}) };
         let mensaje = '';
         let nuevoMinuto = minutoActual;
 
@@ -267,7 +292,7 @@ export default function MatchControlPage() {
         if (mensaje) {
             nuevoMarcador.minuto_actual = nuevoMinuto;
             await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
-            setMatch({ ...match, marcador_detalle: nuevoMarcador });
+            setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
             setMinutoActual(nuevoMinuto);
             registrarEventoSistema('periodo', mensaje);
         }
@@ -277,18 +302,25 @@ export default function MatchControlPage() {
         setIsEndingMatch(false);
         setCronometroActivo(false);
 
+        // Fetch latest from DB to preserve score
+        const { data: freshMatch } = await supabase
+            .from('partidos')
+            .select('marcador_detalle')
+            .eq('id', matchId)
+            .single();
+        const freshDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
+
         // Calcular minuto final si estaba corriendo
         let finalMinute = minutoActual;
         if (cronometroActivo) {
-            const detalle = match.marcador_detalle || {};
-            const lastUpdate = detalle.ultimo_update ? new Date(detalle.ultimo_update).getTime() : new Date().getTime();
+            const lastUpdate = freshDetalle.ultimo_update ? new Date(freshDetalle.ultimo_update).getTime() : new Date().getTime();
             const now = new Date().getTime();
             const diffMinutes = Math.floor((now - lastUpdate) / 60000);
             finalMinute += diffMinutes;
         }
 
         const nuevoDetalle = {
-            ...(match.marcador_detalle || {}),
+            ...freshDetalle,
             estado_cronometro: 'detenido',
             minuto_actual: finalMinute,
             ultimo_update: new Date().toISOString()
@@ -303,7 +335,7 @@ export default function MatchControlPage() {
             .eq('id', matchId);
 
         if (!error) {
-            setMatch({ ...match, estado: 'finalizado', marcador_detalle: nuevoDetalle });
+            setMatch((prev: any) => ({ ...prev, estado: 'finalizado', marcador_detalle: nuevoDetalle }));
             setMinutoActual(finalMinute);
             registrarEventoSistema('fin', 'Partido finalizado oficialmente');
         } else {
@@ -341,13 +373,22 @@ export default function MatchControlPage() {
         });
 
         if (!error) {
+            // IMPORTANT: Always fetch the latest marcador_detalle from the DB
+            // to avoid stale state when the timer is running
+            const { data: freshMatch } = await supabase
+                .from('partidos')
+                .select('marcador_detalle')
+                .eq('id', matchId)
+                .single();
+            const currentDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
+
             // Lógica de Puntos / Resultados
 
             if (disciplinaName === 'Natación') {
                 // Lógica especial para deportes de Ranking/Tiempo
                 const puesto = tipo === 'victoria' ? 1 : tipo === 'segundo' ? 2 : tipo === 'tercero' ? 3 : 0;
                 if (puesto > 0) {
-                    const nuevosResultados = match.marcador_detalle?.resultados || [];
+                    const nuevosResultados = currentDetalle.resultados || [];
 
                     // Find player name for display
                     const isTeamA = equipo === 'equipo_a';
@@ -363,9 +404,9 @@ export default function MatchControlPage() {
                         timestamp: new Date().toISOString()
                     });
 
-                    const nuevoMarcador = { ...match.marcador_detalle, resultados: nuevosResultados };
+                    const nuevoMarcador = { ...currentDetalle, resultados: nuevosResultados };
                     await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
-                    setMatch({ ...match, marcador_detalle: nuevoMarcador });
+                    setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
                 }
             }
             else if (tipo.startsWith('gol') || tipo.startsWith('punto') || tipo.startsWith('set')) {
@@ -373,16 +414,20 @@ export default function MatchControlPage() {
                 if (tipo === 'punto_2') puntos = 2;
                 if (tipo === 'punto_3') puntos = 3;
 
-                // Usar la nueva lógica de scoring
+                // Usar la nueva lógica de scoring con datos frescos de la DB
                 const nuevoMarcador = addPoints(
                     disciplinaName,
-                    match.marcador_detalle || {},
+                    currentDetalle,
                     equipo as 'equipo_a' | 'equipo_b',
                     puntos
                 );
 
                 await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
-                setMatch({ ...match, marcador_detalle: nuevoMarcador });
+                setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
+            } else {
+                // For non-scoring events (tarjetas, cambios, faltas), just sync local state
+                // with whatever is in the DB so local state stays fresh
+                setMatch((prev: any) => ({ ...prev, marcador_detalle: currentDetalle }));
             }
             setNuevoEvento({ tipo: '', equipo: '', jugador_id: null });
             fetchEventos();
@@ -407,16 +452,24 @@ export default function MatchControlPage() {
             if (tipo === 'punto_2') puntos = 2;
             if (tipo === 'punto_3') puntos = 3;
 
+            // Fetch latest from DB to avoid stale state
+            const { data: freshMatch } = await supabase
+                .from('partidos')
+                .select('marcador_detalle')
+                .eq('id', matchId)
+                .single();
+            const freshDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
+
             const equipoKey = match.equipo_a === evento.equipo || evento.equipo === 'equipo_a' ? 'equipo_a' : 'equipo_b';
             const nuevoMarcador = removePoints(
                 disciplinaName,
-                match.marcador_detalle || {},
+                freshDetalle,
                 equipoKey as 'equipo_a', // Type assertion safe here
                 puntos
             );
 
             await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
-            setMatch({ ...match, marcador_detalle: nuevoMarcador });
+            setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
         }
 
         // 2. Eliminar de DB
@@ -431,11 +484,17 @@ export default function MatchControlPage() {
     };
 
     const handleManualScoreUpdate = async (field: string, value: number) => {
-        const nuevoMarcador = { ...(match.marcador_detalle || {}) };
+        // Fetch latest from DB to avoid overwriting other fields
+        const { data: freshMatch } = await supabase
+            .from('partidos')
+            .select('marcador_detalle')
+            .eq('id', matchId)
+            .single();
+        const nuevoMarcador = { ...(freshMatch?.marcador_detalle || match.marcador_detalle || {}) };
         nuevoMarcador[field] = value;
 
         await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
-        setMatch({ ...match, marcador_detalle: nuevoMarcador });
+        setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
     };
 
     const handleSavePlayer = async () => {

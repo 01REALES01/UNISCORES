@@ -59,7 +59,7 @@ export default function LoginPage() {
 
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-black tracking-tighter mb-2">Bienvenido</h1>
-                    <p className="text-slate-400">Ingresa para participar en la Quiniela y votar.</p>
+                    <p className="text-slate-400">Ingresa para participar en las Predicciones y votar.</p>
                 </div>
 
                 <div className="space-y-4">
@@ -112,7 +112,7 @@ export default function LoginPage() {
             </div>
 
             <p className="mt-8 text-slate-500 text-xs text-center max-w-sm">
-                Al continuar, aceptas participar en la Quiniela y que tu nombre sea visible en los rankings públicos.
+                Al continuar, aceptas participar en las Predicciones y que tu nombre sea visible en los rankings públicos.
             </p>
         </div>
     );

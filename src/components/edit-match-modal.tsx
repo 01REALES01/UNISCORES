@@ -222,11 +222,20 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
 
     const actualizarMinutoEnDB = async (minuto: number) => {
         const detalle = match.marcador_detalle || {};
+        // IMPORTANT: Fetch the LATEST marcador_detalle from DB to avoid
+        // overwriting score changes made between timer ticks (stale closure bug)
+        const { data: freshMatch } = await supabase
+            .from('partidos')
+            .select('marcador_detalle')
+            .eq('id', match.id)
+            .single();
+
+        const freshDetalle = freshMatch?.marcador_detalle || detalle;
         const { error } = await supabase
             .from('partidos')
             .update({
                 marcador_detalle: {
-                    ...detalle,
+                    ...freshDetalle,
                     minuto_actual: minuto,
                     estado_cronometro: cronometroActivo ? 'corriendo' : 'pausado'
                 }
@@ -355,23 +364,23 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
 
         // Si es gol, actualizar marcador
         if (nuevoEvento.tipo === 'gol') {
-            console.log('⚽ Actualizando marcador...');
-            // Si es gol, actualizar marcador usando la lógica centralizada
-            if (nuevoEvento.tipo === 'gol') {
-                console.log('⚽ Actualizando marcador (Fútbol)...');
-                const detalleActual = match.marcador_detalle || {};
-                const deporte = match.disciplinas?.name || 'Fútbol';
+            console.log('⚽ Actualizando marcador (Fútbol)...');
+            // Fetch fresh data from DB to avoid stale state
+            const { data: freshMatch } = await supabase
+                .from('partidos')
+                .select('marcador_detalle')
+                .eq('id', match.id)
+                .single();
+            const detalleActual = freshMatch?.marcador_detalle || match.marcador_detalle || {};
+            const deporte = match.disciplinas?.name || 'Fútbol';
 
-                // Usar addPoints con equipo correcto
-                const nuevoDetalle = addPoints(deporte, detalleActual, nuevoEvento.equipo as any, 1);
+            // Usar addPoints con equipo correcto
+            const nuevoDetalle = addPoints(deporte, detalleActual, nuevoEvento.equipo as any, 1);
 
-                const { error: scoreError } = await supabase
-                    .from('partidos')
-                    .update({ marcador_detalle: nuevoDetalle })
-                    .eq('id', match.id);
-
-                if (scoreError) console.error('❌ Error actualizando marcador:', scoreError);
-            }
+            const { error: scoreError } = await supabase
+                .from('partidos')
+                .update({ marcador_detalle: nuevoDetalle })
+                .eq('id', match.id);
 
             if (scoreError) {
                 console.error('❌ Error actualizando marcador:', scoreError);
