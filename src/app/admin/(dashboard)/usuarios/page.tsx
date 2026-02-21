@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { supabase } from "@/lib/supabase";
 import { useAuth, type Profile, type UserRole } from "@/hooks/useAuth";
+import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { Card, Badge, Avatar, Button } from "@/components/ui-primitives";
 import { Shield, Users, Search, ChevronDown, Check, Loader2, Crown, UserCheck, User, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -17,8 +19,8 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
     },
     data_entry: {
         label: 'Data Entry',
-        color: 'text-blue-400',
-        bg: 'bg-blue-500/10 border-blue-500/20',
+        color: 'text-red-400',
+        bg: 'bg-red-500/10 border-red-500/20',
         icon: UserCheck,
         description: 'Puede gestionar partidos',
     },
@@ -122,15 +124,15 @@ export default function UsuariosPage() {
             <div className="grid gap-3 grid-cols-3">
                 {[
                     { label: 'Admins', value: adminCount, color: 'text-purple-400', icon: '👑', filter: 'admin' },
-                    { label: 'Data Entry', value: dataEntryCount, color: 'text-blue-400', icon: '📝', filter: 'data_entry' },
+                    { label: 'Data Entry', value: dataEntryCount, color: 'text-red-400', icon: '📝', filter: 'data_entry' },
                     { label: 'Públicos', value: publicCount, color: 'text-slate-400', icon: '👤', filter: 'public' },
                 ].map(stat => (
                     <button
                         key={stat.label}
                         onClick={() => setRoleFilter(roleFilter === stat.filter ? 'all' : stat.filter)}
                         className={`p-4 rounded-2xl border text-left transition-all ${roleFilter === stat.filter
-                                ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/20'
-                                : 'border-border/20 bg-muted/10 hover:border-border/40'
+                            ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/20'
+                            : 'border-border/20 bg-muted/10 hover:border-border/40'
                             }`}
                     >
                         <div className="flex items-center gap-2 mb-1">
@@ -143,16 +145,12 @@ export default function UsuariosPage() {
             </div>
 
             {/* Search */}
-            <div className="relative">
-                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input
-                    type="text"
-                    placeholder="Buscar por nombre o email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-11 pl-11 pr-4 rounded-xl border-2 border-border/30 bg-muted/10 text-sm font-medium placeholder:text-muted-foreground/40 focus:border-primary/50 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                />
-            </div>
+            <SuggestiveSearch
+                value={searchQuery}
+                onChange={setSearchQuery}
+                suggestions={["Buscar por nombre...", "Buscar por correo...", "Encuentra un admin..."]}
+                className="h-11 rounded-xl border-2 border-border/30 bg-muted/10 focus-within:border-primary/50 focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/20 transition-all w-full"
+            />
 
             {/* Users List */}
             {loading ? (
@@ -180,8 +178,8 @@ export default function UsuariosPage() {
                             <div
                                 key={userProfile.id}
                                 className={`group relative flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 ${isCurrentUser
-                                        ? 'border-primary/20 bg-primary/5'
-                                        : 'border-border/15 bg-muted/5 hover:bg-muted/10 hover:border-border/30'
+                                    ? 'border-primary/20 bg-primary/5'
+                                    : 'border-border/15 bg-muted/5 hover:bg-muted/10 hover:border-border/30'
                                     }`}
                             >
                                 {/* Avatar */}
@@ -225,8 +223,8 @@ export default function UsuariosPage() {
                                                 }}
                                                 disabled={isCurrentUser}
                                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${isCurrentUser
-                                                        ? 'opacity-60 cursor-not-allowed'
-                                                        : 'hover:border-primary/30 hover:bg-muted/20 cursor-pointer'
+                                                    ? 'opacity-60 cursor-not-allowed'
+                                                    : 'hover:border-primary/30 hover:bg-muted/20 cursor-pointer'
                                                     } ${roleInfo.bg}`}
                                             >
                                                 <RoleIcon size={14} className={roleInfo.color} />
@@ -249,8 +247,8 @@ export default function UsuariosPage() {
                                                                     key={role}
                                                                     onClick={() => updateRole(userProfile.id, role)}
                                                                     className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left ${isSelected
-                                                                            ? 'bg-primary/10 border border-primary/20'
-                                                                            : 'hover:bg-muted/30 border border-transparent'
+                                                                        ? 'bg-primary/10 border border-primary/20'
+                                                                        : 'hover:bg-muted/30 border border-transparent'
                                                                         }`}
                                                                 >
                                                                     <div className={`p-1.5 rounded-lg ${config.bg}`}>

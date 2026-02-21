@@ -54,11 +54,11 @@ export default function CampusMapPage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-black text-white relative overflow-hidden">
+        <div className="min-h-screen bg-[#17130D] text-white relative overflow-hidden">
 
             {/* Background Effects */}
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
-            <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-blue-900/20 via-black to-black pointer-events-none" />
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-overlay" />
+            <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-[#FFC000]/10 via-[#17130D] to-[#17130D] pointer-events-none" />
 
             <div className="w-full px-4 py-8 relative z-10 max-w-[1600px] mx-auto">
                 {/* Header */}
@@ -70,8 +70,8 @@ export default function CampusMapPage() {
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
-                                <MapPin className="text-blue-500" /> Mapa del Campus
+                            <h1 className="text-2xl font-black tracking-tight flex items-center gap-2 text-white">
+                                <MapPin className="text-[#FFC000]" /> Mapa del Campus
                             </h1>
                             <p className="text-zinc-400 text-sm">
                                 Visualización en tiempo real de las sedes olímpicas.
@@ -99,12 +99,12 @@ export default function CampusMapPage() {
                 </div>
 
                 {/* Main Map Component */}
-                <div className="w-full h-[75vh] min-h-[500px] mx-auto my-6 border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative bg-zinc-900/50">
+                <div className="w-full h-[75vh] min-h-[500px] mx-auto my-6 border border-white/5 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative bg-[#0a0805] ring-2 ring-white/5">
                     {loading ? (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-[#0a0805]">
                             <div className="flex flex-col items-center gap-4">
-                                <Activity className="animate-spin text-blue-500" size={32} />
-                                <span className="text-xs font-mono text-blue-500 uppercase tracking-widest">Cargando Satélite...</span>
+                                <Activity className="animate-spin text-[#FFC000]" size={32} />
+                                <span className="text-xs font-mono text-[#FFC000] uppercase tracking-widest">Cargando Satélite...</span>
                             </div>
                         </div>
                     ) : (
@@ -119,27 +119,27 @@ export default function CampusMapPage() {
                         const live = venueMatches.find(m => m.estado === 'en_vivo');
 
                         return (
-                            <div key={venue} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 hover:bg-white/5 transition-colors group">
+                            <div key={venue} className="bg-[#0a0805]/80 border border-white/5 rounded-2xl p-4 hover:border-white/20 transition-all group shadow-2xl">
                                 <div className="flex justify-between items-start mb-3">
-                                    <h3 className="font-bold text-zinc-300 group-hover:text-white transition-colors">{venue}</h3>
-                                    {live && <Badge className="bg-red-500/20 text-red-500 border-red-500/20 animate-pulse">LIVE</Badge>}
+                                    <h3 className="font-bold text-white/70 group-hover:text-[#FFC000] transition-colors">{venue}</h3>
+                                    {live && <Badge className="bg-[#DB1406]/20 text-[#DB1406] border-[#DB1406]/20 animate-pulse">LIVE</Badge>}
                                 </div>
 
                                 {venueMatches.length > 0 ? (
                                     <div className="space-y-2">
                                         {venueMatches.slice(0, 2).map(m => (
-                                            <Link href={`/partido/${m.id}`} key={m.id} className="block text-xs bg-black/20 p-2 rounded-lg hover:bg-white/5 transition-colors">
-                                                <div className="flex justify-between font-mono text-zinc-400 mb-1">
+                                            <Link href={`/partido/${m.id}`} key={m.id} className="block text-xs bg-[#17130D] border border-white/5 p-2 rounded-lg hover:border-[#FFC000]/50 transition-colors">
+                                                <div className="flex justify-between font-mono text-[#FFC000]/70 mb-1">
                                                     <span>{new Date(m.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                     <span>{m.disciplinas.emoji}</span>
                                                 </div>
-                                                <div className="font-bold text-zinc-200">
+                                                <div className="font-bold text-white/90">
                                                     {m.delegacion_a || m.equipo_a} vs {m.delegacion_b || m.equipo_b}
                                                 </div>
                                             </Link>
                                         ))}
                                         {venueMatches.length > 2 && (
-                                            <p className="text-[10px] text-center text-zinc-600">+{venueMatches.length - 2} más</p>
+                                            <p className="text-[10px] text-center text-white/40">+{venueMatches.length - 2} más</p>
                                         )}
                                     </div>
                                 ) : (

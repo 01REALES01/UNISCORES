@@ -3,7 +3,18 @@
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-sans: "Helvetica Neue", Helvetica, Arial, var(--font-inter), system-ui, sans-serif;
+
+  /* Overriding default red to Uninorte Red #DB1406 */
+  --color-red-400: #f51e10;
+  --color-red-500: #DB1406;
+  --color-red-600: #b51005;
+  --color-red-900: #6e0802;
+
+  /* Uninorte Gold FFC000 */
+  --color-yellow-400: #FFce33;
+  --color-yellow-500: #FFC000;
+  --color-yellow-600: #cc9900;
 }
 
 :root {
@@ -32,26 +43,29 @@
 
 .dark {
   /* Premium Sports Palette - Dark Mode (OneFootball Inspired) */
-  --background: #050a18;
+  --background: #17130D;
+  /* Uninorte Dark Black/Brown */
   --foreground: #f1f5f9;
-  --card: rgba(15, 23, 42, 0.8);
+  --card: #0a0805;
+  /* Even darker for contrast */
   --card-foreground: #f1f5f9;
-  --primary: #818cf8;
-  --primary-foreground: #0f0a1e;
-  --secondary: #a78bfa;
-  --accent: #1e1b4b;
-  --accent-foreground: #c4b5fd;
-  --muted: rgba(30, 41, 59, 0.6);
+  --primary: #FFC000;
+  /* Uninorte Gold */
+  --primary-foreground: #17130D;
+  --secondary: #DB1406;
+  --accent: #2a2216;
+  --accent-foreground: #FFC000;
+  --muted: rgba(255, 192, 0, 0.1);
   --muted-foreground: #94a3b8;
-  --border: rgba(71, 85, 105, 0.4);
+  --border: rgba(255, 192, 0, 0.2);
   --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #f87171;
-  --input: rgba(30, 41, 59, 0.6);
+  --warning: #FFC000;
+  --danger: #DB1406;
+  --input: rgba(10, 8, 5, 0.6);
 
   /* Glassmorphism Dark */
-  --glass-bg: rgba(15, 23, 42, 0.6);
-  --glass-border: rgba(99, 102, 241, 0.15);
+  --glass-bg: rgba(23, 19, 13, 0.6);
+  --glass-border: rgba(255, 192, 0, 0.15);
 }
 
 * {
@@ -71,12 +85,9 @@ body {
   min-height: 100vh;
 }
 
-/* Dark mode: Beautiful gradient background */
+/* Dark mode: Ensure strict dark background tone */
 .dark body {
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(139, 92, 246, 0.1), transparent),
-    var(--background);
+  background: var(--background);
   background-attachment: fixed;
 }
 

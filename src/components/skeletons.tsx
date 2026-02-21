@@ -11,7 +11,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
 
 export function MatchCardSkeleton() {
     return (
-        <div className="bg-[#0a0f1c] border border-white/5 rounded-3xl p-6 h-[180px] flex flex-col justify-between relative overflow-hidden">
+        <div className="bg-[#17130D] border border-white/5 rounded-3xl p-6 h-[180px] flex flex-col justify-between relative overflow-hidden">
             <div className="flex justify-between items-start">
                 <Skeleton className="h-6 w-24 rounded-full" />
                 <Skeleton className="h-4 w-16" />
@@ -47,7 +47,7 @@ export function MatchCardSkeleton() {
 
 export function MedalSkeleton() {
     return (
-        <div className="w-full h-96 bg-[#0a0f1c]/40 border border-white/5 rounded-[3rem] p-8 relative overflow-hidden">
+        <div className="w-full h-96 bg-[#17130D]/40 border border-white/5 rounded-[3rem] p-8 relative overflow-hidden">
             <div className="flex items-center gap-4 mb-12">
                 <Skeleton className="h-12 w-12 rounded-2xl" />
                 <div className="space-y-2">

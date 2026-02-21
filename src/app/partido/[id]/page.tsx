@@ -89,17 +89,17 @@ export default function PublicMatchDetail() {
     };
 
     if (loading) return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#030711] text-white">
-            <div className="w-16 h-16 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 animate-spin mb-4" />
-            <p className="text-sm font-medium text-indigo-300 animate-pulse">Cargando estadio...</p>
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805] text-white">
+            <div className="w-16 h-16 rounded-full border-4 border-red-500/30 border-t-red-500 animate-spin mb-4" />
+            <p className="text-sm font-medium text-red-300 animate-pulse">Cargando estadio...</p>
         </div>
     );
 
     if (!match) return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#030711] text-white p-8 text-center">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805] text-white p-8 text-center">
             <Trophy size={48} className="text-slate-700 mb-4" />
             <h1 className="text-2xl font-bold mb-2">Partido no encontrado</h1>
-            <Link href="/" className="text-indigo-400 hover:text-indigo-300 transition-colors">Volver al inicio</Link>
+            <Link href="/" className="text-red-400 hover:text-red-300 transition-colors">Volver al inicio</Link>
         </div>
     );
 
@@ -111,10 +111,10 @@ export default function PublicMatchDetail() {
     const generoMatch = match.genero || 'masculino';
 
     return (
-        <div className="min-h-screen bg-[#030711] text-slate-200 font-sans selection:bg-indigo-500/30">
+        <div className="min-h-screen bg-[#0a0805] text-slate-200 font-sans selection:bg-red-500/30">
             {/* Ambient Background */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-indigo-600/10 rounded-full blur-[120px] mix-blend-screen" />
+                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-red-600/10 rounded-full blur-[120px] mix-blend-screen" />
                 <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen" />
             </div>
 
@@ -139,9 +139,9 @@ export default function PublicMatchDetail() {
             <div className="relative z-10 w-full max-w-2xl mx-auto px-4 pb-20 pt-24 sm:pt-32">
 
                 {/* Match Card */}
-                <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0a0f1c]/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 mb-8">
+                <div className="relative overflow-hidden rounded-[2.5rem] bg-[#17130D]/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 mb-8">
                     {/* Header Strip */}
-                    <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none" />
+                    <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-red-500/10 to-transparent pointer-events-none" />
 
                     <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-center">
                         {/* Status Badge */}
@@ -159,7 +159,7 @@ export default function PublicMatchDetail() {
                                     Finalizado
                                 </div>
                             ) : (
-                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold tracking-widest uppercase">
+                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold tracking-widest uppercase">
                                     <Calendar size={12} />
                                     {new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
                                 </div>
@@ -190,7 +190,7 @@ export default function PublicMatchDetail() {
                                         .map((p: any, idx: number) => (
                                             <div key={idx} className={cn(
                                                 "flex items-center gap-4 p-3 sm:p-4 rounded-xl border backdrop-blur-md transition-all",
-                                                p.posicion === 1 ? "bg-gradient-to-r from-yellow-500/20 to-yellow-900/5 border-yellow-500/30 text-yellow-100 shadow-[0_0_20px_rgba(234,179,8,0.2)] scale-[1.02] z-10" :
+                                                p.posicion === 1 ? "bg-gradient-to-r from-yellow-500/20 to-yellow-900/5 border-[#FFC000]/30 text-yellow-100 shadow-[0_0_20px_rgba(234,179,8,0.2)] scale-[1.02] z-10" :
                                                     p.posicion === 2 ? "bg-gradient-to-r from-slate-400/20 to-slate-800/5 border-slate-400/30 text-slate-200" :
                                                         p.posicion === 3 ? "bg-gradient-to-r from-orange-700/20 to-orange-900/5 border-orange-600/30 text-orange-200" :
                                                             "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10"
@@ -209,7 +209,7 @@ export default function PublicMatchDetail() {
                                                     </div>
                                                 </div>
 
-                                                <div className="text-right font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-indigo-300 drop-shadow-md">
+                                                <div className="text-right font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-red-300 drop-shadow-md">
                                                     {p.tiempo || '--:--'}
                                                 </div>
                                             </div>
@@ -227,8 +227,8 @@ export default function PublicMatchDetail() {
                                 {/* Team A */}
                                 <div className="flex flex-col items-center gap-4 group">
                                     <div className="relative">
-                                        <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <Avatar name={match.equipo_a} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#0a0f1c]" />
+                                        <div className="absolute inset-0 bg-red-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                        <Avatar name={match.equipo_a} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
                                     </div>
                                     <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
                                         {match.equipo_a}
@@ -256,7 +256,7 @@ export default function PublicMatchDetail() {
 
                                     {/* Period indicator */}
                                     {extra && (
-                                        <span className="mt-2 text-[10px] font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-3 py-0.5 rounded-full uppercase tracking-wider">
+                                        <span className="mt-2 text-[10px] font-bold text-red-300 bg-red-500/10 border border-red-500/20 px-3 py-0.5 rounded-full uppercase tracking-wider">
                                             {extra}
                                         </span>
                                     )}
@@ -266,7 +266,7 @@ export default function PublicMatchDetail() {
                                 <div className="flex flex-col items-center gap-4 group">
                                     <div className="relative">
                                         <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <Avatar name={match.equipo_b} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#0a0f1c]" />
+                                        <Avatar name={match.equipo_b} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
                                     </div>
                                     <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
                                         {match.equipo_b}
@@ -282,14 +282,14 @@ export default function PublicMatchDetail() {
                                 <span className="uppercase tracking-wide">{sportName}</span>
                             </div>
                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${generoMatch === 'femenino' ? 'bg-pink-500/10 border-pink-500/20 text-pink-300' :
-                                generoMatch === 'mixto' ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' :
-                                    'bg-blue-500/10 border-blue-500/20 text-blue-300'
+                                generoMatch === 'mixto' ? 'bg-orange-500/10 border-orange-500/20 text-orange-300' :
+                                    'bg-red-500/10 border-red-500/20 text-red-300'
                                 }`}>
                                 <span>{generoMatch === 'femenino' ? '♀' : generoMatch === 'mixto' ? '⚤' : '♂'}</span>
                                 <span className="uppercase tracking-wide">{generoMatch === 'femenino' ? 'Femenino' : generoMatch === 'mixto' ? 'Mixto' : 'Masculino'}</span>
                             </div>
                             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
-                                <MapPin size={14} className="text-indigo-400" />
+                                <MapPin size={14} className="text-red-400" />
                                 <span>{match.lugar || 'Coliseo Central'}</span>
                             </div>
                             {isLive && (
@@ -305,13 +305,13 @@ export default function PublicMatchDetail() {
                 {/* Timeline Section */}
                 <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-200">
                     <div className="flex items-center gap-3 mb-6 px-2">
-                        <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+                        <div className="p-2 rounded-xl bg-red-500/10 text-red-400">
                             <AlignLeft size={20} />
                         </div>
                         <h3 className="text-xl font-bold text-white tracking-tight">Minuto a Minuto</h3>
                     </div>
 
-                    <div className="relative space-y-0 pl-8 sm:pl-10 before:absolute before:top-4 before:bottom-4 before:left-[19px] sm:before:left-[23px] before:w-[2px] before:bg-gradient-to-b before:from-indigo-500/50 before:to-transparent before:z-0">
+                    <div className="relative space-y-0 pl-8 sm:pl-10 before:absolute before:top-4 before:bottom-4 before:left-[19px] sm:before:left-[23px] before:w-[2px] before:bg-gradient-to-b before:from-red-500/50 before:to-transparent before:z-0">
                         {eventos.length === 0 ? (
                             <div className="py-12 text-center text-slate-500 bg-white/5 rounded-3xl border border-white/5 border-dashed">
                                 <p>El partido está por comenzar...</p>
@@ -321,10 +321,10 @@ export default function PublicMatchDetail() {
                                 <div key={e.id} className="relative pb-8 group last:pb-0">
                                     {/* Timeline Dot */}
                                     <div className={cn(
-                                        "absolute top-0 -left-[27px] sm:-left-[31px] z-10 flex items-center justify-center w-8 h-8 rounded-full border-4 border-[#030711] transition-transform duration-300 group-hover:scale-110",
+                                        "absolute top-0 -left-[27px] sm:-left-[31px] z-10 flex items-center justify-center w-8 h-8 rounded-full border-4 border-[#0a0805] transition-transform duration-300 group-hover:scale-110",
                                         e.tipo_evento === 'gol' ? "bg-amber-400 text-amber-900" :
                                             e.tipo_evento.includes('tarjeta') ? "bg-rose-500 text-white" :
-                                                "bg-indigo-500 text-white"
+                                                "bg-red-500 text-white"
                                     )}>
                                         <span className="text-[10px] font-black">{e.minuto}'</span>
                                     </div>

@@ -87,7 +87,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
     };
 
     return (
-        <div className="relative w-full h-full bg-[#050a14] rounded-3xl overflow-hidden border border-white/10 shadow-2xl group/map">
+        <div className="relative w-full h-full bg-[#17130D] rounded-3xl overflow-hidden border border-white/10 shadow-2xl group/map">
 
             {/* Controls Overlay */}
             <div className="absolute top-4 right-4 z-50 flex flex-col gap-2">
@@ -120,7 +120,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                 <Button
                     size="icon"
                     variant="outline"
-                    className={`rounded-full w-10 h-10 transition-colors ${calibrationMode ? 'bg-yellow-500 text-black border-yellow-500' : 'bg-black/50 border-white/10 text-zinc-500'}`}
+                    className={`rounded-full w-10 h-10 transition-colors ${calibrationMode ? 'bg-[#FFC000] text-black border-[#FFC000]' : 'bg-black/50 border-white/10 text-zinc-500'}`}
                     onClick={() => setCalibrationMode(!calibrationMode)}
                     title="Modo Calibración (Click para obtener coordenadas)"
                 >
@@ -142,7 +142,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                 <TransformComponent wrapperClass="w-full h-full" contentClass="w-full h-full">
                     {/* Map Container */}
                     <div
-                        className="relative w-[1200px] h-[900px] cursor-move flex items-center justify-center bg-[#050a14]" // Fixed size large container for high res map
+                        className="relative w-[1200px] h-[900px] cursor-move flex items-center justify-center bg-[#17130D]" // Fixed size large container for high res map
                         onClick={handleMapClick}
                     >
                         {/* 1. MAP IMAGE BACKGROUND WITH DARK MODE FILTER */}
@@ -155,7 +155,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                                 priority
                             />
                             {/* Overlay Gradient for Vignette */}
-                            <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#050a14]/10 to-[#050a14]/90 pointer-events-none" />
+                            <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#17130D]/10 to-[#17130D]/90 pointer-events-none" />
                         </div>
 
                         {/* Calibration Grid (Optional visibility) */}
@@ -172,7 +172,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                             const liveMatch = activeMatches.find(m => m.estado === 'en_vivo');
                             const nextMatch = activeMatches.find(m => m.estado === 'programado');
 
-                            const statusColor = liveMatch ? 'bg-red-500' : (nextMatch ? 'bg-blue-500' : 'bg-zinc-700/50');
+                            const statusColor = liveMatch ? 'bg-[#DB1406]' : (nextMatch ? 'bg-[#FFC000]' : 'bg-[#0a0805]/80');
                             const hasActivity = activeMatches.length > 0;
 
                             return (
@@ -187,7 +187,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                                 >
                                     {/* Pulse Effect for Live Matches */}
                                     {liveMatch && (
-                                        <div className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-75 duration-1000" />
+                                        <div className="absolute inset-0 rounded-full bg-[#DB1406] animate-ping opacity-75 duration-1000" />
                                     )}
 
                                     {/* PIN ICON */}
@@ -201,7 +201,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                                         {/* Label (Always visible on selected, or hover) */}
                                         <div className={`mt-2 px-2 py-1 bg-black/80 backdrop-blur-md rounded-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider whitespace-nowrap transition-all duration-300 ${selectedVenue === venueName || hasActivity ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 group-hover/pin:opacity-100 group-hover/pin:translate-y-0'}`}>
                                             {coords.label}
-                                            {calibrationMode && <span className="text-yellow-500 ml-1 text-[8px]">({Math.round(coords.x)}, {Math.round(coords.y)})</span>}
+                                            {calibrationMode && <span className="text-[#FFC000] ml-1 text-[8px]">({Math.round(coords.x)}, {Math.round(coords.y)})</span>}
                                         </div>
                                     </div>
 
@@ -212,13 +212,13 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-64 md:w-72 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 cursor-default"
+                                                className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-64 md:w-72 bg-[#0a0805]/95 backdrop-blur-xl border border-[#FFC000]/10 rounded-2xl shadow-2xl overflow-hidden z-50 cursor-default"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 {/* Header */}
-                                                <div className="p-3 border-b border-white/5 bg-white/5 flex justify-between items-center">
+                                                <div className="p-3 border-b border-white/5 bg-[#17130D]/50 flex justify-between items-center">
                                                     <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                                                        <MapPin size={14} className="text-primary" /> {venueName}
+                                                        <MapPin size={14} className="text-[#FFC000]" /> {venueName}
                                                     </h4>
                                                     <button onClick={() => setSelectedVenue(null)} className="text-zinc-500 hover:text-white">
                                                         <span className="sr-only">Cerrar</span>
@@ -233,10 +233,10 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                                                             {activeMatches.map((m) => (
                                                                 <Link key={m.id} href={`/partido/${m.id}`} className="block p-3 hover:bg-white/5 transition-colors">
                                                                     <div className="flex justify-between items-start mb-2">
-                                                                        <Badge variant="secondary" className={`text-[10px] h-5 ${m.estado === 'en_vivo' ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-blue-500/10 text-blue-400'}`}>
+                                                                        <Badge variant="secondary" className={`text-[10px] h-5 ${m.estado === 'en_vivo' ? 'bg-[#DB1406]/20 text-[#DB1406] animate-pulse border-[#DB1406]/20' : 'bg-[#FFC000]/10 text-[#FFC000] border-[#FFC000]/20'}`}>
                                                                             {m.estado === 'en_vivo' ? 'EN JUEGO' : 'PROGRAMADO'}
                                                                         </Badge>
-                                                                        <span className="text-[10px] text-zinc-500 font-mono flex items-center gap-1">
+                                                                        <span className="text-[10px] text-white/50 font-mono flex items-center gap-1">
                                                                             {m.fecha ? new Date(m.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ahora'}
                                                                         </span>
                                                                     </div>
@@ -245,7 +245,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                                                                         <div className="text-center flex-1">
                                                                             <p className="text-xs font-bold text-white truncate max-w-[80px] mx-auto" title={m.equipo_a}>{m.delegacion_a || m.equipo_a}</p>
                                                                         </div>
-                                                                        <div className="px-2 font-black text-lg text-primary font-mono tabular-nums">
+                                                                        <div className="px-2 font-black text-lg text-[#FFC000] font-mono tabular-nums">
                                                                             {m.estado === 'en_vivo'
                                                                                 ? `${(m.marcador_detalle?.goles_a || m.marcador_detalle?.total_a || m.marcador_detalle?.sets_a || 0)} - ${(m.marcador_detalle?.goles_b || m.marcador_detalle?.total_b || m.marcador_detalle?.sets_b || 0)}`
                                                                                 : 'VS'

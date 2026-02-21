@@ -168,7 +168,7 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false }: Ra
     };
 
     return (
-        <Card className="p-6 bg-[#0a0f1c] border-white/10">
+        <Card className="p-6 bg-[#17130D] border-white/10">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
@@ -211,7 +211,7 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false }: Ra
                 {participantes.map((p, idx) => (
                     <div key={p.id} className={cn(
                         "grid grid-cols-[auto_2fr_2fr_1fr_1fr_auto] gap-2 items-center p-3 rounded-xl border transition-all",
-                        p.posicion === 1 ? "bg-yellow-500/10 border-yellow-500/30" :
+                        p.posicion === 1 ? "bg-[#FFC000]/10 border-[#FFC000]/30" :
                             p.posicion === 2 ? "bg-slate-400/10 border-slate-400/30" :
                                 p.posicion === 3 ? "bg-orange-700/10 border-orange-700/30" :
                                     "bg-white/5 border-white/5"
@@ -271,7 +271,7 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false }: Ra
                             )}
                             {isLocked && p.posicion && p.posicion <= 3 && (
                                 <Medal size={16} className={cn(
-                                    p.posicion === 1 ? "text-yellow-500" :
+                                    p.posicion === 1 ? "text-[#FFC000]" :
                                         p.posicion === 2 ? "text-slate-400" : "text-orange-600"
                                 )} />
                             )}

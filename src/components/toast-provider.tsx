@@ -39,7 +39,7 @@ export function ToastProvider() {
                         } else if (newItem.estado === 'finalizado') {
                             toast.info(`Partido Finalizado`, {
                                 description: `Ganador: ${newItem.ganador || 'Empate'}`,
-                                icon: <Trophy className="w-5 h-5 text-yellow-500" />,
+                                icon: <Trophy className="w-5 h-5 text-[#FFC000]" />,
                                 duration: 8000
                             });
                         }
@@ -64,13 +64,13 @@ export function ToastProvider() {
                     if (scoreA_New > scoreA_Old) {
                         toast(`¡Punto para ${newItem.equipo_a}!`, {
                             description: `Marcador: ${scoreA_New} - ${scoreB_New}`,
-                            icon: <Zap className="w-5 h-5 text-yellow-500" />,
+                            icon: <Zap className="w-5 h-5 text-[#FFC000]" />,
                             style: { borderColor: 'rgba(234, 179, 8, 0.5)' }
                         });
                     } else if (scoreB_New > scoreB_Old) {
                         toast(`¡Punto para ${newItem.equipo_b}!`, {
                             description: `Marcador: ${scoreA_New} - ${scoreB_New}`,
-                            icon: <Zap className="w-5 h-5 text-yellow-500" />,
+                            icon: <Zap className="w-5 h-5 text-[#FFC000]" />,
                             style: { borderColor: 'rgba(234, 179, 8, 0.5)' }
                         });
                     }

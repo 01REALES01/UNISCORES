@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "Olimpiadas Universitarias | UNINORTE 2026",
   description: "Resultados en tiempo real de las Olimpiadas Universitarias UNINORTE",
   manifest: "/manifest.json",
-  themeColor: "#030711",
+  themeColor: "#0a0805",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

@@ -7,6 +7,8 @@ import { Lock, Trophy, Mail, Loader2, ArrowRight, UserPlus, LogIn, Eye, EyeOff, 
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
+import { SmokeyBackground } from "@/components/ui/login-form";
+import { AnimatedFormField, ModernButton } from "@/components/ui/sign-in-flo";
 
 type AuthMode = 'login' | 'register';
 
@@ -195,41 +197,39 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
             {/* Background */}
-            <div className="absolute inset-0 -z-10 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-to-b from-primary/15 to-transparent rounded-full blur-[100px]" />
-                <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-gradient-to-t from-orange-500/10 to-transparent rounded-full blur-[80px]" />
-                <div className="absolute top-1/3 right-0 w-[300px] h-[300px] bg-gradient-to-l from-blue-500/10 to-transparent rounded-full blur-[80px]" />
-                <div className="absolute inset-0 opacity-[0.03]" style={{
-                    backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+            <div className="absolute inset-0 -z-10 overflow-hidden bg-[#17130D]">
+                <SmokeyBackground className="absolute inset-0 opacity-80" color1="#DB1406" color2="#FFC000" backdropBlurAmount="xl" />
+                <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
+                    backgroundImage: 'linear-gradient(rgba(255,192,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,192,0,0.1) 1px, transparent 1px)',
                     backgroundSize: '60px 60px'
                 }} />
             </div>
 
             <div className="w-full max-w-md">
                 {/* Logo & Title */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex p-5 rounded-3xl bg-gradient-to-br from-primary via-primary to-orange-500 text-white mb-5 shadow-2xl shadow-primary/30 relative">
-                        <Trophy size={44} strokeWidth={1.5} />
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-slate-900 animate-pulse" />
+                <div className="text-center mb-8 flex flex-col items-center">
+                    <div className="relative mb-6">
+                        <img src="/uninorte_logo.png" alt="Uninorte 60 Años Logo" className="h-[180px] w-auto object-contain drop-shadow-[0_0_30px_rgba(219,20,6,0.3)] transition-transform hover:scale-105 duration-500" />
+                        <div className="absolute top-4 -right-2 w-4 h-4 bg-green-400 rounded-full border-2 border-[#17130D] animate-pulse" />
                     </div>
-                    <h1 className="text-3xl font-extrabold tracking-tight mb-2 bg-gradient-to-r from-white to-white/60 inline-block text-transparent bg-clip-text">
-                        Olimpiadas Uninorte
+                    <h1 className="text-3xl font-extrabold tracking-tight mb-1 bg-gradient-to-r from-white to-[#FFC000]/80 inline-block text-transparent bg-clip-text">
+                        Olimpiadas Admin
                     </h1>
-                    <p className="text-muted-foreground/80 text-sm font-medium">
-                        Sistema de Gestión Deportiva 2026
+                    <h2 className="text-2xl font-black tracking-tighter text-white/40 mb-2" style={{ fontFamily: 'Arial Black, Impact, sans-serif' }}>
+                        UNINORTE
+                    </h2>
+                    <p className="text-[#FFC000]/70 text-[10px] font-bold uppercase tracking-widest mt-2">
+                        Sistema de Gestión Deportiva
                     </p>
                 </div>
 
-
-
                 {/* Mode Toggle */}
-                <div className="flex bg-slate-800/50 p-1.5 rounded-2xl border border-border/30 mb-6 backdrop-blur-sm">
+                <div className="flex bg-[#0a0805]/80 p-1.5 rounded-2xl border border-white/10 mb-6 backdrop-blur-sm shadow-sm">
                     <button
                         onClick={() => switchMode('login')}
-                        className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'login'
-                            ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                            : 'text-muted-foreground hover:text-foreground'
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'login'
+                            ? 'bg-[#FFC000] text-black shadow-md'
+                            : 'text-white/40 hover:text-[#FFC000]'
                             }`}
                     >
                         <LogIn size={16} />
@@ -237,9 +237,9 @@ export default function LoginPage() {
                     </button>
                     <button
                         onClick={() => switchMode('register')}
-                        className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'register'
-                            ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                            : 'text-muted-foreground hover:text-foreground'
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'register'
+                            ? 'bg-[#FFC000] text-black shadow-md'
+                            : 'text-white/40 hover:text-[#FFC000]'
                             }`}
                     >
                         <UserPlus size={16} />
@@ -248,12 +248,12 @@ export default function LoginPage() {
                 </div>
 
                 {/* Card */}
-                <div className="bg-slate-800/30 backdrop-blur-xl rounded-3xl p-8 border border-border/30 shadow-2xl shadow-black/20">
-                    <form onSubmit={mode === 'login' ? handleLogin : handleRegister} className="space-y-5">
+                <div className="bg-[#0a0805]/95 backdrop-blur-3xl rounded-3xl p-8 border border-[#FFC000]/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+                    <form onSubmit={mode === 'login' ? handleLogin : handleRegister} className="space-y-6">
 
                         {/* Error */}
                         {error && (
-                            <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                            <div className="p-4 rounded-xl bg-[#DB1406]/10 border border-[#DB1406]/30 text-[#DB1406] text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                                 <AlertCircle size={18} className="shrink-0 mt-0.5" />
                                 <span>{error}</span>
                             </div>
@@ -261,7 +261,7 @@ export default function LoginPage() {
 
                         {/* Success */}
                         {success && (
-                            <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                            <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                                 <CheckCircle size={18} className="shrink-0 mt-0.5" />
                                 <span>{success}</span>
                             </div>
@@ -269,71 +269,49 @@ export default function LoginPage() {
 
                         {/* Name (register only) */}
                         {mode === 'register' && (
-                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                <label className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
-                                    <UserPlus size={14} className="text-primary" />
-                                    Nombre Completo
-                                </label>
-                                <Input
-                                    type="text"
-                                    placeholder="Jean Reales"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    required
-                                    disabled={loading}
-                                    className="bg-slate-700/30 border-border/40 h-12 rounded-xl focus:ring-2 focus:ring-primary/30 transition-all"
-                                />
-                            </div>
+                            <AnimatedFormField
+                                type="text"
+                                placeholder="Nombre Completo"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                icon={<UserPlus size={18} />}
+                                required
+                                disabled={loading}
+                            />
                         )}
 
                         {/* Email */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
-                                <Mail size={14} className="text-primary" />
-                                Correo Electrónico
-                            </label>
-                            <Input
-                                type="email"
-                                placeholder="usuario@uninorte.edu.co"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                disabled={loading}
-                                className="bg-slate-700/30 border-border/40 h-12 rounded-xl focus:ring-2 focus:ring-primary/30 transition-all"
-                            />
-                        </div>
+                        <AnimatedFormField
+                            type="email"
+                            placeholder="Correo Electrónico"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            icon={<Mail size={18} />}
+                            required
+                            disabled={loading}
+                        />
 
                         {/* Password */}
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
-                                <Lock size={14} className="text-primary" />
-                                Contraseña
-                            </label>
-                            <div className="relative">
-                                <Input
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    disabled={loading}
-                                    className="bg-slate-700/30 border-border/40 h-12 rounded-xl focus:ring-2 focus:ring-primary/30 transition-all pr-12"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
-                                >
-                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                </button>
-                            </div>
+                            <AnimatedFormField
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Contraseña"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                icon={<Lock size={18} />}
+                                showToggle
+                                onToggle={() => setShowPassword(!showPassword)}
+                                showPassword={showPassword}
+                                required
+                                disabled={loading}
+                            />
                             {mode === 'register' && password.length > 0 && (
-                                <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-2 px-1">
                                     <div className={`h-1 flex-1 rounded-full transition-all ${password.length >= 6 ? 'bg-green-500' : 'bg-red-500/50'}`} />
                                     <div className={`h-1 flex-1 rounded-full transition-all ${password.length >= 8 ? 'bg-green-500' : 'bg-slate-700'}`} />
                                     <div className={`h-1 flex-1 rounded-full transition-all ${password.length >= 10 ? 'bg-green-500' : 'bg-slate-700'}`} />
-                                    <span className="text-[10px] text-muted-foreground ml-1">
-                                        {password.length < 6 ? 'Muy corta' : password.length < 8 ? 'Aceptable' : password.length < 10 ? 'Buena' : 'Fuerte'}
+                                    <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest ml-1">
+                                        {password.length < 6 ? 'Corta' : password.length < 8 ? 'Ok' : password.length < 10 ? 'Buena' : 'Fuerte'}
                                     </span>
                                 </div>
                             )}
@@ -341,23 +319,18 @@ export default function LoginPage() {
 
                         {/* Confirm Password (register only) */}
                         {mode === 'register' && (
-                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                <label className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
-                                    <Lock size={14} className="text-primary" />
-                                    Confirmar Contraseña
-                                </label>
-                                <Input
+                            <div className="space-y-2">
+                                <AnimatedFormField
                                     type={showPassword ? "text" : "password"}
-                                    placeholder="••••••••"
+                                    placeholder="Confirmar Contraseña"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
+                                    icon={<Lock size={18} />}
                                     required
                                     disabled={loading}
-                                    className={`bg-slate-700/30 border-border/40 h-12 rounded-xl focus:ring-2 focus:ring-primary/30 transition-all ${confirmPassword && confirmPassword !== password ? 'border-red-500/50 focus:ring-red-500/30' : ''
-                                        }`}
                                 />
                                 {confirmPassword && confirmPassword !== password && (
-                                    <p className="text-red-400 text-xs flex items-center gap-1">
+                                    <p className="text-[#DB1406] text-xs font-bold px-1 flex items-center gap-1">
                                         <AlertCircle size={12} /> Las contraseñas no coinciden
                                     </p>
                                 )}
@@ -366,45 +339,42 @@ export default function LoginPage() {
 
                         {/* Info text for register */}
                         {mode === 'register' && (
-                            <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 text-blue-400/80 text-xs flex items-start gap-2">
+                            <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/10 text-red-400/80 text-xs font-bold flex items-start gap-2">
                                 <AlertCircle size={14} className="shrink-0 mt-0.5" />
                                 <span>Después de registrarte, un administrador debe aprobar tu acceso al panel.</span>
                             </div>
                         )}
 
                         {/* Submit Button */}
-                        <Button
-                            type="submit"
-                            disabled={loading || (mode === 'register' && password !== confirmPassword)}
-                            className="w-full h-13 rounded-xl text-base font-bold mt-4 shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                            size="lg"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 size={18} className="animate-spin mr-2" />
-                                    {mode === 'login' ? 'Verificando...' : 'Creando cuenta...'}
-                                </>
-                            ) : (
-                                <>
-                                    {mode === 'login' ? (
-                                        <>
-                                            Ingresar al Panel
-                                            <ArrowRight size={18} className="ml-2" />
-                                        </>
-                                    ) : (
-                                        <>
-                                            <UserPlus size={18} className="mr-2" />
-                                            Crear Cuenta
-                                        </>
-                                    )}
-                                </>
-                            )}
-                        </Button>
+                        <div className="pt-2">
+                            <ModernButton type="submit" disabled={loading || (mode === 'register' && password !== confirmPassword)}>
+                                {loading ? (
+                                    <>
+                                        <Loader2 size={18} className="animate-spin mr-2" />
+                                        {mode === 'login' ? 'Verificando...' : 'Creando...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        {mode === 'login' ? (
+                                            <>
+                                                Ingresar al Panel
+                                                <ArrowRight size={18} className="ml-2" />
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UserPlus size={18} className="mr-2" />
+                                                Crear Cuenta
+                                            </>
+                                        )}
+                                    </>
+                                )}
+                            </ModernButton>
+                        </div>
                     </form>
 
                     {/* Divider */}
-                    <div className="mt-6 pt-6 border-t border-border/30 text-center">
-                        <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 hover:gap-2.5">
+                    <div className="mt-8 pt-6 border-t border-white/10 text-center">
+                        <Link href="/" className="text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-[#DB1406] transition-colors inline-flex items-center gap-1.5 hover:gap-2.5">
                             ← Volver a la página principal
                         </Link>
                     </div>
@@ -412,11 +382,11 @@ export default function LoginPage() {
 
                 {/* Security Badge */}
                 <div className="mt-6 text-center space-y-2">
-                    <p className="text-xs text-muted-foreground/50 flex items-center justify-center gap-1.5">
-                        <Lock size={10} />
+                    <p className="text-[10px] text-white/40 font-bold flex items-center justify-center gap-1.5 uppercase tracking-widest">
+                        <Lock size={12} />
                         Conexión segura con Supabase Auth
                     </p>
-                    <p className="text-[10px] text-muted-foreground/30">
+                    <p className="text-[10px] text-white/30">
                         Universidad del Norte — Barranquilla, Colombia
                     </p>
                 </div>

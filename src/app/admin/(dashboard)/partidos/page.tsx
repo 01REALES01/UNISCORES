@@ -8,6 +8,7 @@ import { Card, Badge, Avatar, LiveIndicator } from "@/components/ui-primitives";
 import { CreateMatchModal } from "@/components/create-match-modal";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import SuggestiveSearch from "@/components/ui/suggestive-search";
 
 const SPORT_EMOJI: Record<string, string> = {
     'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
@@ -17,7 +18,7 @@ const SPORT_EMOJI: Record<string, string> = {
 const SPORT_GRADIENT: Record<string, string> = {
     'Fútbol': 'from-emerald-500/20 to-emerald-900/5',
     'Baloncesto': 'from-orange-500/20 to-orange-900/5',
-    'Voleibol': 'from-indigo-500/20 to-indigo-900/5',
+    'Voleibol': 'from-red-500/20 to-red-900/5',
     'Tenis': 'from-lime-500/20 to-lime-900/5',
     'Tenis de Mesa': 'from-rose-500/20 to-rose-900/5',
     'Ajedrez': 'from-slate-500/20 to-slate-900/5',
@@ -27,7 +28,7 @@ const SPORT_GRADIENT: Record<string, string> = {
 const SPORT_ACCENT: Record<string, string> = {
     'Fútbol': 'border-emerald-500/30',
     'Baloncesto': 'border-orange-500/30',
-    'Voleibol': 'border-indigo-500/30',
+    'Voleibol': 'border-red-500/30',
     'Tenis': 'border-lime-500/30',
     'Tenis de Mesa': 'border-rose-500/30',
     'Ajedrez': 'border-slate-500/30',
@@ -108,8 +109,8 @@ export default function PartidosPage() {
             label: 'Total',
             value: partidos.length,
             icon: TrendingUp,
-            gradient: 'from-indigo-500 to-violet-600',
-            glowColor: 'indigo',
+            gradient: 'from-red-500 to-orange-600',
+            glowColor: 'red',
             filterKey: 'todos',
         },
         {
@@ -125,7 +126,7 @@ export default function PartidosPage() {
             label: 'Programados',
             value: programadosCount,
             icon: Calendar,
-            gradient: 'from-cyan-500 to-blue-600',
+            gradient: 'from-cyan-500 to-red-600',
             glowColor: 'cyan',
             filterKey: 'programados',
         },
@@ -142,15 +143,15 @@ export default function PartidosPage() {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* ─── HERO HEADER ─── */}
-            <div className="relative overflow-hidden rounded-3xl bg-[#0a0f1c]/60 backdrop-blur-xl border border-white/5 p-8 sm:p-10">
+            <div className="relative overflow-hidden rounded-3xl bg-[#17130D]/60 backdrop-blur-xl border border-white/5 p-8 sm:p-10">
                 {/* Ambient orbs */}
-                <div className="absolute top-[-40%] right-[-10%] w-[400px] h-[400px] bg-indigo-600/15 rounded-full blur-[80px] pointer-events-none" />
-                <div className="absolute bottom-[-30%] left-[-5%] w-[300px] h-[300px] bg-violet-600/10 rounded-full blur-[60px] pointer-events-none" />
+                <div className="absolute top-[-40%] right-[-10%] w-[400px] h-[400px] bg-red-600/15 rounded-full blur-[80px] pointer-events-none" />
+                <div className="absolute bottom-[-30%] left-[-5%] w-[300px] h-[300px] bg-orange-600/10 rounded-full blur-[60px] pointer-events-none" />
 
                 <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/25">
+                            <div className="p-2.5 rounded-xl bg-gradient-to-br from-red-500 to-orange-600 shadow-lg shadow-red-500/25">
                                 <Activity size={22} className="text-white" />
                             </div>
                             {liveCount > 0 && (
@@ -169,7 +170,7 @@ export default function PartidosPage() {
                     </div>
                     <Button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="shrink-0 h-12 px-6 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-bold shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all border-0"
+                        className="shrink-0 h-12 px-6 rounded-2xl bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-400 hover:to-orange-500 text-white font-bold shadow-xl shadow-red-500/25 hover:shadow-red-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all border-0"
                     >
                         <Plus size={18} className="mr-2" />
                         Nuevo Partido
@@ -227,18 +228,14 @@ export default function PartidosPage() {
             </div>
 
             {/* ─── FILTERS BAR ─── */}
-            <div className="relative overflow-hidden rounded-2xl bg-[#0a0f1c]/40 backdrop-blur-md border border-white/5 p-4 space-y-3">
+            <div className="relative overflow-hidden rounded-2xl bg-[#17130D]/40 backdrop-blur-md border border-white/5 p-4 space-y-3">
                 {/* Search */}
-                <div className="relative">
-                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-                    <input
-                        type="text"
-                        placeholder="Buscar por equipo o jugador..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full h-11 pl-11 pr-4 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white placeholder:text-slate-600 focus:border-indigo-500/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all"
-                    />
-                </div>
+                <SuggestiveSearch
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    suggestions={["Buscar por equipo...", "Buscar por jugador...", "Filtra por universidad..."]}
+                    className="h-11 rounded-xl bg-white/5 border border-white/10 focus-within:border-red-500/50 focus-within:bg-white/10 focus-within:ring-2 focus-within:ring-red-500/10 transition-all w-full"
+                />
 
                 <div className="flex flex-col sm:flex-row gap-3">
                     {/* Sport Filter */}
@@ -248,7 +245,7 @@ export default function PartidosPage() {
                             className={cn(
                                 "px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200",
                                 sportFilter === 'todos'
-                                    ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25"
+                                    ? "bg-gradient-to-r from-red-500 to-orange-600 text-white shadow-md shadow-red-500/25"
                                     : "text-slate-500 hover:text-white hover:bg-white/10"
                             )}
                         >
@@ -261,7 +258,7 @@ export default function PartidosPage() {
                                 className={cn(
                                     "px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 flex items-center gap-1.5",
                                     sportFilter === sport
-                                        ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25"
+                                        ? "bg-gradient-to-r from-red-500 to-orange-600 text-white shadow-md shadow-red-500/25"
                                         : "text-slate-500 hover:text-white hover:bg-white/10"
                                 )}
                             >
@@ -274,8 +271,8 @@ export default function PartidosPage() {
                     {/* Gender Filter */}
                     <div className="flex gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/5 shrink-0">
                         {[
-                            { value: 'todos', label: 'Todos', icon: '🏅', activeClass: 'from-indigo-500 to-violet-600' },
-                            { value: 'masculino', label: 'M', icon: '♂', activeClass: 'from-blue-500 to-blue-600' },
+                            { value: 'todos', label: 'Todos', icon: '🏅', activeClass: 'from-red-500 to-orange-600' },
+                            { value: 'masculino', label: 'M', icon: '♂', activeClass: 'from-red-500 to-red-600' },
                             { value: 'femenino', label: 'F', icon: '♀', activeClass: 'from-pink-500 to-pink-600' },
                             { value: 'mixto', label: 'Mix', icon: '⚤', activeClass: 'from-purple-500 to-purple-600' },
                         ].map(g => (
@@ -300,7 +297,7 @@ export default function PartidosPage() {
             {/* ─── MATCHES GRID ─── */}
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-4">
-                    <div className="w-16 h-16 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 animate-spin" />
+                    <div className="w-16 h-16 rounded-full border-4 border-red-500/30 border-t-red-500 animate-spin" />
                     <p className="text-sm text-slate-500 animate-pulse font-medium">Cargando partidos...</p>
                 </div>
             ) : filteredPartidos.length === 0 ? (
@@ -317,7 +314,7 @@ export default function PartidosPage() {
                     {!searchQuery && (
                         <Button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="mt-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white border-0 shadow-lg shadow-indigo-500/25"
+                            className="mt-2 rounded-xl bg-gradient-to-r from-red-500 to-orange-600 text-white border-0 shadow-lg shadow-red-500/25"
                         >
                             <Plus size={16} className="mr-1" /> Crear Partido
                         </Button>
@@ -362,7 +359,7 @@ export default function PartidosPage() {
                                                     "text-[9px] font-bold px-0 leading-tight",
                                                     (partido.genero || 'masculino') === 'femenino' ? 'text-pink-400' :
                                                         (partido.genero || 'masculino') === 'mixto' ? 'text-purple-400' :
-                                                            'text-blue-400'
+                                                            'text-red-400'
                                                 )}>
                                                     {(partido.genero || 'masculino') === 'femenino' ? '♀ Femenino' : (partido.genero || 'masculino') === 'mixto' ? '⚤ Mixto' : '♂ Masculino'}
                                                 </span>
@@ -388,7 +385,7 @@ export default function PartidosPage() {
                                         {/* Team A */}
                                         <div className="flex flex-col items-center gap-2 text-center">
                                             <Avatar name={partido.equipo_a} size="default" className="ring-2 ring-white/10 shadow-lg" />
-                                            <span className={cn("text-sm font-bold leading-tight truncate max-w-[90px]", score.a > score.b && isFinished ? "text-indigo-400" : "text-white")}>
+                                            <span className={cn("text-sm font-bold leading-tight truncate max-w-[90px]", score.a > score.b && isFinished ? "text-red-400" : "text-white")}>
                                                 {partido.equipo_a}
                                             </span>
                                         </div>
@@ -396,11 +393,11 @@ export default function PartidosPage() {
                                         {/* Score */}
                                         <div className="flex flex-col items-center">
                                             <div className="bg-black/30 backdrop-blur-sm px-5 py-2 rounded-2xl border border-white/5">
-                                                <span className={cn("text-3xl font-black font-mono tabular-nums", score.a > score.b && isFinished ? "text-indigo-400" : "text-white")}>
+                                                <span className={cn("text-3xl font-black font-mono tabular-nums", score.a > score.b && isFinished ? "text-red-400" : "text-white")}>
                                                     {score.a}
                                                 </span>
                                                 <span className="text-xl font-bold text-white/15 mx-1.5">:</span>
-                                                <span className={cn("text-3xl font-black font-mono tabular-nums", score.b > score.a && isFinished ? "text-indigo-400" : "text-white")}>
+                                                <span className={cn("text-3xl font-black font-mono tabular-nums", score.b > score.a && isFinished ? "text-red-400" : "text-white")}>
                                                     {score.b}
                                                 </span>
                                             </div>
@@ -414,7 +411,7 @@ export default function PartidosPage() {
                                         {/* Team B */}
                                         <div className="flex flex-col items-center gap-2 text-center">
                                             <Avatar name={partido.equipo_b} size="default" className="ring-2 ring-white/10 shadow-lg" />
-                                            <span className={cn("text-sm font-bold leading-tight text-slate-400 truncate max-w-[90px]", score.b > score.a && isFinished ? "text-indigo-400" : "")}>
+                                            <span className={cn("text-sm font-bold leading-tight text-slate-400 truncate max-w-[90px]", score.b > score.a && isFinished ? "text-red-400" : "")}>
                                                 {partido.equipo_b}
                                             </span>
                                         </div>
@@ -453,7 +450,7 @@ export default function PartidosPage() {
                                                     e.stopPropagation();
                                                     router.push(`/admin/partidos/${partido.id}`);
                                                 }}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/30 transition-all"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 transition-all"
                                             >
                                                 Controlar
                                                 <ArrowUpRight size={12} />

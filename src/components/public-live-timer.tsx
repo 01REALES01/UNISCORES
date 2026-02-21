@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 type TimerProps = {
     detalle: {
@@ -53,14 +54,25 @@ export function PublicLiveTimer({ detalle }: TimerProps) {
     }, [detalle]);
 
     return (
-        <div className="flex items-center gap-1 font-mono font-bold animate-pulse">
-            {detalle?.estado_cronometro === 'corriendo' && (
-                <span className="relative flex h-2 w-2 mr-1">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+        <div className={cn(
+            "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-lg backdrop-blur-md transition-all duration-300",
+            detalle?.estado_cronometro === 'corriendo'
+                ? "bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+                : "bg-white/5 border-white/10 text-slate-400"
+        )}>
+            {detalle?.estado_cronometro === 'corriendo' ? (
+                <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                 </span>
+            ) : (
+                <div className="flex h-2 w-2 items-center justify-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                </div>
             )}
-            <span className="text-xl tracking-widest">{displayTime}</span>
+            <span className="font-mono font-bold text-sm tracking-widest tabular-nums leading-none mt-0.5">
+                {displayTime || "00:00"}
+            </span>
         </div>
     );
 }

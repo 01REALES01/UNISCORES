@@ -5,15 +5,19 @@ import { supabase } from "@/lib/supabase";
 import { Trophy, Medal, Crown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MedalSkeleton } from "@/components/skeletons";
+import { TeamStatsModal } from "./team-stats-modal";
 
-
-type MedalEntry = {
+export type MedalEntry = {
     id: number;
     equipo_nombre: string;
     oro: number;
     plata: number;
     bronce: number;
     puntos: number;
+    won?: number;
+    draw?: number;
+    lost?: number;
+    played?: number;
     updated_at?: string;
 };
 
@@ -32,6 +36,14 @@ const SAMPLE_DATA: MedalEntry[] = [
 export function MedalLeaderboard() {
     const [medallero, setMedallero] = useState<MedalEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedTeam, setSelectedTeam] = useState<{ team: MedalEntry, rank: number } | null>(null);
+
+    const safeIncludes = (str1?: string, str2?: string) => {
+        if (!str1 || !str2) return false;
+        const s1 = str1.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const s2 = str2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        return s1.includes(s2) || s2.includes(s1);
+    }
 
     const fetchMedallero = async () => {
         setLoading(true);
@@ -43,8 +55,49 @@ export function MedalLeaderboard() {
             .order('oro', { ascending: false })
             .order('plata', { ascending: false });
 
+        const { data: matches } = await supabase
+            .from('partidos')
+            .select('*')
+            .eq('estado', 'finalizado');
+
         if (!error && data && data.length > 0) {
-            setMedallero(data);
+            const extendedData = data.map(team => {
+                let won = 0, draw = 0, lost = 0;
+                let calculatedPoints = 0;
+                matches?.forEach(m => {
+                    const isA = safeIncludes(m.equipo_a, team.equipo_nombre);
+                    const isB = safeIncludes(m.equipo_b, team.equipo_nombre);
+                    if (!isA && !isB) return;
+
+                    const scoreA = m.marcador_detalle?.goles_a ?? m.marcador_detalle?.sets_a ?? m.marcador_detalle?.total_a ?? m.marcador_detalle?.puntos_a ?? m.marcador_detalle?.juegos_a ?? 0;
+                    const scoreB = m.marcador_detalle?.goles_b ?? m.marcador_detalle?.sets_b ?? m.marcador_detalle?.total_b ?? m.marcador_detalle?.puntos_b ?? m.marcador_detalle?.juegos_b ?? 0;
+
+                    const myScore = isA ? scoreA : scoreB;
+                    const theirScore = isA ? scoreB : scoreA;
+
+                    if (myScore > theirScore) {
+                        won++;
+                        calculatedPoints += 3;
+                    }
+                    else if (myScore < theirScore) {
+                        lost++;
+                    }
+                    else {
+                        draw++;
+                        calculatedPoints += 1;
+                    }
+                });
+
+                return { ...team, puntos: calculatedPoints, won, draw, lost, played: won + draw + lost };
+            });
+
+            // Re-order by points descending strongly
+            extendedData.sort((a, b) => {
+                if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+                return (b.won || 0) - (a.won || 0);
+            });
+
+            setMedallero(extendedData);
         } else {
             console.log("Usando datos simulados de medallería (fallback)");
             setMedallero(SAMPLE_DATA);
@@ -75,50 +128,81 @@ export function MedalLeaderboard() {
         return name.substring(0, 2).toUpperCase();
     };
 
-    // Componente de Podio Individual
+
+
+    // Componente de Podio Individual Estilizado
     const TopPodium = ({ entry, rank }: { entry: MedalEntry, rank: number }) => {
-        // Alturas dinámicas
-        const heightMetadata = rank === 1
-            ? { h: "h-48 sm:h-56", bg: "from-yellow-500/20 via-yellow-500/5 to-transparent border-yellow-500/30", text: "text-yellow-400", icon: "🥇" }
-            : rank === 2
-                ? { h: "h-36 sm:h-44", bg: "from-slate-300/20 via-slate-300/5 to-transparent border-slate-300/30", text: "text-slate-300", icon: "🥈" }
-                : { h: "h-28 sm:h-36", bg: "from-orange-700/20 via-orange-700/5 to-transparent border-orange-600/30", text: "text-orange-400", icon: "🥉" };
+        const isFirst = rank === 1;
+        const widthCls = isFirst ? "w-[120px] sm:w-[150px]" : "w-[100px] sm:w-[130px]";
+        const heightMetadata = isFirst
+            ? { wrapper: "h-[320px] sm:h-[360px]", topPad: "pt-8" }
+            : { wrapper: "h-[250px] sm:h-[280px]", topPad: "pt-4" };
 
         return (
-            <div className="flex flex-col items-center justify-end group w-1/3 max-w-[140px]">
-                {/* Avatar Flotante */}
-                <div className={`mb-4 relative transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-105`}>
+            <div
+                onClick={() => setSelectedTeam({ team: entry, rank })}
+                className={cn(
+                    "flex flex-col items-center group cursor-pointer relative",
+                    heightMetadata.wrapper, widthCls
+                )}
+            >
+                {/* Posición & Avatar Circle (Flotando arriba del pilar) */}
+                <div className="absolute top-0 z-30 flex flex-col items-center">
+                    {/* Badge de Ranking */}
                     <div className={cn(
-                        "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl rotate-3 flex items-center justify-center bg-[#0a0f1c] border-2 shadow-2xl relative z-10",
-                        rank === 1 ? 'border-yellow-500/50 shadow-yellow-500/20' : rank === 2 ? 'border-slate-300/50 shadow-slate-300/20' : 'border-orange-600/50 shadow-orange-600/20'
+                        "absolute -top-3 sm:-top-4 z-40 flex items-center justify-center font-black rounded-lg text-white shadow-lg",
+                        isFirst
+                            ? "w-8 h-8 sm:w-10 sm:h-10 text-lg sm:text-xl bg-red-600 shadow-red-600/50"
+                            : "w-6 h-6 sm:w-8 sm:h-8 text-sm sm:text-base bg-red-600 shadow-red-600/40"
                     )}>
-                        <span className="text-lg sm:text-xl font-black">{getInitials(entry.equipo_nombre)}</span>
-                        {rank === 1 && <div className="absolute -top-4 -right-4 text-3xl animate-bounce delay-700">👑</div>}
+                        {rank}
+                    </div>
+
+                    {/* Circular Avatar Dark Pill */}
+                    <div className={cn(
+                        "rounded-full flex items-center justify-center bg-[#0f0c08] relative overflow-hidden ring-2 ring-white/5 shadow-2xl transition-transform duration-500 group-hover:-translate-y-2 group-hover:scale-105",
+                        isFirst ? "w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] mt-4 ring-offset-2 ring-offset-[#0a0805] ring-red-600/50" : "w-[60px] h-[60px] sm:w-[80px] sm:h-[80px] mt-2 opacity-90 group-hover:opacity-100"
+                    )}>
+                        {/* Gradient Inside Avatar */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent mix-blend-overlay" />
+                        <span className={cn(
+                            "font-black text-white/50 z-10 transition-colors group-hover:text-white/80",
+                            isFirst ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"
+                        )}>
+                            {getInitials(entry.equipo_nombre)}
+                        </span>
                     </div>
                 </div>
 
-                {/* Barra */}
+                {/* Vertical Pill Base (Representa el Pilar) */}
                 <div className={cn(
-                    "w-full rounded-t-3xl flex flex-col items-center justify-end pb-4 border-x border-t backdrop-blur-md relative overflow-hidden transition-all duration-700 bg-gradient-to-t",
-                    heightMetadata.bg,
-                    heightMetadata.h
+                    "w-full bg-[#17130D] rounded-[2rem] border border-white/5 flex flex-col items-center justify-end pb-6 sm:pb-8 mt-auto relative transition-colors group-hover:bg-[#1f1911] overflow-hidden",
+                    "h-[220px] sm:h-[250px]" // Static height relative to bottom
                 )}>
-                    <div className="text-4xl sm:text-5xl font-black tracking-tighter tabular-nums leading-none mb-1 drop-shadow-lg">
-                        {entry.oro}
+                    {isFirst && (
+                        <div className="absolute top-0 inset-x-8 h-[2px] bg-red-600 shadow-[0_0_15px_rgba(219,20,6,0.8)] rounded-full" />
+                    )}
+
+                    {/* Hover Glow Background inside Pill */}
+                    <div className="absolute top-0 inset-x-0 h-1/2 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                    <div className="relative z-10 flex flex-col items-center">
+                        <span className={cn(
+                            "font-black tabular-nums leading-none tracking-tighter text-white",
+                            isFirst ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl"
+                        )}>
+                            {entry.puntos}
+                        </span>
+                        <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white/40 mt-2">
+                            Pts
+                        </span>
                     </div>
-                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest opacity-60 text-white">Oros</span>
                 </div>
 
-                {/* Info */}
-                <div className="mt-4 text-center w-full">
-                    <p className={cn("font-bold text-xs sm:text-sm tracking-tight leading-tight line-clamp-2 min-h-[2.5em]", rank === 1 ? 'text-white' : 'text-slate-400')}>
-                        {entry.equipo_nombre}
-                    </p>
-                    <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                        <span className="text-[10px] text-slate-500 uppercase tracking-widest">Total</span>
-                        <span className="text-sm font-bold text-white">{entry.puntos}</span>
-                    </div>
-                </div>
+                {/* Equipo Nombre Display en el podio */}
+                <span className="font-bold text-[10px] sm:text-xs text-center text-white/60 uppercase tracking-wider block mt-4 group-hover:text-white transition-colors truncate w-[140%]">
+                    {entry.equipo_nombre}
+                </span>
             </div>
         );
     };
@@ -127,11 +211,7 @@ export function MedalLeaderboard() {
         <MedalSkeleton />
     );
 
-    // Separar top 3
     const top3 = medallero.slice(0, 3);
-    const rest = medallero.slice(3);
-
-    // Orden visual del podio: 2 - 1 - 3
     let podiumOrder: MedalEntry[] = [];
     if (top3.length >= 1) {
         if (top3.length === 1) podiumOrder = [top3[0]];
@@ -140,85 +220,128 @@ export function MedalLeaderboard() {
     }
 
     return (
-        <section className="relative overflow-hidden rounded-[3rem] bg-[#0a0f1c]/60 border border-white/5 shadow-2xl backdrop-blur-xl">
-            {/* Header */}
-            <div className="relative z-10 p-8 sm:p-10 border-b border-white/5 bg-gradient-to-b from-white/5 to-transparent">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-orange-500/10 border border-yellow-500/20 shadow-lg">
-                            <Trophy className="text-yellow-500 w-8 h-8" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tighter uppercase italic">
-                                Medallería Oficial
-                            </h2>
-                            <p className="text-xs sm:text-sm font-medium text-slate-400 uppercase tracking-widest">
-                                Ranking por Carreras
-                            </p>
-                        </div>
-                    </div>
+        <section className="relative overflow-hidden rounded-[1rem] sm:rounded-[2.5rem] bg-[#0a0805] shadow-2xl pb-6">
+            {/* Ambient Background Glows */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-[400px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none" />
 
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 animate-pulse">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="text-xs font-bold tracking-wide">RESULTADOS EN VIVO</span>
+            {/* Header */}
+            <div className="relative z-10 p-6 sm:p-10 border-b border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6 mb-8">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-red-600 text-white shadow-lg shadow-red-600/20">
+                        <Trophy className="w-8 h-8" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tighter uppercase italic">
+                            Leaderboard General
+                        </h2>
+                        <p className="text-xs sm:text-sm font-bold text-white/50 uppercase tracking-widest">
+                            Olimpiadas Oficiales
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <div className="p-8 sm:p-10">
-                {/* Visual Podium */}
-                <div className="flex justify-center items-end gap-2 sm:gap-4 mb-16 min-h-[300px]">
+            <div className="px-4 sm:px-10 pb-8 border-b border-white/5 relative z-20">
+                <div className="flex justify-center items-end gap-2 sm:gap-4 mb-2 min-h-[300px]">
                     {podiumOrder.map((entry) => {
-                        // Determinar rank real
-                        // Si es el objeto en index 0 de top3 estandar, es rank 1.
                         const realRank = top3.indexOf(entry) + 1;
-                        return <TopPodium key={entry.id} entry={entry} rank={realRank} />;
+                        return <TopPodium key={'podium-' + entry.id} entry={entry} rank={realRank} />;
                     })}
                 </div>
-
-                {/* Remaining List */}
-                {rest.length > 0 && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between px-6 text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">
-                            <span>Posición & Carrera</span>
-                            <div className="flex gap-6 sm:gap-12 mr-4">
-                                <span className="w-8 text-center">Oro</span>
-                                <span className="w-8 text-center">Plata</span>
-                                <span className="w-8 text-center">Bronce</span>
-                                <span className="w-12 text-right">Puntos</span>
-                            </div>
-                        </div>
-
-                        {rest.map((entry, idx) => (
-                            <div key={entry.id} className="group flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-10 h-10 rounded-xl bg-white/5 text-slate-400 font-black text-lg flex items-center justify-center border border-white/5">
-                                        {idx + 4}
-                                    </div>
-                                    <div className="font-bold text-base text-slate-200 group-hover:text-white transition-colors">
-                                        {entry.equipo_nombre}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-6 sm:gap-12 font-mono text-base">
-                                    <div className="w-8 text-center font-bold text-yellow-500 flex justify-center">{entry.oro > 0 ? entry.oro : <span className="opacity-10 text-white">-</span>}</div>
-                                    <div className="w-8 text-center font-bold text-slate-400 flex justify-center">{entry.plata > 0 ? entry.plata : <span className="opacity-10 text-white">-</span>}</div>
-                                    <div className="w-8 text-center font-bold text-orange-600 flex justify-center">{entry.bronce > 0 ? entry.bronce : <span className="opacity-10 text-white">-</span>}</div>
-                                    <div className="w-12 text-right font-black text-white text-lg">
-                                        {entry.puntos}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {medallero.length === 0 && !loading && (
-                    <div className="text-center py-20 text-slate-500 opacity-50">
-                        No hay datos registrados aún.
-                    </div>
-                )}
             </div>
+
+            <div className="px-4 sm:px-10 mt-8">
+                {/* List Design matching reference image */}
+                <div className="flex flex-col gap-3 relative z-20">
+                    {medallero.map((entry, idx) => {
+                        const rank = (idx + 1).toString().padStart(2, '0');
+                        return (
+                            <div
+                                key={entry.id}
+                                onClick={() => setSelectedTeam({ team: entry, rank: idx + 1 })}
+                                className="flex bg-[#17130D] border border-white/5 hover:border-white/20 transition-all duration-300 group cursor-pointer shadow-lg"
+                                style={{ height: '120px' }}
+                            >
+                                {/* Avatar Column */}
+                                <div className="w-[100px] sm:w-[130px] shrink-0 border-r border-white/5 relative overflow-hidden flex items-center justify-center bg-black/40">
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent mix-blend-overlay" />
+                                    <span className="text-4xl sm:text-5xl font-black text-white/10 uppercase tracking-tighter mix-blend-plus-lighter z-10 filter grayscale contrast-200">
+                                        {getInitials(entry.equipo_nombre)}
+                                    </span>
+                                    {/* Optional hovering glow */}
+                                    <div className="absolute inset-0 bg-red-600/0 group-hover:bg-red-600/10 transition-colors duration-500" />
+                                </div>
+
+                                {/* Center Content Column */}
+                                <div className="flex-1 px-4 sm:px-6 py-4 flex flex-col justify-between overflow-hidden">
+                                    <div>
+                                        {/* Rank Number with Yellow Underline */}
+                                        <div className="inline-block border-b-2 border-[#FFC000] pb-0.5 mb-1.5 flex gap-2 items-center">
+                                            <span className="text-[11px] sm:text-xs font-black text-white tracking-widest leading-none drop-shadow-md">{rank}</span>
+                                            <span className="text-[8px] font-black uppercase text-white/30 tracking-widest leading-none">Global</span>
+                                        </div>
+
+                                        {/* Name */}
+                                        <h2 className="text-lg sm:text-2xl font-bold text-white/90 leading-none tracking-tight truncate pb-1">
+                                            {entry.equipo_nombre}
+                                        </h2>
+
+                                        <span className="text-[9px] sm:text-[10px] font-bold text-white/30 uppercase tracking-widest mt-0.5 block truncate">
+                                            PJ: {entry.played || 0} Partidos
+                                        </span>
+                                    </div>
+
+                                    {/* Stats matching the image */}
+                                    <div className="flex gap-4 sm:gap-10 mt-auto items-end">
+                                        <div className="flex flex-col gap-0.5 min-w-[36px]">
+                                            <span className="text-[8px] sm:text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none">Gan</span>
+                                            <span className="text-xs sm:text-sm font-black text-[#FFC000]/90 leading-none tabular-nums" style={{ color: '#FFC000' }}>
+                                                {(entry.won || 0).toString().padStart(2, '0')}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5 min-w-[36px]">
+                                            <span className="text-[8px] sm:text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none">Emp</span>
+                                            <span className="text-xs sm:text-sm font-black text-slate-300/90 leading-none tabular-nums" style={{ color: '#dcc62e' }}>
+                                                {(entry.draw || 0).toString().padStart(2, '0')}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5 min-w-[36px]">
+                                            <span className="text-[8px] sm:text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none">Per</span>
+                                            <span className="text-xs sm:text-sm font-black text-orange-600/90 leading-none tabular-nums" style={{ color: '#e84a4a' }}>
+                                                {(entry.lost || 0).toString().padStart(2, '0')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Total Points Box (Right Column) */}
+                                <div className="w-[80px] sm:w-[130px] shrink-0 border-l border-white/5 flex flex-col items-center justify-center bg-black/60 group-hover:bg-[#111111] transition-colors relative">
+                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-red-600/5" />
+                                    <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none mb-1 tabular-nums drop-shadow-lg relative z-10">
+                                        {entry.puntos}
+                                    </span>
+                                    <span className="text-[9px] sm:text-[11px] font-bold text-white/30 uppercase tracking-widest pt-1 relative z-10">
+                                        Total
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {medallero.length === 0 && !loading && (
+                <div className="text-center py-20 text-white/50 font-bold">
+                    No hay datos registrados aún.
+                </div>
+            )}
+
+            <TeamStatsModal
+                isOpen={!!selectedTeam}
+                onClose={() => setSelectedTeam(null)}
+                team={selectedTeam?.team || null}
+                rank={selectedTeam?.rank || 1}
+            />
         </section>
     );
 }

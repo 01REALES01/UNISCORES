@@ -60,9 +60,9 @@ export default function AdminDashboard() {
             name: "Total Partidos",
             value: partidos.length,
             icon: Calendar,
-            color: "text-blue-500",
-            bg: "bg-blue-500/10",
-            ring: "ring-blue-500/20",
+            color: "text-red-500",
+            bg: "bg-red-500/10",
+            ring: "ring-red-500/20",
             pulse: false,
         },
         {
@@ -151,10 +151,10 @@ export default function AdminDashboard() {
                 {stats.map((stat) => (
                     <div
                         key={stat.name}
-                        className={`relative group overflow-hidden rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/10 border border-white/5 bg-[#0a0f1c]/40 backdrop-blur-md`}
+                        className={`relative group overflow-hidden rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-red-500/10 border border-white/5 bg-[#17130D]/40 backdrop-blur-md`}
                     >
                         {/* Glow Gradient Background */}
-                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${stat.pulse ? 'from-rose-500 to-orange-500' : 'from-indigo-500 to-cyan-500'}`} />
+                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${stat.pulse ? 'from-rose-500 to-orange-500' : 'from-red-500 to-cyan-500'}`} />
 
                         <div className="relative flex items-center justify-between z-10">
                             <div>
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Live Matches */}
-                <div className="rounded-3xl border border-white/5 bg-[#0a0f1c]/40 backdrop-blur-md p-6 relative overflow-hidden">
+                <div className="rounded-3xl border border-white/5 bg-[#17130D]/40 backdrop-blur-md p-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
                     <div className="flex items-center justify-between mb-6 relative z-10">
@@ -235,12 +235,12 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Activity Feed */}
-                <div className="rounded-3xl border border-white/5 bg-[#0a0f1c]/40 backdrop-blur-md p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                <div className="rounded-3xl border border-white/5 bg-[#17130D]/40 backdrop-blur-md p-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
                     <div className="flex items-center justify-between mb-6 relative z-10">
                         <h3 className="text-lg font-bold flex items-center gap-3 text-white">
-                            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+                            <div className="p-2 rounded-xl bg-red-500/10 text-red-500">
                                 <Clock size={18} />
                             </div>
                             Actividad Reciente
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
                                                 {score.a} - {score.b}
                                             </span>
                                         ) : (
-                                            <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                            <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">
                                                 Programado
                                             </span>
                                         )}
@@ -290,7 +290,7 @@ export default function AdminDashboard() {
 
             {/* Disciplines Overview */}
             {/* Disciplines Overview */}
-            <div className="rounded-3xl border border-white/5 bg-[#0a0f1c]/40 backdrop-blur-md p-8 relative overflow-hidden">
+            <div className="rounded-3xl border border-white/5 bg-[#17130D]/40 backdrop-blur-md p-8 relative overflow-hidden">
                 <div className="flex items-center gap-3 mb-6 relative z-10">
                     <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
                         <Trophy size={18} />
@@ -306,7 +306,7 @@ export default function AdminDashboard() {
                             <div
                                 key={sport}
                                 className={`relative group flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${count > 0
-                                    ? 'border-white/10 bg-white/5 hover:bg-white/10 hover:shadow-lg hover:shadow-indigo-500/10'
+                                    ? 'border-white/10 bg-white/5 hover:bg-white/10 hover:shadow-lg hover:shadow-red-500/10'
                                     : 'border-white/5 bg-transparent opacity-40 hover:opacity-100'
                                     }`}
                             >
@@ -319,7 +319,7 @@ export default function AdminDashboard() {
                                 <span className="text-3xl filter drop-shadow-lg transition-transform group-hover:scale-110 duration-300">{getSportEmoji(sport)}</span>
                                 <span className="text-[10px] font-bold text-center leading-tight text-slate-300 uppercase tracking-wider">{sport}</span>
                                 <div className="mt-1 flex items-baseline gap-1">
-                                    <span className={`text-xl font-black ${liveCount > 0 ? 'text-rose-400' : 'text-indigo-400'}`}>{count}</span>
+                                    <span className={`text-xl font-black ${liveCount > 0 ? 'text-rose-400' : 'text-red-400'}`}>{count}</span>
                                     <span className="text-[8px] font-medium text-slate-500">parts</span>
                                 </div>
                             </div>

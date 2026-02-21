@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Calendar, MapPin, Zap } from "lucide-react";
 import { Badge, Button } from "@/components/ui-primitives";
 import Link from "next/link";
-import { SPORT_EMOJI } from "@/lib/constants";
+import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_GLOW } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { cn } from "@/lib/utils";
+import { SportIcon } from "@/components/sport-icons";
 
 // Helper para obtener iniciales
 const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
@@ -37,9 +39,9 @@ export function HeroSlider({ matches }: { matches: any[] }) {
 
     // Si no hay partidos, mostrar banner genérico
     if (featuredMatches.length === 0) return (
-        <div className="relative w-full h-[350px] md:h-[400px] rounded-3xl overflow-hidden mb-8 group bg-[#0a0f1c] border border-white/5 shadow-2xl">
+        <div className="relative w-full h-[350px] md:h-[400px] rounded-3xl overflow-hidden mb-8 group bg-[#17130D] border border-white/5 shadow-2xl">
             <div className="absolute inset-0 opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/40 via-purple-900/20 to-black/60" />
+            <div className="absolute inset-0 bg-gradient-to-r from-red-900/40 via-orange-900/20 to-black/60" />
 
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 z-10">
                 <motion.div
@@ -47,10 +49,10 @@ export function HeroSlider({ matches }: { matches: any[] }) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8 }}
                 >
-                    <Badge className="mb-4 bg-white/10 text-indigo-300 border-indigo-500/30 px-4 py-1.5 mx-auto">
-                        <Zap size={12} className="mr-2 text-yellow-500" /> Próximamente
+                    <Badge className="mb-4 bg-white/10 text-orange-300 border-orange-500/30 px-4 py-1.5 mx-auto">
+                        <Zap size={12} className="mr-2 text-[#FFC000]" /> Próximamente
                     </Badge>
-                    <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-100 to-indigo-500/50 mb-4 drop-shadow-lg">
+                    <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-orange-100 to-amber-500/50 mb-4 drop-shadow-lg">
                         OLIMPIADAS 2026
                     </h2>
                     <p className="text-slate-400 max-w-lg mx-auto text-lg mb-8 leading-relaxed">
@@ -58,7 +60,7 @@ export function HeroSlider({ matches }: { matches: any[] }) {
                     </p>
                     <div className="flex gap-4 justify-center">
                         <Link href="/calendario">
-                            <Button className="rounded-full px-8 bg-indigo-600 hover:bg-indigo-700 shadow-[0_0_30px_rgba(79,70,229,0.4)] border border-indigo-400/20 font-bold">
+                            <Button className="rounded-full px-8 bg-orange-600 hover:bg-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.4)] border border-orange-400/20 font-bold">
                                 Ver Calendario
                             </Button>
                         </Link>
@@ -67,7 +69,7 @@ export function HeroSlider({ matches }: { matches: any[] }) {
             </div>
 
             {/* Decorative Elements */}
-            <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px]" />
+            <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-amber-600/20 rounded-full blur-[100px]" />
             <div className="absolute -top-20 -left-20 w-96 h-96 bg-rose-600/10 rounded-full blur-[100px]" />
         </div>
     );
@@ -93,11 +95,16 @@ export function HeroSlider({ matches }: { matches: any[] }) {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.7 }}
-                    className="absolute inset-0 bg-[#0a0f1c]"
+                    className="absolute inset-0 bg-[#17130D]"
                 >
                     {/* Background Abstracto / Deportes */}
-                    <div className="absolute inset-0 opacity-30 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
-                    <div className={`absolute inset-0 bg-gradient-to-br ${currentMatch.estado === 'en_vivo' ? 'from-rose-900/40 via-black to-black' : 'from-indigo-900/40 via-black to-black'}`} />
+                    <div className="absolute inset-0 opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay z-10" />
+                    <div className={cn("absolute inset-0 bg-gradient-to-br opacity-60 transition-colors duration-1000", SPORT_GRADIENT[currentMatch.disciplinas?.name] || (currentMatch.estado === 'en_vivo' ? 'from-rose-900/40 via-black to-black' : 'from-orange-900/40 via-black to-black'))} />
+
+                    {/* Glowing Sport Watermark */}
+                    <div className="absolute -bottom-20 -right-10 pointer-events-none select-none z-0 scale-150 opacity-10 blur-[2px] md:opacity-20 md:blur-0">
+                        <SportIcon sport={currentMatch.disciplinas?.name} size={400} className={cn("drop-shadow-[0_0_50px_currentColor]", SPORT_ACCENT[currentMatch.disciplinas?.name] || 'text-white')} />
+                    </div>
 
                     {/* Content Container */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
@@ -114,7 +121,7 @@ export function HeroSlider({ matches }: { matches: any[] }) {
                                     <Zap size={12} className="mr-2 fill-current" /> En Vivo Ahora
                                 </Badge>
                             ) : (
-                                <Badge className="bg-indigo-600/20 text-indigo-300 border-indigo-500/30 px-4 py-1.5 text-xs tracking-widest uppercase">
+                                <Badge className="bg-orange-600/20 text-orange-300 border-orange-500/30 px-4 py-1.5 text-xs tracking-widest uppercase">
                                     <Calendar size={12} className="mr-2" /> Programado
                                 </Badge>
                             )}

@@ -350,7 +350,7 @@ export default function EstadisticasPage() {
                 <Card className="p-6 border-border/30">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-lg font-bold flex items-center gap-2">
-                            <Target size={18} className="text-blue-500" />
+                            <Target size={18} className="text-red-500" />
                             Estado de Partidos
                         </h3>
                     </div>
@@ -552,16 +552,16 @@ export default function EstadisticasPage() {
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-indigo-500/10 rounded-xl p-4 text-center border border-indigo-500/10">
-                                    <p className="text-3xl font-black text-indigo-400">
+                                <div className="bg-red-500/10 rounded-xl p-4 text-center border border-red-500/10">
+                                    <p className="text-3xl font-black text-red-400">
                                         {totalGolesStats.totalA}
                                     </p>
                                     <p className="text-[10px] font-bold uppercase text-muted-foreground mt-1">
                                         Equipo Local
                                     </p>
                                 </div>
-                                <div className="bg-violet-500/10 rounded-xl p-4 text-center border border-violet-500/10">
-                                    <p className="text-3xl font-black text-violet-400">
+                                <div className="bg-orange-500/10 rounded-xl p-4 text-center border border-orange-500/10">
+                                    <p className="text-3xl font-black text-orange-400">
                                         {totalGolesStats.totalB}
                                     </p>
                                     <p className="text-[10px] font-bold uppercase text-muted-foreground mt-1">

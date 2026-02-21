@@ -1,0 +1,4 @@
+-- Función para que los partidos finalizados sumen victorias (puntos) al medallero si no estaba reflejándose
+-- Nota: La lógica ideal dependería de qué torneo y tipo de medalla (oro/plata/bronce) reparte, pero por ahora sumaremos a pts generales
+-- Solo agregamos una nota; la lógica principal del medallero de "ganar la carrera" ya está en src/components/race-control.tsx
+-- Vamos a modificar race-control.tsx en react.

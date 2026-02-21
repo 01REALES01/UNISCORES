@@ -53,7 +53,7 @@ const TvLiveMatch = ({ match }: { match: any }) => {
                                     .map((p: any, idx: number) => (
                                         <div key={idx} className={cn(
                                             "flex items-center justify-between p-6 rounded-3xl text-3xl font-bold",
-                                            idx === 0 ? "bg-yellow-500 text-black" : "bg-white/10 text-white"
+                                            idx === 0 ? "bg-[#FFC000] text-black" : "bg-white/10 text-white"
                                         )}>
                                             <div className="flex items-center gap-6">
                                                 <span className="font-black opacity-50 w-12 text-center">{idx + 1}</span>
@@ -69,7 +69,7 @@ const TvLiveMatch = ({ match }: { match: any }) => {
                         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-12">
                             {/* Team A */}
                             <div className="flex flex-col items-center gap-6">
-                                <Avatar name={match.equipo_a} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#0a0f1c]" />
+                                <Avatar name={match.equipo_a} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
                                 <h1 className="text-4xl lg:text-5xl font-black text-white text-center leading-tight uppercase tracking-tight max-w-sm">
                                     {match.equipo_a}
                                 </h1>
@@ -90,7 +90,7 @@ const TvLiveMatch = ({ match }: { match: any }) => {
 
                             {/* Team B */}
                             <div className="flex flex-col items-center gap-6">
-                                <Avatar name={match.equipo_b} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#0a0f1c]" />
+                                <Avatar name={match.equipo_b} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
                                 <h1 className="text-4xl lg:text-5xl font-black text-white text-center leading-tight uppercase tracking-tight max-w-sm">
                                     {match.equipo_b}
                                 </h1>
@@ -216,7 +216,7 @@ export default function TvPage() {
 
 
     return (
-        <div className="min-h-screen bg-[#030711] text-white overflow-hidden relative selection:bg-none cursor-none">
+        <div className="min-h-screen bg-[#0a0805] text-white overflow-hidden relative selection:bg-none cursor-none">
             {/* Background ambient elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                 <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 blur-[120px] rounded-full animate-blob" />
@@ -227,7 +227,7 @@ export default function TvPage() {
                 {/* Header TV */}
                 <header className="h-24 px-12 flex items-center justify-between border-b border-white/5 bg-black/20 backdrop-blur-md">
                     <div className="flex items-center gap-4">
-                        <Trophy className="text-yellow-500 w-10 h-10" />
+                        <Trophy className="text-[#FFC000] w-10 h-10" />
                         <div>
                             <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Olimpiadas 2026</h1>
                             <p className="text-sm text-slate-400 font-mono tracking-widest">TRANSMISIÓN OFICIAL</p>

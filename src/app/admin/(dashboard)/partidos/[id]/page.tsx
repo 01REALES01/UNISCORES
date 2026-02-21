@@ -29,7 +29,7 @@ type Evento = {
 const DISCIPLINES_COLORS: Record<string, string> = {
     'Fútbol': 'from-emerald-600 to-green-800',
     'Baloncesto': 'from-orange-600 to-amber-800',
-    'Voleibol': 'from-blue-600 to-indigo-800',
+    'Voleibol': 'from-red-600 to-red-800',
     'Tenis': 'from-lime-600 to-green-700',
     'Tenis de Mesa': 'from-red-600 to-rose-800',
     'Ajedrez': 'from-slate-700 to-zinc-900',
@@ -551,7 +551,7 @@ export default function MatchControlPage() {
                             </Badge>
                             <Badge className={`border-none ${(match.genero || 'masculino') === 'femenino' ? 'bg-pink-500/80 text-white' :
                                 (match.genero || 'masculino') === 'mixto' ? 'bg-purple-500/80 text-white' :
-                                    'bg-blue-500/80 text-white'
+                                    'bg-red-500/80 text-white'
                                 }`}>
                                 {(match.genero || 'masculino') === 'femenino' ? '♀ Femenino' : (match.genero || 'masculino') === 'mixto' ? '⚤ Mixto' : '♂ Masculino'}
                             </Badge>
@@ -693,7 +693,7 @@ export default function MatchControlPage() {
                                                 (disciplinaName === 'Fútbol' && (match.marcador_detalle?.tiempo_actual || 1) >= 2) ||
                                                 (disciplinaName === 'Baloncesto' && (match.marcador_detalle?.cuarto_actual || 1) >= 4)
                                             }
-                                            className="h-10 md:h-12 px-3 md:px-4 rounded-lg md:rounded-xl bg-blue-500/20 hover:bg-blue-500/40 border-2 border-blue-400/40 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm font-bold whitespace-nowrap"
+                                            className="h-10 md:h-12 px-3 md:px-4 rounded-lg md:rounded-xl bg-red-500/20 hover:bg-red-500/40 border-2 border-red-400/40 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm font-bold whitespace-nowrap"
                                             title={disciplinaName === 'Fútbol' ? 'Cambiar a 2º Tiempo' : 'Siguiente Cuarto'}
                                         >
                                             <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
@@ -919,7 +919,7 @@ export default function MatchControlPage() {
                                             else if (action.style === 'card-yellow') { activeColors = "from-yellow-500 to-amber-600 border-yellow-300 shadow-[0_0_20px_-5px_rgba(234,179,8,0.5)]"; iconColor = "text-yellow-400"; }
                                             else if (action.style === 'card-red') { activeColors = "from-red-600 to-red-800 border-red-500 shadow-[0_0_20px_-5px_rgba(239,68,68,0.5)]"; iconColor = "text-red-500"; }
                                             else if (action.style.includes('orange')) { activeColors = "from-orange-500 to-red-600 border-orange-400 shadow-[0_0_20px_-5px_rgba(249,115,22,0.5)]"; iconColor = "text-orange-400"; }
-                                            else if (action.style === 'pill-blue') { activeColors = "from-blue-600 to-indigo-700 border-blue-400 shadow-[0_0_20px_-5px_rgba(59,130,246,0.5)]"; iconColor = "text-blue-400"; }
+                                            else if (action.style === 'pill-blue') { activeColors = "from-red-600 to-red-700 border-red-400 shadow-[0_0_20px_-5px_rgba(59,130,246,0.5)]"; iconColor = "text-red-400"; }
 
                                             return (
                                                 <button

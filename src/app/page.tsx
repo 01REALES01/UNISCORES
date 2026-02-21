@@ -6,12 +6,16 @@ import { PublicLiveTimer } from "@/components/public-live-timer";
 import { MatchCardSkeleton } from "@/components/skeletons";
 import { HeroSlider } from "@/components/hero-slider";
 import { useAuth } from "@/hooks/useAuth";
-import { User as UserIcon } from "lucide-react";
-import { Trophy, Clock, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, Activity, TrendingUp, Tv, ArrowRight } from "lucide-react";
+import { Trophy, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, Activity, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle } from "lucide-react";
+import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_BORDER, SPORT_GLOW } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { SportIcon } from "@/components/sport-icons";
+import { ExpandableTabs, TabItem } from "@/components/ui/expandable-tabs";
 
 type Partido = {
   id: number;
@@ -28,34 +32,14 @@ type Partido = {
   };
 };
 
-const SPORT_EMOJI: Record<string, string> = {
-  'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
-  'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',
-};
 
-// Modern gradients for each sport
-const SPORT_GRADIENT: Record<string, string> = {
-  'Fútbol': 'from-emerald-500/20 to-emerald-900/5',
-  'Baloncesto': 'from-orange-500/20 to-orange-900/5',
-  'Voleibol': 'from-indigo-500/20 to-indigo-900/5',
-  'Tenis': 'from-lime-500/20 to-lime-900/5',
-  'Tenis de Mesa': 'from-rose-500/20 to-rose-900/5',
-  'Ajedrez': 'from-slate-500/20 to-slate-900/5',
-  'Natación': 'from-cyan-500/20 to-cyan-900/5',
-};
 
-const SPORT_ACCENT: Record<string, string> = {
-  'Fútbol': 'text-emerald-400',
-  'Baloncesto': 'text-orange-400',
-  'Voleibol': 'text-indigo-400',
-  'Tenis': 'text-lime-400',
-  'Tenis de Mesa': 'text-rose-400',
-  'Ajedrez': 'text-slate-400',
-  'Natación': 'text-cyan-400',
-};
+// Modern gradients for each sport - INTENSIFIED
+
 
 export default function Home() {
   const { user } = useAuth();
+  const router = useRouter();
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("todos");
@@ -130,19 +114,17 @@ export default function Home() {
   const recentFinished = [...finishedMatches].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
   return (
-    <div className="min-h-screen bg-[#030711] text-white font-sans selection:bg-indigo-500/30">
-      {/* Background Ambient Effects */}
+    <div className="min-h-screen bg-[#0a0805] text-white font-sans selection:bg-red-500/30">
+      {/* Background Ambient Effects (Removed to keep deep black tone) */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[100px] mix-blend-screen opacity-50" />
-        <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen opacity-30" />
-        <div className="absolute bottom-[-10%] left-[20%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px] mix-blend-screen opacity-40" />
       </div>
 
       {/* Header / Navbar */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-xl border-b border-white/5 bg-[#030711]/70">
+      <header className="sticky top-0 z-50 w-full backdrop-blur-xl border-b border-white/5 bg-[#0a0805]/70">
         <div className="flex h-16 items-center justify-between px-4 sm:px-6 max-w-5xl mx-auto">
+          {/* Logo Group */}
           <div className="flex items-center gap-3 group cursor-default">
-            <div className="relative p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-300">
+            <div className="relative p-2 rounded-xl bg-gradient-to-br from-red-600 to-red-500 shadow-lg shadow-red-500/20 group-hover:scale-105 transition-transform duration-300">
               <Trophy size={20} className="text-white relative z-10" strokeWidth={2.5} />
               <div className="absolute inset-0 bg-white/20 rounded-xl blur-md opacity-50 animate-pulse" />
             </div>
@@ -150,56 +132,59 @@ export default function Home() {
               <h1 className="font-black text-lg sm:text-xl tracking-tight leading-none bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
                 OLIMPIADAS
               </h1>
-              <p className="text-[9px] sm:text-[10px] font-bold text-indigo-400 uppercase tracking-[0.2em] leading-none mt-0.5">
+              <p className="text-[10px] sm:text-[11px] font-bold text-red-500 uppercase tracking-[0.2em] leading-none mt-0.5">
                 Uninorte 2026
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 w-full justify-end">
-            {/* Navigation Items */}
-            <div className="flex items-center gap-2 mr-auto md:mr-0">
+            {/* Navigation Items (Expandable Tabs) */}
+            <div className="hidden md:flex items-center gap-2 mr-auto md:mr-0 pl-4">
+              <ExpandableTabs
+                activeColor="text-red-500"
+                tabs={[
+                  { title: "Inicio", icon: HomeIcon },
+                  { title: "Mapa", icon: MapPin },
+                  { title: "Medallería", icon: Trophy },
+                  { type: "separator" },
+                  { title: "TV", icon: Tv },
+                  { title: "Admin", icon: Activity },
+                ]}
+                onChange={(index) => {
+                  if (index === 0) router.push('/');
+                  if (index === 1) router.push('/mapa');
+                  if (index === 2) router.push('/medallero');
+                  if (index === 4) window.open('/tv', '_blank');
+                  if (index === 5) router.push('/admin/login');
+                }}
+              />
+            </div>
+
+            {/* Mobile simplified nav */}
+            <div className="flex md:hidden items-center gap-2 mr-auto pl-2">
               <Link href="/mapa">
-                {/* Mobile: Icon only. Desktop: Full button */}
-                <Button variant="ghost" size="icon" className="md:hidden text-blue-400 hover:bg-blue-500/10 rounded-full">
+                <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-500/10 rounded-full">
                   <MapPin size={18} />
                 </Button>
-                <Button variant="ghost" size="sm" className="hidden md:flex rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-bold border border-blue-500/20 gap-2 transition-all">
-                  <MapPin size={14} /> Mapa
-                </Button>
               </Link>
-
               <Link href="/medallero">
-                <Button variant="ghost" size="sm" className="hidden md:flex items-center gap-2 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10 transition-colors rounded-full font-bold uppercase tracking-wider text-[10px] border border-yellow-500/20">
-                  <Trophy size={14} />
-                  Medallería
-                </Button>
-              </Link>
-
-              <Link href="/tv" target="_blank">
-                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-white/10 rounded-full" title="Modo TV">
-                  <Tv size={18} />
-                </Button>
-              </Link>
-
-              <Link href="/admin/login">
-                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-white/10 rounded-full" title="Admin">
-                  <Activity size={18} />
+                <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-500/10 rounded-full">
+                  <Trophy size={18} />
                 </Button>
               </Link>
             </div>
 
-            <div className="flex-1" /> {/* Spacer if needed, but justify-end handles it if container is flex */}
+            <div className="flex-1" />
 
             {/* User / Login Section (Far Right) */}
             {!user ? (
               <Link href="/login">
-                <Button variant="outline" className="rounded-full border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 gap-2 hidden sm:flex">
+                <Button variant="outline" className="rounded-full border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 gap-2 hidden sm:flex">
                   <UserIcon size={16} />
                   Ingresar
                 </Button>
-                {/* Mobile Login Icon */}
-                <Button variant="ghost" size="icon" className="sm:hidden text-indigo-300">
+                <Button variant="ghost" size="icon" className="sm:hidden text-orange-300">
                   <UserIcon size={20} />
                 </Button>
               </Link>
@@ -207,10 +192,10 @@ export default function Home() {
               <Link href="/quiniela">
                 <div className="flex items-center gap-3 pl-2 sm:pl-4 sm:border-l border-white/10">
                   <div className="text-right hidden sm:block">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Hola,</p>
-                    <p className="text-xs font-bold text-white">{user.email?.split('@')[0]}</p>
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Hola,</p>
+                    <p className="text-sm font-bold text-white">{user.email?.split('@')[0]}</p>
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold border-2 border-white/10 shadow-lg cursor-pointer hover:scale-105 transition-transform">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-amber-600 flex items-center justify-center text-white font-bold border-2 border-white/10 shadow-lg cursor-pointer hover:scale-105 transition-transform">
                     {user.email?.substring(0, 2).toUpperCase()}
                   </div>
                 </div>
@@ -225,28 +210,29 @@ export default function Home() {
         {/* Hero / Filter Section */}
         <div className="flex flex-col gap-6">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-            <input
-              type="text"
-              placeholder="Buscar equipo o deporte..."
+            <SuggestiveSearch
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white/5 border border-white/10 focus:border-indigo-500/50 focus:bg-white/10 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all text-sm font-medium placeholder:text-slate-500 text-white"
+              onChange={setSearchQuery}
+              suggestions={["Buscar equipo...", "Explorar fútbol...", "Deportes Uninorte...", "Resultados de tenis...", "Natación..."]}
+              className="h-12 rounded-2xl bg-[#17130D] border border-white/10 focus-within:border-amber-500/50 focus-within:bg-white/5 focus-within:ring-4 focus-within:ring-amber-500/10 transition-all shadow-sm w-full"
             />
           </div>
 
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mask-linear">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 md:justify-center px-2">
             <button
               onClick={() => setActiveFilter('todos')}
               className={cn(
-                "group relative px-5 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-300 flex items-center gap-2 border",
+                "group relative min-w-[90px] h-20 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all duration-300 overflow-hidden shrink-0",
                 activeFilter === 'todos'
-                  ? "bg-white text-[#030711] border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                  ? "bg-red-600 text-white border-red-600 shadow-md scale-105"
                   : "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
               )}
             >
-              <Flame size={14} className={activeFilter === 'todos' ? 'text-indigo-600 fill-indigo-600' : 'group-hover:text-indigo-400'} />
-              Todos
+              <Flame size={20} className={cn("transition-all drop-shadow-md", activeFilter === 'todos' ? 'text-rose-600 fill-rose-600' : 'group-hover:text-rose-400 group-hover:fill-rose-400/20')} />
+              <span className="text-xs font-bold uppercase tracking-wider z-10">Todos</span>
+              {activeFilter === 'todos' && (
+                <Flame size={60} className="absolute -bottom-4 -right-4 text-slate-200/20" />
+              )}
             </button>
             {allSports.map(sport => {
               const isActive = activeFilter === sport;
@@ -257,18 +243,36 @@ export default function Home() {
                   key={sport}
                   onClick={() => setActiveFilter(isActive ? 'todos' : sport)}
                   className={cn(
-                    "group relative px-5 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-300 flex items-center gap-2 border",
+                    "group relative min-w-[90px] h-20 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all duration-300 overflow-hidden shrink-0",
                     isActive
-                      ? "bg-[#0a0f1c] border-indigo-500/50 text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                      ? `bg-[#17130D] ${SPORT_BORDER[sport]} text-white scale-105 ${SPORT_GLOW[sport].replace('hover:', '')} shadow-lg`
                       : "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
                   )}
                 >
-                  <span className="text-base leading-none filter drop-shadow-sm">{SPORT_EMOJI[sport]}</span>
-                  {sport}
+                  {/* Watermark in filter */}
+                  {isActive && (
+                    <>
+                      <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sport]} opacity-50`} />
+                      <div className="absolute -bottom-2 -right-2 pointer-events-none select-none">
+                        <SportIcon sport={sport} size={60} className={cn("opacity-20", SPORT_ACCENT[sport])} />
+                      </div>
+                    </>
+                  )}
+
+                  <SportIcon
+                    sport={sport}
+                    size={22}
+                    className={cn(
+                      "transition-all z-10",
+                      isActive ? `${SPORT_ACCENT[sport]} drop-shadow-[0_0_8px_currentColor]` : 'text-slate-500 group-hover:text-slate-300'
+                    )}
+                  />
+                  <span className="text-[11px] font-bold uppercase tracking-wider z-10">{sport.split(' ')[0]}</span>
+
                   {hasLive && (
-                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                    <span className="absolute top-2 right-2 flex h-2 w-2">
                       <span className="animate-ping absolute h-full w-full rounded-full bg-rose-500 opacity-75" />
-                      <span className="relative rounded-full h-2.5 w-2.5 bg-rose-500 shadow-sm" />
+                      <span className="relative rounded-full h-2 w-2 bg-rose-500 shadow-sm" />
                     </span>
                   )}
                 </button>
@@ -281,23 +285,23 @@ export default function Home() {
         {!loading && <HeroSlider matches={partidos} />}
 
         {/* QUINIELA CTA BANNER */}
-        <div className="relative rounded-3xl overflow-hidden border border-yellow-500/20 shadow-[0_0_40px_rgba(234,179,8,0.1)] group cursor-pointer mb-8">
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-900/20 via-black to-black" />
-          <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay" />
+        <div className="relative rounded-3xl overflow-hidden border border-red-600/30 shadow-[0_0_40px_rgba(220,38,38,0.15)] group cursor-pointer mb-8">
+          <div className="absolute inset-0 bg-gradient-to-r from-red-900/40 via-black to-black" />
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
 
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 gap-6">
             <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center text-black shadow-lg transform rotate-3 group-hover:rotate-6 transition-transform">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600 to-red-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(220,38,38,0.2)] transform rotate-3 group-hover:rotate-6 transition-transform">
                 <TrendingUp size={32} strokeWidth={2.5} />
               </div>
               <div>
                 <h3 className="text-2xl font-black italic text-white mb-1 tracking-tight">HAGAN SUS PREDICCIONES</h3>
-                <p className="text-yellow-200/60 text-sm font-medium">Predice resultados y gana premios exclusivos.</p>
+                <p className="text-red-200/60 text-sm font-medium">Predice resultados y gana premios exclusivos.</p>
               </div>
             </div>
 
             <Link href="/quiniela" className="w-full md:w-auto">
-              <Button className="w-full md:w-auto bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase tracking-widest px-8 py-6 rounded-xl shadow-lg transform group-hover:scale-105 transition-all">
+              <Button className="w-full md:w-auto bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest px-8 py-6 rounded-xl shadow-[0_0_30px_rgba(220,38,38,0.3)] transform group-hover:scale-105 transition-all">
                 Jugar Ahora <ArrowRight size={18} className="ml-2" />
               </Button>
             </Link>
@@ -336,7 +340,7 @@ export default function Home() {
         <section className="animate-in slide-in-from-bottom-8 fade-in duration-1000 delay-100">
           <div className="flex items-center justify-between mb-6 px-1">
             <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-              <Calendar className="text-indigo-500" size={20} />
+              <Calendar className="text-orange-500" size={20} />
               {activeFilter === 'todos' ? 'Encuentros' : activeFilter}
             </h2>
           </div>
@@ -372,7 +376,7 @@ export default function Home() {
         {!loading && filteredPartidos.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center animate-in zoom-in-95 duration-500">
             <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6">
-              <Trophy size={40} className="text-white/20" />
+              <Trophy size={40} className="text-slate-300" />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">Sin partidos encontrados</h3>
             <p className="text-slate-500 text-sm max-w-xs mx-auto">
@@ -382,7 +386,7 @@ export default function Home() {
               <Button
                 onClick={() => setActiveFilter('todos')}
                 variant="outline"
-                className="mt-6 border-white/10 hover:bg-white/5 text-indigo-400"
+                className="mt-6 border-white/10 hover:bg-white/5 text-orange-400"
               >
                 Ver todos los deportes
               </Button>
@@ -402,7 +406,7 @@ export default function Home() {
           </div>
         )}
       </main>
-    </div>
+    </div >
   );
 }
 
@@ -417,29 +421,37 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block h-full">
-      <div className="relative h-full overflow-hidden rounded-3xl border border-white/10 bg-[#0a0f1c]/80 backdrop-blur-xl transition-all duration-500 hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1">
+      <div className={cn(
+        "relative h-full overflow-hidden rounded-3xl border bg-[#17130D]/80 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
+        SPORT_BORDER[sportName] || 'border-white/10',
+        SPORT_GLOW[sportName] || 'hover:shadow-orange-500/10'
+      )}>
         {/* Glowing Background gradient */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-30 group-hover:opacity-50 transition-opacity`} />
+        <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-50 group-hover:opacity-70 transition-opacity`} />
+        {/* Sport Icon Watermark */}
+        <div className="absolute -bottom-6 -right-6 pointer-events-none select-none group-hover:scale-110 transition-transform duration-700 origin-bottom-right">
+          <SportIcon sport={sportName} size={150} className={cn("opacity-[0.12] group-hover:opacity-[0.25] transition-all duration-500 drop-shadow-[0_0_30px_currentColor]", SPORT_ACCENT[sportName] || 'text-white')} />
+        </div>
 
         <div className="relative p-6 flex flex-col h-full">
           {/* Header */}
           <div className="flex justify-between items-start mb-6">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-lg backdrop-blur-md border border-white/10">
-                {SPORT_EMOJI[sportName]}
+              <div className={cn("w-8 h-8 rounded-full bg-[#17130D] flex items-center justify-center border border-white/10 shadow-[0_0_15px_currentColor]", SPORT_ACCENT[sportName])}>
+                <SportIcon sport={sportName} size={18} className="drop-shadow-md" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest leading-tight">{sportName}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-medium text-white/80 leading-tight truncate max-w-[100px] sm:max-w-[150px]">{partido.lugar || 'Coliseo Central'}</span>
-                  <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${genero === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
-                    genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
-                      'bg-blue-500/20 text-blue-400'
+                <span className="text-sm font-bold text-slate-500 uppercase tracking-widest leading-tight">{sportName}</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-sm font-medium text-slate-700 leading-tight truncate max-w-[150px] sm:max-w-[200px]">{partido.lugar || 'Coliseo Central'}</span>
+                  <span className={`text-white font-black px-1.5 py-0.5 rounded text-[10px] ${genero === 'femenino' ? 'bg-pink-400' :
+                    genero === 'mixto' ? 'bg-purple-400' :
+                      'bg-blue-400'
                     }`}>{genero === 'femenino' ? '♀' : genero === 'mixto' ? '⚤' : '♂'}</span>
                 </div>
               </div>
             </div>
-            <div className="px-2 py-1 rounded-md bg-rose-500/20 border border-rose-500/30">
+            <div className="z-10">
               <PublicLiveTimer detalle={partido.marcador_detalle || {}} />
             </div>
           </div>
@@ -448,38 +460,38 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
           <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
             {/* Team A */}
             <div className="flex flex-col items-center gap-3 text-center">
-              <Avatar name={partido.equipo_a} size="lg" className="w-14 h-14 text-xl border-2 border-white/10 shadow-lg bg-[#030711]" />
-              <span className="text-sm font-bold text-white leading-tight line-clamp-2">{partido.equipo_a}</span>
+              <Avatar name={partido.equipo_a} size="lg" className="w-16 h-16 text-2xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
+              <span className="text-xl font-bold text-white leading-tight line-clamp-2 px-2">{partido.equipo_a}</span>
             </div>
 
             {/* Score */}
             <div className="flex flex-col items-center justify-center">
-              <div className="flex items-center justify-center gap-2 font-black text-4xl text-white tracking-tighter tabular-nums drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+              <div className="flex items-center justify-center gap-2 font-black text-6xl text-white tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
                 <span>{scoreA}</span>
-                <span className="text-white/20 text-2xl -mt-2">:</span>
+                <span className="text-slate-300 text-4xl -mt-2">:</span>
                 <span>{scoreB}</span>
               </div>
               {subScoreA !== undefined && subScoreB !== undefined && (
-                <div className="flex items-center gap-2 mt-1.5 text-[10px] font-bold text-white/50">
-                  <span className="text-white/80">{subScoreA}</span>
-                  <span className="text-white/30">{subLabel}</span>
-                  <span className="text-white/80">{subScoreB}</span>
+                <div className="flex items-center gap-2 mt-2 text-sm font-bold text-slate-500">
+                  <span className="text-slate-700">{subScoreA}</span>
+                  <span className="text-slate-500">{subLabel}</span>
+                  <span className="text-slate-700">{subScoreB}</span>
                 </div>
               )}
               {extra && (
-                <span className="mt-1 text-[9px] font-bold text-indigo-300/60 bg-indigo-500/10 px-2 py-0.5 rounded-full">{extra}</span>
+                <span className="mt-1 text-[11px] font-bold text-orange-300/60 bg-orange-500/10 px-2 py-0.5 rounded-full">{extra}</span>
               )}
             </div>
 
             {/* Team B */}
             <div className="flex flex-col items-center gap-3 text-center">
-              <Avatar name={partido.equipo_b} size="lg" className="w-14 h-14 text-xl border-2 border-white/10 shadow-lg bg-[#030711]" />
-              <span className="text-sm font-bold text-white leading-tight line-clamp-2">{partido.equipo_b}</span>
+              <Avatar name={partido.equipo_b} size="lg" className="w-16 h-16 text-2xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
+              <span className="text-xl font-bold text-white leading-tight line-clamp-2 px-2">{partido.equipo_b}</span>
             </div>
           </div>
 
           {/* Footer Action */}
-          <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-center text-xs font-bold text-indigo-300 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+          <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-center text-sm font-bold text-orange-400 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
             Ver Detalles <MoveRight size={12} className="ml-1" />
           </div>
         </div>
@@ -490,55 +502,62 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
 
 function UpcomingMatchCard({ partido }: { partido: Partido }) {
   const sportName = partido.disciplinas?.name || 'Deporte';
-  const accentColor = SPORT_ACCENT[sportName] || 'text-slate-400';
+  const accentColor = SPORT_ACCENT[sportName] || 'text-slate-500';
   const genero = partido.genero || 'masculino';
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block">
-      <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 hover:border-white/10 p-4 flex items-center gap-4">
+      <div className={cn(
+        "relative overflow-hidden rounded-2xl border bg-white/5 hover:bg-white/10 shadow-sm border-white/10 transition-all duration-300 p-4 flex items-center gap-4",
+        SPORT_BORDER[sportName] || 'border-white/10'
+      )}>
+        {/* Sport Icon Watermark */}
+        <div className="absolute -bottom-3 -right-3 pointer-events-none select-none group-hover:scale-110 transition-transform duration-500">
+          <SportIcon sport={sportName} size={70} className={cn("opacity-[0.12] group-hover:opacity-[0.25] transition-all duration-500 drop-shadow-[0_0_20px_currentColor]", SPORT_ACCENT[sportName] || 'text-white')} />
+        </div>
         {/* Date Box */}
-        <div className="flex flex-col items-center justify-center w-14 h-14 rounded-xl bg-white/5 border border-white/10 shrink-0">
-          <span className="text-[10px] uppercase font-bold text-slate-500 leading-none mb-0.5">
+        <div className="flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-white/5 border border-white/10 shrink-0">
+          <span className="text-xs uppercase font-bold text-slate-500 leading-none mb-1">
             {new Date(partido.fecha).toLocaleString('es-CO', { month: 'short' }).replace('.', '')}
           </span>
-          <span className="text-xl font-black text-white leading-none">
+          <span className="text-2xl font-black text-white leading-none">
             {new Date(partido.fecha).getDate()}
           </span>
-          <span className="text-[9px] font-medium text-slate-500 leading-none mt-0.5">
+          <span className="text-xs font-medium text-slate-500 leading-none mt-1">
             {new Date(partido.fecha).toLocaleString('es-CO', { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className={cn("text-[9px] font-black uppercase tracking-wider", accentColor)}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className={cn("text-xs font-black uppercase tracking-wider", accentColor)}>
               {sportName}
             </span>
-            <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${genero === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${genero === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
               genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
                 'bg-blue-500/20 text-blue-400'
               }`}>{genero === 'femenino' ? '♀ F' : genero === 'mixto' ? '⚤ Mix' : '♂ M'}</span>
-            <span className="w-1 h-1 rounded-full bg-slate-600" />
-            <span className="text-[9px] text-slate-500 truncate">{partido.lugar || 'Por definir'}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+            <span className="text-sm text-slate-500 font-medium truncate">{partido.lugar || 'Por definir'}</span>
           </div>
 
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Avatar name={partido.equipo_a} size="sm" className="w-5 h-5 text-[9px] border border-white/10" />
-                <span className="text-sm font-bold text-slate-200 truncate">{partido.equipo_a}</span>
+              <div className="flex items-center gap-3">
+                <Avatar name={partido.equipo_a} size="sm" className="w-6 h-6 text-xs border border-white/10" />
+                <span className="text-lg font-bold text-slate-200 truncate">{partido.equipo_a}</span>
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Avatar name={partido.equipo_b} size="sm" className="w-5 h-5 text-[9px] border border-white/10" />
-                <span className="text-sm font-bold text-slate-400 truncate group-hover:text-slate-200 transition-colors">{partido.equipo_b}</span>
+            <div className="flex items-center justify-between mt-1">
+              <div className="flex items-center gap-3">
+                <Avatar name={partido.equipo_b} size="sm" className="w-6 h-6 text-xs border border-white/10" />
+                <span className="text-lg font-bold text-slate-500 truncate group-hover:text-slate-200 transition-colors">{partido.equipo_b}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-slate-500 group-hover:bg-indigo-500 group-hover:text-white transition-colors cursor-pointer">
+        <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-slate-500 group-hover:bg-orange-500 group-hover:text-white transition-colors cursor-pointer">
           <ChevronRight size={14} />
         </div>
       </div>
@@ -554,39 +573,46 @@ function ResultCard({ partido }: { partido: Partido }) {
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block">
-      <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/5 transition-all duration-300 p-3 sm:p-4">
-        <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
+      <div className={cn(
+        "relative overflow-hidden rounded-2xl border bg-white/5 hover:bg-white/10 shadow-sm transition-all duration-300 p-3 sm:p-4",
+        SPORT_BORDER[sportName] || 'border-white/10'
+      )}>
+        {/* Sport Icon Watermark */}
+        <div className="absolute -bottom-3 -right-3 pointer-events-none select-none group-hover:scale-110 transition-transform duration-500">
+          <SportIcon sport={sportName} size={70} className={cn("opacity-[0.12] group-hover:opacity-[0.25] transition-all duration-500 drop-shadow-[0_0_20px_currentColor]", SPORT_ACCENT[sportName] || 'text-white')} />
+        </div>
+        <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{sportName}</span>
-            <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${genero === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
-              genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
-                'bg-blue-500/20 text-blue-400'
+            <span className="text-sm font-bold uppercase tracking-wider text-slate-500">{sportName}</span>
+            <span className={`text-xs font-bold px-1.5 py-0.5 rounded text-white ${genero === 'femenino' ? 'bg-pink-400' :
+              genero === 'mixto' ? 'bg-purple-400' :
+                'bg-blue-400'
               }`}>{genero === 'femenino' ? '♀' : genero === 'mixto' ? '⚤' : '♂'}</span>
           </div>
-          <span className="text-[10px] text-slate-600">Finalizado</span>
+          <span className="text-sm font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">Finalizado</span>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Avatar name={partido.equipo_a} size="sm" className={cn("w-6 h-6 text-[10px] border", winnerA ? "border-indigo-500/50" : "border-white/10 opacity-70")} />
-              <span className={cn("text-sm font-bold truncate", winnerA ? "text-white" : "text-slate-400")}>
+            <div className="flex items-center gap-3">
+              <Avatar name={partido.equipo_a} size="sm" className={cn("w-8 h-8 text-sm border", winnerA ? "border-orange-500/50" : "border-white/10 opacity-70")} />
+              <span className={cn("text-lg font-bold truncate", winnerA ? "text-white" : "text-slate-500")}>
                 {partido.equipo_a}
               </span>
             </div>
-            <span className={cn("text-lg font-black font-mono", winnerA ? "text-indigo-400" : "text-slate-600")}>
+            <span className={cn("text-3xl font-black font-mono", winnerA ? "text-orange-400" : "text-slate-500")}>
               {scoreA}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Avatar name={partido.equipo_b} size="sm" className={cn("w-6 h-6 text-[10px] border", !winnerA && scoreB > scoreA ? "border-indigo-500/50" : "border-white/10 opacity-70")} />
-              <span className={cn("text-sm font-bold truncate", !winnerA && scoreB > scoreA ? "text-white" : "text-slate-400")}>
+            <div className="flex items-center gap-3">
+              <Avatar name={partido.equipo_b} size="sm" className={cn("w-8 h-8 text-sm border", !winnerA && scoreB > scoreA ? "border-orange-500/50" : "border-white/10 opacity-70")} />
+              <span className={cn("text-lg font-bold truncate", !winnerA && scoreB > scoreA ? "text-white" : "text-slate-500")}>
                 {partido.equipo_b}
               </span>
             </div>
-            <span className={cn("text-lg font-black font-mono", !winnerA && scoreB > scoreA ? "text-indigo-400" : "text-slate-600")}>
+            <span className={cn("text-3xl font-black font-mono", !winnerA && scoreB > scoreA ? "text-orange-400" : "text-slate-500")}>
               {scoreB}
             </span>
           </div>
