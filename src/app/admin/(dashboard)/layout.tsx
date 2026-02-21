@@ -173,7 +173,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         }}
                                         className={cn(
                                             "mb-1 flex items-center transition-all",
-                                            !open ? "justify-center px-0 py-3 mx-1" : "px-4",
+                                            !open ? "justify-center px-0 w-12 mx-auto rounded-2xl aspect-square" : "px-4 w-full",
                                             isActive ? "bg-gradient-to-r from-red-600 to-orange-600 shadow-lg shadow-red-500/20 text-white hover:text-white" : ""
                                         )}
                                         onClick={() => setOpen(false)}
@@ -185,11 +185,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                     {/* User Info & View Site Area */}
                     <div className="flex flex-col gap-4 mt-auto">
-                        <div className="px-2">
+                        <div className="px-2 w-full flex justify-center">
                             <Link
                                 href="/"
                                 target="_blank"
-                                className={cn("group flex items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/5 hover:from-emerald-500/20 hover:to-teal-500/10 border border-emerald-500/20 transition-all duration-300 shadow-lg shadow-emerald-900/5 hover:shadow-emerald-900/10 mx-1", open ? "justify-between px-4 py-3" : "py-3 px-0")}
+                                className={cn("group flex items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/5 hover:from-emerald-500/20 hover:to-teal-500/10 border border-emerald-500/20 transition-all duration-300 shadow-lg shadow-emerald-900/5 hover:shadow-emerald-900/10", open ? "justify-between px-4 py-3 w-full" : "w-12 aspect-square")}
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform flex items-center justify-center">
@@ -227,7 +227,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             )}
                             <button
                                 onClick={handleLogout}
-                                className={cn("group flex items-center justify-center gap-3 py-3 text-sm font-medium text-rose-400 rounded-2xl hover:bg-rose-500/10 hover:text-rose-300 transition-all duration-300 mx-1 w-full", open ? "justify-start px-4" : "px-0")}
+                                className={cn("group flex items-center justify-center gap-3 text-sm font-medium text-rose-400 rounded-2xl hover:bg-rose-500/10 hover:text-rose-300 transition-all duration-300 mx-auto", open ? "justify-start px-4 py-3 w-full" : "w-12 aspect-square")}
                             >
                                 <div className="flex items-center justify-center">
                                     <LogOut className="h-5 w-5 transition-transform group-hover:-translate-x-1" />

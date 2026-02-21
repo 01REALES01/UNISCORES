@@ -177,13 +177,14 @@ export const SidebarLink = ({
             href={link.href}
             onClick={onClick}
             className={cn(
-                "flex items-center justify-start gap-4 group/sidebar py-3 px-3 rounded-2xl transition-all duration-300 overflow-hidden hover:bg-white/5 text-slate-400 hover:text-white hover:shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]",
+                "flex items-center group/sidebar py-3 rounded-2xl transition-all duration-300 overflow-hidden hover:bg-white/5 text-slate-400 hover:text-white hover:shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]",
+                animate ? (open ? "justify-start gap-4 px-3" : "justify-center gap-0 px-0") : "justify-start gap-4 px-3",
                 className
             )}
             {...props}
         >
-            <div className="relative z-10 flex min-w-[24px]">
-                <div className="transition-transform duration-300 group-hover/sidebar:text-primary group-hover/sidebar:scale-110">
+            <div className="relative z-10 flex min-w-[24px] items-center justify-center flex-shrink-0">
+                <div className="transition-transform duration-300 group-hover/sidebar:text-primary group-hover/sidebar:scale-110 flex items-center justify-center">
                     {link.icon}
                 </div>
             </div>
