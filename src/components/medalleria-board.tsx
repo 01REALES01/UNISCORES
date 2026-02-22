@@ -150,6 +150,7 @@ export function MedalLeaderboard() {
                 <div className="absolute top-0 z-30 flex flex-col items-center">
                     {/* Badge de Ranking */}
                     <div className={cn(
+<<<<<<< Updated upstream
                         "absolute -top-3 sm:-top-4 z-40 flex items-center justify-center font-black rounded-lg text-white shadow-lg",
                         isFirst
                             ? "w-8 h-8 sm:w-10 sm:h-10 text-lg sm:text-xl bg-red-600 shadow-red-600/50"
@@ -171,6 +172,13 @@ export function MedalLeaderboard() {
                         )}>
                             {getInitials(entry.equipo_nombre)}
                         </span>
+=======
+                        "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center bg-[#0a0f1c] border-2 shadow-2xl relative z-10",
+                        rank === 1 ? 'border-yellow-500/50 shadow-yellow-500/20' : rank === 2 ? 'border-slate-300/50 shadow-slate-300/20' : 'border-orange-600/50 shadow-orange-600/20'
+                    )}>
+                        <span className="text-lg sm:text-xl font-black">{getInitials(entry.equipo_nombre)}</span>
+                        {rank === 1 && <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-3xl animate-bounce delay-700">👑</div>}
+>>>>>>> Stashed changes
                     </div>
                 </div>
 

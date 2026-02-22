@@ -294,8 +294,13 @@ export default function Home() {
                 <TrendingUp size={32} strokeWidth={2.5} />
               </div>
               <div>
+<<<<<<< Updated upstream
                 <h3 className="text-2xl font-black text-white mb-1 tracking-tight">HAGAN SUS PREDICCIONES</h3>
                 <p className="text-amber-200/60 text-sm font-medium">Predice resultados y gana premios exclusivos.</p>
+=======
+                <h3 className="text-2xl font-black italic text-white mb-1 tracking-tight">HAGAN SUS PREDICCIONES</h3>
+                <p className="text-yellow-200/60 text-sm font-medium">Predice resultados y gana premios exclusivos.</p>
+>>>>>>> Stashed changes
               </div>
             </div>
 
