@@ -62,14 +62,16 @@ export function ExpandableTabs({
         onChange?.(null);
     });
 
-    const handleSelect = (index: number) => {
-        if (selected === index) {
-            // Second click: trigger action
-            onChange?.(index);
-        } else {
-            // First click: expand/select the tab
-            setSelected(index);
-        }
+    const handleMouseEnter = (index: number) => {
+        setSelected(index);
+    };
+
+    const handleMouseLeave = () => {
+        setSelected(null);
+    };
+
+    const handleClick = (index: number) => {
+        onChange?.(index);
     };
 
     const Separator = () => (
@@ -97,7 +99,9 @@ export function ExpandableTabs({
                         initial={false}
                         animate="animate"
                         custom={selected === index}
-                        onClick={() => handleSelect(index)}
+                        onMouseEnter={() => handleMouseEnter(index)}
+                        onMouseLeave={handleMouseLeave}
+                        onClick={() => handleClick(index)}
                         transition={transition}
                         className={cn(
                             "relative flex items-center rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-300 overflow-hidden",

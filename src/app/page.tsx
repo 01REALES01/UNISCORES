@@ -122,25 +122,25 @@ export default function Home() {
       {/* Header / Navbar */}
       <header className="sticky top-0 z-50 w-full backdrop-blur-xl border-b border-white/5 bg-[#0a0805]/70">
         <div className="flex h-16 items-center justify-between px-4 sm:px-6 max-w-5xl mx-auto">
-          {/* Logo Group */}
-          <div className="flex items-center gap-3 group cursor-default">
-            <div className="relative p-2 rounded-xl bg-gradient-to-br from-red-600 to-red-500 shadow-lg shadow-red-500/20 group-hover:scale-105 transition-transform duration-300">
-              <Trophy size={20} className="text-white relative z-10" strokeWidth={2.5} />
-              <div className="absolute inset-0 bg-white/20 rounded-xl blur-md opacity-50 animate-pulse" />
+          {/* Logo Group + Nav */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 group cursor-default flex-shrink-0">
+              <div className="relative flex-shrink-0 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <img src="/uninorte_logo.png" alt="Uninorte" className="h-14 w-auto object-contain flex-shrink-0" />
+                <div className="absolute inset-0 bg-white/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              </div>
+              <div>
+                <h1 className="font-black text-lg sm:text-xl tracking-tight leading-none bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+                  OLIMPIADAS
+                </h1>
+                <p className="text-[10px] sm:text-[11px] font-bold text-red-500 uppercase tracking-[0.2em] leading-none mt-0.5">
+                  Uninorte 2026
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="font-black text-lg sm:text-xl tracking-tight leading-none bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                OLIMPIADAS
-              </h1>
-              <p className="text-[10px] sm:text-[11px] font-bold text-red-500 uppercase tracking-[0.2em] leading-none mt-0.5">
-                Uninorte 2026
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-3 w-full justify-end">
             {/* Navigation Items (Expandable Tabs) */}
-            <div className="hidden md:flex items-center gap-2 mr-auto md:mr-0 pl-4">
+            <div className="hidden md:flex items-center">
               <ExpandableTabs
                 activeColor="text-red-500"
                 tabs={[
@@ -160,9 +160,11 @@ export default function Home() {
                 }}
               />
             </div>
+          </div>
 
+          <div className="flex items-center gap-2">
             {/* Mobile simplified nav */}
-            <div className="flex md:hidden items-center gap-2 mr-auto pl-2">
+            <div className="flex md:hidden items-center gap-2">
               <Link href="/mapa">
                 <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-500/10 rounded-full">
                   <MapPin size={18} />
@@ -174,8 +176,6 @@ export default function Home() {
                 </Button>
               </Link>
             </div>
-
-            <div className="flex-1" />
 
             {/* User / Login Section (Far Right) */}
             {!user ? (
@@ -282,26 +282,25 @@ export default function Home() {
         </div>
 
         {/* HERO SLIDER */}
-        {!loading && <HeroSlider matches={partidos} />}
+        {!loading && <HeroSlider matches={partidos} activeFilter={activeFilter} />}
 
         {/* QUINIELA CTA BANNER */}
-        <div className="relative rounded-3xl overflow-hidden border border-red-600/30 shadow-[0_0_40px_rgba(220,38,38,0.15)] group cursor-pointer mb-8">
-          <div className="absolute inset-0 bg-gradient-to-r from-red-900/40 via-black to-black" />
+        <div className="relative rounded-3xl overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group cursor-pointer mb-8 bg-[#0a0805]">
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
 
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 gap-6">
             <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600 to-red-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(220,38,38,0.2)] transform rotate-3 group-hover:rotate-6 transition-transform">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-black shadow-[0_0_20px_rgba(245,158,11,0.2)]">
                 <TrendingUp size={32} strokeWidth={2.5} />
               </div>
               <div>
-                <h3 className="text-2xl font-black italic text-white mb-1 tracking-tight">HAGAN SUS PREDICCIONES</h3>
-                <p className="text-red-200/60 text-sm font-medium">Predice resultados y gana premios exclusivos.</p>
+                <h3 className="text-2xl font-black text-white mb-1 tracking-tight">HAGAN SUS PREDICCIONES</h3>
+                <p className="text-amber-200/60 text-sm font-medium">Predice resultados y gana premios exclusivos.</p>
               </div>
             </div>
 
             <Link href="/quiniela" className="w-full md:w-auto">
-              <Button className="w-full md:w-auto bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest px-8 py-6 rounded-xl shadow-[0_0_30px_rgba(220,38,38,0.3)] transform group-hover:scale-105 transition-all">
+              <Button className="w-full md:w-auto bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-black font-black uppercase tracking-widest px-8 py-6 rounded-xl shadow-[0_0_30px_rgba(245,158,11,0.3)] transform group-hover:scale-105 transition-all">
                 Jugar Ahora <ArrowRight size={18} className="ml-2" />
               </Button>
             </Link>
@@ -354,12 +353,37 @@ export default function Home() {
               {/* Mostrar Upcoming y Recent juntos si no hay filtro, o filtrados si hay */}
               {/* Nota: la lógica original separaba upcoming y recent. Aquí simplificamos para mostrar la grilla unificada */}
 
-              {upcomingMatches.map(partido => (
-                <UpcomingMatchCard key={partido.id} partido={partido} />
-              ))}
-              {recentFinished.map(partido => (
-                <ResultCard key={partido.id} partido={partido} />
-              ))}
+              {/* Próximos */}
+              {upcomingMatches.length > 0 && (
+                <>
+                  <div className="col-span-full flex items-center gap-2 mt-2 mb-1">
+                    <Zap size={14} className="text-amber-400" />
+                    <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">Próximos</span>
+                    <div className="flex-1 h-px bg-white/5" />
+                  </div>
+                  {[...upcomingMatches]
+                    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+                    .map(partido => (
+                      <UpcomingMatchCard key={partido.id} partido={partido} />
+                    ))}
+                </>
+              )}
+
+              {/* Finalizados */}
+              {recentFinished.length > 0 && (
+                <>
+                  <div className="col-span-full flex items-center gap-2 mt-4 mb-1">
+                    <Calendar size={14} className="text-slate-500" />
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Finalizados</span>
+                    <div className="flex-1 h-px bg-white/5" />
+                  </div>
+                  {[...recentFinished]
+                    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+                    .map(partido => (
+                      <ResultCard key={partido.id} partido={partido} />
+                    ))}
+                </>
+              )}
 
               {/* Si no hay nada */}
               {upcomingMatches.length === 0 && recentFinished.length === 0 && (
@@ -500,65 +524,71 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
   );
 }
 
+// Helper: relative date label
+function getRelativeDate(fecha: string, includeTime = true) {
+  const date = new Date(fecha);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diff = (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+  const time = date.toLocaleString('es-CO', { hour: '2-digit', minute: '2-digit' });
+
+  if (diff === 0) return includeTime ? `Hoy, ${time}` : 'Hoy';
+  if (diff === -1) return includeTime ? `Ayer, ${time}` : 'Ayer';
+  if (diff === 1) return includeTime ? `Mañana, ${time}` : 'Mañana';
+  return includeTime
+    ? date.toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : date.toLocaleString('es-CO', { day: 'numeric', month: 'short' });
+}
+
 function UpcomingMatchCard({ partido }: { partido: Partido }) {
   const sportName = partido.disciplinas?.name || 'Deporte';
-  const accentColor = SPORT_ACCENT[sportName] || 'text-slate-500';
   const genero = partido.genero || 'masculino';
+
+  const generoBg = genero === 'femenino'
+    ? 'bg-pink-500/15 border border-pink-400/20 backdrop-blur-md text-pink-400 shadow-[0_0_15px_currentColor]'
+    : genero === 'mixto'
+      ? 'bg-purple-500/15 border border-purple-400/20 backdrop-blur-md text-purple-400 shadow-[0_0_15px_currentColor]'
+      : 'bg-blue-500/15 border border-blue-400/20 backdrop-blur-md text-blue-400 shadow-[0_0_15px_currentColor]';
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block">
-      <div className={cn(
-        "relative overflow-hidden rounded-2xl border bg-white/5 hover:bg-white/10 shadow-sm border-white/10 transition-all duration-300 p-4 flex items-center gap-4",
-        SPORT_BORDER[sportName] || 'border-white/10'
-      )}>
+      <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-[#17130D] hover:bg-[#1f1911] shadow-sm transition-all duration-300 p-3 sm:p-4 hover:-translate-y-0.5">
+        {/* Glowing Background gradient */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-30 group-hover:opacity-50 transition-opacity`} />
         {/* Sport Icon Watermark */}
         <div className="absolute -bottom-3 -right-3 pointer-events-none select-none group-hover:scale-110 transition-transform duration-500">
-          <SportIcon sport={sportName} size={70} className={cn("opacity-[0.12] group-hover:opacity-[0.25] transition-all duration-500 drop-shadow-[0_0_20px_currentColor]", SPORT_ACCENT[sportName] || 'text-white')} />
-        </div>
-        {/* Date Box */}
-        <div className="flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-white/5 border border-white/10 shrink-0">
-          <span className="text-xs uppercase font-bold text-slate-500 leading-none mb-1">
-            {new Date(partido.fecha).toLocaleString('es-CO', { month: 'short' }).replace('.', '')}
-          </span>
-          <span className="text-2xl font-black text-white leading-none">
-            {new Date(partido.fecha).getDate()}
-          </span>
-          <span className="text-xs font-medium text-slate-500 leading-none mt-1">
-            {new Date(partido.fecha).toLocaleString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-          </span>
+          <SportIcon sport={sportName} size={70} className={cn("opacity-[0.12] group-hover:opacity-[0.20] transition-all duration-500", SPORT_ACCENT[sportName] || 'text-white')} />
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <span className={cn("text-xs font-black uppercase tracking-wider", accentColor)}>
-              {sportName}
+        {/* Header: Sport icon on gender-colored bg + Date */}
+        <div className="relative z-10 flex items-center justify-between mb-3 pb-3 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", generoBg)}>
+              <SportIcon sport={sportName} size={16} className="text-white" />
+            </div>
+            <span className="text-sm font-black text-white">
+              {getRelativeDate(partido.fecha, true)}
             </span>
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${genero === 'femenino' ? 'bg-pink-500/20 text-pink-400' :
-              genero === 'mixto' ? 'bg-purple-500/20 text-purple-400' :
-                'bg-blue-500/20 text-blue-400'
-              }`}>{genero === 'femenino' ? '♀ F' : genero === 'mixto' ? '⚤ Mix' : '♂ M'}</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-            <span className="text-sm text-slate-500 font-medium truncate">{partido.lugar || 'Por definir'}</span>
           </div>
-
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar name={partido.equipo_a} size="sm" className="w-6 h-6 text-xs border border-white/10" />
-                <span className="text-lg font-bold text-slate-200 truncate">{partido.equipo_a}</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <div className="flex items-center gap-3">
-                <Avatar name={partido.equipo_b} size="sm" className="w-6 h-6 text-xs border border-white/10" />
-                <span className="text-lg font-bold text-slate-500 truncate group-hover:text-slate-200 transition-colors">{partido.equipo_b}</span>
-              </div>
-            </div>
-          </div>
+          <span className="text-[10px] font-bold text-amber-400/80 bg-amber-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Próximo</span>
         </div>
 
-        <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-slate-500 group-hover:bg-orange-500 group-hover:text-white transition-colors cursor-pointer">
-          <ChevronRight size={14} />
+        {/* Teams */}
+        <div className="relative z-10 space-y-2.5">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0">
+              {partido.equipo_a.substring(0, 2).toUpperCase()}
+            </div>
+            <span className="text-sm font-bold text-white truncate">{partido.equipo_a}</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0">
+              {partido.equipo_b.substring(0, 2).toUpperCase()}
+            </div>
+            <span className="text-sm font-bold text-slate-400 truncate group-hover:text-white transition-colors">{partido.equipo_b}</span>
+          </div>
         </div>
       </div>
     </Link>
@@ -569,50 +599,64 @@ function ResultCard({ partido }: { partido: Partido }) {
   const sportName = partido.disciplinas?.name || 'Deporte';
   const { scoreA, scoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
   const winnerA = scoreA > scoreB;
+  const isDraw = scoreA === scoreB;
   const genero = partido.genero || 'masculino';
+
+  const generoBg = genero === 'femenino'
+    ? 'bg-pink-500/15 border border-pink-400/20 backdrop-blur-md text-pink-400 shadow-[0_0_15px_currentColor]'
+    : genero === 'mixto'
+      ? 'bg-purple-500/15 border border-purple-400/20 backdrop-blur-md text-purple-400 shadow-[0_0_15px_currentColor]'
+      : 'bg-blue-500/15 border border-blue-400/20 backdrop-blur-md text-blue-400 shadow-[0_0_15px_currentColor]';
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block">
-      <div className={cn(
-        "relative overflow-hidden rounded-2xl border bg-white/5 hover:bg-white/10 shadow-sm transition-all duration-300 p-3 sm:p-4",
-        SPORT_BORDER[sportName] || 'border-white/10'
-      )}>
-        {/* Sport Icon Watermark */}
+      <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-[#17130D] hover:bg-[#1f1911] shadow-sm transition-all duration-300 p-3 sm:p-4 hover:-translate-y-0.5">
+        {/* Glowing Background gradient */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-30 group-hover:opacity-50 transition-opacity`} />
+        {/* Sport Icon Watermark with sport color */}
         <div className="absolute -bottom-3 -right-3 pointer-events-none select-none group-hover:scale-110 transition-transform duration-500">
-          <SportIcon sport={sportName} size={70} className={cn("opacity-[0.12] group-hover:opacity-[0.25] transition-all duration-500 drop-shadow-[0_0_20px_currentColor]", SPORT_ACCENT[sportName] || 'text-white')} />
-        </div>
-        <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold uppercase tracking-wider text-slate-500">{sportName}</span>
-            <span className={`text-xs font-bold px-1.5 py-0.5 rounded text-white ${genero === 'femenino' ? 'bg-pink-400' :
-              genero === 'mixto' ? 'bg-purple-400' :
-                'bg-blue-400'
-              }`}>{genero === 'femenino' ? '♀' : genero === 'mixto' ? '⚤' : '♂'}</span>
-          </div>
-          <span className="text-sm font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">Finalizado</span>
+          <SportIcon sport={sportName} size={70} className={cn("opacity-[0.12] group-hover:opacity-[0.20] transition-all duration-500", SPORT_ACCENT[sportName] || 'text-white')} />
         </div>
 
-        <div className="space-y-3">
+        {/* Header: Sport icon on gender-colored bg + Date + Finalizado badge */}
+        <div className="relative z-10 flex items-center justify-between mb-3 pb-3 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", generoBg)}>
+              <SportIcon sport={sportName} size={16} className="text-white" />
+            </div>
+            <span className="text-sm font-black text-white">
+              {getRelativeDate(partido.fecha, false)}
+            </span>
+          </div>
+          <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded-full uppercase tracking-wider">Finalizado</span>
+        </div>
+
+        {/* Teams */}
+        <div className="relative z-10 space-y-2.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar name={partido.equipo_a} size="sm" className={cn("w-8 h-8 text-sm border", winnerA ? "border-orange-500/50" : "border-white/10 opacity-70")} />
-              <span className={cn("text-lg font-bold truncate", winnerA ? "text-white" : "text-slate-500")}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={cn("w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0")}>
+                {partido.equipo_a.substring(0, 2).toUpperCase()}
+              </div>
+              <span className={cn("text-sm font-bold truncate", winnerA || isDraw ? "text-white" : "text-slate-500")}>
                 {partido.equipo_a}
               </span>
             </div>
-            <span className={cn("text-3xl font-black font-mono", winnerA ? "text-orange-400" : "text-slate-500")}>
+            <span className={cn("text-2xl font-black tabular-nums ml-3", winnerA ? "text-amber-400" : "text-slate-600")}>
               {scoreA}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar name={partido.equipo_b} size="sm" className={cn("w-8 h-8 text-sm border", !winnerA && scoreB > scoreA ? "border-orange-500/50" : "border-white/10 opacity-70")} />
-              <span className={cn("text-lg font-bold truncate", !winnerA && scoreB > scoreA ? "text-white" : "text-slate-500")}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={cn("w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0")}>
+                {partido.equipo_b.substring(0, 2).toUpperCase()}
+              </div>
+              <span className={cn("text-sm font-bold truncate", !winnerA && scoreB > scoreA ? "text-white" : isDraw ? "text-white" : "text-slate-500")}>
                 {partido.equipo_b}
               </span>
             </div>
-            <span className={cn("text-3xl font-black font-mono", !winnerA && scoreB > scoreA ? "text-orange-400" : "text-slate-500")}>
+            <span className={cn("text-2xl font-black tabular-nums ml-3", !winnerA && scoreB > scoreA ? "text-amber-400" : "text-slate-600")}>
               {scoreB}
             </span>
           </div>

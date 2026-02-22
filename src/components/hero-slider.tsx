@@ -13,11 +13,20 @@ import { SportIcon } from "@/components/sport-icons";
 // Helper para obtener iniciales
 const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
 
-export function HeroSlider({ matches }: { matches: any[] }) {
+export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[], activeFilter?: string }) {
     const [currentIndex, setCurrentIndex] = useState(0);
 
+    // Reset index when filter changes
+    useEffect(() => {
+        setCurrentIndex(0);
+    }, [activeFilter]);
+
     // Filtrar partidos destacados: En vivo primero, luego programados cercanos
-    const featuredMatches = matches
+    const filteredBySport = activeFilter === 'todos'
+        ? matches
+        : matches.filter(m => m.disciplinas?.name === activeFilter);
+
+    const featuredMatches = filteredBySport
         .filter(m => m.estado === 'en_vivo' || m.estado === 'programado')
         .sort((a, b) => {
             if (a.estado === 'en_vivo' && b.estado !== 'en_vivo') return -1;
@@ -136,7 +145,7 @@ export function HeroSlider({ matches }: { matches: any[] }) {
                                 transition={{ delay: 0.3 }}
                                 className="flex flex-col items-center gap-4 flex-1 text-right"
                             >
-                                <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm transform -rotate-3">
+                                <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
                                     <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.equipo_a)}</span>
                                 </div>
                                 <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
@@ -176,7 +185,7 @@ export function HeroSlider({ matches }: { matches: any[] }) {
                                 transition={{ delay: 0.3 }}
                                 className="flex flex-col items-center gap-4 flex-1 text-left"
                             >
-                                <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm transform rotate-3">
+                                <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
                                     <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.equipo_b)}</span>
                                 </div>
                                 <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
