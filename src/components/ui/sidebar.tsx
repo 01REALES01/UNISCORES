@@ -120,13 +120,18 @@ export const MobileSidebar = ({
         <>
             <div
                 className={cn(
-                    "h-16 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-[#17130D]/90 backdrop-blur-2xl border-b border-white/5 w-full glass sticky top-0 z-30"
+                    "h-16 px-6 py-4 flex flex-row md:hidden items-center justify-between bg-[#17130D] border-b border-white/5 w-full sticky top-0 z-[60] shadow-xl"
                 )}
                 {...props}
             >
-                <div className="flex z-20 w-fit">
+                <div className="flex justify-between items-center w-full z-20">
+                    <div className="flex items-center gap-3">
+                        <img src="/uninorte_logo.png" alt="Logo" className="h-8 w-auto" />
+                        <span className="text-sm font-black tracking-tighter text-white">ADMIN</span>
+                    </div>
                     <Menu
-                        className="text-white/50 hover:text-white cursor-pointer"
+                        className="text-white hover:text-red-500 transition-colors cursor-pointer"
+                        size={24}
                         onClick={() => setOpen(!open)}
                     />
                 </div>
@@ -141,18 +146,34 @@ export const MobileSidebar = ({
                                 ease: "easeInOut",
                             }}
                             className={cn(
-                                "fixed h-full w-full inset-0 bg-[#0a0805]/95 backdrop-blur-3xl p-10 z-[100] flex flex-col justify-between",
+                                "fixed h-full w-[280px] inset-y-0 left-0 bg-[#0a0805] p-6 z-[100] flex flex-col justify-between border-r border-white/10 shadow-2xl",
                                 className
                             )}
                         >
-                            <div
-                                className="absolute right-10 top-10 z-50 text-white/50 hover:text-white cursor-pointer"
-                                onClick={() => setOpen(!open)}
-                            >
-                                <X />
+                            <div className="flex flex-col h-full relative">
+                                <div
+                                    className="absolute right-0 top-0 z-50 text-white/50 hover:text-white cursor-pointer p-2"
+                                    onClick={() => setOpen(false)}
+                                >
+                                    <X size={20} />
+                                </div>
+                                <div className="mt-8 flex-1 overflow-y-auto">
+                                    {children}
+                                </div>
                             </div>
-                            {children}
                         </motion.div>
+                    )}
+                </AnimatePresence>
+                {/* Backdrop overlay */}
+                <AnimatePresence>
+                    {open && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setOpen(false)}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] md:hidden"
+                        />
                     )}
                 </AnimatePresence>
             </div>

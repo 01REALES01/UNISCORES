@@ -175,6 +175,11 @@ export default function Home() {
                   <Trophy size={18} />
                 </Button>
               </Link>
+              <Link href="/admin/login">
+                <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-500/10 rounded-full">
+                  <Activity size={18} />
+                </Button>
+              </Link>
             </div>
 
             {/* User / Login Section (Far Right) */}

@@ -120,7 +120,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ];
 
     return (
-        <div className="min-h-screen flex bg-[#0a0805] text-slate-200 selection:bg-red-500/30">
+        <div className="min-h-screen flex flex-col md:flex-row bg-[#0a0805] text-slate-200 selection:bg-red-500/30">
             {/* Ambient Background - Global */}
             <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-red-600/10 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '8s' }} />
@@ -243,7 +243,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden relative">
 
 
-                <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                <main className="flex-1 overflow-y-auto p-4 md:p-8 mt-16 md:mt-0">
                     {children}
                 </main>
             </div>
