@@ -29,13 +29,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // Redirect to login if not authenticated or not staff
     useEffect(() => {
         if (!loading && !user) {
-            router.push("/admin/login");
+            router.push("/login");
         }
     }, [loading, user, router]);
 
     const handleLogout = async () => {
         await signOut();
-        router.push("/admin/login");
+        router.push("/login");
     };
 
     // Show loading while checking auth
@@ -188,7 +188,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <div className="px-2 w-full flex justify-center">
                             <Link
                                 href="/"
-                                target="_blank"
                                 className={cn("group flex items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/5 hover:from-emerald-500/20 hover:to-teal-500/10 border border-emerald-500/20 transition-all duration-300 shadow-lg shadow-emerald-900/5 hover:shadow-emerald-900/10", open ? "justify-between px-4 py-3 w-full" : "w-12 aspect-square")}
                             >
                                 <div className="flex items-center gap-3">

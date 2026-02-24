@@ -207,3 +207,74 @@ input,
 .font-sans {
   font-family: var(--font-sans);
 }
+
+/* ============================================
+   SPLASH SCREEN ANIMATIONS
+   ============================================ */
+
+/* Impact flash - brief white burst */
+.splash-flash {
+  animation: splashFlash 0.4s ease-out forwards;
+}
+
+@keyframes splashFlash {
+  0% {
+    opacity: 0;
+  }
+
+  15% {
+    opacity: 0.35;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Screen shake on impact */
+.splash-shake {
+  animation: splashShake 0.5s ease-out;
+}
+
+@keyframes splashShake {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  15% {
+    transform: translate(-4px, 2px) rotate(-0.5deg);
+  }
+
+  30% {
+    transform: translate(3px, -2px) rotate(0.5deg);
+  }
+
+  45% {
+    transform: translate(-2px, 1px) rotate(-0.3deg);
+  }
+
+  60% {
+    transform: translate(1px, -1px) rotate(0.2deg);
+  }
+
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
+/* Expanding ring on impact point */
+.splash-ring {
+  animation: splashRing 0.8s ease-out forwards;
+}
+
+@keyframes splashRing {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.5);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(3);
+  }
+}

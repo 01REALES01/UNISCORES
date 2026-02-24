@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { MatchCardSkeleton } from "@/components/skeletons";
 import { HeroSlider } from "@/components/hero-slider";
 import { useAuth } from "@/hooks/useAuth";
-import { Trophy, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, Activity, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle } from "lucide-react";
+import { Trophy, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield } from "lucide-react";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -16,6 +16,7 @@ import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_BORDER, SPORT_GLOW } f
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { SportIcon } from "@/components/sport-icons";
 import { ExpandableTabs, TabItem } from "@/components/ui/expandable-tabs";
+import { SplashScreen } from "@/components/splash-screen";
 
 type Partido = {
   id: number;
@@ -38,12 +39,31 @@ type Partido = {
 
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, isStaff, signOut } = useAuth();
   const router = useRouter();
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("todos");
   const [searchQuery, setSearchQuery] = useState("");
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close profile menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    setProfileMenuOpen(false);
+    await signOut();
+    router.push('/');
+  };
 
   const fetchPartidos = async (isBackground = false) => {
     if (!isBackground) setLoading(true);
@@ -115,6 +135,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0a0805] text-white font-sans selection:bg-red-500/30">
+      {/* Splash Screen - Solo se muestra 1 vez */}
+      <SplashScreen />
       {/* Background Ambient Effects (Removed to keep deep black tone) */}
       <div className="fixed inset-0 pointer-events-none z-0">
       </div>
@@ -149,14 +171,14 @@ export default function Home() {
                   { title: "Medallería", icon: Trophy },
                   { type: "separator" },
                   { title: "TV", icon: Tv },
-                  { title: "Admin", icon: Activity },
+                  ...(isStaff ? [{ title: "Admin", icon: Shield }] : []),
                 ]}
                 onChange={(index) => {
                   if (index === 0) router.push('/');
                   if (index === 1) router.push('/mapa');
                   if (index === 2) router.push('/medallero');
                   if (index === 4) window.open('/tv', '_blank');
-                  if (index === 5) router.push('/admin/login');
+                  if (index === 5 && isStaff) router.push('/admin');
                 }}
               />
             </div>
@@ -175,11 +197,6 @@ export default function Home() {
                   <Trophy size={18} />
                 </Button>
               </Link>
-              <Link href="/admin/login">
-                <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-500/10 rounded-full">
-                  <Activity size={18} />
-                </Button>
-              </Link>
             </div>
 
             {/* User / Login Section (Far Right) */}
@@ -194,19 +211,66 @@ export default function Home() {
                 </Button>
               </Link>
             ) : (
-              <Link href="/quiniela">
-                <div className="flex items-center gap-3 pl-2 sm:pl-4 sm:border-l border-white/10">
+              <div className="relative" ref={profileMenuRef}>
+                <div
+                  className="flex items-center gap-3 pl-2 sm:pl-4 sm:border-l border-white/10 cursor-pointer"
+                  onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                >
                   <div className="text-right hidden sm:block">
                     <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Hola,</p>
                     <p className="text-sm font-bold text-white">{user.email?.split('@')[0]}</p>
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-amber-600 flex items-center justify-center text-white font-bold border-2 border-white/10 shadow-lg cursor-pointer hover:scale-105 transition-transform">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-amber-600 flex items-center justify-center text-white font-bold border-2 border-white/10 shadow-lg hover:scale-105 transition-transform">
                     {user.email?.substring(0, 2).toUpperCase()}
                   </div>
                 </div>
-              </Link>
-            )}
-          </div>
+
+                {/* Profile Dropdown */}
+                {profileMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-[#17130D] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                    {/* User info header */}
+                    <div className="px-4 py-3 border-b border-white/5">
+                      <p className="text-sm font-bold text-white truncate">{user.email?.split('@')[0]}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
+                    </div>
+
+                    <div className="py-1">
+                      {/* Admin Panel (only for staff) */}
+                      {isStaff && (
+                        <button
+                          onClick={() => { setProfileMenuOpen(false); router.push('/admin'); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors"
+                        >
+                          <Shield size={16} />
+                          Panel Admin
+                        </button>
+                      )}
+
+                      {/* Mis Predicciones */}
+                      <button
+                        onClick={() => { setProfileMenuOpen(false); router.push('/quiniela'); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white hover:bg-white/5 transition-colors"
+                      >
+                        <BarChart3 size={16} />
+                        Mis Predicciones
+                      </button>
+
+                      {/* Divider */}
+                      <div className="my-1 border-t border-white/5" />
+
+                      {/* Cerrar Sesión */}
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors"
+                      >
+                        <LogOut size={16} />
+                        Cerrar Sesión
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}</div>
         </div>
       </header>
 
