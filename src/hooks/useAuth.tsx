@@ -85,6 +85,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         mountedRef.current = true;
 
+        // Safety timeout — never stay on loading screen forever
+        const safetyTimer = setTimeout(() => {
+            if (mountedRef.current) {
+                setLoading(false);
+            }
+        }, 5000);
+
         const getInitialSession = async () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
@@ -120,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const currentUser = session?.user ?? null;
                 setUser(currentUser);
 
-                if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+                if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
                     await fetchProfile(currentUser.id);
                     if (mountedRef.current) {
                         setLoading(false);
@@ -134,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         return () => {
             mountedRef.current = false;
+            clearTimeout(safetyTimer);
             subscription.unsubscribe();
         };
     }, [fetchProfile]);

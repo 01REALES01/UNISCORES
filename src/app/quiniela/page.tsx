@@ -477,8 +477,13 @@ export default function QuinielaPage() {
                     throw error;
                 }
 
-                const { data: newData } = await supabase.from('pronosticos').select('*').eq('user_id', user.id);
-                if (newData) setPredictions(newData);
+                // Refresh both user predictions AND all predictions (for percentage bar)
+                const [userPreds, allPreds] = await Promise.all([
+                    supabase.from('pronosticos').select('*').eq('user_id', user.id),
+                    supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'),
+                ]);
+                if (userPreds.data) setPredictions(userPreds.data);
+                if (allPreds.data) setAllPredictions(allPreds.data);
             },
             {
                 loading: 'Guardando predicción...',
