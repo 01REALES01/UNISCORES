@@ -1,23 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 const SPLASH_KEY = "uninorte_splash_seen";
+const TOTAL_FRAMES = 80;
+const FRAME_INTERVAL_MS = 40; // ~25fps
+
+function getFramePath(index: number) {
+    return `/animacion_UNISCORES/The_general_idea_1080p_202602250113_${index.toString().padStart(3, '0')}.jpg`;
+}
 
 export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
     const [isVisible, setIsVisible] = useState(true);
-    const [currentFrame, setCurrentFrame] = useState(0);
-    const [isClient, setIsClient] = useState(false);
+    const [isReady, setIsReady] = useState(false);
     const [isFadingOut, setIsFadingOut] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const imagesRef = useRef<HTMLImageElement[]>([]);
+    const frameRef = useRef(0);
+    const animIdRef = useRef<number | null>(null);
+    const lastTimeRef = useRef(0);
 
-    const totalFrames = 80;
-    // ~24fps = ~41ms per frame. We'll use 40ms to make it smooth.
-    const frameIntervalMs = 40;
-
+    // Check session + preload all images
     useEffect(() => {
         setIsClient(true);
 
-        // Check if user has already seen splash screen this session
         try {
             if (sessionStorage.getItem(SPLASH_KEY) === "true") {
                 setIsVisible(false);
@@ -26,42 +33,93 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
             }
         } catch { }
 
-        // Start animation loop
-        let frame = 0;
-        const interval = setInterval(() => {
-            frame++;
-            if (frame >= totalFrames) {
-                clearInterval(interval);
+        // Preload all frames into Image objects
+        let loaded = 0;
+        const images: HTMLImageElement[] = [];
 
-                // Start fade out
-                setIsFadingOut(true);
+        for (let i = 0; i < TOTAL_FRAMES; i++) {
+            const img = new Image();
+            img.src = getFramePath(i);
+            img.onload = () => {
+                loaded++;
+                if (loaded >= TOTAL_FRAMES) {
+                    setIsReady(true);
+                }
+            };
+            img.onerror = () => {
+                loaded++;
+                if (loaded >= TOTAL_FRAMES) {
+                    setIsReady(true);
+                }
+            };
+            images.push(img);
+        }
+        imagesRef.current = images;
 
-                // Mark as seen for this session
-                try {
-                    sessionStorage.setItem(SPLASH_KEY, "true");
-                } catch { }
-
-                // Wait for fade out transition (700ms) to unmount
-                setTimeout(() => {
-                    setIsVisible(false);
-                    onComplete?.();
-                }, 700);
-            } else {
-                setCurrentFrame(frame);
-            }
-        }, frameIntervalMs);
-
-        return () => clearInterval(interval);
+        return () => {
+            if (animIdRef.current) cancelAnimationFrame(animIdRef.current);
+        };
     }, [onComplete]);
 
-    // Don't render until client-side hydration is complete to prevent flashing
-    if (!isClient || !isVisible) return null;
+    // Start canvas animation once images are ready
+    const startAnimation = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
 
-    // Helper to format frame number with leading zeros (000 to 079)
-    const getFramePath = (index: number) => {
-        const paddedIndex = index.toString().padStart(3, '0');
-        return `/animacion_UNISCORES/The_general_idea_1080p_202602250113_${paddedIndex}.jpg`;
-    };
+        const images = imagesRef.current;
+        if (images.length === 0) return;
+
+        // Set canvas size to match first image
+        const firstImg = images[0];
+        canvas.width = firstImg.naturalWidth;
+        canvas.height = firstImg.naturalHeight;
+
+        frameRef.current = 0;
+        lastTimeRef.current = performance.now();
+
+        const animate = (now: number) => {
+            const elapsed = now - lastTimeRef.current;
+
+            if (elapsed >= FRAME_INTERVAL_MS) {
+                lastTimeRef.current = now - (elapsed % FRAME_INTERVAL_MS);
+                const frame = frameRef.current;
+
+                if (frame >= TOTAL_FRAMES) {
+                    // Animation complete
+                    setIsFadingOut(true);
+                    try { sessionStorage.setItem(SPLASH_KEY, "true"); } catch { }
+                    setTimeout(() => {
+                        setIsVisible(false);
+                        onComplete?.();
+                    }, 700);
+                    return;
+                }
+
+                // Draw current frame
+                const img = images[frame];
+                if (img.complete && img.naturalWidth > 0) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                }
+
+                frameRef.current = frame + 1;
+            }
+
+            animIdRef.current = requestAnimationFrame(animate);
+        };
+
+        animIdRef.current = requestAnimationFrame(animate);
+    }, [onComplete]);
+
+    useEffect(() => {
+        if (isReady) {
+            startAnimation();
+        }
+    }, [isReady, startAnimation]);
+
+    if (!isClient || !isVisible) return null;
 
     return (
         <div
@@ -69,46 +127,22 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
                 }`}
         >
             <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-black">
-                {/* 
-                    We render the current frame.
-                */}
-                <img
-                    src={getFramePath(currentFrame)}
-                    alt="Cargando Olimpiadas 2026"
-                    // On mobile: fills height, crops sides cleanly (object-cover).
-                    // On desktop: contained to show full ratio, scaled slightly to enhance presence.
+                <canvas
+                    ref={canvasRef}
                     className="w-full h-full object-cover md:object-contain md:scale-[1.15]"
-                    draggable={false}
                 />
-
-                {/* Preloading next few frames to ensure smooth playback without network stutter */}
-                <div className="hidden">
-                    {[1, 2, 3, 4, 5].map(offset => {
-                        const nextIndex = currentFrame + offset;
-                        if (nextIndex < totalFrames) {
-                            return (
-                                <img
-                                    key={nextIndex}
-                                    src={getFramePath(nextIndex)}
-                                    alt=""
-                                    aria-hidden="true"
-                                />
-                            );
-                        }
-                        return null;
-                    })}
-                </div>
             </div>
 
-            {/* Skip button for impatient users */}
+            {/* Skip button */}
             <button
                 onClick={() => {
+                    if (animIdRef.current) cancelAnimationFrame(animIdRef.current);
                     setIsFadingOut(true);
                     try { sessionStorage.setItem(SPLASH_KEY, "true"); } catch { }
                     setTimeout(() => {
                         setIsVisible(false);
                         onComplete?.();
-                    }, 400); // Faster fade out on skip
+                    }, 400);
                 }}
                 className={`absolute bottom-6 right-6 text-white/30 hover:text-white/80 text-[10px] 
                     font-medium tracking-wider uppercase transition-all duration-300 

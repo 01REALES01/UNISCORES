@@ -9,11 +9,7 @@ import { CreateMatchModal } from "@/components/create-match-modal";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
-
-const SPORT_EMOJI: Record<string, string> = {
-    'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
-    'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',
-};
+import { SPORT_EMOJI } from "@/lib/constants";
 
 const SPORT_GRADIENT: Record<string, string> = {
     'Fútbol': 'from-emerald-500/20 to-emerald-900/5',

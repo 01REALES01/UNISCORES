@@ -8,14 +8,9 @@ import { PublicLiveTimer } from "@/components/public-live-timer";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { Badge, Avatar } from "@/components/ui-primitives";
 import { cn } from "@/lib/utils";
+import { SPORT_EMOJI } from "@/lib/constants";
 
 // --- Components for TV View ---
-
-const SPORT_EMOJI: Record<string, string> = {
-    'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐', 'Tenis': '🎾',
-    'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Atletismo': '🏃', 'Natación': '🏊',
-    'Ultimate': '🥏'
-};
 
 const TvLiveMatch = ({ match }: { match: any }) => {
     const { scoreA, scoreB, subScoreA, subScoreB, extra, subLabel } = getCurrentScore(match.disciplinas?.name || '', match.marcador_detalle || {});

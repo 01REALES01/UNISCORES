@@ -7,7 +7,7 @@ import { MapPin, Users, Activity, Trophy, Move, Crosshair, ZoomIn, ZoomOut, Maxi
 import Image from "next/image";
 import Link from "next/link";
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import { LUGARES_OLIMPICOS } from "@/lib/constants";
+import { LUGARES_OLIMPICOS, SPORT_EMOJI } from "@/lib/constants";
 
 // Coordenadas ajustadas al mapa generado (Dark Blueprint):
 const VENUE_COORDINATES: Record<string, { x: number; y: number; label: string }> = {
@@ -16,11 +16,6 @@ const VENUE_COORDINATES: Record<string, { x: number; y: number; label: string }>
     'Cancha #1': { x: 57, y: 58, label: 'Cancha 1' },
     'Cancha #2': { x: 61, y: 61, label: 'Cancha 2' },
     'Piscina Centro Deportivo': { x: 71, y: 66, label: 'Piscinas' },
-};
-
-const SPORT_EMOJI: Record<string, string> = {
-    'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
-    'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',
 };
 
 type Match = {

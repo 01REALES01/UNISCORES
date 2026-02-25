@@ -45,6 +45,7 @@ export const CARRERAS_UNINORTE = [
 export const SPORT_EMOJI: Record<string, string> = {
     'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
     'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',
+    'Atletismo': '🏃', 'Ultimate': '🥏',
 };
 
 export const SPORT_GRADIENT: Record<string, string> = {

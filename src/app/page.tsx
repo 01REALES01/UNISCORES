@@ -16,6 +16,7 @@ import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_BORDER, SPORT_GLOW } f
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { SportIcon } from "@/components/sport-icons";
 import { ExpandableTabs, TabItem } from "@/components/ui/expandable-tabs";
+import { toast } from "sonner";
 import { SplashScreen } from "@/components/splash-screen";
 
 type Partido = {
@@ -72,10 +73,11 @@ export default function Home() {
       .select(`*, disciplinas ( name, icon )`)
       .order('fecha', { ascending: true });
 
-    if (!error && data) {
+    if (error) {
+      if (!isBackground) toast.error("Error cargando partidos. Intenta recargar.");
+      console.error("Fetch error:", error);
+    } else if (data) {
       const sorted = (data as any).sort((a: Partido, b: Partido) => {
-        // Live first, then by date desc (newest first for regular matches? no, usually upcoming is asc, past is desc)
-        // Let's just put Live first, then Programado asc (soonest first), then Finalizado desc (recent first)
         const scoreA = getSortScore(a);
         const scoreB = getSortScore(b);
         return scoreA - scoreB;
@@ -94,7 +96,7 @@ export default function Home() {
   useEffect(() => {
     fetchPartidos();
 
-    // Realtime subscription
+    // Realtime subscription — updates arrive instantly, no polling needed
     const subscription = supabase
       .channel('public:partidos')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, (payload) => {
@@ -103,14 +105,8 @@ export default function Home() {
       })
       .subscribe();
 
-    // Polling backup (every 10s) to ensure carousel updates
-    const interval = setInterval(() => {
-      fetchPartidos(true); // Silent update
-    }, 10000);
-
     return () => {
       supabase.removeChannel(subscription);
-      clearInterval(interval);
     };
   }, []);
 

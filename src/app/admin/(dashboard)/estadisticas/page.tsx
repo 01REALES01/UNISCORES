@@ -24,6 +24,7 @@ import {
     Loader2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { SPORT_EMOJI } from "@/lib/constants";
 
 // ===== TYPES =====
 type Partido = {
@@ -43,17 +44,6 @@ type Evento = {
     minuto: number;
     equipo: string;
     partido_id: number;
-};
-
-// Sport emoji map
-const SPORT_EMOJI: Record<string, string> = {
-    Fútbol: "⚽",
-    Baloncesto: "🏀",
-    Voleibol: "🏐",
-    Tenis: "🎾",
-    "Tenis de Mesa": "🏓",
-    Ajedrez: "♟️",
-    Natación: "🏊",
 };
 
 const SPORT_COLORS: Record<string, string> = {
@@ -419,12 +409,12 @@ export default function EstadisticasPage() {
                                     {/* Position */}
                                     <div
                                         className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm ${i === 0
-                                                ? "bg-amber-500/20 text-amber-400"
-                                                : i === 1
-                                                    ? "bg-slate-400/20 text-slate-300"
-                                                    : i === 2
-                                                        ? "bg-orange-700/20 text-orange-500"
-                                                        : "bg-muted/30 text-muted-foreground"
+                                            ? "bg-amber-500/20 text-amber-400"
+                                            : i === 1
+                                                ? "bg-slate-400/20 text-slate-300"
+                                                : i === 2
+                                                    ? "bg-orange-700/20 text-orange-500"
+                                                    : "bg-muted/30 text-muted-foreground"
                                             }`}
                                     >
                                         {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
@@ -465,10 +455,10 @@ export default function EstadisticasPage() {
                                     </div>
                                     <span
                                         className={`text-xs font-bold px-2 py-1 rounded-lg ${team.winRate >= 70
-                                                ? "bg-emerald-400/10 text-emerald-400"
-                                                : team.winRate >= 40
-                                                    ? "bg-amber-400/10 text-amber-400"
-                                                    : "bg-red-400/10 text-red-400"
+                                            ? "bg-emerald-400/10 text-emerald-400"
+                                            : team.winRate >= 40
+                                                ? "bg-amber-400/10 text-amber-400"
+                                                : "bg-red-400/10 text-red-400"
                                             }`}
                                     >
                                         {team.winRate}%
