@@ -25,16 +25,12 @@ export default function LoginPage() {
     const router = useRouter();
     const { user, profile, loading: authLoading, isStaff } = useAuth();
 
-    // If already logged in, redirect based on role
+    // If already logged in, redirect to home
     useEffect(() => {
         if (!authLoading && user && profile) {
-            if (isStaff) {
-                router.push("/admin");
-            } else {
-                router.push("/");
-            }
+            router.push("/");
         }
-    }, [authLoading, user, profile, isStaff, router]);
+    }, [authLoading, user, profile, router]);
 
     const resetForm = () => {
         setError(null);
@@ -54,7 +50,7 @@ export default function LoginPage() {
         setError(null);
 
         try {
-            const { data, error: authError } = await supabase.auth.signInWithPassword({
+            const { error: authError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
@@ -69,28 +65,14 @@ export default function LoginPage() {
                 throw new Error(authError.message);
             }
 
-            if (data.user) {
-                // Fetch profile to determine redirect
-                const { data: profileData } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', data.user.id)
-                    .single();
+            // Auth state change will be picked up by useAuth → useEffect redirect
+            // No need to manually redirect here
 
-                const role = profileData?.role;
-
-                if (role === 'admin' || role === 'data_entry') {
-                    window.location.href = '/admin';
-                } else {
-                    window.location.href = '/';
-                }
-            }
         } catch (err: any) {
             if (err?.name === 'AbortError' || err?.message?.includes('abort')) {
                 return;
             }
             setError(err.message || "Error al iniciar sesión");
-        } finally {
             setLoading(false);
         }
     };

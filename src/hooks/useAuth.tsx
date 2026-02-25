@@ -121,15 +121,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(currentUser);
 
                 if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-                    // Small delay to avoid race conditions with navigation
-                    setTimeout(async () => {
-                        if (mountedRef.current) {
-                            await fetchProfile(currentUser.id);
-                            if (mountedRef.current) {
-                                setLoading(false);
-                            }
-                        }
-                    }, 100);
+                    await fetchProfile(currentUser.id);
+                    if (mountedRef.current) {
+                        setLoading(false);
+                    }
                 } else if (!currentUser) {
                     setProfile(null);
                     setLoading(false);
