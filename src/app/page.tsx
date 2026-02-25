@@ -68,23 +68,29 @@ export default function Home() {
 
   const fetchPartidos = async (isBackground = false) => {
     if (!isBackground) setLoading(true);
-    const { data, error } = await supabase
-      .from('partidos')
-      .select(`*, disciplinas ( name, icon )`)
-      .order('fecha', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('partidos')
+        .select(`*, disciplinas ( name, icon )`)
+        .order('fecha', { ascending: true });
 
-    if (error) {
-      if (!isBackground) toast.error(`Error cargando partidos: ${error.message || error.code || 'desconocido'}`);
-      console.error("Fetch error:", error);
-    } else if (data) {
-      const sorted = (data as any).sort((a: Partido, b: Partido) => {
-        const scoreA = getSortScore(a);
-        const scoreB = getSortScore(b);
-        return scoreA - scoreB;
-      });
-      setPartidos(sorted);
+      if (error) {
+        if (!isBackground) toast.error(`Error cargando partidos: ${error.message || error.code || 'desconocido'}`);
+        console.error("Fetch error:", error);
+      } else if (data) {
+        const sorted = (data as any).sort((a: Partido, b: Partido) => {
+          const scoreA = getSortScore(a);
+          const scoreB = getSortScore(b);
+          return scoreA - scoreB;
+        });
+        setPartidos(sorted);
+      }
+    } catch (err) {
+      console.error("Critical fetch crash in Partidos:", err);
+      if (!isBackground) toast.error("Error crítico de red. Por favor recarga.");
+    } finally {
+      if (!isBackground) setLoading(false);
     }
-    if (!isBackground) setLoading(false);
   };
 
   const getSortScore = (p: Partido) => {

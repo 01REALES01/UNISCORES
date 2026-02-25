@@ -396,36 +396,47 @@ export default function QuinielaPage() {
         const fetchData = async () => {
             setLoading(true);
 
-            // 1. ALL matches (including finished for result checking)
-            const { data: matchesData } = await supabase
-                .from('partidos')
-                .select('*, disciplinas(name)')
-                .order('fecha', { ascending: true });
+            try {
+                // 1. ALL matches (including finished for result checking)
+                const { data: matchesData, error: mErr } = await supabase
+                    .from('partidos')
+                    .select('*, disciplinas(name)')
+                    .order('fecha', { ascending: true });
 
-            // 2. User's predictions
-            const { data: predsData } = await supabase
-                .from('pronosticos')
-                .select('*')
-                .eq('user_id', user.id);
+                // 2. User's predictions
+                const { data: predsData, error: pErr } = await supabase
+                    .from('pronosticos')
+                    .select('*')
+                    .eq('user_id', user.id);
 
-            // 3. ALL predictions (for community percentages)
-            const { data: allPredsData } = await supabase
-                .from('pronosticos')
-                .select('match_id, winner_pick, prediction_type');
+                // 3. ALL predictions (for community percentages)
+                const { data: allPredsData, error: aErr } = await supabase
+                    .from('pronosticos')
+                    .select('match_id, winner_pick, prediction_type');
 
-            // 4. Ranking
-            const { data: rankingData } = await supabase
-                .from('public_profiles')
-                .select('*')
-                .order('points', { ascending: false })
-                .limit(50);
+                // 4. Ranking
+                const { data: rankingData, error: rErr } = await supabase
+                    .from('public_profiles')
+                    .select('*')
+                    .order('points', { ascending: false })
+                    .limit(50);
 
-            if (matchesData) setMatches(matchesData);
-            if (predsData) setPredictions(predsData);
-            if (allPredsData) setAllPredictions(allPredsData);
-            if (rankingData) setRanking(rankingData);
+                if (mErr) console.error("Matches error:", mErr);
+                if (matchesData) setMatches(matchesData);
 
-            setLoading(false);
+                if (pErr) console.error("Preds error:", pErr);
+                if (predsData) setPredictions(predsData);
+
+                if (aErr) console.error("All preds error:", aErr);
+                if (allPredsData) setAllPredictions(allPredsData);
+
+                if (rErr) console.error("Ranking error:", rErr);
+                if (rankingData) setRanking(rankingData);
+            } catch (err: any) {
+                console.error("Critical fetch crash in Quiniela:", err);
+            } finally {
+                setLoading(false);
+            }
         };
 
         fetchData();
