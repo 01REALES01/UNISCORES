@@ -136,6 +136,14 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                             )}
                         </motion.div>
 
+                        {/* Sport Badge - Centered independently */}
+                        <div className="flex justify-center mb-4">
+                            <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full border border-white/5">
+                                <span>{SPORT_EMOJI[currentMatch.disciplinas?.name] || '🏅'}</span>
+                                <span>{currentMatch.disciplinas?.name}</span>
+                            </div>
+                        </div>
+
                         {/* Teams & Score */}
                         <div className="flex items-center justify-center gap-4 md:gap-12 w-full max-w-4xl">
                             {/* Team A */}
@@ -143,7 +151,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                 initial={{ x: -50, opacity: 0 }}
                                 animate={{ x: 0, opacity: 1 }}
                                 transition={{ delay: 0.3 }}
-                                className="flex flex-col items-center gap-4 flex-1 text-right"
+                                className="flex flex-col items-center gap-4 flex-1 text-center"
                             >
                                 <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
                                     <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.equipo_a)}</span>
@@ -172,10 +180,6 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                 ) : (
                                     <div className="text-4xl md:text-6xl font-black text-white/10 italic">VS</div>
                                 )}
-                                <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full border border-white/5 hover:bg-white/10 transition-colors mt-2">
-                                    <span>{SPORT_EMOJI[currentMatch.disciplinas?.name] || '🏅'}</span>
-                                    <span>{currentMatch.disciplinas?.name}</span>
-                                </div>
                             </div>
 
                             {/* Team B */}
@@ -183,7 +187,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                 initial={{ x: 50, opacity: 0 }}
                                 animate={{ x: 0, opacity: 1 }}
                                 transition={{ delay: 0.3 }}
-                                className="flex flex-col items-center gap-4 flex-1 text-left"
+                                className="flex flex-col items-center gap-4 flex-1 text-center"
                             >
                                 <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
                                     <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.equipo_b)}</span>

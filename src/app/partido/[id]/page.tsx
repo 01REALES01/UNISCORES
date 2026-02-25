@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Badge, Avatar } from "@/components/ui-primitives";
+import { Badge, Avatar, Button } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getCurrentScore } from "@/lib/sport-scoring";
@@ -36,8 +38,14 @@ export default function PublicMatchDetail() {
     const router = useRouter();
     const matchId = params.id as string;
 
+    const { user } = useAuth();
+
     const [match, setMatch] = useState<Partido | null>(null);
     const [eventos, setEventos] = useState<Evento[]>([]);
+    const [matchPredictions, setMatchPredictions] = useState<any[]>([]);
+    const [userPrediction, setUserPrediction] = useState<any>(null);
+    const [votingPick, setVotingPick] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
 
     // Cargar datos
@@ -59,7 +67,83 @@ export default function PublicMatchDetail() {
             .order('minuto', { ascending: false });
 
         if (eventosData) setEventos(eventosData);
+
+        // 3. Predictions for this match
+        const { data: predsData } = await supabase
+            .from('pronosticos')
+            .select('winner_pick, prediction_type')
+            .eq('match_id', matchId);
+
+        if (predsData) setMatchPredictions(predsData);
+
+        // 4. User's own prediction for this match
+        if (user) {
+            const { data: userPred } = await supabase
+                .from('pronosticos')
+                .select('*')
+                .eq('match_id', matchId)
+                .eq('user_id', user.id)
+                .single();
+            if (userPred) {
+                setUserPrediction(userPred);
+                setVotingPick(userPred.winner_pick);
+            }
+        }
+
         setLoading(false);
+    };
+
+    // Handle voting
+    const handleVote = async (pick: string) => {
+        if (!user || !match) return;
+        if (match.estado !== 'programado') return;
+
+        setVotingPick(pick);
+        setSaving(true);
+
+        try {
+            // Ensure profile exists
+            await supabase.from('public_profiles').upsert(
+                { id: user.id, email: user.email },
+                { onConflict: 'id' }
+            );
+
+            const payload = {
+                user_id: user.id,
+                match_id: parseInt(matchId),
+                prediction_type: 'winner',
+                goles_a: null,
+                goles_b: null,
+                winner_pick: pick
+            };
+
+            if (userPrediction) {
+                await supabase.from('pronosticos').update(payload).eq('id', userPrediction.id);
+            } else {
+                await supabase.from('pronosticos').insert(payload);
+            }
+
+            // Refresh predictions
+            const { data: predsData } = await supabase
+                .from('pronosticos')
+                .select('winner_pick, prediction_type')
+                .eq('match_id', matchId);
+            if (predsData) setMatchPredictions(predsData);
+
+            const { data: userPred } = await supabase
+                .from('pronosticos')
+                .select('*')
+                .eq('match_id', matchId)
+                .eq('user_id', user.id)
+                .single();
+            if (userPred) setUserPrediction(userPred);
+
+            toast.success('¡Predicción guardada!');
+        } catch (err: any) {
+            toast.error('Error al guardar: ' + err.message);
+        } finally {
+            setSaving(false);
+        }
     };
 
     useEffect(() => {
@@ -300,6 +384,145 @@ export default function PublicMatchDetail() {
                             )}
                         </div>
                     </div>
+                </div>
+
+                {/* Community Predictions + Voting Section */}
+                <div className="rounded-3xl bg-[#17130D]/60 backdrop-blur-xl border border-white/10 p-6 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
+                    <div className="flex items-center gap-3 mb-5">
+                        <div className="p-2 rounded-xl bg-red-500/10 text-red-400">
+                            <BarChart3 size={20} />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-lg font-bold text-white tracking-tight">Predicciones</h3>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                                <Users size={10} /> {matchPredictions.length} votos
+                            </p>
+                        </div>
+                        {userPrediction && (
+                            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px]">
+                                <CheckCircle size={10} className="mr-1" /> Votaste
+                            </Badge>
+                        )}
+                    </div>
+
+                    {/* Single Horizontal Percentage Bar */}
+                    {(() => {
+                        const winnerPreds = matchPredictions.filter(p => p.winner_pick);
+                        const total = winnerPreds.length;
+                        const countA = total > 0 ? winnerPreds.filter(p => p.winner_pick === 'A').length : 0;
+                        const countDraw = total > 0 ? winnerPreds.filter(p => p.winner_pick === 'DRAW').length : 0;
+                        const countB = total > 0 ? winnerPreds.filter(p => p.winner_pick === 'B').length : 0;
+                        const pctA = total > 0 ? Math.round((countA / total) * 100) : 33;
+                        const pctDraw = total > 0 ? Math.round((countDraw / total) * 100) : 34;
+                        const pctB = total > 0 ? 100 - pctA - pctDraw : 33;
+
+                        return (
+                            <div className="space-y-3">
+                                {/* Labels */}
+                                <div className="flex justify-between text-[10px] font-black uppercase tracking-wide">
+                                    <span className="text-red-400">{match?.equipo_a?.substring(0, 10)} {total > 0 ? `${pctA}%` : ''}</span>
+                                    <span className="text-slate-500">Empate {total > 0 ? `${pctDraw}%` : ''}</span>
+                                    <span className="text-cyan-400">{match?.equipo_b?.substring(0, 10)} {total > 0 ? `${pctB}%` : ''}</span>
+                                </div>
+
+                                {/* The single bar */}
+                                <div className="flex h-3 rounded-full overflow-hidden bg-white/5 gap-[2px]">
+                                    <div
+                                        className="bg-gradient-to-r from-red-500 to-red-600 rounded-l-full transition-all duration-1000"
+                                        style={{ width: `${Math.max(pctA, 1)}%` }}
+                                    />
+                                    <div
+                                        className="bg-gradient-to-r from-slate-500 to-slate-600 transition-all duration-1000"
+                                        style={{ width: `${Math.max(pctDraw, 1)}%` }}
+                                    />
+                                    <div
+                                        className="bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-r-full transition-all duration-1000"
+                                        style={{ width: `${Math.max(pctB, 1)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* Voting Buttons */}
+                    {match?.estado === 'programado' && user ? (
+                        <div className="mt-5 pt-4 border-t border-white/5">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center">
+                                {userPrediction ? 'Cambiar tu predicción' : '¿Quién ganará?'}
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                                <button
+                                    onClick={() => handleVote('A')}
+                                    disabled={saving}
+                                    className={cn(
+                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        votingPick === 'A'
+                                            ? "bg-gradient-to-b from-red-500 to-red-700 border-red-400 text-white shadow-lg shadow-red-500/25 scale-[1.03]"
+                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    {match?.equipo_a?.substring(0, 8)}
+                                </button>
+                                <button
+                                    onClick={() => handleVote('DRAW')}
+                                    disabled={saving}
+                                    className={cn(
+                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        votingPick === 'DRAW'
+                                            ? "bg-gradient-to-b from-slate-500 to-slate-700 border-slate-400 text-white shadow-lg scale-[1.03]"
+                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    Empate
+                                </button>
+                                <button
+                                    onClick={() => handleVote('B')}
+                                    disabled={saving}
+                                    className={cn(
+                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        votingPick === 'B'
+                                            ? "bg-gradient-to-b from-cyan-500 to-cyan-700 border-cyan-400 text-white shadow-lg shadow-cyan-500/25 scale-[1.03]"
+                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    {match?.equipo_b?.substring(0, 8)}
+                                </button>
+                            </div>
+                        </div>
+                    ) : match?.estado === 'programado' && !user ? (
+                        <div className="mt-5 pt-4 border-t border-white/5 text-center">
+                            <Link href="/login" className="text-[10px] font-bold text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors">
+                                Inicia sesión para predecir →
+                            </Link>
+                        </div>
+                    ) : match?.estado !== 'programado' && userPrediction ? (
+                        <div className={cn(
+                            "mt-5 pt-4 border-t border-white/5 text-center p-3 rounded-xl",
+                            match?.estado === 'finalizado'
+                                ? ((() => {
+                                    const md = match?.marcador_detalle || {};
+                                    const sA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
+                                    const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
+                                    const result = sA > sB ? 'A' : sB > sA ? 'B' : 'DRAW';
+                                    return userPrediction.winner_pick === result;
+                                })() ? "bg-emerald-500/10 border border-emerald-500/15" : "bg-rose-500/10 border border-rose-500/15")
+                                : "bg-white/5"
+                        )}>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu predicción</p>
+                            <p className={cn("text-sm font-black",
+                                match?.estado === 'finalizado' ? (() => {
+                                    const md = match?.marcador_detalle || {};
+                                    const sA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
+                                    const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
+                                    const result = sA > sB ? 'A' : sB > sA ? 'B' : 'DRAW';
+                                    return userPrediction.winner_pick === result ? "text-emerald-400" : "text-rose-400";
+                                })() : "text-white"
+                            )}>
+                                {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {match?.equipo_a}</> :
+                                    userPrediction.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {match?.equipo_b}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
+                            </p>
+                        </div>
+                    ) : null}
                 </div>
 
                 {/* Timeline Section */}

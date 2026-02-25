@@ -39,7 +39,7 @@ type Partido = {
 
 
 export default function Home() {
-  const { user, isStaff, signOut } = useAuth();
+  const { user, profile, isStaff, signOut } = useAuth();
   const router = useRouter();
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,7 +218,7 @@ export default function Home() {
                 >
                   <div className="text-right hidden sm:block">
                     <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Hola,</p>
-                    <p className="text-sm font-bold text-white">{user.email?.split('@')[0]}</p>
+                    <p className="text-sm font-bold text-white truncate max-w-[120px]">{profile?.full_name || user.email?.split('@')[0]}</p>
                   </div>
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-amber-600 flex items-center justify-center text-white font-bold border-2 border-white/10 shadow-lg hover:scale-105 transition-transform">
                     {user.email?.substring(0, 2).toUpperCase()}
@@ -230,7 +230,7 @@ export default function Home() {
                   <div className="absolute right-0 top-full mt-2 w-56 bg-[#17130D] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
                     {/* User info header */}
                     <div className="px-4 py-3 border-b border-white/5">
-                      <p className="text-sm font-bold text-white truncate">{user.email?.split('@')[0]}</p>
+                      <p className="text-sm font-bold text-white truncate">{profile?.full_name || user.email?.split('@')[0]}</p>
                       <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
                     </div>
 

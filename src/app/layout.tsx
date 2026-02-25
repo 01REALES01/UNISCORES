@@ -18,13 +18,19 @@ export const metadata: Metadata = {
     shortcut: "/logo_bar.png",
     apple: "/logo_bar.png",
   },
-  themeColor: "#0a0805",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Olimpiadas",
   },
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
+};
+
+export const viewport = {
+  themeColor: "#0a0805",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

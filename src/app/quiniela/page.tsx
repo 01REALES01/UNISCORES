@@ -5,22 +5,92 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Button, Badge } from "@/components/ui-primitives";
-import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Loader2, Gauge, HandMetal } from "lucide-react";
+import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Loader2, Gauge, HandMetal, Users, X, Flame, Target, Zap, ChevronDown, Filter, History, Handshake } from "lucide-react";
 import Link from "next/link";
-import { SPORT_EMOJI } from "@/lib/constants";
+import { SportIcon } from "@/components/sport-icons";
+
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { getCurrentScore } from "@/lib/sport-scoring";
 
-// --- Components ---
-const PredictionCard = ({ match, prediction, onPredict, locked, mode }: { match: any, prediction: any, onPredict: (matchId: any, data: any) => void, locked: boolean, mode: 'score' | 'winner' }) => {
-    // Score Mode State
+// ─── Helper: Determine actual match result ───
+const getMatchResult = (match: any): 'A' | 'B' | 'DRAW' | null => {
+    if (match.estado !== 'finalizado') return null;
+    const md = match.marcador_detalle || {};
+    const a = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
+    const b = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
+    if (a > b) return 'A';
+    if (b > a) return 'B';
+    return 'DRAW';
+};
+
+// ─── Vote Percentage Bar ───
+const VotePercentageBar = ({ matchId, allPredictions, teamA, teamB }: { matchId: number, allPredictions: any[], teamA: string, teamB: string }) => {
+    const matchPreds = allPredictions.filter(p => p.match_id === matchId && p.winner_pick);
+    const total = matchPreds.length;
+    if (total === 0) return (
+        <div className="flex items-center gap-2 text-[10px] text-slate-600 justify-center py-1">
+            <Users size={10} />
+            <span>Sin predicciones aún</span>
+        </div>
+    );
+
+    const countA = matchPreds.filter(p => p.winner_pick === 'A').length;
+    const countDraw = matchPreds.filter(p => p.winner_pick === 'DRAW').length;
+    const countB = matchPreds.filter(p => p.winner_pick === 'B').length;
+    const pctA = Math.round((countA / total) * 100);
+    const pctDraw = Math.round((countDraw / total) * 100);
+    const pctB = 100 - pctA - pctDraw;
+
+    return (
+        <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider px-0.5">
+                <span className="flex items-center gap-1"><Users size={10} /> {total} predicciones</span>
+            </div>
+            <div className="flex gap-0.5 h-2 rounded-full overflow-hidden bg-white/5">
+                {pctA > 0 && (
+                    <div
+                        className="bg-gradient-to-r from-red-500 to-red-600 rounded-l-full transition-all duration-700 relative group"
+                        style={{ width: `${pctA}%` }}
+                    />
+                )}
+                {pctDraw > 0 && (
+                    <div
+                        className="bg-gradient-to-r from-slate-500 to-slate-600 transition-all duration-700"
+                        style={{ width: `${pctDraw}%` }}
+                    />
+                )}
+                {pctB > 0 && (
+                    <div
+                        className="bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-r-full transition-all duration-700"
+                        style={{ width: `${pctB}%` }}
+                    />
+                )}
+            </div>
+            <div className="flex justify-between text-[10px] font-black tabular-nums">
+                <span className="text-red-400">{teamA.substring(0, 6).toUpperCase()} {pctA}%</span>
+                <span className="text-slate-500">Empate {pctDraw}%</span>
+                <span className="text-cyan-400">{teamB.substring(0, 6).toUpperCase()} {pctB}%</span>
+            </div>
+        </div>
+    );
+};
+
+// ─── Prediction Card ───
+const PredictionCard = ({
+    match, prediction, onPredict, locked, mode, allPredictions
+}: {
+    match: any,
+    prediction: any,
+    onPredict: (matchId: any, data: any) => void,
+    locked: boolean,
+    mode: 'score' | 'winner',
+    allPredictions: any[]
+}) => {
     const [scoreA, setScoreA] = useState(prediction?.goles_a ?? "");
     const [scoreB, setScoreB] = useState(prediction?.goles_b ?? "");
-
-    // Winner Mode State (A, B, DRAW)
     const [winnerPick, setWinnerPick] = useState(prediction?.winner_pick ?? null);
 
-    // Sync state if prediction prop updates
     useEffect(() => {
         if (mode === 'score') {
             setScoreA(prediction?.goles_a ?? "");
@@ -52,125 +122,267 @@ const PredictionCard = ({ match, prediction, onPredict, locked, mode }: { match:
 
     const isPredicted = prediction !== undefined && prediction !== null;
     const isLocked = locked || match.estado !== 'programado';
+    const isFinished = match.estado === 'finalizado';
+    const isLive = match.estado === 'en_vivo';
+
+    // Determine result for finished matches
+    const matchResult = getMatchResult(match);
+    let predictionCorrect: boolean | null = null;
+    if (isFinished && isPredicted && matchResult) {
+        if (prediction.prediction_type === 'winner' || prediction.winner_pick) {
+            predictionCorrect = prediction.winner_pick === matchResult;
+        } else if (prediction.prediction_type === 'score') {
+            const md = match.marcador_detalle || {};
+            const actualA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
+            const actualB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
+            predictionCorrect = prediction.goles_a === actualA && prediction.goles_b === actualB;
+        }
+    }
+
+    // Get actual score for finished/live
+    const scoreInfo = getCurrentScore(match.disciplinas?.name, match.marcador_detalle || {});
+
+    // Card glow color based on result
+    const getCardStyle = () => {
+        if (isFinished && predictionCorrect === true) {
+            return "bg-emerald-500/5 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.12)] ring-1 ring-emerald-500/10";
+        }
+        if (isFinished && predictionCorrect === false) {
+            return "bg-rose-500/5 border-rose-500/20 shadow-[0_0_30px_rgba(244,63,94,0.08)] ring-1 ring-rose-500/10";
+        }
+        if (isLive) {
+            return "bg-rose-500/5 border-rose-500/25 shadow-[0_0_20px_rgba(244,63,94,0.1)]";
+        }
+        if (isPredicted) {
+            return "bg-red-900/10 border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.05)]";
+        }
+        return "bg-white/[0.03] border-white/5 hover:bg-white/[0.06] hover:border-white/10";
+    };
 
     return (
-        <div className={`relative p-5 rounded-3xl border transition-all duration-300 ${isPredicted ? 'bg-red-900/10 border-red-500/30 shadow-[0_0_20px_rgba(99,102,241,0.05)]' : 'bg-white/5 border-white/5 hover:bg-white/[0.07]'}`}>
-            {isLocked && (
-                <div className="absolute top-3 right-3 text-white/60 bg-black/40 p-1.5 rounded-full backdrop-blur-sm">
+        <div className={cn("relative p-5 rounded-3xl border transition-all duration-500 overflow-hidden group", getCardStyle())}>
+            {/* Subtle gradient overlay for finished + correct */}
+            {isFinished && predictionCorrect === true && (
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
+            )}
+            {isFinished && predictionCorrect === false && (
+                <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
+            )}
+
+            {/* Lock icon */}
+            {isLocked && !isFinished && !isLive && (
+                <div className="absolute top-3 right-3 text-white/40 bg-black/40 p-1.5 rounded-full backdrop-blur-sm z-10">
                     <Lock size={12} />
                 </div>
             )}
 
-            <div className="flex justify-between items-center mb-5 border-b border-white/5 pb-3">
-                <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-white/70 uppercase">
-                    <span className="text-base">{SPORT_EMOJI[match.disciplinas.name] || '🏆'}</span>
+            {/* Header: Sport + Date + Status */}
+            <div className="relative flex justify-between items-center mb-4 pb-3 border-b border-white/5">
+                <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-white/60 uppercase">
+                    <SportIcon sport={match.disciplinas?.name} size={16} className="text-current opacity-70" />
                     <span>{new Date(match.fecha).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                    <span className="mx-1">•</span>
+                    <span className="mx-0.5">•</span>
                     <span>{new Date(match.fecha).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
-                {isPredicted && (
-                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-2 py-0.5">
-                        <CheckCircle size={10} className="mr-1" />
-                        Guardado
-                    </Badge>
-                )}
-            </div>
-
-            <div className="flex items-center gap-4 mb-4">
-                <div className="flex-1 text-center font-bold text-sm leading-tight">{match.equipo_a}</div>
-                <div className="text-[10px] font-bold text-white/40 uppercase">VS</div>
-                <div className="flex-1 text-center font-bold text-sm leading-tight">{match.equipo_b}</div>
-            </div>
-
-            {/* INPUT AREA */}
-            <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-                {mode === 'score' ? (
-                    <div className="flex items-center justify-center gap-3">
-                        <input
-                            type="number"
-                            className="w-14 h-12 bg-white/5 border border-white/10 rounded-xl text-center font-mono text-2xl font-black focus:border-red-500 focus:bg-red-500/10 focus:ring-0 outline-none transition-all placeholder:text-white/10"
-                            value={scoreA}
-                            onChange={(e) => setScoreA(e.target.value)}
-                            disabled={isLocked}
-                            placeholder="0"
-                        />
-                        <span className="text-white/50 font-black">-</span>
-                        <input
-                            type="number"
-                            className="w-14 h-12 bg-white/5 border border-white/10 rounded-xl text-center font-mono text-2xl font-black focus:border-red-500 focus:bg-red-500/10 focus:ring-0 outline-none transition-all placeholder:text-white/10"
-                            value={scoreB}
-                            onChange={(e) => setScoreB(e.target.value)}
-                            disabled={isLocked}
-                            placeholder="0"
-                        />
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-3 gap-2">
-                        <button
-                            onClick={() => setWinnerPick('A')}
-                            disabled={isLocked}
-                            className={cn(
-                                "py-3 px-2 rounded-lg text-xs font-black tracking-wide transition-all border",
-                                winnerPick === 'A'
-                                    ? "bg-red-600 border-red-500 text-white shadow-lg shadow-red-500/20"
-                                    : "bg-white/5 border-transparent text-white/70 hover:bg-white/10"
-                            )}
-                        >
-                            Gana {match.equipo_a.substring(0, 3).toUpperCase()}
-                        </button>
-                        <button
-                            onClick={() => setWinnerPick('DRAW')}
-                            disabled={isLocked}
-                            className={cn(
-                                "py-3 px-2 rounded-lg text-xs font-black tracking-wide transition-all border",
-                                winnerPick === 'DRAW'
-                                    ? "bg-slate-600 border-slate-500 text-white shadow-lg"
-                                    : "bg-white/5 border-transparent text-white/70 hover:bg-white/10"
-                            )}
-                        >
-                            Empate
-                        </button>
-                        <button
-                            onClick={() => setWinnerPick('B')}
-                            disabled={isLocked}
-                            className={cn(
-                                "py-3 px-2 rounded-lg text-xs font-black tracking-wide transition-all border",
-                                winnerPick === 'B'
-                                    ? "bg-red-600 border-red-500 text-white shadow-lg shadow-red-500/20"
-                                    : "bg-white/5 border-transparent text-white/70 hover:bg-white/10"
-                            )}
-                        >
-                            Gana {match.equipo_b.substring(0, 3).toUpperCase()}
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {!isLocked && (
-                <div className="mt-4 flex justify-end">
-                    <Button
-                        size="sm"
-                        className={cn("w-full rounded-xl text-xs font-black tracking-wide tracking-wide transition-all", isPredicted ? "bg-red-600 hover:bg-red-700" : "bg-white hover:bg-slate-200 text-black")}
-                        onClick={handleSave}
-                        disabled={mode === 'score' ? (scoreA === "" || scoreB === "") : (!winnerPick)}
-                    >
-                        {isPredicted ? "Actualizar Predicción" : "Guardar Predicción"}
-                    </Button>
+                <div className="flex items-center gap-2">
+                    {isLive && (
+                        <Badge className="bg-rose-500/15 text-rose-400 border-rose-500/20 text-[9px] px-2 py-0.5 animate-pulse">
+                            <Zap size={8} className="mr-1 fill-current" /> EN VIVO
+                        </Badge>
+                    )}
+                    {isFinished && predictionCorrect === true && (
+                        <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-[9px] px-2 py-0.5">
+                            <CheckCircle size={10} className="mr-1" /> ¡Acertaste!
+                        </Badge>
+                    )}
+                    {isFinished && predictionCorrect === false && (
+                        <Badge className="bg-rose-500/15 text-rose-400 border-rose-500/20 text-[9px] px-2 py-0.5">
+                            <X size={10} className="mr-1" /> Fallaste
+                        </Badge>
+                    )}
+                    {!isFinished && !isLive && isPredicted && (
+                        <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] px-2 py-0.5">
+                            <CheckCircle size={10} className="mr-1" /> Guardado
+                        </Badge>
+                    )}
                 </div>
-            )}
+            </div>
+
+            {/* Teams + Score */}
+            <div className="relative flex items-center gap-3 mb-4">
+                <div className="flex-1 text-center">
+                    <div className="w-12 h-12 mx-auto rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg font-black mb-2">
+                        {match.equipo_a.substring(0, 2).toUpperCase()}
+                    </div>
+                    <p className={cn("font-bold text-xs leading-tight", isFinished && matchResult === 'A' ? "text-emerald-400" : "text-white")}>{match.equipo_a}</p>
+                </div>
+
+                <div className="flex flex-col items-center min-w-[60px]">
+                    {(isLive || isFinished) ? (
+                        <div className="text-2xl font-black tabular-nums font-mono flex items-center gap-1.5">
+                            <span className={cn(isFinished && matchResult === 'A' ? "text-emerald-400" : "text-white")}>{scoreInfo.scoreA}</span>
+                            <span className="text-white/20">:</span>
+                            <span className={cn(isFinished && matchResult === 'B' ? "text-emerald-400" : "text-white")}>{scoreInfo.scoreB}</span>
+                        </div>
+                    ) : (
+                        <span className="text-lg font-black text-white/15 italic">VS</span>
+                    )}
+                </div>
+
+                <div className="flex-1 text-center">
+                    <div className="w-12 h-12 mx-auto rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg font-black mb-2">
+                        {match.equipo_b.substring(0, 2).toUpperCase()}
+                    </div>
+                    <p className={cn("font-bold text-xs leading-tight", isFinished && matchResult === 'B' ? "text-emerald-400" : "text-white")}>{match.equipo_b}</p>
+                </div>
+            </div>
+
+            {/* Community Vote Percentages */}
+            <div className="mb-4 p-3 rounded-xl bg-black/20 border border-white/5">
+                <VotePercentageBar
+                    matchId={match.id}
+                    allPredictions={allPredictions}
+                    teamA={match.equipo_a}
+                    teamB={match.equipo_b}
+                />
+            </div>
+
+            {/* Your Prediction Section */}
+            {isFinished && isPredicted ? (
+                <div className={cn(
+                    "p-3 rounded-xl border text-center",
+                    predictionCorrect
+                        ? "bg-emerald-500/10 border-emerald-500/20"
+                        : "bg-rose-500/10 border-rose-500/20"
+                )}>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu predicción</p>
+                    {prediction.prediction_type === 'score' || (prediction.goles_a !== null && prediction.goles_a !== undefined) ? (
+                        <p className={cn("text-xl font-black tabular-nums font-mono", predictionCorrect ? "text-emerald-400" : "text-rose-400")}>
+                            {prediction.goles_a} - {prediction.goles_b}
+                        </p>
+                    ) : (
+                        <p className={cn("text-sm font-black", predictionCorrect ? "text-emerald-400" : "text-rose-400")}>
+                            {prediction.winner_pick === 'A' ? `Gana ${match.equipo_a}` : prediction.winner_pick === 'B' ? `Gana ${match.equipo_b}` : 'Empate'}
+                        </p>
+                    )}
+                </div>
+            ) : isLive && isPredicted ? (
+                <div className="p-3 rounded-xl bg-rose-500/5 border border-rose-500/15 text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu predicción</p>
+                    {prediction.winner_pick ? (
+                        <p className="text-sm font-black text-rose-300">
+                            {prediction.winner_pick === 'A' ? `Gana ${match.equipo_a}` : prediction.winner_pick === 'B' ? `Gana ${match.equipo_b}` : 'Empate'}
+                        </p>
+                    ) : (
+                        <p className="text-xl font-black tabular-nums font-mono text-rose-300">
+                            {prediction.goles_a} - {prediction.goles_b}
+                        </p>
+                    )}
+                </div>
+            ) : !isLocked ? (
+                <>
+                    {/* Prediction Input */}
+                    <div className="bg-black/30 rounded-xl p-3 border border-white/5">
+                        {mode === 'score' ? (
+                            <div className="flex items-center justify-center gap-3">
+                                <input
+                                    type="number"
+                                    className="w-14 h-12 bg-white/5 border border-white/10 rounded-xl text-center font-mono text-2xl font-black focus:border-red-500 focus:bg-red-500/10 focus:ring-0 outline-none transition-all placeholder:text-white/10"
+                                    value={scoreA}
+                                    onChange={(e) => setScoreA(e.target.value)}
+                                    disabled={isLocked}
+                                    placeholder="0"
+                                />
+                                <span className="text-white/50 font-black">-</span>
+                                <input
+                                    type="number"
+                                    className="w-14 h-12 bg-white/5 border border-white/10 rounded-xl text-center font-mono text-2xl font-black focus:border-red-500 focus:bg-red-500/10 focus:ring-0 outline-none transition-all placeholder:text-white/10"
+                                    value={scoreB}
+                                    onChange={(e) => setScoreB(e.target.value)}
+                                    disabled={isLocked}
+                                    placeholder="0"
+                                />
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-3 gap-2">
+                                <button
+                                    onClick={() => setWinnerPick('A')}
+                                    disabled={isLocked}
+                                    className={cn(
+                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        winnerPick === 'A'
+                                            ? "bg-gradient-to-b from-red-500 to-red-700 border-red-400 text-white shadow-lg shadow-red-500/25 scale-[1.03]"
+                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    Gana<br />{match.equipo_a.substring(0, 8)}
+                                </button>
+                                <button
+                                    onClick={() => setWinnerPick('DRAW')}
+                                    disabled={isLocked}
+                                    className={cn(
+                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        winnerPick === 'DRAW'
+                                            ? "bg-gradient-to-b from-slate-500 to-slate-700 border-slate-400 text-white shadow-lg scale-[1.03]"
+                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    Empate
+                                </button>
+                                <button
+                                    onClick={() => setWinnerPick('B')}
+                                    disabled={isLocked}
+                                    className={cn(
+                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        winnerPick === 'B'
+                                            ? "bg-gradient-to-b from-cyan-500 to-cyan-700 border-cyan-400 text-white shadow-lg shadow-cyan-500/25 scale-[1.03]"
+                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    Gana<br />{match.equipo_b.substring(0, 8)}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="mt-4">
+                        <Button
+                            size="sm"
+                            className={cn(
+                                "w-full rounded-xl text-xs font-black tracking-wide transition-all h-11",
+                                isPredicted
+                                    ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 shadow-lg shadow-red-500/20"
+                                    : "bg-white hover:bg-slate-200 text-black"
+                            )}
+                            onClick={handleSave}
+                            disabled={mode === 'score' ? (scoreA === "" || scoreB === "") : (!winnerPick)}
+                        >
+                            {isPredicted ? (
+                                <><Target size={14} className="mr-2" /> Actualizar Predicción</>
+                            ) : (
+                                <><Flame size={14} className="mr-2" /> Guardar Predicción</>
+                            )}
+                        </Button>
+                    </div>
+                </>
+            ) : null}
         </div>
     );
 };
 
+// ─── Main Page ───
 export default function QuinielaPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'play' | 'ranking'>('play');
+    const [activeTab, setActiveTab] = useState<'play' | 'history' | 'ranking'>('play');
     const [matches, setMatches] = useState<any[]>([]);
     const [predictions, setPredictions] = useState<any[]>([]);
+    const [allPredictions, setAllPredictions] = useState<any[]>([]);
     const [ranking, setRanking] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [bettingMode, setBettingMode] = useState<'score' | 'winner'>('winner'); // Default to winner (easier)
+    const [bettingMode, setBettingMode] = useState<'score' | 'winner'>('winner');
+    const [viewFilter, setViewFilter] = useState<'upcoming' | 'live' | 'finished' | 'all'>('upcoming');
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -184,20 +396,24 @@ export default function QuinielaPage() {
         const fetchData = async () => {
             setLoading(true);
 
-            // 1. Matches
+            // 1. ALL matches (including finished for result checking)
             const { data: matchesData } = await supabase
                 .from('partidos')
                 .select('*, disciplinas(name)')
-                .order('fecha', { ascending: true })
-                .gte('fecha', new Date().toISOString());
+                .order('fecha', { ascending: true });
 
-            // 2. Predictions
+            // 2. User's predictions
             const { data: predsData } = await supabase
                 .from('pronosticos')
                 .select('*')
                 .eq('user_id', user.id);
 
-            // 3. Ranking
+            // 3. ALL predictions (for community percentages)
+            const { data: allPredsData } = await supabase
+                .from('pronosticos')
+                .select('match_id, winner_pick, prediction_type');
+
+            // 4. Ranking
             const { data: rankingData } = await supabase
                 .from('public_profiles')
                 .select('*')
@@ -206,12 +422,28 @@ export default function QuinielaPage() {
 
             if (matchesData) setMatches(matchesData);
             if (predsData) setPredictions(predsData);
+            if (allPredsData) setAllPredictions(allPredsData);
             if (rankingData) setRanking(rankingData);
 
             setLoading(false);
         };
 
         fetchData();
+
+        // Realtime for predictions updates
+        const channel = supabase
+            .channel('quiniela-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'pronosticos' }, async () => {
+                const { data } = await supabase.from('pronosticos').select('match_id, winner_pick, prediction_type');
+                if (data) setAllPredictions(data);
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, async () => {
+                const { data } = await supabase.from('partidos').select('*, disciplinas(name)').order('fecha', { ascending: true });
+                if (data) setMatches(data);
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
     }, [user]);
 
     const handlePredict = async (matchId: any, data: any) => {
@@ -219,7 +451,6 @@ export default function QuinielaPage() {
 
         toast.promise(
             async () => {
-                // FIX: Ensure user profile exists to satisfy FK constraint
                 const { error: profileError } = await supabase.from('public_profiles').upsert(
                     { id: user.id, email: user.email },
                     { onConflict: 'id' }
@@ -227,15 +458,10 @@ export default function QuinielaPage() {
 
                 if (profileError) {
                     console.error("Profile auto-creation failed:", profileError);
-                    // Don't throw here, try to proceed, maybe it exists
                 }
 
                 const existing = predictions.find(p => p.match_id === matchId);
-                const payload = {
-                    user_id: user.id,
-                    match_id: matchId,
-                    ...data
-                };
+                const payload = { user_id: user.id, match_id: matchId, ...data };
 
                 let error;
                 if (existing) {
@@ -255,88 +481,174 @@ export default function QuinielaPage() {
                 if (newData) setPredictions(newData);
             },
             {
-                loading: 'Guardando...',
-                success: '¡Guardado!',
+                loading: 'Guardando predicción...',
+                success: '¡Predicción guardada! 🔥',
                 error: (e) => `Error: ${e.message}`
             }
         );
     };
 
-    if (authLoading || !user) return <div className="min-h-screen bg-[#0a0805] flex items-center justify-center"><Loader2 className="animate-spin text-white" /></div>;
+    // Filtered matches
+    const filteredMatches = matches.filter(m => {
+        if (viewFilter === 'upcoming') return m.estado === 'programado';
+        if (viewFilter === 'live') return m.estado === 'en_vivo';
+        if (viewFilter === 'finished') return m.estado === 'finalizado';
+        return true;
+    });
+
+    // Stats
+    const totalPredictions = predictions.length;
+    const correctPredictions = predictions.filter(p => {
+        const m = matches.find(match => match.id === p.match_id);
+        if (!m || m.estado !== 'finalizado') return false;
+        const result = getMatchResult(m);
+        if (!result) return false;
+        if (p.winner_pick) return p.winner_pick === result;
+        return false;
+    }).length;
+    const finishedWithPrediction = predictions.filter(p => {
+        const m = matches.find(match => match.id === p.match_id);
+        return m && m.estado === 'finalizado';
+    }).length;
+    const accuracy = finishedWithPrediction > 0 ? Math.round((correctPredictions / finishedWithPrediction) * 100) : 0;
+
+    if (authLoading || !user) return <div className="min-h-screen bg-[#0a0805] flex items-center justify-center"><Loader2 className="animate-spin text-red-500" size={32} /></div>;
 
     return (
         <div className="min-h-screen bg-[#0a0805] text-white font-sans pb-20">
-            {/* Simple Header */}
-            <div className="p-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#0a0805]/80 backdrop-blur-md z-40">
-                <Link href="/">
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                        <ArrowLeft />
-                    </Button>
-                </Link>
-                <div className="text-center">
-                    <h1 className="text-2xl font-black italic tracking-tighter text-white">
-                        PREDICCIONES
-                    </h1>
-                    <p className="text-[10px] text-white/70 font-bold tracking-widest uppercase">Olimpiadas 2026</p>
+            {/* Header */}
+            <div className="sticky top-0 z-50 bg-[#0a0805]/80 backdrop-blur-xl border-b border-white/5">
+                <div className="flex items-center justify-between p-4 max-w-xl mx-auto">
+                    <Link href="/">
+                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/5">
+                            <ArrowLeft size={20} />
+                        </Button>
+                    </Link>
+                    <div className="text-center">
+                        <h1 className="text-xl font-black tracking-tighter bg-gradient-to-r from-white to-red-400 bg-clip-text text-transparent">
+                            PREDICCIONES
+                        </h1>
+                        <p className="text-[9px] text-white/40 font-bold tracking-[0.2em] uppercase">Olimpiadas 2026</p>
+                    </div>
+                    <div className="w-10" />
                 </div>
-                <div className="w-10"></div>
             </div>
 
-            <div className="max-w-xl mx-auto p-4 space-y-8">
+            <div className="max-w-xl mx-auto p-4 space-y-6">
 
-                {/* Mode Switcher */}
-                {activeTab === 'play' && (
-                    <div className="flex justify-center">
-                        <div className="inline-flex bg-white/5 p-1 rounded-full border border-white/10">
-                            <button
-                                onClick={() => setBettingMode('winner')}
-                                className={cn("px-4 py-1.5 rounded-full text-xs font-black tracking-wide transition-all flex items-center gap-2", bettingMode === 'winner' ? "bg-red-600 text-white shadow-lg" : "text-white/70 hover:text-white")}
-                            >
-                                <HandMetal size={12} />
-                                Ganador
-                            </button>
-                            <button
-                                onClick={() => setBettingMode('score')}
-                                className={cn("px-4 py-1.5 rounded-full text-xs font-black tracking-wide transition-all flex items-center gap-2", bettingMode === 'score' ? "bg-rose-600 text-white shadow-lg" : "text-white/70 hover:text-white")}
-                            >
-                                <Gauge size={12} />
-                                Marcador Exacto
-                            </button>
-                        </div>
+                {/* Stats Row */}
+                <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/5 text-center">
+                        <p className="text-2xl font-black tabular-nums text-white">{totalPredictions}</p>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Predicciones</p>
                     </div>
-                )}
+                    <div className="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-center">
+                        <p className="text-2xl font-black tabular-nums text-emerald-400">{correctPredictions}</p>
+                        <p className="text-[9px] font-bold text-emerald-500/70 uppercase tracking-wider">Acertadas</p>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-red-500/5 border border-red-500/10 text-center">
+                        <p className="text-2xl font-black tabular-nums text-red-400">{accuracy}%</p>
+                        <p className="text-[9px] font-bold text-red-500/70 uppercase tracking-wider">Precisión</p>
+                    </div>
+                </div>
 
                 {/* Tabs */}
-                <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-xl mb-6">
+                <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-white/[0.03] rounded-2xl border border-white/5">
                     <button
                         onClick={() => setActiveTab('play')}
-                        className={`py-3 rounded-lg text-sm font-black tracking-wide transition-all ${activeTab === 'play' ? 'bg-white text-black shadow-xl' : 'text-white/70 hover:text-white'}`}
+                        className={cn(
+                            "py-3 rounded-xl text-xs font-black tracking-wide transition-all flex items-center justify-center gap-1.5",
+                            activeTab === 'play'
+                                ? 'bg-white text-black shadow-xl'
+                                : 'text-white/50 hover:text-white hover:bg-white/5'
+                        )}
                     >
-                        Jugar
+                        <Flame size={14} /> Jugar
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={cn(
+                            "py-3 rounded-xl text-xs font-black tracking-wide transition-all flex items-center justify-center gap-1.5",
+                            activeTab === 'history'
+                                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-xl shadow-amber-600/20'
+                                : 'text-white/50 hover:text-white hover:bg-white/5'
+                        )}
+                    >
+                        <History size={14} /> Historial
                     </button>
                     <button
                         onClick={() => setActiveTab('ranking')}
-                        className={`py-3 rounded-lg text-sm font-black tracking-wide transition-all ${activeTab === 'ranking' ? 'bg-red-600 text-white shadow-xl shadow-red-600/20' : 'text-white/70 hover:text-white'}`}
+                        className={cn(
+                            "py-3 rounded-xl text-xs font-black tracking-wide transition-all flex items-center justify-center gap-1.5",
+                            activeTab === 'ranking'
+                                ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-xl shadow-red-600/20'
+                                : 'text-white/50 hover:text-white hover:bg-white/5'
+                        )}
                     >
-                        Ranking
+                        <Trophy size={14} /> Ranking
                     </button>
                 </div>
 
-                {/* Content */}
+                {/* ─── PLAY TAB ─── */}
                 {activeTab === 'play' ? (
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 mb-4 px-2">
-                            <Clock size={16} className="text-red-400" />
-                            <h2 className="font-bold text-sm">Próximos Partidos</h2>
+                    <div className="space-y-5">
+                        {/* Mode + Filter Row */}
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            {/* Betting Mode */}
+                            <div className="inline-flex bg-white/[0.03] p-1 rounded-xl border border-white/5 flex-1">
+                                <button
+                                    onClick={() => setBettingMode('winner')}
+                                    className={cn("flex-1 px-3 py-2 rounded-lg text-[10px] font-black tracking-wide transition-all flex items-center justify-center gap-1.5", bettingMode === 'winner' ? "bg-red-600 text-white shadow-md" : "text-white/50 hover:text-white")}
+                                >
+                                    <HandMetal size={12} /> Ganador
+                                </button>
+                                <button
+                                    onClick={() => setBettingMode('score')}
+                                    className={cn("flex-1 px-3 py-2 rounded-lg text-[10px] font-black tracking-wide transition-all flex items-center justify-center gap-1.5", bettingMode === 'score' ? "bg-rose-600 text-white shadow-md" : "text-white/50 hover:text-white")}
+                                >
+                                    <Gauge size={12} /> Marcador
+                                </button>
+                            </div>
+
+                            {/* View Filter */}
+                            <div className="inline-flex bg-white/[0.03] p-1 rounded-xl border border-white/5">
+                                {([
+                                    { key: 'upcoming', label: 'Próximos', icon: Clock },
+                                    { key: 'live', label: 'Vivo', icon: Zap },
+                                    { key: 'finished', label: 'Finales', icon: Trophy },
+                                    { key: 'all', label: 'Todos', icon: Filter },
+                                ] as const).map((f) => (
+                                    <button
+                                        key={f.key}
+                                        onClick={() => setViewFilter(f.key)}
+                                        className={cn(
+                                            "px-2.5 py-2 rounded-lg text-[10px] font-black transition-all flex items-center gap-1",
+                                            viewFilter === f.key
+                                                ? "bg-white/10 text-white"
+                                                : "text-white/40 hover:text-white/70"
+                                        )}
+                                    >
+                                        <f.icon size={10} />
+                                        <span className="hidden sm:inline">{f.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        {matches.length === 0 ? (
-                            <div className="text-center py-20 text-white/60 bg-white/5 rounded-3xl border border-white/5 border-dashed">
-                                <AlertTriangle className="mx-auto mb-4 opacity-50 w-12 h-12" />
-                                <p className="font-medium">No hay partidos habilitados para hoy.</p>
+                        {/* Match List */}
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center py-20 gap-3">
+                                <div className="w-12 h-12 rounded-full border-4 border-red-500/30 border-t-red-500 animate-spin" />
+                                <p className="text-xs text-slate-500 animate-pulse">Cargando partidos...</p>
+                            </div>
+                        ) : filteredMatches.length === 0 ? (
+                            <div className="text-center py-20 text-white/40 bg-white/[0.02] rounded-3xl border border-white/5 border-dashed">
+                                <AlertTriangle className="mx-auto mb-4 opacity-30 w-10 h-10" />
+                                <p className="font-bold text-sm">No hay partidos en esta categoría</p>
+                                <p className="text-xs text-slate-600 mt-1">Intenta otro filtro</p>
                             </div>
                         ) : (
-                            matches.map(m => (
+                            filteredMatches.map(m => (
                                 <PredictionCard
                                     key={m.id}
                                     match={m}
@@ -344,39 +656,224 @@ export default function QuinielaPage() {
                                     onPredict={handlePredict}
                                     locked={false}
                                     mode={bettingMode}
+                                    allPredictions={allPredictions}
                                 />
                             ))
                         )}
                     </div>
+                ) : activeTab === 'history' ? (
+                    /* ─── HISTORY TAB ─── */
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-2 px-1">
+                            <History size={16} className="text-amber-400" />
+                            <h2 className="font-bold text-sm text-white">Mis Predicciones</h2>
+                            <span className="text-[10px] text-slate-500 font-bold">({predictions.length})</span>
+                        </div>
+
+                        {predictions.length === 0 ? (
+                            <div className="text-center py-20 text-white/40 bg-white/[0.02] rounded-3xl border border-white/5 border-dashed">
+                                <Target className="mx-auto mb-4 opacity-30 w-10 h-10" />
+                                <p className="font-bold text-sm">No has hecho predicciones aún</p>
+                                <p className="text-xs text-slate-600 mt-1">Ve a la pestaña Jugar para comenzar</p>
+                            </div>
+                        ) : (
+                            (() => {
+                                // Sort: finished first (newest), then live, then upcoming
+                                const sortedPreds = [...predictions].sort((a, b) => {
+                                    const matchA = matches.find(m => m.id === a.match_id);
+                                    const matchB = matches.find(m => m.id === b.match_id);
+                                    if (!matchA || !matchB) return 0;
+                                    const order: Record<string, number> = { 'finalizado': 0, 'en_vivo': 1, 'programado': 2 };
+                                    const orderA = order[matchA.estado] ?? 3;
+                                    const orderB = order[matchB.estado] ?? 3;
+                                    if (orderA !== orderB) return orderA - orderB;
+                                    return new Date(matchB.fecha).getTime() - new Date(matchA.fecha).getTime();
+                                });
+
+                                return sortedPreds.map(pred => {
+                                    const m = matches.find(match => match.id === pred.match_id);
+                                    if (!m) return null;
+
+                                    const result = getMatchResult(m);
+                                    const isFinished = m.estado === 'finalizado';
+                                    const isLive = m.estado === 'en_vivo';
+                                    let correct: boolean | null = null;
+
+                                    if (isFinished && result) {
+                                        if (pred.winner_pick) {
+                                            correct = pred.winner_pick === result;
+                                        } else if (pred.goles_a !== null && pred.goles_a !== undefined) {
+                                            const md = m.marcador_detalle || {};
+                                            const actualA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
+                                            const actualB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
+                                            correct = pred.goles_a === actualA && pred.goles_b === actualB;
+                                        }
+                                    }
+
+                                    const scoreInfo = getCurrentScore(m.disciplinas?.name, m.marcador_detalle || {});
+
+                                    // Card background
+                                    const cardBg = isFinished && correct === true
+                                        ? "bg-gradient-to-br from-emerald-900/40 via-emerald-900/20 to-[#0a0805] border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.1)]"
+                                        : isFinished && correct === false
+                                            ? "bg-gradient-to-br from-rose-900/40 via-rose-900/20 to-[#0a0805] border-rose-500/25 shadow-[0_0_40px_rgba(244,63,94,0.08)]"
+                                            : isLive
+                                                ? "bg-rose-500/5 border-rose-500/20"
+                                                : "bg-white/[0.03] border-white/5";
+
+                                    return (
+                                        <Link href={`/partido/${m.id}`} key={pred.id}>
+                                            <div className={cn("relative p-5 rounded-3xl border transition-all duration-300 hover:scale-[1.01] cursor-pointer", cardBg)}>
+                                                {/* Result badge */}
+                                                {isFinished && correct !== null && (
+                                                    <div className={cn(
+                                                        "absolute top-3 right-3 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider",
+                                                        correct
+                                                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20"
+                                                            : "bg-rose-500/20 text-rose-400 border border-rose-500/20"
+                                                    )}>
+                                                        {correct ? <><CheckCircle size={10} className="inline mr-0.5" /> Acertado</> : <><X size={10} className="inline mr-0.5" /> Fallado</>}
+                                                    </div>
+                                                )}
+                                                {isLive && (
+                                                    <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-500/15 text-rose-400 border border-rose-500/20 animate-pulse">
+                                                        <Zap size={10} className="inline mr-0.5" /> En Vivo
+                                                    </div>
+                                                )}
+                                                {!isFinished && !isLive && (
+                                                    <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-white/5 text-slate-500 border border-white/5">
+                                                        <Clock size={10} className="inline mr-0.5" /> Pendiente
+                                                    </div>
+                                                )}
+
+                                                {/* Sport + Date */}
+                                                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-4">
+                                                    <SportIcon sport={m.disciplinas?.name} size={14} className="text-current opacity-70" />
+                                                    <span>{m.disciplinas?.name}</span>
+                                                    <span className="mx-0.5">•</span>
+                                                    <span>{new Date(m.fecha).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
+                                                </div>
+
+                                                {/* Teams and Score */}
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex-1 text-center">
+                                                        <div className={cn(
+                                                            "w-11 h-11 mx-auto rounded-xl flex items-center justify-center text-sm font-black mb-1.5",
+                                                            isFinished && result === 'A' ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300" : "bg-white/5 border border-white/10 text-white"
+                                                        )}>
+                                                            {m.equipo_a.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <p className={cn("font-bold text-[11px] leading-tight", isFinished && result === 'A' ? "text-emerald-400" : "text-white/80")}>
+                                                            {m.equipo_a}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex flex-col items-center min-w-[50px]">
+                                                        {(isLive || isFinished) ? (
+                                                            <div className="text-xl font-black tabular-nums font-mono flex items-center gap-1">
+                                                                <span className={cn(isFinished && result === 'A' ? "text-emerald-400" : "text-white")}>{scoreInfo.scoreA}</span>
+                                                                <span className="text-white/20">:</span>
+                                                                <span className={cn(isFinished && result === 'B' ? "text-emerald-400" : "text-white")}>{scoreInfo.scoreB}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-sm font-black text-white/15">VS</span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex-1 text-center">
+                                                        <div className={cn(
+                                                            "w-11 h-11 mx-auto rounded-xl flex items-center justify-center text-sm font-black mb-1.5",
+                                                            isFinished && result === 'B' ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300" : "bg-white/5 border border-white/10 text-white"
+                                                        )}>
+                                                            {m.equipo_b.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <p className={cn("font-bold text-[11px] leading-tight", isFinished && result === 'B' ? "text-emerald-400" : "text-white/80")}>
+                                                            {m.equipo_b}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Your prediction */}
+                                                <div className={cn(
+                                                    "mt-4 p-3 rounded-xl border text-center",
+                                                    isFinished && correct === true ? "bg-emerald-500/10 border-emerald-500/15" :
+                                                        isFinished && correct === false ? "bg-rose-500/10 border-rose-500/15" :
+                                                            "bg-white/5 border-white/5"
+                                                )}>
+                                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu predicción</p>
+                                                    {(pred.goles_a !== null && pred.goles_a !== undefined && (pred.prediction_type === 'score' || !pred.winner_pick)) ? (
+                                                        <p className={cn(
+                                                            "text-lg font-black tabular-nums font-mono",
+                                                            isFinished && correct === true ? "text-emerald-400" :
+                                                                isFinished && correct === false ? "text-rose-400" : "text-white"
+                                                        )}>
+                                                            {pred.goles_a} - {pred.goles_b}
+                                                        </p>
+                                                    ) : (
+                                                        <p className={cn(
+                                                            "text-xs font-black",
+                                                            isFinished && correct === true ? "text-emerald-400" :
+                                                                isFinished && correct === false ? "text-rose-400" : "text-white"
+                                                        )}>
+                                                            {pred.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {m.equipo_a}</> :
+                                                                pred.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {m.equipo_b}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    );
+                                });
+                            })()
+                        )}
+                    </div>
                 ) : (
-                    <div className="bg-white/5 rounded-3xl border border-white/5 overflow-hidden">
-                        <div className="p-6 bg-red-600/10 border-b border-red-600/10 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-red-600 flex items-center justify-center text-white shadow-lg shadow-red-600/20">
+                    /* ─── RANKING TAB ─── */
+                    <div className="bg-white/[0.02] rounded-3xl border border-white/5 overflow-hidden">
+                        <div className="p-6 bg-gradient-to-r from-red-600/10 to-orange-600/5 border-b border-red-600/10 flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-red-600/25">
                                 <Trophy size={24} strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h2 className="font-black text-xl text-red-500 tracking-tight">TABLA DE LÍDERES</h2>
-                                <p className="text-xs text-red-500/70 font-bold uppercase tracking-widest">Top Analistas</p>
+                                <h2 className="font-black text-xl bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent tracking-tight">TABLA DE LÍDERES</h2>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Top Analistas Uninorte</p>
                             </div>
                         </div>
 
                         <div className="divide-y divide-white/5">
-                            {ranking.map((profile, idx) => (
-                                <div key={profile.id} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors group">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-transform group-hover:scale-110 ${idx < 3 ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-white/10 text-white'}`}>
-                                            {idx + 1}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-sm text-white">{profile.display_name?.split('@')[0] || 'Usuario'}</p>
-                                            <p className="text-[10px] text-white/60 truncate max-w-[150px] font-medium">{profile.email}</p>
-                                        </div>
-                                    </div>
-                                    <div className="font-mono font-black text-lg text-red-400 tabular-nums">
-                                        {profile.points}
-                                    </div>
+                            {ranking.length === 0 ? (
+                                <div className="p-12 text-center text-slate-500">
+                                    <Trophy size={32} className="mx-auto mb-3 opacity-20" />
+                                    <p className="text-sm font-medium">Aún no hay ranking</p>
                                 </div>
-                            ))}
+                            ) : (
+                                ranking.map((profile, idx) => (
+                                    <div key={profile.id} className={cn(
+                                        "flex items-center justify-between p-4 hover:bg-white/5 transition-all group",
+                                        profile.id === user?.id && "bg-red-500/5 border-l-2 border-l-red-500"
+                                    )}>
+                                        <div className="flex items-center gap-4">
+                                            <div className={cn(
+                                                "w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-transform group-hover:scale-110",
+                                                idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-600 text-black shadow-lg shadow-yellow-500/20' :
+                                                    idx === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-black shadow-lg' :
+                                                        idx === 2 ? 'bg-gradient-to-br from-orange-600 to-orange-800 text-white shadow-lg' :
+                                                            'bg-white/10 text-white'
+                                            )}>
+                                                {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-sm text-white">{profile.display_name?.split('@')[0] || 'Usuario'}</p>
+                                                <p className="text-[10px] text-white/40 truncate max-w-[150px] font-medium">{profile.email}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-mono font-black text-lg text-red-400 tabular-nums">{profile.points}</span>
+                                            <span className="text-[9px] text-slate-600 font-bold uppercase">pts</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 )}

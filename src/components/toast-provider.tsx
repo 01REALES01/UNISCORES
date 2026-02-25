@@ -37,8 +37,20 @@ export function ToastProvider() {
                                 duration: 5000
                             });
                         } else if (newItem.estado === 'finalizado') {
+                            // Compute winner from score data
+                            const md = newItem.marcador_detalle || {};
+                            const sA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
+                            const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
+                            let winnerText: string;
+                            if (sA > sB) {
+                                winnerText = `${newItem.equipo_a} ganó ${sA}-${sB}`;
+                            } else if (sB > sA) {
+                                winnerText = `${newItem.equipo_b} ganó ${sB}-${sA}`;
+                            } else {
+                                winnerText = `Empate ${sA}-${sB}`;
+                            }
                             toast.info(`Partido Finalizado`, {
-                                description: `Ganador: ${newItem.ganador || 'Empate'}`,
+                                description: `${newItem.equipo_a} vs ${newItem.equipo_b} — ${winnerText}`,
                                 icon: <Trophy className="w-5 h-5 text-[#FFC000]" />,
                                 duration: 8000
                             });
