@@ -148,7 +148,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                         {/* 1. MAP IMAGE BACKGROUND WITH DARK MODE FILTER */}
                         <div className="absolute inset-0 pointer-events-none">
                             <Image
-                                src="/campus_real.png"
+                                src="/campus_real.jpg"
                                 alt="Mapa Campus Uninorte"
                                 fill
                                 className="object-contain filter invert-[.85] hue-rotate-180 grayscale-[.5] contrast-125 opacity-80"
