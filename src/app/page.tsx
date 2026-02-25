@@ -74,7 +74,7 @@ export default function Home() {
       .order('fecha', { ascending: true });
 
     if (error) {
-      if (!isBackground) toast.error("Error cargando partidos. Intenta recargar.");
+      if (!isBackground) toast.error(`Error cargando partidos: ${error.message || error.code || 'desconocido'}`);
       console.error("Fetch error:", error);
     } else if (data) {
       const sorted = (data as any).sort((a: Partido, b: Partido) => {
