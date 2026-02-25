@@ -23,14 +23,14 @@ export default function LoginPage() {
     const [success, setSuccess] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
-    const { user, profile, loading: authLoading, isStaff } = useAuth();
+    const { user, loading: authLoading } = useAuth();
 
     // If already logged in, redirect to home
     useEffect(() => {
-        if (!authLoading && user && profile) {
-            router.push("/");
+        if (!authLoading && user) {
+            router.replace("/");
         }
-    }, [authLoading, user, profile, router]);
+    }, [authLoading, user, router]);
 
     const resetForm = () => {
         setError(null);
@@ -65,14 +65,15 @@ export default function LoginPage() {
                 throw new Error(authError.message);
             }
 
-            // Auth state change will be picked up by useAuth → useEffect redirect
-            // No need to manually redirect here
+            // useAuth will detect the session change and update user state
+            // The useEffect above will then redirect to "/"
 
         } catch (err: any) {
             if (err?.name === 'AbortError' || err?.message?.includes('abort')) {
                 return;
             }
             setError(err.message || "Error al iniciar sesión");
+        } finally {
             setLoading(false);
         }
     };
