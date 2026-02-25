@@ -8,6 +8,17 @@ const withPWA = withPWAInit({
   fallbacks: {
     document: "/offline",
   },
+  workboxOptions: {
+    // Exclude Supabase from service worker cache to prevent token lock deadlocks
+    // and session revocation issues caused by delayed cache lookups
+    exclude: [/^https:\/\/.*\.supabase\.co\/.*/],
+    runtimeCaching: [
+      {
+        urlPattern: /^https:\/\/.*\.supabase\.co\/.*/,
+        handler: 'NetworkOnly',
+      }
+    ]
+  }
 });
 
 const nextConfig: NextConfig = {
