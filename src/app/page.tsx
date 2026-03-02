@@ -3,13 +3,14 @@
 import { useEffect, useState, useRef } from "react";
 import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { MatchCardSkeleton } from "@/components/skeletons";
+import { MatchCardSkeleton, NewsListSkeleton } from "@/components/skeletons";
 import { HeroSlider } from "@/components/hero-slider";
 import { useAuth } from "@/hooks/useAuth";
 import { Trophy, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield, Newspaper } from "lucide-react";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
+import { NewsListCard, Noticia } from "@/components/news-card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const [latestNews, setLatestNews] = useState<Noticia[]>([]);
 
   // Close profile menu on outside click
   useEffect(() => {
@@ -86,6 +88,20 @@ export default function Home() {
       setPartidos(sorted);
     }
 
+    // Fetch Latest News
+    const { data: newsData } = await safeQuery(
+      supabase.from('noticias')
+        .select('*, partidos(equipo_a, equipo_b, disciplinas(name))')
+        .eq('published', true)
+        .order('created_at', { ascending: false })
+        .limit(4),
+      'home-latest-news'
+    );
+
+    if (newsData) {
+      setLatestNews(newsData as Noticia[]);
+    }
+
     if (!isBackground) setLoading(false);
   };
 
@@ -102,7 +118,9 @@ export default function Home() {
     const subscription = supabase
       .channel('public:partidos')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, (payload) => {
-        console.log("Realtime update received:", payload);
+        fetchPartidos(true); // Silent update
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'noticias' }, (payload) => {
         fetchPartidos(true); // Silent update
       })
       .subscribe();
@@ -380,6 +398,37 @@ export default function Home() {
             </Link>
           </div>
         </div>
+
+        {/* ÚLTIMAS NOTICIAS */}
+        <section className="animate-in slide-in-from-bottom-8 fade-in duration-1000">
+          <div className="flex items-center justify-between mb-5 px-1">
+            <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+              <Newspaper className="text-amber-400" size={24} />
+              ÚLTIMAS NOTICIAS
+            </h2>
+            <Link href="/noticias">
+              <Button variant="ghost" size="sm" className="text-white/40 hover:text-white uppercase tracking-widest text-[10px] font-bold">
+                Ver Todas <ChevronRight size={14} className="ml-1" />
+              </Button>
+            </Link>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1, 2].map(i => <NewsListSkeleton key={i} />)}
+            </div>
+          ) : latestNews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4">
+              {latestNews.map(noticia => (
+                <NewsListCard key={noticia.id} noticia={noticia} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10 bg-[#17130D]/50 border border-white/5 rounded-2xl">
+              <p className="text-sm text-white/30 font-bold uppercase tracking-widest">No hay noticias publicadas aún</p>
+            </div>
+          )}
+        </section>
 
         {/* Global Leaderboard Removed from here */}
 
