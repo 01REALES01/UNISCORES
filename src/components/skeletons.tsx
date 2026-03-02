@@ -64,3 +64,41 @@ export function MedalSkeleton() {
         </div>
     )
 }
+
+export function NewsHeroSkeleton() {
+    return (
+        <div className="relative h-[400px] sm:h-[480px] rounded-3xl overflow-hidden border border-white/5 bg-[#17130D]">
+            <Skeleton className="absolute inset-0 w-full h-full" />
+            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 bg-gradient-to-t from-black/90 to-transparent">
+                <Skeleton className="h-5 w-20 rounded-full mb-3" />
+                <Skeleton className="h-8 w-3/4 mb-2" />
+                <Skeleton className="h-8 w-1/2 mb-4" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <div className="flex gap-4 mt-4">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-3 w-16" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function NewsListSkeleton() {
+    return (
+        <div className="flex gap-4 bg-[#17130D]/60 border border-white/5 rounded-2xl p-3 sm:p-4">
+            <Skeleton className="w-[100px] h-[80px] sm:w-[140px] sm:h-[100px] rounded-xl shrink-0" />
+            <div className="flex-1 flex flex-col justify-between py-0.5">
+                <div>
+                    <Skeleton className="h-3 w-16 mb-2" />
+                    <Skeleton className="h-5 w-full mb-1" />
+                    <Skeleton className="h-5 w-3/4" />
+                </div>
+                <div className="flex gap-3 mt-2">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-3 w-16" />
+                </div>
+            </div>
+        </div>
+    );
+}

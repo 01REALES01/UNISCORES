@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Trophy, LayoutDashboard, Calendar, Users, LogOut, Menu, X, Zap, Shield, Loader2, BarChart3 } from "lucide-react";
+import { Trophy, LayoutDashboard, Calendar, Users, LogOut, Menu, X, Zap, Shield, Loader2, BarChart3, Newspaper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -115,6 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const menuItems = [
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
         { name: "Partidos", href: "/admin/partidos", icon: Calendar },
+        { name: "Noticias", href: "/admin/noticias", icon: Newspaper },
         { name: "Estadísticas", href: "/admin/estadisticas", icon: BarChart3 },
         ...(isAdmin ? [{ name: "Usuarios", href: "/admin/usuarios", icon: Users }] : []),
     ];

@@ -6,7 +6,7 @@ import { PublicLiveTimer } from "@/components/public-live-timer";
 import { MatchCardSkeleton } from "@/components/skeletons";
 import { HeroSlider } from "@/components/hero-slider";
 import { useAuth } from "@/hooks/useAuth";
-import { Trophy, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield } from "lucide-react";
+import { Trophy, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield, Newspaper } from "lucide-react";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
@@ -165,6 +165,7 @@ export default function Home() {
                 activeColor="text-red-500"
                 tabs={[
                   { title: "Inicio", icon: HomeIcon },
+                  { title: "Noticias", icon: Newspaper },
                   { title: "Mapa", icon: MapPin },
                   { title: "Medallería", icon: Trophy },
                   { type: "separator" },
@@ -173,10 +174,11 @@ export default function Home() {
                 ]}
                 onChange={(index) => {
                   if (index === 0) router.push('/');
-                  if (index === 1) router.push('/mapa');
-                  if (index === 2) router.push('/medallero');
-                  if (index === 4) window.open('/tv', '_blank');
-                  if (index === 5 && isStaff) router.push('/admin');
+                  if (index === 1) router.push('/noticias');
+                  if (index === 2) router.push('/mapa');
+                  if (index === 3) router.push('/medallero');
+                  if (index === 5) window.open('/tv', '_blank');
+                  if (index === 6 && isStaff) router.push('/admin');
                 }}
               />
             </div>
@@ -185,6 +187,11 @@ export default function Home() {
           <div className="flex items-center gap-2">
             {/* Mobile simplified nav */}
             <div className="flex md:hidden items-center gap-2">
+              <Link href="/noticias">
+                <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-500/10 rounded-full">
+                  <Newspaper size={18} />
+                </Button>
+              </Link>
               <Link href="/mapa">
                 <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-500/10 rounded-full">
                   <MapPin size={18} />
