@@ -95,8 +95,8 @@ export default function EditNoticiaPage() {
             imagen_url: form.imagen_url || null,
             categoria: form.categoria,
             autor_nombre: form.autor_nombre.trim() || 'Redacción',
-            partido_id: form.partido_id ? parseInt(form.partido_id) : null,
-            carrera: form.carrera || null,
+            partido_id: form.partido_id ? parseInt(form.partido_id, 10) : null,
+            carrera: form.carrera.trim() || null,
             published: publish !== undefined ? publish : form.published,
             updated_at: new Date().toISOString(),
         };
