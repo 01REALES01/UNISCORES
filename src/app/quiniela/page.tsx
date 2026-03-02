@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import { safeQuery } from "@/lib/supabase-query";
 import { toast } from "sonner";
 import { Button, Badge } from "@/components/ui-primitives";
 import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Loader2, Gauge, HandMetal, Users, X, Flame, Target, Zap, ChevronDown, Filter, History, Handshake } from "lucide-react";
@@ -396,47 +397,19 @@ export default function QuinielaPage() {
         const fetchData = async () => {
             setLoading(true);
 
-            try {
-                // 1. ALL matches (including finished for result checking)
-                const { data: matchesData, error: mErr } = await supabase
-                    .from('partidos')
-                    .select('*, disciplinas(name)')
-                    .order('fecha', { ascending: true });
+            const [matchesRes, predsRes, allPredsRes, rankingRes] = await Promise.all([
+                safeQuery(supabase.from('partidos').select('*, disciplinas(name)').order('fecha', { ascending: true }), 'quiniela-matches'),
+                safeQuery(supabase.from('pronosticos').select('*').eq('user_id', user.id), 'quiniela-preds'),
+                safeQuery(supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'), 'quiniela-allPreds'),
+                safeQuery(supabase.from('public_profiles').select('*').order('points', { ascending: false }).limit(50), 'quiniela-ranking'),
+            ]);
 
-                // 2. User's predictions
-                const { data: predsData, error: pErr } = await supabase
-                    .from('pronosticos')
-                    .select('*')
-                    .eq('user_id', user.id);
+            if (matchesRes.data) setMatches(matchesRes.data);
+            if (predsRes.data) setPredictions(predsRes.data);
+            if (allPredsRes.data) setAllPredictions(allPredsRes.data);
+            if (rankingRes.data) setRanking(rankingRes.data);
 
-                // 3. ALL predictions (for community percentages)
-                const { data: allPredsData, error: aErr } = await supabase
-                    .from('pronosticos')
-                    .select('match_id, winner_pick, prediction_type');
-
-                // 4. Ranking
-                const { data: rankingData, error: rErr } = await supabase
-                    .from('public_profiles')
-                    .select('*')
-                    .order('points', { ascending: false })
-                    .limit(50);
-
-                if (mErr) console.error("Matches error:", mErr);
-                if (matchesData) setMatches(matchesData);
-
-                if (pErr) console.error("Preds error:", pErr);
-                if (predsData) setPredictions(predsData);
-
-                if (aErr) console.error("All preds error:", aErr);
-                if (allPredsData) setAllPredictions(allPredsData);
-
-                if (rErr) console.error("Ranking error:", rErr);
-                if (rankingData) setRanking(rankingData);
-            } catch (err: any) {
-                console.error("Critical fetch crash in Quiniela:", err);
-            } finally {
-                setLoading(false);
-            }
+            setLoading(false);
         };
 
         fetchData();
@@ -445,11 +418,11 @@ export default function QuinielaPage() {
         const channel = supabase
             .channel('quiniela-realtime')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'pronosticos' }, async () => {
-                const { data } = await supabase.from('pronosticos').select('match_id, winner_pick, prediction_type');
+                const { data } = await safeQuery(supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'), 'rt-allPreds');
                 if (data) setAllPredictions(data);
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, async () => {
-                const { data } = await supabase.from('partidos').select('*, disciplinas(name)').order('fecha', { ascending: true });
+                const { data } = await safeQuery(supabase.from('partidos').select('*, disciplinas(name)').order('fecha', { ascending: true }), 'rt-matches');
                 if (data) setMatches(data);
             })
             .subscribe();

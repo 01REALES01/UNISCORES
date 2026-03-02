@@ -6,6 +6,7 @@ import { Badge, Avatar, Button } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { safeQuery } from "@/lib/supabase-query";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -50,40 +51,21 @@ export default function PublicMatchDetail() {
 
     // Cargar datos
     const fetchData = async () => {
-        // 1. Partido
-        const { data: matchData } = await supabase
-            .from('partidos')
-            .select(`*, disciplinas(name)`)
-            .eq('id', matchId)
-            .single();
+        const [matchRes, eventosRes, predsRes] = await Promise.all([
+            safeQuery(supabase.from('partidos').select(`*, disciplinas(name)`).eq('id', matchId).single(), 'partido-detail'),
+            safeQuery(supabase.from('olympics_eventos').select('*, jugadores:olympics_jugadores(nombre, numero)').eq('partido_id', matchId).order('minuto', { ascending: false }), 'partido-eventos'),
+            safeQuery(supabase.from('pronosticos').select('winner_pick, prediction_type').eq('match_id', matchId), 'partido-preds'),
+        ]);
 
-        if (matchData) setMatch(matchData);
+        if (matchRes.data) setMatch(matchRes.data);
+        if (eventosRes.data) setEventos(eventosRes.data);
+        if (predsRes.data) setMatchPredictions(predsRes.data);
 
-        // 2. Eventos
-        const { data: eventosData } = await supabase
-            .from('olympics_eventos')
-            .select('*, jugadores:olympics_jugadores(nombre, numero)')
-            .eq('partido_id', matchId)
-            .order('minuto', { ascending: false });
-
-        if (eventosData) setEventos(eventosData);
-
-        // 3. Predictions for this match
-        const { data: predsData } = await supabase
-            .from('pronosticos')
-            .select('winner_pick, prediction_type')
-            .eq('match_id', matchId);
-
-        if (predsData) setMatchPredictions(predsData);
-
-        // 4. User's own prediction for this match
         if (user) {
-            const { data: userPred } = await supabase
-                .from('pronosticos')
-                .select('*')
-                .eq('match_id', matchId)
-                .eq('user_id', user.id)
-                .single();
+            const { data: userPred } = await safeQuery<any>(
+                supabase.from('pronosticos').select('*').eq('match_id', matchId).eq('user_id', user.id).single(),
+                'partido-userPred'
+            );
             if (userPred) {
                 setUserPrediction(userPred);
                 setVotingPick(userPred.winner_pick);

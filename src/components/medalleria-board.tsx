@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { safeQuery } from "@/lib/supabase-query";
 import { Trophy, Medal, Crown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MedalSkeleton } from "@/components/skeletons";
@@ -47,20 +48,16 @@ export function MedalLeaderboard() {
 
     const fetchMedallero = async () => {
         setLoading(true);
-        // Intentar cargar de Supabase
-        const { data, error } = await supabase
-            .from('medallero')
-            .select('*')
-            .order('puntos', { ascending: false }) // Prioridad Puntos
-            .order('oro', { ascending: false })
-            .order('plata', { ascending: false });
 
-        const { data: matches } = await supabase
-            .from('partidos')
-            .select('*')
-            .eq('estado', 'finalizado');
+        const [medalRes, matchRes] = await Promise.all([
+            safeQuery(supabase.from('medallero').select('*').order('puntos', { ascending: false }).order('oro', { ascending: false }).order('plata', { ascending: false }), 'medallero'),
+            safeQuery(supabase.from('partidos').select('*').eq('estado', 'finalizado'), 'medallero-matches'),
+        ]);
 
-        if (!error && data && data.length > 0) {
+        const data = medalRes.data;
+        const matches = matchRes.data;
+
+        if (data && data.length > 0) {
             const extendedData = data.map(team => {
                 let won = 0, draw = 0, lost = 0;
                 let calculatedPoints = 0;
@@ -91,7 +88,6 @@ export function MedalLeaderboard() {
                 return { ...team, puntos: calculatedPoints, won, draw, lost, played: won + draw + lost };
             });
 
-            // Re-order by points descending strongly
             extendedData.sort((a, b) => {
                 if (b.puntos !== a.puntos) return b.puntos - a.puntos;
                 return (b.won || 0) - (a.won || 0);

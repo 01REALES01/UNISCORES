@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CampusMapInteractive } from "@/components/campus-map-interactive";
 import { supabase } from "@/lib/supabase";
+import { safeQuery } from "@/lib/supabase-query";
 import { Button, Badge } from "@/components/ui-primitives";
 import { ArrowLeft, MapPin, Activity, Calendar } from "lucide-react";
 import Link from "next/link";
@@ -16,28 +17,14 @@ export default function CampusMapPage() {
         const fetchMatches = async () => {
             setLoading(true);
 
-            // Traemos partidos en vivo o programados (no finalizados, o finalizados hoy)
-            // Para simplificar, traemos todo y filtramos en cliente lo relevante
-            const { data, error } = await supabase
-                .from('partidos')
-                .select(`*, disciplinas ( name, icon )`)
-                .order('fecha', { ascending: false })
-                .limit(50);
+            const { data, error } = await safeQuery(
+                supabase.from('partidos').select(`*, disciplinas ( name, icon )`).order('fecha', { ascending: false }).limit(50),
+                'mapa-matches'
+            );
 
-            if (data && !error) {
-                // DEBUG: Ver qué llega de Supabase
+            if (data) {
                 console.log("🔍 [DEBUG MAPA] Partidos RAW:", data);
-                const lugaresEnBD = [...new Set(data.map((m: any) => m.lugar))];
-                console.log("📍 [DEBUG MAPA] Lugares encontrados en BD:", lugaresEnBD);
-                console.log("✅ [DEBUG MAPA] Lugares esperados (constantes):", LUGARES_OLIMPICOS);
-
-                const now = new Date();
-                const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-
-                const relevantMatches = data;
-
-                console.log("🎯 [DEBUG MAPA] Partidos FILTRADOS:", relevantMatches);
-                setMatches(relevantMatches);
+                setMatches(data);
             }
             setLoading(false);
         };

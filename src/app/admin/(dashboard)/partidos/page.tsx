@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
+import { safeQuery } from "@/lib/supabase-query";
 import { Plus, Calendar, Clock, Loader2, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity } from "lucide-react";
 import { Card, Badge, Avatar, LiveIndicator } from "@/components/ui-primitives";
 import { CreateMatchModal } from "@/components/create-match-modal";
@@ -56,11 +57,10 @@ export default function PartidosPage() {
     }, []);
 
     const fetchPartidos = async () => {
-        const { data } = await supabase
-            .from('partidos')
-            .select(`*, disciplinas(name)`)
-            .order('created_at', { ascending: false });
-
+        const { data } = await safeQuery(
+            supabase.from('partidos').select(`*, disciplinas(name)`).order('created_at', { ascending: false }),
+            'admin-partidos'
+        );
         if (data) setPartidos(data);
         setLoading(false);
     };

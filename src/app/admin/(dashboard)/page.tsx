@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui-primitives";
 import { Activity, Calendar, Trophy, Users, TrendingUp, Zap, Clock, ArrowUpRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { safeQuery } from "@/lib/supabase-query";
 import Link from "next/link";
 import { getCurrentScore } from "@/lib/sport-scoring";
 
@@ -23,10 +24,10 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         const fetchData = async () => {
-            const { data } = await supabase
-                .from('partidos')
-                .select('*, disciplinas(name)')
-                .order('fecha', { ascending: false });
+            const { data } = await safeQuery(
+                supabase.from('partidos').select('*, disciplinas(name)').order('fecha', { ascending: false }),
+                'admin-dashboard'
+            );
             if (data) setPartidos(data as any);
             setLoading(false);
         };

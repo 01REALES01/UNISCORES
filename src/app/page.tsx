@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Trophy, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield } from "lucide-react";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { supabase } from "@/lib/supabase";
+import { safeQuery } from "@/lib/supabase-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -68,29 +69,24 @@ export default function Home() {
 
   const fetchPartidos = async (isBackground = false) => {
     if (!isBackground) setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('partidos')
-        .select(`*, disciplinas ( name, icon )`)
-        .order('fecha', { ascending: true });
 
-      if (error) {
-        if (!isBackground) toast.error(`Error cargando partidos: ${error.message || error.code || 'desconocido'}`);
-        console.error("Fetch error:", error);
-      } else if (data) {
-        const sorted = (data as any).sort((a: Partido, b: Partido) => {
-          const scoreA = getSortScore(a);
-          const scoreB = getSortScore(b);
-          return scoreA - scoreB;
-        });
-        setPartidos(sorted);
-      }
-    } catch (err) {
-      console.error("Critical fetch crash in Partidos:", err);
-      if (!isBackground) toast.error("Error crítico de red. Por favor recarga.");
-    } finally {
-      if (!isBackground) setLoading(false);
+    const { data, error } = await safeQuery(
+      supabase.from('partidos').select(`*, disciplinas ( name, icon )`).order('fecha', { ascending: true }),
+      'partidos'
+    );
+
+    if (error) {
+      if (!isBackground) toast.error(`Error cargando partidos: ${error.message}`);
+    } else if (data) {
+      const sorted = (data as any).sort((a: Partido, b: Partido) => {
+        const scoreA = getSortScore(a);
+        const scoreB = getSortScore(b);
+        return scoreA - scoreB;
+      });
+      setPartidos(sorted);
     }
+
+    if (!isBackground) setLoading(false);
   };
 
   const getSortScore = (p: Partido) => {

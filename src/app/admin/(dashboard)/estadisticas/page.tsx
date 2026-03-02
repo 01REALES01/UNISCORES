@@ -24,6 +24,7 @@ import {
     Loader2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { safeQuery } from "@/lib/supabase-query";
 import { SPORT_EMOJI } from "@/lib/constants";
 
 // ===== TYPES =====
@@ -67,14 +68,14 @@ export default function EstadisticasPage() {
         const fetchData = async () => {
             setLoading(true);
             const [partidosRes, eventosRes] = await Promise.all([
-                supabase
-                    .from("partidos")
-                    .select("*, disciplinas(name)")
-                    .order("fecha", { ascending: false }),
-                supabase
-                    .from("olympics_eventos")
-                    .select("*")
-                    .order("created_at", { ascending: false }),
+                safeQuery(
+                    supabase.from("partidos").select("*, disciplinas(name)").order("fecha", { ascending: false }),
+                    'stats-partidos'
+                ),
+                safeQuery(
+                    supabase.from("olympics_eventos").select("*").order("created_at", { ascending: false }),
+                    'stats-eventos'
+                ),
             ]);
 
             if (partidosRes.data) setPartidos(partidosRes.data as any);
