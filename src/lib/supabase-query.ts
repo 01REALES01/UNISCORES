@@ -78,6 +78,45 @@ export async function safeQuery<T = any>(
 }
 
 /**
+ * Execute a Supabase mutation (insert, update, delete) with a STRICT timeout.
+ * - Unlike safeQuery, this DOES NOT retry automatically (to prevent duplicate inserts if the network was just slow).
+ * - It fails fast so the UI doesn't hang forever on "Guardando...".
+ * 
+ * Usage:
+ *   const { error } = await safeMutation(
+ *     supabase.from('noticias').insert(payload)
+ *   );
+ */
+export async function safeMutation<T = any>(
+    queryBuilder: PromiseLike<{ data: T | null; error: any }>,
+    label?: string
+): Promise<QueryResult<T>> {
+    try {
+        const result = await withTimeout(queryBuilder, TIMEOUT_MS);
+
+        if (result.error) {
+            console.warn(`[safeMutation]${label ? ` ${label}` : ''} error:`, result.error.message || result.error);
+            return {
+                data: null,
+                error: { message: result.error.message || 'Error en base de datos', code: result.error.code },
+            };
+        }
+
+        return { data: result.data, error: null };
+
+    } catch (err: any) {
+        console.error(`[safeMutation]${label ? ` ${label}` : ''} crashed:`, err?.message || err);
+        return {
+            data: null,
+            error: {
+                message: err?.message?.includes('timed out') ? 'La conexión está muy lenta (Timeout)' : (err?.message || 'Error de red'),
+                code: 'MUTATION_FAILED',
+            },
+        };
+    }
+}
+
+/**
  * Execute multiple Supabase queries in parallel, all with timeout + retry protection.
  * 
  * Usage:

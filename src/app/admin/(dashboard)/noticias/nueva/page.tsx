@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { safeQuery } from "@/lib/supabase-query";
+import { safeQuery, safeMutation } from "@/lib/supabase-query";
 import { Button, Input } from "@/components/ui-primitives";
 import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Eye, X } from "lucide-react";
 import { toast } from "sonner";
@@ -114,10 +114,13 @@ export default function NuevaNoticiaPage() {
             published: publish || form.published,
         };
 
-        const { error } = await supabase.from('noticias').insert(payload);
+        const { error } = await safeMutation(
+            supabase.from('noticias').insert(payload),
+            'crear-noticia'
+        );
 
         if (error) {
-            toast.error('Error guardando: ' + error.message);
+            toast.error(error.message);
             setSaving(false);
             return;
         }

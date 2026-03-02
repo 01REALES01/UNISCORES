@@ -54,46 +54,47 @@ export function NewsHeroCard({ noticia }: { noticia: Noticia }) {
 
     return (
         <Link href={`/noticias/${noticia.id}`} className="group block">
-            <div className="relative h-[400px] sm:h-[480px] rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+            <div className="relative h-[450px] sm:h-[520px] rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl bg-[#0a0805]">
                 {/* Background Image */}
                 {noticia.imagen_url ? (
                     <img
                         src={noticia.imagen_url}
                         alt={noticia.titulo}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                     />
                 ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-900/40 to-[#17130D]" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-900/40 to-[#0a0805]" />
                 )}
 
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                {/* Gradient Overlays for perfect contrast */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0805] via-[#0a0805]/60 to-transparent opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0805] via-transparent to-transparent opacity-60" />
 
                 {/* Content */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                    <div className="flex items-center gap-3 mb-3">
-                        <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider border", cat.bg, cat.color)}>
+                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 transform transition-transform duration-500 group-hover:-translate-y-2">
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <span className={cn("inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest border", cat.bg, cat.color)}>
                             {cat.label}
                         </span>
                         {noticia.carrera && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white/50">
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-white/50 bg-white/5 backdrop-blur-md px-3 py-1 rounded-full border border-white/5">
                                 <GraduationCap size={12} /> {noticia.carrera}
                             </span>
                         )}
                     </div>
 
-                    <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight mb-3 line-clamp-3 group-hover:text-[#FFC000] transition-colors">
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-4 line-clamp-3 group-hover:text-[#FFC000] transition-colors duration-300 drop-shadow-lg">
                         {noticia.titulo}
                     </h2>
 
-                    <p className="text-sm text-white/60 line-clamp-2 mb-4 max-w-2xl">
-                        {noticia.contenido.substring(0, 180)}...
+                    <p className="text-sm sm:text-base text-white/60 line-clamp-2 mb-6 max-w-3xl font-medium leading-relaxed">
+                        {noticia.contenido.substring(0, 200).replace(/\*\*/g, '')}...
                     </p>
 
-                    <div className="flex items-center gap-4 text-xs font-bold text-white/40">
+                    <div className="flex items-center gap-4 text-xs font-bold text-white/40 uppercase tracking-widest">
                         <span>{noticia.autor_nombre}</span>
-                        <span className="flex items-center gap-1"><Clock size={11} /> {getRelativeTime(noticia.created_at)}</span>
-                        <span>{getReadTime(noticia.contenido)} lectura</span>
+                        <span className="w-1 h-1 rounded-full bg-white/20" />
+                        <span className="flex items-center gap-1.5"><Clock size={12} /> {getRelativeTime(noticia.created_at)}</span>
                     </div>
                 </div>
             </div>
@@ -107,14 +108,14 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
 
     return (
         <Link href={`/noticias/${noticia.id}`} className="group block">
-            <div className="flex gap-4 bg-[#17130D]/60 border border-white/5 rounded-2xl p-3 sm:p-4 hover:border-white/15 transition-all duration-300 hover:bg-[#1a1610]">
+            <div className="flex gap-4 sm:gap-6 bg-transparent rounded-2xl p-2 sm:p-3 hover:bg-white/[0.03] transition-colors duration-300">
                 {/* Thumbnail */}
-                <div className="w-[100px] h-[80px] sm:w-[140px] sm:h-[100px] rounded-xl overflow-hidden shrink-0 relative">
+                <div className="w-[110px] h-[90px] sm:w-[160px] sm:h-[120px] rounded-xl sm:rounded-2xl overflow-hidden shrink-0 relative bg-[#17130D] border border-white/5 shadow-lg">
                     {noticia.imagen_url ? (
                         <img
                             src={noticia.imagen_url}
                             alt={noticia.titulo}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         />
                     ) : (
                         <div className="w-full h-full bg-gradient-to-br from-red-900/30 to-[#17130D] flex items-center justify-center">
@@ -124,33 +125,38 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                <div className="flex-1 min-w-0 flex flex-col justify-center sm:py-1">
                     <div>
-                        <div className="flex items-center gap-2 mb-1.5">
-                            <span className={cn("text-[10px] font-black uppercase tracking-widest", cat.color)}>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
+                            <span className={cn("text-[9px] sm:text-[10px] font-black uppercase tracking-widest", cat.color)}>
                                 {cat.label}
                             </span>
                             {noticia.carrera && (
-                                <span className="text-[10px] font-bold text-white/30 truncate">
-                                    · {noticia.carrera}
-                                </span>
+                                <>
+                                    <span className="text-white/20 text-[10px]">•</span>
+                                    <span className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-wider truncate max-w-[120px] sm:max-w-[200px]">
+                                        {noticia.carrera}
+                                    </span>
+                                </>
                             )}
                         </div>
-                        <h3 className="text-sm sm:text-base font-bold text-white/90 leading-snug line-clamp-2 group-hover:text-[#FFC000] transition-colors">
+                        <h3 className="text-base sm:text-xl font-black text-white/90 leading-tight tracking-tight line-clamp-2 sm:line-clamp-3 group-hover:text-white transition-colors">
                             {noticia.titulo}
                         </h3>
                     </div>
 
-                    <div className="flex items-center gap-3 text-[10px] sm:text-[11px] font-bold text-white/30 mt-2">
-                        <span>{getRelativeTime(noticia.created_at)}</span>
-                        <span>·</span>
-                        <span>{getReadTime(noticia.contenido)} lectura</span>
+                    <div className="flex items-center gap-3 text-[10px] sm:text-[11px] font-bold text-white/30 mt-3 sm:mt-4 uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5"><Clock size={11} /> {getRelativeTime(noticia.created_at)}</span>
+                        <span className="w-1 h-1 rounded-full bg-white/20" />
+                        <span>{getReadTime(noticia.contenido)} lec</span>
                     </div>
                 </div>
 
                 {/* Arrow */}
-                <div className="hidden sm:flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronRight size={16} className="text-white/30" />
+                <div className="hidden sm:flex items-center pr-2 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                    <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center bg-white/5">
+                        <ChevronRight size={18} className="text-white/60" />
+                    </div>
                 </div>
             </div>
         </Link>

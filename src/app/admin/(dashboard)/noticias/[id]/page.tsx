@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { safeQuery } from "@/lib/supabase-query";
+import { safeQuery, safeMutation } from "@/lib/supabase-query";
 import { Button, Input } from "@/components/ui-primitives";
 import { ArrowLeft, Save, Loader2, Image as ImageIcon, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -101,7 +101,10 @@ export default function EditNoticiaPage() {
             updated_at: new Date().toISOString(),
         };
 
-        const { error } = await supabase.from('noticias').update(payload).eq('id', id);
+        const { error } = await safeMutation(
+            supabase.from('noticias').update(payload).eq('id', id),
+            'update-noticia'
+        );
         if (error) { toast.error('Error: ' + error.message); setSaving(false); return; }
 
         toast.success('Noticia actualizada');
