@@ -54,6 +54,38 @@ export function addPoints(
 }
 
 /**
+ * Establece los puntos/goles explícitamente a un valor dado (Manual Edit)
+ */
+export function setPoints(
+    deporte: string,
+    detalle: ScoreDetail,
+    equipo: 'equipo_a' | 'equipo_b',
+    puntosNuevos: number
+): ScoreDetail {
+    const nuevo = JSON.parse(JSON.stringify(detalle)); // Deep copy to avoid mutations
+
+    // Aplicar cambio específico del deporte
+    let resultado = nuevo;
+    if (deporte === 'Fútbol') {
+        resultado = setGoalFutbol(nuevo, equipo, puntosNuevos);
+    } else if (deporte === 'Baloncesto') {
+        resultado = setPointsBasket(nuevo, equipo, puntosNuevos);
+    } else if (deporte === 'Voleibol') {
+        resultado = setPointVolley(nuevo, equipo, puntosNuevos);
+    } else if (deporte === 'Tenis de Mesa' || deporte === 'Tenis') {
+        resultado = setPointTenis(nuevo, equipo, puntosNuevos);
+    } else {
+        // Genérico
+        const field = equipo === 'equipo_a' ? 'total_a' : 'total_b';
+        nuevo[field] = Math.max(0, puntosNuevos);
+        resultado = nuevo;
+    }
+
+    // SIEMPRE Recalcular Totales para asegurar consistencia
+    return recalculateTotals(deporte, resultado);
+}
+
+/**
  * Recalcular totales basados en los detalles (Sets, Tiempos, Cuartos)
  * Esto corrige inconsistencias si se editaron los parciales manualmente
  */
@@ -435,4 +467,91 @@ function removePointTenis(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b')
     if (detalle.sets && detalle.sets[setActual]) {
         detalle.sets[setActual][field] = Math.max(0, (detalle.sets[setActual][field] || 0) - 1);
     }
+}
+
+// ========================
+// FUNCIONES DE REEMPLAZO (SET)
+// ========================
+
+function setGoalFutbol(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b', puntosNuevos: number) {
+    const field = equipo === 'equipo_a' ? 'goles_a' : 'goles_b';
+
+    // Si queremos sobreescribir el marcador total arbitrariamente, podemos simplemente forzarlo
+    // Pero para ser limpios, sobreescribiremos el total global y borraremos los parciales de tiempo
+    // si hay discrepancia (o lo fijamos en el tiempo actual para que coincida).
+
+    detalle[field] = puntosNuevos;
+
+    // Distribuimos todos los goles en el 1er y 2do tiempo para coincidir
+    // Estrategia simple: Si el nuevo total es X, y existían divisiones, intentamos respetarlas. 
+    // Sino, forzamos todo al tiempo actual.
+    const tiempo = detalle.tiempo_actual || 1;
+    if (!detalle.tiempos) detalle.tiempos = {};
+    if (!detalle.tiempos[tiempo]) detalle.tiempos[tiempo] = { goles_a: 0, goles_b: 0 };
+
+    // Forzamos el tiempo actual a cuadrar la caja.
+    // Esto significa que si pones 5, y el total era 5, tiempos[1] absorbe todos los 5.
+    // Es lo más seguro para "ediciones manuales sucias".
+    detalle.tiempos[tiempo][field] = puntosNuevos;
+
+    return detalle;
+}
+
+function setPointsBasket(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b', puntosNuevos: number) {
+    const fieldTotal = equipo === 'equipo_a' ? 'total_a' : 'total_b';
+    const fieldCuarto = equipo === 'equipo_a' ? 'puntos_a' : 'puntos_b';
+    const cuarto = detalle.cuarto_actual || 1;
+
+    // Calculamos qué puntaje tenían los OTROS cuartos
+    let puntosOtrosCuartos = 0;
+    if (detalle.cuartos) {
+        Object.entries(detalle.cuartos).forEach(([key, q]: [string, any]) => {
+            if (parseInt(key) !== cuarto) {
+                puntosOtrosCuartos += (q[fieldCuarto] || 0);
+            }
+        });
+    }
+
+    // Establecemos en el cuarto ACTUAL lo necesario para llegar al nuevo Total,
+    // o simplemente fijamos el nuevo valor directamente. 
+    // Pedimos "puntosNuevos" asumiendo que el usuario está editando el PARCIAL actual.
+    // Editando Q1, Q2, etc. O editando el GLOBAL. 
+    // Para no complicarlo, diremos que setPointsBasket setea el global sobreescribiendo el cuarto actual
+
+    if (!detalle.cuartos) detalle.cuartos = {};
+    if (!detalle.cuartos[cuarto]) detalle.cuartos[cuarto] = { puntos_a: 0, puntos_b: 0 };
+
+    // La forma más directa es ajustar el sub-score del cuarto actual para que el recálculo arroje el punto nuevo
+    // O si el admin quiere editar el GLOBAL absoluto que edita el componente modal, pasamos "puntosNuevos" como global
+    const ajusteParaCuarto = Math.max(0, puntosNuevos - puntosOtrosCuartos);
+    detalle.cuartos[cuarto][fieldCuarto] = ajusteParaCuarto;
+    detalle[fieldTotal] = puntosNuevos;
+
+    return detalle;
+}
+
+function setPointVolley(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b', puntosNuevos: number) {
+    const setActual = detalle.set_actual || 1;
+    const field = equipo === 'equipo_a' ? 'puntos_a' : 'puntos_b';
+
+    if (!detalle.sets) detalle.sets = {};
+    if (!detalle.sets[setActual]) detalle.sets[setActual] = { puntos_a: 0, puntos_b: 0 };
+
+    // Establecemos explícitamente en el set actual
+    detalle.sets[setActual][field] = Math.max(0, puntosNuevos);
+
+    return detalle;
+}
+
+function setPointTenis(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b', puntosNuevos: number) {
+    const setActual = detalle.set_actual || 1;
+    const field = equipo === 'equipo_a' ? 'juegos_a' : 'juegos_b';
+
+    if (!detalle.sets) detalle.sets = {};
+    if (!detalle.sets[setActual]) detalle.sets[setActual] = { juegos_a: 0, juegos_b: 0 };
+
+    // Establecemos explícitamente en el set actual
+    detalle.sets[setActual][field] = Math.max(0, puntosNuevos);
+
+    return detalle;
 }

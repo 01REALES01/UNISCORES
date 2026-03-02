@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button, Input, Badge, Avatar } from "@/components/ui-primitives";
-import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle, Minus } from "lucide-react";
+import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle, Minus, Edit2, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { addPoints, removePoints, getCurrentScore, ScoreDetail } from "@/lib/sport-scoring";
+import { addPoints, removePoints, setPoints, getCurrentScore, ScoreDetail } from "@/lib/sport-scoring";
 
 type EditMatchModalProps = {
     match: any;
@@ -45,7 +45,15 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
     // Cronómetro
     const [minutoActual, setMinutoActual] = useState(0);
     const [cronometroActivo, setCronometroActivo] = useState(false);
+    const [isEditingTime, setIsEditingTime] = useState(false);
+    const [tempTime, setTempTime] = useState("0");
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Edición manual de marcador
+    const [isEditingScoreA, setIsEditingScoreA] = useState(false);
+    const [tempScoreA, setTempScoreA] = useState("0");
+    const [isEditingScoreB, setIsEditingScoreB] = useState(false);
+    const [tempScoreB, setTempScoreB] = useState("0");
 
     // Nuevo evento
     const [showEventMenu, setShowEventMenu] = useState(false);
@@ -177,29 +185,96 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
         await supabase.from('partidos').update({ marcador_detalle: nuevoDetalle }).eq('id', match.id);
     };
 
+    const handleSetScore = async (equipo: 'equipo_a' | 'equipo_b', valorNuevo: number) => {
+        const detalleActual = match.marcador_detalle || {};
+        const deporte = match.disciplinas?.name || 'Genérico';
+
+        // Set absolute points
+        const nuevoDetalle = setPoints(deporte, detalleActual, equipo, valorNuevo);
+
+        const { error } = await supabase
+            .from('partidos')
+            .update({ marcador_detalle: nuevoDetalle })
+            .eq('id', match.id);
+
+        if (error) {
+            console.error('Error setting score:', error);
+            alert('Error actualizando marcador');
+        } else {
+            console.log(`✅ Marcador forzado a ${valorNuevo} para ${equipo}`);
+        }
+    };
+
+    const handleSaveManualScore = (equipo: 'equipo_a' | 'equipo_b') => {
+        if (equipo === 'equipo_a') {
+            handleSetScore('equipo_a', parseInt(tempScoreA) || 0);
+            setIsEditingScoreA(false);
+        } else {
+            handleSetScore('equipo_b', parseInt(tempScoreB) || 0);
+            setIsEditingScoreB(false);
+        }
+    };
+
     // Renderizado de controles de puntuación según deporte
-    const renderScoreControls = (equipo: 'equipo_a' | 'equipo_b') => {
+    const renderScoreControls = (equipo: 'equipo_a' | 'equipo_b', currentScoreValue: number) => {
         const deporte = match.disciplinas?.name;
+
+        const isEditing = equipo === 'equipo_a' ? isEditingScoreA : isEditingScoreB;
+        const setEditing = equipo === 'equipo_a' ? setIsEditingScoreA : setIsEditingScoreB;
+        const tempScore = equipo === 'equipo_a' ? tempScoreA : tempScoreB;
+        const setTemp = equipo === 'equipo_a' ? setTempScoreA : setTempScoreB;
+
+        if (isEditing) {
+            return (
+                <div className="flex gap-2 justify-center mt-2 animate-in fade-in">
+                    <Input
+                        type="number"
+                        value={tempScore}
+                        onChange={(e) => setTemp(e.target.value)}
+                        className="w-16 h-8 text-center px-1"
+                        autoFocus
+                        onKeyDown={(e) => e.key === 'Enter' && handleSaveManualScore(equipo)}
+                    />
+                    <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700" onClick={() => handleSaveManualScore(equipo)}>
+                        <Check size={14} />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 px-2 text-slate-400" onClick={() => setEditing(false)}>
+                        <X size={14} />
+                    </Button>
+                </div>
+            );
+        }
+
+        const btnManualEdit = (
+            <Button size="sm" variant="ghost" onClick={() => {
+                setTemp(currentScoreValue.toString());
+                setEditing(true);
+            }} className="h-8 px-2 text-slate-500 hover:text-white">
+                <Edit2 size={12} />
+            </Button>
+        );
 
         if (deporte === 'Voleibol' || deporte === 'Tenis' || deporte === 'Tenis de Mesa') {
             return (
-                <div className="flex gap-2 justify-center mt-2">
+                <div className="flex gap-2 justify-center mt-2 items-center">
                     <Button size="sm" variant="outline" onClick={() => handleUndoScore(equipo)} disabled={!match.marcador_detalle} className="h-8 w-8 p-0">
                         <Minus size={14} />
                     </Button>
                     <Button size="sm" onClick={() => handleUpdateScore(equipo, 1)} className="bg-indigo-600 hover:bg-indigo-700 h-8 px-3">
                         +1 Punto
                     </Button>
+                    {btnManualEdit}
                 </div>
             );
         }
 
         if (deporte === 'Baloncesto') {
             return (
-                <div className="flex gap-1 justify-center mt-2">
+                <div className="flex gap-1 justify-center mt-2 items-center">
                     <Button size="sm" variant="outline" onClick={() => handleUpdateScore(equipo, 1)} className="h-8 px-2 text-xs">+1</Button>
                     <Button size="sm" variant="outline" onClick={() => handleUpdateScore(equipo, 2)} className="h-8 px-2 text-xs">+2</Button>
                     <Button size="sm" variant="outline" onClick={() => handleUpdateScore(equipo, 3)} className="h-8 px-2 text-xs">+3</Button>
+                    {btnManualEdit}
                 </div>
             );
         }
@@ -207,15 +282,17 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
         // Fútbol y otros (Solo mostrar si es Admin manual, pero fútbol usa eventos)
         if (deporte === 'Fútbol') {
             return (
-                <div className="flex justify-center mt-2">
+                <div className="flex justify-center mt-2 items-center gap-2">
                     <span className="text-[10px] text-slate-500">Usa "Nuevo Evento" para Goles</span>
+                    {btnManualEdit}
                 </div>
             );
         }
 
         return (
-            <div className="flex justify-center mt-2">
+            <div className="flex justify-center mt-2 items-center gap-2">
                 <Button size="sm" onClick={() => handleUpdateScore(equipo, 1)}>+1</Button>
+                {btnManualEdit}
             </div>
         );
     };
@@ -237,7 +314,8 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                 marcador_detalle: {
                     ...freshDetalle,
                     minuto_actual: minuto,
-                    estado_cronometro: cronometroActivo ? 'corriendo' : 'pausado'
+                    estado_cronometro: cronometroActivo ? 'corriendo' : 'pausado',
+                    ultimo_update: new Date().toISOString()
                 }
             })
             .eq('id', match.id);
@@ -260,7 +338,8 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                     ...match.marcador_detalle,
                     tiempo_inicio: new Date().toISOString(),
                     minuto_actual: 0,
-                    estado_cronometro: 'corriendo'
+                    estado_cronometro: 'corriendo',
+                    ultimo_update: new Date().toISOString()
                 }
             })
             .eq('id', match.id);
@@ -296,7 +375,16 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
 
     const reanudarCronometro = () => {
         console.log('▶️ Reanudando cronómetro...');
+        // Force the new ultimo_update on resume
+        actualizarMinutoEnDB(minutoActual);
         setCronometroActivo(true);
+    };
+
+    const handleSaveManualTime = () => {
+        const nuevoMinuto = parseInt(tempTime) || 0;
+        setMinutoActual(nuevoMinuto);
+        actualizarMinutoEnDB(nuevoMinuto); // Saves with new ultimo_update explicitly
+        setIsEditingTime(false);
     };
 
     const finalizarPartido = async () => {
@@ -310,7 +398,8 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                 marcador_detalle: {
                     ...match.marcador_detalle,
                     minuto_actual: minutoActual,
-                    estado_cronometro: 'detenido'
+                    estado_cronometro: 'detenido',
+                    ultimo_update: new Date().toISOString()
                 }
             })
             .eq('id', match.id);
@@ -458,7 +547,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                     </Badge>
                                 )}
                             </div>
-                            {renderScoreControls('equipo_a')}
+                            {renderScoreControls('equipo_a', scoreA)}
                         </div>
 
                         {/* Cronómetro / Info Central - Solo si el deporte tiene tiempo */}
@@ -468,9 +557,43 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                     <Badge className="bg-indigo-500/10 text-indigo-400 mb-2">{extraInfo}</Badge>
                                 )}
 
-                                <div className="text-6xl font-black font-mono text-primary">
-                                    {minutoActual}'
-                                </div>
+                                {isEditingTime ? (
+                                    <div className="flex flex-col items-center gap-2 animate-in fade-in">
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="number"
+                                                value={tempTime}
+                                                onChange={(e) => setTempTime(e.target.value)}
+                                                className="w-20 text-center text-2xl font-black font-mono"
+                                                autoFocus
+                                                onKeyDown={(e) => e.key === 'Enter' && handleSaveManualTime()}
+                                            />
+                                            <span className="text-2xl font-black text-slate-500">'</span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={handleSaveManualTime}>
+                                                Guardar
+                                            </Button>
+                                            <Button size="sm" variant="ghost" onClick={() => setIsEditingTime(false)}>
+                                                Cancelar
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div
+                                        className="text-6xl font-black font-mono text-primary cursor-pointer hover:text-indigo-400 transition-colors group relative inline-block mx-auto"
+                                        onClick={() => {
+                                            setTempTime(minutoActual.toString());
+                                            setIsEditingTime(true);
+                                        }}
+                                        title="Click para editar manualmente el minuto"
+                                    >
+                                        {minutoActual}'
+                                        <div className="absolute -top-2 -right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Edit2 size={16} className="text-slate-500" />
+                                        </div>
+                                    </div>
+                                )}
 
                                 {match.estado === 'programado' && (
                                     <Button onClick={iniciarPartido} className="w-full">
@@ -539,7 +662,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                     </Badge>
                                 )}
                             </div>
-                            {renderScoreControls('equipo_b')}
+                            {renderScoreControls('equipo_b', scoreB)}
                         </div>
                     </div>
 
