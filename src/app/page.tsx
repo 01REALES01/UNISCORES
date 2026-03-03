@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { MatchCardSkeleton, NewsListSkeleton } from "@/components/skeletons";
@@ -8,8 +8,6 @@ import { HeroSlider } from "@/components/hero-slider";
 import { useAuth } from "@/hooks/useAuth";
 import { Trophy, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield, Newspaper } from "lucide-react";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
-import { supabase } from "@/lib/supabase";
-import { safeQuery } from "@/lib/supabase-query";
 import { NewsListCard, Noticia } from "@/components/news-card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -20,6 +18,8 @@ import { SportIcon } from "@/components/sport-icons";
 import { ExpandableTabs, TabItem } from "@/components/ui/expandable-tabs";
 import { toast } from "sonner";
 import { SplashScreen } from "@/components/splash-screen";
+import { useMatches } from "@/hooks/use-matches";
+import { useNews } from "@/hooks/use-news";
 
 type Partido = {
   id: number;
@@ -34,6 +34,8 @@ type Partido = {
     name: string;
     icon: string;
   };
+  carrera_a?: { nombre: string } | null;
+  carrera_b?: { nombre: string } | null;
 };
 
 
@@ -44,13 +46,28 @@ type Partido = {
 export default function Home() {
   const { user, profile, isStaff, signOut } = useAuth();
   const router = useRouter();
-  const [partidos, setPartidos] = useState<Partido[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("todos");
   const [searchQuery, setSearchQuery] = useState("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const [latestNews, setLatestNews] = useState<Noticia[]>([]);
+
+  // ─── SWR Hooks — cached, deduplicated, realtime-enabled ──────────────────
+  const { matches: rawMatches, loading: matchesLoading } = useMatches();
+  const { news: latestNews, loading: newsLoading } = useNews(4);
+  const loading = matchesLoading;
+
+  const getSortScore = (p: Partido) => {
+    if (p.estado === 'en_vivo') return -10000000000;
+    if (p.estado === 'programado') return new Date(p.fecha).getTime();
+    return new Date(p.fecha).getTime() + 10000000000;
+  };
+
+  // Sort matches: live first, then programmed by date, then finished
+  const partidos = useMemo(() => {
+    return [...rawMatches].sort((a: Partido, b: Partido) => {
+      return getSortScore(a) - getSortScore(b);
+    });
+  }, [rawMatches]);
 
   // Close profile menu on outside click
   useEffect(() => {
@@ -69,74 +86,15 @@ export default function Home() {
     router.push('/');
   };
 
-  const fetchPartidos = async (isBackground = false) => {
-    if (!isBackground) setLoading(true);
-
-    const { data, error } = await safeQuery(
-      supabase.from('partidos').select(`*, disciplinas ( name, icon )`).order('fecha', { ascending: true }),
-      'partidos'
-    );
-
-    if (error) {
-      if (!isBackground) toast.error(`Error cargando partidos: ${error.message}`);
-    } else if (data) {
-      const sorted = (data as any).sort((a: Partido, b: Partido) => {
-        const scoreA = getSortScore(a);
-        const scoreB = getSortScore(b);
-        return scoreA - scoreB;
-      });
-      setPartidos(sorted);
-    }
-
-    // Fetch Latest News
-    const { data: newsData } = await safeQuery(
-      supabase.from('noticias')
-        .select('*, partidos(equipo_a, equipo_b, disciplinas(name))')
-        .eq('published', true)
-        .order('created_at', { ascending: false })
-        .limit(4),
-      'home-latest-news'
-    );
-
-    if (newsData) {
-      setLatestNews(newsData as Noticia[]);
-    }
-
-    if (!isBackground) setLoading(false);
-  };
-
-  const getSortScore = (p: Partido) => {
-    if (p.estado === 'en_vivo') return -10000000000; // Live always top
-    if (p.estado === 'programado') return new Date(p.fecha).getTime(); // Soonest first
-    return new Date(p.fecha).getTime() + 10000000000; // Finished last
-  };
-
-  useEffect(() => {
-    fetchPartidos();
-
-    // Realtime subscription — updates arrive instantly, no polling needed
-    const subscription = supabase
-      .channel('public:partidos')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, (payload) => {
-        fetchPartidos(true); // Silent update
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'noticias' }, (payload) => {
-        fetchPartidos(true); // Silent update
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, []);
-
   const filteredPartidos = partidos.filter(p => {
     // Sport filter
     if (activeFilter !== 'todos' && p.disciplinas?.name !== activeFilter) return false;
     // Search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      return p.equipo_a.toLowerCase().includes(q) || p.equipo_b.toLowerCase().includes(q) || p.disciplinas?.name.toLowerCase().includes(q);
+      const eqA = p.carrera_a?.nombre || p.equipo_a;
+      const eqB = p.carrera_b?.nombre || p.equipo_b;
+      return eqA.toLowerCase().includes(q) || eqB.toLowerCase().includes(q) || p.disciplinas?.name.toLowerCase().includes(q);
     }
     return true;
   });
@@ -183,6 +141,7 @@ export default function Home() {
                 activeColor="text-red-500"
                 tabs={[
                   { title: "Inicio", icon: HomeIcon },
+                  { title: "Calendario", icon: Calendar },
                   { title: "Noticias", icon: Newspaper },
                   { title: "Mapa", icon: MapPin },
                   { title: "Medallería", icon: Trophy },
@@ -192,11 +151,12 @@ export default function Home() {
                 ]}
                 onChange={(index) => {
                   if (index === 0) router.push('/');
-                  if (index === 1) router.push('/noticias');
-                  if (index === 2) router.push('/mapa');
-                  if (index === 3) router.push('/medallero');
-                  if (index === 5) window.open('/tv', '_blank');
-                  if (index === 6 && isStaff) router.push('/admin');
+                  if (index === 1) router.push('/calendario');
+                  if (index === 2) router.push('/noticias');
+                  if (index === 3) router.push('/mapa');
+                  if (index === 4) router.push('/medallero');
+                  if (index === 6) window.open('/tv', '_blank');
+                  if (index === 7 && isStaff) router.push('/admin');
                 }}
               />
             </div>
@@ -205,6 +165,11 @@ export default function Home() {
           <div className="flex items-center gap-2">
             {/* Mobile simplified nav */}
             <div className="flex md:hidden items-center gap-2">
+              <Link href="/calendario">
+                <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-500/10 rounded-full">
+                  <Calendar size={18} />
+                </Button>
+              </Link>
               <Link href="/noticias">
                 <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-500/10 rounded-full">
                   <Newspaper size={18} />
@@ -607,8 +572,8 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
           <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
             {/* Team A */}
             <div className="flex flex-col items-center gap-3 text-center">
-              <Avatar name={partido.equipo_a} size="lg" className="w-16 h-16 text-2xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
-              <span className="text-xl font-bold text-white leading-tight line-clamp-2 px-2">{partido.equipo_a}</span>
+              <Avatar name={partido.carrera_a?.nombre || partido.equipo_a} size="lg" className="w-16 h-16 text-2xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
+              <span className="text-xl font-bold text-white leading-tight line-clamp-2 px-2">{partido.carrera_a?.nombre || partido.equipo_a}</span>
             </div>
 
             {/* Score */}
@@ -632,8 +597,8 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
 
             {/* Team B */}
             <div className="flex flex-col items-center gap-3 text-center">
-              <Avatar name={partido.equipo_b} size="lg" className="w-16 h-16 text-2xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
-              <span className="text-xl font-bold text-white leading-tight line-clamp-2 px-2">{partido.equipo_b}</span>
+              <Avatar name={partido.carrera_b?.nombre || partido.equipo_b} size="lg" className="w-16 h-16 text-2xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
+              <span className="text-xl font-bold text-white leading-tight line-clamp-2 px-2">{partido.carrera_b?.nombre || partido.equipo_b}</span>
             </div>
           </div>
 
@@ -701,16 +666,16 @@ function UpcomingMatchCard({ partido }: { partido: Partido }) {
         <div className="relative z-10 space-y-2.5">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0">
-              {partido.equipo_a.substring(0, 2).toUpperCase()}
+              {(partido.carrera_a?.nombre || partido.equipo_a).substring(0, 2).toUpperCase()}
             </div>
-            <span className="text-sm font-bold text-white truncate">{partido.equipo_a}</span>
+            <span className="text-sm font-bold text-white truncate">{partido.carrera_a?.nombre || partido.equipo_a}</span>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0">
-              {partido.equipo_b.substring(0, 2).toUpperCase()}
+              {(partido.carrera_b?.nombre || partido.equipo_b).substring(0, 2).toUpperCase()}
             </div>
-            <span className="text-sm font-bold text-slate-400 truncate group-hover:text-white transition-colors">{partido.equipo_b}</span>
+            <span className="text-sm font-bold text-slate-400 truncate group-hover:text-white transition-colors">{partido.carrera_b?.nombre || partido.equipo_b}</span>
           </div>
         </div>
       </div>
@@ -759,10 +724,10 @@ function ResultCard({ partido }: { partido: Partido }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
               <div className={cn("w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0")}>
-                {partido.equipo_a.substring(0, 2).toUpperCase()}
+                {(partido.carrera_a?.nombre || partido.equipo_a).substring(0, 2).toUpperCase()}
               </div>
               <span className={cn("text-sm font-bold truncate", winnerA || isDraw ? "text-white" : "text-slate-500")}>
-                {partido.equipo_a}
+                {partido.carrera_a?.nombre || partido.equipo_a}
               </span>
             </div>
             <span className={cn("text-2xl font-black tabular-nums ml-3", winnerA ? "text-amber-400" : "text-slate-600")}>
@@ -773,10 +738,10 @@ function ResultCard({ partido }: { partido: Partido }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
               <div className={cn("w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0")}>
-                {partido.equipo_b.substring(0, 2).toUpperCase()}
+                {(partido.carrera_b?.nombre || partido.equipo_b).substring(0, 2).toUpperCase()}
               </div>
               <span className={cn("text-sm font-bold truncate", !winnerA && scoreB > scoreA ? "text-white" : isDraw ? "text-white" : "text-slate-500")}>
-                {partido.equipo_b}
+                {partido.carrera_b?.nombre || partido.equipo_b}
               </span>
             </div>
             <span className={cn("text-2xl font-black tabular-nums ml-3", !winnerA && scoreB > scoreA ? "text-amber-400" : "text-slate-600")}>

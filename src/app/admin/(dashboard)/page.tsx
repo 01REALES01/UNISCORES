@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Card } from "@/components/ui-primitives";
 import { Activity, Calendar, Trophy, Users, TrendingUp, Zap, Clock, ArrowUpRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -16,31 +16,40 @@ type Partido = {
     fecha: string;
     marcador_detalle: any;
     disciplinas: { name: string };
+    carrera_a?: { nombre: string } | null;
+    carrera_b?: { nombre: string } | null;
 };
 
 export default function AdminDashboard() {
     const [partidos, setPartidos] = useState<Partido[]>([]);
     const [loading, setLoading] = useState(true);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const fetchData = useCallback(async () => {
+        const { data } = await safeQuery(
+            supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)').order('fecha', { ascending: false }),
+            'admin-dashboard'
+        );
+        if (data) setPartidos(data as any);
+        setLoading(false);
+    }, []);
 
     useEffect(() => {
-        const fetchData = async () => {
-            const { data } = await safeQuery(
-                supabase.from('partidos').select('*, disciplinas(name)').order('fecha', { ascending: false }),
-                'admin-dashboard'
-            );
-            if (data) setPartidos(data as any);
-            setLoading(false);
-        };
         fetchData();
 
-        // Real-time updates
         const sub = supabase
             .channel('admin-dashboard')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => fetchData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
+                if (debounceRef.current) clearTimeout(debounceRef.current);
+                debounceRef.current = setTimeout(() => fetchData(), 800);
+            })
             .subscribe();
 
-        return () => { supabase.removeChannel(sub); };
-    }, []);
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            supabase.removeChannel(sub);
+        };
+    }, [fetchData]);
 
     const enVivo = partidos.filter(p => p.estado === 'en_vivo');
     const finalizados = partidos.filter(p => p.estado === 'finalizado');
@@ -210,11 +219,11 @@ export default function AdminDashboard() {
                                         <span className="text-3xl filter drop-shadow-md">{getSportEmoji(p.disciplinas?.name)}</span>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-1">
-                                                <span className="text-sm font-bold text-slate-200 truncate">{p.equipo_a}</span>
+                                                <span className="text-sm font-bold text-slate-200 truncate">{p.carrera_a?.nombre || p.equipo_a}</span>
                                                 <span className="text-xl font-black text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]">{score.a}</span>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm font-bold text-slate-400 truncate">{p.equipo_b}</span>
+                                                <span className="text-sm font-bold text-slate-400 truncate">{p.carrera_b?.nombre || p.equipo_b}</span>
                                                 <span className="text-xl font-black text-slate-500">{score.b}</span>
                                             </div>
                                         </div>
@@ -262,7 +271,7 @@ export default function AdminDashboard() {
                                         <span className="text-2xl opacity-80">{getSportEmoji(p.disciplinas?.name)}</span>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-semibold text-slate-200 truncate">
-                                                {p.equipo_a} <span className="text-slate-500 mx-1">vs</span> {p.equipo_b}
+                                                {p.carrera_a?.nombre || p.equipo_a} <span className="text-slate-500 mx-1">vs</span> {p.carrera_b?.nombre || p.equipo_b}
                                             </p>
                                             <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide mt-0.5">
                                                 {p.disciplinas?.name} • {new Date(p.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}

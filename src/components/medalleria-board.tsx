@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { Trophy, Medal, Crown, TrendingUp } from "lucide-react";
@@ -51,7 +51,7 @@ export function MedalLeaderboard() {
 
         const [medalRes, matchRes] = await Promise.all([
             safeQuery(supabase.from('medallero').select('*').order('puntos', { ascending: false }).order('oro', { ascending: false }).order('plata', { ascending: false }), 'medallero'),
-            safeQuery(supabase.from('partidos').select('*').eq('estado', 'finalizado'), 'medallero-matches'),
+            safeQuery(supabase.from('partidos').select('*, carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)').eq('estado', 'finalizado'), 'medallero-matches'),
         ]);
 
         const data = medalRes.data;
@@ -62,8 +62,8 @@ export function MedalLeaderboard() {
                 let won = 0, draw = 0, lost = 0;
                 let calculatedPoints = 0;
                 matches?.forEach(m => {
-                    const isA = safeIncludes(m.equipo_a, team.equipo_nombre);
-                    const isB = safeIncludes(m.equipo_b, team.equipo_nombre);
+                    const isA = safeIncludes(m.carrera_a?.nombre || m.equipo_a, team.equipo_nombre);
+                    const isB = safeIncludes(m.carrera_b?.nombre || m.equipo_b, team.equipo_nombre);
                     if (!isA && !isB) return;
 
                     const scoreA = m.marcador_detalle?.goles_a ?? m.marcador_detalle?.sets_a ?? m.marcador_detalle?.total_a ?? m.marcador_detalle?.puntos_a ?? m.marcador_detalle?.juegos_a ?? 0;
@@ -101,18 +101,23 @@ export function MedalLeaderboard() {
         setLoading(false);
     };
 
+    const rtDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     useEffect(() => {
         fetchMedallero();
 
-        // Realtime updates
         const channel = supabase
             .channel('public:medallero')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'medallero' }, () => {
-                fetchMedallero();
+                if (rtDebounceRef.current) clearTimeout(rtDebounceRef.current);
+                rtDebounceRef.current = setTimeout(() => fetchMedallero(), 800);
             })
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        return () => {
+            if (rtDebounceRef.current) clearTimeout(rtDebounceRef.current);
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     // Helper para formatear nombres largos en Avatar

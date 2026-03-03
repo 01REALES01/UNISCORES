@@ -17,7 +17,18 @@ export type Noticia = {
     created_at: string;
     updated_at: string;
     // Joined
-    partidos?: { equipo_a: string; equipo_b: string; disciplinas: { name: string } } | null;
+    partidos?: {
+        id?: number;
+        equipo_a: string;
+        equipo_b: string;
+        fecha?: string;
+        estado?: 'programado' | 'en_vivo' | 'finalizado' | string;
+        lugar?: string;
+        marcador_detalle?: any;
+        disciplinas: { name: string; icon?: string };
+        carrera_a?: { nombre: string } | null;
+        carrera_b?: { nombre: string } | null;
+    } | null;
 };
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {

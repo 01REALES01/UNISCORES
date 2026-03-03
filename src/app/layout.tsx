@@ -39,8 +39,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="dark">
-      <body className={`${inter.variable} font-sans antialiased`}>
+    <html lang="es" className="dark" suppressHydrationWarning>
+      <head>
+        {/* DNS Preconnect — eliminates ~100-300ms TLS handshake on first Supabase request */}
+        <link rel="preconnect" href="https://uhsslexvmoecwvcjiwit.supabase.co" />
+        <link rel="dns-prefetch" href="https://uhsslexvmoecwvcjiwit.supabase.co" />
+      </head>
+      <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

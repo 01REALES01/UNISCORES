@@ -89,7 +89,7 @@ export function setPoints(
  * Recalcular totales basados en los detalles (Sets, Tiempos, Cuartos)
  * Esto corrige inconsistencias si se editaron los parciales manualmente
  */
-function recalculateTotals(deporte: string, detalle: ScoreDetail): ScoreDetail {
+export function recalculateTotals(deporte: string, detalle: ScoreDetail): ScoreDetail {
     const d = JSON.parse(JSON.stringify(detalle));
 
     if (deporte === 'Fútbol') {

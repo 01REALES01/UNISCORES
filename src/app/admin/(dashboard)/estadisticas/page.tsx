@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Card } from "@/components/ui-primitives";
 import {
     BarChart,
@@ -64,6 +64,8 @@ export default function EstadisticasPage() {
     const [filterDisciplina, setFilterDisciplina] = useState<string>("all");
 
     // Fetch data
+    const rtDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
@@ -85,17 +87,20 @@ export default function EstadisticasPage() {
 
         fetchData();
 
-        // Real-time updates
         const sub = supabase
             .channel("stats-dashboard")
             .on(
                 "postgres_changes",
                 { event: "*", schema: "public", table: "partidos" },
-                () => fetchData()
+                () => {
+                    if (rtDebounce.current) clearTimeout(rtDebounce.current);
+                    rtDebounce.current = setTimeout(() => fetchData(), 800);
+                }
             )
             .subscribe();
 
         return () => {
+            if (rtDebounce.current) clearTimeout(rtDebounce.current);
             supabase.removeChannel(sub);
         };
     }, []);

@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { safeQuery } from "@/lib/supabase-query";
+import { useState, useMemo } from "react";
 import { NewsHeroCard, NewsListCard, Noticia } from "@/components/news-card";
 import { NewsHeroSkeleton, NewsListSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui-primitives";
 import { ArrowLeft, Newspaper, GraduationCap, Filter } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useNews } from "@/hooks/use-news";
 
 const CATEGORIES = [
     { key: 'todas', label: 'Todas' },
@@ -19,57 +18,16 @@ const CATEGORIES = [
 ];
 
 export default function NoticiasPage() {
-    const [noticias, setNoticias] = useState<Noticia[]>([]);
-    const [carreras, setCarreras] = useState<string[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { allNews: noticias, loading } = useNews();
     const [categoryFilter, setCategoryFilter] = useState('todas');
     const [carreraFilter, setCarreraFilter] = useState('todas');
 
-    useEffect(() => {
-        const fetchNoticias = async () => {
-            setLoading(true);
-
-            const [newsRes, carrerasRes] = await Promise.all([
-                safeQuery(
-                    supabase.from('noticias')
-                        .select('*, partidos(equipo_a, equipo_b, disciplinas(name))')
-                        .eq('published', true)
-                        .order('created_at', { ascending: false }),
-                    'noticias-feed'
-                ),
-                safeQuery(
-                    supabase.from('medallero').select('equipo_nombre').order('equipo_nombre'),
-                    'noticias-carreras'
-                ),
-            ]);
-
-            if (newsRes.data) setNoticias(newsRes.data as Noticia[]);
-            if (carrerasRes.data) {
-                const names = carrerasRes.data.map((c: any) => c.equipo_nombre).filter(Boolean);
-                setCarreras(names);
-            }
-
-            setLoading(false);
-        };
-
-        fetchNoticias();
-
-        const channel = supabase
-            .channel('noticias-realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'noticias' }, async () => {
-                const { data } = await safeQuery(
-                    supabase.from('noticias')
-                        .select('*, partidos(equipo_a, equipo_b, disciplinas(name))')
-                        .eq('published', true)
-                        .order('created_at', { ascending: false }),
-                    'rt-noticias'
-                );
-                if (data) setNoticias(data as Noticia[]);
-            })
-            .subscribe();
-
-        return () => { supabase.removeChannel(channel); };
-    }, []);
+    // Extract unique carreras from news data
+    const carreras = useMemo(() => {
+        const names = new Set<string>();
+        noticias.forEach((n: any) => { if (n.carrera) names.add(n.carrera); });
+        return Array.from(names).sort();
+    }, [noticias]);
 
     const filtered = noticias.filter(n => {
         if (categoryFilter !== 'todas' && n.categoria !== categoryFilter) return false;

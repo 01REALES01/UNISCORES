@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
@@ -42,6 +42,16 @@ export default function PartidosPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const router = useRouter();
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const fetchPartidos = useCallback(async () => {
+        const { data } = await safeQuery(
+            supabase.from('partidos').select(`*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).order('created_at', { ascending: false }),
+            'admin-partidos'
+        );
+        if (data) setPartidos(data);
+        setLoading(false);
+    }, []);
 
     useEffect(() => {
         fetchPartidos();
@@ -49,21 +59,16 @@ export default function PartidosPage() {
         const channel = supabase
             .channel('realtime-partidos')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
-                fetchPartidos();
+                if (debounceRef.current) clearTimeout(debounceRef.current);
+                debounceRef.current = setTimeout(() => fetchPartidos(), 800);
             })
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
-    }, []);
-
-    const fetchPartidos = async () => {
-        const { data } = await safeQuery(
-            supabase.from('partidos').select(`*, disciplinas(name)`).order('created_at', { ascending: false }),
-            'admin-partidos'
-        );
-        if (data) setPartidos(data);
-        setLoading(false);
-    };
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            supabase.removeChannel(channel);
+        };
+    }, [fetchPartidos]);
 
     const deletePartido = async (id: number, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -82,7 +87,9 @@ export default function PartidosPage() {
         if (genderFilter !== 'todos' && (p.genero || 'masculino') !== genderFilter) return false;
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
-            if (!p.equipo_a.toLowerCase().includes(q) && !p.equipo_b.toLowerCase().includes(q)) return false;
+            const eqA = p.carrera_a?.nombre || p.equipo_a;
+            const eqB = p.carrera_b?.nombre || p.equipo_b;
+            if (!eqA.toLowerCase().includes(q) && !eqB.toLowerCase().includes(q)) return false;
         }
         return true;
     });
@@ -380,9 +387,9 @@ export default function PartidosPage() {
                                     <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center mb-5">
                                         {/* Team A */}
                                         <div className="flex flex-col items-center gap-2 text-center">
-                                            <Avatar name={partido.equipo_a} size="default" className="ring-2 ring-white/10 shadow-lg" />
+                                            <Avatar name={partido.carrera_a?.nombre || partido.equipo_a} size="default" className="ring-2 ring-white/10 shadow-lg" />
                                             <span className={cn("text-sm font-bold leading-tight truncate max-w-[90px]", score.a > score.b && isFinished ? "text-red-400" : "text-white")}>
-                                                {partido.equipo_a}
+                                                {partido.carrera_a?.nombre || partido.equipo_a}
                                             </span>
                                         </div>
 
@@ -406,9 +413,9 @@ export default function PartidosPage() {
 
                                         {/* Team B */}
                                         <div className="flex flex-col items-center gap-2 text-center">
-                                            <Avatar name={partido.equipo_b} size="default" className="ring-2 ring-white/10 shadow-lg" />
+                                            <Avatar name={partido.carrera_b?.nombre || partido.equipo_b} size="default" className="ring-2 ring-white/10 shadow-lg" />
                                             <span className={cn("text-sm font-bold leading-tight text-slate-400 truncate max-w-[90px]", score.b > score.a && isFinished ? "text-red-400" : "")}>
-                                                {partido.equipo_b}
+                                                {partido.carrera_b?.nombre || partido.equipo_b}
                                             </span>
                                         </div>
                                     </div>

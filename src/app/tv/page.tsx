@@ -9,6 +9,7 @@ import { getCurrentScore } from "@/lib/sport-scoring";
 import { Badge, Avatar } from "@/components/ui-primitives";
 import { cn } from "@/lib/utils";
 import { SPORT_EMOJI } from "@/lib/constants";
+import { OrbitalLoader } from "@/components/ui/orbital-loader";
 
 // --- Components for TV View ---
 
@@ -40,7 +41,7 @@ const TvLiveMatch = ({ match }: { match: any }) => {
 
                     {isRace ? (
                         <div className="text-center">
-                            <h2 className="text-6xl font-black text-white mb-12 tracking-tight">{match.equipo_a}</h2>
+                            <h2 className="text-6xl font-black text-white mb-12 tracking-tight">{match.carrera_a?.nombre || match.equipo_a}</h2>
                             <div className="space-y-4">
                                 {(match.marcador_detalle?.participantes || [])
                                     .sort((a: any, b: any) => (a.posicion || 99) - (b.posicion || 99))
@@ -64,30 +65,52 @@ const TvLiveMatch = ({ match }: { match: any }) => {
                         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-12">
                             {/* Team A */}
                             <div className="flex flex-col items-center gap-6">
-                                <Avatar name={match.equipo_a} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
+                                <Avatar name={match.carrera_a?.nombre || match.equipo_a} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
                                 <h1 className="text-4xl lg:text-5xl font-black text-white text-center leading-tight uppercase tracking-tight max-w-sm">
-                                    {match.equipo_a}
+                                    {match.carrera_a?.nombre || match.equipo_a}
                                 </h1>
                             </div>
 
                             {/* Score */}
                             <div className="flex flex-col items-center">
-                                <div className="text-[10rem] lg:text-[12rem] leading-none font-black text-white tabular-nums tracking-tighter drop-shadow-2xl flex items-center gap-8">
-                                    <span>{scoreA}</span>
-                                    <span className="text-white/20 -mt-8">:</span>
-                                    <span>{scoreB}</span>
+                                <div className="text-[10rem] lg:text-[14rem] leading-none font-black text-white tabular-nums tracking-tighter drop-shadow-2xl flex items-center justify-center gap-8 w-full min-w-[500px]">
+                                    <span className="text-right w-1/2">{scoreA}</span>
+                                    <div className="w-12 h-3 bg-white/20 rounded-full shrink-0" />
+                                    <span className="text-left w-1/2">{scoreB}</span>
                                 </div>
-                                <div className="mt-6 scale-150 transform origin-top">
-                                    <PublicLiveTimer detalle={match.marcador_detalle} />
+
+                                <div className="flex flex-col items-center mt-12 w-full max-w-[350px]">
+                                    <div className="flex items-center gap-4 text-2xl font-black uppercase tracking-widest text-[#00E676] drop-shadow-[0_0_15px_rgba(0,230,118,0.5)] mb-6">
+                                        {extra ? <span>{extra}</span> : <span>EN CURSO</span>}
+
+                                        {match.marcador_detalle?.timer && (
+                                            <>
+                                                <span className="opacity-50">•</span>
+                                                <div className="scale-150 origin-left">
+                                                    <PublicLiveTimer detalle={match.marcador_detalle} />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {subScoreA !== undefined && subScoreB !== undefined && (
+                                            <>
+                                                <span className="opacity-50">•</span>
+                                                <span>{subLabel || 'PTS'}: {subScoreA} - {subScoreB}</span>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    <div className="w-full h-2 rounded-full overflow-hidden bg-[#00E676]/20 relative">
+                                        <div className="h-full bg-[#00E676] rounded-full w-[100%] absolute top-0 left-0 shadow-[0_0_20px_#00E676] animate-pulse" />
+                                    </div>
                                 </div>
-                                {extra && <div className="mt-8 text-2xl font-bold text-indigo-300 uppercase tracking-widest bg-indigo-500/10 px-6 py-2 rounded-full border border-indigo-500/20">{extra}</div>}
                             </div>
 
                             {/* Team B */}
                             <div className="flex flex-col items-center gap-6">
-                                <Avatar name={match.equipo_b} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
+                                <Avatar name={match.carrera_b?.nombre || match.equipo_b} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
                                 <h1 className="text-4xl lg:text-5xl font-black text-white text-center leading-tight uppercase tracking-tight max-w-sm">
-                                    {match.equipo_b}
+                                    {match.carrera_b?.nombre || match.equipo_b}
                                 </h1>
                             </div>
                         </div>
@@ -115,13 +138,13 @@ const TvUpcoming = ({ matches }: { matches: any[] }) => {
                         </div>
                         <div className="flex justify-between items-center text-4xl font-bold text-white mt-8">
                             <div className="flex flex-col items-center gap-4">
-                                <Avatar name={match.equipo_a} size="lg" className="h-24 w-24 text-2xl" />
-                                <span className="text-xl text-center line-clamp-1 max-w-[150px]">{match.equipo_a}</span>
+                                <Avatar name={match.carrera_a?.nombre || match.equipo_a} size="lg" className="h-24 w-24 text-2xl" />
+                                <span className="text-xl text-center line-clamp-1 max-w-[150px]">{match.carrera_a?.nombre || match.equipo_a}</span>
                             </div>
                             <div className="text-slate-500 font-light">vs</div>
                             <div className="flex flex-col items-center gap-4">
-                                <Avatar name={match.equipo_b} size="lg" className="h-24 w-24 text-2xl" />
-                                <span className="text-xl text-center line-clamp-1 max-w-[150px]">{match.equipo_b}</span>
+                                <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" className="h-24 w-24 text-2xl" />
+                                <span className="text-xl text-center line-clamp-1 max-w-[150px]">{match.carrera_b?.nombre || match.equipo_b}</span>
                             </div>
                         </div>
                         <div className="mt-auto bg-white/5 rounded-2xl p-4 flex items-center justify-center gap-4 text-xl text-indigo-300 font-mono">
@@ -147,7 +170,7 @@ export default function TvPage() {
         // Fetch Live
         const { data: live } = await supabase
             .from('partidos')
-            .select('*, disciplinas(*)')
+            .select('*, disciplinas(*), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)')
             .eq('estado', 'en_vivo');
 
         if (live) setLiveMatches(live);
@@ -155,7 +178,7 @@ export default function TvPage() {
         // Fetch Upcoming
         const { data: upcoming } = await supabase
             .from('partidos')
-            .select('*, disciplinas(*)')
+            .select('*, disciplinas(*), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)')
             .eq('estado', 'programado')
             .gt('fecha', new Date().toISOString())
             .order('fecha', { ascending: true })

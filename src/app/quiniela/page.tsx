@@ -213,9 +213,9 @@ const PredictionCard = ({
             <div className="relative flex items-center gap-3 mb-4">
                 <div className="flex-1 text-center">
                     <div className="w-12 h-12 mx-auto rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg font-black mb-2">
-                        {match.equipo_a.substring(0, 2).toUpperCase()}
+                        {(match.carrera_a?.nombre || match.equipo_a).substring(0, 2).toUpperCase()}
                     </div>
-                    <p className={cn("font-bold text-xs leading-tight", isFinished && matchResult === 'A' ? "text-emerald-400" : "text-white")}>{match.equipo_a}</p>
+                    <p className={cn("font-bold text-xs leading-tight", isFinished && matchResult === 'A' ? "text-emerald-400" : "text-white")}>{match.carrera_a?.nombre || match.equipo_a}</p>
                 </div>
 
                 <div className="flex flex-col items-center min-w-[60px]">
@@ -232,9 +232,9 @@ const PredictionCard = ({
 
                 <div className="flex-1 text-center">
                     <div className="w-12 h-12 mx-auto rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg font-black mb-2">
-                        {match.equipo_b.substring(0, 2).toUpperCase()}
+                        {(match.carrera_b?.nombre || match.equipo_b).substring(0, 2).toUpperCase()}
                     </div>
-                    <p className={cn("font-bold text-xs leading-tight", isFinished && matchResult === 'B' ? "text-emerald-400" : "text-white")}>{match.equipo_b}</p>
+                    <p className={cn("font-bold text-xs leading-tight", isFinished && matchResult === 'B' ? "text-emerald-400" : "text-white")}>{match.carrera_b?.nombre || match.equipo_b}</p>
                 </div>
             </div>
 
@@ -243,8 +243,8 @@ const PredictionCard = ({
                 <VotePercentageBar
                     matchId={match.id}
                     allPredictions={allPredictions}
-                    teamA={match.equipo_a}
-                    teamB={match.equipo_b}
+                    teamA={match.carrera_a?.nombre || match.equipo_a}
+                    teamB={match.carrera_b?.nombre || match.equipo_b}
                 />
             </div>
 
@@ -263,7 +263,7 @@ const PredictionCard = ({
                         </p>
                     ) : (
                         <p className={cn("text-sm font-black", predictionCorrect ? "text-emerald-400" : "text-rose-400")}>
-                            {prediction.winner_pick === 'A' ? `Gana ${match.equipo_a}` : prediction.winner_pick === 'B' ? `Gana ${match.equipo_b}` : 'Empate'}
+                            {prediction.winner_pick === 'A' ? `Gana ${match.carrera_a?.nombre || match.equipo_a}` : prediction.winner_pick === 'B' ? `Gana ${match.carrera_b?.nombre || match.equipo_b}` : 'Empate'}
                         </p>
                     )}
                 </div>
@@ -272,7 +272,7 @@ const PredictionCard = ({
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu predicción</p>
                     {prediction.winner_pick ? (
                         <p className="text-sm font-black text-rose-300">
-                            {prediction.winner_pick === 'A' ? `Gana ${match.equipo_a}` : prediction.winner_pick === 'B' ? `Gana ${match.equipo_b}` : 'Empate'}
+                            {prediction.winner_pick === 'A' ? `Gana ${match.carrera_a?.nombre || match.equipo_a}` : prediction.winner_pick === 'B' ? `Gana ${match.carrera_b?.nombre || match.equipo_b}` : 'Empate'}
                         </p>
                     ) : (
                         <p className="text-xl font-black tabular-nums font-mono text-rose-300">
@@ -316,7 +316,7 @@ const PredictionCard = ({
                                             : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
-                                    Gana<br />{match.equipo_a.substring(0, 8)}
+                                    Gana<br />{(match.carrera_a?.nombre || match.equipo_a).substring(0, 8)}
                                 </button>
                                 <button
                                     onClick={() => setWinnerPick('DRAW')}
@@ -340,7 +340,7 @@ const PredictionCard = ({
                                             : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
-                                    Gana<br />{match.equipo_b.substring(0, 8)}
+                                    Gana<br />{(match.carrera_b?.nombre || match.equipo_b).substring(0, 8)}
                                 </button>
                             </div>
                         )}
@@ -398,7 +398,7 @@ export default function QuinielaPage() {
             setLoading(true);
 
             const [matchesRes, predsRes, allPredsRes, rankingRes] = await Promise.all([
-                safeQuery(supabase.from('partidos').select('*, disciplinas(name)').order('fecha', { ascending: true }), 'quiniela-matches'),
+                safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)').order('fecha', { ascending: true }), 'quiniela-matches'),
                 safeQuery(supabase.from('pronosticos').select('*').eq('user_id', user.id), 'quiniela-preds'),
                 safeQuery(supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'), 'quiniela-allPreds'),
                 safeQuery(supabase.from('public_profiles').select('*').order('points', { ascending: false }).limit(50), 'quiniela-ranking'),
@@ -422,7 +422,7 @@ export default function QuinielaPage() {
                 if (data) setAllPredictions(data);
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, async () => {
-                const { data } = await safeQuery(supabase.from('partidos').select('*, disciplinas(name)').order('fecha', { ascending: true }), 'rt-matches');
+                const { data } = await safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)').order('fecha', { ascending: true }), 'rt-matches');
                 if (data) setMatches(data);
             })
             .subscribe();
@@ -750,10 +750,10 @@ export default function QuinielaPage() {
                                                             "w-11 h-11 mx-auto rounded-xl flex items-center justify-center text-sm font-black mb-1.5",
                                                             isFinished && result === 'A' ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300" : "bg-white/5 border border-white/10 text-white"
                                                         )}>
-                                                            {m.equipo_a.substring(0, 2).toUpperCase()}
+                                                            {(m.carrera_a?.nombre || m.equipo_a).substring(0, 2).toUpperCase()}
                                                         </div>
                                                         <p className={cn("font-bold text-[11px] leading-tight", isFinished && result === 'A' ? "text-emerald-400" : "text-white/80")}>
-                                                            {m.equipo_a}
+                                                            {m.carrera_a?.nombre || m.equipo_a}
                                                         </p>
                                                     </div>
 
@@ -774,10 +774,10 @@ export default function QuinielaPage() {
                                                             "w-11 h-11 mx-auto rounded-xl flex items-center justify-center text-sm font-black mb-1.5",
                                                             isFinished && result === 'B' ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300" : "bg-white/5 border border-white/10 text-white"
                                                         )}>
-                                                            {m.equipo_b.substring(0, 2).toUpperCase()}
+                                                            {(m.carrera_b?.nombre || m.equipo_b).substring(0, 2).toUpperCase()}
                                                         </div>
                                                         <p className={cn("font-bold text-[11px] leading-tight", isFinished && result === 'B' ? "text-emerald-400" : "text-white/80")}>
-                                                            {m.equipo_b}
+                                                            {m.carrera_b?.nombre || m.equipo_b}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -804,8 +804,8 @@ export default function QuinielaPage() {
                                                             isFinished && correct === true ? "text-emerald-400" :
                                                                 isFinished && correct === false ? "text-rose-400" : "text-white"
                                                         )}>
-                                                            {pred.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {m.equipo_a}</> :
-                                                                pred.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {m.equipo_b}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
+                                                            {pred.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {m.carrera_a?.nombre || m.equipo_a}</> :
+                                                                pred.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {m.carrera_b?.nombre || m.equipo_b}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
                                                         </p>
                                                     )}
                                                 </div>

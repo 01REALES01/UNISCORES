@@ -23,6 +23,8 @@ type Partido = {
     lugar?: string;
     genero?: string;
     disciplinas: { name: string };
+    carrera_a?: { nombre: string } | null;
+    carrera_b?: { nombre: string } | null;
 };
 
 type Evento = {
@@ -33,6 +35,8 @@ type Evento = {
     descripcion: string;
     jugadores: { nombre: string; numero: number } | null;
 };
+
+import { OrbitalLoader } from "@/components/ui/orbital-loader";
 
 export default function PublicMatchDetail() {
     const params = useParams();
@@ -52,7 +56,7 @@ export default function PublicMatchDetail() {
     // Cargar datos
     const fetchData = async () => {
         const [matchRes, eventosRes, predsRes] = await Promise.all([
-            safeQuery(supabase.from('partidos').select(`*, disciplinas(name)`).eq('id', matchId).single(), 'partido-detail'),
+            safeQuery(supabase.from('partidos').select(`*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).eq('id', matchId).single(), 'partido-detail'),
             safeQuery(supabase.from('olympics_eventos').select('*, jugadores:olympics_jugadores(nombre, numero)').eq('partido_id', matchId).order('minuto', { ascending: false }), 'partido-eventos'),
             safeQuery(supabase.from('pronosticos').select('winner_pick, prediction_type').eq('match_id', matchId), 'partido-preds'),
         ]);
@@ -156,8 +160,7 @@ export default function PublicMatchDetail() {
 
     if (loading) return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805] text-white">
-            <div className="w-16 h-16 rounded-full border-4 border-red-500/30 border-t-red-500 animate-spin mb-4" />
-            <p className="text-sm font-medium text-red-300 animate-pulse">Cargando estadio...</p>
+            <OrbitalLoader message="Cargando estadio..." messagePlacement="bottom" className="text-red-500 scale-150 mb-6" />
         </div>
     );
 
@@ -210,39 +213,40 @@ export default function PublicMatchDetail() {
                     <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-red-500/10 to-transparent pointer-events-none" />
 
                     <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-center">
-                        {/* Status Badge */}
-                        <div className="flex justify-center mb-8">
+                        {/* Status Badges */}
+                        <div className="flex flex-wrap justify-center items-center gap-3 mb-6 sm:mb-8 relative z-20">
                             {isLive ? (
-                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-black tracking-widest uppercase shadow-[0_0_15px_rgba(244,63,94,0.3)] animate-pulse">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-rose-500 text-white text-[10px] sm:text-xs font-black tracking-widest uppercase shadow-[0_0_15px_rgba(244,63,94,0.3)]">
                                     <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
                                     </span>
-                                    En Vivo
+                                    LIVE
                                 </div>
                             ) : isFinished ? (
-                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-400 text-xs font-bold tracking-widest uppercase">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-[10px] sm:text-xs font-bold tracking-widest uppercase">
                                     Finalizado
                                 </div>
                             ) : (
-                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold tracking-widest uppercase">
-                                    <Calendar size={12} />
+                                <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-slate-800 border border-slate-700 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase">
+                                    <Calendar size={12} className="text-red-400" />
                                     {new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
                                 </div>
                             )}
+
+                            <div className="inline-flex px-3 py-1.5 rounded-full bg-black/40 border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/70">
+                                {sportName} • {generoMatch}
+                            </div>
                         </div>
 
                         {/* Scoreboard Layout */}
                         {/* Scoreboard Layout */}
                         {match.marcador_detalle?.tipo === 'carrera' ? (
                             <div className="w-full max-w-3xl mx-auto animate-in fade-in zoom-in-95 duration-500 my-4">
-                                <div className="text-center mb-8">
+                                <div className="text-center mb-8 mt-4 sm:mt-0">
                                     <h1 className="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 uppercase tracking-tighter drop-shadow-sm leading-tight mb-2">
-                                        {match.equipo_a}
+                                        {match.carrera_a?.nombre || match.equipo_a}
                                     </h1>
-                                    <Badge variant="outline" className="border-white/10 text-slate-400 uppercase tracking-widest text-[10px]">
-                                        {sportName} • {generoMatch}
-                                    </Badge>
                                 </div>
 
                                 <div className="flex flex-col gap-2 relative">
@@ -294,48 +298,73 @@ export default function PublicMatchDetail() {
                                 <div className="flex flex-col items-center gap-4 group">
                                     <div className="relative">
                                         <div className="absolute inset-0 bg-red-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <Avatar name={match.equipo_a} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
+                                        <Avatar name={match.carrera_a?.nombre || match.equipo_a} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
                                     </div>
                                     <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
-                                        {match.equipo_a}
+                                        {match.carrera_a?.nombre || match.equipo_a}
                                     </h2>
                                 </div>
 
-                                <div className="flex flex-col items-center relative z-20 min-w-[140px]">
+                                <div className="flex flex-col items-center relative z-20 min-w-[160px] sm:min-w-[220px]">
                                     <div className={cn(
-                                        "flex items-center justify-center gap-2 sm:gap-4 font-black text-6xl sm:text-8xl tabular-nums tracking-tighter transition-all duration-300",
-                                        isLive ? "text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.3)]" : "text-white/50"
+                                        "flex items-center justify-center gap-3 sm:gap-6 font-black text-[3.5rem] sm:text-7xl tabular-nums tracking-tighter transition-all duration-300",
+                                        isLive ? "text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "text-white/80"
                                     )}>
-                                        <span>{scoreA}</span>
-                                        <span className="text-white/20 text-4xl sm:text-6xl -mt-2 sm:-mt-4">:</span>
-                                        <span>{scoreB}</span>
+                                        <span className="w-16 sm:w-24 text-right">{scoreA}</span>
+                                        <div className="w-4 sm:w-6 h-1 sm:h-2 bg-white/20 rounded-full" />
+                                        <span className="w-16 sm:w-24 text-left">{scoreB}</span>
                                     </div>
 
-                                    {/* Sub-score del período/set actual */}
-                                    {subScoreA !== undefined && subScoreB !== undefined && (
-                                        <div className="flex items-center gap-3 mt-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 shadow-lg backdrop-blur-sm">
-                                            <span className="text-sm sm:text-base font-bold tabular-nums text-white">{subScoreA}</span>
-                                            <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">{subLabel || 'Pts'}</span>
-                                            <span className="text-sm sm:text-base font-bold tabular-nums text-white">{subScoreB}</span>
-                                        </div>
-                                    )}
+                                    {/* Info Row: Time, Quarter/Set, and Status Bar */}
+                                    <div className="flex flex-col items-center mt-3 sm:mt-4 w-full px-2 sm:px-0">
+                                        <div className={cn(
+                                            "flex items-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-2 sm:mb-3",
+                                            isLive ? "text-[#00E676] drop-shadow-[0_0_5px_rgba(0,230,118,0.5)]" : "text-white/40"
+                                        )}>
+                                            {/* Quarter or 'Finalizado' */}
+                                            {extra ? <span>{extra}</span> : <span>{isLive ? 'EN CURSO' : 'FINAL'}</span>}
 
-                                    {/* Period indicator */}
-                                    {extra && (
-                                        <span className="mt-2 text-[10px] font-bold text-red-300 bg-red-500/10 border border-red-500/20 px-3 py-0.5 rounded-full uppercase tracking-wider">
-                                            {extra}
-                                        </span>
-                                    )}
+                                            {/* Timer or Subscores */}
+                                            {isLive && match.marcador_detalle?.timer && (
+                                                <>
+                                                    <span className="opacity-50">•</span>
+                                                    <div className="scale-90 origin-left">
+                                                        <PublicLiveTimer detalle={match.marcador_detalle} />
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {/* Subscores for Tennis / Volleyball */}
+                                            {subScoreA !== undefined && subScoreB !== undefined && (
+                                                <>
+                                                    <span className="opacity-50">•</span>
+                                                    <span>{subLabel || 'PTS'}: {subScoreA} - {subScoreB}</span>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {/* Glowing Progress Status Bar */}
+                                        <div className={cn(
+                                            "w-full h-1 sm:h-[6px] rounded-full overflow-hidden relative",
+                                            isLive ? "bg-[#00E676]/20" : "bg-white/10"
+                                        )}>
+                                            {isLive ? (
+                                                <div className="h-full bg-[#00E676] rounded-full w-[100%] absolute top-0 left-0 shadow-[0_0_12px_#00E676] animate-pulse" />
+                                            ) : isFinished ? (
+                                                <div className="h-full bg-white/40 rounded-full w-[100%] absolute top-0 left-0" />
+                                            ) : null}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* Team B */}
                                 <div className="flex flex-col items-center gap-4 group">
                                     <div className="relative">
                                         <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <Avatar name={match.equipo_b} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
+                                        <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
                                     </div>
                                     <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
-                                        {match.equipo_b}
+                                        {match.carrera_b?.nombre || match.equipo_b}
                                     </h2>
                                 </div>
                             </div>
@@ -402,9 +431,9 @@ export default function PublicMatchDetail() {
                             <div className="space-y-3">
                                 {/* Labels */}
                                 <div className="flex justify-between text-[10px] font-black uppercase tracking-wide">
-                                    <span className="text-red-400">{match?.equipo_a?.substring(0, 10)} {total > 0 ? `${pctA}%` : ''}</span>
+                                    <span className="text-red-400">{(match?.carrera_a?.nombre || match?.equipo_a)?.substring(0, 10)} {total > 0 ? `${pctA}%` : ''}</span>
                                     <span className="text-slate-500">Empate {total > 0 ? `${pctDraw}%` : ''}</span>
-                                    <span className="text-cyan-400">{match?.equipo_b?.substring(0, 10)} {total > 0 ? `${pctB}%` : ''}</span>
+                                    <span className="text-cyan-400">{(match?.carrera_b?.nombre || match?.equipo_b)?.substring(0, 10)} {total > 0 ? `${pctB}%` : ''}</span>
                                 </div>
 
                                 {/* The single bar */}
@@ -443,7 +472,7 @@ export default function PublicMatchDetail() {
                                             : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
-                                    {match?.equipo_a?.substring(0, 8)}
+                                    {(match?.carrera_a?.nombre || match?.equipo_a)?.substring(0, 8)}
                                 </button>
                                 <button
                                     onClick={() => handleVote('DRAW')}
@@ -467,7 +496,7 @@ export default function PublicMatchDetail() {
                                             : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
-                                    {match?.equipo_b?.substring(0, 8)}
+                                    {(match?.carrera_b?.nombre || match?.equipo_b)?.substring(0, 8)}
                                 </button>
                             </div>
                         </div>
@@ -500,8 +529,8 @@ export default function PublicMatchDetail() {
                                     return userPrediction.winner_pick === result ? "text-emerald-400" : "text-rose-400";
                                 })() : "text-white"
                             )}>
-                                {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {match?.equipo_a}</> :
-                                    userPrediction.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {match?.equipo_b}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
+                                {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {match?.carrera_a?.nombre || match?.equipo_a}</> :
+                                    userPrediction.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {match?.carrera_b?.nombre || match?.equipo_b}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
                             </p>
                         </div>
                     ) : null}
@@ -549,7 +578,7 @@ export default function PublicMatchDetail() {
                                                 </span>
                                             </div>
                                             <Badge variant="outline" className="w-fit text-[10px] bg-white/5 border-white/10 text-slate-400">
-                                                {e.equipo === 'sistema' ? 'Juez' : e.equipo === 'equipo_a' ? match.equipo_a : match.equipo_b}
+                                                {e.equipo === 'sistema' ? 'Juez' : e.equipo === 'equipo_a' ? (match.carrera_a?.nombre || match.equipo_a) : (match.carrera_b?.nombre || match.equipo_b)}
                                             </Badge>
                                         </div>
 

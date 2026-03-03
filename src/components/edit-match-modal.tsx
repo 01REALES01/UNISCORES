@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button, Input, Badge, Avatar } from "@/components/ui-primitives";
 import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle, Minus, Edit2, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { addPoints, removePoints, setPoints, getCurrentScore, ScoreDetail } from "@/lib/sport-scoring";
+import { addPoints, removePoints, setPoints, getCurrentScore, ScoreDetail, recalculateTotals } from "@/lib/sport-scoring";
 
 type EditMatchModalProps = {
     match: any;
@@ -62,6 +62,56 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
         equipo: '',
         jugador_id: null as number | null,
     });
+
+    // Edición Avanzada (Voleibol / Tenis)
+    const [showAdvancedEdit, setShowAdvancedEdit] = useState(false);
+    const [advancedSets, setAdvancedSets] = useState<any>({});
+    const [advancedSetActual, setAdvancedSetActual] = useState(1);
+
+    const openAdvancedEdit = () => {
+        setAdvancedSets(JSON.parse(JSON.stringify(match?.marcador_detalle?.sets || {})));
+        setAdvancedSetActual(match?.marcador_detalle?.set_actual || 1);
+        setShowAdvancedEdit(true);
+    };
+
+    const handleAdvChange = (setNum: number, field: string, value: string) => {
+        // Permitir vacío temporalmente mientras se borra/escribe, o parseInt
+        const val = value === '' ? '' : parseInt(value);
+        setAdvancedSets((prev: any) => ({
+            ...prev,
+            [setNum]: {
+                ...(prev[setNum] || {}),
+                [field]: typeof val === 'number' ? Math.max(0, val) : 0
+            }
+        }));
+    };
+
+    const saveAdvancedEdit = async () => {
+        if (!match) return;
+        const prevDetalle = match.marcador_detalle || {};
+        const deporte = match.disciplinas?.name || 'Voleibol';
+
+        const forcedDetalle = {
+            ...prevDetalle,
+            sets: advancedSets,
+            set_actual: advancedSetActual
+        };
+
+        const finalDetalle = recalculateTotals(deporte, forcedDetalle);
+
+        const { error } = await supabase
+            .from('partidos')
+            .update({ marcador_detalle: finalDetalle })
+            .eq('id', match.id);
+
+        if (error) {
+            console.error('Error saving advanced edit:', error);
+            alert('Error actualizando marcador avanzado');
+        } else {
+            console.log('✅ Marcador avanzado guardado', finalDetalle);
+            setShowAdvancedEdit(false);
+        }
+    };
 
     // Cargar jugadores y eventos
     useEffect(() => {
@@ -485,7 +535,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
     };
 
     const agregarJugador = async (equipo: string) => {
-        const nombre = prompt(`Nombre del jugador (${equipo === 'equipo_a' ? match.equipo_a : match.equipo_b}):`);
+        const nombre = prompt(`Nombre del jugador (${equipo === 'equipo_a' ? (match.carrera_a?.nombre || match.equipo_a) : (match.carrera_b?.nombre || match.equipo_b)}):`);
         if (!nombre) return;
 
         const numeroStr = prompt('Número de camiseta (opcional):');
@@ -536,8 +586,8 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                     <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
                         {/* Equipo A */}
                         <div className="text-center space-y-2">
-                            <Avatar name={match.equipo_a} size="lg" />
-                            <p className="font-bold text-lg">{match.equipo_a}</p>
+                            <Avatar name={match.carrera_a?.nombre || match.equipo_a} size="lg" />
+                            <p className="font-bold text-lg">{match.carrera_a?.nombre || match.equipo_a}</p>
                             <div className="flex flex-col items-center">
                                 <p className="text-5xl font-black">{scoreA}</p>
                                 {/* Subscore (Sets/Cuartos/Tiempos) */}
@@ -647,13 +697,19 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                     )}
                                     {match.estado === 'finalizado' && <Badge variant="outline">Finalizado</Badge>}
                                 </div>
+
+                                {(match.estado === 'en_vivo' || match.estado === 'finalizado') && (
+                                    <Button size="sm" variant="outline" onClick={openAdvancedEdit} className="mt-4 border-indigo-500/30 text-indigo-400 w-full bg-indigo-500/5 hover:bg-indigo-500/20">
+                                        Modo Edición Avanzada
+                                    </Button>
+                                )}
                             </div>
                         )}
 
                         {/* Equipo B */}
                         <div className="text-center space-y-2">
-                            <Avatar name={match.equipo_b} size="lg" />
-                            <p className="font-bold text-lg">{match.equipo_b}</p>
+                            <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" />
+                            <p className="font-bold text-lg">{match.carrera_b?.nombre || match.equipo_b}</p>
                             <div className="flex flex-col items-center">
                                 <p className="text-5xl font-black text-muted-foreground">{scoreB}</p>
                                 {subScoreB !== undefined && (
@@ -666,8 +722,68 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                         </div>
                     </div>
 
+                    {/* Panel de Edición Avanzada para Sets */}
+                    {showAdvancedEdit && (
+                        <div className="glass rounded-xl p-4 space-y-4 border border-indigo-500/30 animate-in fade-in slide-in-from-top-2">
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="font-bold flex items-center gap-2">
+                                    <Edit2 size={16} className="text-indigo-400" />
+                                    Edición Avanzada (Sets y Puntos)
+                                </h4>
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setShowAdvancedEdit(false)}>
+                                    <X size={16} />
+                                </Button>
+                            </div>
+
+                            <p className="text-xs text-muted-foreground">
+                                Edita directamente los puntos históricos de cualquier set. El sistema calculará automáticamente quién ganó cada uno y los totales.
+                            </p>
+
+                            <div className="grid grid-cols-[100px_repeat(5,1fr)] gap-2 text-center text-[10px] md:text-xs font-bold text-slate-400 mb-2 items-center">
+                                <div className="text-left pl-2">Equipo</div>
+                                <div>S1</div><div>S2</div><div>S3</div><div>S4</div><div>S5</div>
+                            </div>
+
+                            <div className="grid grid-cols-[100px_repeat(5,1fr)] gap-2 items-center mb-2">
+                                <div className="text-xs font-bold truncate pr-1 text-left" title={match.carrera_a?.nombre || match.equipo_a}>
+                                    {match.carrera_a?.nombre || match.equipo_a}
+                                </div>
+                                {[1, 2, 3, 4, 5].map(setNum => (
+                                    <Input key={`a-${setNum}`} type="number"
+                                        value={advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a'] ?? ''}
+                                        onChange={(e) => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a', e.target.value)}
+                                        className="h-9 p-1 text-center bg-slate-900 border-white/10 text-sm font-mono" />
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-[100px_repeat(5,1fr)] gap-2 items-center">
+                                <div className="text-xs font-bold truncate pr-1 text-left" title={match.carrera_b?.nombre || match.equipo_b}>
+                                    {match.carrera_b?.nombre || match.equipo_b}
+                                </div>
+                                {[1, 2, 3, 4, 5].map(setNum => (
+                                    <Input key={`b-${setNum}`} type="number"
+                                        value={advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] ?? ''}
+                                        onChange={(e) => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b', e.target.value)}
+                                        className="h-9 p-1 text-center bg-slate-900 border-white/10 text-sm font-mono" />
+                                ))}
+                            </div>
+
+                            <div className="mt-4 flex gap-4 items-center border-t border-border/50 pt-4">
+                                <span className="text-sm font-bold text-slate-400">Set Actual en juego:</span>
+                                <select className="bg-slate-900 border border-white/10 rounded-md h-9 px-3 text-sm flex-1"
+                                    value={advancedSetActual} onChange={e => setAdvancedSetActual(parseInt(e.target.value))}>
+                                    {[1, 2, 3, 4, 5].map(s => <option key={s} value={s}>Set {s}</option>)}
+                                </select>
+                            </div>
+
+                            <Button onClick={saveAdvancedEdit} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 h-11 shadow-lg shadow-indigo-600/20">
+                                <Save size={18} className="mr-2" /> Guardar y Recalcular Totales
+                            </Button>
+                        </div>
+                    )}
+
                     {/* Crear Evento */}
-                    {match.estado === 'en_vivo' && (
+                    {(match.estado === 'en_vivo' && !showAdvancedEdit) && (
                         <div className="glass rounded-xl p-4 space-y-4">
                             <div className="flex items-center justify-between">
                                 <h4 className="font-bold flex items-center gap-2">
@@ -728,7 +844,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                                     : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
                                                     }`}
                                             >
-                                                {match.equipo_a}
+                                                {match.carrera_a?.nombre || match.equipo_a}
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -740,7 +856,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                                     : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
                                                     }`}
                                             >
-                                                {match.equipo_b}
+                                                {match.carrera_b?.nombre || match.equipo_b}
                                             </button>
                                         </div>
                                     </div>
@@ -825,7 +941,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                             )}
                                         </div>
                                         <Badge variant={evento.equipo === 'equipo_a' ? 'default' : 'secondary'} className="text-xs">
-                                            {evento.equipo === 'equipo_a' ? match.equipo_a : evento.equipo === 'equipo_b' ? match.equipo_b : 'Sistema'}
+                                            {evento.equipo === 'equipo_a' ? (match.carrera_a?.nombre || match.equipo_a) : evento.equipo === 'equipo_b' ? (match.carrera_b?.nombre || match.equipo_b) : 'Sistema'}
                                         </Badge>
                                     </div>
                                 ))

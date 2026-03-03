@@ -5,10 +5,11 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { Noticia, NewsListCard } from "@/components/news-card";
-import { Button } from "@/components/ui-primitives";
-import { ArrowLeft, Clock, GraduationCap, Trophy, Share2, ChevronRight } from "lucide-react";
+import { Avatar, Button } from "@/components/ui-primitives";
+import { ArrowLeft, Clock, GraduationCap, MapPin, Share2, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { SportIcon } from "@/components/sport-icons";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
     cronica: { label: 'Crónica', color: 'text-blue-400', bg: 'bg-blue-500/15 border-blue-500/20' },
@@ -31,7 +32,7 @@ export default function NoticiaDetailPage() {
 
             const { data } = await safeQuery<any>(
                 supabase.from('noticias')
-                    .select('*, partidos(id, equipo_a, equipo_b, disciplinas(name))')
+                    .select('*, partidos(id, equipo_a, equipo_b, fecha, estado, lugar, marcador_detalle, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre))')
                     .eq('id', id)
                     .single(),
                 'noticia-detail'
@@ -139,15 +140,6 @@ export default function NoticiaDetailPage() {
                             <GraduationCap size={13} /> {noticia.carrera}
                         </span>
                     )}
-                    {noticia.partidos && (
-                        <Link
-                            href={`/partido/${noticia.partido_id}`}
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400/70 bg-amber-500/10 rounded-full px-3 py-1.5 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
-                        >
-                            <Trophy size={13} /> {noticia.partidos.equipo_a} vs {noticia.partidos.equipo_b}
-                            <ChevronRight size={12} />
-                        </Link>
-                    )}
                 </div>
 
                 {/* Title */}
@@ -163,6 +155,69 @@ export default function NoticiaDetailPage() {
                     <span>·</span>
                     <span className="flex items-center gap-1"><Clock size={13} /> {readTime} min lectura</span>
                 </div>
+
+                {/* Associated Match Card */}
+                {noticia.partidos && (
+                    <Link href={`/partido/${noticia.partido_id}`}>
+                        <div className="flex items-center justify-between w-full bg-[#17130D]/80 border border-white/5 rounded-2xl p-4 sm:p-5 mb-10 hover:bg-white/5 hover:border-white/10 transition-all group overflow-hidden relative shadow-lg">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+
+                            {/* Left: Time & Day or Score */}
+                            <div className="flex flex-col items-center justify-center border-r border-white/10 pr-3 sm:pr-6 shrink-0 w-[20%] sm:w-[15%] relative z-10">
+                                {noticia.partidos.estado === 'programado' ? (
+                                    <>
+                                        <span className="text-sm font-black text-white">{new Date(noticia.partidos.fecha || '').toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span className="text-[9px] font-bold text-white/50 uppercase mt-0.5">
+                                            {new Date(noticia.partidos.fecha || '').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className={cn("text-base font-black tabular-nums", noticia.partidos.estado === 'en_vivo' ? 'text-rose-500' : 'text-white/80')}>
+                                            {(noticia.partidos.marcador_detalle?.goles_a ?? noticia.partidos.marcador_detalle?.sets_a ?? noticia.partidos.marcador_detalle?.total_a ?? 0)}
+                                            -
+                                            {(noticia.partidos.marcador_detalle?.goles_b ?? noticia.partidos.marcador_detalle?.sets_b ?? noticia.partidos.marcador_detalle?.total_b ?? 0)}
+                                        </span>
+                                        <span className="text-[9px] font-black text-white/30 uppercase mt-0.5 tracking-wider">
+                                            {noticia.partidos.estado === 'en_vivo' ? <span className="text-rose-500 animate-pulse">LIVE</span> : 'FINAL'}
+                                        </span>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Middle: Teams */}
+                            <div className="flex items-center justify-center gap-2 sm:gap-6 flex-1 px-2 sm:px-4 relative z-10">
+                                <div className="flex items-center justify-end gap-2 sm:gap-4 flex-1">
+                                    <span className="text-xs sm:text-sm font-black truncate text-right">{noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a}</span>
+                                    <Avatar name={noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a} className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
+                                </div>
+                                <div className="text-[9px] font-black text-white/20 uppercase px-1 sm:px-2 py-0.5 rounded shrink-0">
+                                    VS
+                                </div>
+                                <div className="flex items-center justify-start gap-2 sm:gap-4 flex-1">
+                                    <Avatar name={noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b} className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
+                                    <span className="text-xs sm:text-sm font-black truncate text-left">{noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b}</span>
+                                </div>
+                            </div>
+
+                            {/* Right: Tournament & Button */}
+                            <div className="hidden md:flex flex-col items-start border-l border-white/10 pl-6 w-[25%] shrink-0 gap-1.5 relative z-10">
+                                <span className="text-xs font-bold text-white flex items-center gap-2">
+                                    <SportIcon sport={noticia.partidos.disciplinas?.name} size={14} className="text-white/60" /> {noticia.partidos.disciplinas?.name}
+                                </span>
+                                <span className="text-[10px] text-white/40 truncate max-w-[150px] flex items-center gap-1.5">
+                                    <MapPin size={10} /> {noticia.partidos.lugar || 'Sede UNINORTE'}
+                                </span>
+                            </div>
+
+                            <div className="ml-2 sm:ml-4 flex shrink-0 relative z-10">
+                                <div className="px-4 py-2 text-[10px] font-bold text-white uppercase tracking-wider bg-white/5 border border-white/10 rounded-full group-hover:bg-white/10 transition-colors">
+                                    Details
+                                </div>
+                            </div>
+                        </div>
+                    </Link>
+                )}
 
                 {/* Content */}
                 <article className="prose prose-invert max-w-none">

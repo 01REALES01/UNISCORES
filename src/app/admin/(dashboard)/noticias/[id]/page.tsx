@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { safeQuery, safeMutation } from "@/lib/supabase-query";
+import { safeQuery, safeMutation, invalidateCache } from "@/lib/supabase-query";
 import { Button, Input } from "@/components/ui-primitives";
 import { ArrowLeft, Save, Loader2, Image as ImageIcon, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -106,6 +106,10 @@ export default function EditNoticiaPage() {
             'update-noticia'
         );
         if (error) { toast.error('Error: ' + error.message); setSaving(false); return; }
+
+        // Invalidar caché para reflejar cambios al volver
+        invalidateCache('home-noticias');
+        invalidateCache('admin-noticias');
 
         toast.success('Noticia actualizada');
         router.push('/admin/noticias');

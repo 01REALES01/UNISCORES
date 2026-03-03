@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { safeQuery, safeMutation } from "@/lib/supabase-query";
+import { safeQuery, safeMutation, invalidateCache } from "@/lib/supabase-query";
 import { Button, Input } from "@/components/ui-primitives";
 import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Eye, X } from "lucide-react";
 import { toast } from "sonner";
@@ -124,6 +124,10 @@ export default function NuevaNoticiaPage() {
             setSaving(false);
             return;
         }
+
+        // Invalidar caché de noticias para que home y admin muestren la nueva noticia al volver
+        invalidateCache('home-noticias');
+        invalidateCache('admin-noticias');
 
         toast.success(publish ? '¡Noticia publicada!' : 'Borrador guardado');
         router.push('/admin/noticias');

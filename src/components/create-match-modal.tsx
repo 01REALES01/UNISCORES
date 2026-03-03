@@ -121,13 +121,29 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                 marcadorInicial = { total_a: 0, total_b: 0 };
             }
 
+            // Buscar IDs de carreras si aplican
+            let carreraAId = null;
+            let carreraBId = null;
+
+            if (!isRaceSport && !isIndividual) {
+                const { data: cData } = await supabase.from('carreras').select('id, nombre').in('nombre', [equipoA, equipoB]);
+                carreraAId = cData?.find(c => c.nombre === equipoA)?.id || null;
+                carreraBId = cData?.find(c => c.nombre === equipoB)?.id || null;
+            } else if (isIndividual) {
+                const { data: cData } = await supabase.from('carreras').select('id, nombre').in('nombre', [delegacionA, delegacionB]);
+                carreraAId = cData?.find(c => c.nombre === delegacionA)?.id || null;
+                carreraBId = cData?.find(c => c.nombre === delegacionB)?.id || null;
+            }
+
             // Insertar partido
             const { error } = await supabase.from('partidos').insert({
                 disciplina_id: disc?.id,
-                equipo_a: isRaceSport ? equipoA : equipoA, // En carreras, equipo_a es el Nombre del Evento
-                equipo_b: isRaceSport ? 'Evento Múltiple' : equipoB, // Placeholder descriptivo
+                equipo_a: equipoA,
+                equipo_b: isRaceSport ? 'Evento Múltiple' : equipoB,
                 delegacion_a: isIndividual ? delegacionA : equipoA,
                 delegacion_b: isIndividual ? delegacionB : equipoB,
+                carrera_a_id: carreraAId,
+                carrera_b_id: carreraBId,
                 fecha: fecha ? new Date(fecha).toISOString() : new Date().toISOString(),
                 estado: estado,
                 genero: genero,

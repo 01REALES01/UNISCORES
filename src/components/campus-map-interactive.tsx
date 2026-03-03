@@ -22,6 +22,8 @@ type Match = {
     id: number;
     equipo_a: string;
     equipo_b: string;
+    carrera_a?: { nombre: string } | null;
+    carrera_b?: { nombre: string } | null;
     delegacion_a?: string;
     delegacion_b?: string;
     disciplinas: { name: string; icon?: string; emoji?: string };
@@ -238,7 +240,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
 
                                                                     <div className="flex justify-between items-center">
                                                                         <div className="text-center flex-1">
-                                                                            <p className="text-xs font-bold text-white truncate max-w-[80px] mx-auto" title={m.equipo_a}>{m.delegacion_a || m.equipo_a}</p>
+                                                                            <p className="text-xs font-bold text-white truncate max-w-[80px] mx-auto" title={m.carrera_a?.nombre || m.equipo_a}>{m.delegacion_a || m.carrera_a?.nombre || m.equipo_a}</p>
                                                                         </div>
                                                                         <div className="px-2 font-black text-lg text-[#FFC000] font-mono tabular-nums">
                                                                             {m.estado === 'en_vivo'
@@ -247,7 +249,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                                                                             }
                                                                         </div>
                                                                         <div className="text-center flex-1">
-                                                                            <p className="text-xs font-bold text-white truncate max-w-[80px] mx-auto" title={m.equipo_b}>{m.delegacion_b || m.equipo_b}</p>
+                                                                            <p className="text-xs font-bold text-white truncate max-w-[80px] mx-auto" title={m.carrera_b?.nombre || m.equipo_b}>{m.delegacion_b || m.carrera_b?.nombre || m.equipo_b}</p>
                                                                         </div>
                                                                     </div>
 

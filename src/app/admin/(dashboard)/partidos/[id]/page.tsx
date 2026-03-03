@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button, Badge, Avatar, Card } from "@/components/ui-primitives";
-import { ArrowLeft, Clock, Play, Pause, Square, AlertCircle, Plus, Save, Users, Trophy, ChevronRight, Activity, Check, Trash2, Edit2, RotateCcw } from "lucide-react";
+import { ArrowLeft, Clock, Play, Pause, Square, AlertCircle, Plus, Save, Users, Trophy, ChevronRight, Activity, Check, Trash2, Edit2, RotateCcw, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { addPoints, removePoints, getCurrentScore, cambiarTiempoFutbol, cambiarCuartoBasket } from "@/lib/sport-scoring";
+import { addPoints, removePoints, getCurrentScore, cambiarTiempoFutbol, cambiarCuartoBasket, recalculateTotals } from "@/lib/sport-scoring";
 import { RaceControl } from "@/components/race-control";
+import { invalidateCache } from "@/lib/supabase-query";
 
 // Tipos
 type Jugador = {
@@ -129,6 +130,82 @@ export default function MatchControlPage() {
     const [confirmingDeletion, setConfirmingDeletion] = useState<Evento | null>(null);
     const [deletingEventId, setDeletingEventId] = useState<number | null>(null);
 
+    // Edición Avanzada — Todos los deportes
+    const [showAdvancedEdit, setShowAdvancedEdit] = useState(false);
+    const [advancedData, setAdvancedData] = useState<any>({});
+    const [advancedPeriod, setAdvancedPeriod] = useState(1); // set_actual / tiempo_actual / cuarto_actual
+    const [advancedMinuto, setAdvancedMinuto] = useState(0);
+
+    const openAdvancedEdit = () => {
+        const det = match?.marcador_detalle || {};
+        const sport = match?.disciplinas?.name;
+        if (sport === 'Fútbol') {
+            setAdvancedData(JSON.parse(JSON.stringify(det.tiempos || {})));
+            setAdvancedPeriod(det.tiempo_actual || 1);
+            setAdvancedMinuto(det.minuto_actual || 0);
+        } else if (sport === 'Baloncesto' || sport === 'Futsal') {
+            setAdvancedData(JSON.parse(JSON.stringify(det.cuartos || {})));
+            setAdvancedPeriod(det.cuarto_actual || 1);
+            setAdvancedMinuto(det.minuto_actual || 0);
+        } else {
+            setAdvancedData(JSON.parse(JSON.stringify(det.sets || {})));
+            setAdvancedPeriod(det.set_actual || 1);
+            setAdvancedMinuto(0);
+        }
+        setShowAdvancedEdit(true);
+    };
+
+    const handleAdvChange = (periodNum: number, field: string, value: string) => {
+        const val = value === '' ? '' : parseInt(value);
+        setAdvancedData((prev: any) => ({
+            ...prev,
+            [periodNum]: {
+                ...(prev[periodNum] || {}),
+                [field]: typeof val === 'number' ? Math.max(0, val) : 0
+            }
+        }));
+    };
+
+    const saveAdvancedEdit = async () => {
+        if (!match) return;
+        const prevDetalle = match.marcador_detalle || {};
+        const deporte = match.disciplinas?.name || 'Fútbol';
+
+        let forcedDetalle: any = { ...prevDetalle };
+
+        if (deporte === 'Fútbol') {
+            forcedDetalle.tiempos = advancedData;
+            forcedDetalle.tiempo_actual = advancedPeriod;
+            forcedDetalle.minuto_actual = advancedMinuto;
+        } else if (deporte === 'Baloncesto' || deporte === 'Futsal') {
+            forcedDetalle.cuartos = advancedData;
+            forcedDetalle.cuarto_actual = advancedPeriod;
+            forcedDetalle.minuto_actual = advancedMinuto;
+        } else {
+            forcedDetalle.sets = advancedData;
+            forcedDetalle.set_actual = advancedPeriod;
+        }
+
+        const finalDetalle = recalculateTotals(deporte, forcedDetalle);
+
+        const { error } = await supabase
+            .from('partidos')
+            .update({ marcador_detalle: finalDetalle })
+            .eq('id', matchId);
+
+        if (error) {
+            console.error('Error saving advanced edit:', error);
+            alert('Error actualizando marcador avanzado');
+        } else {
+            console.log('✅ Marcador avanzado guardado', finalDetalle);
+            setMatch((prev: any) => ({ ...prev, marcador_detalle: finalDetalle }));
+            setMinutoActual(advancedMinuto);
+            setShowAdvancedEdit(false);
+            invalidateCache('admin-partidos');
+            invalidateCache('home-partidos');
+        }
+    };
+
     // 1. Cargar Datos Iniciales
     useEffect(() => {
         fetchMatchDetails();
@@ -156,7 +233,7 @@ export default function MatchControlPage() {
             setLoading(true);
             const { data, error } = await supabase
                 .from('partidos')
-                .select(`*, disciplinas(name)`)
+                .select(`*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`)
                 .eq('id', matchId)
                 .single();
 
@@ -251,6 +328,10 @@ export default function MatchControlPage() {
                 marcador_detalle: nuevoDetalle
             }).eq('id', matchId);
             setMatch((prev: any) => ({ ...prev, estado: 'en_vivo', marcador_detalle: nuevoDetalle }));
+            // Invalidar cachés para que home y dashboard reflejen que hay un partido en vivo
+            invalidateCache('home-partidos');
+            invalidateCache('admin-dashboard');
+            invalidateCache('admin-partidos');
             registrarEventoSistema('inicio', 'Inicio del partido');
         } else {
             await supabase.from('partidos').update({ marcador_detalle: nuevoDetalle }).eq('id', matchId);
@@ -337,6 +418,10 @@ export default function MatchControlPage() {
         if (!error) {
             setMatch((prev: any) => ({ ...prev, estado: 'finalizado', marcador_detalle: nuevoDetalle }));
             setMinutoActual(finalMinute);
+            // Invalidar cachés para que home y dashboard reflejen el partido finalizado
+            invalidateCache('home-partidos');
+            invalidateCache('admin-dashboard');
+            invalidateCache('admin-partidos');
             registrarEventoSistema('fin', 'Partido finalizado oficialmente');
         } else {
             alert("Error al finalizar: " + error.message);
@@ -707,11 +792,14 @@ export default function MatchControlPage() {
                                 <div className="relative">
                                     <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/10 flex items-center justify-center text-xl md:text-3xl font-bold border-2 md:border-4 border-white/10 shadow-xl relative z-10 backdrop-blur-sm">
-                                        <Avatar name={match.equipo_b} size="lg" className="h-full w-full" />
+                                        <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" className="h-full w-full" />
+                                    </div>
+                                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[#0a0805] px-3 py-1 rounded-full border border-zinc-800 text-[10px] font-bold text-zinc-400 uppercase tracking-widest whitespace-nowrap shadow-lg">
+                                        Team B
                                     </div>
                                 </div>
                                 <h2 className="text-sm md:text-2xl font-bold mt-2 md:mt-4 text-center leading-tight drop-shadow-md break-words max-w-[100px] md:max-w-none line-clamp-2">
-                                    {match.equipo_b}
+                                    {match.carrera_b?.nombre || match.equipo_b}
                                 </h2>
                             </div>
                         </div>
@@ -772,7 +860,7 @@ export default function MatchControlPage() {
                                 <tbody>
                                     {/* Equipo A */}
                                     <tr className="border-b border-white/5 hover:bg-white/5">
-                                        <td className="py-2 px-3 font-semibold">{match.equipo_a}</td>
+                                        <td className="py-2 px-3 font-semibold">{match.carrera_a?.nombre || match.equipo_a}</td>
                                         {disciplinaName === 'Fútbol' && (
                                             <>
                                                 <td className="text-center py-2 px-3">{match.marcador_detalle?.tiempos?.[1]?.goles_a || 0}</td>
@@ -821,7 +909,7 @@ export default function MatchControlPage() {
                                     </tr>
                                     {/* Equipo B */}
                                     <tr className="hover:bg-white/5">
-                                        <td className="py-2 px-3 font-semibold">{match.equipo_b}</td>
+                                        <td className="py-2 px-3 font-semibold">{match.carrera_b?.nombre || match.equipo_b}</td>
                                         {disciplinaName === 'Fútbol' && (
                                             <>
                                                 <td className="text-center py-2 px-3">{match.marcador_detalle?.tiempos?.[1]?.goles_b || 0}</td>
@@ -871,6 +959,170 @@ export default function MatchControlPage() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {(match.estado === 'en_vivo' || match.estado === 'finalizado') && (
+                            <div className="p-4 md:p-5 border-t border-white/5">
+                                {!showAdvancedEdit ? (
+                                    <button onClick={openAdvancedEdit} className="w-full group relative overflow-hidden rounded-xl p-[1px] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,192,0,0.15)]">
+                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FFC000] via-[#DB1406] to-[#FFC000] bg-[length:200%_100%] animate-[gradient-shift_3s_ease_infinite] pointer-events-none" />
+                                        <div className="relative flex items-center justify-center gap-3 rounded-xl bg-[#0a0805] px-6 py-4 transition-all group-hover:bg-[#17130D] pointer-events-none">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 rounded-lg bg-[#FFC000]/10">
+                                                    <Edit2 size={16} className="text-[#FFC000]" />
+                                                </div>
+                                                <span className="font-bold text-sm md:text-base text-white">Modo Edición Avanzada</span>
+                                            </div>
+                                            <span className="text-[10px] md:text-xs text-[#FFC000]/60 font-medium">Ajuste Manual Absoluto</span>
+                                        </div>
+                                    </button>
+                                ) : (() => {
+                                    // Config per sport
+                                    const isFutbol = disciplinaName === 'Fútbol';
+                                    const isBasket = disciplinaName === 'Baloncesto' || disciplinaName === 'Futsal';
+                                    const isSets = !isFutbol && !isBasket;
+
+                                    const periods = isFutbol ? [1, 2] : isBasket ? [1, 2, 3, 4] : [1, 2, 3, 4, 5];
+                                    const periodLabel = isFutbol ? 'Tiempo' : isBasket ? 'Cuarto' : 'Set';
+                                    const periodShort = isFutbol ? 'T' : isBasket ? 'Q' : 'S';
+                                    const fieldA = isFutbol ? 'goles_a' : isBasket ? 'puntos_a' : (disciplinaName === 'Tenis' ? 'juegos_a' : 'puntos_a');
+                                    const fieldB = isFutbol ? 'goles_b' : isBasket ? 'puntos_b' : (disciplinaName === 'Tenis' ? 'juegos_b' : 'puntos_b');
+                                    const hasTimer = isFutbol || isBasket;
+                                    const subtitle = isFutbol ? 'Goles por Tiempo · Minuto' : isBasket ? 'Puntos por Cuarto · Minuto' : 'Sets y Puntos · Ajuste Manual';
+
+                                    const colCount = periods.length;
+
+                                    return (
+                                        <div className="rounded-2xl overflow-hidden border border-[#FFC000]/20 bg-gradient-to-b from-[#17130D] to-[#0a0805] animate-in fade-in slide-in-from-top-2 duration-300">
+                                            {/* Header */}
+                                            <div className="flex items-center justify-between p-4 md:p-5 bg-gradient-to-r from-[#FFC000]/10 via-transparent to-[#DB1406]/10 border-b border-[#FFC000]/10">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 rounded-xl bg-[#FFC000]/10 border border-[#FFC000]/20">
+                                                        <Edit2 size={18} className="text-[#FFC000]" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-sm md:text-base text-white">Edición Avanzada</h4>
+                                                        <p className="text-[10px] md:text-xs text-[#FFC000]/50">{subtitle}</p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => setShowAdvancedEdit(false)} className="p-2 rounded-lg hover:bg-white/5 text-slate-500 hover:text-white transition-colors">
+                                                    <X size={18} />
+                                                </button>
+                                            </div>
+
+                                            <div className="p-4 md:p-5 space-y-5">
+                                                <p className="text-xs text-slate-400 leading-relaxed">
+                                                    Edita directamente los {isFutbol ? 'goles' : isBasket ? 'puntos' : 'puntos'} de cada {periodLabel.toLowerCase()}. Al guardar, el sistema recalculará automáticamente los totales.
+                                                </p>
+
+                                                {/* Period Grid */}
+                                                <div className="space-y-3">
+                                                    {/* Header Row */}
+                                                    <div className={`grid gap-1.5 md:gap-2 text-center`} style={{ gridTemplateColumns: `1fr repeat(${colCount}, minmax(0, 1fr))` }}>
+                                                        <div className="text-left text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider pl-2">Equipo</div>
+                                                        {periods.map(s => (
+                                                            <div key={s} className={`text-[10px] md:text-xs font-bold rounded-lg py-1.5 ${advancedPeriod === s ? 'bg-[#FFC000]/15 text-[#FFC000] border border-[#FFC000]/20' : 'text-slate-500'}`}>
+                                                                {periodShort}{s}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Team A Row */}
+                                                    <div className={`grid gap-1.5 md:gap-2 items-center`} style={{ gridTemplateColumns: `1fr repeat(${colCount}, minmax(0, 1fr))` }}>
+                                                        <div className="flex items-center gap-2 pl-1 min-w-0">
+                                                            <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-[#FFC000]/10 border border-[#FFC000]/20 flex items-center justify-center text-[8px] md:text-[10px] font-bold text-[#FFC000] flex-shrink-0">A</div>
+                                                            <span className="text-[10px] md:text-xs font-bold truncate" title={match.carrera_a?.nombre || match.equipo_a}>
+                                                                {match.carrera_a?.nombre || match.equipo_a}
+                                                            </span>
+                                                        </div>
+                                                        {periods.map(p => (
+                                                            <input key={`a-${p}`} type="number"
+                                                                value={advancedData[p]?.[fieldA] ?? ''}
+                                                                onChange={(e) => handleAdvChange(p, fieldA, e.target.value)}
+                                                                className={`w-full h-10 md:h-11 p-1 text-center rounded-xl text-sm md:text-base font-mono font-bold outline-none transition-all duration-200
+                                                                ${advancedPeriod === p
+                                                                        ? 'bg-[#FFC000]/10 border-2 border-[#FFC000]/40 text-[#FFC000] shadow-[0_0_12px_rgba(255,192,0,0.1)]'
+                                                                        : 'bg-white/[0.03] border border-white/10 text-white/80 hover:border-white/20 focus:border-[#FFC000]/50 focus:bg-[#FFC000]/5'}`} />
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Divider */}
+                                                    <div className={`grid gap-1.5 md:gap-2 items-center`} style={{ gridTemplateColumns: `1fr repeat(${colCount}, minmax(0, 1fr))` }}>
+                                                        <div className="text-[10px] text-slate-600 font-medium pl-2">VS</div>
+                                                        {periods.map(s => (
+                                                            <div key={s} className="border-t border-dashed border-white/5" />
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Team B Row */}
+                                                    <div className={`grid gap-1.5 md:gap-2 items-center`} style={{ gridTemplateColumns: `1fr repeat(${colCount}, minmax(0, 1fr))` }}>
+                                                        <div className="flex items-center gap-2 pl-1 min-w-0">
+                                                            <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-[#DB1406]/10 border border-[#DB1406]/20 flex items-center justify-center text-[8px] md:text-[10px] font-bold text-[#DB1406] flex-shrink-0">B</div>
+                                                            <span className="text-[10px] md:text-xs font-bold truncate" title={match.carrera_b?.nombre || match.equipo_b}>
+                                                                {match.carrera_b?.nombre || match.equipo_b}
+                                                            </span>
+                                                        </div>
+                                                        {periods.map(p => (
+                                                            <input key={`b-${p}`} type="number"
+                                                                value={advancedData[p]?.[fieldB] ?? ''}
+                                                                onChange={(e) => handleAdvChange(p, fieldB, e.target.value)}
+                                                                className={`w-full h-10 md:h-11 p-1 text-center rounded-xl text-sm md:text-base font-mono font-bold outline-none transition-all duration-200
+                                                                ${advancedPeriod === p
+                                                                        ? 'bg-[#DB1406]/10 border-2 border-[#DB1406]/40 text-[#f55] shadow-[0_0_12px_rgba(219,20,6,0.1)]'
+                                                                        : 'bg-white/[0.03] border border-white/10 text-white/80 hover:border-white/20 focus:border-[#DB1406]/50 focus:bg-[#DB1406]/5'}`} />
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Period Selector + Timer */}
+                                                <div className="flex flex-col gap-4 pt-4 border-t border-white/5">
+                                                    <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                                                        <span className="text-xs font-bold text-slate-400 flex items-center gap-2 flex-shrink-0">
+                                                            <Activity size={14} className="text-[#FFC000]" />
+                                                            {periodLabel} Actual:
+                                                        </span>
+                                                        <div className="flex gap-1.5 flex-1">
+                                                            {periods.map(s => (
+                                                                <button key={s} onClick={() => setAdvancedPeriod(s)}
+                                                                    className={`flex-1 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 ${advancedPeriod === s
+                                                                        ? 'bg-[#FFC000] text-[#17130D] shadow-lg shadow-[#FFC000]/20'
+                                                                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'}`}>
+                                                                    {s}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Timer edit — only for Football/Basketball */}
+                                                    {hasTimer && (
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-xs font-bold text-slate-400 flex items-center gap-2 flex-shrink-0">
+                                                                <Clock size={14} className="text-[#FFC000]" />
+                                                                Minuto:
+                                                            </span>
+                                                            <div className="flex items-center gap-2 flex-1">
+                                                                <input type="number" value={advancedMinuto}
+                                                                    onChange={e => setAdvancedMinuto(Math.max(0, parseInt(e.target.value) || 0))}
+                                                                    className="w-24 h-10 text-center rounded-xl bg-white/[0.03] border border-white/10 text-white font-mono font-bold text-lg outline-none focus:border-[#FFC000]/50 focus:bg-[#FFC000]/5" />
+                                                                <span className="text-lg font-bold text-slate-500">&apos;</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Save Button */}
+                                                <button onClick={saveAdvancedEdit} className="w-full relative group overflow-hidden rounded-xl p-[1px] mt-2 transition-all hover:shadow-[0_0_30px_rgba(255,192,0,0.2)]">
+                                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FFC000] to-[#DB1406] pointer-events-none" />
+                                                    <div className="relative flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FFC000] to-[#e6a800] px-6 py-3.5 font-bold text-[#17130D] text-sm md:text-base group-hover:from-[#FFce33] group-hover:to-[#FFC000] transition-all pointer-events-none">
+                                                        <Save size={18} />
+                                                        Guardar y Recalcular
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
                     </Card>
                 )}
 
@@ -953,8 +1205,8 @@ export default function MatchControlPage() {
                                         <p className="text-xs font-bold uppercase text-muted-foreground mb-3 tracking-wider ml-1">2. ¿Para qué equipo?</p>
                                         <div className="grid grid-cols-2 gap-4">
                                             {[
-                                                { id: 'equipo_a', name: match.equipo_a },
-                                                { id: 'equipo_b', name: match.equipo_b }
+                                                { id: 'equipo_a', name: match.carrera_a?.nombre || match.equipo_a },
+                                                { id: 'equipo_b', name: match.carrera_b?.nombre || match.equipo_b }
                                             ].map(team => {
                                                 const isSelected = nuevoEvento.equipo === team.id;
                                                 return (
@@ -1127,7 +1379,7 @@ export default function MatchControlPage() {
                                                     )}
                                                     {e.equipo !== 'sistema' && (
                                                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mt-1">
-                                                            {e.equipo === 'equipo_a' ? match.equipo_a : match.equipo_b}
+                                                            {e.equipo === 'equipo_a' ? (match.carrera_a?.nombre || match.equipo_a) : (match.carrera_b?.nombre || match.equipo_b)}
                                                         </p>
                                                     )}
                                                 </div>
@@ -1183,14 +1435,14 @@ export default function MatchControlPage() {
 
                                         <div className="flex items-center justify-between px-2">
                                             <div className="flex flex-col items-center w-1/3">
-                                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 truncate max-w-full">{match.equipo_a}</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 truncate max-w-full">{match.carrera_a?.nombre || match.equipo_a}</span>
                                                 <span className="text-4xl font-black text-white tracking-tighter">{scoreA}</span>
                                             </div>
 
                                             <div className="h-8 w-px bg-white/10 mx-2" />
 
                                             <div className="flex flex-col items-center w-1/3">
-                                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 truncate max-w-full">{match.equipo_b}</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 truncate max-w-full">{match.carrera_b?.nombre || match.equipo_b}</span>
                                                 <span className="text-4xl font-black text-white tracking-tighter">{scoreB}</span>
                                             </div>
                                         </div>
@@ -1231,7 +1483,7 @@ export default function MatchControlPage() {
                                 <div className="flex items-center justify-between gap-4 mb-8">
                                     {/* Team A */}
                                     <div className="flex flex-col items-center gap-2">
-                                        <span className="text-xs font-bold uppercase text-muted-foreground">{match.equipo_a}</span>
+                                        <span className="text-xs font-bold uppercase text-muted-foreground">{match.carrera_a?.nombre || match.equipo_a}</span>
                                         <div className="flex items-center gap-2 bg-black/40 rounded-xl p-1 border border-white/5">
                                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/10" onClick={() => handleManualScoreUpdate(disciplinaName === 'Fútbol' ? 'goles_a' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_a' : 'total_a'), Math.max(0, (match.marcador_detalle?.[disciplinaName === 'Fútbol' ? 'goles_a' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_a' : 'total_a')] || 0) - 1))}>
                                                 <span className="text-xl">-</span>
@@ -1247,7 +1499,7 @@ export default function MatchControlPage() {
 
                                     {/* Team B */}
                                     <div className="flex flex-col items-center gap-2">
-                                        <span className="text-xs font-bold uppercase text-muted-foreground">{match.equipo_b}</span>
+                                        <span className="text-xs font-bold uppercase text-muted-foreground">{match.carrera_b?.nombre || match.equipo_b}</span>
                                         <div className="flex items-center gap-2 bg-black/40 rounded-xl p-1 border border-white/5">
                                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/10" onClick={() => handleManualScoreUpdate(disciplinaName === 'Fútbol' ? 'goles_b' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_b' : 'total_b'), Math.max(0, (match.marcador_detalle?.[disciplinaName === 'Fútbol' ? 'goles_b' : (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa' ? 'sets_b' : 'total_b')] || 0) - 1))}>
                                                 <span className="text-xl">-</span>
@@ -1302,7 +1554,7 @@ export default function MatchControlPage() {
                                             {confirmingDeletion.jugadores ? confirmingDeletion.jugadores.nombre : 'Evento de equipo'}
                                         </p>
                                         <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wider">
-                                            {confirmingDeletion.equipo === 'equipo_a' ? match.equipo_a : match.equipo_b}
+                                            {confirmingDeletion.equipo === 'equipo_a' ? (match.carrera_a?.nombre || match.equipo_a) : (match.carrera_b?.nombre || match.equipo_b)}
                                         </p>
                                     </div>
 

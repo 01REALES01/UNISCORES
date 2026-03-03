@@ -9,6 +9,7 @@ import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_GLOW } from "@/lib/con
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
+import { PublicLiveTimer } from "@/components/public-live-timer";
 
 // Helper para obtener iniciales
 const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
@@ -154,28 +155,51 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                 className="flex flex-col items-center gap-4 flex-1 text-center"
                             >
                                 <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
-                                    <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.equipo_a)}</span>
+                                    <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.carrera_a?.nombre || currentMatch.equipo_a)}</span>
                                 </div>
                                 <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
-                                    {currentMatch.delegacion_a || currentMatch.equipo_a}
+                                    {currentMatch.delegacion_a || currentMatch.carrera_a?.nombre || currentMatch.equipo_a}
                                 </h3>
                             </motion.div>
 
                             {/* VS / Score */}
-                            <div className="flex flex-col items-center gap-2 z-20 mx-4">
+                            <div className="flex flex-col items-center gap-2 z-20 mx-4 relative min-w-[140px] md:min-w-[220px]">
                                 {currentMatch.estado === 'en_vivo' ? (
-                                    <div className="flex flex-col items-center">
-                                        <div className="text-5xl md:text-7xl font-black font-mono tracking-tighter flex items-center gap-4">
-                                            <span className="text-white">{scoreInfo.scoreA}</span>
-                                            <span className="text-white/20">-</span>
-                                            <span className="text-white">{scoreInfo.scoreB}</span>
+                                    <div className="flex flex-col items-center w-full">
+                                        <div className="text-[3.5rem] md:text-[5.5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-3 md:gap-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                                            <span className="text-white text-right w-16 md:w-24">{scoreInfo.scoreA}</span>
+                                            <div className="w-4 md:w-6 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
+                                            <span className="text-white text-left w-16 md:w-24">{scoreInfo.scoreB}</span>
                                         </div>
-                                        {/* Show Sub-score (Sets, Quarters) if available */}
-                                        {(scoreInfo.subScoreA !== undefined || scoreInfo.extra) && (
-                                            <Badge variant="outline" className="mt-2 bg-black/50 border-white/10 text-xs text-slate-300">
-                                                {scoreInfo.extra || scoreInfo.subLabel}: {scoreInfo.subScoreA} - {scoreInfo.subScoreB}
-                                            </Badge>
-                                        )}
+
+                                        {/* Dynamic Info Row */}
+                                        <div className="flex flex-col items-center mt-3 md:mt-4 w-full">
+                                            <div className="flex items-center gap-2 text-[10px] md:text-xs font-black uppercase tracking-widest text-[#00E676] drop-shadow-[0_0_5px_rgba(0,230,118,0.5)] mb-2 md:mb-3">
+                                                <span>{scoreInfo.extra || 'EN CURSO'}</span>
+
+                                                {/* Timer or Subscores */}
+                                                {currentMatch.marcador_detalle?.timer && (
+                                                    <>
+                                                        <span className="opacity-50">•</span>
+                                                        <div className="scale-90 origin-left">
+                                                            <PublicLiveTimer detalle={currentMatch.marcador_detalle} />
+                                                        </div>
+                                                    </>
+                                                )}
+
+                                                {scoreInfo.subScoreA !== undefined && scoreInfo.subScoreB !== undefined && (
+                                                    <>
+                                                        <span className="opacity-50">•</span>
+                                                        <span>{scoreInfo.subLabel || 'PTS'}: {scoreInfo.subScoreA} - {scoreInfo.subScoreB}</span>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {/* Glowing Progress Status Bar */}
+                                            <div className="w-[80%] md:w-full h-1 md:h-1.5 rounded-full overflow-hidden bg-[#00E676]/20 relative">
+                                                <div className="h-full bg-[#00E676] rounded-full w-[100%] absolute top-0 left-0 shadow-[0_0_12px_#00E676] animate-pulse" />
+                                            </div>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="text-4xl md:text-6xl font-black text-white/10 italic">VS</div>
@@ -190,10 +214,10 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                 className="flex flex-col items-center gap-4 flex-1 text-center"
                             >
                                 <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
-                                    <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.equipo_b)}</span>
+                                    <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.carrera_b?.nombre || currentMatch.equipo_b)}</span>
                                 </div>
                                 <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
-                                    {currentMatch.delegacion_b || currentMatch.equipo_b}
+                                    {currentMatch.delegacion_b || currentMatch.carrera_b?.nombre || currentMatch.equipo_b}
                                 </h3>
                             </motion.div>
                         </div>

@@ -38,7 +38,7 @@ export function TeamStatsModal({ isOpen, onClose, team, rank }: TeamStatsModalPr
 
         const { data: allMatches, error } = await supabase
             .from('partidos')
-            .select('*, disciplinas(name)')
+            .select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)')
             .eq('estado', 'finalizado')
             .order('fecha', { ascending: true });
 
@@ -47,7 +47,7 @@ export function TeamStatsModal({ isOpen, onClose, team, rank }: TeamStatsModalPr
             return;
         }
 
-        const matches = allMatches.filter(m => safeIncludes(m.equipo_a, team.equipo_nombre) || safeIncludes(m.equipo_b, team.equipo_nombre));
+        const matches = allMatches.filter(m => safeIncludes(m.carrera_a?.nombre || m.equipo_a, team.equipo_nombre) || safeIncludes(m.carrera_b?.nombre || m.equipo_b, team.equipo_nombre));
 
         let w = 0, d = 0, l = 0;
         let pts = 0;
@@ -55,7 +55,7 @@ export function TeamStatsModal({ isOpen, onClose, team, rank }: TeamStatsModalPr
         const hist: any[] = [];
 
         for (const m of matches) {
-            const isA = safeIncludes(m.equipo_a, team.equipo_nombre);
+            const isA = safeIncludes(m.carrera_a?.nombre || m.equipo_a, team.equipo_nombre);
 
             // Abstract score reading (deals with goals, sets, points, etc)
             const scoreA = m.marcador_detalle?.goles_a ?? m.marcador_detalle?.sets_a ?? m.marcador_detalle?.total_a ?? m.marcador_detalle?.puntos_a ?? m.marcador_detalle?.juegos_a ?? 0;
@@ -84,7 +84,7 @@ export function TeamStatsModal({ isOpen, onClose, team, rank }: TeamStatsModalPr
             // Add specifically to reverse chronological history
             hist.unshift({
                 points: addedPoints,
-                event: `${m.disciplinas?.name || 'Evento'} vs ${isA ? m.equipo_b : m.equipo_a}`,
+                event: `${m.disciplinas?.name || 'Evento'} vs ${isA ? (m.carrera_b?.nombre || m.equipo_b) : (m.carrera_a?.nombre || m.equipo_a)}`,
                 date: new Date(m.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
                 result: resultType
             });
