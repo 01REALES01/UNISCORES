@@ -28,15 +28,22 @@ export default function NoticiaDetailPage() {
 
     useEffect(() => {
         const fetchNoticia = async () => {
+            if (!id) return;
             setLoading(true);
 
-            const { data } = await safeQuery<any>(
+            console.log("Fetching noticia with ID:", id);
+
+            const { data, error } = await safeQuery<any>(
                 supabase.from('noticias')
-                    .select('*, partidos(id, equipo_a, equipo_b, fecha, estado, lugar, marcador_detalle, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre))')
+                    .select('id, titulo, contenido, imagen_url, categoria, autor_nombre, partido_id, carrera, published, created_at, partidos(id, equipo_a, equipo_b, fecha, estado, lugar, marcador_detalle, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre))')
                     .eq('id', id)
                     .single(),
                 'noticia-detail'
             );
+
+            if (error) {
+                console.error("Detail Error:", error);
+            }
 
             if (data) {
                 setNoticia(data as Noticia);
@@ -44,14 +51,14 @@ export default function NoticiaDetailPage() {
                 // Fetch related news (same carrera or same partido)
                 const { data: relatedData } = await safeQuery(
                     supabase.from('noticias')
-                        .select('*, partidos(equipo_a, equipo_b, disciplinas(name))')
+                        .select('id, titulo, contenido, imagen_url, categoria, created_at, published, partidos(equipo_a, equipo_b, disciplinas(name))')
                         .eq('published', true)
                         .neq('id', id)
                         .order('created_at', { ascending: false })
                         .limit(4),
                     'noticia-related'
                 );
-                if (relatedData) setRelated(relatedData as Noticia[]);
+                if (relatedData) setRelated(relatedData as unknown as Noticia[]);
             }
 
             setLoading(false);

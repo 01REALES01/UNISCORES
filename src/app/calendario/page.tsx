@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import {
     ChevronLeft, ChevronRight, Trophy, Bell, Ticket,
-    Activity, ArrowLeft, Calendar as CalendarIcon, MapPin
+    Activity, ArrowLeft, Calendar as CalendarIcon, MapPin, BatteryCharging, Flame
 } from "lucide-react";
 import Link from "next/link";
 import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_BORDER } from "@/lib/constants";
@@ -84,18 +84,14 @@ export default function CalendarioPage() {
         return finishedMatches[0] || null;
     }, [filteredMatches]);
 
-    // Upcoming Fixtures (List selected date matches, or if none, the generic next/recent ones)
+    // Matches strictly for the selected date
     const upcomingFixtures = useMemo(() => {
-        let list = selectedDateMatches.length > 0 ? selectedDateMatches : filteredMatches.filter(m => new Date(m.fecha) >= new Date() && m.estado === 'programado');
-        if (list.length === 0 && selectedDateMatches.length === 0) {
-            // If viewing today and nothing is upcoming, show some past matches to fill the space
-            list = filteredMatches.filter(m => m.estado === 'finalizado').sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).slice(0, 4);
-        }
+        let list = [...selectedDateMatches];
         if (matchOfTheDay) {
             list = list.filter(m => m.id !== matchOfTheDay.id);
         }
-        return list.slice(0, 5);
-    }, [selectedDateMatches, filteredMatches, matchOfTheDay]);
+        return list;
+    }, [selectedDateMatches, matchOfTheDay]);
 
     return (
         <div className="min-h-screen bg-[#0a0805] text-white selection:bg-rose-500/30 font-sans pb-20">
@@ -360,7 +356,7 @@ export default function CalendarioPage() {
                         <div className="bg-[#17130D]/80 backdrop-blur-xl rounded-[2.5rem] border border-white/5 p-6 sm:p-8 shadow-2xl flex-1 flex flex-col min-h-[400px]">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-xl font-black text-white">
-                                    {isSameDay(selectedDate, new Date()) ? (upcomingFixtures.length > 0 && selectedDateMatches.length === 0 ? 'Partidos Recientes/Próximos' : 'Encuentros de Hoy') : `Partidos (${selectedDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })})`}
+                                    {isSameDay(selectedDate, new Date()) ? 'Encuentros de Hoy' : `Partidos (${selectedDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })})`}
                                 </h3>
                                 <Badge variant="outline" className="text-[10px] font-black bg-[#0a0805] border-white/10">{upcomingFixtures.length}</Badge>
                             </div>
@@ -371,8 +367,18 @@ export default function CalendarioPage() {
                                 )}
 
                                 {!loading && upcomingFixtures.length === 0 && (
-                                    <div className="text-center py-8 text-white/30 text-xs font-bold border border-white/5 border-dashed rounded-2xl">
-                                        No hay partidos en esta lista.
+                                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-gradient-to-b from-white/5 to-transparent border border-white/5 rounded-3xl relative overflow-hidden group">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                        <div className="w-16 h-16 mb-4 relative z-10 flex items-center justify-center group-hover:-translate-y-2 transition-transform duration-500">
+                                            <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full" />
+                                            <BatteryCharging size={40} className="text-amber-400 drop-shadow-2xl" />
+                                        </div>
+                                        <h4 className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-rose-400 font-black text-lg sm:text-xl mb-2 tracking-tight relative z-10">
+                                            ¡Día Libre de Competencias!
+                                        </h4>
+                                        <p className="text-white/50 text-xs sm:text-sm font-bold max-w-[240px] leading-relaxed relative z-10">
+                                            Nuestros atletas están descansando. ¡Recarga todas tus energías porque la acción vuelve pronto!
+                                        </p>
                                     </div>
                                 )}
 

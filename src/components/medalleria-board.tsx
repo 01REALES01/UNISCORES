@@ -201,7 +201,7 @@ export function MedalLeaderboard() {
                 </div>
 
                 {/* Equipo Nombre Display en el podio */}
-                <span className="font-bold text-[10px] sm:text-xs text-center text-white/60 uppercase tracking-wider block mt-4 group-hover:text-white transition-colors truncate w-[140%]">
+                <span className="absolute -bottom-10 font-bold text-[9px] sm:text-[10px] text-center text-white/60 uppercase tracking-widest block transition-colors w-[120%] leading-tight line-clamp-2 break-words group-hover:text-white">
                     {entry.equipo_nombre}
                 </span>
             </div>
@@ -242,8 +242,8 @@ export function MedalLeaderboard() {
                 </div>
             </div>
 
-            <div className="px-4 sm:px-10 pb-8 border-b border-white/5 relative z-20">
-                <div className="flex justify-center items-end gap-2 sm:gap-4 mb-2 min-h-[300px]">
+            <div className="px-4 sm:px-10 pb-10 border-b border-white/5 relative z-20">
+                <div className="flex justify-center items-end gap-2 sm:gap-4 mb-10 min-h-[300px]">
                     {podiumOrder.map((entry) => {
                         const realRank = top3.indexOf(entry) + 1;
                         return <TopPodium key={'podium-' + entry.id} entry={entry} rank={realRank} />;

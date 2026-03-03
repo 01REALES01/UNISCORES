@@ -178,6 +178,7 @@ export default function PublicMatchDetail() {
     const sportEmoji = getSportEmoji(sportName);
     const { scoreA, scoreB, subScoreA, subScoreB, extra, subLabel } = getCurrentScore(sportName, match.marcador_detalle || {});
     const generoMatch = match.genero || 'masculino';
+    const hasTimer = ['Fútbol', 'Baloncesto', 'Futsal'].includes(sportName);
 
     return (
         <div className="min-h-screen bg-[#0a0805] text-slate-200 font-sans selection:bg-red-500/30">
@@ -298,21 +299,21 @@ export default function PublicMatchDetail() {
                                 <div className="flex flex-col items-center gap-4 group">
                                     <div className="relative">
                                         <div className="absolute inset-0 bg-red-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <Avatar name={match.carrera_a?.nombre || match.equipo_a} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
+                                        <Avatar name={match.carrera_a?.nombre || match.equipo_a} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
                                     </div>
-                                    <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
+                                    <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
                                         {match.carrera_a?.nombre || match.equipo_a}
                                     </h2>
                                 </div>
 
-                                <div className="flex flex-col items-center relative z-20 min-w-[160px] sm:min-w-[220px]">
+                                <div className="flex flex-col items-center relative z-20 min-w-[120px] sm:min-w-[220px]">
                                     <div className={cn(
-                                        "flex items-center justify-center gap-3 sm:gap-6 font-black text-[3.5rem] sm:text-7xl tabular-nums tracking-tighter transition-all duration-300",
+                                        "flex items-center justify-center gap-2 sm:gap-6 font-black text-5xl sm:text-7xl tabular-nums tracking-tighter transition-all duration-300",
                                         isLive ? "text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "text-white/80"
                                     )}>
-                                        <span className="w-16 sm:w-24 text-right">{scoreA}</span>
-                                        <div className="w-4 sm:w-6 h-1 sm:h-2 bg-white/20 rounded-full" />
-                                        <span className="w-16 sm:w-24 text-left">{scoreB}</span>
+                                        <span className="w-12 sm:w-24 text-right">{scoreA}</span>
+                                        <div className="w-3 sm:w-6 h-1 sm:h-2 bg-white/20 rounded-full" />
+                                        <span className="w-12 sm:w-24 text-left">{scoreB}</span>
                                     </div>
 
                                     {/* Info Row: Time, Quarter/Set, and Status Bar */}
@@ -325,11 +326,11 @@ export default function PublicMatchDetail() {
                                             {extra ? <span>{extra}</span> : <span>{isLive ? 'EN CURSO' : 'FINAL'}</span>}
 
                                             {/* Timer or Subscores */}
-                                            {isLive && match.marcador_detalle?.timer && (
+                                            {isLive && hasTimer && (
                                                 <>
                                                     <span className="opacity-50">•</span>
                                                     <div className="scale-90 origin-left">
-                                                        <PublicLiveTimer detalle={match.marcador_detalle} />
+                                                        <PublicLiveTimer detalle={match.marcador_detalle || {}} />
                                                     </div>
                                                 </>
                                             )}
@@ -361,9 +362,9 @@ export default function PublicMatchDetail() {
                                 <div className="flex flex-col items-center gap-4 group">
                                     <div className="relative">
                                         <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" className="w-20 h-20 sm:w-28 sm:h-28 text-3xl sm:text-4xl border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
+                                        <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
                                     </div>
-                                    <h2 className="text-white font-bold text-sm sm:text-lg leading-tight uppercase tracking-wide truncate max-w-[120px] sm:max-w-[160px]">
+                                    <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
                                         {match.carrera_b?.nombre || match.equipo_b}
                                     </h2>
                                 </div>
@@ -387,7 +388,7 @@ export default function PublicMatchDetail() {
                                 <MapPin size={14} className="text-red-400" />
                                 <span>{match.lugar || 'Coliseo Central'}</span>
                             </div>
-                            {isLive && (
+                            {isLive && hasTimer && (
                                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300">
                                     <Clock size={14} />
                                     <PublicLiveTimer detalle={match.marcador_detalle || {}} />
