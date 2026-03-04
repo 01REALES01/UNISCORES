@@ -13,9 +13,7 @@ import { LUGARES_OLIMPICOS, SPORT_EMOJI } from "@/lib/constants";
 const VENUE_COORDINATES: Record<string, { x: number; y: number; label: string }> = {
     'Coliseo Uninorte': { x: 44, y: 48, label: 'Coliseo' },
     'Cancha de Fútbol': { x: 61, y: 57, label: 'Estadio' },
-    'Cancha #1': { x: 57, y: 58, label: 'Cancha 1' },
-    'Cancha #2': { x: 61, y: 61, label: 'Cancha 2' },
-    'Piscina Centro Deportivo': { x: 71, y: 66, label: 'Piscinas' },
+    'Piscina Centro Deportivo': { x: 82, y: 80, label: 'Piscinas' },
 };
 
 type Match = {
@@ -52,10 +50,8 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
 
             // Búsqueda flexible por palabras clave para mayor robustez
             if (m.lugar?.includes('Coliseo')) venueKey = 'Coliseo Uninorte';
-            else if (m.lugar?.toLowerCase().includes('futbol') || m.lugar?.toLowerCase().includes('fútbol')) venueKey = 'Cancha de Fútbol';
+            else if (m.lugar?.toLowerCase().includes('futbol') || m.lugar?.toLowerCase().includes('fútbol') || m.lugar?.includes('Cancha #1') || m.lugar?.includes('Cancha #2')) venueKey = 'Cancha de Fútbol';
             else if (m.lugar?.includes('Piscina')) venueKey = 'Piscina Centro Deportivo';
-            else if (m.lugar?.includes('Cancha #1')) venueKey = 'Cancha #1';
-            else if (m.lugar?.includes('Cancha #2')) venueKey = 'Cancha #2';
             else {
                 // Fallback: búsqueda exacta en la lista oficial
                 venueKey = LUGARES_OLIMPICOS.find(v => m.lugar?.includes(v));
@@ -84,7 +80,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
     };
 
     return (
-        <div className="relative w-full h-full bg-[#17130D] rounded-3xl overflow-hidden border border-white/10 shadow-2xl group/map">
+        <div className="relative w-full h-full bg-white rounded-3xl overflow-hidden border border-black/10 shadow-2xl group/map">
 
             {/* Controls Overlay */}
             <div className="absolute top-4 right-4 z-50 flex flex-col gap-2">
@@ -125,32 +121,42 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                 </Button>
             </div>
 
+            {/* Floating Recenter Button */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50">
+                <Button
+                    variant="secondary"
+                    className="bg-white/90 hover:bg-white text-black font-bold uppercase tracking-wider text-xs px-6 py-2 rounded-full shadow-xl hover:scale-105 transition-transform"
+                    onClick={() => transformComponentRef.current?.resetTransform()}
+                >
+                    <Crosshair className="w-4 h-4 mr-2" />
+                    Centrar Mapa
+                </Button>
+            </div>
+
             <TransformWrapper
                 ref={transformComponentRef}
-                initialScale={1.2}
+                initialScale={0.8}
                 centerOnInit={true}
-                minScale={0.5}
+                minScale={0.2}
                 maxScale={4}
                 limitToBounds={false}
                 wheel={{ step: 0.1 }}
             >
-                <TransformComponent wrapperClass="w-full h-full" contentClass="w-full h-full">
-                    {/* Map Container */}
+                <TransformComponent wrapperClass="w-full h-full bg-white" contentClass="w-full h-full flex items-center justify-center">
+                    {/* Infinite Map Container */}
                     <div
-                        className="relative w-[1600px] h-[1000px] cursor-move flex items-center justify-center bg-[#17130D]" // Fixed size large container for high res map
+                        className="relative w-[1600px] h-[1000px] cursor-move bg-white"
                         onClick={handleMapClick}
                     >
-                        {/* 1. MAP IMAGE BACKGROUND WITH DARK MODE FILTER */}
-                        <div className="absolute inset-0 pointer-events-none bg-[#17130D]">
+                        {/* MAP IMAGE & VIGNETTE WRAPPER */}
+                        <div className="absolute inset-0 pointer-events-none bg-white">
                             <Image
                                 src="/campus_real.jpg"
                                 alt="Mapa Campus Uninorte"
                                 fill
-                                className="object-cover opacity-70"
+                                className="object-cover"
                                 priority
                             />
-                            {/* Overlay Gradient for Vignette */}
-                            <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_40%,#17130D_100%)] pointer-events-none" />
                         </div>
 
                         {/* Calibration Grid (Optional visibility) */}

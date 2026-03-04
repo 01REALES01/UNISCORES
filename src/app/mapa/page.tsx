@@ -44,11 +44,11 @@ export default function CampusMapPage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#17130D] text-white relative overflow-hidden">
+        <div className="min-h-screen bg-[#0a0805] text-white relative overflow-hidden">
 
             {/* Background Effects */}
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-overlay" />
-            <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-[#FFC000]/10 via-[#17130D] to-[#17130D] pointer-events-none" />
+            <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-[#FFC000]/10 via-[#0a0805] to-[#0a0805] pointer-events-none" />
 
             <div className="w-full px-4 py-8 relative z-10 max-w-[1600px] mx-auto">
                 {/*  Main Navbar */}
@@ -76,12 +76,12 @@ export default function CampusMapPage() {
             </div>
 
             {/* Main Map Component */}
-            <div className="w-full h-[75vh] min-h-[500px] mx-auto my-6 border border-white/5 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative bg-[#0a0805] ring-2 ring-white/5">
+            <div className="w-full h-[75vh] min-h-[500px] mx-auto my-6 border border-white/5 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative bg-white ring-2 ring-black/5">
                 {loading ? (
-                    <div className="w-full h-full flex items-center justify-center bg-[#0a0805]">
+                    <div className="w-full h-full flex items-center justify-center bg-white">
                         <div className="flex flex-col items-center gap-4">
                             <Activity className="animate-spin text-[#FFC000]" size={32} />
-                            <span className="text-xs font-mono text-[#FFC000] uppercase tracking-widest">Cargando Satélite...</span>
+                            <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Cargando Satélite...</span>
                         </div>
                     </div>
                 ) : (

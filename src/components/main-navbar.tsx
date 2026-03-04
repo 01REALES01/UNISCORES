@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { HomeIcon, Calendar, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut } from "lucide-react";
+import { HomeIcon, Calendar, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { Button } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +19,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
     const router = useRouter();
     const pathname = usePathname();
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const profileMenuRef = useRef<HTMLDivElement>(null);
 
     const getActiveIndex = () => {
@@ -62,7 +63,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                 </div>
 
                 {/* 2. Center: Navigation Dock */}
-                <div className="hidden md:flex flex-shrink-0 items-center justify-center">
+                <div className="hidden lg:flex flex-shrink-0 items-center justify-center">
                     <ExpandableTabs
                         activeColor="text-red-500"
                         activeItem={getActiveIndex()}
@@ -89,13 +90,18 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                 </div>
 
                 {/* 3. Right: User / Login Section */}
-                <div className="flex-1 flex items-center justify-end gap-2">
-                    {/* Mobile simplified nav */}
-                    <div className="flex md:hidden items-center gap-1 sm:gap-2 mr-2">
-                        <Link href="/calendario"><Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full h-8 w-8"><Calendar size={16} /></Button></Link>
-                        <Link href="/noticias"><Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 rounded-full h-8 w-8"><Newspaper size={16} /></Button></Link>
+                <div className="flex-1 flex items-center justify-end gap-2 overflow-hidden">
+                    {/* Mobile Menu Toggle */}
+                    <div className="flex lg:hidden items-center mr-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-white hover:bg-white/10 rounded-full w-10 h-10"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        >
+                            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                        </Button>
                     </div>
-
                     {!user ? (
                         <Link href="/login">
                             <Button variant="outline" className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white gap-2 hidden sm:flex font-medium">
@@ -162,6 +168,59 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                     )}
                 </div>
             </div>
+
+            {/* Mobile Navigation Menu Dropdown */}
+            {mobileMenuOpen && (
+                <div className="lg:hidden absolute top-full left-0 right-0 bg-[#0a0805]/95 backdrop-blur-xl border-b border-white/10 shadow-2xl animate-in slide-in-from-top-2 fade-in duration-200">
+                    <nav className="flex flex-col p-4 gap-2">
+                        <Link href="/" onClick={() => setMobileMenuOpen(false)}>
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname === '/' ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                                <HomeIcon size={20} />
+                                <span className="font-medium text-sm">Inicio</span>
+                            </div>
+                        </Link>
+                        <Link href="/calendario" onClick={() => setMobileMenuOpen(false)}>
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/calendario') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                                <Calendar size={20} />
+                                <span className="font-medium text-sm">Calendario</span>
+                            </div>
+                        </Link>
+                        <Link href="/noticias" onClick={() => setMobileMenuOpen(false)}>
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/noticias') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                                <Newspaper size={20} />
+                                <span className="font-medium text-sm">Noticias</span>
+                            </div>
+                        </Link>
+                        <Link href="/mapa" onClick={() => setMobileMenuOpen(false)}>
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/mapa') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                                <MapPin size={20} />
+                                <span className="font-medium text-sm">Mapa</span>
+                            </div>
+                        </Link>
+                        <Link href="/medallero" onClick={() => setMobileMenuOpen(false)}>
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/medallero') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                                <Trophy size={20} />
+                                <span className="font-medium text-sm">Medallería</span>
+                            </div>
+                        </Link>
+                        <div className="h-px bg-white/10 my-2" />
+                        <a href="/tv" target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)}>
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/tv') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                                <Tv size={20} />
+                                <span className="font-medium text-sm">TV</span>
+                            </div>
+                        </a>
+                        {isStaff && (
+                            <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
+                                <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/admin') ? 'bg-amber-500/10 text-amber-500' : 'text-amber-500/80 hover:bg-amber-500/5 hover:text-amber-500'}`}>
+                                    <Shield size={20} />
+                                    <span className="font-medium text-sm">Admin Panel</span>
+                                </div>
+                            </Link>
+                        )}
+                    </nav>
+                </div>
+            )}
         </header>
     );
 }
