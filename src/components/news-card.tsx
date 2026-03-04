@@ -39,13 +39,17 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string
 };
 
 function getReadTime(content: string): string {
-    const words = content.split(/\s+/).length;
+    const safeContent = content || '';
+    const words = safeContent.split(/\s+/).length;
     const mins = Math.max(1, Math.ceil(words / 200));
     return `${mins} min`;
 }
 
 function getRelativeTime(dateStr: string): string {
+    if (!dateStr) return '';
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -99,7 +103,7 @@ export function NewsHeroCard({ noticia }: { noticia: Noticia }) {
                     </h2>
 
                     <p className="text-sm sm:text-base text-white/60 line-clamp-2 mb-6 max-w-3xl font-medium leading-relaxed">
-                        {noticia.contenido.substring(0, 200).replace(/\*\*/g, '')}...
+                        {(noticia.contenido || '').substring(0, 200).replace(/\*\*/g, '')}...
                     </p>
 
                     <div className="flex items-center gap-4 text-xs font-bold text-white/40 uppercase tracking-widest">

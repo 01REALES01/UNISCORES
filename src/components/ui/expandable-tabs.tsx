@@ -1,10 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { useOnClickOutside } from "usehooks-ts";
 import { cn } from "@/lib/utils";
-import { LucideIcon } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface Tab {
     title: string;
@@ -24,50 +22,25 @@ interface ExpandableTabsProps {
     tabs: TabItem[];
     className?: string;
     activeColor?: string;
+    activeItem?: number | null;
     onChange?: (index: number | null) => void;
 }
-
-const buttonVariants = {
-    initial: {
-        gap: 0,
-        paddingLeft: ".5rem",
-        paddingRight: ".5rem",
-    },
-    animate: (isSelected: boolean) => ({
-        gap: isSelected ? ".5rem" : 0,
-        paddingLeft: isSelected ? "1rem" : ".5rem",
-        paddingRight: isSelected ? "1rem" : ".5rem",
-    }),
-};
-
-const spanVariants = {
-    initial: { width: 0, opacity: 0 },
-    animate: { width: "auto", opacity: 1 },
-    exit: { width: 0, opacity: 0 },
-};
-
-const transition = { delay: 0.1, type: "spring" as const, bounce: 0, duration: 0.6 };
 
 export function ExpandableTabs({
     tabs,
     className,
     activeColor = "text-primary",
+    activeItem = null,
     onChange,
 }: ExpandableTabsProps) {
-    const [selected, setSelected] = React.useState<number | null>(null);
-    const outsideClickRef = React.useRef<HTMLDivElement>(null);
-
-    useOnClickOutside(outsideClickRef as any, () => {
-        setSelected(null);
-        onChange?.(null);
-    });
+    const [hovered, setHovered] = React.useState<number | null>(null);
 
     const handleMouseEnter = (index: number) => {
-        setSelected(index);
+        setHovered(index);
     };
 
     const handleMouseLeave = () => {
-        setSelected(null);
+        setHovered(null);
     };
 
     const handleClick = (index: number) => {
@@ -75,14 +48,13 @@ export function ExpandableTabs({
     };
 
     const Separator = () => (
-        <div className="mx-1 h-[24px] w-[1.2px] bg-white/20" aria-hidden="true" />
+        <div className="mx-2 h-[24px] w-[1px] bg-white/10" aria-hidden="true" />
     );
 
     return (
         <div
-            ref={outsideClickRef}
             className={cn(
-                "flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#17130D]/80 backdrop-blur-md p-1 shadow-[0_0_15px_rgba(0,0,0,0.5)]",
+                "flex items-center gap-1 rounded-full border border-white/5 bg-[#0a0805]/90 backdrop-blur-xl p-1.5 shadow-2xl",
                 className
             )}
         >
@@ -92,34 +64,33 @@ export function ExpandableTabs({
                 }
 
                 const Icon = tab.icon;
+                const isSelected = hovered === index || activeItem === index;
+
                 return (
                     <motion.button
                         key={tab.title}
-                        variants={buttonVariants}
                         initial={false}
-                        animate="animate"
-                        custom={selected === index}
+                        animate={{
+                            backgroundColor: isSelected ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0)",
+                        }}
                         onMouseEnter={() => handleMouseEnter(index)}
                         onMouseLeave={handleMouseLeave}
                         onClick={() => handleClick(index)}
-                        transition={transition}
                         className={cn(
-                            "relative flex items-center rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-300 overflow-hidden",
-                            selected === index
-                                ? cn("bg-white/10 text-white shadow-sm ring-1 ring-white/20", activeColor)
-                                : "text-slate-400 hover:bg-white/5 hover:text-white"
+                            "relative flex items-center rounded-full px-3 py-2 transition-colors duration-300",
+                            isSelected ? activeColor : "text-slate-400 hover:text-white"
                         )}
+                        aria-label={tab.title}
                     >
-                        <Icon size={20} />
+                        <Icon size={18} strokeWidth={isSelected ? 2.5 : 2} className="transition-transform duration-300 flex-shrink-0" />
                         <AnimatePresence initial={false}>
-                            {selected === index && (
+                            {isSelected && (
                                 <motion.span
-                                    variants={spanVariants}
-                                    initial="initial"
-                                    animate="animate"
-                                    exit="exit"
-                                    transition={transition}
-                                    className="overflow-hidden whitespace-nowrap font-bold tracking-wide"
+                                    initial={{ width: 0, opacity: 0, marginLeft: 0 }}
+                                    animate={{ width: "auto", opacity: 1, marginLeft: 8 }}
+                                    exit={{ width: 0, opacity: 0, marginLeft: 0 }}
+                                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                                    className="overflow-hidden whitespace-nowrap text-[13px] font-bold tracking-wide"
                                 >
                                     {tab.title}
                                 </motion.span>

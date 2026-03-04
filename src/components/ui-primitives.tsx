@@ -125,7 +125,7 @@ export function Avatar({
     size = "default",
     className
 }: {
-    name: string;
+    name?: string | null;
     size?: "sm" | "default" | "lg";
     className?: string;
 }) {
@@ -135,7 +135,8 @@ export function Avatar({
         lg: "w-16 h-16 text-lg",
     };
 
-    const initials = name.substring(0, 2).toUpperCase();
+    const safeName = name || "?";
+    const initials = safeName.substring(0, 2).toUpperCase();
 
     // Generate consistent color based on name
     const colors = [
@@ -145,7 +146,7 @@ export function Avatar({
         "from-green-500 to-teal-600",
         "from-cyan-500 to-blue-600",
     ];
-    const colorIndex = name.charCodeAt(0) % colors.length;
+    const colorIndex = safeName.charCodeAt(0) % colors.length;
 
     return (
         <div className={cn(

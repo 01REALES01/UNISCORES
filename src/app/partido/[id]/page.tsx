@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR } from "@/lib/constants";
 
 type Partido = {
     id: number;
@@ -320,7 +321,7 @@ export default function PublicMatchDetail() {
                                     <div className="flex flex-col items-center mt-3 sm:mt-4 w-full px-2 sm:px-0">
                                         <div className={cn(
                                             "flex items-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-2 sm:mb-3",
-                                            isLive ? "text-[#00E676] drop-shadow-[0_0_5px_rgba(0,230,118,0.5)]" : "text-white/40"
+                                            isLive ? (SPORT_LIVE_TEXT[match.disciplinas?.name] || SPORT_LIVE_TEXT.default) : "text-white/40"
                                         )}>
                                             {/* Quarter or 'Finalizado' */}
                                             {extra ? <span>{extra}</span> : <span>{isLive ? 'EN CURSO' : 'FINAL'}</span>}
@@ -347,10 +348,10 @@ export default function PublicMatchDetail() {
                                         {/* Glowing Progress Status Bar */}
                                         <div className={cn(
                                             "w-full h-1 sm:h-[6px] rounded-full overflow-hidden relative",
-                                            isLive ? "bg-[#00E676]/20" : "bg-white/10"
+                                            isLive ? (SPORT_LIVE_BG_WRAPPER[match.disciplinas?.name] || SPORT_LIVE_BG_WRAPPER.default) : "bg-white/10"
                                         )}>
                                             {isLive ? (
-                                                <div className="h-full bg-[#00E676] rounded-full w-[100%] absolute top-0 left-0 shadow-[0_0_12px_#00E676] animate-pulse" />
+                                                <div className={cn("h-full rounded-full w-[100%] absolute top-0 left-0 animate-pulse", SPORT_LIVE_BAR[match.disciplinas?.name] || SPORT_LIVE_BAR.default)} />
                                             ) : isFinished ? (
                                                 <div className="h-full bg-white/40 rounded-full w-[100%] absolute top-0 left-0" />
                                             ) : null}

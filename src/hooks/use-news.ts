@@ -7,7 +7,7 @@ import { Noticia } from "@/components/news-card";
 
 // ─── Column Selection ────────────────────────────────────────────────────────
 const NEWS_COLUMNS = `
-  id, titulo, contenido, imagen_url, categoria, created_at, published,
+  id, titulo, contenido, imagen_url, categoria, created_at, published, autor_nombre, carrera,
   partidos(equipo_a, equipo_b, disciplinas(name),
     carrera_a:carreras!carrera_a_id(nombre),
     carrera_b:carreras!carrera_b_id(nombre))

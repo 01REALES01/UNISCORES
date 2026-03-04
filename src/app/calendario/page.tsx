@@ -12,6 +12,8 @@ import { Avatar, Button, Badge } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { SportIcon } from "@/components/sport-icons";
 import { useMatches } from "@/hooks/use-matches";
+import { MainNavbar } from "@/components/main-navbar";
+import { useAuth } from "@/hooks/useAuth";
 
 const SPORTS_FILTERS = [
     { id: 'all', label: 'All Sports', icon: Trophy },
@@ -36,6 +38,7 @@ type Match = {
 };
 
 export default function CalendarioPage() {
+    const { user, profile, isStaff } = useAuth();
     const { matches, loading } = useMatches();
 
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -101,21 +104,8 @@ export default function CalendarioPage() {
                 <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-rose-500/10 rounded-full blur-[100px]" />
             </div>
 
-            {/* Header / Navbar */}
-            <header className="sticky top-0 left-0 right-0 z-50 bg-[#0a0805]/80 backdrop-blur-xl border-b border-white/5">
-                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/">
-                            <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full border border-white/10">
-                                <ArrowLeft size={16} />
-                            </Button>
-                        </Link>
-                        <h1 className="text-xl font-black tracking-tight flex items-center gap-2">
-                            <CalendarIcon className="text-indigo-400" /> Calendario Oficial
-                        </h1>
-                    </div>
-                </div>
-            </header>
+            {/* Main Navbar */}
+            <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-8">
 

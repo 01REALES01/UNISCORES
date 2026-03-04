@@ -88,3 +88,37 @@ export const SPORT_GLOW: Record<string, string> = {
     'Ajedrez': 'hover:shadow-violet-500/15',
     'Natación': 'hover:shadow-cyan-500/15',
 };
+
+// Harmony Live Bar Colors
+export const SPORT_LIVE_TEXT: Record<string, string> = {
+    'Fútbol': 'text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]',
+    'Baloncesto': 'text-orange-400 drop-shadow-[0_0_5px_rgba(251,146,60,0.5)]',
+    'Voleibol': 'text-indigo-400 drop-shadow-[0_0_5px_rgba(129,140,248,0.5)]',
+    'Tenis': 'text-lime-400 drop-shadow-[0_0_5px_rgba(163,230,53,0.5)]',
+    'Tenis de Mesa': 'text-rose-400 drop-shadow-[0_0_5px_rgba(251,113,133,0.5)]',
+    'Ajedrez': 'text-violet-400 drop-shadow-[0_0_5px_rgba(167,139,250,0.5)]',
+    'Natación': 'text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]',
+    'default': 'text-[#00E676] drop-shadow-[0_0_5px_rgba(0,230,118,0.5)]'
+};
+
+export const SPORT_LIVE_BG_WRAPPER: Record<string, string> = {
+    'Fútbol': 'bg-emerald-500/20',
+    'Baloncesto': 'bg-orange-500/20',
+    'Voleibol': 'bg-indigo-500/20',
+    'Tenis': 'bg-lime-500/20',
+    'Tenis de Mesa': 'bg-rose-500/20',
+    'Ajedrez': 'bg-violet-500/20',
+    'Natación': 'bg-cyan-500/20',
+    'default': 'bg-[#00E676]/20'
+};
+
+export const SPORT_LIVE_BAR: Record<string, string> = {
+    'Fútbol': 'bg-emerald-500 shadow-[0_0_12px_#34d399]',
+    'Baloncesto': 'bg-orange-500 shadow-[0_0_12px_#fb923c]',
+    'Voleibol': 'bg-indigo-500 shadow-[0_0_12px_#818cf8]',
+    'Tenis': 'bg-lime-500 shadow-[0_0_12px_#a3e635]',
+    'Tenis de Mesa': 'bg-rose-500 shadow-[0_0_12px_#fb7185]',
+    'Ajedrez': 'bg-violet-500 shadow-[0_0_12px_#a78bfa]',
+    'Natación': 'bg-cyan-500 shadow-[0_0_12px_#22d3ee]',
+    'default': 'bg-[#00E676] shadow-[0_0_12px_#00E676]'
+};

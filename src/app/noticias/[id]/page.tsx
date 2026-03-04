@@ -102,11 +102,12 @@ export default function NoticiaDetailPage() {
     const formattedDate = date.toLocaleDateString('es-CO', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
-    const words = noticia.contenido.split(/\s+/).length;
+    const content = noticia.contenido || '';
+    const words = content.split(/\s+/).length;
     const readTime = Math.max(1, Math.ceil(words / 200));
 
     // Simple markdown-like rendering: split by double newlines for paragraphs
-    const paragraphs = noticia.contenido.split(/\n\n+/).filter(Boolean);
+    const paragraphs = content.split(/\n\n+/).filter(Boolean);
 
     return (
         <div className="min-h-screen bg-[#0a0805] text-white selection:bg-red-500/30">
@@ -169,40 +170,50 @@ export default function NoticiaDetailPage() {
                         <div className="flex items-center justify-between w-full bg-[#17130D]/80 border border-white/5 rounded-2xl p-4 sm:p-5 mb-10 hover:bg-white/5 hover:border-white/10 transition-all group overflow-hidden relative shadow-lg">
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
 
-                            {/* Left: Time & Day or Score */}
+                            {/* Left: Time & Day or Status */}
                             <div className="flex flex-col items-center justify-center border-r border-white/10 pr-3 sm:pr-6 shrink-0 w-[20%] sm:w-[15%] relative z-10">
                                 {noticia.partidos.estado === 'programado' ? (
                                     <>
-                                        <span className="text-sm font-black text-white">{new Date(noticia.partidos.fecha || '').toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span className="text-sm font-black text-white">
+                                            {noticia.partidos.fecha ? new Date(noticia.partidos.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                        </span>
                                         <span className="text-[9px] font-bold text-white/50 uppercase mt-0.5">
-                                            {new Date(noticia.partidos.fecha || '').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                                            {noticia.partidos.fecha ? new Date(noticia.partidos.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '--'}
                                         </span>
                                     </>
                                 ) : (
                                     <>
-                                        <span className={cn("text-base font-black tabular-nums", noticia.partidos.estado === 'en_vivo' ? 'text-rose-500' : 'text-white/80')}>
-                                            {(noticia.partidos.marcador_detalle?.goles_a ?? noticia.partidos.marcador_detalle?.sets_a ?? noticia.partidos.marcador_detalle?.total_a ?? 0)}
-                                            -
-                                            {(noticia.partidos.marcador_detalle?.goles_b ?? noticia.partidos.marcador_detalle?.sets_b ?? noticia.partidos.marcador_detalle?.total_b ?? 0)}
+                                        <span className={cn("text-[10px] sm:text-xs font-black tracking-widest uppercase", noticia.partidos.estado === 'en_vivo' ? 'text-rose-500 animate-pulse' : 'text-white/60')}>
+                                            {noticia.partidos.estado === 'en_vivo' ? 'EN VIVO' : 'FINAL'}
                                         </span>
-                                        <span className="text-[9px] font-black text-white/30 uppercase mt-0.5 tracking-wider">
-                                            {noticia.partidos.estado === 'en_vivo' ? <span className="text-rose-500 animate-pulse">LIVE</span> : 'FINAL'}
+                                        <span className="text-[9px] font-bold text-white/30 uppercase mt-1">
+                                            {noticia.partidos.fecha ? new Date(noticia.partidos.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '--'}
                                         </span>
                                     </>
                                 )}
                             </div>
 
                             {/* Middle: Teams */}
-                            <div className="flex items-center justify-center gap-2 sm:gap-6 flex-1 px-2 sm:px-4 relative z-10">
-                                <div className="flex items-center justify-end gap-2 sm:gap-4 flex-1">
+                            <div className="flex items-center justify-center gap-1 sm:gap-4 flex-1 px-1 sm:px-4 relative z-10">
+                                <div className="flex items-center justify-end gap-2 sm:gap-3 flex-1">
                                     <span className="text-xs sm:text-sm font-black truncate text-right">{noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a}</span>
-                                    <Avatar name={noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a} className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
+                                    <Avatar name={noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
                                 </div>
-                                <div className="text-[9px] font-black text-white/20 uppercase px-1 sm:px-2 py-0.5 rounded shrink-0">
-                                    VS
-                                </div>
-                                <div className="flex items-center justify-start gap-2 sm:gap-4 flex-1">
-                                    <Avatar name={noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b} className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
+
+                                {noticia.partidos.estado === 'programado' ? (
+                                    <div className="text-[9px] font-black text-white/20 uppercase px-1 sm:px-2 py-0.5 rounded shrink-0">
+                                        VS
+                                    </div>
+                                ) : (
+                                    <div className={cn("flex items-center text-sm sm:text-xl font-black tabular-nums tracking-tighter shrink-0 px-2", noticia.partidos.estado === 'en_vivo' ? 'text-rose-500' : 'text-white/90')}>
+                                        <span>{(noticia.partidos.marcador_detalle?.goles_a ?? noticia.partidos.marcador_detalle?.sets_a ?? noticia.partidos.marcador_detalle?.total_a ?? 0)}</span>
+                                        <span className="text-white/20 mx-1 font-medium">-</span>
+                                        <span>{(noticia.partidos.marcador_detalle?.goles_b ?? noticia.partidos.marcador_detalle?.sets_b ?? noticia.partidos.marcador_detalle?.total_b ?? 0)}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex items-center justify-start gap-2 sm:gap-3 flex-1">
+                                    <Avatar name={noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
                                     <span className="text-xs sm:text-sm font-black truncate text-left">{noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b}</span>
                                 </div>
                             </div>

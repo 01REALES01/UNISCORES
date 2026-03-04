@@ -127,32 +127,30 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
 
             <TransformWrapper
                 ref={transformComponentRef}
-                initialScale={1.8}
-                initialPositionX={-100} // Ajuste fino horizontal
-                initialPositionY={-150} // Mover mapa hacia arriba para ver mejor la zona central/baja
+                initialScale={1.2}
+                centerOnInit={true}
                 minScale={0.5}
                 maxScale={4}
-                centerOnInit={false} // Desactivamos centrado automático para usar posición manual
                 limitToBounds={false}
                 wheel={{ step: 0.1 }}
             >
                 <TransformComponent wrapperClass="w-full h-full" contentClass="w-full h-full">
                     {/* Map Container */}
                     <div
-                        className="relative w-[1200px] h-[900px] cursor-move flex items-center justify-center bg-[#17130D]" // Fixed size large container for high res map
+                        className="relative w-[1600px] h-[1000px] cursor-move flex items-center justify-center bg-[#17130D]" // Fixed size large container for high res map
                         onClick={handleMapClick}
                     >
                         {/* 1. MAP IMAGE BACKGROUND WITH DARK MODE FILTER */}
-                        <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute inset-0 pointer-events-none bg-[#17130D]">
                             <Image
                                 src="/campus_real.jpg"
                                 alt="Mapa Campus Uninorte"
                                 fill
-                                className="object-contain filter invert-[.85] hue-rotate-180 grayscale-[.5] contrast-125 opacity-80"
+                                className="object-cover opacity-70"
                                 priority
                             />
                             {/* Overlay Gradient for Vignette */}
-                            <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#17130D]/10 to-[#17130D]/90 pointer-events-none" />
+                            <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_40%,#17130D_100%)] pointer-events-none" />
                         </div>
 
                         {/* Calibration Grid (Optional visibility) */}

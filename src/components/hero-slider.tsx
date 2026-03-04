@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Calendar, MapPin, Zap } from "lucide-react";
 import { Badge, Button } from "@/components/ui-primitives";
 import Link from "next/link";
-import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_GLOW } from "@/lib/constants";
+import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_GLOW, SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
@@ -147,79 +147,90 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
 
                         {/* Teams & Score */}
                         <div className="flex items-center justify-center gap-4 md:gap-12 w-full max-w-4xl">
-                            {/* Team A */}
-                            <motion.div
-                                initial={{ x: -50, opacity: 0 }}
-                                animate={{ x: 0, opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                                className="flex flex-col items-center gap-4 flex-1 text-center"
-                            >
-                                <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
-                                    <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.carrera_a?.nombre || currentMatch.equipo_a)}</span>
-                                </div>
-                                <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
-                                    {currentMatch.delegacion_a || currentMatch.carrera_a?.nombre || currentMatch.equipo_a}
-                                </h3>
-                            </motion.div>
+                            {(() => {
+                                const sName = currentMatch.disciplinas?.name || '';
+                                const liveText = SPORT_LIVE_TEXT[sName] || SPORT_LIVE_TEXT.default;
+                                const liveBg = SPORT_LIVE_BG_WRAPPER[sName] || SPORT_LIVE_BG_WRAPPER.default;
+                                const liveBar = SPORT_LIVE_BAR[sName] || SPORT_LIVE_BAR.default;
 
-                            {/* VS / Score */}
-                            <div className="flex flex-col items-center gap-2 z-20 mx-4 relative min-w-[140px] md:min-w-[220px]">
-                                {currentMatch.estado === 'en_vivo' ? (
-                                    <div className="flex flex-col items-center w-full">
-                                        <div className="text-[3.5rem] md:text-[5.5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-3 md:gap-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                                            <span className="text-white text-right w-16 md:w-24">{scoreInfo.scoreA}</span>
-                                            <div className="w-4 md:w-6 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
-                                            <span className="text-white text-left w-16 md:w-24">{scoreInfo.scoreB}</span>
-                                        </div>
+                                return (
+                                    <>
+                                        {/* Team A */}
+                                        <motion.div
+                                            initial={{ x: -50, opacity: 0 }}
+                                            animate={{ x: 0, opacity: 1 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="flex flex-col items-center gap-4 flex-1 text-center"
+                                        >
+                                            <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
+                                                <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.carrera_a?.nombre || currentMatch.equipo_a)}</span>
+                                            </div>
+                                            <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
+                                                {currentMatch.delegacion_a || currentMatch.carrera_a?.nombre || currentMatch.equipo_a}
+                                            </h3>
+                                        </motion.div>
 
-                                        {/* Dynamic Info Row */}
-                                        <div className="flex flex-col items-center mt-3 md:mt-4 w-full">
-                                            <div className="flex items-center gap-2 text-[10px] md:text-xs font-black uppercase tracking-widest text-[#00E676] drop-shadow-[0_0_5px_rgba(0,230,118,0.5)] mb-2 md:mb-3">
-                                                <span>{scoreInfo.extra || 'EN CURSO'}</span>
+                                        {/* VS / Score */}
+                                        <div className="flex flex-col items-center gap-2 z-20 mx-4 relative min-w-[140px] md:min-w-[220px]">
+                                            {currentMatch.estado === 'en_vivo' ? (
+                                                <div className="flex flex-col items-center w-full">
+                                                    <div className="text-[3.5rem] md:text-[5.5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-3 md:gap-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                                                        <span className="text-white text-right w-16 md:w-24">{scoreInfo.scoreA}</span>
+                                                        <div className="w-4 md:w-6 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
+                                                        <span className="text-white text-left w-16 md:w-24">{scoreInfo.scoreB}</span>
+                                                    </div>
 
-                                                {/* Timer or Subscores */}
-                                                {currentMatch.marcador_detalle?.timer && (
-                                                    <>
-                                                        <span className="opacity-50">•</span>
-                                                        <div className="scale-90 origin-left">
-                                                            <PublicLiveTimer detalle={currentMatch.marcador_detalle} />
+                                                    {/* Dynamic Info Row */}
+                                                    <div className="flex flex-col items-center mt-3 md:mt-4 w-full">
+                                                        <div className={cn("flex items-center gap-2 text-[10px] md:text-xs font-black uppercase tracking-widest mb-2 md:mb-3", liveText)}>
+                                                            <span>{scoreInfo.extra || 'EN CURSO'}</span>
+
+                                                            {/* Timer or Subscores */}
+                                                            {currentMatch.marcador_detalle?.timer && (
+                                                                <>
+                                                                    <span className="opacity-50">•</span>
+                                                                    <div className="scale-90 origin-left">
+                                                                        <PublicLiveTimer detalle={currentMatch.marcador_detalle} />
+                                                                    </div>
+                                                                </>
+                                                            )}
+
+                                                            {scoreInfo.subScoreA !== undefined && scoreInfo.subScoreB !== undefined && (
+                                                                <>
+                                                                    <span className="opacity-50">•</span>
+                                                                    <span>{scoreInfo.subLabel || 'PTS'}: {scoreInfo.subScoreA} - {scoreInfo.subScoreB}</span>
+                                                                </>
+                                                            )}
                                                         </div>
-                                                    </>
-                                                )}
 
-                                                {scoreInfo.subScoreA !== undefined && scoreInfo.subScoreB !== undefined && (
-                                                    <>
-                                                        <span className="opacity-50">•</span>
-                                                        <span>{scoreInfo.subLabel || 'PTS'}: {scoreInfo.subScoreA} - {scoreInfo.subScoreB}</span>
-                                                    </>
-                                                )}
-                                            </div>
-
-                                            {/* Glowing Progress Status Bar */}
-                                            <div className="w-[80%] md:w-full h-1 md:h-1.5 rounded-full overflow-hidden bg-[#00E676]/20 relative">
-                                                <div className="h-full bg-[#00E676] rounded-full w-[100%] absolute top-0 left-0 shadow-[0_0_12px_#00E676] animate-pulse" />
-                                            </div>
+                                                        {/* Glowing Progress Status Bar */}
+                                                        <div className={cn("w-[80%] md:w-full h-1 md:h-1.5 rounded-full overflow-hidden relative", liveBg)}>
+                                                            <div className={cn("h-full rounded-full w-[100%] absolute top-0 left-0 animate-pulse", liveBar)} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-4xl md:text-6xl font-black text-white/10 italic">VS</div>
+                                            )}
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-4xl md:text-6xl font-black text-white/10 italic">VS</div>
-                                )}
-                            </div>
 
-                            {/* Team B */}
-                            <motion.div
-                                initial={{ x: 50, opacity: 0 }}
-                                animate={{ x: 0, opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                                className="flex flex-col items-center gap-4 flex-1 text-center"
-                            >
-                                <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
-                                    <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.carrera_b?.nombre || currentMatch.equipo_b)}</span>
-                                </div>
-                                <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
-                                    {currentMatch.delegacion_b || currentMatch.carrera_b?.nombre || currentMatch.equipo_b}
-                                </h3>
-                            </motion.div>
+                                        {/* Team B */}
+                                        <motion.div
+                                            initial={{ x: 50, opacity: 0 }}
+                                            animate={{ x: 0, opacity: 1 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="flex flex-col items-center gap-4 flex-1 text-center"
+                                        >
+                                            <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
+                                                <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.carrera_b?.nombre || currentMatch.equipo_b)}</span>
+                                            </div>
+                                            <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
+                                                {currentMatch.delegacion_b || currentMatch.carrera_b?.nombre || currentMatch.equipo_b}
+                                            </h3>
+                                        </motion.div>
+                                    </>
+                                );
+                            })()}
                         </div>
 
                         {/* Meta Info & CTA */}
@@ -247,28 +258,30 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
             </AnimatePresence>
 
             {/* Controls */}
-            {featuredMatches.length > 1 && (
-                <>
-                    <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20">
-                        <ChevronLeft size={20} />
-                    </button>
-                    <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20">
-                        <ChevronRight size={20} />
-                    </button>
+            {
+                featuredMatches.length > 1 && (
+                    <>
+                        <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20">
+                            <ChevronLeft size={20} />
+                        </button>
+                        <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20">
+                            <ChevronRight size={20} />
+                        </button>
 
-                    {/* Dots */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                        {featuredMatches.map((_, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => setCurrentIndex(idx)}
-                                className={`w-2 h-2 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-6' : 'bg-white/20 hover:bg-white/40'}`}
-                            />
-                        ))}
-                    </div>
-                </>
-            )}
-        </div>
+                        {/* Dots */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                            {featuredMatches.map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setCurrentIndex(idx)}
+                                    className={`w-2 h-2 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-6' : 'bg-white/20 hover:bg-white/40'}`}
+                                />
+                            ))}
+                        </div>
+                    </>
+                )
+            }
+        </div >
     );
 }
 

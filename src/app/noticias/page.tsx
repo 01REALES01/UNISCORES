@@ -8,6 +8,8 @@ import { ArrowLeft, Newspaper, GraduationCap, Filter } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useNews } from "@/hooks/use-news";
+import { MainNavbar } from "@/components/main-navbar";
+import { useAuth } from "@/hooks/useAuth";
 
 const CATEGORIES = [
     { key: 'todas', label: 'Todas' },
@@ -18,6 +20,7 @@ const CATEGORIES = [
 ];
 
 export default function NoticiasPage() {
+    const { user, profile, isStaff } = useAuth();
     const { allNews: noticias, loading } = useNews();
     const [categoryFilter, setCategoryFilter] = useState('todas');
     const [carreraFilter, setCarreraFilter] = useState('todas');
@@ -46,27 +49,10 @@ export default function NoticiasPage() {
                 <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-amber-600/5 rounded-full blur-[100px]" />
             </div>
 
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0805]/80 backdrop-blur-xl border-b border-white/5">
-                <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/">
-                            <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full">
-                                <ArrowLeft size={20} />
-                            </Button>
-                        </Link>
-                        <div className="flex items-center gap-2">
-                            <Newspaper size={20} className="text-[#FFC000]" />
-                            <h1 className="text-xl font-black tracking-tight">Noticias</h1>
-                        </div>
-                    </div>
-                    <div className="text-xs font-mono font-black tracking-widest text-white/40 hidden sm:block">
-                        MEDIO DEPORTIVO
-                    </div>
-                </div>
-            </header>
+            {/*  Main Navbar */}
+            <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
-            <main className="max-w-5xl mx-auto px-4 pt-24 pb-12 relative z-10">
+            <main className="max-w-5xl mx-auto px-4 pt-10 pb-12 relative z-10">
                 {/* Sticky Filters Bar */}
                 <div className="sticky top-16 z-40 bg-[#0a0805]/90 backdrop-blur-xl py-4 mb-8 border-b border-white/5 -mx-4 px-4 sm:mx-0 sm:px-0 sm:bg-transparent sm:backdrop-blur-none sm:border-none">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
