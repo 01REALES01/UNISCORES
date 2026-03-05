@@ -52,16 +52,13 @@ export function useMatches() {
     );
 
     // ─── Realtime subscription ───────────────────────────────────────────────
-    const mutateRef = useRef(mutate);
-    mutateRef.current = mutate;
-
     useEffect(() => {
         const debounceRef = { timer: null as ReturnType<typeof setTimeout> | null };
 
         const debouncedMutate = () => {
             if (debounceRef.timer) clearTimeout(debounceRef.timer);
             debounceRef.timer = setTimeout(() => {
-                mutateRef.current(); // Revalidate from Supabase
+                mutate(); // Revalidate from Supabase
             }, 800);
         };
 
@@ -74,7 +71,7 @@ export function useMatches() {
             if (debounceRef.timer) clearTimeout(debounceRef.timer);
             supabase.removeChannel(channel);
         };
-    }, []);
+    }, [mutate]);
 
     return {
         matches: data || [],

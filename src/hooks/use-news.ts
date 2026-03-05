@@ -38,19 +38,16 @@ export function useNews(limit?: number) {
     );
 
     // ─── Realtime subscription ───────────────────────────────────────────────
-    const mutateRef = useRef(mutate);
-    mutateRef.current = mutate;
-
     useEffect(() => {
         const channel = supabase
             .channel('swr:noticias')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'noticias' }, () => {
-                mutateRef.current();
+                mutate();
             })
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
-    }, []);
+    }, [mutate]);
 
     const news = limit ? (data || []).slice(0, limit) : (data || []);
 
