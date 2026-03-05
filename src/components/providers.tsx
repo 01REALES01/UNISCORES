@@ -2,14 +2,17 @@
 
 import { AuthProvider } from "@/hooks/useAuth";
 import { ReactNode } from "react";
+import { LazyMotion, domAnimation } from "framer-motion";
 
 import { ToastProvider } from "@/components/toast-provider";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children }: { children: ReactNode }) {
     return (
         <AuthProvider>
             <ToastProvider />
-            {children}
+            <LazyMotion features={domAnimation}>
+                {children}
+            </LazyMotion>
         </AuthProvider>
     );
 }

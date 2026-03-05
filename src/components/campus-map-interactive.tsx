@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { Badge, Button } from "@/components/ui-primitives";
 import { MapPin, Users, Activity, Trophy, Move, Crosshair, ZoomIn, ZoomOut, Maximize } from "lucide-react";
 import Image from "next/image";
@@ -209,7 +209,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                                     {/* POPUP CARD (When Selected) - Scale inverse so it stays readable? No, simpler to just render */}
                                     <AnimatePresence>
                                         {selectedVenue === venueName && !calibrationMode && (
-                                            <motion.div
+                                            <m.div
                                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -270,7 +270,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                                                         </div>
                                                     )}
                                                 </div>
-                                            </motion.div>
+                                            </m.div>
                                         )}
                                     </AnimatePresence>
                                 </div>

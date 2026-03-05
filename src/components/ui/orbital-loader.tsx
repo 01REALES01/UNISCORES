@@ -2,7 +2,7 @@
 
 import React from "react"
 import { cva } from "class-variance-authority"
-import { motion } from "motion/react"
+import { m } from "framer-motion"
 
 import { cn } from "@/lib/utils"
 
@@ -38,7 +38,7 @@ export function OrbitalLoader({
     return (
         <div className={cn(orbitalLoaderVariants({ messagePlacement }))}>
             <div className={cn("relative w-16 h-16", className)} {...props}>
-                <motion.div
+                <m.div
                     className="absolute inset-0 border-2 border-transparent border-t-foreground rounded-full"
                     animate={{ rotate: 360 }}
                     transition={{
@@ -47,7 +47,7 @@ export function OrbitalLoader({
                         ease: "linear",
                     }}
                 />
-                <motion.div
+                <m.div
                     className="absolute inset-2 border-2 border-transparent border-t-foreground rounded-full"
                     animate={{ rotate: -360 }}
                     transition={{
@@ -56,7 +56,7 @@ export function OrbitalLoader({
                         ease: "linear",
                     }}
                 />
-                <motion.div
+                <m.div
                     className="absolute inset-4 border-2 border-transparent border-t-foreground rounded-full"
                     animate={{ rotate: 360 }}
                     transition={{

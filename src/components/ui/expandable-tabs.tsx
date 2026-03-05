@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 
 interface Tab {
     title: string;
@@ -24,6 +24,7 @@ interface ExpandableTabsProps {
     activeColor?: string;
     activeItem?: number | null;
     onChange?: (index: number | null) => void;
+    onHover?: (index: number) => void;
 }
 
 export function ExpandableTabs({
@@ -32,11 +33,13 @@ export function ExpandableTabs({
     activeColor = "text-primary",
     activeItem = null,
     onChange,
+    onHover,
 }: ExpandableTabsProps) {
     const [hovered, setHovered] = React.useState<number | null>(null);
 
     const handleMouseEnter = (index: number) => {
         setHovered(index);
+        onHover?.(index);
     };
 
     const handleMouseLeave = () => {
@@ -67,7 +70,7 @@ export function ExpandableTabs({
                 const isSelected = hovered === index || activeItem === index;
 
                 return (
-                    <motion.button
+                    <m.button
                         key={tab.title}
                         initial={false}
                         animate={{
@@ -85,7 +88,7 @@ export function ExpandableTabs({
                         <Icon size={18} strokeWidth={isSelected ? 2.5 : 2} className="transition-transform duration-300 flex-shrink-0" />
                         <AnimatePresence initial={false}>
                             {isSelected && (
-                                <motion.span
+                                <m.span
                                     initial={{ width: 0, opacity: 0, marginLeft: 0 }}
                                     animate={{ width: "auto", opacity: 1, marginLeft: 8 }}
                                     exit={{ width: 0, opacity: 0, marginLeft: 0 }}
@@ -93,10 +96,10 @@ export function ExpandableTabs({
                                     className="overflow-hidden whitespace-nowrap text-[13px] font-bold tracking-wide"
                                 >
                                     {tab.title}
-                                </motion.span>
+                                </m.span>
                             )}
                         </AnimatePresence>
-                    </motion.button>
+                    </m.button>
                 );
             })}
         </div>

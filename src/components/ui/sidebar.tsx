@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import Link, { LinkProps } from "next/link";
 import React, { useState, createContext, useContext } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { Menu, X } from "lucide-react";
 
 interface Links {
@@ -71,7 +71,7 @@ export const Sidebar = ({
     );
 };
 
-export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
+export const SidebarBody = (props: React.ComponentProps<typeof m.div>) => {
     return (
         <>
             <DesktopSidebar {...props} children={props.children as React.ReactNode} />
@@ -84,10 +84,10 @@ export const DesktopSidebar = ({
     className,
     children,
     ...props
-}: React.ComponentProps<typeof motion.div> & { children?: React.ReactNode }) => {
+}: React.ComponentProps<typeof m.div> & { children?: React.ReactNode }) => {
     const { open, setOpen, animate } = useSidebar();
     return (
-        <motion.div
+        <m.div
             className={cn(
                 "h-full px-4 py-4 hidden md:flex md:flex-col bg-[#17130D]/90 backdrop-blur-2xl border-r border-white/5 w-[300px] flex-shrink-0 shadow-2xl shadow-red-900/10",
                 className
@@ -106,7 +106,7 @@ export const DesktopSidebar = ({
             </div>
 
             {children}
-        </motion.div>
+        </m.div>
     );
 };
 
@@ -137,7 +137,7 @@ export const MobileSidebar = ({
                 </div>
                 <AnimatePresence>
                     {open && (
-                        <motion.div
+                        <m.div
                             initial={{ x: "-100%", opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: "-100%", opacity: 0 }}
@@ -161,13 +161,13 @@ export const MobileSidebar = ({
                                     {children}
                                 </div>
                             </div>
-                        </motion.div>
+                        </m.div>
                     )}
                 </AnimatePresence>
                 {/* Backdrop overlay */}
                 <AnimatePresence>
                     {open && (
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
@@ -209,7 +209,7 @@ export const SidebarLink = ({
                     {link.icon}
                 </div>
             </div>
-            <motion.span
+            <m.span
                 animate={{
                     display: animate ? (open ? "inline-block" : "none") : "inline-block",
                     opacity: animate ? (open ? 1 : 0) : 1,
@@ -217,7 +217,7 @@ export const SidebarLink = ({
                 className="text-white text-sm font-medium transition duration-150 whitespace-pre inline-block !p-0 !m-0"
             >
                 {link.label}
-            </motion.span>
+            </m.span>
         </Link>
     );
 };

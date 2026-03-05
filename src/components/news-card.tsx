@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Clock, ChevronRight, Trophy, GraduationCap } from "lucide-react";
 
@@ -72,10 +73,11 @@ export function NewsHeroCard({ noticia }: { noticia: Noticia }) {
             <div className="relative h-[450px] sm:h-[520px] rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl bg-[#0a0805]">
                 {/* Background Image */}
                 {noticia.imagen_url ? (
-                    <img
+                    <Image
                         src={noticia.imagen_url}
                         alt={noticia.titulo}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                        fill
+                        className="absolute inset-0 object-cover transition-transform duration-1000 group-hover:scale-105"
                     />
                 ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-red-900/40 to-[#0a0805]" />
@@ -127,10 +129,11 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
                 {/* Thumbnail */}
                 <div className="w-[110px] h-[90px] sm:w-[160px] sm:h-[120px] rounded-xl sm:rounded-2xl overflow-hidden shrink-0 relative bg-[#17130D] border border-white/5 shadow-lg">
                     {noticia.imagen_url ? (
-                        <img
+                        <Image
                             src={noticia.imagen_url}
                             alt={noticia.titulo}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            fill
+                            className="object-cover group-hover:scale-110 transition-transform duration-700"
                         />
                     ) : (
                         <div className="w-full h-full bg-gradient-to-br from-red-900/30 to-[#17130D] flex items-center justify-center">

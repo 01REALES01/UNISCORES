@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Calendar, MapPin, Zap } from "lucide-react";
 import { Badge, Button } from "@/components/ui-primitives";
 import Link from "next/link";
@@ -54,7 +54,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
             <div className="absolute inset-0 bg-gradient-to-r from-red-900/40 via-orange-900/20 to-black/60" />
 
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 z-10">
-                <motion.div
+                <m.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8 }}
@@ -75,7 +75,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                             </Button>
                         </Link>
                     </div>
-                </motion.div>
+                </m.div>
             </div>
 
             {/* Decorative Elements */}
@@ -99,7 +99,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
     return (
         <div className="relative w-full h-[400px] md:h-[450px] rounded-3xl overflow-hidden mb-8 group">
             <AnimatePresence mode="wait">
-                <motion.div
+                <m.div
                     key={currentMatch.id}
                     initial={{ opacity: 0, scale: 1.05 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -120,7 +120,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
 
                         {/* Status Badge */}
-                        <motion.div
+                        <m.div
                             initial={{ y: -20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.2 }}
@@ -135,7 +135,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                     <Calendar size={12} className="mr-2" /> Programado
                                 </Badge>
                             )}
-                        </motion.div>
+                        </m.div>
 
                         {/* Sport Badge - Centered independently */}
                         <div className="flex justify-center mb-4">
@@ -156,7 +156,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                 return (
                                     <>
                                         {/* Team A */}
-                                        <motion.div
+                                        <m.div
                                             initial={{ x: -50, opacity: 0 }}
                                             animate={{ x: 0, opacity: 1 }}
                                             transition={{ delay: 0.3 }}
@@ -168,7 +168,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
                                                 {currentMatch.delegacion_a || currentMatch.carrera_a?.nombre || currentMatch.equipo_a}
                                             </h3>
-                                        </motion.div>
+                                        </m.div>
 
                                         {/* VS / Score */}
                                         <div className="flex flex-col items-center gap-2 z-20 mx-4 relative min-w-[140px] md:min-w-[220px]">
@@ -215,7 +215,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                         </div>
 
                                         {/* Team B */}
-                                        <motion.div
+                                        <m.div
                                             initial={{ x: 50, opacity: 0 }}
                                             animate={{ x: 0, opacity: 1 }}
                                             transition={{ delay: 0.3 }}
@@ -227,14 +227,14 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
                                                 {currentMatch.delegacion_b || currentMatch.carrera_b?.nombre || currentMatch.equipo_b}
                                             </h3>
-                                        </motion.div>
+                                        </m.div>
                                     </>
                                 );
                             })()}
                         </div>
 
                         {/* Meta Info & CTA */}
-                        <motion.div
+                        <m.div
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.5 }}
@@ -252,9 +252,9 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                     Ver Detalles
                                 </Button>
                             </Link>
-                        </motion.div>
+                        </m.div>
                     </div>
-                </motion.div>
+                </m.div>
             </AnimatePresence>
 
             {/* Controls */}

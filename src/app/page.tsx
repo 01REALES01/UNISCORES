@@ -1,13 +1,22 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { MatchCardSkeleton, NewsListSkeleton } from "@/components/skeletons";
-import { HeroSlider } from "@/components/hero-slider";
 import { useAuth } from "@/hooks/useAuth";
 import { Trophy, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield, Newspaper } from "lucide-react";
-import SuggestiveSearch from "@/components/ui/suggestive-search";
+
+const HeroSlider = dynamic(() => import('@/components/hero-slider').then(mod => mod.HeroSlider), {
+  ssr: false,
+  loading: () => <div className="w-full h-[400px] md:h-[450px] rounded-3xl bg-white/5 animate-pulse mb-8" />
+});
+
+const SuggestiveSearch = dynamic(() => import('@/components/ui/suggestive-search'), {
+  ssr: false,
+  loading: () => <div className="h-12 w-full rounded-2xl bg-white/5 animate-pulse" />
+});
 import { NewsListCard, Noticia } from "@/components/news-card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

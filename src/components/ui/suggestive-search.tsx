@@ -6,7 +6,7 @@ import React, {
     useState,
     type RefObject,
 } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Search } from "lucide-react";
 
@@ -132,7 +132,7 @@ export const TypewriterEffect: React.FC<EffectRendererProps> = ({
                     {text}
                 </span>
             ) : (
-                <motion.div
+                <m.div
                     key={text}
                     initial={{ width: "0%" }}
                     animate={
@@ -175,7 +175,7 @@ export const TypewriterEffect: React.FC<EffectRendererProps> = ({
                     </span>
 
                     {/* blinking cursor */}
-                    <motion.span
+                    <m.span
                         aria-hidden
                         style={{
                             display: "inline-block",
@@ -196,7 +196,7 @@ export const TypewriterEffect: React.FC<EffectRendererProps> = ({
                                 : { duration: 0.1 }
                         }
                     />
-                </motion.div>
+                </m.div>
             )}
         </div>
     );
@@ -266,7 +266,7 @@ export const SlideEffect: React.FC<EffectRendererProps> = ({
                 alignItems: "center",
             }}
         >
-            <motion.div
+            <m.div
                 key={text}
                 initial={{ y: "-100%" }}
                 animate={
@@ -300,7 +300,7 @@ export const SlideEffect: React.FC<EffectRendererProps> = ({
                 <span className="text-sm text-slate-500 select-none">
                     {text}
                 </span>
-            </motion.div>
+            </m.div>
         </div>
     );
 };
@@ -367,7 +367,7 @@ export const FadeEffect: React.FC<EffectRendererProps> = ({
                 whiteSpace: "nowrap",
             }}
         >
-            <motion.div
+            <m.div
                 key={text}
                 initial={{ opacity: 0 }}
                 animate={
@@ -401,7 +401,7 @@ export const FadeEffect: React.FC<EffectRendererProps> = ({
                 <span className="text-sm text-slate-500 select-none">
                     {text}
                 </span>
-            </motion.div>
+            </m.div>
         </div>
     );
 };

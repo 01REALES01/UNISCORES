@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import { HomeIcon, Calendar, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords } from "lucide-react";
@@ -49,7 +50,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                     <Link href="/">
                         <div className="flex items-center gap-3 sm:gap-4 group cursor-pointer">
                             <div className="relative flex-shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                                <img src="/uninorte_logo.png" alt="Uninorte" className="h-10 sm:h-12 w-auto object-contain flex-shrink-0" />
+                                <Image src="/uninorte_logo.png" alt="Uninorte" width={48} height={48} className="h-10 sm:h-12 w-auto object-contain flex-shrink-0" priority />
                                 <div className="absolute inset-0 bg-white/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                             </div>
                             <div className="flex flex-col justify-center">
@@ -91,6 +92,16 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                             if (index === 6) router.push('/brackets');
                             if (index === 8) window.open('/tv', '_blank');
                             if (index === 9 && isStaff) router.push('/admin');
+                        }}
+                        onHover={(index) => {
+                            if (index === 0) router.prefetch('/');
+                            if (index === 1) router.prefetch('/calendario');
+                            if (index === 2) router.prefetch('/noticias');
+                            if (index === 3) router.prefetch('/mapa');
+                            if (index === 4) router.prefetch('/medallero');
+                            if (index === 5) router.prefetch('/quiniela');
+                            if (index === 6) router.prefetch('/brackets');
+                            if (index === 9 && isStaff) router.prefetch('/admin');
                         }}
                     />
                 </div>
