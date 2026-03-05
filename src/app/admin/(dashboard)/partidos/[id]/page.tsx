@@ -7,7 +7,9 @@ import { ArrowLeft, Clock, Play, Pause, Square, AlertCircle, Plus, Save, Users, 
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { addPoints, removePoints, getCurrentScore, cambiarTiempoFutbol, cambiarCuartoBasket, recalculateTotals } from "@/lib/sport-scoring";
+import { cn } from "@/lib/utils";
+import { getCurrentScore, recalculateTotals, cambiarTiempoFutbol, cambiarCuartoBasket, removePoints, addPoints, isCountdownSport, getPeriodDuration, getCurrentPeriodNumber } from "@/lib/sport-scoring";
+import { toast } from "sonner";
 import { RaceControl } from "@/components/race-control";
 import { invalidateCache } from "@/lib/supabase-query";
 
@@ -24,6 +26,7 @@ type Evento = {
     tipo_evento: string;
     minuto: number;
     equipo: string;
+    periodo?: number | null;
     jugadores?: Jugador;
 };
 
@@ -214,9 +217,10 @@ export default function MatchControlPage() {
     // 2. Cronómetro (Lógica de servidor - cada 60s)
     useEffect(() => {
         if (cronometroActivo) {
+            const isCountdown = isCountdownSport(match?.disciplinas?.name || "");
             intervalRef.current = setInterval(() => {
                 setMinutoActual(prev => {
-                    const nuevo = prev + 1;
+                    const nuevo = isCountdown ? Math.max(0, prev - 1) : prev + 1;
                     actualizarMinutoEnDB(nuevo);
                     return nuevo;
                 });
@@ -269,10 +273,11 @@ export default function MatchControlPage() {
             .from('olympics_eventos')
             .select('*, jugadores:olympics_jugadores(*)')
             .eq('partido_id', matchId)
-            .order('minuto', { ascending: false });
+            .order('id', { ascending: false });
 
         if (data) setEventos(data);
     };
+
 
     // Funciones de Acción
     const actualizarMinutoEnDB = async (minuto: number) => {
@@ -299,43 +304,58 @@ export default function MatchControlPage() {
         setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoDetalle }));
     };
 
+
     const toggleCronometro = async () => {
-        const nuevoEstado = !cronometroActivo;
-        setCronometroActivo(nuevoEstado);
+        try {
+            const nuevoEstado = !cronometroActivo;
+            setCronometroActivo(nuevoEstado);
 
-        // Fetch latest from DB to avoid overwriting score
-        const { data: freshMatch } = await supabase
-            .from('partidos')
-            .select('marcador_detalle, estado')
-            .eq('id', matchId)
-            .single();
-        const freshDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
+            // Fetch latest from DB to avoid overwriting score
+            const { data: freshMatch } = await supabase
+                .from('partidos')
+                .select('marcador_detalle, estado')
+                .eq('id', matchId)
+                .single();
+            const freshDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
 
-        // Update DB
-        const nuevoDetalle = {
-            ...freshDetalle,
-            estado_cronometro: nuevoEstado ? 'corriendo' : 'pausado',
-            ultimo_update: new Date().toISOString()
-        };
+            // Update DB
+            const nuevoDetalle = {
+                ...freshDetalle,
+                estado_cronometro: nuevoEstado ? 'corriendo' : 'pausado',
+                ultimo_update: new Date().toISOString()
+            };
 
-        // Si inicia por primera vez
-        const currentEstado = freshMatch?.estado || match.estado;
-        if (nuevoEstado && currentEstado === 'programado') {
-            nuevoDetalle.tiempo_inicio = new Date().toISOString();
-            nuevoDetalle.minuto_actual = 0;
-            await supabase.from('partidos').update({
-                estado: 'en_vivo',
-                marcador_detalle: nuevoDetalle
-            }).eq('id', matchId);
-            setMatch((prev: any) => ({ ...prev, estado: 'en_vivo', marcador_detalle: nuevoDetalle }));
-            // Invalidar cachés para que home y dashboard reflejen que hay un partido en vivo
-            invalidateCache('home-partidos');
-            invalidateCache('admin-dashboard');
-            invalidateCache('admin-partidos');
-            registrarEventoSistema('inicio', 'Inicio del partido');
-        } else {
-            await supabase.from('partidos').update({ marcador_detalle: nuevoDetalle }).eq('id', matchId);
-            setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoDetalle }));
+            // Si inicia por primera vez
+            const currentEstado = freshMatch?.estado || match.estado;
+            if (nuevoEstado && currentEstado === 'programado') {
+                const sportName = match?.disciplinas?.name || "";
+                const isCountdown = isCountdownSport(sportName);
+
+                nuevoDetalle.tiempo_inicio = new Date().toISOString();
+                nuevoDetalle.minuto_actual = isCountdown ? getPeriodDuration(sportName) : 0;
+                const { error } = await supabase.from('partidos').update({
+                    estado: 'en_vivo',
+                    marcador_detalle: nuevoDetalle
+                }).eq('id', matchId);
+
+                if (error) throw error;
+
+                setMatch((prev: any) => ({ ...prev, estado: 'en_vivo', marcador_detalle: nuevoDetalle }));
+                // Invalidar cachés para que home y dashboard reflejen que hay un partido en vivo
+                invalidateCache('home-partidos');
+                invalidateCache('admin-dashboard');
+                invalidateCache('admin-partidos');
+                registrarEventoSistema('inicio', 'Inicio del partido');
+            } else {
+                const { error } = await supabase.from('partidos').update({ marcador_detalle: nuevoDetalle }).eq('id', matchId);
+                if (error) throw error;
+                setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoDetalle }));
+            }
+        } catch (err: any) {
+            console.error('Error toggling chronometer:', err);
+            toast.error('Error con el cronómetro: ' + err.message);
+            // Revert local state if DB failed
+            setCronometroActivo(cronometroActivo);
         }
     };
 
@@ -344,38 +364,53 @@ export default function MatchControlPage() {
     };
 
     const handleCambiarPeriodo = async () => {
-        const disciplinaName = match.disciplinas?.name || 'Deporte';
+        try {
+            const disciplinaName = match.disciplinas?.name || 'Deporte';
 
-        // Fetch latest from DB to avoid overwriting score
-        const { data: freshMatch } = await supabase
-            .from('partidos')
-            .select('marcador_detalle')
-            .eq('id', matchId)
-            .single();
-        let nuevoMarcador = { ...(freshMatch?.marcador_detalle || match.marcador_detalle || {}) };
-        let mensaje = '';
-        let nuevoMinuto = minutoActual;
+            // Pausar cronómetro localmente para el nuevo período
+            setCronometroActivo(false);
 
-        if (disciplinaName === 'Fútbol') {
-            nuevoMarcador = cambiarTiempoFutbol(nuevoMarcador);
-            mensaje = 'Cambio al 2º tiempo';
-            // Iniciar 2º tiempo en 45'
-            if (nuevoMarcador.tiempo_actual === 2) nuevoMinuto = 45;
-        } else if (disciplinaName === 'Baloncesto') {
-            const cuartoActual = nuevoMarcador.cuarto_actual || 1;
-            if (cuartoActual < 4) {
-                nuevoMarcador = cambiarCuartoBasket(nuevoMarcador);
-                mensaje = `Cambio al ${nuevoMarcador.cuarto_actual}º cuarto`;
-                nuevoMinuto = 0; // Reiniciar cronómetro por cuarto
+            // Fetch latest from DB to avoid overwriting score
+            const { data: freshMatch } = await supabase
+                .from('partidos')
+                .select('marcador_detalle')
+                .eq('id', matchId)
+                .single();
+
+            let nuevoMarcador = { ...(freshMatch?.marcador_detalle || match.marcador_detalle || {}) };
+            let mensaje = '';
+            let nuevoMinuto = minutoActual;
+
+            if (disciplinaName === 'Fútbol') {
+                nuevoMarcador = cambiarTiempoFutbol(nuevoMarcador);
+                mensaje = 'Cambio al 2º tiempo';
+                // Iniciar 2º tiempo en 45'
+                if (nuevoMarcador.tiempo_actual === 2) nuevoMinuto = 45;
+            } else if (disciplinaName === 'Baloncesto') {
+                const cuartoActual = nuevoMarcador.cuarto_actual || 1;
+                if (cuartoActual < 4) {
+                    nuevoMarcador = cambiarCuartoBasket(nuevoMarcador);
+                    mensaje = `Cambio al ${nuevoMarcador.cuarto_actual}º cuarto`;
+                    nuevoMinuto = getPeriodDuration('Baloncesto'); // NBA: 12 min
+                }
             }
-        }
 
-        if (mensaje) {
-            nuevoMarcador.minuto_actual = nuevoMinuto;
-            await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
-            setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
-            setMinutoActual(nuevoMinuto);
-            registrarEventoSistema('periodo', mensaje);
+            if (mensaje) {
+                nuevoMarcador.minuto_actual = nuevoMinuto;
+                nuevoMarcador.estado_cronometro = 'pausado'; // Forzar pausa en DB
+                nuevoMarcador.ultimo_update = new Date().toISOString();
+
+                const { error } = await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
+                if (error) throw error;
+
+                setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
+                setMinutoActual(nuevoMinuto);
+                registrarEventoSistema('periodo', mensaje);
+                toast.success(mensaje + '. Cronómetro pausado.');
+            }
+        } catch (err: any) {
+            console.error('Error changing period:', err);
+            toast.error('Error al cambiar período: ' + err.message);
         }
     };
 
@@ -429,11 +464,18 @@ export default function MatchControlPage() {
     };
 
     const registrarEventoSistema = async (tipo: string, desc: string) => {
+        const periodo = getCurrentPeriodNumber(match.disciplinas?.name || "", match.marcador_detalle || {});
         await supabase.from('olympics_eventos').insert({
-            partido_id: matchId, tipo_evento: tipo, minuto: minutoActual, equipo: 'sistema', descripcion: desc
+            partido_id: matchId,
+            tipo_evento: tipo,
+            minuto: minutoActual,
+            equipo: 'sistema',
+            descripcion: desc,
+            periodo: periodo
         });
         fetchEventos();
     };
+
 
     const handleNuevoEvento = async (eventOverride?: any) => {
         const stateToUse = eventOverride || nuevoEvento;
@@ -449,13 +491,17 @@ export default function MatchControlPage() {
         const tipo = stateToUse.tipo;
         const jugador_id = stateToUse.jugador_id;
 
+        const periodo = getCurrentPeriodNumber(disciplinaName, match.marcador_detalle || {});
+
         const { error } = await supabase.from('olympics_eventos').insert({
             partido_id: matchId,
             tipo_evento: tipo,
             minuto: minutoActual,
             equipo: equipo,
-            jugador_id: jugador_id
+            jugador_id: jugador_id,
+            periodo: periodo
         });
+
 
         if (!error) {
             // IMPORTANT: Always fetch the latest marcador_detalle from the DB
@@ -576,10 +622,15 @@ export default function MatchControlPage() {
             .eq('id', matchId)
             .single();
         const nuevoMarcador = { ...(freshMatch?.marcador_detalle || match.marcador_detalle || {}) };
+
+        const oldVal = nuevoMarcador[field] || 0;
         nuevoMarcador[field] = value;
 
-        await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
-        setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
+        const { error } = await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
+        if (!error) {
+            setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
+            registrarEventoSistema('ajuste', `Ajuste manual marquador: ${field.replace('_', ' ')} de ${oldVal} a ${value}`);
+        }
     };
 
     const handleSavePlayer = async () => {
@@ -744,7 +795,7 @@ export default function MatchControlPage() {
                                 )}
 
                                 {/* Timer */}
-                                <PublicLiveTimer detalle={match.marcador_detalle} />
+                                <PublicLiveTimer detalle={match.marcador_detalle} deporte={match.disciplinas?.name} />
 
                                 {/* Quick Actions */}
                                 <div className="flex items-center gap-2 sm:gap-4 mt-2">
@@ -1358,17 +1409,27 @@ export default function MatchControlPage() {
                                         <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-mono text-xs font-bold z-10">
                                             {e.minuto}'
                                         </div>
+                                        {e.periodo && (
+                                            <div className="mt-1 text-[9px] font-black text-[#FFC000] bg-[#FFC000]/10 px-1 rounded-sm border border-[#FFC000]/20">
+                                                {disciplinaName === 'Fútbol' ? 'T' : (disciplinaName === 'Baloncesto' || disciplinaName === 'Futsal' ? 'Q' : 'S')}{e.periodo}
+                                            </div>
+                                        )}
                                         <div className="w-0.5 flex-1 bg-slate-800/50 my-1" />
                                     </div>
                                     <div className="flex-1 pb-4">
                                         <div className={`p-3 rounded-xl border ${e.equipo === 'sistema' ? 'bg-slate-900 border-slate-800' : 'bg-white/5 border-white/5 hover:bg-white/10'} transition-colors`}>
                                             <div className="flex justify-between items-start">
-                                                <span className="text-lg mr-3 mt-1">
+                                                <span className="text-xl mr-4 flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-black/40 border border-white/5">
                                                     {e.tipo_evento === 'gol' && '⚽'}
-                                                    {e.tipo_evento.startsWith('punto') && '🏐'}
-                                                    {e.tipo_evento === 'tarjeta_amarilla' && '🟨'}
-                                                    {e.tipo_evento === 'tarjeta_roja' && '🟥'}
-                                                    {e.tipo_evento === 'cambio' && '🔄'}
+                                                    {e.tipo_evento === 'punto_1' && <span className="text-[10px] font-black font-mono">+1</span>}
+                                                    {e.tipo_evento === 'punto_2' && <span className="text-[10px] font-black font-mono">+2</span>}
+                                                    {e.tipo_evento === 'punto_3' && <span className="text-[10px] font-black font-mono">+3</span>}
+                                                    {e.tipo_evento === 'punto' && '🏐'}
+                                                    {e.tipo_evento === 'falta' && '⛔'}
+                                                    {e.tipo_evento === 'set' && '🏆'}
+                                                    {e.tipo_evento === 'tarjeta_amarilla' && <div className="w-2.5 h-3.5 bg-yellow-400 rounded-sm" />}
+                                                    {e.tipo_evento === 'tarjeta_roja' && <div className="w-2.5 h-3.5 bg-red-500 rounded-sm" />}
+                                                    {e.tipo_evento === 'cambio' && <span className="text-emerald-400 text-[14px]">⇄</span>}
                                                     {e.tipo_evento === 'inicio' && '🚀'}
                                                     {e.tipo_evento === 'fin' && '🏁'}
                                                 </span>

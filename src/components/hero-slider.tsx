@@ -190,7 +190,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                                 <>
                                                                     <span className="opacity-50">•</span>
                                                                     <div className="scale-90 origin-left">
-                                                                        <PublicLiveTimer detalle={currentMatch.marcador_detalle} />
+                                                                        <PublicLiveTimer detalle={currentMatch.marcador_detalle} deporte={currentMatch.disciplinas?.name} />
                                                                     </div>
                                                                 </>
                                                             )}

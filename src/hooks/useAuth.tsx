@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (mountedRef.current) {
                 setLoading(false);
             }
-        }, 5000);
+        }, 2000);
 
         const getInitialSession = async () => {
             try {
@@ -101,8 +101,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const currentUser = session?.user ?? null;
                 setUser(currentUser);
 
+                // Set loading false IMMEDIATELY after getting session
+                // Profile loads in background — pages don't need to wait for it
+                if (mountedRef.current) setLoading(false);
+
                 if (currentUser) {
-                    await fetchProfile(currentUser.id);
+                    // Fire and forget — profile arrives async
+                    fetchProfile(currentUser.id);
                 }
             } catch (err: any) {
                 if (err?.name === 'AbortError' || err?.message?.includes('abort')) {

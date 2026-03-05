@@ -4,7 +4,7 @@
  * Sin caché, sin magia — solo timeout para que nunca se cuelgue.
  */
 
-const TIMEOUT_MS = 8000; // 8s — generoso para conexiones lentas
+const TIMEOUT_MS = 20000; // 20s — aumentado para redes lentas y cold starts
 
 type QueryResult<T> = {
     data: T | null;

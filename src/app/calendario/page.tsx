@@ -293,7 +293,7 @@ export default function CalendarioPage() {
                                                         {(matchOfTheDay.marcador_detalle?.goles_b || matchOfTheDay.marcador_detalle?.sets_b || matchOfTheDay.marcador_detalle?.total_b || 0)}
                                                     </span>
                                                     <div className="scale-75 origin-top mt-1">
-                                                        <PublicLiveTimer detalle={matchOfTheDay.marcador_detalle} />
+                                                        <PublicLiveTimer detalle={matchOfTheDay.marcador_detalle} deporte={matchOfTheDay.disciplinas?.name} />
                                                     </div>
                                                 </div>
                                             ) : (
@@ -416,7 +416,7 @@ export default function CalendarioPage() {
                                                                         {(match.marcador_detalle?.goles_a || match.marcador_detalle?.sets_a || match.marcador_detalle?.total_a || 0)} - {(match.marcador_detalle?.goles_b || match.marcador_detalle?.sets_b || match.marcador_detalle?.total_b || 0)}
                                                                     </span>
                                                                     <div className="scale-50 origin-top mt-0 flex items-center">
-                                                                        <PublicLiveTimer detalle={match.marcador_detalle} />
+                                                                        <PublicLiveTimer detalle={match.marcador_detalle} deporte={match.disciplinas?.name} />
                                                                     </div>
                                                                 </>
                                                             ) : match.estado === 'finalizado' ? (

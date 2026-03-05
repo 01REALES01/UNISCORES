@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { HomeIcon, Calendar, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X } from "lucide-react";
+import { HomeIcon, Calendar, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { Button } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
@@ -28,8 +28,10 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
         if (pathname.startsWith('/noticias')) return 2;
         if (pathname.startsWith('/mapa')) return 3;
         if (pathname.startsWith('/medallero')) return 4;
-        if (pathname.startsWith('/tv')) return 6;
-        if (pathname.startsWith('/admin') && isStaff) return 7;
+        if (pathname.startsWith('/quiniela')) return 5;
+        if (pathname.startsWith('/brackets')) return 6;
+        if (pathname.startsWith('/tv')) return 8;
+        if (pathname.startsWith('/admin') && isStaff) return 9;
         return null;
     };
 
@@ -73,6 +75,8 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                             { title: "Noticias", icon: Newspaper },
                             { title: "Mapa", icon: MapPin },
                             { title: "Medallería", icon: Trophy },
+                            { title: "Predicciones", icon: BarChart3 },
+                            { title: "Brackets", icon: Swords },
                             { type: "separator" },
                             { title: "TV", icon: Tv },
                             ...(isStaff ? [{ title: "Admin", icon: Shield }] : []),
@@ -83,14 +87,16 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                             if (index === 2) router.push('/noticias');
                             if (index === 3) router.push('/mapa');
                             if (index === 4) router.push('/medallero');
-                            if (index === 6) window.open('/tv', '_blank');
-                            if (index === 7 && isStaff) router.push('/admin');
+                            if (index === 5) router.push('/quiniela');
+                            if (index === 6) router.push('/brackets');
+                            if (index === 8) window.open('/tv', '_blank');
+                            if (index === 9 && isStaff) router.push('/admin');
                         }}
                     />
                 </div>
 
                 {/* 3. Right: User / Login Section */}
-                <div className="flex-1 flex items-center justify-end gap-2 overflow-hidden">
+                <div className="flex-1 flex items-center justify-end gap-2">
                     {/* Mobile Menu Toggle */}
                     <div className="flex lg:hidden items-center mr-1">
                         <Button
@@ -201,6 +207,18 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                             <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/medallero') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
                                 <Trophy size={20} />
                                 <span className="font-medium text-sm">Medallería</span>
+                            </div>
+                        </Link>
+                        <Link href="/quiniela" onClick={() => setMobileMenuOpen(false)}>
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/quiniela') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                                <BarChart3 size={20} />
+                                <span className="font-medium text-sm">Predicciones</span>
+                            </div>
+                        </Link>
+                        <Link href="/brackets" onClick={() => setMobileMenuOpen(false)}>
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/brackets') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                                <Swords size={20} />
+                                <span className="font-medium text-sm">Brackets</span>
                             </div>
                         </Link>
                         <div className="h-px bg-white/10 my-2" />

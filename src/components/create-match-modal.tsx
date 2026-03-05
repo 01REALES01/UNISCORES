@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button, Input, Badge } from "@/components/ui-primitives";
-import { X, Save, Trophy, Loader2, Calendar, Users, Activity, MapPin, Clock, Plus, GraduationCap } from "lucide-react";
+import { X, Save, Trophy, Loader2, Calendar, Users, Activity, MapPin, Clock, Plus, GraduationCap, Swords } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { CARRERAS_UNINORTE, LUGARES_OLIMPICOS } from "@/lib/constants";
 
@@ -32,6 +32,9 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
     const [genero, setGenero] = useState("masculino");
     const [lugar, setLugar] = useState("");
     const [fecha, setFecha] = useState("");
+    const [fase, setFase] = useState("");
+    const [grupo, setGrupo] = useState("");
+    const [bracketOrder, setBracketOrder] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
 
     if (!isOpen) return null;
@@ -148,7 +151,10 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                 estado: estado,
                 genero: genero,
                 lugar: lugar || 'Coliseo Central',
-                marcador_detalle: marcadorInicial
+                marcador_detalle: marcadorInicial,
+                ...(fase ? { fase } : {}),
+                ...(grupo ? { grupo } : {}),
+                ...(bracketOrder ? { bracket_order: parseInt(bracketOrder) } : {}),
             });
 
             if (error) throw error;
@@ -161,6 +167,9 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
             setGenero("masculino");
             setLugar("");
             setFecha("");
+            setFase("");
+            setGrupo("");
+            setBracketOrder("");
             onClose();
         } catch (e: any) {
             setErrorMsg(e.message);
@@ -371,6 +380,54 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                 </button>
                             </div>
                         </div>
+
+                        {/* Bracket / Fase Info — Only for team sports */}
+                        {!isIndividual && !isRaceSport && (
+                            <div className="col-span-1 sm:col-span-2 space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 ml-1">
+                                    <Swords size={12} className="text-primary" /> Bracket / Torneo <span className="text-white/20">(Opcional)</span>
+                                </label>
+                                <div className="flex gap-2">
+                                    <select
+                                        className="flex-1 h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-xs font-bold text-white focus:border-primary/50 outline-none"
+                                        value={fase}
+                                        onChange={(e) => { setFase(e.target.value); if (e.target.value !== 'grupos') setGrupo(''); }}
+                                    >
+                                        <option value="">Sin fase</option>
+                                        <option value="grupos">Fase de Grupos</option>
+                                        <option value="cuartos">Cuartos de Final</option>
+                                        <option value="semifinal">Semifinal</option>
+                                        <option value="tercer_puesto">Tercer Puesto</option>
+                                        <option value="final">Final</option>
+                                    </select>
+                                    {fase === 'grupos' && (
+                                        <select
+                                            className="w-20 h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-xs font-bold text-white focus:border-primary/50 outline-none"
+                                            value={grupo}
+                                            onChange={(e) => setGrupo(e.target.value)}
+                                        >
+                                            <option value="" disabled>Grupo</option>
+                                            <option value="A">A</option>
+                                            <option value="B">B</option>
+                                            <option value="C">C</option>
+                                            <option value="D">D</option>
+                                        </select>
+                                    )}
+                                    {fase && fase !== 'grupos' && (
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="10"
+                                            placeholder="#"
+                                            className="w-16 h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-xs font-bold text-white text-center focus:border-primary/50 outline-none"
+                                            value={bracketOrder}
+                                            onChange={(e) => setBracketOrder(e.target.value)}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Estado Switch */}
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 ml-1">

@@ -420,7 +420,7 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
               </div>
             </div>
             <div className="z-10">
-              <PublicLiveTimer detalle={partido.marcador_detalle || {}} />
+              <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={partido.disciplinas?.name} />
             </div>
           </div>
 

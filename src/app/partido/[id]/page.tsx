@@ -34,6 +34,7 @@ type Evento = {
     minuto: number;
     equipo: string;
     descripcion: string;
+    periodo: number | null;
     jugadores: { nombre: string; numero: number } | null;
 };
 
@@ -56,28 +57,32 @@ export default function PublicMatchDetail() {
 
     // Cargar datos
     const fetchData = async () => {
-        const [matchRes, eventosRes, predsRes] = await Promise.all([
-            safeQuery(supabase.from('partidos').select(`*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).eq('id', matchId).single(), 'partido-detail'),
-            safeQuery(supabase.from('olympics_eventos').select('*, jugadores:olympics_jugadores(nombre, numero)').eq('partido_id', matchId).order('minuto', { ascending: false }), 'partido-eventos'),
-            safeQuery(supabase.from('pronosticos').select('winner_pick, prediction_type').eq('match_id', matchId), 'partido-preds'),
-        ]);
+        try {
+            const [matchRes, eventosRes, predsRes] = await Promise.all([
+                safeQuery(supabase.from('partidos').select(`*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).eq('id', matchId).single(), 'partido-detail'),
+                safeQuery(supabase.from('olympics_eventos').select('*, jugadores:olympics_jugadores(nombre, numero)').eq('partido_id', matchId).order('id', { ascending: false }), 'partido-eventos'),
+                safeQuery(supabase.from('pronosticos').select('winner_pick, prediction_type').eq('match_id', matchId), 'partido-preds'),
+            ]);
 
-        if (matchRes.data) setMatch(matchRes.data);
-        if (eventosRes.data) setEventos(eventosRes.data);
-        if (predsRes.data) setMatchPredictions(predsRes.data);
+            if (matchRes.data) setMatch(matchRes.data);
+            if (eventosRes.data) setEventos(eventosRes.data);
+            if (predsRes.data) setMatchPredictions(predsRes.data);
 
-        if (user) {
-            const { data: userPred } = await safeQuery<any>(
-                supabase.from('pronosticos').select('*').eq('match_id', matchId).eq('user_id', user.id).single(),
-                'partido-userPred'
-            );
-            if (userPred) {
-                setUserPrediction(userPred);
-                setVotingPick(userPred.winner_pick);
+            if (user) {
+                const { data: userPred } = await safeQuery<any>(
+                    supabase.from('pronosticos').select('*').eq('match_id', matchId).eq('user_id', user.id).single(),
+                    'partido-userPred'
+                );
+                if (userPred) {
+                    setUserPrediction(userPred);
+                    setVotingPick(userPred.winner_pick);
+                }
             }
+        } catch (err) {
+            console.error('[fetchData] error:', err);
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     };
 
     // Handle voting
@@ -331,7 +336,7 @@ export default function PublicMatchDetail() {
                                                 <>
                                                     <span className="opacity-50">•</span>
                                                     <div className="scale-90 origin-left">
-                                                        <PublicLiveTimer detalle={match.marcador_detalle || {}} />
+                                                        <PublicLiveTimer detalle={match.marcador_detalle || {}} deporte={match.disciplinas?.name} />
                                                     </div>
                                                 </>
                                             )}
@@ -392,7 +397,7 @@ export default function PublicMatchDetail() {
                             {isLive && hasTimer && (
                                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300">
                                     <Clock size={14} />
-                                    <PublicLiveTimer detalle={match.marcador_detalle || {}} />
+                                    <PublicLiveTimer detalle={match.marcador_detalle || {}} deporte={match.disciplinas?.name} />
                                 </div>
                             )}
                         </div>
@@ -547,60 +552,101 @@ export default function PublicMatchDetail() {
                         <h3 className="text-xl font-bold text-white tracking-tight">Minuto a Minuto</h3>
                     </div>
 
-                    <div className="relative space-y-0 pl-8 sm:pl-10 before:absolute before:top-4 before:bottom-4 before:left-[19px] sm:before:left-[23px] before:w-[2px] before:bg-gradient-to-b before:from-red-500/50 before:to-transparent before:z-0">
+                    <div className="relative max-w-2xl mx-auto before:absolute before:top-4 before:bottom-4 before:left-[19px] sm:before:left-1/2 sm:before:-translate-x-1/2 before:w-[2px] before:bg-white/10 before:z-0">
                         {eventos.length === 0 ? (
                             <div className="py-12 text-center text-slate-500 bg-white/5 rounded-3xl border border-white/5 border-dashed">
                                 <p>El partido está por comenzar...</p>
                             </div>
                         ) : (
-                            eventos.map((e, idx) => (
-                                <div key={e.id} className="relative pb-8 group last:pb-0">
-                                    {/* Timeline Dot */}
-                                    <div className={cn(
-                                        "absolute top-0 -left-[27px] sm:-left-[31px] z-10 flex items-center justify-center w-8 h-8 rounded-full border-4 border-[#0a0805] transition-transform duration-300 group-hover:scale-110",
-                                        e.tipo_evento === 'gol' ? "bg-amber-400 text-amber-900" :
-                                            e.tipo_evento.includes('tarjeta') ? "bg-rose-500 text-white" :
-                                                "bg-red-500 text-white"
-                                    )}>
-                                        <span className="text-[10px] font-black">{e.minuto}'</span>
-                                    </div>
+                            eventos.map((e, idx) => {
+                                const isTeamA = e.equipo === 'equipo_a';
+                                const isTeamB = e.equipo === 'equipo_b';
+                                const isSystem = e.equipo === 'sistema';
 
-                                    {/* Event Card */}
-                                    <div className="relative p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all duration-300 hover:translate-x-1">
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xl">
-                                                    {e.tipo_evento === 'gol' && '⚽ GOL'}
-                                                    {e.tipo_evento === 'tarjeta_amarilla' && '🟨 Tarjeta Amarilla'}
-                                                    {e.tipo_evento === 'tarjeta_roja' && '🟥 Tarjeta Roja'}
-                                                    {e.tipo_evento === 'inicio' && '🚀 Inicio del Partido'}
-                                                    {e.tipo_evento === 'fin' && '🏁 Final del Partido'}
-                                                    {e.tipo_evento === 'cambio' && '🔄 Cambio'}
-                                                    {!['gol', 'tarjeta_amarilla', 'tarjeta_roja', 'inicio', 'fin', 'cambio'].includes(e.tipo_evento) && '📌 Evento'}
-                                                </span>
+                                let eventIcon = <div className="w-2 h-2 rounded-full bg-white/50" />;
+                                let eventLabel = 'Evento';
+
+                                if (e.tipo_evento === 'gol') { eventIcon = <span className="text-sm">⚽</span>; eventLabel = 'Gol'; }
+                                else if (e.tipo_evento === 'tarjeta_amarilla') { eventIcon = <div className="w-3 h-4 bg-yellow-400 rounded-[2px] shadow-sm" />; eventLabel = 'Tarjeta Amarilla'; }
+                                else if (e.tipo_evento === 'tarjeta_roja') { eventIcon = <div className="w-3 h-4 bg-red-500 rounded-[2px] shadow-sm" />; eventLabel = 'Tarjeta Roja'; }
+                                else if (e.tipo_evento === 'cambio') { eventIcon = <span className="text-[13px] text-emerald-400">⇄</span>; eventLabel = 'Cambio'; }
+                                else if (e.tipo_evento === 'punto_1') { eventIcon = <span className="text-[10px] font-black text-white">+1</span>; eventLabel = 'Tiro Libre'; }
+                                else if (e.tipo_evento === 'punto_2') { eventIcon = <span className="text-[10px] font-black text-white">+2</span>; eventLabel = 'Anotación'; }
+                                else if (e.tipo_evento === 'punto_3') { eventIcon = <span className="text-[10px] font-black text-white">+3</span>; eventLabel = 'Triple'; }
+                                else if (e.tipo_evento === 'falta') { eventIcon = <span className="text-xs">⛔</span>; eventLabel = 'Falta'; }
+                                else if (e.tipo_evento === 'punto') { eventIcon = <span className="text-sm">🏐</span>; eventLabel = 'Punto'; }
+                                else if (e.tipo_evento === 'set') { eventIcon = <span className="text-xs">🏆</span>; eventLabel = 'Set'; }
+
+                                if (isSystem) {
+                                    return (
+                                        <div key={e.id} className="relative flex justify-center py-5 w-full z-10 group">
+                                            <div className="bg-[#0a0805] px-4 font-black text-[11px] text-white/50 uppercase tracking-widest text-center">
+                                                {e.descripcion || 'Evento de Sistema'}
+                                                {e.periodo && (
+                                                    <span className="ml-2 px-1 rounded bg-white/5 border border-white/5 text-[9px]">
+                                                        {match.disciplinas?.name === 'Fútbol' ? 'T' : (match.disciplinas?.name === 'Baloncesto' || match.disciplinas?.name === 'Futsal' ? 'Q' : 'S')}{e.periodo}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <Badge variant="outline" className="w-fit text-[10px] bg-white/5 border-white/10 text-slate-400">
-                                                {e.equipo === 'sistema' ? 'Juez' : e.equipo === 'equipo_a' ? (match.carrera_a?.nombre || match.equipo_a) : (match.carrera_b?.nombre || match.equipo_b)}
-                                            </Badge>
+                                        </div>
+                                    )
+                                }
+
+                                return (
+                                    <div key={e.id} className="relative flex items-center w-full py-4 min-h-[70px] group">
+                                        {/* LEFT SIDE (Desktop Only, Team A) */}
+                                        <div className={cn(
+                                            "hidden sm:flex w-1/2 pr-10 items-center justify-end gap-3",
+                                            isTeamB && "invisible"
+                                        )}>
+                                            <div className="text-right">
+                                                <p className="text-[13px] font-bold leading-none text-white/90">
+                                                    {e.jugadores?.nombre || (isTeamA ? (match.carrera_a?.nombre || match.equipo_a) : (match.carrera_b?.nombre || match.equipo_b))}
+                                                </p>
+                                                <p className="text-[11px] text-white/40 mt-1">
+                                                    {eventLabel} {e.descripcion ? `• ${e.descripcion}` : ''}
+                                                </p>
+                                            </div>
+                                            <div className="w-[30px] h-[30px] rounded-full bg-[#17130D] border border-white/5 flex items-center justify-center flex-shrink-0 shadow-lg relative">
+                                                {eventIcon}
+                                            </div>
                                         </div>
 
-                                        {e.jugadores && (
-                                            <div className="flex items-center gap-3 mt-1 pl-1">
-                                                <div className="w-1 h-8 bg-white/10 rounded-full" />
-                                                <div>
-                                                    <p className="font-bold text-white text-sm">{e.jugadores.nombre}</p>
-                                                    <p className="text-xs text-slate-500 font-mono">#{e.jugadores.numero}</p>
-                                                </div>
+                                        {/* MIDDLE MINUTE CIRCLE */}
+                                        <div className="absolute left-[20px] -translate-x-1/2 sm:left-1/2 z-10 flex flex-col items-center gap-1 group">
+                                            <div className="w-[34px] h-[34px] rounded-full bg-[#1c1c1c] flex items-center justify-center border-4 border-[#0a0805] group-hover:bg-[#2a2a2a] transition-colors shadow-lg">
+                                                <span className="text-[11px] font-black text-white/80">{e.minuto}'</span>
                                             </div>
-                                        )}
-                                        {e.descripcion && (
-                                            <p className="text-sm text-slate-400 mt-2 italic border-t border-white/5 pt-2">
-                                                "{e.descripcion}"
-                                            </p>
-                                        )}
+                                            {e.periodo && (
+                                                <div className="text-[8px] font-bold text-[#FFC000] bg-black/80 px-1 border border-[#FFC000]/20 rounded ring-1 ring-black/50">
+                                                    {match.disciplinas?.name === 'Fútbol' ? 'T' : (match.disciplinas?.name === 'Baloncesto' || match.disciplinas?.name === 'Futsal' ? 'Q' : 'S')}{e.periodo}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* RIGHT SIDE (Mobile All, Desktop Team B) */}
+                                        <div className={cn(
+                                            "flex w-full sm:w-1/2 pl-[50px] sm:pl-10 items-center justify-start gap-3",
+                                            "sm:visible",
+                                            isTeamA && "sm:invisible"
+                                        )}>
+                                            <div className="w-[30px] h-[30px] rounded-full bg-[#17130D] border border-white/5 flex items-center justify-center flex-shrink-0 shadow-lg relative">
+                                                {eventIcon}
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-[13px] font-bold leading-none text-white/90 flex items-center gap-2">
+                                                    {e.jugadores?.nombre || (isTeamA ? (match.carrera_a?.nombre || match.equipo_a) : (match.carrera_b?.nombre || match.equipo_b))}
+                                                    {/* Color dot for team indication on mobile when it's Team A rendered on right side */}
+                                                    {isTeamA && <span className="sm:hidden w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                                                </p>
+                                                <p className="text-[11px] text-white/40 mt-1">
+                                                    {eventLabel} {e.descripcion ? `• ${e.descripcion}` : ''}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </div>

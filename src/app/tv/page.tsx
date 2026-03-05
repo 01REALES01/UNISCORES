@@ -87,7 +87,7 @@ const TvLiveMatch = ({ match }: { match: any }) => {
                                             <>
                                                 <span className="opacity-50">•</span>
                                                 <div className="scale-150 origin-left">
-                                                    <PublicLiveTimer detalle={match.marcador_detalle} />
+                                                    <PublicLiveTimer detalle={match.marcador_detalle} deporte={match.disciplinas?.name} />
                                                 </div>
                                             </>
                                         )}

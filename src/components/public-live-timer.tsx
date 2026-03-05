@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getPeriodDuration, isCountdownSport } from "@/lib/sport-scoring";
 
 type TimerProps = {
     detalle: {
@@ -9,17 +10,19 @@ type TimerProps = {
         estado_cronometro?: 'corriendo' | 'pausado' | 'detenido';
         ultimo_update?: string; // Timestamp ISO de la última actualización
     };
+    deporte?: string;
 };
 
-export function PublicLiveTimer({ detalle }: TimerProps) {
+export function PublicLiveTimer({ detalle, deporte = "" }: TimerProps) {
     const [displayTime, setDisplayTime] = useState("");
 
     useEffect(() => {
-        // Si no hay datos, mostrar 0'
-        const minutoBase = detalle?.minuto_actual || 0;
+        // Si no hay datos, mostrar 0' o duración inicial
+        const isCountdown = isCountdownSport(deporte);
+        const minutoBase = detalle?.minuto_actual ?? (isCountdown ? getPeriodDuration(deporte) : 0);
 
         if (detalle?.estado_cronometro !== 'corriendo') {
-            setDisplayTime(`${minutoBase}'`);
+            setDisplayTime(`${minutoBase}:00`);
             return;
         }
 
@@ -31,19 +34,20 @@ export function PublicLiveTimer({ detalle }: TimerProps) {
             // Diferencia en segundos desde que el admin guardó el minuto
             const diffSeconds = Math.floor((now - lastUpdate) / 1000);
 
-            // Minuto actual + minutos extra si han pasado (aunque el admin debería actualizar)
-            // Nota: Asumimos que el admin guarda el estado "limpio" del minuto (ej. minuto 15:00)
-            // Pero como el update es lento (cada 60s), usamos updated_at para sumar el offset.
+            let totalSeconds = 0;
+            if (isCountdown) {
+                // Cuenta regresiva
+                const baseSeconds = minutoBase * 60;
+                totalSeconds = Math.max(0, baseSeconds - diffSeconds);
+            } else {
+                // Cuenta progresiva
+                totalSeconds = (minutoBase * 60) + diffSeconds;
+            }
 
-            // Ajuste: si el admin da update cada minuto, diffSeconds irá de 0 a 60.
+            const mm = Math.floor(totalSeconds / 60);
+            const ss = (totalSeconds % 60).toString().padStart(2, '0');
 
-            const secondsDisplay = diffSeconds % 60;
-            const minutesExtra = Math.floor(diffSeconds / 60);
-            const totalMinutes = minutoBase + minutesExtra;
-
-            // Formatear MM:SS
-            const ss = secondsDisplay.toString().padStart(2, '0');
-            setDisplayTime(`${totalMinutes}:${ss}`);
+            setDisplayTime(`${mm}:${ss}`);
         };
 
         // Iniciar loop local

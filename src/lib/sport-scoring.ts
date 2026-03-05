@@ -5,6 +5,32 @@
 
 export type ScoreDetail = Record<string, any>;
 
+/**
+ * Obtener la duración en minutos de un período/tiempo/cuarto
+ */
+export function getPeriodDuration(deporte: string): number {
+    if (deporte === 'Baloncesto') return 12; // 12 min por cuarto
+    if (deporte === 'Fútbol') return 45; // 45 min por tiempo
+    return 0; // Sin límite fijo (vóley, tenis, etc.)
+}
+
+/**
+ * Indica si el deporte usa cronómetro en cuenta regresiva
+ */
+export function isCountdownSport(deporte: string): boolean {
+    return deporte === 'Baloncesto';
+}
+
+/**
+ * Obtiene el número de periodo actual (1, 2, 3...) según el deporte
+ */
+export function getCurrentPeriodNumber(deporte: string, detalle: ScoreDetail): number {
+    if (deporte === 'Fútbol') return detalle.tiempo_actual || 1;
+    if (deporte === 'Baloncesto' || deporte === 'Futsal') return detalle.cuarto_actual || 1;
+    if (['Voleibol', 'Tenis', 'Tenis de Mesa'].includes(deporte)) return detalle.set_actual || 1;
+    return 1;
+}
+
 export type ScoreResult = {
     scoreA: number;
     scoreB: number;
