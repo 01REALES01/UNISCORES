@@ -15,26 +15,36 @@ const MATCH_COLUMNS = `
 
 // ─── SWR Fetcher ─────────────────────────────────────────────────────────────
 const fetchMatches = async (): Promise<any[]> => {
-    const { data, error } = await supabase
-        .from('partidos')
-        .select(MATCH_COLUMNS)
-        .order('fecha', { ascending: true });
+    console.log('[DEBUG] 🔵 fetchMatches: Iniciando solicitud a Supabase');
+    const start = performance.now();
+    try {
+        const { data, error } = await supabase
+            .from('partidos')
+            .select(MATCH_COLUMNS)
+            .order('fecha', { ascending: true });
 
-    if (error) {
-        // Fallback for missing columns (e.g. before SQL migration is run)
-        if (error.code === 'PGRST204' || error.message?.includes('column')) {
-            const FALLBACK_COLUMNS = MATCH_COLUMNS.replace('fase, grupo, bracket_order,', '');
-            const fallback = await supabase
-                .from('partidos')
-                .select(FALLBACK_COLUMNS)
-                .order('fecha', { ascending: true });
+        console.log(`[DEBUG] 🟢 fetchMatches: Respuesta recibida en ${Math.round(performance.now() - start)}ms`);
 
-            if (fallback.error) throw fallback.error;
-            return fallback.data || [];
+        if (error) {
+            console.error('[DEBUG] 🔴 fetchMatches: Error en consulta principal:', error);
+            // Fallback for missing columns (e.g. before SQL migration is run)
+            if (error.code === 'PGRST204' || error.message?.includes('column')) {
+                const FALLBACK_COLUMNS = MATCH_COLUMNS.replace('fase, grupo, bracket_order,', '');
+                const fallback = await supabase
+                    .from('partidos')
+                    .select(FALLBACK_COLUMNS)
+                    .order('fecha', { ascending: true });
+
+                if (fallback.error) throw fallback.error;
+                return fallback.data || [];
+            }
+            throw error;
         }
-        throw error;
+        return data || [];
+    } catch (err) {
+        console.error('[DEBUG] 🔴 fetchMatches: Catch de error inesperado:', err);
+        throw err;
     }
-    return data || [];
 };
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
