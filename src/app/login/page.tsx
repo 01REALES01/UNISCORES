@@ -140,6 +140,21 @@ export default function LoginPage() {
         setLoading(false);
     };
 
+    const handleMicrosoftLogin = async () => {
+        setLoading(true);
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: "azure",
+            options: {
+                scopes: "email profile",
+                redirectTo: `${window.location.origin}/auth/callback`,
+            },
+        });
+        if (error) {
+            setError("Error de conexión con Microsoft: " + error.message);
+        }
+        setLoading(false);
+    };
+
     // Show loading if checking existing auth
     if (authLoading) {
         return (
@@ -337,6 +352,23 @@ export default function LoginPage() {
                             </svg>
                         }
                     />
+
+                    {/* Microsoft Login Button */}
+                    <div className="mt-3">
+                        <SocialButton
+                            name="Microsoft"
+                            onClick={handleMicrosoftLogin}
+                            disabled={loading}
+                            icon={
+                                <svg className="w-5 h-5" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="#f25022" d="M0 0h10v10H0z" />
+                                    <path fill="#7fba00" d="M11 0h10v10H11z" />
+                                    <path fill="#00a4ef" d="M0 11h10v10H0z" />
+                                    <path fill="#ffb900" d="M11 11h10v10H11z" />
+                                </svg>
+                            }
+                        />
+                    </div>
 
                     {/* Back to Home */}
                     <div className="mt-8 pt-6 border-t border-white/10 text-center">
