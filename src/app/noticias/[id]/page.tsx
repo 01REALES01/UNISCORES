@@ -10,6 +10,7 @@ import { ArrowLeft, Clock, GraduationCap, MapPin, Share2, ChevronRight } from "l
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
+import { NewsReactions } from "@/components/news-reactions";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
     cronica: { label: 'Crónica', color: 'text-blue-400', bg: 'bg-blue-500/15 border-blue-500/20' },
@@ -258,6 +259,9 @@ export default function NoticiaDetailPage() {
                         );
                     })}
                 </article>
+
+                {/* Reactions */}
+                <NewsReactions noticiaId={id} />
 
                 {/* Related News */}
                 {related.length > 0 && (

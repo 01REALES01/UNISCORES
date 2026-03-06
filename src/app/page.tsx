@@ -499,10 +499,10 @@ function UpcomingMatchCard({ partido }: { partido: Partido }) {
   const genero = partido.genero || 'masculino';
 
   const generoBg = genero === 'femenino'
-    ? 'bg-pink-500/15 border border-pink-400/20 backdrop-blur-md text-pink-400 shadow-[0_0_15px_currentColor]'
+    ? 'bg-pink-500/50 border border-pink-400/50 backdrop-blur-md text-pink-200 shadow-[0_0_20px_rgba(236,72,153,0.4)]'
     : genero === 'mixto'
       ? 'bg-purple-500/15 border border-purple-400/20 backdrop-blur-md text-purple-400 shadow-[0_0_15px_currentColor]'
-      : 'bg-blue-500/15 border border-blue-400/20 backdrop-blur-md text-blue-400 shadow-[0_0_15px_currentColor]';
+      : 'bg-blue-500/50 border border-blue-400/50 backdrop-blur-md text-blue-200 shadow-[0_0_20px_rgba(59,130,246,0.4)]';
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block">
@@ -556,10 +556,10 @@ function ResultCard({ partido }: { partido: Partido }) {
   const genero = partido.genero || 'masculino';
 
   const generoBg = genero === 'femenino'
-    ? 'bg-pink-500/15 border border-pink-400/20 backdrop-blur-md text-pink-400 shadow-[0_0_15px_currentColor]'
+    ? 'bg-pink-500/50 border border-pink-400/50 backdrop-blur-md text-pink-200 shadow-[0_0_20px_rgba(236,72,153,0.4)]'
     : genero === 'mixto'
       ? 'bg-purple-500/15 border border-purple-400/20 backdrop-blur-md text-purple-400 shadow-[0_0_15px_currentColor]'
-      : 'bg-blue-500/15 border border-blue-400/20 backdrop-blur-md text-blue-400 shadow-[0_0_15px_currentColor]';
+      : 'bg-blue-500/50 border border-blue-400/50 backdrop-blur-md text-blue-200 shadow-[0_0_20px_rgba(59,130,246,0.4)]';
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block">
