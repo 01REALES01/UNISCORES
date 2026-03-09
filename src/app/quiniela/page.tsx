@@ -6,7 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { toast } from "sonner";
 import { Button, Badge } from "@/components/ui-primitives";
-import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Loader2, Gauge, HandMetal, Users, X, Flame, Target, Zap, ChevronDown, Filter, History, Handshake } from "lucide-react";
+import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Gauge, HandMetal, Users, X, Flame, Target, Zap, ChevronDown, Filter, History, Handshake, Loader2 } from "lucide-react";
+import UniqueLoading from "@/components/ui/morph-loading";
 import Link from "next/link";
 import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_BORDER } from "@/lib/constants";
 import { SportIcon } from "@/components/sport-icons";
@@ -14,6 +15,7 @@ import { SportIcon } from "@/components/sport-icons";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { MainNavbar } from "@/components/main-navbar";
 
 // ─── Helper: Determine actual match result ───
 const getMatchResult = (match: any): 'A' | 'B' | 'DRAW' | null => {
@@ -376,7 +378,7 @@ const PredictionCard = ({
 
 // ─── Main Page ───
 export default function QuinielaPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, profile, isStaff, loading: authLoading } = useAuth();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'play' | 'history' | 'ranking'>('play');
     const [matches, setMatches] = useState<any[]>([]);
@@ -503,27 +505,15 @@ export default function QuinielaPage() {
     }).length;
     const accuracy = finishedWithPrediction > 0 ? Math.round((correctPredictions / finishedWithPrediction) * 100) : 0;
 
-    if (authLoading || !user) return <div className="min-h-screen bg-[#0a0805] flex items-center justify-center"><Loader2 className="animate-spin text-red-500" size={32} /></div>;
+    if (authLoading || !user) return (
+        <div className="min-h-screen bg-[#0a0805] flex flex-col items-center justify-center">
+            <UniqueLoading size="lg" className="scale-125" />
+        </div>
+    );
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white font-sans pb-20">
-            {/* Header */}
-            <div className="sticky top-0 z-50 bg-[#0a0805]/80 backdrop-blur-xl border-b border-white/5">
-                <div className="flex items-center justify-between p-4 max-w-xl mx-auto">
-                    <Link href="/">
-                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/5">
-                            <ArrowLeft size={20} />
-                        </Button>
-                    </Link>
-                    <div className="text-center">
-                        <h1 className="text-xl font-black tracking-tighter bg-gradient-to-r from-white to-red-400 bg-clip-text text-transparent">
-                            PREDICCIONES
-                        </h1>
-                        <p className="text-[9px] text-white/40 font-bold tracking-[0.2em] uppercase">Olimpiadas 2026</p>
-                    </div>
-                    <div className="w-10" />
-                </div>
-            </div>
+        <div className="min-h-screen bg-black text-white font-sans pb-20">
+            <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <div className="max-w-xl mx-auto p-4 space-y-6">
 

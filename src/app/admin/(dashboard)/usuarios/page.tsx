@@ -6,7 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { useAuth, type Profile, type UserRole } from "@/hooks/useAuth";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { Card, Badge, Avatar, Button } from "@/components/ui-primitives";
-import { Shield, Users, Search, ChevronDown, Check, Loader2, Crown, UserCheck, User, AlertCircle } from "lucide-react";
+import { Shield, Users, Search, ChevronDown, Check, Crown, UserCheck, User, AlertCircle, Loader2 } from "lucide-react";
+import UniqueLoading from "@/components/ui/morph-loading";
 import { useRouter } from "next/navigation";
 
 const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; icon: typeof Crown; description: string }> = {
@@ -154,9 +155,8 @@ export default function UsuariosPage() {
 
             {/* Users List */}
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <Loader2 className="animate-spin text-primary" size={40} />
-                    <p className="text-sm text-muted-foreground animate-pulse">Cargando usuarios...</p>
+                <div className="flex flex-col items-center justify-center py-32">
+                    <UniqueLoading size="lg" />
                 </div>
             ) : filteredProfiles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">

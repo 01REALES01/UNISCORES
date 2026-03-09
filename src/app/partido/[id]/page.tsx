@@ -12,7 +12,8 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getCurrentScore } from "@/lib/sport-scoring";
-import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_ACCENT, SPORT_COLORS } from "@/lib/constants";
+import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_ACCENT, SPORT_COLORS, SPORT_BORDER, SPORT_GLOW, SPORT_GRADIENT } from "@/lib/constants";
+import { SportIcon } from "@/components/sport-icons";
 
 type Partido = {
     id: number;
@@ -38,7 +39,7 @@ type Evento = {
     jugadores: { nombre: string; numero: number } | null;
 };
 
-import { OrbitalLoader } from "@/components/ui/orbital-loader";
+import UniqueLoading from "@/components/ui/morph-loading";
 
 export default function PublicMatchDetail() {
     const params = useParams();
@@ -166,7 +167,7 @@ export default function PublicMatchDetail() {
 
     if (loading) return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805] text-white">
-            <OrbitalLoader message="Cargando estadio..." messagePlacement="bottom" className="text-red-500 scale-150 mb-6" />
+            <UniqueLoading size="lg" />
         </div>
     );
 
@@ -218,34 +219,44 @@ export default function PublicMatchDetail() {
             <div className="relative z-10 w-full max-w-2xl mx-auto px-4 pb-20 pt-24 sm:pt-32">
 
                 {/* Match Card */}
-                <div className="relative overflow-hidden rounded-[2.5rem] bg-[#17130D]/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 mb-8">
+                <div className={cn(
+                    "relative overflow-hidden rounded-[2.5rem] bg-[#17130D]/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 mb-8 transition-all duration-700",
+                    SPORT_BORDER[sportName] || 'border-white/10',
+                    SPORT_GLOW[sportName] || ''
+                )}>
                     {/* Header Strip */}
-                    <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-red-500/10 to-transparent pointer-events-none" />
+                    <div className={cn(
+                        "absolute top-0 left-0 right-0 h-32 opacity-20 pointer-events-none",
+                        `bg-gradient-to-b ${SPORT_GRADIENT[sportName] || 'from-white/10'} to-transparent`
+                    )} />
 
                     <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-center">
                         {/* Status Badges */}
-                        <div className="flex flex-wrap justify-center items-center gap-3 mb-6 sm:mb-8 relative z-20">
-                            {isLive ? (
-                                <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-rose-500 text-white text-[10px] sm:text-xs font-black tracking-widest uppercase shadow-[0_0_15px_rgba(244,63,94,0.3)]">
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-                                    </span>
-                                    LIVE
-                                </div>
-                            ) : isFinished ? (
-                                <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-[10px] sm:text-xs font-bold tracking-widest uppercase">
-                                    Finalizado
-                                </div>
-                            ) : (
-                                <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-slate-800 border border-slate-700 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase">
-                                    <Calendar size={12} className="text-red-400" />
+                        <div className="flex flex-wrap justify-center items-center gap-2 mb-8 relative z-20 px-4">
+                            {!isFinished && !isLive && (
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#17130D]/80 border border-white/10 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase shadow-lg">
+                                    <Calendar size={14} className={cn(SPORT_ACCENT[sportName] || 'text-amber-400')} />
                                     {new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
                                 </div>
                             )}
 
-                            <div className="inline-flex px-3 py-1.5 rounded-full bg-black/40 border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/70">
-                                {sportName} • {generoMatch}
+                            {isFinished && (
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700 text-slate-400 text-[10px] sm:text-xs font-black tracking-widest uppercase">
+                                    <Trophy size={14} /> Finalizado
+                                </div>
+                            )}
+
+                            <div className={cn(
+                                "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#17130D]/80 border border-white/10 text-[10px] font-black uppercase tracking-widest shadow-lg transition-all",
+                                SPORT_ACCENT[sportName] || 'text-white/70'
+                            )}>
+                                <SportIcon sport={sportName} size={14} />
+                                <span>{sportName}</span>
+                                <span className="opacity-30 mx-1">•</span>
+                                <span className={cn(
+                                    generoMatch === 'femenino' ? 'text-pink-400' :
+                                        generoMatch === 'mixto' ? 'text-purple-400' : 'text-blue-400'
+                                )}>{generoMatch}</span>
                             </div>
                         </div>
 
@@ -307,8 +318,11 @@ export default function PublicMatchDetail() {
                                 {/* Team A */}
                                 <div className="flex flex-col items-center gap-4 group">
                                     <div className="relative">
-                                        <div className="absolute inset-0 bg-red-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <Avatar name={match.carrera_a?.nombre || match.equipo_a} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
+                                        <div className={cn(
+                                            "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
+                                            `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
+                                        )} />
+                                        <Avatar name={match.carrera_a?.nombre || match.equipo_a} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
                                         {match.carrera_a?.nombre || match.equipo_a}
@@ -332,23 +346,31 @@ export default function PublicMatchDetail() {
                                             isLive ? (SPORT_LIVE_TEXT[match.disciplinas?.name] || SPORT_LIVE_TEXT.default) : "text-white/40"
                                         )}>
                                             {/* Quarter or 'Finalizado' */}
-                                            {extra ? <span>{extra}</span> : <span>{isLive ? 'EN CURSO' : 'FINAL'}</span>}
+                                            {extra ? (
+                                                <div className="flex items-center gap-2">
+                                                    <span className={cn(
+                                                        "brightness-125 drop-shadow-[0_0_8px_currentColor]",
+                                                        isLive ? (SPORT_ACCENT[match.disciplinas?.name] || 'text-white') : 'text-white/40'
+                                                    )}>
+                                                        {extra}
+                                                    </span>
+                                                    {subScoreA !== undefined && (
+                                                        <span className="text-white/30 font-mono text-[9px] tracking-normal brightness-75">
+                                                            ({subScoreA} - {subScoreB})
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span>{isLive ? 'EN CURSO' : 'FINAL'}</span>
+                                            )}
 
-                                            {/* Timer or Subscores */}
+                                            {/* Timer */}
                                             {isLive && hasTimer && (
                                                 <>
                                                     <span className="opacity-50">•</span>
                                                     <div className="scale-90 origin-left">
                                                         <PublicLiveTimer detalle={match.marcador_detalle || {}} deporte={match.disciplinas?.name} />
                                                     </div>
-                                                </>
-                                            )}
-
-                                            {/* Subscores for Tennis / Volleyball */}
-                                            {subScoreA !== undefined && subScoreB !== undefined && (
-                                                <>
-                                                    <span className="opacity-50">•</span>
-                                                    <span>{subLabel || 'PTS'}: {subScoreA} - {subScoreB}</span>
                                                 </>
                                             )}
                                         </div>
@@ -370,39 +392,25 @@ export default function PublicMatchDetail() {
                                 {/* Team B */}
                                 <div className="flex flex-col items-center gap-4 group">
                                     <div className="relative">
-                                        <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#17130D]" />
+                                        <div className={cn(
+                                            "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
+                                            `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
+                                        )} />
+                                        <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
                                         {match.carrera_b?.nombre || match.equipo_b}
                                     </h2>
                                 </div>
                             </div>
-                        )}
-
-                        {/* Metadata Footer */}
-                        <div className="mt-8 sm:mt-10 flex flex-wrap justify-center items-center gap-3 sm:gap-6 text-xs sm:text-sm font-medium text-slate-400">
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
-                                <span className="text-lg">{sportEmoji}</span>
-                                <span className="uppercase tracking-wide">{sportName}</span>
-                            </div>
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${generoMatch === 'femenino' ? 'bg-pink-500/10 border-pink-500/20 text-pink-300' :
-                                generoMatch === 'mixto' ? 'bg-orange-500/10 border-orange-500/20 text-orange-300' :
-                                    'bg-red-500/10 border-red-500/20 text-red-300'
-                                }`}>
-                                <span>{generoMatch === 'femenino' ? '♀' : generoMatch === 'mixto' ? '⚤' : '♂'}</span>
-                                <span className="uppercase tracking-wide">{generoMatch === 'femenino' ? 'Femenino' : generoMatch === 'mixto' ? 'Mixto' : 'Masculino'}</span>
-                            </div>
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
-                                <MapPin size={14} className="text-red-400" />
-                                <span>{match.lugar || 'Coliseo Central'}</span>
-                            </div>
-                            {isLive && hasTimer && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300">
-                                    <Clock size={14} />
-                                    <PublicLiveTimer detalle={match.marcador_detalle || {}} deporte={match.disciplinas?.name} />
+                        )}                      {/* Metadata Footer: Clean Location Label */}
+                        <div className="mt-6 sm:mt-8 flex justify-center px-4">
+                            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/5 border border-white/5 shadow-inner backdrop-blur-md group hover:bg-white/10 transition-all">
+                                <div className={cn("p-1.5 rounded-lg bg-black/20", SPORT_ACCENT[sportName])}>
+                                    <MapPin size={16} className="drop-shadow-[0_0_5px_currentColor]" />
                                 </div>
-                            )}
+                                <span className="text-xs sm:text-sm font-bold text-white/80 tracking-wide">{match.lugar || 'Coliseo Central'}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -410,8 +418,8 @@ export default function PublicMatchDetail() {
                 {/* Community Predictions + Voting Section */}
                 <div className="rounded-3xl bg-[#17130D]/60 backdrop-blur-xl border border-white/10 p-6 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
                     <div className="flex items-center gap-3 mb-5">
-                        <div className="p-2 rounded-xl bg-red-500/10 text-red-400">
-                            <BarChart3 size={20} />
+                        <div className={cn("p-2 rounded-xl bg-white/5 border border-white/10", SPORT_ACCENT[sportName])}>
+                            <BarChart3 size={20} className="drop-shadow-[0_0_8px_currentColor]" />
                         </div>
                         <div className="flex-1">
                             <h3 className="text-lg font-bold text-white tracking-tight">Predicciones</h3>
@@ -420,7 +428,7 @@ export default function PublicMatchDetail() {
                             </p>
                         </div>
                         {userPrediction && (
-                            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px]">
+                            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] font-black uppercase tracking-widest shadow-lg">
                                 <CheckCircle size={10} className="mr-1" /> Votaste
                             </Badge>
                         )}
@@ -565,12 +573,12 @@ export default function PublicMatchDetail() {
                 {/* Timeline Section */}
                 <div className="rounded-[2.5rem] bg-[#0a0805]/80 backdrop-blur-2xl border border-white/5 p-6 sm:p-10 animate-in fade-in duration-700 delay-200 shadow-2xl shadow-black/40">
                     <div className="flex items-center gap-3 mb-8 px-2">
-                        <div className="p-2.5 rounded-2xl bg-white/5 text-white/70 border border-white/10">
-                            <AlignLeft size={22} />
+                        <div className={cn("p-2.5 rounded-2xl bg-white/5 border border-white/10", SPORT_ACCENT[sportName])}>
+                            <AlignLeft size={22} className="drop-shadow-[0_0_8px_currentColor]" />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black text-white tracking-tight uppercase">Minuto a Minuto</h3>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5">Registro oficial del evento</p>
+                            <h3 className="text-2xl font-black text-white tracking-tight uppercase px-1">Minuto a Minuto</h3>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5 px-1">Registro oficial del evento</p>
                         </div>
                     </div>
 

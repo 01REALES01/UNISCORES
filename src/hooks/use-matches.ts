@@ -17,12 +17,19 @@ const MATCH_COLUMNS = `
 const fetchMatches = async (): Promise<any[]> => {
     console.log('[DEBUG] 🔵 fetchMatches: Iniciando solicitud a Supabase');
     const start = performance.now();
+
+    // 10 second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     try {
         const { data, error } = await supabase
             .from('partidos')
             .select(MATCH_COLUMNS)
-            .order('fecha', { ascending: true });
+            .order('fecha', { ascending: true })
+            .abortSignal(controller.signal);
 
+        clearTimeout(timeoutId);
         console.log(`[DEBUG] 🟢 fetchMatches: Respuesta recibida en ${Math.round(performance.now() - start)}ms`);
 
         if (error) {
@@ -33,7 +40,8 @@ const fetchMatches = async (): Promise<any[]> => {
                 const fallback = await supabase
                     .from('partidos')
                     .select(FALLBACK_COLUMNS)
-                    .order('fecha', { ascending: true });
+                    .order('fecha', { ascending: true })
+                    .abortSignal(controller.signal);
 
                 if (fallback.error) throw fallback.error;
                 return fallback.data || [];
@@ -41,7 +49,12 @@ const fetchMatches = async (): Promise<any[]> => {
             throw error;
         }
         return data || [];
-    } catch (err) {
+    } catch (err: any) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+            console.error('[DEBUG] 🔴 fetchMatches: La solicitud excedió el tiempo límite de 10s');
+            throw new Error('TIMEOUT');
+        }
         console.error('[DEBUG] 🔴 fetchMatches: Catch de error inesperado:', err);
         throw err;
     }

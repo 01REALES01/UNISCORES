@@ -6,7 +6,7 @@ import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { MatchCardSkeleton, NewsListSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/hooks/useAuth";
-import { Trophy, MapPin, ChevronRight, Calendar, Zap, Flame, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield, Newspaper } from "lucide-react";
+import { Trophy, MapPin, ChevronRight, Calendar, Zap, LayoutGrid, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield, Newspaper, AlertCircle, RefreshCw } from "lucide-react";
 
 const HeroSlider = dynamic(() => import('@/components/hero-slider').then(mod => mod.HeroSlider), {
   ssr: false,
@@ -17,7 +17,11 @@ const SuggestiveSearch = dynamic(() => import('@/components/ui/suggestive-search
   ssr: false,
   loading: () => <div className="h-12 w-full rounded-2xl bg-white/5 animate-pulse" />
 });
-import { NewsListCard, Noticia } from "@/components/news-card";
+const NewsListCard = dynamic(() => import('@/components/news-card').then(mod => mod.NewsListCard), {
+  ssr: false,
+  loading: () => <NewsListSkeleton />
+});
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -28,6 +32,7 @@ import { MainNavbar } from "@/components/main-navbar";
 import { toast } from "sonner";
 import { SplashScreen } from "@/components/splash-screen";
 import { useMatches } from "@/hooks/use-matches";
+import { WelcomeHero } from "@/components/welcome-hero";
 import { useNews } from "@/hooks/use-news";
 
 type Partido = {
@@ -117,7 +122,7 @@ export default function Home() {
   const recentFinished = [...finishedMatches].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
   return (
-    <div className="min-h-screen bg-[#0a0805] text-white font-sans selection:bg-red-500/30">
+    <div className="min-h-screen bg-black text-white font-sans selection:bg-red-500/30">
       {/* Splash Screen - Solo se muestra 1 vez */}
       <SplashScreen />
       {/* Background Ambient Effects (Removed to keep deep black tone) */}
@@ -131,6 +136,9 @@ export default function Home() {
 
         {/* Hero / Filter Section */}
         <div className="flex flex-col gap-6">
+          {/* Hero Section */}
+          <WelcomeHero />
+
           <div className="relative">
             <SuggestiveSearch
               value={searchQuery}
@@ -140,20 +148,25 @@ export default function Home() {
             />
           </div>
 
+          <div className="flex items-center justify-between mb-2 px-2">
+            <h2 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Filtrar por Deporte</h2>
+            <div className="h-px flex-1 bg-white/5 mx-4" />
+          </div>
+
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 md:justify-center px-2">
             <button
               onClick={() => setActiveFilter('todos')}
               className={cn(
                 "group relative min-w-[90px] h-20 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all duration-300 overflow-hidden shrink-0",
                 activeFilter === 'todos'
-                  ? "bg-red-600 text-white border-red-600 shadow-md scale-105"
-                  : "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                  ? "bg-red-600 text-white border-red-600 shadow-lg scale-105"
+                  : "bg-[#17130D] border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
               )}
             >
-              <Flame size={20} className={cn("transition-all drop-shadow-md", activeFilter === 'todos' ? 'text-rose-600 fill-rose-600' : 'group-hover:text-rose-400 group-hover:fill-rose-400/20')} />
-              <span className="text-xs font-bold uppercase tracking-wider z-10">Todos</span>
+              <LayoutGrid size={20} className={cn("transition-all drop-shadow-md", activeFilter === 'todos' ? 'text-white' : 'text-slate-500 group-hover:text-white')} />
+              <span className="text-xs font-black uppercase tracking-widest z-10">Todos</span>
               {activeFilter === 'todos' && (
-                <Flame size={60} className="absolute -bottom-4 -right-4 text-slate-200/20" />
+                <LayoutGrid size={60} className="absolute -bottom-4 -right-4 text-white/10" />
               )}
             </button>
             {allSports.map(sport => {
@@ -167,8 +180,8 @@ export default function Home() {
                   className={cn(
                     "group relative min-w-[90px] h-20 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all duration-300 overflow-hidden shrink-0",
                     isActive
-                      ? `bg-[#17130D] ${SPORT_BORDER[sport]} text-white scale-105 ${SPORT_GLOW[sport].replace('hover:', '')} shadow-lg`
-                      : "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                      ? `bg-[#1f1911] ${SPORT_BORDER[sport]} text-white scale-105 ${SPORT_GLOW[sport].replace('hover:', '')} shadow-xl`
+                      : "bg-[#17130D] border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
                   )}
                 >
                   {/* Watermark in filter */}
@@ -189,7 +202,9 @@ export default function Home() {
                       isActive ? `${SPORT_ACCENT[sport]} drop-shadow-[0_0_8px_currentColor]` : 'text-slate-500 group-hover:text-slate-300'
                     )}
                   />
-                  <span className="text-[11px] font-bold uppercase tracking-wider z-10">{sport.split(' ')[0]}</span>
+                  <span className="text-[10px] font-black uppercase tracking-tighter sm:tracking-widest z-10 leading-none text-center px-1">
+                    {sport === 'Tenis de Mesa' ? 'T. Mesa' : sport}
+                  </span>
 
                   {hasLive && (
                     <span className="absolute top-2 right-2 flex h-2 w-2">
@@ -203,41 +218,57 @@ export default function Home() {
           </div>
         </div>
 
-        {/* HERO SLIDER */}
-        {!loading && <HeroSlider matches={partidos} activeFilter={activeFilter} />}
-
-        {/* QUINIELA CTA BANNER */}
-        <div className="relative rounded-3xl overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group cursor-pointer mb-8 bg-[#0a0805]">
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
-
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 gap-6">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-black shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-                <TrendingUp size={32} strokeWidth={2.5} />
+        {/* Resto del contenido */}
+        <div className="grid gap-8">
+          {/* Live Slider if no specific filter */}
+          {activeFilter === 'todos' && partidos.some(p => p.estado === 'en_vivo') && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 px-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                </span>
+                <h2 className="text-sm font-black text-white uppercase tracking-widest">En Vivo ahora</h2>
               </div>
-              <div>
-                <h3 className="text-2xl font-black text-white mb-1 tracking-tight">HAGAN SUS PREDICCIONES</h3>
-                <p className="text-amber-200/60 text-sm font-medium">Predice resultados y gana premios exclusivos.</p>
-              </div>
+              <HeroSlider matches={partidos} activeFilter="todos" />
             </div>
+          )}
 
-            <Link href="/quiniela" className="w-full md:w-auto">
-              <Button className="w-full md:w-auto bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-black font-black uppercase tracking-widest px-8 py-6 rounded-xl shadow-[0_0_30px_rgba(245,158,11,0.3)] transform group-hover:scale-105 transition-all">
-                Jugar Ahora <ArrowRight size={18} className="ml-2" />
-              </Button>
-            </Link>
+          {/* QUINIELA CTA BANNER */}
+          <div className="relative rounded-[2rem] overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group cursor-pointer mb-8 bg-black">
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 to-transparent" />
+
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 gap-6">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-black shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+                  <TrendingUp size={32} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-white mb-1 tracking-tight">HAGAN SUS PREDICCIONES</h3>
+                  <p className="text-amber-200/60 text-sm font-medium">Lidera el tablero y gana premios exclusivos.</p>
+                </div>
+              </div>
+
+              <Link href="/quiniela" className="w-full md:w-auto">
+                <Button className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-black font-black uppercase tracking-[0.2em] px-8 py-6 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.3)] transform group-hover:scale-105 transition-all outline-none border-none">
+                  Jugar Ahora <ArrowRight size={18} className="ml-2" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
+
 
         {/* ÚLTIMAS NOTICIAS */}
         <section className="animate-in slide-in-from-bottom-8 fade-in duration-1000">
           <div className="flex items-center justify-between mb-5 px-1">
-            <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-              <Newspaper className="text-amber-400" size={24} />
-              ÚLTIMAS NOTICIAS
+            <h2 className="text-xl font-black text-white tracking-widest flex items-center gap-2 uppercase">
+              <Newspaper className="text-red-500" size={24} />
+              Últimas Noticias
             </h2>
             <Link href="/noticias">
-              <Button variant="ghost" size="sm" className="text-white/40 hover:text-white uppercase tracking-widest text-[10px] font-bold">
+              <Button variant="ghost" size="sm" className="text-white/70 hover:text-red-500 hover:bg-red-500/10 uppercase tracking-[0.2em] text-[10px] font-black transition-all">
                 Ver Todas <ChevronRight size={14} className="ml-1" />
               </Button>
             </Link>
@@ -268,15 +299,15 @@ export default function Home() {
           <section className="animate-in slide-in-from-bottom-6 fade-in duration-700">
             <div className="flex items-center gap-3 mb-5 px-1">
               <div className="relative">
-                <div className="absolute inset-0 bg-rose-500 blur-lg opacity-20" />
-                <div className="relative p-2 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                <div className="absolute inset-0 bg-red-500 blur-lg opacity-20" />
+                <div className="relative p-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20">
                   <Zap size={18} fill="currentColor" />
                 </div>
               </div>
-              <h2 className="text-xl font-black text-white tracking-tight">EN VIVO AHORA</h2>
-              <span className="ml-auto flex items-center gap-1.5 text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-500/20 animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                LIVE
+              <h2 className="text-xl font-black text-white tracking-widest uppercase">EN VIVO AHORA</h2>
+              <span className="ml-auto flex items-center gap-1.5 text-[10px] font-black text-white bg-red-600 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(220,38,38,0.4)] animate-pulse uppercase tracking-widest">
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                Live
               </span>
             </div>
 
@@ -291,8 +322,8 @@ export default function Home() {
         {/* Upcoming / Recent Section */}
         <section className="animate-in slide-in-from-bottom-8 fade-in duration-1000 delay-100">
           <div className="flex items-center justify-between mb-6 px-1">
-            <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-              <Calendar className="text-orange-500" size={20} />
+            <h2 className="text-xl font-black text-white tracking-widest flex items-center gap-2 uppercase">
+              <Calendar className="text-red-500" size={24} />
               {activeFilter === 'todos' ? 'Encuentros' : activeFilter}
             </h2>
           </div>
@@ -310,9 +341,9 @@ export default function Home() {
               {upcomingMatches.length > 0 && (
                 <>
                   <div className="col-span-full flex items-center gap-2 mt-2 mb-1">
-                    <Zap size={14} className="text-amber-400" />
-                    <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">Próximos</span>
-                    <div className="flex-1 h-px bg-white/5" />
+                    <Zap size={14} className="text-red-500" />
+                    <span className="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Próximos</span>
+                    <div className="flex-1 h-px bg-white/10" />
                   </div>
                   {[...upcomingMatches]
                     .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
@@ -327,8 +358,8 @@ export default function Home() {
                 <>
                   <div className="col-span-full flex items-center gap-2 mt-4 mb-1">
                     <Calendar size={14} className="text-slate-500" />
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Finalizados</span>
-                    <div className="flex-1 h-px bg-white/5" />
+                    <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Finalizados</span>
+                    <div className="flex-1 h-px bg-white/10" />
                   </div>
                   {[...recentFinished]
                     .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
@@ -394,12 +425,12 @@ export default function Home() {
 function LiveMatchCard({ partido }: { partido: Partido }) {
   const sportName = partido.disciplinas?.name || 'Deporte';
   const { scoreA, scoreB, subScoreA, subScoreB, subLabel, extra } = getCurrentScore(sportName, partido.marcador_detalle || {});
-  const genero = partido.genero || 'masculino';
+  const genero = (partido.genero || 'masculino').toLowerCase();
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block h-full">
       <div className={cn(
-        "relative h-full overflow-hidden rounded-3xl border bg-[#17130D]/80 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
+        "relative h-full overflow-hidden rounded-[2rem] border bg-[#17130D]/80 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
         SPORT_BORDER[sportName] || 'border-white/10',
         SPORT_GLOW[sportName] || 'hover:shadow-orange-500/10'
       )}>
@@ -441,22 +472,30 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
             <div className="flex flex-col items-center justify-center">
               <div className="flex items-center justify-center gap-2 font-black text-6xl text-white tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
                 <span>{scoreA}</span>
-                <span className="text-slate-300 text-4xl -mt-2">:</span>
+                <span className="text-slate-300/40 text-4xl -mt-2">:</span>
                 <span>{scoreB}</span>
               </div>
 
-              <div className={cn(
-                "mt-3 text-[10px] font-medium tracking-[0.2em] uppercase transition-all duration-1000",
-                genero === 'femenino' ? "text-pink-400 drop-shadow-[0_0_8px_rgba(244,114,182,0.8)]" :
-                  genero === 'mixto' ? "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]" :
-                    "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]"
-              )}>
-                {genero}
-              </div>
+              <div className="flex flex-col items-center gap-1.5 mt-3">
+                <div className={cn(
+                  "text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-1000",
+                  genero === 'femenino' ? "text-pink-400 drop-shadow-[0_0_8px_rgba(244,114,182,0.8)]" :
+                    genero === 'mixto' ? "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]" :
+                      "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]"
+                )}>
+                  {genero}
+                </div>
 
-              {extra && (
-                <span className="mt-2 text-[10px] font-bold text-orange-300/40 tracking-wider uppercase">{extra}</span>
-              )}
+                {extra && (
+                  <div className={cn(
+                    "text-[10px] font-black tracking-[0.25em] uppercase transition-all duration-300",
+                    SPORT_ACCENT[sportName] || 'text-white/60',
+                    "drop-shadow-[0_0_8px_currentColor] brightness-125"
+                  )}>
+                    {extra}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Team B */}
@@ -499,17 +538,11 @@ function getRelativeDate(fecha: string, includeTime = true) {
 
 function UpcomingMatchCard({ partido }: { partido: Partido }) {
   const sportName = partido.disciplinas?.name || 'Deporte';
-  const genero = partido.genero || 'masculino';
-
-  const generoBg = genero === 'femenino'
-    ? 'bg-pink-500/50 border border-pink-400/50 backdrop-blur-md text-pink-200 shadow-[0_0_20px_rgba(236,72,153,0.4)]'
-    : genero === 'mixto'
-      ? 'bg-purple-500/15 border border-purple-400/20 backdrop-blur-md text-purple-400 shadow-[0_0_15px_currentColor]'
-      : 'bg-blue-500/50 border border-blue-400/50 backdrop-blur-md text-blue-200 shadow-[0_0_20px_rgba(59,130,246,0.4)]';
+  const genero = (partido.genero || 'masculino').toLowerCase();
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block">
-      <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-[#17130D] hover:bg-[#1f1911] shadow-sm transition-all duration-300 p-3 sm:p-4 hover:-translate-y-0.5">
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#17130D] hover:bg-[#1f1911] shadow-sm transition-all duration-300 p-3 sm:p-4 hover:-translate-y-0.5">
         {/* Glowing Background gradient */}
         <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-30 group-hover:opacity-50 transition-opacity`} />
         {/* Sport Icon Watermark */}
@@ -535,18 +568,19 @@ function UpcomingMatchCard({ partido }: { partido: Partido }) {
               </span>
             </div>
           </div>
-          <span className="text-[9px] font-bold text-amber-500/40 tracking-wider uppercase">Próximo</span>
         </div>
 
         {/* Teams */}
-        <div className="relative z-10 space-y-2">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[9px] font-bold text-white/40 flex-shrink-0">
-              {(partido.carrera_a?.nombre || partido.equipo_a).substring(0, 2).toUpperCase()}
-            </div>
-            <span className="text-[13px] font-bold text-white truncate">{partido.carrera_a?.nombre || partido.equipo_a}</span>
+        <div className="relative z-10 space-y-3 my-2">
+          <div className="flex items-center gap-3">
+            <Avatar name={partido.carrera_a?.nombre || partido.equipo_a} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-[#0a0805]" />
+            <span className="text-sm font-bold text-white truncate">{partido.carrera_a?.nombre || partido.equipo_a}</span>
           </div>
 
+          <div className="flex items-center gap-3">
+            <Avatar name={partido.carrera_b?.nombre || partido.equipo_b} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-[#0a0805]" />
+            <span className="text-sm font-bold text-white truncate">{partido.carrera_b?.nombre || partido.equipo_b}</span>
+          </div>
         </div>
 
         {/* Footer Action */}
@@ -567,20 +601,14 @@ function ResultCard({ partido }: { partido: Partido }) {
   const { scoreA, scoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
   const winnerA = scoreA > scoreB;
   const isDraw = scoreA === scoreB;
-  const genero = partido.genero || 'masculino';
-
-  const generoBg = genero === 'femenino'
-    ? 'bg-pink-500/50 border border-pink-400/50 backdrop-blur-md text-pink-200 shadow-[0_0_20px_rgba(236,72,153,0.4)]'
-    : genero === 'mixto'
-      ? 'bg-purple-500/15 border border-purple-400/20 backdrop-blur-md text-purple-400 shadow-[0_0_15px_currentColor]'
-      : 'bg-blue-500/50 border border-blue-400/50 backdrop-blur-md text-blue-200 shadow-[0_0_20px_rgba(59,130,246,0.4)]';
+  const genero = (partido.genero || 'masculino').toLowerCase();
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block">
-      <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-[#17130D] hover:bg-[#1f1911] shadow-sm transition-all duration-300 p-3 sm:p-4 hover:-translate-y-0.5">
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#17130D] hover:bg-[#1f1911] shadow-sm transition-all duration-300 p-3 sm:p-4 hover:-translate-y-0.5">
         {/* Glowing Background gradient */}
         <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-30 group-hover:opacity-50 transition-opacity`} />
-        {/* Sport Icon Watermark with sport color */}
+        {/* Sport Icon Watermark */}
         <div className="absolute -bottom-3 -right-3 pointer-events-none select-none group-hover:scale-110 transition-transform duration-500">
           <SportIcon sport={sportName} size={70} className={cn("opacity-[0.12] group-hover:opacity-[0.20] transition-all duration-500", SPORT_ACCENT[sportName] || 'text-white')} />
         </div>
@@ -610,9 +638,7 @@ function ResultCard({ partido }: { partido: Partido }) {
         <div className="relative z-10 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className={cn("w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[9px] font-bold text-white/40 flex-shrink-0")}>
-                {(partido.carrera_a?.nombre || partido.equipo_a).substring(0, 2).toUpperCase()}
-              </div>
+              <Avatar name={partido.carrera_a?.nombre || partido.equipo_a} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-[#0a0805]" />
               <span className={cn("text-[13px] font-bold truncate", winnerA || isDraw ? "text-white" : "text-slate-500")}>
                 {partido.carrera_a?.nombre || partido.equipo_a}
               </span>
@@ -624,9 +650,7 @@ function ResultCard({ partido }: { partido: Partido }) {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className={cn("w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[9px] font-bold text-white/40 flex-shrink-0")}>
-                {(partido.carrera_b?.nombre || partido.equipo_b).substring(0, 2).toUpperCase()}
-              </div>
+              <Avatar name={partido.carrera_b?.nombre || partido.equipo_b} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-[#0a0805]" />
               <span className={cn("text-[13px] font-bold truncate", !winnerA && scoreB > scoreA ? "text-white" : isDraw ? "text-white" : "text-slate-500")}>
                 {partido.carrera_b?.nombre || partido.equipo_b}
               </span>
@@ -649,3 +673,4 @@ function ResultCard({ partido }: { partido: Partido }) {
     </Link>
   );
 }
+

@@ -43,23 +43,39 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
     };
 
     return (
-        <header className="sticky top-0 z-50 w-full backdrop-blur-xl border-b border-white/5 bg-[#0a0805]/70">
-            <div className="flex h-16 items-center px-4 sm:px-6 w-full max-w-7xl mx-auto">
+        <header className="sticky top-0 z-50 w-full backdrop-blur-xl border-b border-white/5 bg-[#0a0805]/80">
+            <div className="flex h-16 sm:h-18 items-center px-4 sm:px-6 w-full max-w-7xl mx-auto">
                 {/* 1. Left: Logo Group */}
                 <div className="flex-1 flex items-center justify-start">
                     <Link href="/">
-                        <div className="flex items-center gap-3 sm:gap-4 group cursor-pointer">
-                            <div className="relative flex-shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                                <Image src="/uninorte_logo.png" alt="Uninorte" width={48} height={48} className="h-10 sm:h-12 w-auto object-contain flex-shrink-0" priority />
-                                <div className="absolute inset-0 bg-white/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                        <div className="flex items-center gap-3 sm:gap-5 group cursor-pointer relative">
+                            {/* Logo Wrapper - Balanced size */}
+                            <div className="relative flex-shrink-0 flex items-center justify-center transition-all duration-500 group-hover:scale-105">
+                                {/* Ambient Glow - Balanced intensity */}
+                                <div className="absolute inset-0 bg-red-600/30 rounded-full blur-[30px] opacity-20 group-hover:opacity-50 animate-pulse duration-[4s] transition-opacity" />
+
+                                {/* Logo Image */}
+                                <Image
+                                    src="/uninorte_logo.png"
+                                    alt="Uninorte"
+                                    width={100}
+                                    height={100}
+                                    className="h-12 sm:h-18 w-auto object-contain flex-shrink-0 relative z-10 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] group-hover:drop-shadow-[0_0_15px_rgba(255,0,0,0.5)] transition-all duration-500"
+                                    priority
+                                />
                             </div>
+
+                            {/* Text labels - Professional & Sporty */}
                             <div className="flex flex-col justify-center">
-                                <h1 className="font-extrabold text-[15px] sm:text-[18px] tracking-tight leading-none text-white">
+                                <h1 className="font-black text-[18px] sm:text-[24px] tracking-tighter leading-none text-white transition-all duration-500 group-hover:text-red-500">
                                     OLIMPIADAS
                                 </h1>
-                                <p className="text-[9px] sm:text-[10px] font-bold text-red-500 tracking-[0.2em] leading-none mt-1">
-                                    UNINORTE 2026
-                                </p>
+                                <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5">
+                                    <span className="h-px w-2 sm:w-4 bg-red-600/50" />
+                                    <p className="text-[9px] sm:text-[11px] font-black text-red-600 tracking-[0.3em] uppercase leading-none drop-shadow-[0_0_8px_rgba(220,38,38,0.4)] transition-all duration-500 group-hover:text-white">
+                                        UNINORTE 2026
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </Link>
@@ -70,6 +86,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                     <ExpandableTabs
                         activeColor="text-red-500"
                         activeItem={getActiveIndex()}
+                        alwaysShowLabels={false}
                         tabs={[
                             { title: "Inicio", icon: HomeIcon },
                             { title: "Calendario", icon: Calendar },
@@ -132,50 +149,66 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                     ) : (
                         <div className="relative" ref={profileMenuRef}>
                             <div
-                                className="flex items-center gap-3 cursor-pointer group"
+                                className="flex items-center gap-3 cursor-pointer group p-1 pr-2 rounded-full hover:bg-white/5 transition-all duration-300"
                                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
                             >
-                                <div className="text-right hidden sm:block">
-                                    <p className="text-[10px] text-slate-400/80 font-bold uppercase tracking-widest leading-none">HOLA,</p>
-                                    <p className="text-[13px] font-bold text-white truncate max-w-[140px] mt-1 tracking-tight group-hover:text-amber-400 transition-colors">
-                                        {profile?.full_name || user.email?.split('@')[0]}
+                                <div className="text-right hidden sm:block pl-2">
+                                    <span className="block text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] leading-none mb-1">¡Hola!</span>
+                                    <p className="text-[13px] font-black text-white truncate max-w-[140px] tracking-tight group-hover:text-red-500 transition-colors">
+                                        {profile?.full_name?.split(' ')[0] || user.email?.split('@')[0]}
                                     </p>
                                 </div>
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#E86000] to-[#E86000] flex items-center justify-center text-white font-extrabold text-[15px] border border-white/10 shadow-[0_0_15px_rgba(232,96,0,0.3)] group-hover:scale-105 transition-all duration-300">
-                                    {user.email?.substring(0, 2).toUpperCase()}
+
+                                {/* Premium Avatar with Ring */}
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-orange-500 rounded-full blur-sm opacity-40 group-hover:opacity-100 transition-opacity animate-pulse" />
+                                    <div className="relative w-10 h-10 rounded-full bg-[#1A1612] border-2 border-white/10 flex items-center justify-center overflow-hidden shadow-2xl transition-transform duration-300 group-hover:scale-110">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 to-orange-500/20" />
+                                        <span className="relative z-10 text-white font-black text-[14px] tracking-tighter uppercase drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
+                                            {user.email?.substring(0, 2).toUpperCase()}
+                                        </span>
+                                    </div>
+                                    {/* Status Dot */}
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0a0805] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                 </div>
                             </div>
 
                             {/* Profile Dropdown */}
                             {profileMenuOpen && (
-                                <div className="absolute right-0 top-full mt-2 w-56 bg-[#17130D] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="px-4 py-3 border-b border-white/5">
-                                        <p className="text-sm font-bold text-white truncate">{profile?.full_name || user.email?.split('@')[0]}</p>
-                                        <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
+                                <div className="absolute right-0 top-full mt-3 w-64 bg-[#0F0D0A]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-4 duration-300 origin-top-right">
+                                    <div className="p-4 bg-gradient-to-br from-white/[0.03] to-transparent border-b border-white/5">
+                                        <p className="text-sm font-black text-white truncate drop-shadow-sm">{profile?.full_name || user.email?.split('@')[0]}</p>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5 truncate">{user.email}</p>
                                     </div>
-                                    <div className="py-1">
+                                    <div className="p-1.5">
                                         {isStaff && (
                                             <button
                                                 onClick={() => { setProfileMenuOpen(false); router.push('/admin'); }}
-                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors"
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-400/10 transition-all group/item"
                                             >
-                                                <Shield size={16} />
-                                                Panel Admin
+                                                <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center group-hover/item:scale-110 transition-transform">
+                                                    <Shield size={16} />
+                                                </div>
+                                                Admin Dashboard
                                             </button>
                                         )}
                                         <button
                                             onClick={() => { setProfileMenuOpen(false); router.push('/quiniela'); }}
-                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white hover:bg-white/5 transition-colors"
+                                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all group/item"
                                         >
-                                            <BarChart3 size={16} />
+                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:scale-110 transition-transform">
+                                                <BarChart3 size={16} />
+                                            </div>
                                             Mis Predicciones
                                         </button>
-                                        <div className="my-1 border-t border-white/5" />
+                                        <div className="my-1.5 h-px bg-white/5" />
                                         <button
                                             onClick={handleLogout}
-                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-500/10 transition-all group/item"
                                         >
-                                            <LogOut size={16} />
+                                            <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center group-hover/item:scale-110 transition-transform">
+                                                <LogOut size={16} />
+                                            </div>
                                             Cerrar Sesión
                                         </button>
                                     </div>

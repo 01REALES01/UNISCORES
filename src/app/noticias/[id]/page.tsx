@@ -11,6 +11,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
 import { NewsReactions } from "@/components/news-reactions";
+import UniqueLoading from "@/components/ui/morph-loading";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
     cronica: { label: 'Crónica', color: 'text-blue-400', bg: 'bg-blue-500/15 border-blue-500/20' },
@@ -83,8 +84,7 @@ export default function NoticiaDetailPage() {
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805] text-white">
-                <div className="w-16 h-16 rounded-full border-4 border-[#FFC000]/30 border-t-[#FFC000] animate-spin mb-4" />
-                <p className="text-sm font-medium text-[#FFC000]/60 animate-pulse">Cargando artículo...</p>
+                <UniqueLoading size="lg" />
             </div>
         );
     }

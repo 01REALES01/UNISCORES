@@ -97,7 +97,7 @@ export default function CalendarioPage() {
     }, [selectedDateMatches, matchOfTheDay]);
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white selection:bg-rose-500/30 font-sans pb-20">
+        <div className="min-h-screen bg-black text-white selection:bg-rose-500/30 font-sans pb-20">
             {/* Ambient Background Gradient */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px]" />

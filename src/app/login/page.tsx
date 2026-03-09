@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { Button, Input } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
-import { Lock, Trophy, Mail, Loader2, ArrowRight, UserPlus, LogIn, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
+import { Lock, Trophy, Mail, ArrowRight, UserPlus, LogIn, Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import UniqueLoading from "@/components/ui/morph-loading";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
@@ -145,8 +146,8 @@ export default function LoginPage() {
     // Show loading if checking existing auth
     if (authLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#17130D]">
-                <Loader2 size={32} className="animate-spin text-[#FFC000]" />
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#17130D]">
+                <UniqueLoading size="lg" />
             </div>
         );
     }

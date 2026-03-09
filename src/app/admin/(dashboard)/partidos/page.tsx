@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
-import { Plus, Calendar, Clock, Loader2, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity } from "lucide-react";
+import { Plus, Calendar, Clock, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity, Loader2 } from "lucide-react";
+import UniqueLoading from "@/components/ui/morph-loading";
 import { Card, Badge, Avatar, LiveIndicator } from "@/components/ui-primitives";
 import { CreateMatchModal } from "@/components/create-match-modal";
 import { useRouter } from "next/navigation";
@@ -299,9 +300,8 @@ export default function PartidosPage() {
 
             {/* ─── MATCHES GRID ─── */}
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-4">
-                    <div className="w-16 h-16 rounded-full border-4 border-red-500/30 border-t-red-500 animate-spin" />
-                    <p className="text-sm text-slate-500 animate-pulse font-medium">Cargando partidos...</p>
+                <div className="flex flex-col items-center justify-center py-32">
+                    <UniqueLoading size="lg" />
                 </div>
             ) : filteredPartidos.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-5">

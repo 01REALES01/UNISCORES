@@ -49,7 +49,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
 
     // Si no hay partidos, mostrar banner genérico
     if (featuredMatches.length === 0) return (
-        <div className="relative w-full h-[350px] md:h-[400px] rounded-3xl overflow-hidden mb-8 group bg-[#17130D] border border-white/5 shadow-2xl">
+        <div className="relative w-full h-[350px] md:h-[400px] rounded-[2rem] overflow-hidden mb-8 group bg-[#110e0a] border border-white/10 shadow-2xl">
             <div className="absolute inset-0 opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
             <div className="absolute inset-0 bg-gradient-to-r from-red-900/40 via-orange-900/20 to-black/60" />
 
@@ -97,7 +97,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
     const scoreInfo = getCurrentScore(currentMatch.disciplinas?.name, currentMatch.marcador_detalle || {});
 
     return (
-        <div className="relative w-full h-[340px] md:h-[380px] rounded-3xl overflow-hidden mb-8 group">
+        <div className="relative w-full h-[340px] md:h-[380px] rounded-[2rem] overflow-hidden mb-8 group border border-white/10 shadow-2xl">
             <AnimatePresence mode="wait">
                 <m.div
                     key={currentMatch.id}
@@ -124,23 +124,28 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                             initial={{ y: -20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.2 }}
-                            className="mb-6"
+                            className="mb-8"
                         >
                             {currentMatch.estado === 'en_vivo' ? (
-                                <Badge className="bg-rose-600 text-white border-rose-500 animate-pulse px-4 py-1.5 text-xs tracking-widest uppercase">
-                                    <Zap size={12} className="mr-2 fill-current" /> En Vivo Ahora
-                                </Badge>
+                                <div className="flex items-center justify-center gap-2.5 text-rose-500 text-[10px] md:text-xs font-black tracking-[0.3em] uppercase transition-all duration-500">
+                                    <div className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,1)]" />
+                                    </div>
+                                    <span className="drop-shadow-[0_0_10px_rgba(244,63,94,0.8)]">En Vivo Ahora</span>
+                                </div>
                             ) : (
-                                <Badge className="bg-orange-600/20 text-orange-300 border-orange-500/30 px-4 py-1.5 text-xs tracking-widest uppercase">
-                                    <Calendar size={12} className="mr-2" /> Programado
-                                </Badge>
+                                <div className="flex items-center justify-center gap-2.5 text-orange-500/60 text-[10px] md:text-xs font-black tracking-[0.3em] uppercase transition-all duration-500">
+                                    <Calendar size={12} />
+                                    <span>Programado</span>
+                                </div>
                             )}
                         </m.div>
 
                         {/* Sport Badge - Centered independently */}
                         <div className="flex justify-center mb-4">
-                            <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full border border-white/5">
-                                <span>{SPORT_EMOJI[currentMatch.disciplinas?.name] || '🏅'}</span>
+                            <div className="flex items-center gap-2.5 text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest bg-black/40 px-4 py-1.5 rounded-full border border-white/5">
+                                <SportIcon sport={currentMatch.disciplinas?.name} size={14} className="opacity-70" />
                                 <span>{currentMatch.disciplinas?.name}</span>
                             </div>
                         </div>
@@ -183,7 +188,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                     {/* Dynamic Info Row */}
                                                     <div className="flex flex-col items-center mt-2 md:mt-3 w-full">
                                                         <div className={cn("flex flex-col items-center gap-1.5 mb-2 md:mb-3")}>
-                                                            <div className={cn("flex items-center gap-2 text-[9px] md:text-[11px] font-black uppercase tracking-widest", liveText)}>
+                                                            <div className={cn("flex items-center gap-2 text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] brightness-125", liveText)}>
                                                                 <span>{scoreInfo.extra || 'EN CURSO'}</span>
 
                                                                 {/* Timer */}
@@ -253,11 +258,14 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                             </div>
 
                             <Link href={`/partido/${currentMatch.id}`}>
-                                <Button className={cn(
-                                    "rounded-full px-6 h-9 text-[10px] font-black uppercase tracking-[0.2em] bg-white/5 hover:bg-white/10 border-white/5 backdrop-blur-md transition-all duration-300",
-                                    SPORT_ACCENT[currentMatch.disciplinas?.name] || 'text-white/80',
-                                    "hover:drop-shadow-[0_0_10px_currentColor] border-white/10"
-                                )}>
+                                <Button
+                                    variant="outline"
+                                    className={cn(
+                                        "rounded-full px-6 h-9 text-[10px] font-black uppercase tracking-[0.2em] bg-white/5 hover:bg-white/10 backdrop-blur-md transition-all duration-300 shadow-none hover:shadow-none whitespace-nowrap",
+                                        SPORT_ACCENT[currentMatch.disciplinas?.name] || 'text-white/80',
+                                        "hover:drop-shadow-[0_0_10px_currentColor] border-white/5 hover:border-white/20"
+                                    )}
+                                >
                                     Ver Detalles
                                 </Button>
                             </Link>

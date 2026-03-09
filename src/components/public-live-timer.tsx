@@ -59,22 +59,25 @@ export function PublicLiveTimer({ detalle, deporte = "" }: TimerProps) {
 
     return (
         <div className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-lg backdrop-blur-md transition-all duration-300",
+            "flex items-center gap-2.5 transition-all duration-500",
             detalle?.estado_cronometro === 'corriendo'
-                ? "bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-                : "bg-white/5 border-white/10 text-slate-400"
+                ? "text-rose-500"
+                : "text-slate-500/40"
         )}>
             {detalle?.estado_cronometro === 'corriendo' ? (
                 <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400/80 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.8)]"></span>
                 </span>
             ) : (
                 <div className="flex h-2 w-2 items-center justify-center">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500/40"></span>
                 </div>
             )}
-            <span className="font-mono font-bold text-sm tracking-widest tabular-nums leading-none mt-0.5">
+            <span className={cn(
+                "font-mono font-black text-base tracking-[0.1em] tabular-nums leading-none mt-0.5 transition-all duration-500",
+                detalle?.estado_cronometro === 'corriendo' && "underline-offset-4 decoration-rose-500/30 drop-shadow-[0_0_10px_rgba(244,63,94,0.9)]"
+            )}>
                 {displayTime || "00:00"}
             </span>
         </div>

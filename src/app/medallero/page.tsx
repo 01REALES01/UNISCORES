@@ -11,7 +11,7 @@ export default function MedalleroPage() {
     const { user, profile, isStaff } = useAuth();
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white selection:bg-red-500/30">
+        <div className="min-h-screen bg-black text-white selection:bg-red-500/30">
 
             {/* Main Navbar */}
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />

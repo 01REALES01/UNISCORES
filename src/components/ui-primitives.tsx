@@ -19,7 +19,7 @@ export function Card({
     return (
         <div
             className={cn(
-                "text-card-foreground rounded-2xl border shadow-lg shadow-black/5 p-5 transition-all duration-300",
+                "text-card-foreground rounded-[2rem] border shadow-lg shadow-black/5 p-5 transition-all duration-300",
                 variants[variant],
                 className
             )}
@@ -41,12 +41,12 @@ export function Badge({
     className?: string;
 }) {
     const variants = {
-        default: "bg-primary/15 text-primary border-primary/20",
-        outline: "border-border/60 bg-muted/30 text-foreground/80",
-        destructive: "bg-danger/15 text-danger border-danger/20",
-        success: "bg-success/15 text-success border-success/20",
-        secondary: "bg-secondary/15 text-secondary border-secondary/20",
-        live: "bg-danger/20 text-danger border-danger/30 live-indicator",
+        default: "bg-red-500/10 text-red-500 border-red-500/20",
+        outline: "border-white/10 bg-white/5 text-slate-400",
+        destructive: "bg-red-600/20 text-red-500 border-red-600/30",
+        success: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30",
+        secondary: "bg-white/10 text-white border-white/20",
+        live: "bg-red-500/20 text-red-500 border-red-500/30 live-indicator shadow-[0_0_10px_rgba(239,68,68,0.2)]",
     };
 
     return (
@@ -71,12 +71,12 @@ export function Button({
     size?: "default" | "sm" | "lg" | "icon";
 }) {
     const variants = {
-        default: "bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 shadow-lg shadow-primary/25",
-        outline: "border-2 border-border bg-transparent hover:bg-muted/50 hover:border-primary/50 text-foreground",
-        ghost: "hover:bg-muted/50 text-foreground/80 hover:text-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        secondary: "bg-secondary/15 text-secondary hover:bg-secondary/25 border border-secondary/20",
-        glass: "glass hover:bg-white/10 text-foreground",
+        default: "bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20 border-none",
+        outline: "border border-white/10 bg-white/5 hover:bg-white/10 text-white",
+        ghost: "hover:bg-white/5 text-slate-400 hover:text-white",
+        link: "text-red-500 underline-offset-4 hover:underline",
+        secondary: "bg-white/10 text-white hover:bg-white/20 border border-white/10",
+        glass: "bg-white/5 backdrop-blur-md hover:bg-white/10 text-white border border-white/10",
     };
 
     const sizes = {
@@ -89,8 +89,8 @@ export function Button({
     return (
         <button
             className={cn(
-                "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "inline-flex items-center justify-center gap-2 rounded-2xl font-black uppercase tracking-widest transition-all duration-300",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 "disabled:pointer-events-none disabled:opacity-50",
                 "active:scale-[0.98]",
                 variants[variant],

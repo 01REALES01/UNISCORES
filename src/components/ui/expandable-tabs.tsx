@@ -23,6 +23,7 @@ interface ExpandableTabsProps {
     className?: string;
     activeColor?: string;
     activeItem?: number | null;
+    alwaysShowLabels?: boolean;
     onChange?: (index: number | null) => void;
     onHover?: (index: number) => void;
 }
@@ -32,6 +33,7 @@ export function ExpandableTabs({
     className,
     activeColor = "text-primary",
     activeItem = null,
+    alwaysShowLabels = false,
     onChange,
     onHover,
 }: ExpandableTabsProps) {
@@ -68,6 +70,7 @@ export function ExpandableTabs({
 
                 const Icon = tab.icon;
                 const isSelected = hovered === index || activeItem === index;
+                const showLabel = isSelected || alwaysShowLabels;
 
                 return (
                     <m.button
@@ -80,14 +83,14 @@ export function ExpandableTabs({
                         onMouseLeave={handleMouseLeave}
                         onClick={() => handleClick(index)}
                         className={cn(
-                            "relative flex items-center rounded-full px-3 py-2 transition-colors duration-300",
+                            "relative flex items-center rounded-full px-3 py-2 transition-all duration-300",
                             isSelected ? activeColor : "text-slate-400 hover:text-white"
                         )}
                         aria-label={tab.title}
                     >
                         <Icon size={18} strokeWidth={isSelected ? 2.5 : 2} className="transition-transform duration-300 flex-shrink-0" />
                         <AnimatePresence initial={false}>
-                            {isSelected && (
+                            {showLabel && (
                                 <m.span
                                     initial={{ width: 0, opacity: 0, marginLeft: 0 }}
                                     animate={{ width: "auto", opacity: 1, marginLeft: 8 }}

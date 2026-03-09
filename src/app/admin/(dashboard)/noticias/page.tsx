@@ -8,6 +8,7 @@ import { Plus, Newspaper, Trash2, Edit, Eye, EyeOff, Loader2, Clock } from "luci
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import UniqueLoading from "@/components/ui/morph-loading";
 
 type Noticia = {
     id: string;
@@ -73,8 +74,8 @@ export default function AdminNoticiasPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-[60vh]">
-                <Loader2 size={32} className="animate-spin text-red-500" />
+            <div className="flex flex-col items-center justify-center h-[60vh]">
+                <UniqueLoading size="md" />
             </div>
         );
     }

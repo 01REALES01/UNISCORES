@@ -42,7 +42,7 @@ export default function NoticiasPage() {
     const rest = filtered.slice(1);
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white selection:bg-red-500/30">
+        <div className="min-h-screen bg-black text-white selection:bg-red-500/30">
             {/* Ambient Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-red-600/8 rounded-full blur-[120px]" />
@@ -54,7 +54,7 @@ export default function NoticiasPage() {
 
             <main className="max-w-5xl mx-auto px-4 pt-10 pb-12 relative z-10">
                 {/* Sticky Filters Bar */}
-                <div className="sticky top-16 z-40 bg-[#0a0805]/90 backdrop-blur-xl py-4 mb-8 border-b border-white/5 -mx-4 px-4 sm:mx-0 sm:px-0 sm:bg-transparent sm:backdrop-blur-none sm:border-none">
+                <div className="sticky top-16 z-40 bg-black/90 backdrop-blur-xl py-4 mb-8 border-b border-white/5 -mx-4 px-4 sm:mx-0 sm:px-0 sm:bg-transparent sm:backdrop-blur-none sm:border-none">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                         {/* Category Filter */}
                         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0 flex-1">

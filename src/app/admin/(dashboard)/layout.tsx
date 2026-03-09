@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Trophy, LayoutDashboard, Calendar, Users, LogOut, Menu, X, Zap, Shield, Loader2, BarChart3, Newspaper } from "lucide-react";
+import { Trophy, LayoutDashboard, Calendar, Users, LogOut, Menu, X, Zap, Shield, BarChart3, Newspaper, Loader2 } from "lucide-react";
+import UniqueLoading from "@/components/ui/morph-loading";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -41,14 +42,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // Show loading while checking auth
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="p-4 rounded-2xl bg-gradient-to-br from-primary to-secondary text-white shadow-lg shadow-primary/30">
-                        <Trophy size={32} />
-                    </div>
-                    <Loader2 size={24} className="animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground">Verificando acceso...</p>
-                </div>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805]">
+                <UniqueLoading size="lg" />
             </div>
         );
     }
@@ -62,14 +57,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // This prevents showing "Acceso Restringido" before the profile fetch completes
     if (user && !profile && !profileTimeout) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="p-4 rounded-2xl bg-gradient-to-br from-primary to-secondary text-white shadow-lg shadow-primary/30">
-                        <Trophy size={32} />
-                    </div>
-                    <Loader2 size={24} className="animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground">Cargando perfil...</p>
-                </div>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805]">
+                <UniqueLoading size="lg" />
             </div>
         );
     }

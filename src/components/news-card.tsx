@@ -125,9 +125,9 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
 
     return (
         <Link href={`/noticias/${noticia.id}`} className="group block">
-            <div className="flex gap-4 sm:gap-6 bg-transparent rounded-2xl p-2 sm:p-3 hover:bg-white/[0.03] transition-colors duration-300">
+            <div className="flex gap-4 sm:gap-6 bg-transparent rounded-2xl p-2 sm:p-3 hover:bg-white/[0.04] transition-all duration-300 border border-transparent hover:border-white/5">
                 {/* Thumbnail */}
-                <div className="w-[110px] h-[90px] sm:w-[160px] sm:h-[120px] rounded-xl sm:rounded-2xl overflow-hidden shrink-0 relative bg-[#17130D] border border-white/5 shadow-lg">
+                <div className="w-[110px] h-[90px] sm:w-[160px] sm:h-[120px] rounded-2xl overflow-hidden shrink-0 relative bg-[#17130D] border border-white/5 shadow-lg">
                     {noticia.imagen_url ? (
                         <Image
                             src={noticia.imagen_url}

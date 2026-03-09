@@ -41,9 +41,11 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark" suppressHydrationWarning>
       <head>
-        {/* DNS Preconnect — eliminates ~100-300ms TLS handshake on first Supabase request */}
+        {/* DNS Preconnect & Preconnect hints for performance */}
         <link rel="preconnect" href="https://uhsslexvmoecwvcjiwit.supabase.co" />
         <link rel="dns-prefetch" href="https://uhsslexvmoecwvcjiwit.supabase.co" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
         <Providers>

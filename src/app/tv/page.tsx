@@ -9,7 +9,6 @@ import { getCurrentScore } from "@/lib/sport-scoring";
 import { Badge, Avatar } from "@/components/ui-primitives";
 import { cn } from "@/lib/utils";
 import { SPORT_EMOJI } from "@/lib/constants";
-import { OrbitalLoader } from "@/components/ui/orbital-loader";
 
 // --- Components for TV View ---
 

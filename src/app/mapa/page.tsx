@@ -44,17 +44,14 @@ export default function CampusMapPage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white relative overflow-hidden">
+        <div className="min-h-screen bg-black text-white relative overflow-hidden">
+            <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             {/* Background Effects */}
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-overlay" />
-            <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-[#FFC000]/10 via-[#0a0805] to-[#0a0805] pointer-events-none" />
+            <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-[#FFC000]/10 via-black to-black pointer-events-none" />
 
             <div className="w-full px-4 py-8 relative z-10 max-w-[1600px] mx-auto">
-                {/*  Main Navbar */}
-                <div className="mb-8">
-                    <MainNavbar user={user} profile={profile} isStaff={isStaff} />
-                </div>
 
                 {/* Leyenda */}
                 <div className="flex items-center gap-3 bg-white/5 p-2 rounded-xl backdrop-blur-md border border-white/5">

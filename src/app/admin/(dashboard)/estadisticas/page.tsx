@@ -23,6 +23,7 @@ import {
     Filter,
     Loader2,
 } from "lucide-react";
+import UniqueLoading from "@/components/ui/morph-loading";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { SPORT_EMOJI } from "@/lib/constants";
@@ -236,20 +237,8 @@ export default function EstadisticasPage() {
     // ===== LOADING STATE =====
     if (loading) {
         return (
-            <div className="space-y-8">
-                <div className="flex items-center gap-3">
-                    <Loader2 className="animate-spin text-primary" size={24} />
-                    <span className="text-muted-foreground">Cargando estadísticas...</span>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="h-28 bg-muted/20 rounded-2xl animate-pulse" />
-                    ))}
-                </div>
-                <div className="grid gap-6 md:grid-cols-2">
-                    <div className="h-80 bg-muted/20 rounded-2xl animate-pulse" />
-                    <div className="h-80 bg-muted/20 rounded-2xl animate-pulse" />
-                </div>
+            <div className="min-h-screen flex flex-col items-center justify-center py-20">
+                <UniqueLoading size="lg" />
             </div>
         );
     }

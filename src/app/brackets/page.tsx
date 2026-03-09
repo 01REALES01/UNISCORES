@@ -54,7 +54,7 @@ export default function BracketsPage() {
     const accent = SPORT_ACCENT[selectedSport] || 'text-amber-400';
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white selection:bg-red-500/30">
+        <div className="min-h-screen bg-black text-white selection:bg-red-500/30">
             {/* Ambient Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-red-600/8 rounded-full blur-[120px]" />
