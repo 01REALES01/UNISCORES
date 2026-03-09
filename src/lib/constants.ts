@@ -122,3 +122,12 @@ export const SPORT_LIVE_BAR: Record<string, string> = {
     'Natación': 'bg-cyan-500 shadow-[0_0_12px_#22d3ee]',
     'default': 'bg-[#00E676] shadow-[0_0_12px_#00E676]'
 };
+export const SPORT_COLORS: Record<string, string> = {
+    'Fútbol': '#10b981',
+    'Baloncesto': '#f97316',
+    'Voleibol': '#6366f1',
+    'Tenis': '#84cc16',
+    'Tenis de Mesa': '#f43f5e',
+    'Ajedrez': '#8b5cf6',
+    'Natación': '#06b6d4',
+};

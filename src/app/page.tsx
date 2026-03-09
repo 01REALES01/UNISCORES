@@ -410,21 +410,17 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
           <SportIcon sport={sportName} size={150} className={cn("opacity-[0.12] group-hover:opacity-[0.25] transition-all duration-500 drop-shadow-[0_0_30px_currentColor]", SPORT_ACCENT[sportName] || 'text-white')} />
         </div>
 
-        <div className="relative p-6 flex flex-col h-full">
+        <div className="relative p-5 flex flex-col h-full">
           {/* Header */}
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex justify-between items-start mb-4">
             <div className="flex items-center gap-2">
               <div className={cn("w-8 h-8 rounded-full bg-[#17130D] flex items-center justify-center border border-white/10 shadow-[0_0_15px_currentColor]", SPORT_ACCENT[sportName])}>
                 <SportIcon sport={sportName} size={18} className="drop-shadow-md" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-slate-500 uppercase tracking-widest leading-tight">{sportName}</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-tight">{sportName}</span>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-sm font-medium text-slate-700 leading-tight truncate max-w-[150px] sm:max-w-[200px]">{partido.lugar || 'Coliseo Central'}</span>
-                  <span className={`text-white font-black px-1.5 py-0.5 rounded text-[10px] ${genero === 'femenino' ? 'bg-pink-400' :
-                    genero === 'mixto' ? 'bg-purple-400' :
-                      'bg-blue-400'
-                    }`}>{genero === 'femenino' ? '♀' : genero === 'mixto' ? '⚤' : '♂'}</span>
+                  <span className="text-[13px] font-medium text-slate-400 leading-tight truncate">{partido.lugar || 'Coliseo Central'}</span>
                 </div>
               </div>
             </div>
@@ -437,8 +433,8 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
           <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
             {/* Team A */}
             <div className="flex flex-col items-center gap-3 text-center">
-              <Avatar name={partido.carrera_a?.nombre || partido.equipo_a} size="lg" className="w-16 h-16 text-2xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
-              <span className="text-xl font-bold text-white leading-tight line-clamp-2 px-2">{partido.carrera_a?.nombre || partido.equipo_a}</span>
+              <Avatar name={partido.carrera_a?.nombre || partido.equipo_a} size="lg" className="w-14 h-14 text-xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
+              <span className="text-lg font-bold text-white leading-tight line-clamp-2 px-1">{partido.carrera_a?.nombre || partido.equipo_a}</span>
             </div>
 
             {/* Score */}
@@ -448,28 +444,35 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
                 <span className="text-slate-300 text-4xl -mt-2">:</span>
                 <span>{scoreB}</span>
               </div>
-              {subScoreA !== undefined && subScoreB !== undefined && (
-                <div className="flex items-center gap-2 mt-2 text-sm font-bold text-slate-500">
-                  <span className="text-slate-700">{subScoreA}</span>
-                  <span className="text-slate-500">{subLabel}</span>
-                  <span className="text-slate-700">{subScoreB}</span>
-                </div>
-              )}
+
+              <div className={cn(
+                "mt-3 text-[10px] font-medium tracking-[0.2em] uppercase transition-all duration-1000",
+                genero === 'femenino' ? "text-pink-400 drop-shadow-[0_0_8px_rgba(244,114,182,0.8)]" :
+                  genero === 'mixto' ? "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]" :
+                    "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]"
+              )}>
+                {genero}
+              </div>
+
               {extra && (
-                <span className="mt-1 text-[11px] font-bold text-orange-300/60 bg-orange-500/10 px-2 py-0.5 rounded-full">{extra}</span>
+                <span className="mt-2 text-[10px] font-bold text-orange-300/40 tracking-wider uppercase">{extra}</span>
               )}
             </div>
 
             {/* Team B */}
             <div className="flex flex-col items-center gap-3 text-center">
-              <Avatar name={partido.carrera_b?.nombre || partido.equipo_b} size="lg" className="w-16 h-16 text-2xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
-              <span className="text-xl font-bold text-white leading-tight line-clamp-2 px-2">{partido.carrera_b?.nombre || partido.equipo_b}</span>
+              <Avatar name={partido.carrera_b?.nombre || partido.equipo_b} size="lg" className="w-14 h-14 text-xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
+              <span className="text-lg font-bold text-white leading-tight line-clamp-2 px-1">{partido.carrera_b?.nombre || partido.equipo_b}</span>
             </div>
           </div>
 
           {/* Footer Action */}
-          <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-center text-sm font-bold text-orange-400 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-            Ver Detalles <MoveRight size={12} className="ml-1" />
+          <div className={cn(
+            "mt-4 pt-3 border-t border-white/5 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 group-hover:drop-shadow-[0_0_8px_currentColor]",
+            SPORT_ACCENT[sportName] || 'text-white/40',
+            "opacity-40 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0"
+          )}>
+            Ver Detalles <MoveRight size={10} className="ml-2 shadow-sm" />
           </div>
         </div>
       </div>
@@ -514,34 +517,45 @@ function UpcomingMatchCard({ partido }: { partido: Partido }) {
           <SportIcon sport={sportName} size={70} className={cn("opacity-[0.12] group-hover:opacity-[0.20] transition-all duration-500", SPORT_ACCENT[sportName] || 'text-white')} />
         </div>
 
-        {/* Header: Sport icon on gender-colored bg + Date */}
-        <div className="relative z-10 flex items-center justify-between mb-3 pb-3 border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", generoBg)}>
-              <SportIcon sport={sportName} size={16} className="text-white" />
+        {/* Header: Sport icon + Date + Category */}
+        <div className="relative z-10 flex items-center justify-between mb-2 pb-2 border-b border-white/5">
+          <div className="flex items-center gap-2">
+            <SportIcon sport={sportName} size={14} className={cn("shrink-0", SPORT_ACCENT[sportName])} />
+            <div className="flex flex-col">
+              <span className="text-[11px] font-black text-white leading-tight">
+                {getRelativeDate(partido.fecha, true)}
+              </span>
+              <span className={cn(
+                "text-[9px] font-light tracking-[0.15em] uppercase leading-tight mt-0.5",
+                genero === 'femenino' ? "text-pink-400 drop-shadow-[0_0_5px_rgba(244,114,182,0.6)]" :
+                  genero === 'mixto' ? "text-purple-400 drop-shadow-[0_0_5px_rgba(192,132,252,0.6)]" :
+                    "text-blue-400 drop-shadow-[0_0_5px_rgba(96,165,250,0.6)]"
+              )}>
+                {genero === 'mixto' ? 'Mixto' : genero === 'femenino' ? 'Femenino' : 'Masculino'}
+              </span>
             </div>
-            <span className="text-sm font-black text-white">
-              {getRelativeDate(partido.fecha, true)}
-            </span>
           </div>
-          <span className="text-[10px] font-bold text-amber-400/80 bg-amber-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Próximo</span>
+          <span className="text-[9px] font-bold text-amber-500/40 tracking-wider uppercase">Próximo</span>
         </div>
 
         {/* Teams */}
-        <div className="relative z-10 space-y-2.5">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0">
+        <div className="relative z-10 space-y-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[9px] font-bold text-white/40 flex-shrink-0">
               {(partido.carrera_a?.nombre || partido.equipo_a).substring(0, 2).toUpperCase()}
             </div>
-            <span className="text-sm font-bold text-white truncate">{partido.carrera_a?.nombre || partido.equipo_a}</span>
+            <span className="text-[13px] font-bold text-white truncate">{partido.carrera_a?.nombre || partido.equipo_a}</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0">
-              {(partido.carrera_b?.nombre || partido.equipo_b).substring(0, 2).toUpperCase()}
-            </div>
-            <span className="text-sm font-bold text-slate-400 truncate group-hover:text-white transition-colors">{partido.carrera_b?.nombre || partido.equipo_b}</span>
-          </div>
+        </div>
+
+        {/* Footer Action */}
+        <div className={cn(
+          "mt-4 pt-3 border-t border-white/5 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 group-hover:drop-shadow-[0_0_8px_currentColor]",
+          SPORT_ACCENT[sportName] || 'text-white/40',
+          "opacity-40 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0"
+        )}>
+          Ver Detalles <MoveRight size={10} className="ml-2 shadow-sm" />
         </div>
       </div>
     </Link>
@@ -571,48 +585,65 @@ function ResultCard({ partido }: { partido: Partido }) {
           <SportIcon sport={sportName} size={70} className={cn("opacity-[0.12] group-hover:opacity-[0.20] transition-all duration-500", SPORT_ACCENT[sportName] || 'text-white')} />
         </div>
 
-        {/* Header: Sport icon on gender-colored bg + Date + Finalizado badge */}
-        <div className="relative z-10 flex items-center justify-between mb-3 pb-3 border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", generoBg)}>
-              <SportIcon sport={sportName} size={16} className="text-white" />
+        {/* Header: Sport icon + Date + Category */}
+        <div className="relative z-10 flex items-center justify-between mb-2 pb-2 border-b border-white/5">
+          <div className="flex items-center gap-2">
+            <SportIcon sport={sportName} size={14} className={cn("shrink-0", SPORT_ACCENT[sportName])} />
+            <div className="flex flex-col">
+              <span className="text-[11px] font-black text-white leading-tight">
+                {getRelativeDate(partido.fecha, false)}
+              </span>
+              <span className={cn(
+                "text-[9px] font-light tracking-[0.15em] uppercase leading-tight mt-0.5",
+                genero === 'femenino' ? "text-pink-400 drop-shadow-[0_0_5px_rgba(244,114,182,0.6)]" :
+                  genero === 'mixto' ? "text-purple-400 drop-shadow-[0_0_5px_rgba(192,132,252,0.6)]" :
+                    "text-blue-400 drop-shadow-[0_0_5px_rgba(96,165,250,0.6)]"
+              )}>
+                {genero === 'mixto' ? 'Mixto' : genero === 'femenino' ? 'Femenino' : 'Masculino'}
+              </span>
             </div>
-            <span className="text-sm font-black text-white">
-              {getRelativeDate(partido.fecha, false)}
-            </span>
           </div>
-          <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded-full uppercase tracking-wider">Finalizado</span>
+          <span className="text-[9px] font-bold text-slate-600/60 tracking-wider uppercase">Finalizado</span>
         </div>
 
         {/* Teams */}
-        <div className="relative z-10 space-y-2.5">
+        <div className="relative z-10 space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className={cn("w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0")}>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={cn("w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[9px] font-bold text-white/40 flex-shrink-0")}>
                 {(partido.carrera_a?.nombre || partido.equipo_a).substring(0, 2).toUpperCase()}
               </div>
-              <span className={cn("text-sm font-bold truncate", winnerA || isDraw ? "text-white" : "text-slate-500")}>
+              <span className={cn("text-[13px] font-bold truncate", winnerA || isDraw ? "text-white" : "text-slate-500")}>
                 {partido.carrera_a?.nombre || partido.equipo_a}
               </span>
             </div>
-            <span className={cn("text-2xl font-black tabular-nums ml-3", winnerA ? "text-amber-400" : "text-slate-600")}>
+            <span className={cn("text-xl font-black tabular-nums ml-2", winnerA ? "text-white" : "text-slate-600")}>
               {scoreA}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className={cn("w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/60 flex-shrink-0")}>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={cn("w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[9px] font-bold text-white/40 flex-shrink-0")}>
                 {(partido.carrera_b?.nombre || partido.equipo_b).substring(0, 2).toUpperCase()}
               </div>
-              <span className={cn("text-sm font-bold truncate", !winnerA && scoreB > scoreA ? "text-white" : isDraw ? "text-white" : "text-slate-500")}>
+              <span className={cn("text-[13px] font-bold truncate", !winnerA && scoreB > scoreA ? "text-white" : isDraw ? "text-white" : "text-slate-500")}>
                 {partido.carrera_b?.nombre || partido.equipo_b}
               </span>
             </div>
-            <span className={cn("text-2xl font-black tabular-nums ml-3", !winnerA && scoreB > scoreA ? "text-amber-400" : "text-slate-600")}>
+            <span className={cn("text-xl font-black tabular-nums ml-2", !winnerA && scoreB > scoreA ? "text-white" : "text-slate-600")}>
               {scoreB}
             </span>
           </div>
+        </div>
+
+        {/* Footer Action */}
+        <div className={cn(
+          "mt-4 pt-3 border-t border-white/5 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 group-hover:drop-shadow-[0_0_8px_currentColor]",
+          SPORT_ACCENT[sportName] || 'text-white/40',
+          "opacity-40 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0"
+        )}>
+          Ver Detalles <MoveRight size={10} className="ml-2 shadow-sm" />
         </div>
       </div>
     </Link>

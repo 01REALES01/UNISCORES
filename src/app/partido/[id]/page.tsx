@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getCurrentScore } from "@/lib/sport-scoring";
-import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR } from "@/lib/constants";
+import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_ACCENT, SPORT_COLORS } from "@/lib/constants";
 
 type Partido = {
     id: number;
@@ -185,13 +185,16 @@ export default function PublicMatchDetail() {
     const { scoreA, scoreB, subScoreA, subScoreB, extra, subLabel } = getCurrentScore(sportName, match.marcador_detalle || {});
     const generoMatch = match.genero || 'masculino';
     const hasTimer = ['Fútbol', 'Baloncesto', 'Futsal'].includes(sportName);
+    const sportColor = SPORT_COLORS[sportName] || '#10b981';
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-slate-200 font-sans selection:bg-red-500/30">
+        <div className="min-h-screen text-slate-200 font-sans selection:bg-white/10 transition-colors duration-1000" style={{ backgroundColor: `${sportColor}08` }}>
             {/* Ambient Background */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-red-600/10 rounded-full blur-[120px] mix-blend-screen" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen" />
+                <div className="absolute top-[-20%] left-[-10%] w-[1000px] h-[1000px] rounded-full blur-[150px] mix-blend-screen animate-pulse duration-[10s] transition-all"
+                    style={{ backgroundColor: `${sportColor}15` }} />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[800px] h-[800px] rounded-full blur-[130px] mix-blend-screen animate-pulse duration-[8s] transition-all"
+                    style={{ backgroundColor: `${sportColor}10` }} />
             </div>
 
             {/* Navigation Header */}
@@ -437,25 +440,41 @@ export default function PublicMatchDetail() {
                         return (
                             <div className="space-y-3">
                                 {/* Labels */}
-                                <div className="flex justify-between text-[10px] font-black uppercase tracking-wide">
-                                    <span className="text-red-400">{(match?.carrera_a?.nombre || match?.equipo_a)?.substring(0, 10)} {total > 0 ? `${pctA}%` : ''}</span>
-                                    <span className="text-slate-500">Empate {total > 0 ? `${pctDraw}%` : ''}</span>
-                                    <span className="text-cyan-400">{(match?.carrera_b?.nombre || match?.equipo_b)?.substring(0, 10)} {total > 0 ? `${pctB}%` : ''}</span>
+                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest px-1">
+                                    <div className="flex flex-col items-start gap-1">
+                                        <span className="text-white/40">{(match?.carrera_a?.nombre || match?.equipo_a)?.substring(0, 12)}</span>
+                                        <span className={cn("text-sm", SPORT_ACCENT[sportName] || "text-white")}>{total > 0 ? `${pctA}%` : '0%'}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center gap-1">
+                                        <span className="text-white/40">Empate</span>
+                                        <span className="text-sm text-slate-400">{total > 0 ? `${pctDraw}%` : '0%'}</span>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <span className="text-white/40">{(match?.carrera_b?.nombre || match?.equipo_b)?.substring(0, 12)}</span>
+                                        <span className={cn("text-sm", SPORT_ACCENT[sportName] || "text-white")}>{total > 0 ? `${pctB}%` : '0%'}</span>
+                                    </div>
                                 </div>
-
                                 {/* The single bar */}
-                                <div className="flex h-3 rounded-full overflow-hidden bg-white/5 gap-[2px]">
+                                <div className="flex h-3 rounded-full overflow-hidden bg-white/5 gap-[2px] shadow-inner">
                                     <div
-                                        className="bg-gradient-to-r from-red-500 to-red-600 rounded-l-full transition-all duration-1000"
-                                        style={{ width: `${Math.max(pctA, 1)}%` }}
+                                        className={cn("transition-all duration-1000 rounded-l-full", SPORT_ACCENT[sportName] || "bg-emerald-500")}
+                                        style={{
+                                            width: `${Math.max(pctA, 1)}%`,
+                                            backgroundColor: 'currentColor',
+                                            filter: 'brightness(0.3)'
+                                        }}
                                     />
                                     <div
-                                        className="bg-gradient-to-r from-slate-500 to-slate-600 transition-all duration-1000"
+                                        className="bg-slate-700/50 transition-all duration-1000"
                                         style={{ width: `${Math.max(pctDraw, 1)}%` }}
                                     />
                                     <div
-                                        className="bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-r-full transition-all duration-1000"
-                                        style={{ width: `${Math.max(pctB, 1)}%` }}
+                                        className={cn("transition-all duration-1000 rounded-r-full", SPORT_ACCENT[sportName] || "bg-emerald-500")}
+                                        style={{
+                                            width: `${Math.max(pctB, 1)}%`,
+                                            backgroundColor: 'currentColor',
+                                            filter: 'brightness(1.7)'
+                                        }}
                                     />
                                 </div>
                             </div>
@@ -475,8 +494,8 @@ export default function PublicMatchDetail() {
                                     className={cn(
                                         "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
                                         votingPick === 'A'
-                                            ? "bg-gradient-to-b from-red-500 to-red-700 border-red-400 text-white shadow-lg shadow-red-500/25 scale-[1.03]"
-                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                            ? [SPORT_ACCENT[sportName] || "bg-white/10 text-white", "border-current shadow-lg scale-[1.03] bg-white/5"]
+                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
                                     {(match?.carrera_a?.nombre || match?.equipo_a)?.substring(0, 8)}
@@ -487,8 +506,8 @@ export default function PublicMatchDetail() {
                                     className={cn(
                                         "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
                                         votingPick === 'DRAW'
-                                            ? "bg-gradient-to-b from-slate-500 to-slate-700 border-slate-400 text-white shadow-lg scale-[1.03]"
-                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                            ? "bg-white/10 border-slate-400 text-white shadow-lg scale-[1.03]"
+                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
                                     Empate
@@ -499,8 +518,8 @@ export default function PublicMatchDetail() {
                                     className={cn(
                                         "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
                                         votingPick === 'B'
-                                            ? "bg-gradient-to-b from-cyan-500 to-cyan-700 border-cyan-400 text-white shadow-lg shadow-cyan-500/25 scale-[1.03]"
-                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                            ? [SPORT_ACCENT[sportName] || "bg-white/10 text-white", "border-current shadow-lg scale-[1.03] bg-white/5"]
+                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
                                     {(match?.carrera_b?.nombre || match?.equipo_b)?.substring(0, 8)}
@@ -544,109 +563,101 @@ export default function PublicMatchDetail() {
                 </div>
 
                 {/* Timeline Section */}
-                <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-200">
-                    <div className="flex items-center gap-3 mb-6 px-2">
-                        <div className="p-2 rounded-xl bg-red-500/10 text-red-400">
-                            <AlignLeft size={20} />
+                <div className="rounded-[2.5rem] bg-[#0a0805]/80 backdrop-blur-2xl border border-white/5 p-6 sm:p-10 animate-in fade-in duration-700 delay-200 shadow-2xl shadow-black/40">
+                    <div className="flex items-center gap-3 mb-8 px-2">
+                        <div className="p-2.5 rounded-2xl bg-white/5 text-white/70 border border-white/10">
+                            <AlignLeft size={22} />
                         </div>
-                        <h3 className="text-xl font-bold text-white tracking-tight">Minuto a Minuto</h3>
+                        <div>
+                            <h3 className="text-2xl font-black text-white tracking-tight uppercase">Minuto a Minuto</h3>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5">Registro oficial del evento</p>
+                        </div>
                     </div>
 
-                    <div className="relative max-w-2xl mx-auto before:absolute before:top-4 before:bottom-4 before:left-[19px] sm:before:left-1/2 sm:before:-translate-x-1/2 before:w-[2px] before:bg-white/10 before:z-0">
+                    <div className="relative max-w-2xl mx-auto py-4 overflow-hidden">
+                        {/* Vertical Line - Centered */}
+                        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-white/20 via-white/10 to-transparent -translate-x-1/2" />
+
                         {eventos.length === 0 ? (
-                            <div className="py-12 text-center text-slate-500 bg-white/5 rounded-3xl border border-white/5 border-dashed">
-                                <p>El partido está por comenzar...</p>
+                            <div className="py-16 text-center text-slate-500 bg-white/[0.02] rounded-[2rem] border border-white/5 border-dashed relative z-10">
+                                <p className="text-sm font-medium italic opacity-60">El partido está por comenzar...</p>
                             </div>
                         ) : (
-                            eventos.map((e, idx) => {
-                                const isTeamA = e.equipo === 'equipo_a';
-                                const isTeamB = e.equipo === 'equipo_b';
-                                const isSystem = e.equipo === 'sistema';
+                            <div className="space-y-6 relative z-10">
+                                {eventos.map((e, idx) => {
+                                    const isTeamA = e.equipo === 'equipo_a';
+                                    const isTeamB = e.equipo === 'equipo_b';
+                                    const isSystem = e.equipo === 'sistema';
 
-                                let eventIcon = <div className="w-2 h-2 rounded-full bg-white/50" />;
-                                let eventLabel = 'Evento';
+                                    let eventIcon = <div className="w-2.5 h-2.5 rounded-full bg-white/40 shadow-[0_0_8px_rgba(255,255,255,0.2)]" />;
+                                    let eventLabel = 'Evento';
+                                    if (e.tipo_evento === 'gol') { eventIcon = <span className="text-base">⚽</span>; eventLabel = 'Gol'; }
+                                    else if (e.tipo_evento === 'tarjeta_amarilla') { eventIcon = <div className="w-3.5 h-4.5 bg-yellow-400 rounded-[3px] shadow-[0_0_10px_rgba(250,204,21,0.3)]" />; eventLabel = 'Tarjeta Amarilla'; }
+                                    else if (e.tipo_evento === 'tarjeta_roja') { eventIcon = <div className="w-3.5 h-4.5 bg-red-500 rounded-[3px] shadow-[0_0_10px_rgba(239,68,68,0.3)]" />; eventLabel = 'Tarjeta Roja'; }
+                                    else if (e.tipo_evento === 'cambio') { eventIcon = <span className="text-xl text-emerald-400">⇄</span>; eventLabel = 'Cambio'; }
+                                    else if (e.tipo_evento === 'falta') { eventIcon = <span className="text-sm">⛔</span>; eventLabel = 'Falta'; }
+                                    else if (e.tipo_evento === 'punto_1') { eventIcon = <span className="text-[11px] font-black text-white">+1</span>; eventLabel = 'Tiro Libre'; }
+                                    else if (e.tipo_evento === 'punto_2') { eventIcon = <span className="text-[11px] font-black text-white">+2</span>; eventLabel = 'Anotación'; }
+                                    else if (e.tipo_evento === 'punto_3') { eventIcon = <span className="text-[11px] font-black text-white">+3</span>; eventLabel = 'Triple'; }
+                                    else if (e.tipo_evento === 'punto') { eventIcon = <span className="text-base">🏐</span>; eventLabel = 'Punto'; }
+                                    else if (e.tipo_evento === 'set') { eventIcon = <span className="text-sm">🏆</span>; eventLabel = 'Set'; }
 
-                                if (e.tipo_evento === 'gol') { eventIcon = <span className="text-sm">⚽</span>; eventLabel = 'Gol'; }
-                                else if (e.tipo_evento === 'tarjeta_amarilla') { eventIcon = <div className="w-3 h-4 bg-yellow-400 rounded-[2px] shadow-sm" />; eventLabel = 'Tarjeta Amarilla'; }
-                                else if (e.tipo_evento === 'tarjeta_roja') { eventIcon = <div className="w-3 h-4 bg-red-500 rounded-[2px] shadow-sm" />; eventLabel = 'Tarjeta Roja'; }
-                                else if (e.tipo_evento === 'cambio') { eventIcon = <span className="text-[13px] text-emerald-400">⇄</span>; eventLabel = 'Cambio'; }
-                                else if (e.tipo_evento === 'punto_1') { eventIcon = <span className="text-[10px] font-black text-white">+1</span>; eventLabel = 'Tiro Libre'; }
-                                else if (e.tipo_evento === 'punto_2') { eventIcon = <span className="text-[10px] font-black text-white">+2</span>; eventLabel = 'Anotación'; }
-                                else if (e.tipo_evento === 'punto_3') { eventIcon = <span className="text-[10px] font-black text-white">+3</span>; eventLabel = 'Triple'; }
-                                else if (e.tipo_evento === 'falta') { eventIcon = <span className="text-xs">⛔</span>; eventLabel = 'Falta'; }
-                                else if (e.tipo_evento === 'punto') { eventIcon = <span className="text-sm">🏐</span>; eventLabel = 'Punto'; }
-                                else if (e.tipo_evento === 'set') { eventIcon = <span className="text-xs">🏆</span>; eventLabel = 'Set'; }
-
-                                if (isSystem) {
-                                    return (
-                                        <div key={e.id} className="relative flex justify-center py-5 w-full z-10 group">
-                                            <div className="bg-[#0a0805] px-4 font-black text-[11px] text-white/50 uppercase tracking-widest text-center">
-                                                {e.descripcion || 'Evento de Sistema'}
-                                                {e.periodo && (
-                                                    <span className="ml-2 px-1 rounded bg-white/5 border border-white/5 text-[9px]">
-                                                        {match.disciplinas?.name === 'Fútbol' ? 'T' : (match.disciplinas?.name === 'Baloncesto' || match.disciplinas?.name === 'Futsal' ? 'Q' : 'S')}{e.periodo}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )
-                                }
-
-                                return (
-                                    <div key={e.id} className="relative flex items-center w-full py-4 min-h-[70px] group">
-                                        {/* LEFT SIDE (Desktop Only, Team A) */}
-                                        <div className={cn(
-                                            "hidden sm:flex w-1/2 pr-10 items-center justify-end gap-3",
-                                            isTeamB && "invisible"
-                                        )}>
-                                            <div className="text-right">
-                                                <p className="text-[13px] font-bold leading-none text-white/90">
-                                                    {e.jugadores?.nombre || (isTeamA ? (match.carrera_a?.nombre || match.equipo_a) : (match.carrera_b?.nombre || match.equipo_b))}
-                                                </p>
-                                                <p className="text-[11px] text-white/40 mt-1">
-                                                    {eventLabel} {e.descripcion ? `• ${e.descripcion}` : ''}
-                                                </p>
-                                            </div>
-                                            <div className="w-[30px] h-[30px] rounded-full bg-[#17130D] border border-white/5 flex items-center justify-center flex-shrink-0 shadow-lg relative">
-                                                {eventIcon}
-                                            </div>
-                                        </div>
-
-                                        {/* MIDDLE MINUTE CIRCLE */}
-                                        <div className="absolute left-[20px] -translate-x-1/2 sm:left-1/2 z-10 flex flex-col items-center gap-1 group">
-                                            <div className="w-[34px] h-[34px] rounded-full bg-[#1c1c1c] flex items-center justify-center border-4 border-[#0a0805] group-hover:bg-[#2a2a2a] transition-colors shadow-lg">
-                                                <span className="text-[11px] font-black text-white/80">{e.minuto}'</span>
-                                            </div>
-                                            {e.periodo && (
-                                                <div className="text-[8px] font-bold text-[#FFC000] bg-black/80 px-1 border border-[#FFC000]/20 rounded ring-1 ring-black/50">
-                                                    {match.disciplinas?.name === 'Fútbol' ? 'T' : (match.disciplinas?.name === 'Baloncesto' || match.disciplinas?.name === 'Futsal' ? 'Q' : 'S')}{e.periodo}
+                                    if (isSystem) {
+                                        return (
+                                            <div key={e.id || idx} className="relative flex justify-center py-6 w-full">
+                                                <div className="bg-[#0a0805]/80 backdrop-blur-md px-6 font-black text-[11px] text-white/30 uppercase tracking-[0.3em] text-center border border-white/5 rounded-full py-1.5 shadow-xl">
+                                                    {e.descripcion || 'Evento de Sistema'}
                                                 </div>
-                                            )}
-                                        </div>
+                                            </div>
+                                        );
+                                    }
 
-                                        {/* RIGHT SIDE (Mobile All, Desktop Team B) */}
-                                        <div className={cn(
-                                            "flex w-full sm:w-1/2 pl-[50px] sm:pl-10 items-center justify-start gap-3",
-                                            "sm:visible",
-                                            isTeamA && "sm:invisible"
-                                        )}>
-                                            <div className="w-[30px] h-[30px] rounded-full bg-[#17130D] border border-white/5 flex items-center justify-center flex-shrink-0 shadow-lg relative">
-                                                {eventIcon}
+                                    return (
+                                        <div key={e.id || idx} className="relative flex items-center min-h-[90px] group/item">
+                                            {/* Minute indicator - Centered */}
+                                            <div className="absolute left-1/2 -translate-x-1/2 z-20">
+                                                <div className="w-9 h-9 rounded-full bg-[#111] border border-white/10 flex items-center justify-center shadow-2xl ring-[6px] ring-[#0a0805] group-hover/item:scale-110 transition-transform duration-300">
+                                                    <span className="text-[11px] font-black tabular-nums text-white/80">{e.minuto}&apos;</span>
+                                                </div>
                                             </div>
-                                            <div className="text-left">
-                                                <p className="text-[13px] font-bold leading-none text-white/90 flex items-center gap-2">
-                                                    {e.jugadores?.nombre || (isTeamA ? (match.carrera_a?.nombre || match.equipo_a) : (match.carrera_b?.nombre || match.equipo_b))}
-                                                    {/* Color dot for team indication on mobile when it's Team A rendered on right side */}
-                                                    {isTeamA && <span className="sm:hidden w-1.5 h-1.5 rounded-full bg-emerald-500" />}
-                                                </p>
-                                                <p className="text-[11px] text-white/40 mt-1">
-                                                    {eventLabel} {e.descripcion ? `• ${e.descripcion}` : ''}
-                                                </p>
+
+                                            {/* LEFT SIDE (Team A) */}
+                                            <div className={cn(
+                                                "w-1/2 pr-8 sm:pr-12 flex items-center justify-end gap-4 transition-all duration-300",
+                                                !isTeamA ? "opacity-0 pointer-events-none translate-x-4" : "opacity-100 translate-x-0"
+                                            )}>
+                                                <div className="text-right py-1">
+                                                    <p className="text-[13px] sm:text-[15px] font-black leading-tight text-white/95 truncate max-w-[90px] sm:max-w-none">
+                                                        {e.jugadores?.nombre || (match.carrera_a?.nombre || match.equipo_a)}
+                                                    </p>
+                                                    <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-[0.15em]">{eventLabel}</p>
+                                                </div>
+                                                <div className="w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] rounded-xl border bg-red-500/10 border-red-500/20 text-red-400 flex items-center justify-center flex-shrink-0 shadow-lg relative group-hover/item:scale-110 transition-transform">
+                                                    <div className="absolute inset-0 bg-red-500/10 blur-md rounded-xl opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                                                    <span className="relative z-10">{eventIcon}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* RIGHT SIDE (Team B) */}
+                                            <div className={cn(
+                                                "w-1/2 pl-8 sm:pl-12 flex items-center justify-start gap-4 transition-all duration-300",
+                                                !isTeamB ? "opacity-0 pointer-events-none -translate-x-4" : "opacity-100 translate-x-0"
+                                            )}>
+                                                <div className="w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] rounded-xl border bg-cyan-500/10 border-cyan-500/20 text-cyan-400 flex items-center justify-center flex-shrink-0 shadow-lg relative group-hover/item:scale-110 transition-transform">
+                                                    <div className="absolute inset-0 bg-cyan-500/10 blur-md rounded-xl opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                                                    <span className="relative z-10">{eventIcon}</span>
+                                                </div>
+                                                <div className="text-left py-1">
+                                                    <p className="text-[13px] sm:text-[15px] font-black leading-tight text-white/95 truncate max-w-[90px] sm:max-w-none">
+                                                        {e.jugadores?.nombre || (match.carrera_b?.nombre || match.equipo_b)}
+                                                    </p>
+                                                    <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-[0.15em]">{eventLabel}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })
+                                    );
+                                })}
+                            </div>
                         )}
                     </div>
                 </div>

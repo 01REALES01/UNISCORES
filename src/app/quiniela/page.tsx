@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button, Badge } from "@/components/ui-primitives";
 import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Loader2, Gauge, HandMetal, Users, X, Flame, Target, Zap, ChevronDown, Filter, History, Handshake } from "lucide-react";
 import Link from "next/link";
+import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_BORDER } from "@/lib/constants";
 import { SportIcon } from "@/components/sport-icons";
 
 import { useRouter } from "next/navigation";
@@ -26,7 +27,7 @@ const getMatchResult = (match: any): 'A' | 'B' | 'DRAW' | null => {
 };
 
 // ─── Vote Percentage Bar ───
-const VotePercentageBar = ({ matchId, allPredictions, teamA, teamB }: { matchId: number, allPredictions: any[], teamA: string, teamB: string }) => {
+const VotePercentageBar = ({ matchId, allPredictions, teamA, teamB, sportName }: { matchId: number, allPredictions: any[], teamA: string, teamB: string, sportName: string }) => {
     const matchPreds = allPredictions.filter(p => p.match_id === matchId && p.winner_pick);
     const total = matchPreds.length;
     if (total === 0) return (
@@ -45,33 +46,33 @@ const VotePercentageBar = ({ matchId, allPredictions, teamA, teamB }: { matchId:
 
     return (
         <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider px-0.5">
+            <div className="flex items-center justify-between text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] px-0.5">
                 <span className="flex items-center gap-1"><Users size={10} /> {total} predicciones</span>
             </div>
-            <div className="flex gap-0.5 h-2 rounded-full overflow-hidden bg-white/5">
+            <div className="flex gap-[2px] h-2.5 rounded-full overflow-hidden bg-white/5 shadow-inner">
                 {pctA > 0 && (
                     <div
-                        className="bg-gradient-to-r from-red-500 to-red-600 rounded-l-full transition-all duration-700 relative group"
-                        style={{ width: `${pctA}%` }}
+                        className={cn("transition-all duration-700 relative group", SPORT_ACCENT[sportName] || "bg-white/20")}
+                        style={{ width: `${pctA}%`, backgroundColor: 'currentColor', filter: 'brightness(0.3)' }}
                     />
                 )}
                 {pctDraw > 0 && (
                     <div
-                        className="bg-gradient-to-r from-slate-500 to-slate-600 transition-all duration-700"
+                        className="bg-slate-700/50 transition-all duration-700"
                         style={{ width: `${pctDraw}%` }}
                     />
                 )}
                 {pctB > 0 && (
                     <div
-                        className="bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-r-full transition-all duration-700"
-                        style={{ width: `${pctB}%` }}
+                        className={cn("transition-all duration-700", SPORT_ACCENT[sportName] || "bg-white/20")}
+                        style={{ width: `${pctB}%`, backgroundColor: 'currentColor', filter: 'brightness(1.7)' }}
                     />
                 )}
             </div>
-            <div className="flex justify-between text-[10px] font-black tabular-nums">
-                <span className="text-red-400">{teamA.substring(0, 6).toUpperCase()} {pctA}%</span>
+            <div className="flex justify-between text-[10px] font-black tabular-nums tracking-wide">
+                <span className={cn(SPORT_ACCENT[sportName] || "text-white/60")}>{teamA.substring(0, 8).toUpperCase()} {pctA}%</span>
                 <span className="text-slate-500">Empate {pctDraw}%</span>
-                <span className="text-cyan-400">{teamB.substring(0, 6).toUpperCase()} {pctB}%</span>
+                <span className={cn(SPORT_ACCENT[sportName] || "text-white/60")}>{teamB.substring(0, 8).toUpperCase()} {pctB}%</span>
             </div>
         </div>
     );
@@ -245,6 +246,7 @@ const PredictionCard = ({
                     allPredictions={allPredictions}
                     teamA={match.carrera_a?.nombre || match.equipo_a}
                     teamB={match.carrera_b?.nombre || match.equipo_b}
+                    sportName={match.disciplinas?.name}
                 />
             </div>
 
@@ -312,8 +314,8 @@ const PredictionCard = ({
                                     className={cn(
                                         "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
                                         winnerPick === 'A'
-                                            ? "bg-gradient-to-b from-red-500 to-red-700 border-red-400 text-white shadow-lg shadow-red-500/25 scale-[1.03]"
-                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                            ? [SPORT_ACCENT[match.disciplinas?.name] || "bg-white/10 text-white", "border-current shadow-lg scale-[1.03] bg-white/5"]
+                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
                                     Gana<br />{(match.carrera_a?.nombre || match.equipo_a).substring(0, 8)}
@@ -324,8 +326,8 @@ const PredictionCard = ({
                                     className={cn(
                                         "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
                                         winnerPick === 'DRAW'
-                                            ? "bg-gradient-to-b from-slate-500 to-slate-700 border-slate-400 text-white shadow-lg scale-[1.03]"
-                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                            ? "bg-white/10 border-slate-400 text-white shadow-lg scale-[1.03]"
+                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
                                     Empate
@@ -336,8 +338,8 @@ const PredictionCard = ({
                                     className={cn(
                                         "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
                                         winnerPick === 'B'
-                                            ? "bg-gradient-to-b from-cyan-500 to-cyan-700 border-cyan-400 text-white shadow-lg shadow-cyan-500/25 scale-[1.03]"
-                                            : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:text-white"
+                                            ? [SPORT_ACCENT[match.disciplinas?.name] || "bg-white/10 text-white", "border-current shadow-lg scale-[1.03] bg-white/5"]
+                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
                                     Gana<br />{(match.carrera_b?.nombre || match.equipo_b).substring(0, 8)}

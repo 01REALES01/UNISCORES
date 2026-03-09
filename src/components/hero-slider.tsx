@@ -97,7 +97,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
     const scoreInfo = getCurrentScore(currentMatch.disciplinas?.name, currentMatch.marcador_detalle || {});
 
     return (
-        <div className="relative w-full h-[400px] md:h-[450px] rounded-3xl overflow-hidden mb-8 group">
+        <div className="relative w-full h-[340px] md:h-[380px] rounded-3xl overflow-hidden mb-8 group">
             <AnimatePresence mode="wait">
                 <m.div
                     key={currentMatch.id}
@@ -160,47 +160,52 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             initial={{ x: -50, opacity: 0 }}
                                             animate={{ x: 0, opacity: 1 }}
                                             transition={{ delay: 0.3 }}
-                                            className="flex flex-col items-center gap-4 flex-1 text-center"
+                                            className="flex flex-col items-center gap-3 flex-1 text-center"
                                         >
-                                            <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
-                                                <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.carrera_a?.nombre || currentMatch.equipo_a)}</span>
+                                            <div className="w-14 h-14 md:w-24 md:h-24 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
+                                                <span className="text-2xl md:text-4xl font-black">{getInitials(currentMatch.carrera_a?.nombre || currentMatch.equipo_a)}</span>
                                             </div>
-                                            <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
+                                            <h3 className="text-lg md:text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
                                                 {currentMatch.delegacion_a || currentMatch.carrera_a?.nombre || currentMatch.equipo_a}
                                             </h3>
                                         </m.div>
 
                                         {/* VS / Score */}
-                                        <div className="flex flex-col items-center gap-2 z-20 mx-4 relative min-w-[140px] md:min-w-[220px]">
+                                        <div className="flex flex-col items-center gap-1 z-20 mx-4 relative min-w-[120px] md:min-w-[180px]">
                                             {currentMatch.estado === 'en_vivo' ? (
                                                 <div className="flex flex-col items-center w-full">
-                                                    <div className="text-[3.5rem] md:text-[5.5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-3 md:gap-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                                                        <span className="text-white text-right w-16 md:w-24">{scoreInfo.scoreA}</span>
-                                                        <div className="w-4 md:w-6 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
-                                                        <span className="text-white text-left w-16 md:w-24">{scoreInfo.scoreB}</span>
+                                                    <div className="text-[3rem] md:text-[5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-2 md:gap-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                                                        <span className="text-white text-right w-14 md:w-20">{scoreInfo.scoreA}</span>
+                                                        <div className="w-3 md:w-5 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
+                                                        <span className="text-white text-left w-14 md:w-20">{scoreInfo.scoreB}</span>
                                                     </div>
 
                                                     {/* Dynamic Info Row */}
-                                                    <div className="flex flex-col items-center mt-3 md:mt-4 w-full">
-                                                        <div className={cn("flex items-center gap-2 text-[10px] md:text-xs font-black uppercase tracking-widest mb-2 md:mb-3", liveText)}>
-                                                            <span>{scoreInfo.extra || 'EN CURSO'}</span>
+                                                    <div className="flex flex-col items-center mt-2 md:mt-3 w-full">
+                                                        <div className={cn("flex flex-col items-center gap-1.5 mb-2 md:mb-3")}>
+                                                            <div className={cn("flex items-center gap-2 text-[9px] md:text-[11px] font-black uppercase tracking-widest", liveText)}>
+                                                                <span>{scoreInfo.extra || 'EN CURSO'}</span>
 
-                                                            {/* Timer or Subscores */}
-                                                            {currentMatch.marcador_detalle?.timer && (
-                                                                <>
-                                                                    <span className="opacity-50">•</span>
-                                                                    <div className="scale-90 origin-left">
-                                                                        <PublicLiveTimer detalle={currentMatch.marcador_detalle} deporte={currentMatch.disciplinas?.name} />
-                                                                    </div>
-                                                                </>
-                                                            )}
+                                                                {/* Timer */}
+                                                                {currentMatch.marcador_detalle?.timer && (
+                                                                    <>
+                                                                        <span className="opacity-50">•</span>
+                                                                        <div className="scale-75 md:scale-90 origin-left">
+                                                                            <PublicLiveTimer detalle={currentMatch.marcador_detalle} deporte={currentMatch.disciplinas?.name} />
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                            </div>
 
-                                                            {scoreInfo.subScoreA !== undefined && scoreInfo.subScoreB !== undefined && (
-                                                                <>
-                                                                    <span className="opacity-50">•</span>
-                                                                    <span>{scoreInfo.subLabel || 'PTS'}: {scoreInfo.subScoreA} - {scoreInfo.subScoreB}</span>
-                                                                </>
-                                                            )}
+                                                            {/* Neon Gender Label */}
+                                                            <div className={cn(
+                                                                "text-[9px] md:text-[10px] font-medium tracking-[0.25em] uppercase transition-all duration-1000",
+                                                                currentMatch.genero === 'femenino' ? "text-pink-400 drop-shadow-[0_0_8px_rgba(244,114,182,0.8)]" :
+                                                                    currentMatch.genero === 'mixto' ? "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]" :
+                                                                        "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]"
+                                                            )}>
+                                                                {currentMatch.genero || 'masculino'}
+                                                            </div>
                                                         </div>
 
                                                         {/* Glowing Progress Status Bar */}
@@ -219,12 +224,12 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             initial={{ x: 50, opacity: 0 }}
                                             animate={{ x: 0, opacity: 1 }}
                                             transition={{ delay: 0.3 }}
-                                            className="flex flex-col items-center gap-4 flex-1 text-center"
+                                            className="flex flex-col items-center gap-3 flex-1 text-center"
                                         >
-                                            <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
-                                                <span className="text-3xl md:text-5xl font-black">{getInitials(currentMatch.carrera_b?.nombre || currentMatch.equipo_b)}</span>
+                                            <div className="w-14 h-14 md:w-24 md:h-24 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
+                                                <span className="text-2xl md:text-4xl font-black">{getInitials(currentMatch.carrera_b?.nombre || currentMatch.equipo_b)}</span>
                                             </div>
-                                            <h3 className="text-xl md:text-3xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
+                                            <h3 className="text-lg md:text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
                                                 {currentMatch.delegacion_b || currentMatch.carrera_b?.nombre || currentMatch.equipo_b}
                                             </h3>
                                         </m.div>
@@ -238,17 +243,21 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.5 }}
-                            className="mt-8 flex flex-col items-center gap-4"
+                            className="mt-4 flex flex-col items-center gap-3"
                         >
-                            <div className="flex items-center gap-2 text-sm text-slate-400">
-                                <MapPin size={14} />
+                            <div className="flex items-center gap-2 text-[11px] md:text-xs text-slate-500">
+                                <MapPin size={12} />
                                 {currentMatch.lugar}
-                                <span className="mx-2 text-slate-600">•</span>
+                                <span className="mx-2 text-slate-600/50">•</span>
                                 <ClockDisplay date={currentMatch.fecha} />
                             </div>
 
                             <Link href={`/partido/${currentMatch.id}`}>
-                                <Button className="rounded-full px-8 bg-white/10 hover:bg-white/20 border border-white/5 backdrop-blur-md">
+                                <Button className={cn(
+                                    "rounded-full px-6 h-9 text-[10px] font-black uppercase tracking-[0.2em] bg-white/5 hover:bg-white/10 border-white/5 backdrop-blur-md transition-all duration-300",
+                                    SPORT_ACCENT[currentMatch.disciplinas?.name] || 'text-white/80',
+                                    "hover:drop-shadow-[0_0_10px_currentColor] border-white/10"
+                                )}>
                                     Ver Detalles
                                 </Button>
                             </Link>
