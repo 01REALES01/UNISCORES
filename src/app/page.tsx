@@ -6,7 +6,7 @@ import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { MatchCardSkeleton, NewsListSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/hooks/useAuth";
-import { Trophy, MapPin, ChevronRight, Calendar, Zap, LayoutGrid, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield, Newspaper, AlertCircle, RefreshCw, Star } from "lucide-react";
+import { Trophy, MapPin, ChevronRight, Calendar, Zap, LayoutGrid, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield, Newspaper, AlertCircle, RefreshCw, Star, Crown, Handshake } from "lucide-react";
 
 const HeroSlider = dynamic(() => import('@/components/hero-slider').then(mod => mod.HeroSlider), {
   ssr: false,
@@ -1001,8 +1001,8 @@ function ResultCard({ partido }: { partido: Partido }) {
                   )}
                 </div>
               </div>
-              {partido.marcador_detalle?.resultado_final === 'victoria_a' && <span className="text-lg drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]">👑</span>}
-              {partido.marcador_detalle?.resultado_final === 'empate' && <span className="text-lg opacity-80">🤝</span>}
+              {partido.marcador_detalle?.resultado_final === 'victoria_a' && <Crown size={18} className="text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />}
+              {partido.marcador_detalle?.resultado_final === 'empate' && <Handshake size={18} className="text-slate-300 opacity-80" />}
             </div>
 
             <div className="flex items-center justify-between">
@@ -1017,8 +1017,8 @@ function ResultCard({ partido }: { partido: Partido }) {
                   )}
                 </div>
               </div>
-              {partido.marcador_detalle?.resultado_final === 'victoria_b' && <span className="text-lg drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]">👑</span>}
-              {partido.marcador_detalle?.resultado_final === 'empate' && <span className="text-lg opacity-80">🤝</span>}
+              {partido.marcador_detalle?.resultado_final === 'victoria_b' && <Crown size={18} className="text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />}
+              {partido.marcador_detalle?.resultado_final === 'empate' && <Handshake size={18} className="text-slate-300 opacity-80" />}
             </div>
           </div>
         ) : (

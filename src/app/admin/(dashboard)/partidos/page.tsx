@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
-import { Plus, Calendar, Clock, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity, Loader2 } from "lucide-react";
+import { Plus, Calendar, Clock, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity, Loader2, Crown, Handshake } from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { Card, Badge, Avatar, LiveIndicator } from "@/components/ui-primitives";
 import { CreateMatchModal } from "@/components/create-match-modal";
@@ -408,12 +408,12 @@ export default function PartidosPage() {
                                                     {isFinished && partido.marcador_detalle?.resultado_final ? (
                                                         partido.marcador_detalle.resultado_final === 'empate' ? (
                                                             <div className="bg-white/10 backdrop-blur-sm px-4 py-1.5 rounded-xl border border-white/20 flex flex-col items-center">
-                                                                <span className="text-lg">🤝</span>
+                                                                <Handshake size={20} />
                                                                 <span className="text-[10px] uppercase font-bold text-white tracking-widest mt-0.5">Empate</span>
                                                             </div>
                                                         ) : (
                                                             <div className="bg-gradient-to-br from-amber-500/20 to-yellow-500/10 backdrop-blur-sm px-4 py-1.5 rounded-xl border border-amber-500/30 flex flex-col items-center">
-                                                                <span className="text-lg mb-0.5">👑</span>
+                                                                <Crown size={20} className="mb-0.5" />
                                                                 <span className="text-[10px] uppercase font-bold text-amber-300 tracking-wider text-center leading-tight">Ganador:<br/>{getDisplayName(partido, partido.marcador_detalle.resultado_final === 'victoria_a' ? 'a' : 'b')}</span>
                                                             </div>
                                                         )

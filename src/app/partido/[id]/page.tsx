@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Badge, Avatar, Button } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -342,13 +342,13 @@ export default function PublicMatchDetail() {
                                             {isFinished && match.marcador_detalle?.resultado_final ? (
                                                 match.marcador_detalle.resultado_final === 'empate' ? (
                                                     <div className="bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex flex-col items-center shadow-lg">
-                                                        <span className="text-4xl sm:text-6xl mb-1">🤝</span>
+                                                        <Handshake size={64} className="mb-1 text-slate-300" />
                                                         <span className="text-sm sm:text-base uppercase font-black text-white tracking-[0.2em]">Empate</span>
                                                     </div>
                                                 ) : (
                                                     <div className="bg-gradient-to-b from-amber-500/20 to-yellow-500/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-amber-500/30 flex flex-col items-center shadow-[0_0_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
                                                         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-300" />
-                                                        <span className="text-4xl sm:text-6xl mb-1 drop-shadow-md">👑</span>
+                                                        <Crown size={64} className="mb-1 text-amber-400 drop-shadow-md" />
                                                         <span className="text-[10px] sm:text-xs uppercase font-bold text-amber-500/70 tracking-widest text-center mt-1">Ganador</span>
                                                         <span className="text-base sm:text-lg font-black text-amber-300 tracking-wide text-center leading-tight mt-0.5">
                                                             {getDisplayName(match, match.marcador_detalle.resultado_final === 'victoria_a' ? 'a' : 'b')}

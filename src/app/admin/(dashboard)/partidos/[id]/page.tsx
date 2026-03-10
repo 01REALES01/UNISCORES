@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button, Badge, Avatar, Card } from "@/components/ui-primitives";
-import { ArrowLeft, Clock, Play, Pause, Square, AlertCircle, Plus, Save, Users, Trophy, ChevronRight, Activity, Check, Trash2, Edit2, RotateCcw, X } from "lucide-react";
+import { ArrowLeft, Clock, Play, Pause, Square, AlertCircle, Plus, Save, Users, Trophy, ChevronRight, Activity, Check, Trash2, Edit2, RotateCcw, X, Crown, Handshake } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { PublicLiveTimer } from "@/components/public-live-timer";
@@ -82,8 +82,8 @@ const GET_SPORT_ACTIONS = (sport: string) => {
     // Ajedrez - solo resultado final
     if (sport === 'Ajedrez') {
         return [
-            { value: 'victoria', label: 'Victoria', icon: '👑', style: 'pill-gold' },
-            { value: 'empate', label: 'Empate', icon: '🤝', style: 'pill-neutral' },
+            { value: 'victoria', label: 'Victoria', icon: <Crown size={32} />, style: 'pill-gold' },
+            { value: 'empate', label: 'Empate', icon: <Handshake size={32} />, style: 'pill-neutral' },
         ];
     }
 
@@ -578,8 +578,8 @@ export default function MatchControlPage() {
                 invalidateCache('admin-partidos');
                 toast.success(
                     tipo === 'empate'
-                        ? '🤝 Empate registrado. Partido finalizado.'
-                        : `👑 Victoria registrada para ${getDisplayName(match, equipo === 'equipo_a' ? 'a' : 'b')}. Partido finalizado.`
+                        ? 'Empate registrado. Partido finalizado.'
+                        : `Victoria registrada para ${getDisplayName(match, equipo === 'equipo_a' ? 'a' : 'b')}. Partido finalizado.`
                 );
             }
             // --- Natación ---
@@ -800,14 +800,14 @@ export default function MatchControlPage() {
                                             <>
                                                 {match.marcador_detalle.resultado_final === 'empate' ? (
                                                     <div className="flex flex-col items-center gap-2">
-                                                        <div className="text-5xl md:text-7xl">🤝</div>
+                                                        <Handshake className="w-16 h-16 md:w-20 md:h-20 text-slate-300" />
                                                         <div className="bg-white/10 backdrop-blur-sm px-5 py-2 rounded-2xl border border-white/20">
                                                             <span className="text-lg md:text-2xl font-black uppercase tracking-wider text-white/90">Empate</span>
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-col items-center gap-2">
-                                                        <div className="text-5xl md:text-7xl">👑</div>
+                                                        <Crown className="w-16 h-16 md:w-20 md:h-20 text-amber-400 drop-shadow-md" />
                                                         <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 backdrop-blur-sm px-5 py-2 rounded-2xl border border-amber-400/30">
                                                             <span className="text-xs font-bold text-amber-300/70 uppercase tracking-widest">Ganador</span>
                                                         </div>
