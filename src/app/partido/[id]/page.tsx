@@ -320,6 +320,11 @@ export default function PublicMatchDetail() {
                             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-8">
                                 {/* Team A */}
                                 <div className="flex flex-col items-center gap-4 group">
+                                    {sportName === 'Ajedrez' && isFinished && match.marcador_detalle?.resultado_final === 'victoria_a' && (
+                                        <div className="mb-[-0.5rem] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm z-30">
+                                            Ganador
+                                        </div>
+                                    )}
                                     <div className="relative">
                                         <div className={cn(
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
@@ -342,17 +347,11 @@ export default function PublicMatchDetail() {
                                             {isFinished && match.marcador_detalle?.resultado_final ? (
                                                 match.marcador_detalle.resultado_final === 'empate' ? (
                                                     <div className="bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex flex-col items-center shadow-lg">
-                                                        <Handshake size={64} className="mb-1 text-slate-300" />
-                                                        <span className="text-sm sm:text-base uppercase font-black text-white tracking-[0.2em]">Empate</span>
+                                                        <span className="text-sm sm:text-base uppercase font-black text-slate-300 tracking-[0.2em]">Empate</span>
                                                     </div>
                                                 ) : (
-                                                    <div className="bg-gradient-to-b from-amber-500/20 to-yellow-500/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-amber-500/30 flex flex-col items-center shadow-[0_0_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
-                                                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-300" />
-                                                        <Crown size={64} className="mb-1 text-amber-400 drop-shadow-md" />
-                                                        <span className="text-[10px] sm:text-xs uppercase font-bold text-amber-500/70 tracking-widest text-center mt-1">Ganador</span>
-                                                        <span className="text-base sm:text-lg font-black text-amber-300 tracking-wide text-center leading-tight mt-0.5">
-                                                            {getDisplayName(match, match.marcador_detalle.resultado_final === 'victoria_a' ? 'a' : 'b')}
-                                                        </span>
+                                                    <div className="bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex flex-col items-center shadow-lg">
+                                                        <span className="text-sm sm:text-base uppercase font-black text-white/40 tracking-[0.2em]">Final</span>
                                                     </div>
                                                 )
                                             ) : isLive ? (
@@ -434,6 +433,11 @@ export default function PublicMatchDetail() {
 
                                 {/* Team B */}
                                 <div className="flex flex-col items-center gap-4 group">
+                                    {sportName === 'Ajedrez' && isFinished && match.marcador_detalle?.resultado_final === 'victoria_b' && (
+                                        <div className="mb-[-0.5rem] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm z-30">
+                                            Ganador
+                                        </div>
+                                    )}
                                     <div className="relative">
                                         <div className={cn(
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",

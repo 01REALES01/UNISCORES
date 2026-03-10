@@ -390,7 +390,12 @@ export default function PartidosPage() {
                                     <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center mb-5">
                                         {/* Team A */}
                                         <div className="flex flex-col items-center gap-2 text-center">
-                                            <Avatar name={getDisplayName(partido, 'a')} size="default" className="ring-2 ring-white/10 shadow-lg" />
+                                            {sportName === 'Ajedrez' && isFinished && partido.marcador_detalle?.resultado_final === 'victoria_a' && (
+                                                <div className="mb-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
+                                                    Ganador
+                                                </div>
+                                            )}
+                                            <Avatar name={getDisplayName(partido, 'a')} size="default" className="ring-2 ring-white/10 shadow-lg relative z-10" />
                                             <div className="flex flex-col items-center gap-0.5">
                                                 <span className={cn("text-sm font-bold leading-tight truncate max-w-[90px]", score.a > score.b && isFinished ? "text-red-400" : "text-white")}>
                                                     {getDisplayName(partido, 'a')}
@@ -407,14 +412,12 @@ export default function PartidosPage() {
                                                 <div className="flex flex-col items-center gap-1.5">
                                                     {isFinished && partido.marcador_detalle?.resultado_final ? (
                                                         partido.marcador_detalle.resultado_final === 'empate' ? (
-                                                            <div className="bg-white/10 backdrop-blur-sm px-4 py-1.5 rounded-xl border border-white/20 flex flex-col items-center">
-                                                                <Handshake size={20} />
-                                                                <span className="text-[10px] uppercase font-bold text-white tracking-widest mt-0.5">Empate</span>
+                                                            <div className="bg-white/5 backdrop-blur-sm px-3 py-1 rounded-lg border border-white/10 flex flex-col items-center">
+                                                                <span className="text-[10px] uppercase font-bold text-slate-300 tracking-widest">Empate</span>
                                                             </div>
                                                         ) : (
-                                                            <div className="bg-gradient-to-br from-amber-500/20 to-yellow-500/10 backdrop-blur-sm px-4 py-1.5 rounded-xl border border-amber-500/30 flex flex-col items-center">
-                                                                <Crown size={20} className="mb-0.5" />
-                                                                <span className="text-[10px] uppercase font-bold text-amber-300 tracking-wider text-center leading-tight">Ganador:<br/>{getDisplayName(partido, partido.marcador_detalle.resultado_final === 'victoria_a' ? 'a' : 'b')}</span>
+                                                            <div className="bg-white/5 backdrop-blur-sm px-3 py-1 rounded-lg border border-white/10 flex flex-col items-center">
+                                                                <span className="text-[10px] uppercase font-bold text-white/40 tracking-widest">Final</span>
                                                             </div>
                                                         )
                                                     ) : isLive ? (
@@ -449,7 +452,12 @@ export default function PartidosPage() {
 
                                         {/* Team B */}
                                         <div className="flex flex-col items-center gap-2 text-center">
-                                            <Avatar name={getDisplayName(partido, 'b')} size="default" className="ring-2 ring-white/10 shadow-lg" />
+                                            {sportName === 'Ajedrez' && isFinished && partido.marcador_detalle?.resultado_final === 'victoria_b' && (
+                                                <div className="mb-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
+                                                    Ganador
+                                                </div>
+                                            )}
+                                            <Avatar name={getDisplayName(partido, 'b')} size="default" className="ring-2 ring-white/10 shadow-lg relative z-10" />
                                             <div className="flex flex-col items-center gap-0.5">
                                                 <span className={cn("text-sm font-bold leading-tight text-slate-400 truncate max-w-[90px]", score.b > score.a && isFinished ? "text-red-400" : "")}>
                                                     {getDisplayName(partido, 'b')}

@@ -1001,8 +1001,16 @@ function ResultCard({ partido }: { partido: Partido }) {
                   )}
                 </div>
               </div>
-              {partido.marcador_detalle?.resultado_final === 'victoria_a' && <Crown size={18} className="text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />}
-              {partido.marcador_detalle?.resultado_final === 'empate' && <Handshake size={18} className="text-slate-300 opacity-80" />}
+              {partido.marcador_detalle?.resultado_final === 'victoria_a' && (
+                <div className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
+                  Ganador
+                </div>
+              )}
+              {partido.marcador_detalle?.resultado_final === 'empate' && (
+                <div className="bg-white/5 text-slate-300 border border-white/10 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
+                  Empate
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
@@ -1017,8 +1025,16 @@ function ResultCard({ partido }: { partido: Partido }) {
                   )}
                 </div>
               </div>
-              {partido.marcador_detalle?.resultado_final === 'victoria_b' && <Crown size={18} className="text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />}
-              {partido.marcador_detalle?.resultado_final === 'empate' && <Handshake size={18} className="text-slate-300 opacity-80" />}
+              {partido.marcador_detalle?.resultado_final === 'victoria_b' && (
+                <div className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
+                  Ganador
+                </div>
+              )}
+              {partido.marcador_detalle?.resultado_final === 'empate' && (
+                <div className="bg-white/5 text-slate-300 border border-white/10 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
+                  Empate
+                </div>
+              )}
             </div>
           </div>
         ) : (

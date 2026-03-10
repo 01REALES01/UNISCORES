@@ -776,6 +776,11 @@ export default function MatchControlPage() {
 
                             {/* Team A */}
                             <div className="flex flex-col items-center group order-1">
+                                {disciplinaName === 'Ajedrez' && match.marcador_detalle?.resultado_final === 'victoria_a' && (
+                                    <div className="mb-2 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+                                        Ganador
+                                    </div>
+                                )}
                                 <div className="relative">
                                     <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/10 flex items-center justify-center text-xl md:text-3xl font-bold border-2 md:border-4 border-white/10 shadow-xl relative z-10 backdrop-blur-sm">
@@ -795,39 +800,16 @@ export default function MatchControlPage() {
 
                                 {/* CHESS: Visual Result instead of numeric score */}
                                 {disciplinaName === 'Ajedrez' ? (
-                                    <div className="flex flex-col items-center gap-3">
-                                        {match.marcador_detalle?.resultado_final ? (
-                                            <>
-                                                {match.marcador_detalle.resultado_final === 'empate' ? (
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <Handshake className="w-16 h-16 md:w-20 md:h-20 text-slate-300" />
-                                                        <div className="bg-white/10 backdrop-blur-sm px-5 py-2 rounded-2xl border border-white/20">
-                                                            <span className="text-lg md:text-2xl font-black uppercase tracking-wider text-white/90">Empate</span>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <Crown className="w-16 h-16 md:w-20 md:h-20 text-amber-400 drop-shadow-md" />
-                                                        <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 backdrop-blur-sm px-5 py-2 rounded-2xl border border-amber-400/30">
-                                                            <span className="text-xs font-bold text-amber-300/70 uppercase tracking-widest">Ganador</span>
-                                                        </div>
-                                                        <span className="text-lg md:text-2xl font-black text-white drop-shadow-md">
-                                                            {getDisplayName(match, match.marcador_detalle.resultado_final === 'victoria_a' ? 'a' : 'b')}
-                                                        </span>
-                                                        <span className="text-xs text-white/40 font-medium">
-                                                            {getCarreraSubtitle(match, match.marcador_detalle.resultado_final === 'victoria_a' ? 'a' : 'b')}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="flex flex-col items-center gap-2">
-                                                <div className="bg-white/10 backdrop-blur-sm px-6 py-3 rounded-2xl border border-white/20">
-                                                    <span className="text-2xl md:text-4xl font-black text-white/60 tracking-widest">VS</span>
-                                                </div>
-                                                <span className="text-xs text-white/30 font-medium">Sin resultado aún</span>
-                                            </div>
-                                        )}
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="bg-white/5 backdrop-blur-sm px-6 py-2 rounded-2xl border border-white/10">
+                                            {match.marcador_detalle?.resultado_final === 'empate' ? (
+                                                <span className="text-xl md:text-3xl font-black text-slate-300 tracking-widest uppercase">Empate</span>
+                                            ) : match.estado === 'finalizado' ? (
+                                                <span className="text-xl md:text-3xl font-black text-white/40 tracking-widest uppercase">FINAL</span>
+                                            ) : (
+                                                <span className="text-2xl md:text-4xl font-black text-white/40 tracking-widest">VS</span>
+                                            )}
+                                        </div>
                                     </div>
                                 ) : (
                                     <>
@@ -945,6 +927,11 @@ export default function MatchControlPage() {
 
                             {/* Team B */}
                             <div className="flex flex-col items-center group order-3">
+                                {disciplinaName === 'Ajedrez' && match.marcador_detalle?.resultado_final === 'victoria_b' && (
+                                    <div className="mb-2 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+                                        Ganador
+                                    </div>
+                                )}
                                 <div className="relative">
                                     <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/10 flex items-center justify-center text-xl md:text-3xl font-bold border-2 md:border-4 border-white/10 shadow-xl relative z-10 backdrop-blur-sm">
