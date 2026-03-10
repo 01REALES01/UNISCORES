@@ -813,13 +813,15 @@ export default function MatchControlPage() {
                                     <>
                                 {/* STANDARD SCOREBOARD */}
                                 <div className="flex items-center justify-center gap-2 md:gap-4 leading-none relative group/score">
-                                    <button
-                                        onClick={() => setIsEditingScore(true)}
-                                        className="absolute -top-6 bg-white/10 hover:bg-white/20 p-1.5 rounded-full opacity-0 group-hover/score:opacity-100 transition-opacity"
-                                        title="Ajuste Manual de Marcador"
-                                    >
-                                        <Edit2 size={12} />
-                                    </button>
+                                    {match.estado === 'en_vivo' && (
+                                        <button
+                                            onClick={() => setIsEditingScore(true)}
+                                            className="absolute -top-6 bg-white/10 hover:bg-white/20 p-1.5 rounded-full opacity-0 group-hover/score:opacity-100 transition-opacity"
+                                            title="Ajuste Manual de Marcador"
+                                        >
+                                            <Edit2 size={12} />
+                                        </button>
+                                    )}
                                     <span className="text-5xl md:text-8xl font-black tabular-nums tracking-tighter drop-shadow-xl">{scoreA}</span>
                                     <span className="text-2xl md:text-4xl font-bold text-white/40">-</span>
                                     <span className="text-5xl md:text-8xl font-black tabular-nums tracking-tighter drop-shadow-xl">{scoreB}</span>
@@ -837,8 +839,9 @@ export default function MatchControlPage() {
                                 {/* Period/Quarter/Set Indicator */}
                                 {disciplinaName === 'Baloncesto' ? (
                                     <select
-                                        className="bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold appearance-none text-center cursor-pointer hover:bg-white/20 outline-none focus:ring-2 focus:ring-primary/50"
+                                        className={`bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold appearance-none text-center outline-none focus:ring-2 focus:ring-primary/50 ${match.estado !== 'en_vivo' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/20'}`}
                                         value={match.marcador_detalle?.cuarto_actual || 1}
+                                        disabled={match.estado !== 'en_vivo'}
                                         onChange={async (e) => {
                                             const newQ = parseInt(e.target.value);
                                             const newDetalle = { ...match.marcador_detalle, cuarto_actual: newQ };
@@ -856,8 +859,9 @@ export default function MatchControlPage() {
                                     </select>
                                 ) : ['Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName) ? (
                                     <select
-                                        className="bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold appearance-none text-center cursor-pointer hover:bg-white/20 outline-none focus:ring-2 focus:ring-primary/50 uppercase"
+                                        className={`bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold appearance-none text-center uppercase outline-none focus:ring-2 focus:ring-primary/50 ${match.estado !== 'en_vivo' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/20'}`}
                                         value={extra || 'Set 1'}
+                                        disabled={match.estado !== 'en_vivo'}
                                         onChange={async (e) => {
                                             const setNum = parseInt(e.target.value.replace(/\D/g, ''));
                                             const newDetalle = { ...match.marcador_detalle, set_actual: setNum };
@@ -1101,7 +1105,7 @@ export default function MatchControlPage() {
                             </table>
                         </div>
 
-                        {(match.estado === 'en_vivo' || match.estado === 'finalizado') && (
+                        {match.estado === 'en_vivo' && (
                             <div className="p-4 md:p-5 border-t border-white/5">
                                 {!showAdvancedEdit ? (
                                     <button onClick={openAdvancedEdit} className="w-full group relative overflow-hidden rounded-xl p-[1px] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,192,0,0.15)]">
@@ -1315,7 +1319,7 @@ export default function MatchControlPage() {
                                         stepText = nuevoEvento.tipo ? '1/1' : '';
                                     } else if (isChess && isVictoria) {
                                         stepText = nuevoEvento.equipo ? '2/2' : '1/2';
-                                    } else if (['Ajedrez', 'Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName)) {
+                                    } else if (['Ajedrez', 'Tenis', 'Tenis de Mesa'].includes(disciplinaName)) {
                                         stepText = nuevoEvento.equipo ? '2/2' : '1/2';
                                     } else {
                                         stepText = nuevoEvento.equipo ? (nuevoEvento.jugador_id ? '3/3' : '2/3') : '1/3';
@@ -1414,7 +1418,7 @@ export default function MatchControlPage() {
                                                     <button
                                                         key={team.id}
                                                         onClick={() => {
-                                                            const isIndividual = ['Ajedrez', 'Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName);
+                                                            const isIndividual = ['Ajedrez', 'Tenis', 'Tenis de Mesa'].includes(disciplinaName);
 
                                                             if (isIndividual && disciplinaName !== 'Ajedrez') {
                                                                 // Non-chess individual sports: auto-submit
@@ -1483,7 +1487,7 @@ export default function MatchControlPage() {
                                     )}
 
                                     {/* PLAYER SELECTOR — Solo para deportes colectivos que requieren jugador */}
-                                    {!['Ajedrez', 'Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName) && (
+                                    {!['Ajedrez', 'Tenis', 'Tenis de Mesa'].includes(disciplinaName) && (
                                         <div className={`transition-all duration-500 delay-100 ${nuevoEvento.equipo ? 'opacity-100 translate-x-0' : 'opacity-50 translate-x-4 pointer-events-none'}`}>
                                             <div className="flex justify-between items-center mb-3">
                                                 <p className="text-xs font-bold uppercase text-muted-foreground tracking-wider ml-1">3. Selecciona Jugador</p>
