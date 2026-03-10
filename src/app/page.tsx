@@ -483,19 +483,42 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid gap-8">
-            {/* Live Slider if no specific filter */}
-            {activeFilter === 'todos' && partidos.some(p => p.estado === 'en_vivo') && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 px-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-                  </span>
-                  <h2 className="text-sm font-black text-white uppercase tracking-widest">En Vivo ahora</h2>
+            {/* Live / Featured Slider */}
+            {(() => {
+              const sliderMatches = activeFilter === 'todos' 
+                ? partidos 
+                : partidos.filter(m => m.disciplinas?.name === activeFilter);
+              
+              const hasLive = sliderMatches.some(m => m.estado === 'en_vivo');
+              const hasProgrammed = sliderMatches.some(m => m.estado === 'programado');
+
+              return (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 px-2">
+                    {hasLive ? (
+                      <>
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                        </span>
+                        <h2 className="text-sm font-black text-white uppercase tracking-widest">En Vivo ahora</h2>
+                      </>
+                    ) : hasProgrammed ? (
+                      <>
+                        <Calendar size={14} className="text-orange-400" />
+                        <h2 className="text-sm font-black text-slate-300 uppercase tracking-widest">Próximos Partidos</h2>
+                      </>
+                    ) : (
+                      <>
+                         <Zap size={14} className="text-amber-500" />
+                         <h2 className="text-sm font-black text-amber-500/80 uppercase tracking-widest">Próximamente</h2>
+                      </>
+                    )}
+                  </div>
+                  <HeroSlider matches={partidos} activeFilter={activeFilter} />
                 </div>
-                <HeroSlider matches={partidos} activeFilter="todos" />
-              </div>
-            )}
+              );
+            })()}
 
             {/* QUINIELA CTA BANNER */}
             <div className="relative rounded-[2rem] overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group cursor-pointer mb-8 bg-black">
