@@ -34,19 +34,68 @@ export async function GET(request: NextRequest) {
         }
     )
 
-    // Handle OAuth callback (Google login, etc.)
+    // ── Handle OAuth callback (Microsoft / Google / etc.) ────────────────────
     if (code) {
-        await supabase.auth.exchangeCodeForSession(code)
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
+        if (error || !data.session) {
+            console.error('[Auth Callback] exchangeCodeForSession failed:', error?.message)
+            return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
+        }
+
+        // ── Ensure profile row exists (critical for new OAuth users) ─────────
+        const user = data.session.user
+        try {
+            const { data: existingProfile } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('id', user.id)
+                .single()
+
+            if (!existingProfile) {
+                // Auto-create profile for first-time OAuth users
+                const fullName =
+                    user.user_metadata?.full_name ||
+                    user.user_metadata?.name ||
+                    user.user_metadata?.preferred_username ||
+                    user.email?.split('@')[0] ||
+                    'Usuario'
+
+                const { error: insertError } = await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: user.id,
+                        email: user.email || '',
+                        full_name: fullName,
+                        role: 'public',
+                    }, { onConflict: 'id' })
+
+                if (insertError) {
+                    console.error('[Auth Callback] Profile upsert failed:', insertError.message)
+                    // Don't block the redirect — the client-side will retry
+                } else {
+                    console.log('[Auth Callback] Profile auto-created for:', user.email)
+                }
+            }
+        } catch (err: any) {
+            console.error('[Auth Callback] Profile check/creation error:', err?.message)
+            // Non-fatal — continue to redirect
+        }
     }
 
-    // Handle Magic Link callback (email OTP)
+    // ── Handle Magic Link callback (email OTP) ──────────────────────────────
     if (token_hash && type) {
-        await supabase.auth.verifyOtp({
+        const { error } = await supabase.auth.verifyOtp({
             token_hash,
             type: type as 'magiclink' | 'email',
         })
+
+        if (error) {
+            console.error('[Auth Callback] verifyOtp failed:', error.message)
+            return NextResponse.redirect(`${origin}/login?error=otp_failed`)
+        }
     }
 
-    // Redirect to home page after login
+    // ── Redirect to home page after successful login ────────────────────────
     return NextResponse.redirect(`${origin}/`)
 }

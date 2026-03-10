@@ -12,20 +12,9 @@ import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [open, setOpen] = useState(false);
-    const [profileTimeout, setProfileTimeout] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
-    const { user, profile, loading, isStaff, isAdmin, signOut } = useAuth();
-
-    // Timeout for profile loading — if profile doesn't load in 5 seconds, stop waiting
-    useEffect(() => {
-        if (user && !profile && !profileTimeout) {
-            const timer = setTimeout(() => {
-                setProfileTimeout(true);
-            }, 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [user, profile, profileTimeout]);
+    const { user, profile, loading, isStaff, isAdmin, signOut, profileLoading } = useAuth();
 
     // Redirect to login if not authenticated or not staff
     useEffect(() => {
@@ -53,14 +42,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return null; // Will redirect via useEffect
     }
 
-    // Authenticated but profile not loaded yet — keep showing loader
-    // This prevents showing "Acceso Restringido" before the profile fetch completes
-    if (user && !profile && !profileTimeout) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805]">
-                <UniqueLoading size="lg" />
-            </div>
-        );
+    // Authenticated but profile still loading (retry in progress)
+    // This replaces the old timeout-based guard and prevents the false
+    // "Acceso Restringido" flash during profile fetch
+    if (profileLoading || (!profile && !loading)) {
+        // Show a brief loader — profile fetch with retries is in progress
+        // Safety: if profileLoading is false and profile is null, the user
+        // genuinely has no profile (all retries exhausted) — fall through
+        if (profileLoading) {
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805]">
+                    <UniqueLoading size="lg" />
+                </div>
+            );
+        }
     }
 
     // Authenticated but no staff role — show access denied

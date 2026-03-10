@@ -19,6 +19,7 @@ type AuthContextType = {
     user: User | null;
     profile: Profile | null;
     loading: boolean;
+    profileLoading: boolean;
     isAdmin: boolean;
     isDataEntry: boolean;
     isStaff: boolean;
@@ -30,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
     user: null,
     profile: null,
     loading: true,
+    profileLoading: false,
     isAdmin: false,
     isDataEntry: false,
     isStaff: false,
@@ -37,13 +39,21 @@ const AuthContext = createContext<AuthContextType>({
     refreshProfile: async () => { },
 });
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [profile, setProfile] = useState<Profile | null>(null);
-    const [loading, setLoading] = useState(true);
-    const mountedRef = useRef(true);
+// ── Constants ────────────────────────────────────────────────────────────────
+const PROFILE_RETRY_ATTEMPTS = 3;
+const PROFILE_RETRY_DELAY_MS = 800;
+const SAFETY_TIMEOUT_MS = 10_000; // 10s — generous for slow networks / cold starts
 
-    const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+/**
+ * Fetch profile with retry logic.
+ * On OAuth first-login, the callback creates the profile row server-side,
+ * but there can be a brief replication delay. Retrying handles this gracefully.
+ */
+async function fetchProfileWithRetry(
+    userId: string,
+    attempts: number = PROFILE_RETRY_ATTEMPTS
+): Promise<Profile | null> {
+    for (let i = 0; i < attempts; i++) {
         try {
             const { data, error } = await supabase
                 .from('profiles')
@@ -51,30 +61,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 .eq('id', userId)
                 .single();
 
-            if (!mountedRef.current) return null;
-
             if (data && !error) {
-                const profileData = data as Profile;
-                setProfile(profileData);
-                return profileData;
-            } else {
-                console.warn('Profile not found for user:', userId, error?.message);
-                setProfile(null);
-                return null;
+                return data as Profile;
+            }
+
+            // If profile not found (PGRST116 = single row not found), retry after delay
+            if (error?.code === 'PGRST116' && i < attempts - 1) {
+                console.log(`[useAuth] Profile not found yet (attempt ${i + 1}/${attempts}), retrying in ${PROFILE_RETRY_DELAY_MS}ms...`);
+                await new Promise(r => setTimeout(r, PROFILE_RETRY_DELAY_MS));
+                continue;
+            }
+
+            if (error) {
+                console.warn(`[useAuth] Profile fetch error (attempt ${i + 1}):`, error.message);
             }
         } catch (err: any) {
             // Ignore AbortError — happens during navigation
             if (err?.name === 'AbortError' || err?.message?.includes('abort')) {
-                console.log('Profile fetch aborted (navigation in progress)');
+                console.log('[useAuth] Profile fetch aborted (navigation in progress)');
                 return null;
             }
-            console.error('Error fetching profile:', err);
-            if (mountedRef.current) {
-                setProfile(null);
+            console.error(`[useAuth] Profile fetch crash (attempt ${i + 1}):`, err?.message);
+
+            if (i < attempts - 1) {
+                await new Promise(r => setTimeout(r, PROFILE_RETRY_DELAY_MS));
             }
+        }
+    }
+
+    return null;
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+    const [user, setUser] = useState<User | null>(null);
+    const [profile, setProfile] = useState<Profile | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [profileLoading, setProfileLoading] = useState(false);
+    const mountedRef = useRef(true);
+    const profileFetchInFlightRef = useRef(false);
+
+    /**
+     * Fetch and set profile, with retry and deduplication.
+     * Returns the profile if found, null otherwise.
+     */
+    const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+        // Deduplicate concurrent profile fetches
+        if (profileFetchInFlightRef.current) {
             return null;
         }
-    }, []);
+
+        profileFetchInFlightRef.current = true;
+        if (mountedRef.current) setProfileLoading(true);
+
+        try {
+            const result = await fetchProfileWithRetry(userId);
+
+            if (!mountedRef.current) return null;
+
+            if (result) {
+                setProfile(result);
+                return result;
+            } else {
+                console.warn('[useAuth] Profile not found after all retries for user:', userId);
+                setProfile(null);
+                return null;
+            }
+        } finally {
+            profileFetchInFlightRef.current = false;
+            if (mountedRef.current) setProfileLoading(false);
+        }
+    }, []); // No dependencies — stable identity, no re-render loops
 
     const refreshProfile = useCallback(async () => {
         if (user) {
@@ -86,11 +142,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         mountedRef.current = true;
 
         // Safety timeout — never stay on loading screen forever
+        // Generous to accommodate slow networks and Supabase cold starts
         const safetyTimer = setTimeout(() => {
-            if (mountedRef.current) {
+            if (mountedRef.current && loading) {
+                console.warn('[useAuth] Safety timeout reached — forcing loading=false');
                 setLoading(false);
+                setProfileLoading(false);
             }
-        }, 2000);
+        }, SAFETY_TIMEOUT_MS);
 
         const getInitialSession = async () => {
             try {
@@ -101,19 +160,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const currentUser = session?.user ?? null;
                 setUser(currentUser);
 
-                // Set loading false IMMEDIATELY after getting session
-                // Profile loads in background — pages don't need to wait for it
-                if (mountedRef.current) setLoading(false);
-
                 if (currentUser) {
-                    // Fire and forget — profile arrives async
-                    fetchProfile(currentUser.id);
+                    // CRITICAL: Wait for profile before setting loading=false
+                    // This prevents the brief "no profile" flash that causes
+                    // "Acceso Restringido" on admin pages
+                    await fetchProfile(currentUser.id);
                 }
             } catch (err: any) {
                 if (err?.name === 'AbortError' || err?.message?.includes('abort')) {
                     return;
                 }
-                console.error('Error getting session:', err);
+                console.error('[useAuth] Error getting session:', err);
             } finally {
                 if (mountedRef.current) {
                     setLoading(false);
@@ -127,18 +184,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             async (event, session) => {
                 if (!mountedRef.current) return;
 
-                console.log('Auth state change:', event);
+                console.log('[useAuth] Auth state change:', event);
 
                 const currentUser = session?.user ?? null;
                 setUser(currentUser);
 
-                if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+                if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+                    // Fetch profile WITH retry — covers the OAuth callback race
+                    // where profile was just created server-side
                     await fetchProfile(currentUser.id);
-                    if (mountedRef.current) {
-                        setLoading(false);
-                    }
                 } else if (!currentUser) {
                     setProfile(null);
+                }
+
+                // For auth state changes AFTER initial load, ensure loading is false
+                if (mountedRef.current) {
                     setLoading(false);
                 }
             }
@@ -156,7 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await supabase.auth.signOut();
         } catch (err: any) {
             if (err?.name !== 'AbortError') {
-                console.error('Sign out error:', err);
+                console.error('[useAuth] Sign out error:', err);
             }
         }
         setUser(null);
@@ -172,6 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             user,
             profile,
             loading,
+            profileLoading,
             isAdmin,
             isDataEntry,
             isStaff,

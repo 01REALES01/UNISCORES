@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
-import { Plus, Calendar, Clock, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity, Loader2, Crown, Handshake, AlertTriangle, X } from "lucide-react";
+import { Plus, Calendar, Clock, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity, Loader2, Crown, Handshake, AlertTriangle, X, Users } from "lucide-react";
 import { toast } from "sonner";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { Card, Badge, Avatar, LiveIndicator } from "@/components/ui-primitives";
@@ -78,22 +78,30 @@ export default function PartidosPage() {
         if (!matchToDelete) return;
         setDeletingId(matchToDelete.id);
         
-        // 1. Clean related tables just in case DB cascade is missing
-        await supabase.from('olympics_eventos').delete().eq('partido_id', matchToDelete.id);
-        await supabase.from('olympics_jugadores').delete().eq('partido_id', matchToDelete.id);
-        
-        // 2. Delete Match
-        const { error } = await supabase.from('partidos').delete().eq('id', matchToDelete.id);
-        
-        if (error) {
-            toast.error("Error al eliminar partido: " + error.message);
-        } else {
-            toast.success("Partido eliminado exitosamente");
-            await fetchPartidos();
+        try {
+            // 1. Clean related tables just in case DB cascade is missing
+            await supabase.from('olympics_eventos').delete().eq('partido_id', matchToDelete.id);
+            await supabase.from('olympics_jugadores').delete().eq('partido_id', matchToDelete.id);
+            await supabase.from('pronosticos').delete().eq('match_id', matchToDelete.id);
+            await supabase.from('noticias').update({ partido_id: null }).eq('partido_id', matchToDelete.id);
+            
+            // 2. Delete Match (using .select() to confirm row removal)
+            const { data, error } = await supabase.from('partidos').delete().eq('id', matchToDelete.id).select();
+            
+            if (error) {
+                toast.error("Error BD: " + error.message);
+            } else if (!data || data.length === 0) {
+                toast.error("Alerta BBDD: Permisos insuficientes (RLS) para borrar, contacta soporte.");
+            } else {
+                toast.success("Partido eliminado permanentemente.");
+                await fetchPartidos();
+            }
+        } catch (err: any) {
+            toast.error("Error al procesar: " + err.message);
+        } finally {
+            setDeletingId(null);
+            setMatchToDelete(null);
         }
-        
-        setDeletingId(null);
-        setMatchToDelete(null);
     };
 
     const filteredPartidos = partidos.filter(p => {
@@ -401,7 +409,43 @@ export default function PartidosPage() {
                                         </div>
                                     </div>
 
-                                    {/* Teams & Score */}
+                                    {/* Teams & Score — or Swimming Event */}
+                                    {partido.marcador_detalle?.tipo === 'carrera' ? (
+                                        /* ── Swimming / Race Event Card ────────────────── */
+                                        <div className="flex flex-col items-center gap-3 mb-5">
+                                            <div className="text-center">
+                                                <h3 className="text-lg font-black text-white tracking-tight leading-tight">
+                                                    {partido.marcador_detalle?.distancia && partido.marcador_detalle?.estilo
+                                                        ? `${partido.marcador_detalle.distancia} ${partido.marcador_detalle.estilo}`
+                                                        : partido.equipo_a}
+                                                </h3>
+                                                {partido.marcador_detalle?.serie && (
+                                                    <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">
+                                                        Serie {partido.marcador_detalle.serie}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                                                <Users size={12} />
+                                                <span className="font-bold">{(partido.marcador_detalle?.participantes || []).length} participantes</span>
+                                            </div>
+                                            {isFinished && (partido.marcador_detalle?.participantes || []).length > 0 && (
+                                                <div className="flex gap-3 items-end">
+                                                    {(partido.marcador_detalle.participantes as any[])
+                                                        .filter((p: any) => p.posicion && p.posicion <= 3 && p.estado === 'valid')
+                                                        .sort((a: any, b: any) => a.posicion - b.posicion)
+                                                        .map((p: any) => (
+                                                            <div key={p.id} className="flex flex-col items-center gap-1 text-center">
+                                                                <span className="text-lg">{p.posicion === 1 ? '🥇' : p.posicion === 2 ? '🥈' : '🥉'}</span>
+                                                                <span className="text-[10px] font-bold text-white truncate max-w-[70px]">{p.nombre}</span>
+                                                                <span className="text-[9px] text-cyan-400/60 font-mono">{p.tiempo || '—'}</span>
+                                                            </div>
+                                                        ))
+                                                    }
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
                                     <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center mb-5">
                                         {/* Team A */}
                                         <div className="flex flex-col items-center gap-2 text-center">
@@ -477,6 +521,7 @@ export default function PartidosPage() {
                                             </div>
                                         </div>
                                     </div>
+                                    )}
 
                                     {/* Bottom bar */}
                                     <div className="flex justify-between items-center pt-4 border-t border-white/5">

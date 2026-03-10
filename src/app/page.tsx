@@ -825,6 +825,31 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
           </div>
 
           {/* Scores */}
+          {partido.marcador_detalle?.tipo === 'carrera' ? (
+            /* ── Swimming Live Card ───── */
+            <div className="flex-1 flex flex-col items-center justify-center gap-3">
+              <h3 className="text-2xl font-black text-white tracking-tight text-center leading-tight">
+                {partido.marcador_detalle?.distancia && partido.marcador_detalle?.estilo
+                  ? `${partido.marcador_detalle.distancia} ${partido.marcador_detalle.estilo}`
+                  : partido.equipo_a}
+              </h3>
+              {partido.marcador_detalle?.serie && (
+                <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Serie {partido.marcador_detalle.serie}</span>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500 shadow-[0_0_12px_rgba(6,182,212,1)]" />
+                </span>
+                <span className="text-sm font-black text-cyan-400 uppercase tracking-widest">PRUEBA EN CURSO</span>
+              </div>
+              <span className="text-[11px] text-slate-500 font-bold">{(partido.marcador_detalle?.participantes || []).length} nadadores</span>
+              <div className={cn(
+                "text-[10px] font-bold tracking-[0.2em] uppercase",
+                genero === 'femenino' ? "text-pink-400" : genero === 'mixto' ? "text-purple-400" : "text-blue-400"
+              )}>{genero}</div>
+            </div>
+          ) : (
           <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
             {/* Team A */}
             <div className="flex flex-col items-center gap-2 text-center">
@@ -890,6 +915,7 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
               </div>
             </div>
           </div>
+          )}
 
           {/* Footer Action */}
           <div className={cn(
@@ -957,6 +983,18 @@ function UpcomingMatchCard({ partido }: { partido: Partido }) {
         </div>
 
         {/* Teams */}
+        {partido.marcador_detalle?.tipo === 'carrera' ? (
+          <div className="relative z-10 flex flex-col items-center gap-2 my-2">
+            <h3 className="text-sm font-black text-white tracking-tight text-center">
+              {partido.marcador_detalle?.distancia && partido.marcador_detalle?.estilo
+                ? `${partido.marcador_detalle.distancia} ${partido.marcador_detalle.estilo}`
+                : partido.equipo_a}
+            </h3>
+            <span className="text-[10px] text-slate-500 font-bold">
+              {(partido.marcador_detalle?.participantes || []).length} participantes
+            </span>
+          </div>
+        ) : (
         <div className="relative z-10 space-y-3 my-2">
           <div className="flex items-center gap-3">
             <Avatar name={getDisplayName(partido, 'a')} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-[#0a0805]" />
@@ -978,6 +1016,7 @@ function UpcomingMatchCard({ partido }: { partido: Partido }) {
             </div>
           </div>
         </div>
+        )}
 
         {/* Footer Action */}
         <div className={cn(
@@ -1031,7 +1070,28 @@ function ResultCard({ partido }: { partido: Partido }) {
         </div>
 
         {/* Teams */}
-        {sportName === 'Ajedrez' ? (
+        {partido.marcador_detalle?.tipo === 'carrera' ? (
+          <div className="relative z-10 flex flex-col items-center gap-2 my-2">
+            <h3 className="text-sm font-black text-white tracking-tight text-center">
+              {partido.marcador_detalle?.distancia && partido.marcador_detalle?.estilo
+                ? `${partido.marcador_detalle.distancia} ${partido.marcador_detalle.estilo}`
+                : partido.equipo_a}
+            </h3>
+            {/* Podium summary */}
+            <div className="flex gap-3 items-end">
+              {((partido.marcador_detalle?.participantes || []) as any[])
+                .filter((p: any) => p.posicion && p.posicion <= 3 && p.estado === 'valid')
+                .sort((a: any, b: any) => a.posicion - b.posicion)
+                .map((p: any) => (
+                  <div key={p.id} className="flex flex-col items-center gap-0.5 text-center">
+                    <span className="text-sm">{p.posicion === 1 ? '🥇' : p.posicion === 2 ? '🥈' : '🥉'}</span>
+                    <span className="text-[10px] font-bold text-white truncate max-w-[60px]">{p.nombre}</span>
+                    <span className="text-[9px] text-cyan-400/60 font-mono">{p.tiempo || '—'}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        ) : sportName === 'Ajedrez' ? (
           <div className={cn("relative z-10 space-y-2", partido.marcador_detalle?.resultado_final === 'empate' && "pr-12")}>
             {partido.marcador_detalle?.resultado_final === 'empate' && (
               <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/5 text-slate-300 border border-white/10 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">

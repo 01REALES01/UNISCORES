@@ -6,6 +6,18 @@ export const DEPORTES_INDIVIDUALES = [
     'Atletismo'
 ];
 
+// ── Swimming-specific constants ──────────────────────────────────────────────
+export const NATACION_ESTILOS = ['Libre', 'Pecho', 'Espalda', 'Mariposa', 'Combinado'];
+export const NATACION_DISTANCIAS = ['25m', '50m', '100m', '200m'];
+export const NATACION_PUNTOS: Record<number, number> = { 1: 5, 2: 3, 3: 1 };
+
+export const RACE_SPORTS = ['Natación', 'Atletismo', 'Ciclismo', 'Triatlón'];
+
+export function isRaceSport(sportName?: string): boolean {
+    if (!sportName) return false;
+    return RACE_SPORTS.includes(sportName);
+}
+
 export const LUGARES_OLIMPICOS = [
     'Coliseo Uninorte',
     'Cancha de Fútbol',

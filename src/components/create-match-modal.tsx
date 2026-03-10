@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button, Input, Badge } from "@/components/ui-primitives";
 import { X, Save, Trophy, Loader2, Calendar, Users, Activity, MapPin, Clock, Plus, GraduationCap, Swords } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { CARRERAS_UNINORTE, LUGARES_OLIMPICOS } from "@/lib/constants";
+import { CARRERAS_UNINORTE, LUGARES_OLIMPICOS, NATACION_ESTILOS, NATACION_DISTANCIAS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 type CreateMatchModalProps = {
@@ -37,6 +37,10 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
     const [grupo, setGrupo] = useState("");
     const [bracketOrder, setBracketOrder] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
+    // Swimming-specific fields
+    const [natEstilo, setNatEstilo] = useState('Libre');
+    const [natDistancia, setNatDistancia] = useState('50m');
+    const [natSerie, setNatSerie] = useState('');
 
     if (!isOpen) return null;
 
@@ -49,7 +53,7 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
 
         try {
             if (isRaceSport) {
-                if (!equipoA) throw new Error("Por favor ingresa el nombre de la prueba/evento");
+                if (disciplina !== 'Natación' && !equipoA) throw new Error("Por favor ingresa el nombre de la prueba/evento");
             } else if (isIndividual) {
                 if (!delegacionA || !delegacionB) throw new Error('Debes seleccionar la carrera de cada participante');
                 if (!equipoA || !equipoB) throw new Error('Debes ingresar el nombre de cada participante');
@@ -72,7 +76,12 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                 marcadorInicial = {
                     tipo: 'carrera',
                     fase: 'Final',
-                    participantes: []
+                    participantes: [],
+                    ...(disciplina === 'Natación' ? {
+                        estilo: natEstilo,
+                        distancia: natDistancia,
+                        ...(natSerie ? { serie: parseInt(natSerie) } : {}),
+                    } : {}),
                 };
             } else if (disciplina === 'Fútbol') {
                 marcadorInicial = {
@@ -144,7 +153,7 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
             // Insertar partido
             const { error } = await supabase.from('partidos').insert({
                 disciplina_id: disc?.id,
-                equipo_a: equipoA,
+                equipo_a: isRaceSport && disciplina === 'Natación' ? `${natDistancia} ${natEstilo}` : equipoA,
                 equipo_b: isRaceSport ? 'Evento Múltiple' : equipoB,
                 delegacion_a: isIndividual ? delegacionA : equipoA,
                 delegacion_b: isIndividual ? delegacionB : equipoB,
@@ -252,19 +261,64 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
 
                     {/* 2. Equipos / Evento */}
                     {isRaceSport ? (
-                        <div className="space-y-1.5 animate-in fade-in slide-in-from-left-4">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 ml-1">
-                                <Trophy size={12} className="text-primary" /> Nombre de la Prueba / Evento
-                            </label>
-                            <Input
-                                placeholder="Ej: 100m Libres - Final"
-                                value={equipoA}
-                                onChange={(e) => setEquipoA(e.target.value)}
-                                className="bg-black/40 border-white/5 focus:border-primary/50 h-10 text-sm font-medium"
-                            />
-                            <p className="text-[10px] text-muted-foreground ml-1">
-                                * Se agregarán los participantes en la pantalla de gestión.
-                            </p>
+                        <div className="space-y-3 animate-in fade-in slide-in-from-left-4">
+                            {disciplina === 'Natación' ? (
+                                <>
+                                    {/* Swimming: Style + Distance + Serie */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Estilo</label>
+                                            <select
+                                                value={natEstilo}
+                                                onChange={(e) => setNatEstilo(e.target.value)}
+                                                className="w-full h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-sm font-semibold text-white focus:border-cyan-500 outline-none"
+                                            >
+                                                {NATACION_ESTILOS.map(e => <option key={e} value={e}>{e}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Distancia</label>
+                                            <select
+                                                value={natDistancia}
+                                                onChange={(e) => setNatDistancia(e.target.value)}
+                                                className="w-full h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-sm font-semibold text-white focus:border-cyan-500 outline-none"
+                                            >
+                                                {NATACION_DISTANCIAS.map(d => <option key={d} value={d}>{d}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Serie (opcional)</label>
+                                        <Input
+                                            type="number"
+                                            placeholder="Ej: 1, 2, 3..."
+                                            value={natSerie}
+                                            onChange={(e) => setNatSerie(e.target.value)}
+                                            className="bg-black/40 border-white/5 focus:border-cyan-500 h-10 text-sm font-medium w-32"
+                                            min={1}
+                                        />
+                                    </div>
+                                    <div className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl">
+                                        <p className="text-xs text-cyan-400 font-semibold">📋 Nombre del evento: <span className="text-white">{natDistancia} {natEstilo}{natSerie ? ` - Serie ${natSerie}` : ''}</span></p>
+                                        <p className="text-[10px] text-cyan-400/60 mt-1">* Los nadadores se agregarán en la pantalla de gestión.</p>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 ml-1">
+                                        <Trophy size={12} className="text-primary" /> Nombre de la Prueba / Evento
+                                    </label>
+                                    <Input
+                                        placeholder="Ej: 100m Salto de longitúd - Final"
+                                        value={equipoA}
+                                        onChange={(e) => setEquipoA(e.target.value)}
+                                        className="bg-black/40 border-white/5 focus:border-primary/50 h-10 text-sm font-medium"
+                                    />
+                                    <p className="text-[10px] text-muted-foreground ml-1">
+                                        * Se agregarán los participantes en la pantalla de gestión.
+                                    </p>
+                                </>
+                            )}
                         </div>
                     ) : (
                         <div className="relative flex flex-col sm:flex-row items-stretch justify-between gap-4 p-4 rounded-2xl bg-zinc-900/50 border border-white/5 shadow-inner">
@@ -514,7 +568,7 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                     </Button>
                     <Button
                         onClick={handleCreate}
-                        disabled={loading || !equipoA || (!isRaceSport && !equipoB)}
+                        disabled={loading || (!isRaceSport && (!equipoA || !equipoB)) || (isRaceSport && disciplina !== 'Natación' && !equipoA)}
                         className={`flex-[2] h-12 rounded-xl text-sm font-bold shadow-xl transition-all duration-300 relative overflow-hidden group ${(!equipoA || (!isRaceSport && !equipoB)) ? 'opacity-50 cursor-not-allowed bg-zinc-800 text-muted-foreground' : `bg-gradient-to-r ${selectedDiscColor} hover:scale-[1.01] hover:shadow-2xl`}`}
                     >
                         {loading ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2" size={18} />}

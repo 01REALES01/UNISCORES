@@ -76,3 +76,73 @@ export function getCarreraSubtitle(partido: PartidoLike, side: 'a' | 'b'): strin
     }
     return partido.carrera_b?.nombre || partido.delegacion_b || null;
 }
+
+// ── Race / Swimming Helpers ──────────────────────────────────────────────────
+
+import { isRaceSport as _isRaceSport } from './constants';
+export { _isRaceSport as isRaceSportCheck };
+
+/**
+ * Check if a partido uses the multi-competitor race model
+ */
+export function isRaceMatch(partido: { marcador_detalle?: any }): boolean {
+    return partido?.marcador_detalle?.tipo === 'carrera';
+}
+
+/**
+ * Generate a human-readable title for a swimming/race event.
+ * e.g. "50m Libre" or the event name stored in equipo_a.
+ */
+export function getSwimmingEventTitle(partido: PartidoLike & { marcador_detalle?: any }): string {
+    const det = partido.marcador_detalle || {};
+    if (det.distancia && det.estilo) {
+        return `${det.distancia} ${det.estilo}`;
+    }
+    // Fallback to equipo_a which stores the event name
+    return partido.equipo_a || 'Prueba de Natación';
+}
+
+/**
+ * Parse a time string (mm:ss.xx or ss.xx) into milliseconds for accurate sorting.
+ * Returns Infinity if unparseable (so invalid times sort to the bottom).
+ */
+export function parseTimeToMs(timeStr?: string): number {
+    if (!timeStr || timeStr.trim() === '') return Infinity;
+    const cleaned = timeStr.trim();
+
+    // Format: mm:ss.xx
+    const longMatch = cleaned.match(/^(\d{1,2}):(\d{1,2})\.(\d{1,3})$/);
+    if (longMatch) {
+        const mins = parseInt(longMatch[1]);
+        const secs = parseInt(longMatch[2]);
+        const ms = parseInt(longMatch[3].padEnd(3, '0'));
+        return mins * 60000 + secs * 1000 + ms;
+    }
+
+    // Format: ss.xx
+    const shortMatch = cleaned.match(/^(\d{1,3})\.(\d{1,3})$/);
+    if (shortMatch) {
+        const secs = parseInt(shortMatch[1]);
+        const ms = parseInt(shortMatch[2].padEnd(3, '0'));
+        return secs * 1000 + ms;
+    }
+
+    // Format: mm:ss (no ms)
+    const noMsMatch = cleaned.match(/^(\d{1,2}):(\d{1,2})$/);
+    if (noMsMatch) {
+        const mins = parseInt(noMsMatch[1]);
+        const secs = parseInt(noMsMatch[2]);
+        return mins * 60000 + secs * 1000;
+    }
+
+    return Infinity;
+}
+
+/**
+ * Validate time format: accepts mm:ss.xx, ss.xx, or mm:ss
+ */
+export function isValidTimeFormat(timeStr: string): boolean {
+    if (!timeStr || timeStr.trim() === '') return true; // Empty is OK (pending)
+    return parseTimeToMs(timeStr) !== Infinity;
+}
+

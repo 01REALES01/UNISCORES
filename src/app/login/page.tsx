@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Button, Input } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { Lock, Trophy, Mail, ArrowRight, UserPlus, LogIn, Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { SmokeyBackground } from "@/components/ui/login-form";
@@ -14,6 +14,18 @@ import { AnimatedFormField, ModernButton, SocialButton } from "@/components/ui/s
 type AuthMode = 'login' | 'register';
 
 export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#17130D]">
+                <UniqueLoading size="lg" />
+            </div>
+        }>
+            <LoginPageContent />
+        </Suspense>
+    );
+}
+
+function LoginPageContent() {
     const [mode, setMode] = useState<AuthMode>('login');
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -24,7 +36,20 @@ export default function LoginPage() {
     const [success, setSuccess] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, loading: authLoading } = useAuth();
+
+    // Show error from auth callback redirect
+    useEffect(() => {
+        const callbackError = searchParams.get('error');
+        if (callbackError) {
+            const messages: Record<string, string> = {
+                auth_callback_failed: 'Error al autenticar con Microsoft. Intenta de nuevo.',
+                otp_failed: 'El enlace de verificación ha expirado o es inválido.',
+            };
+            setError(messages[callbackError] || 'Ocurrió un error durante la autenticación.');
+        }
+    }, [searchParams]);
 
     // If already logged in, redirect to home
     useEffect(() => {

@@ -1,18 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Trash2, Save, Medal, Trophy, Timer, ArrowDown01, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Plus, Trash2, Save, Medal, Trophy, Timer, ArrowDown01, CheckCircle2, AlertTriangle, Ban, Clock, GraduationCap } from "lucide-react";
 import { Button, Input, Badge, Card } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { CARRERAS_UNINORTE, NATACION_PUNTOS } from "@/lib/constants";
+import { parseTimeToMs, isValidTimeFormat } from "@/lib/sport-helpers";
+import { toast } from "sonner";
 
-type Participante = {
-    id: string; // uuid o random string
+// ── Types ────────────────────────────────────────────────────────────────────
+
+export type ParticipantStatus = 'valid' | 'dns' | 'dq' | 'pending';
+
+export type Participante = {
+    id: string;
     nombre: string;
-    equipo: string; // Facultad/Delegación
+    carrera: string;       // Carrera universitaria (e.g. "Ingeniería de Sistemas")
+    carrera_id?: number;
     carril?: number;
-    tiempo?: string; // "10.55"
-    posicion?: number; // 1, 2, 3...
+    tiempo?: string;       // Display format: "mm:ss.xx" or "ss.xx"
+    tiempo_ms?: number;    // Milliseconds — used for sorting
+    estado: ParticipantStatus;
+    posicion?: number;
     puntos?: number;
 };
 
@@ -23,126 +33,197 @@ type RaceControlProps = {
     isLocked?: boolean;
 };
 
-export function RaceControl({ matchId, detalle, onUpdate, isLocked = false }: RaceControlProps) {
-    // Si no hay participantes, inicializar vacío
-    const [participantes, setParticipantes] = useState<Participante[]>(detalle.participantes || []);
-    const [newItem, setNewItem] = useState({ nombre: "", equipo: "", carril: "" });
-    const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
+// ── Status config ────────────────────────────────────────────────────────────
 
-    // Sincronizar estado local si detalle cambia externamente
+const STATUS_CONFIG: Record<ParticipantStatus, { label: string; color: string; icon: any }> = {
+    valid: { label: 'Válido', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
+    pending: { label: 'Pendiente', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', icon: Clock },
+    dns: { label: 'NSP', color: 'text-slate-400 bg-slate-500/10 border-slate-500/20', icon: Ban },
+    dq: { label: 'DQ', color: 'text-red-400 bg-red-500/10 border-red-500/20', icon: AlertTriangle },
+};
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+export function RaceControl({ matchId, detalle, onUpdate, isLocked = false }: RaceControlProps) {
+    const [participantes, setParticipantes] = useState<Participante[]>([]);
+    const [newCarrera, setNewCarrera] = useState("");
+    const [newNombre, setNewNombre] = useState("");
+    const [newCarril, setNewCarril] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    // Initialize from detalle
     useEffect(() => {
-        if (detalle.participantes) {
-            setParticipantes(detalle.participantes);
-        }
+        const raw = detalle.participantes || [];
+        // Migrate old data that might not have 'estado' or 'carrera'
+        const migrated = raw.map((p: any) => ({
+            ...p,
+            estado: p.estado || (p.tiempo ? 'valid' : 'pending'),
+            carrera: p.carrera || p.equipo || '',
+        }));
+        setParticipantes(migrated);
     }, [detalle]);
 
+    // ── Add participant ──────────────────────────────────────────────────────
     const handleAdd = () => {
-        if (!newItem.nombre || !newItem.equipo) return;
+        if (!newCarrera || !newNombre.trim()) {
+            toast.error('Selecciona carrera e ingresa nombre del nadador');
+            return;
+        }
 
         const newP: Participante = {
-            id: Math.random().toString(36).substring(7),
-            nombre: newItem.nombre,
-            equipo: newItem.equipo,
-            carril: newItem.carril ? parseInt(newItem.carril) : undefined,
-            tiempo: "",
-            posicion: undefined
+            id: Math.random().toString(36).substring(2, 9),
+            nombre: newNombre.trim(),
+            carrera: newCarrera,
+            carril: newCarril ? parseInt(newCarril) : undefined,
+            tiempo: '',
+            estado: 'pending',
+            posicion: undefined,
+            puntos: 0,
         };
 
         const updated = [...participantes, newP];
         setParticipantes(updated);
-        setNewItem({ nombre: "", equipo: "", carril: "" });
-        saveChanges(updated);
+        setNewNombre('');
+        setNewCarrera('');
+        setNewCarril('');
+        saveParticipantes(updated);
     };
 
+    // ── Remove participant ───────────────────────────────────────────────────
     const handleRemove = (id: string) => {
         if (isLocked) return;
         const updated = participantes.filter(p => p.id !== id);
         setParticipantes(updated);
-        saveChanges(updated);
+        saveParticipantes(updated);
     };
 
+    // ── Update field ─────────────────────────────────────────────────────────
     const handleChange = (id: string, field: keyof Participante, value: any) => {
-        if (isLocked) return;
-        const updated = participantes.map(p =>
-            p.id === id ? { ...p, [field]: value } : p
-        );
-        setParticipantes(updated);
-    };
+        if (isLocked && field !== 'posicion') return;
 
-    const saveChanges = async (newData: Participante[]) => {
-        setSaving(true);
-        const { error } = await supabase
-            .from('partidos')
-            .update({
-                marcador_detalle: {
-                    ...detalle,
-                    participantes: newData
+        setParticipantes(prev => prev.map(p => {
+            if (p.id !== id) return p;
+
+            const updated = { ...p, [field]: value };
+
+            // Auto-set estado based on time
+            if (field === 'tiempo') {
+                const timeStr = value as string;
+                if (timeStr && timeStr.trim() !== '') {
+                    updated.tiempo_ms = parseTimeToMs(timeStr);
+                    if (updated.estado === 'pending') updated.estado = 'valid';
+                } else {
+                    updated.tiempo_ms = undefined;
+                    if (updated.estado === 'valid') updated.estado = 'pending';
                 }
-            })
-            .eq('id', matchId);
-
-        if (!error && onUpdate) onUpdate();
-        setSaving(false);
-    };
-
-    const autoSort = () => {
-        // Ordenar por tiempo (ascendente) si hay tiempos
-        // Asume formato MM:SS.ms o SS.ms como string comparable si es consistente
-        // Mejor estrategia: Ordenar por posición explícita si existe, si no por tiempo
-        const sorted = [...participantes].sort((a, b) => {
-            // Prioridad 1: Posición manual
-            if (a.posicion && b.posicion) return a.posicion - b.posicion;
-            if (a.posicion) return -1;
-            if (b.posicion) return 1;
-
-            // Prioridad 2: Tiempo (intento de parseo simple o string compare)
-            if (a.tiempo && b.tiempo) return a.tiempo.localeCompare(b.tiempo);
-
-            return 0;
-        });
-
-        // Auto-asignar posiciones basado en el orden de la lista visual
-        const reindexed = sorted.map((p, idx) => ({ ...p, posicion: idx + 1 }));
-        setParticipantes(reindexed);
-        saveChanges(reindexed);
-    };
-
-    // Función mágica: Finalizar y Asignar Puntos
-    const finalizeRace = async () => {
-        if (!confirm("¿Estás seguro de finalizar la prueba? Esto asignará medallas y puntos al medallero general.")) return;
-
-        setLoading(true);
-
-        try {
-            // 1. Guardar estado final del partido
-            await supabase.from('partidos').update({ estado: 'finalizado' }).eq('id', matchId);
-
-            // 2. Ordenar participantes por posición (1, 2, 3...)
-            const ganadores = participantes.filter(p => p.posicion && p.posicion <= 3).sort((a, b) => a.posicion! - b.posicion!);
-
-            // 3. Asignar Medallas
-            for (const p of ganadores) {
-                if (p.posicion === 1) await addMedal(p.equipo, 'oro', 5);
-                else if (p.posicion === 2) await addMedal(p.equipo, 'plata', 3);
-                else if (p.posicion === 3) await addMedal(p.equipo, 'bronce', 1);
             }
 
-            alert("¡Prueba finalizada y medallas asignadas!");
-            window.location.reload(); // Recargar para ver estado finalizado
-        } catch (e) {
-            console.error(e);
-            alert("Error al finalizar prueba");
+            // Clear time when setting DQ/DNS
+            if (field === 'estado') {
+                if (value === 'dq' || value === 'dns') {
+                    updated.posicion = undefined;
+                    updated.puntos = 0;
+                }
+            }
+
+            return updated;
+        }));
+    };
+
+    // ── Auto-rank by time ────────────────────────────────────────────────────
+    const autoRankAndSave = () => {
+        const ranked = recalculateRanking(participantes);
+        setParticipantes(ranked);
+        saveParticipantes(ranked);
+        toast.success('Ranking recalculado automáticamente');
+    };
+
+    // ── Save to DB ───────────────────────────────────────────────────────────
+    const saveParticipantes = async (data: Participante[]) => {
+        setSaving(true);
+        try {
+            const { error } = await supabase
+                .from('partidos')
+                .update({
+                    marcador_detalle: {
+                        ...detalle,
+                        participantes: data,
+                    }
+                })
+                .eq('id', matchId);
+
+            if (error) {
+                toast.error('Error guardando: ' + error.message);
+            } else if (onUpdate) {
+                onUpdate();
+            }
+        } catch (e: any) {
+            toast.error('Error: ' + e.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // ── Save all (manual button) ─────────────────────────────────────────────
+    const handleSaveAll = () => {
+        // Validate times
+        const invalidTimes = participantes.filter(p => p.tiempo && !isValidTimeFormat(p.tiempo));
+        if (invalidTimes.length > 0) {
+            toast.error(`Formato de tiempo inválido para: ${invalidTimes.map(p => p.nombre).join(', ')}. Usa mm:ss.xx o ss.xx`);
+            return;
+        }
+
+        // Recalculate ranking, then save
+        const ranked = recalculateRanking(participantes);
+        setParticipantes(ranked);
+        saveParticipantes(ranked);
+        toast.success('Resultados guardados y ranking recalculado');
+    };
+
+    // ── Finalize race ────────────────────────────────────────────────────────
+    const finalizeRace = async () => {
+        // Validate all participants have results
+        const pending = participantes.filter(p => p.estado === 'pending');
+        if (pending.length > 0) {
+            toast.error(`Hay ${pending.length} participante(s) pendientes. Registra su tiempo o márcalos como NSP/DQ.`);
+            return;
+        }
+
+        if (!confirm('¿Estás seguro de finalizar la prueba? Esto asignará medallas y puntos al medallero.')) return;
+
+        setLoading(true);
+        try {
+            // Recalculate final ranking
+            const finalData = recalculateRanking(participantes);
+
+            // Save final state
+            await supabase.from('partidos').update({
+                estado: 'finalizado',
+                marcador_detalle: {
+                    ...detalle,
+                    participantes: finalData,
+                }
+            }).eq('id', matchId);
+
+            // Assign medals to carreras
+            const podium = finalData.filter(p => p.posicion && p.posicion <= 3 && p.estado === 'valid');
+            for (const p of podium) {
+                if (p.posicion === 1) await addMedal(p.carrera, 'oro', NATACION_PUNTOS[1] || 5);
+                else if (p.posicion === 2) await addMedal(p.carrera, 'plata', NATACION_PUNTOS[2] || 3);
+                else if (p.posicion === 3) await addMedal(p.carrera, 'bronce', NATACION_PUNTOS[3] || 1);
+            }
+
+            toast.success('¡Prueba finalizada y medallas asignadas!');
+            if (onUpdate) onUpdate();
+        } catch (e: any) {
+            toast.error('Error al finalizar: ' + e.message);
         } finally {
             setLoading(false);
         }
     };
 
     const addMedal = async (equipo: string, tipo: 'oro' | 'plata' | 'bronce', puntosExtra: number) => {
-        // Llamada RPC o update manual. Haremos update manual con select primero por simplicidad.
-        // Ojo: En producción usar una RPC (stored procedure) es más seguro para concurrencia.
-
-        // 1. Verificar si existe equipo en medallero (case insensitive)
         const { data: existing } = await supabase
             .from('medallero')
             .select('*')
@@ -150,15 +231,12 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false }: Ra
             .maybeSingle();
 
         if (existing) {
-            const currentMedals = existing[tipo] as number;
-
             await supabase.from('medallero').update({
-                [tipo]: currentMedals + 1,
-                puntos: existing.puntos + puntosExtra,
+                [tipo]: (existing[tipo] as number || 0) + 1,
+                puntos: (existing.puntos || 0) + puntosExtra,
                 updated_at: new Date().toISOString()
             }).eq('id', existing.id);
         } else {
-            // Crear nuevo
             await supabase.from('medallero').insert({
                 equipo_nombre: equipo,
                 [tipo]: 1,
@@ -167,146 +245,360 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false }: Ra
         }
     };
 
+    // ── Summary stats ────────────────────────────────────────────────────────
+    const stats = useMemo(() => {
+        const valid = participantes.filter(p => p.estado === 'valid').length;
+        const pending = participantes.filter(p => p.estado === 'pending').length;
+        const dq = participantes.filter(p => p.estado === 'dq').length;
+        const dns = participantes.filter(p => p.estado === 'dns').length;
+        return { valid, pending, dq, dns, total: participantes.length };
+    }, [participantes]);
+
+    // ── Event metadata ───────────────────────────────────────────────────────
+    const eventMeta = useMemo(() => {
+        const parts: string[] = [];
+        if (detalle.distancia) parts.push(detalle.distancia);
+        if (detalle.estilo) parts.push(detalle.estilo);
+        if (detalle.serie) parts.push(`Serie ${detalle.serie}`);
+        return parts.join(' · ');
+    }, [detalle]);
+
+    // ── Render ───────────────────────────────────────────────────────────────
     return (
-        <Card className="p-6 bg-[#17130D] border-white/10">
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
-                        <Timer size={24} />
+        <Card className="p-0 bg-[#17130D] border-white/10 overflow-hidden">
+            {/* Header */}
+            <div className="p-6 bg-gradient-to-r from-cyan-500/10 to-blue-600/10 border-b border-white/5">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-cyan-500/20 rounded-xl text-cyan-400">
+                            <Timer size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-white">Control de Prueba</h3>
+                            {eventMeta && (
+                                <p className="text-sm text-cyan-400/80 font-medium">{eventMeta}</p>
+                            )}
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-white">Control de Evento</h3>
-                        <p className="text-sm text-slate-400">Gestiona participantes y resultados</p>
-                    </div>
+                    {!isLocked && (
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={autoRankAndSave}
+                                disabled={saving}
+                                className="border-white/10 hover:bg-white/5 text-xs"
+                            >
+                                <ArrowDown01 size={14} className="mr-1.5" /> Auto Ranking
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={handleSaveAll}
+                                disabled={saving}
+                                className="bg-cyan-600 hover:bg-cyan-700 text-white border-none text-xs"
+                            >
+                                <Save size={14} className="mr-1.5" /> Guardar
+                            </Button>
+                        </div>
+                    )}
                 </div>
-                {!isLocked && (
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={autoSort} className="border-white/10 hover:bg-white/5">
-                            <ArrowDown01 size={16} className="mr-2" /> Ordenar
-                        </Button>
-                        <Button
-                            size="sm"
-                            onClick={finalizeRace}
-                            disabled={loading || participantes.length === 0}
-                            className="bg-green-600 hover:bg-green-700 text-white border-none"
-                        >
-                            <Trophy size={16} className="mr-2" /> Finalizar y Premiar
-                        </Button>
+
+                {/* Stats bar */}
+                <div className="flex gap-3 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="text-slate-400">{stats.total} participantes</span>
+                    {stats.valid > 0 && <span className="text-emerald-400">{stats.valid} con tiempo</span>}
+                    {stats.pending > 0 && <span className="text-yellow-400">{stats.pending} pendientes</span>}
+                    {stats.dq > 0 && <span className="text-red-400">{stats.dq} DQ</span>}
+                    {stats.dns > 0 && <span className="text-slate-500">{stats.dns} NSP</span>}
+                </div>
+            </div>
+
+            {/* Participant List */}
+            <div className="p-4 space-y-1.5">
+                {/* Column headers */}
+                <div className="grid grid-cols-[40px_1.5fr_1.5fr_60px_100px_90px_40px] gap-2 px-3 py-2 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                    <div className="text-center">Pos</div>
+                    <div>Nadador</div>
+                    <div>Carrera</div>
+                    <div className="text-center">Carril</div>
+                    <div className="text-right">Tiempo</div>
+                    <div className="text-center">Estado</div>
+                    <div></div>
+                </div>
+
+                {participantes.map((p, idx) => {
+                    const statusCfg = STATUS_CONFIG[p.estado] || STATUS_CONFIG.pending;
+                    const StatusIcon = statusCfg.icon;
+                    const isPodium = p.estado === 'valid' && p.posicion && p.posicion <= 3;
+                    const isInvalid = p.estado === 'dq' || p.estado === 'dns';
+
+                    return (
+                        <div key={p.id} className={cn(
+                            "grid grid-cols-[40px_1.5fr_1.5fr_60px_100px_90px_40px] gap-2 items-center p-3 rounded-xl border transition-all",
+                            isPodium && p.posicion === 1 ? "bg-gradient-to-r from-yellow-500/15 to-transparent border-yellow-500/25 shadow-[0_0_15px_rgba(234,179,8,0.1)]" :
+                            isPodium && p.posicion === 2 ? "bg-gradient-to-r from-slate-400/10 to-transparent border-slate-400/20" :
+                            isPodium && p.posicion === 3 ? "bg-gradient-to-r from-orange-700/10 to-transparent border-orange-600/20" :
+                            isInvalid ? "bg-red-950/20 border-white/5 opacity-60" :
+                            "bg-white/[0.02] border-white/5 hover:bg-white/[0.04]"
+                        )}>
+                            {/* Position */}
+                            <div className="w-10 text-center">
+                                {isPodium ? (
+                                    <span className="text-xl">
+                                        {p.posicion === 1 ? '🥇' : p.posicion === 2 ? '🥈' : '🥉'}
+                                    </span>
+                                ) : isInvalid ? (
+                                    <span className="text-xs text-slate-600">—</span>
+                                ) : (
+                                    <span className="text-sm font-bold text-white/50">{p.posicion || '-'}</span>
+                                )}
+                            </div>
+
+                            {/* Athlete */}
+                            <div className={cn("min-w-0", isInvalid && "line-through opacity-60")}>
+                                {isLocked ? (
+                                    <span className="font-semibold text-white text-sm truncate block">{p.nombre}</span>
+                                ) : (
+                                    <input
+                                        value={p.nombre}
+                                        onChange={(e) => handleChange(p.id, 'nombre', e.target.value)}
+                                        className="w-full bg-transparent text-white font-semibold text-sm focus:outline-none focus:border-b border-cyan-500/50 truncate"
+                                        placeholder="Nombre"
+                                    />
+                                )}
+                            </div>
+
+                            {/* Carrera */}
+                            <div className="min-w-0">
+                                {isLocked ? (
+                                    <span className="text-xs text-slate-400 truncate block">{p.carrera}</span>
+                                ) : (
+                                    <select
+                                        value={p.carrera}
+                                        onChange={(e) => handleChange(p.id, 'carrera', e.target.value)}
+                                        className="w-full bg-transparent text-xs text-slate-300 focus:outline-none border-none cursor-pointer truncate"
+                                    >
+                                        <option value="" className="bg-zinc-900">Seleccionar...</option>
+                                        {CARRERAS_UNINORTE.map(c => (
+                                            <option key={c} value={c} className="bg-zinc-900">{c}</option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+
+                            {/* Lane */}
+                            <div className="text-center">
+                                {isLocked ? (
+                                    <span className="text-xs text-slate-500">{p.carril || '-'}</span>
+                                ) : (
+                                    <input
+                                        type="number"
+                                        value={p.carril || ''}
+                                        onChange={(e) => handleChange(p.id, 'carril', parseInt(e.target.value) || undefined)}
+                                        className="w-full bg-transparent text-center text-xs text-slate-300 focus:outline-none"
+                                        placeholder="#"
+                                        min={1}
+                                        max={10}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Time */}
+                            <div className="text-right">
+                                {isLocked ? (
+                                    <span className={cn(
+                                        "font-mono font-bold text-sm tabular-nums",
+                                        isInvalid ? "text-slate-600 line-through" :
+                                        isPodium ? "text-cyan-300" : "text-cyan-400/70"
+                                    )}>
+                                        {p.tiempo || (isInvalid ? '—' : '--:--.--')}
+                                    </span>
+                                ) : (
+                                    <input
+                                        value={p.tiempo || ''}
+                                        onChange={(e) => handleChange(p.id, 'tiempo', e.target.value)}
+                                        className={cn(
+                                            "w-full bg-transparent text-right font-mono font-bold text-sm focus:outline-none tabular-nums",
+                                            p.tiempo && !isValidTimeFormat(p.tiempo) ? "text-red-400" : "text-cyan-400",
+                                            isInvalid && "text-slate-600 cursor-not-allowed"
+                                        )}
+                                        placeholder="ss.xx"
+                                        disabled={isInvalid}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Status */}
+                            <div className="text-center">
+                                {isLocked ? (
+                                    <span className={cn(
+                                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border",
+                                        statusCfg.color
+                                    )}>
+                                        <StatusIcon size={10} />
+                                        {statusCfg.label}
+                                    </span>
+                                ) : (
+                                    <select
+                                        value={p.estado}
+                                        onChange={(e) => handleChange(p.id, 'estado', e.target.value as ParticipantStatus)}
+                                        className={cn(
+                                            "w-full bg-transparent text-[10px] font-bold uppercase focus:outline-none cursor-pointer text-center rounded px-1 py-0.5 border",
+                                            statusCfg.color
+                                        )}
+                                    >
+                                        <option value="pending" className="bg-zinc-900 text-yellow-400">Pendiente</option>
+                                        <option value="valid" className="bg-zinc-900 text-emerald-400">Válido</option>
+                                        <option value="dns" className="bg-zinc-900 text-slate-400">NSP</option>
+                                        <option value="dq" className="bg-zinc-900 text-red-400">DQ</option>
+                                    </select>
+                                )}
+                            </div>
+
+                            {/* Delete */}
+                            <div className="w-10 flex justify-center">
+                                {!isLocked ? (
+                                    <button
+                                        onClick={() => handleRemove(p.id)}
+                                        className="text-slate-600 hover:text-red-400 transition-colors p-1"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                ) : isPodium ? (
+                                    <Medal size={14} className={cn(
+                                        p.posicion === 1 ? "text-yellow-400" :
+                                        p.posicion === 2 ? "text-slate-400" : "text-orange-600"
+                                    )} />
+                                ) : null}
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {participantes.length === 0 && (
+                    <div className="text-center py-12 text-slate-500 text-sm italic">
+                        No hay participantes registrados aún
                     </div>
                 )}
             </div>
 
-            {/* Lista Participantes */}
-            <div className="space-y-2 mb-6">
-                {/* Header Tabla */}
-                <div className="grid grid-cols-[auto_2fr_2fr_1fr_1fr_auto] gap-2 px-4 py-2 text-xs font-bold uppercase text-slate-500">
-                    <div className="w-8 text-center">Pos</div>
-                    <div>Atleta / Participante</div>
-                    <div>Equipo / Facultad</div>
-                    <div>Carril</div>
-                    <div>Tiempo</div>
-                    <div className="w-8"></div>
-                </div>
-
-                {participantes.map((p, idx) => (
-                    <div key={p.id} className={cn(
-                        "grid grid-cols-[auto_2fr_2fr_1fr_1fr_auto] gap-2 items-center p-3 rounded-xl border transition-all",
-                        p.posicion === 1 ? "bg-[#FFC000]/10 border-[#FFC000]/30" :
-                            p.posicion === 2 ? "bg-slate-400/10 border-slate-400/30" :
-                                p.posicion === 3 ? "bg-orange-700/10 border-orange-700/30" :
-                                    "bg-white/5 border-white/5"
-                    )}>
-                        <div className="w-8">
-                            <input
-                                type="number"
-                                value={p.posicion || ''}
-                                onChange={(e) => handleChange(p.id, 'posicion', parseInt(e.target.value))}
-                                className="w-full bg-transparent text-center font-bold text-white focus:outline-none"
-                                placeholder="-"
-                                disabled={isLocked}
-                            />
-                        </div>
-                        <div className="font-medium text-white">
-                            {isLocked ? p.nombre : (
-                                <input
-                                    value={p.nombre}
-                                    onChange={(e) => handleChange(p.id, 'nombre', e.target.value)}
-                                    className="w-full bg-transparent focus:outline-none focus:border-b border-indigo-500"
-                                />
-                            )}
-                        </div>
-                        <div className="text-sm text-slate-400">
-                            {isLocked ? p.equipo : (
-                                <input
-                                    value={p.equipo}
-                                    onChange={(e) => handleChange(p.id, 'equipo', e.target.value)}
-                                    className="w-full bg-transparent focus:outline-none focus:border-b border-indigo-500"
-                                />
-                            )}
-                        </div>
-                        <div>
-                            <input
-                                type="number"
-                                value={p.carril || ''}
-                                onChange={(e) => handleChange(p.id, 'carril', parseInt(e.target.value))}
-                                className="w-full bg-transparent text-slate-300 focus:outline-none"
-                                placeholder="#"
-                                disabled={isLocked}
-                            />
-                        </div>
-                        <div className="font-mono text-indigo-300 font-bold">
-                            <input
-                                value={p.tiempo || ''}
-                                onChange={(e) => handleChange(p.id, 'tiempo', e.target.value)}
-                                className="w-full bg-transparent focus:outline-none text-right"
-                                placeholder="--:--"
-                                disabled={isLocked}
-                            />
-                        </div>
-                        <div className="w-8 flex justify-center">
-                            {!isLocked && (
-                                <button onClick={() => handleRemove(p.id)} className="text-slate-600 hover:text-red-400">
-                                    <Trash2 size={16} />
-                                </button>
-                            )}
-                            {isLocked && p.posicion && p.posicion <= 3 && (
-                                <Medal size={16} className={cn(
-                                    p.posicion === 1 ? "text-[#FFC000]" :
-                                        p.posicion === 2 ? "text-slate-400" : "text-orange-600"
-                                )} />
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Formulario Añadir */}
+            {/* Add Participant Form */}
             {!isLocked && (
-                <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-white/5">
-                    <Input
-                        placeholder="Nombre Atleta"
-                        value={newItem.nombre}
-                        onChange={(e) => setNewItem({ ...newItem, nombre: e.target.value })}
-                        className="bg-black/20"
-                    />
-                    <Input
-                        placeholder="Equipo (ej: Ing)"
-                        value={newItem.equipo}
-                        onChange={(e) => setNewItem({ ...newItem, equipo: e.target.value })}
-                        className="bg-black/20"
-                    />
-                    <Input
-                        placeholder="Carril"
-                        type="number"
-                        value={newItem.carril}
-                        onChange={(e) => setNewItem({ ...newItem, carril: e.target.value })}
-                        className="w-20 bg-black/20"
-                    />
-                    <Button onClick={handleAdd} disabled={!newItem.nombre || !newItem.equipo} variant="secondary">
-                        <Plus size={16} />
+                <div className="p-4 border-t border-white/5 bg-white/[0.01]">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+                        <Plus size={10} /> Agregar Participante
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        {/* 1. Carrera FIRST */}
+                        <div className="relative flex-1">
+                            <GraduationCap className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
+                            <select
+                                value={newCarrera}
+                                onChange={(e) => setNewCarrera(e.target.value)}
+                                className="w-full h-9 bg-zinc-900/80 border border-white/10 rounded-lg pl-8 pr-2 text-xs text-zinc-300 focus:border-cyan-500 outline-none"
+                            >
+                                <option value="" disabled>1. Carrera...</option>
+                                {CARRERAS_UNINORTE.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                        </div>
+                        {/* 2. Name SECOND */}
+                        <Input
+                            placeholder="2. Nombre del Nadador"
+                            value={newNombre}
+                            onChange={(e) => setNewNombre(e.target.value)}
+                            disabled={!newCarrera}
+                            className={cn(
+                                "flex-1 bg-zinc-900/80 border-white/10 h-9 text-xs",
+                                !newCarrera && "opacity-40 cursor-not-allowed"
+                            )}
+                        />
+                        <Input
+                            placeholder="Carril"
+                            type="number"
+                            value={newCarril}
+                            onChange={(e) => setNewCarril(e.target.value)}
+                            className="w-20 bg-zinc-900/80 border-white/10 h-9 text-xs text-center"
+                            min={1}
+                            max={10}
+                        />
+                        <Button
+                            onClick={handleAdd}
+                            disabled={!newCarrera || !newNombre.trim()}
+                            size="sm"
+                            className="bg-cyan-600 hover:bg-cyan-700 text-white border-none h-9 px-4"
+                        >
+                            <Plus size={16} />
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Finalize Button */}
+            {!isLocked && participantes.length > 0 && (
+                <div className="p-4 border-t border-white/5">
+                    <Button
+                        onClick={finalizeRace}
+                        disabled={loading || stats.pending > 0}
+                        className="w-full bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-500 hover:to-green-600 text-white border-none h-11 font-bold text-sm shadow-lg shadow-emerald-900/30"
+                    >
+                        <Trophy size={18} className="mr-2" />
+                        {stats.pending > 0
+                            ? `Hay ${stats.pending} pendiente(s) — registra resultados primero`
+                            : 'Finalizar Prueba y Asignar Medallas'
+                        }
                     </Button>
                 </div>
             )}
         </Card>
     );
+}
+
+// ── Ranking Logic ────────────────────────────────────────────────────────────
+
+function recalculateRanking(participantes: Participante[]): Participante[] {
+    // Split into valid (with time) and invalid (DQ, DNS, pending)
+    const validWithTime = participantes
+        .filter(p => p.estado === 'valid' && p.tiempo && p.tiempo.trim() !== '')
+        .map(p => ({
+            ...p,
+            tiempo_ms: parseTimeToMs(p.tiempo),
+        }));
+
+    const validNoTime = participantes.filter(p => p.estado === 'valid' && (!p.tiempo || p.tiempo.trim() === ''));
+    const pending = participantes.filter(p => p.estado === 'pending');
+    const invalid = participantes.filter(p => p.estado === 'dq' || p.estado === 'dns');
+
+    // Sort valid participants by time (ascending = fastest first)
+    validWithTime.sort((a, b) => a.tiempo_ms - b.tiempo_ms);
+
+    // Assign positions and points
+    const ranked = validWithTime.map((p, idx) => ({
+        ...p,
+        posicion: idx + 1,
+        puntos: NATACION_PUNTOS[idx + 1] || 0,
+    }));
+
+    // No-time valid participants get position after ranked
+    const nextPos = ranked.length + 1;
+    const unrankedValid = validNoTime.map((p, idx) => ({
+        ...p,
+        posicion: nextPos + idx,
+        puntos: 0,
+    }));
+
+    // Pending participants keep no position
+    const pendingFixed = pending.map(p => ({
+        ...p,
+        posicion: undefined,
+        puntos: 0,
+    }));
+
+    // Invalid participants get no position
+    const invalidFixed = invalid.map(p => ({
+        ...p,
+        posicion: undefined,
+        puntos: 0,
+    }));
+
+    return [...ranked, ...unrankedValid, ...pendingFixed, ...invalidFixed];
 }
