@@ -48,19 +48,19 @@ describe("UI Primitives", () => {
             render(<Badge>Default Badge</Badge>);
             const badge = screen.getByText("Default Badge");
             expect(badge).toBeInTheDocument();
-            expect(badge.className).toContain("text-primary");
+            expect(badge.className).toContain("text-red-500");
         });
 
         it("renders destructive variant", () => {
             render(<Badge variant="destructive">Error</Badge>);
             const badge = screen.getByText("Error");
-            expect(badge.className).toContain("text-danger");
+            expect(badge.className).toContain("bg-red-600/20");
         });
 
         it("renders success variant", () => {
             render(<Badge variant="success">Success</Badge>);
             const badge = screen.getByText("Success");
-            expect(badge.className).toContain("text-success");
+            expect(badge.className).toContain("text-emerald-500");
         });
 
         it("renders live variant with animation", () => {
@@ -92,13 +92,13 @@ describe("UI Primitives", () => {
         it("applies outline variant", () => {
             const { container } = render(<Button variant="outline">Outline</Button>);
             const btn = container.firstChild as HTMLElement;
-            expect(btn.className).toContain("border-2");
+            expect(btn.className).toContain("border-white/10");
         });
 
         it("applies ghost variant", () => {
             const { container } = render(<Button variant="ghost">Ghost</Button>);
             const btn = container.firstChild as HTMLElement;
-            expect(btn.className).toContain("hover:bg-muted/50");
+            expect(btn.className).toContain("hover:bg-white/5");
         });
 
         it("applies different sizes", () => {
