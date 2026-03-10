@@ -364,8 +364,8 @@ export default function Home() {
                   : "bg-[#17130D] border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
               )}
             >
-              <LayoutGrid size={20} className={cn("transition-all drop-shadow-md", activeFilter === 'todos' ? 'text-white' : 'text-slate-500 group-hover:text-white')} />
-              <span className="text-xs font-black uppercase tracking-widest z-10">Todos</span>
+              <LayoutGrid size={20} className={cn("transition-all z-10 drop-shadow-md", activeFilter === 'todos' ? 'text-white' : 'text-slate-500 group-hover:text-white')} />
+              <span className="text-[10px] font-black uppercase tracking-widest z-10 leading-none text-center px-1">Todos</span>
               {activeFilter === 'todos' && (
                 <LayoutGrid size={60} className="absolute -bottom-4 -right-4 text-white/10" />
               )}

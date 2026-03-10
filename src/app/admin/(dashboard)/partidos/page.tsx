@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
-import { Plus, Calendar, Clock, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity, Loader2, Crown, Handshake } from "lucide-react";
+import { Plus, Calendar, Clock, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity, Loader2, Crown, Handshake, AlertTriangle, X } from "lucide-react";
+import { toast } from "sonner";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { Card, Badge, Avatar, LiveIndicator } from "@/components/ui-primitives";
 import { CreateMatchModal } from "@/components/create-match-modal";
@@ -43,6 +44,7 @@ export default function PartidosPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [matchToDelete, setMatchToDelete] = useState<any>(null);
     const router = useRouter();
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -72,13 +74,26 @@ export default function PartidosPage() {
         };
     }, [fetchPartidos]);
 
-    const deletePartido = async (id: number, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!confirm('¿Estás seguro de eliminar este partido?')) return;
-        setDeletingId(id);
-        await supabase.from('partidos').delete().eq('id', id);
-        await fetchPartidos();
+    const confirmDelete = async () => {
+        if (!matchToDelete) return;
+        setDeletingId(matchToDelete.id);
+        
+        // 1. Clean related tables just in case DB cascade is missing
+        await supabase.from('eventos_partido').delete().eq('partido_id', matchToDelete.id);
+        await supabase.from('participantes_partido').delete().eq('partido_id', matchToDelete.id);
+        
+        // 2. Delete Match
+        const { error } = await supabase.from('partidos').delete().eq('id', matchToDelete.id);
+        
+        if (error) {
+            toast.error("Error al eliminar partido: " + error.message);
+        } else {
+            toast.success("Partido eliminado exitosamente");
+            await fetchPartidos();
+        }
+        
         setDeletingId(null);
+        setMatchToDelete(null);
     };
 
     const filteredPartidos = partidos.filter(p => {
@@ -481,7 +496,7 @@ export default function PartidosPage() {
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             <button
-                                                onClick={(e) => deletePartido(partido.id, e)}
+                                                onClick={(e) => { e.stopPropagation(); setMatchToDelete(partido); }}
                                                 className="p-2 rounded-lg text-slate-700 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
                                                 title="Eliminar partido"
                                             >
@@ -525,6 +540,57 @@ export default function PartidosPage() {
                     fetchPartidos();
                 }}
             />
+            
+            {/* DELETE MODAL */}
+            {matchToDelete && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !deletingId && setMatchToDelete(null)} />
+                    <div className="relative bg-[#17130D] border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        {/* Header bg */}
+                        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-rose-500/20 to-transparent" />
+                        
+                        <button 
+                            onClick={() => !deletingId && setMatchToDelete(null)}
+                            className="absolute top-4 right-4 text-white/50 hover:text-white bg-black/20 hover:bg-black/40 rounded-full p-2 z-20 transition-colors"
+                        >
+                            <X size={16} />
+                        </button>
+
+                        <div className="p-8 pt-12 flex flex-col items-center text-center relative z-10">
+                            <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 mb-6 relative">
+                                <AlertTriangle size={32} />
+                                <div className="absolute inset-0 bg-rose-500/20 blur-xl rounded-full" />
+                            </div>
+                            
+                            <h3 className="text-xl font-black text-white mb-2">¿Eliminar Partido?</h3>
+                            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+                                Esta acción <strong className="text-rose-400">no se puede deshacer</strong>. Se perderán todos los eventos y estadísticas de este partido.
+                            </p>
+
+                            <div className="flex gap-3 w-full">
+                                <Button 
+                                    onClick={() => setMatchToDelete(null)}
+                                    className="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold tracking-widest uppercase text-xs border border-white/10"
+                                    disabled={deletingId !== null}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button 
+                                    onClick={confirmDelete}
+                                    className="flex-1 bg-rose-600/80 hover:bg-rose-600 text-white font-bold tracking-widest uppercase text-xs border-none"
+                                    disabled={deletingId !== null}
+                                >
+                                    {deletingId === matchToDelete.id ? (
+                                        <Loader2 size={16} className="animate-spin" />
+                                    ) : (
+                                        "Eliminar"
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
