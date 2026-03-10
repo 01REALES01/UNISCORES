@@ -33,8 +33,14 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
         .sort((a, b) => {
             if (a.estado === 'en_vivo' && b.estado !== 'en_vivo') return -1;
             if (b.estado === 'en_vivo' && a.estado !== 'en_vivo') return 1;
-            // Newest first (Descending)
-            return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+
+            // Programmed matches: Show the ones closest to NOW first (Ascending)
+            const now = new Date().getTime();
+            const dateA = new Date(a.fecha).getTime();
+            const dateB = new Date(b.fecha).getTime();
+
+            // If both are in the future, show the closest one first
+            return dateA - dateB;
         })
         .slice(0, 5); // Top 5
 
@@ -301,10 +307,10 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
             {
                 featuredMatches.length > 1 && (
                     <>
-                        <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20">
+                        <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-20">
                             <ChevronLeft size={20} />
                         </button>
-                        <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20">
+                        <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-20">
                             <ChevronRight size={20} />
                         </button>
 

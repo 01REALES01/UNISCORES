@@ -111,6 +111,26 @@ export default function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Handlers for scrolling to results when loading finished or hash changes
+  useEffect(() => {
+    if (!loading) {
+      const handleHashScroll = () => {
+        const hash = window.location.hash;
+        if (hash === '#finalizados') {
+          // Small delay to ensure the DOM has settled after loading state change
+          setTimeout(() => {
+            const el = document.getElementById('finalizados');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+        }
+      };
+
+      handleHashScroll();
+      window.addEventListener('hashchange', handleHashScroll);
+      return () => window.removeEventListener('hashchange', handleHashScroll);
+    }
+  }, [loading]);
+
   const handleLogout = async () => {
     setProfileMenuOpen(false);
     await signOut();
@@ -641,6 +661,7 @@ export default function Home() {
                 )}
 
                 {/* Finalizados */}
+                <div id="finalizados" className="scroll-mt-24 md:scroll-mt-32" />
                 {recentFinished.length > 0 && (
                   <>
                     <div className="col-span-full flex items-center gap-2 mt-4 mb-1">

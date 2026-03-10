@@ -579,8 +579,8 @@ export default function QuinielaPage() {
                 {/* ─── PLAY TAB ─── */}
                 {activeTab === 'play' ? (
                     <div className="space-y-5">
-                        {/* Sport Filters - ICON ONLY - 5 Main Sports */}
-                        <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1 custom-scrollbar no-scrollbar items-center justify-center">
+                        {/* Sport Filters - ICON ONLY - 7 Sports */}
+                        <div className="flex gap-3 overflow-x-auto py-4 -mx-1 px-1 custom-scrollbar no-scrollbar items-center justify-center min-h-[80px]">
                             <button
                                 onClick={() => setSportFilter('todos')}
                                 title="Todos los deportes"
@@ -593,7 +593,7 @@ export default function QuinielaPage() {
                             >
                                 <LayoutGrid size={22} />
                             </button>
-                            {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa'].map(sport => (
+                            {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'].map(sport => (
                                 <button
                                     key={sport}
                                     onClick={() => setSportFilter(sport)}
@@ -605,7 +605,7 @@ export default function QuinielaPage() {
                                             : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
-                                    <span>{SPORT_EMOJI[sport]}</span>
+                                    <SportIcon sport={sport} size={22} className="text-current" />
                                 </button>
                             ))}
                         </div>
@@ -693,8 +693,8 @@ export default function QuinielaPage() {
                             </div>
                         </div>
 
-                        {/* Sport Filters for History - ICON ONLY - 5 Main Sports */}
-                        <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1 custom-scrollbar no-scrollbar items-center justify-center">
+                        {/* Sport Filters for History - ICON ONLY - 7 Sports */}
+                        <div className="flex gap-3 overflow-x-auto py-4 -mx-1 px-1 custom-scrollbar no-scrollbar items-center justify-center min-h-[80px]">
                             <button
                                 onClick={() => setSportFilter('todos')}
                                 title="Todos los deportes"
@@ -707,7 +707,7 @@ export default function QuinielaPage() {
                             >
                                 <LayoutGrid size={22} />
                             </button>
-                            {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa'].map(sport => (
+                            {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'].map(sport => (
                                 <button
                                     key={sport}
                                     onClick={() => setSportFilter(sport)}
@@ -719,7 +719,7 @@ export default function QuinielaPage() {
                                             : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
-                                    <span>{SPORT_EMOJI[sport]}</span>
+                                    <SportIcon sport={sport} size={22} className="text-current" />
                                 </button>
                             ))}
                         </div>

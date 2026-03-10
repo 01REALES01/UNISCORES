@@ -1,7 +1,7 @@
 "use client";
 
 import { m } from "framer-motion";
-import { Zap, Calendar, Trophy, ChevronRight } from "lucide-react";
+import { Zap, Calendar, Trophy, ChevronRight, TrendingUp } from "lucide-react";
 import { Badge, Button } from "@/components/ui-primitives";
 import Link from "next/link";
 
@@ -43,12 +43,22 @@ export function WelcomeHero() {
                                 Ver Calendario
                             </Button>
                         </Link>
-                        <Link href="/quiniela">
-                            <Button variant="outline" className="w-full sm:w-auto rounded-full h-14 px-10 text-base border-white/10 hover:bg-white/10 hover:scale-105 active:scale-95 transition-all">
-                                <Trophy size={18} className="mr-2 text-orange-400" />
-                                Hacer Predicciones
-                            </Button>
-                        </Link>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                const el = document.getElementById('finalizados');
+                                if (el) {
+                                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                } else {
+                                    // Fallback if not found
+                                    window.location.href = '/#finalizados';
+                                }
+                            }}
+                            className="w-full sm:w-auto rounded-full h-14 px-10 text-base border-white/10 hover:bg-white/10 hover:scale-105 active:scale-95 transition-all text-slate-300"
+                        >
+                            <TrendingUp size={18} className="mr-2 text-red-500" />
+                            Ir a Resultados
+                        </Button>
                     </div>
 
                     <div className="mt-12 flex items-center justify-center gap-8 text-slate-500 font-bold uppercase tracking-widest text-[10px] sm:text-xs">
