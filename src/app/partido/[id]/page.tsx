@@ -234,38 +234,41 @@ export default function PublicMatchDetail() {
                     )} />
 
                     <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-center">
-                        {/* Top-Left Timer Wrapper */}
-                        {isLive && hasTimer && (
-                            <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-30 bg-black/40 backdrop-blur-md border border-white/10 shadow-xl rounded-full px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-center scale-90 sm:scale-100 origin-top-left transition-all">
-                                <PublicLiveTimer detalle={match.marcador_detalle || {}} deporte={match.disciplinas?.name} />
-                            </div>
-                        )}
-                        {/* Status Badges */}
-                        <div className="flex flex-wrap justify-center items-center gap-2 mb-8 relative z-20 px-4">
-                            {!isFinished && !isLive && (
-                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#17130D]/80 border border-white/10 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase shadow-lg">
-                                    <Calendar size={14} className={cn(SPORT_ACCENT[sportName] || 'text-amber-400')} />
-                                    {new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        {/* Status Badges & Integrated Timer */}
+                        <div className="flex flex-col justify-center items-center mb-8 relative z-20 px-4 w-full">
+                            {/* Live Timer directly integrated above the badge */}
+                            {isLive && hasTimer && (
+                                <div className="z-30 flex items-center justify-center scale-90 sm:scale-100 transition-all mb-3 drop-shadow-md">
+                                    <PublicLiveTimer detalle={match.marcador_detalle || {}} deporte={match.disciplinas?.name} />
                                 </div>
                             )}
 
-                            {isFinished && (
-                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700 text-slate-400 text-[10px] sm:text-xs font-black tracking-widest uppercase">
-                                    <Trophy size={14} /> Finalizado
-                                </div>
-                            )}
+                            <div className="flex flex-wrap justify-center items-center gap-2">
+                                {!isFinished && !isLive && (
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#17130D]/80 border border-white/10 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase shadow-lg">
+                                        <Calendar size={14} className={cn(SPORT_ACCENT[sportName] || 'text-amber-400')} />
+                                        {new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                    </div>
+                                )}
 
-                            <div className={cn(
-                                "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#17130D]/80 border border-white/10 text-[10px] font-black uppercase tracking-widest shadow-lg transition-all",
-                                SPORT_ACCENT[sportName] || 'text-white/70'
-                            )}>
-                                <SportIcon sport={sportName} size={14} />
-                                <span>{sportName}</span>
-                                <span className="opacity-30 mx-1">•</span>
-                                <span className={cn(
-                                    generoMatch === 'femenino' ? 'text-pink-400' :
-                                        generoMatch === 'mixto' ? 'text-purple-400' : 'text-blue-400'
-                                )}>{generoMatch}</span>
+                                {isFinished && (
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700 text-slate-400 text-[10px] sm:text-xs font-black tracking-widest uppercase">
+                                        <Trophy size={14} /> Finalizado
+                                    </div>
+                                )}
+
+                                <div className={cn(
+                                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#17130D]/80 border border-white/10 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg transition-all",
+                                    SPORT_ACCENT[sportName] || 'text-white/70'
+                                )}>
+                                    <SportIcon sport={sportName} size={14} />
+                                    <span>{sportName}</span>
+                                    <span className="opacity-30 mx-1">•</span>
+                                    <span className={cn(
+                                        generoMatch === 'femenino' ? 'text-pink-400' :
+                                            generoMatch === 'mixto' ? 'text-purple-400' : 'text-blue-400'
+                                    )}>{generoMatch}</span>
+                                </div>
                             </div>
                         </div>
 
@@ -323,15 +326,15 @@ export default function PublicMatchDetail() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-8">
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-8 w-full relative">
                                 {/* Team A */}
-                                <div className="flex flex-col items-center gap-4 group">
+                                <div className="flex flex-col items-center gap-4 group min-w-0 w-full">
                                     {sportName === 'Ajedrez' && isFinished && match.marcador_detalle?.resultado_final === 'victoria_a' && (
                                         <div className="mb-[-0.5rem] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm z-30">
                                             Ganador
                                         </div>
                                     )}
-                                    <div className="relative">
+                                    <div className="relative shrink-0">
                                         <div className={cn(
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
                                             `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
@@ -342,11 +345,11 @@ export default function PublicMatchDetail() {
                                         {getDisplayName(match, 'a')}
                                     </h2>
                                     {getCarreraSubtitle(match, 'a') && (
-                                        <span className="text-[10px] sm:text-xs text-slate-500 font-medium">{getCarreraSubtitle(match, 'a')}</span>
+                                        <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'a')}</span>
                                     )}
                                 </div>
 
-                                <div className="flex flex-col items-center relative z-20 min-w-[120px] sm:min-w-[220px]">
+                                <div className="flex flex-col items-center relative z-20 min-w-[120px] sm:min-w-[220px] shrink-0">
 
                                     {sportName === 'Ajedrez' ? (
                                         <div className="flex flex-col items-center justify-center w-full min-h-[100px] sm:min-h-[140px]">
@@ -375,9 +378,9 @@ export default function PublicMatchDetail() {
                                             "flex items-center justify-center gap-2 sm:gap-6 font-black text-5xl sm:text-7xl tabular-nums tracking-tighter transition-all duration-300",
                                             isLive ? "text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "text-white/80"
                                         )}>
-                                            <span className="w-12 sm:w-24 text-right">{scoreA}</span>
-                                            <div className="w-3 sm:w-6 h-1 sm:h-2 bg-white/20 rounded-full" />
-                                            <span className="w-12 sm:w-24 text-left">{scoreB}</span>
+                                            <span className="w-12 sm:w-24 text-right flex-1">{scoreA}</span>
+                                            <div className="w-3 sm:w-6 h-1 sm:h-2 bg-white/20 rounded-full shrink-0 mx-2" />
+                                            <span className="w-12 sm:w-24 text-left flex-1">{scoreB}</span>
                                         </div>
                                     )}
 
@@ -421,15 +424,15 @@ export default function PublicMatchDetail() {
                                         </div>
                                     </div>
                                 </div>
-
+                                
                                 {/* Team B */}
-                                <div className="flex flex-col items-center gap-4 group">
+                                <div className="flex flex-col items-center gap-4 group min-w-0 w-full">
                                     {sportName === 'Ajedrez' && isFinished && match.marcador_detalle?.resultado_final === 'victoria_b' && (
                                         <div className="mb-[-0.5rem] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm z-30">
                                             Ganador
                                         </div>
                                     )}
-                                    <div className="relative">
+                                    <div className="relative shrink-0">
                                         <div className={cn(
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
                                             `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
@@ -440,7 +443,7 @@ export default function PublicMatchDetail() {
                                         {getDisplayName(match, 'b')}
                                     </h2>
                                     {getCarreraSubtitle(match, 'b') && (
-                                        <span className="text-[10px] sm:text-xs text-slate-500 font-medium">{getCarreraSubtitle(match, 'b')}</span>
+                                        <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'b')}</span>
                                     )}
                                 </div>
                             </div>
