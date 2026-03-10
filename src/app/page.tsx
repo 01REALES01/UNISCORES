@@ -988,7 +988,12 @@ function ResultCard({ partido }: { partido: Partido }) {
 
         {/* Teams */}
         {sportName === 'Ajedrez' ? (
-          <div className="relative z-10 space-y-2">
+          <div className={cn("relative z-10 space-y-2", partido.marcador_detalle?.resultado_final === 'empate' && "pr-12")}>
+            {partido.marcador_detalle?.resultado_final === 'empate' && (
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/5 text-slate-300 border border-white/10 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
+                Empate
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Avatar name={getDisplayName(partido, 'a')} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-[#0a0805]" />
@@ -1004,11 +1009,6 @@ function ResultCard({ partido }: { partido: Partido }) {
               {partido.marcador_detalle?.resultado_final === 'victoria_a' && (
                 <div className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
                   Ganador
-                </div>
-              )}
-              {partido.marcador_detalle?.resultado_final === 'empate' && (
-                <div className="bg-white/5 text-slate-300 border border-white/10 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
-                  Empate
                 </div>
               )}
             </div>
@@ -1028,11 +1028,6 @@ function ResultCard({ partido }: { partido: Partido }) {
               {partido.marcador_detalle?.resultado_final === 'victoria_b' && (
                 <div className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
                   Ganador
-                </div>
-              )}
-              {partido.marcador_detalle?.resultado_final === 'empate' && (
-                <div className="bg-white/5 text-slate-300 border border-white/10 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
-                  Empate
                 </div>
               )}
             </div>
