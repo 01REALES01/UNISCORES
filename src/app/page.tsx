@@ -6,7 +6,7 @@ import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { MatchCardSkeleton, NewsListSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/hooks/useAuth";
-import { Trophy, MapPin, ChevronRight, Calendar, Zap, LayoutGrid, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield, Newspaper, AlertCircle, RefreshCw } from "lucide-react";
+import { Trophy, MapPin, ChevronRight, Calendar, Zap, LayoutGrid, MoveRight, Search, TrendingUp, Tv, ArrowRight, Home as HomeIcon, UserIcon, Navigation2, Play, PlayCircle, LogOut, BarChart3, Shield, Newspaper, AlertCircle, RefreshCw, Star } from "lucide-react";
 
 const HeroSlider = dynamic(() => import('@/components/hero-slider').then(mod => mod.HeroSlider), {
   ssr: false,
@@ -34,6 +34,9 @@ import { SplashScreen } from "@/components/splash-screen";
 import { useMatches } from "@/hooks/use-matches";
 import { WelcomeHero } from "@/components/welcome-hero";
 import { useNews } from "@/hooks/use-news";
+import { useFavoritos } from "@/hooks/use-favoritos";
+import { useCarreras } from "@/hooks/use-carreras";
+import { supabase } from "@/lib/supabase";
 
 type Partido = {
   id: number;
@@ -63,12 +66,23 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState("todos");
   const [searchQuery, setSearchQuery] = useState("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [isSelectingCareers, setIsSelectingCareers] = useState(false);
+  const [selectedCareers, setSelectedCareers] = useState<number[]>([]);
+  const [errorModal, setErrorModal] = useState({ show: false, message: "" });
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   // ─── SWR Hooks — cached, deduplicated, realtime-enabled ──────────────────
   const { matches: rawMatches, loading: matchesLoading } = useMatches();
   const { news: latestNews, loading: newsLoading } = useNews(4);
-  const loading = matchesLoading;
+  const { favoriteIds, loading: favoritosLoading, mutate: mutateFavoritos } = useFavoritos(user?.id);
+  const { carreras, loading: carrerasLoading } = useCarreras();
+  const loading = matchesLoading || (activeFilter === 'favoritos' && favoritosLoading);
+
+  const favoriteNames = useMemo(() => {
+    return carreras
+      .filter(c => favoriteIds.includes(c.id))
+      .map(c => c.nombre);
+  }, [carreras, favoriteIds]);
 
   const getSortScore = (p: Partido) => {
     if (p.estado === 'en_vivo') return -10000000000;
@@ -100,9 +114,160 @@ export default function Home() {
     router.push('/');
   };
 
+  const toggleCareerSelection = (id: number) => {
+    setSelectedCareers(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(c => c !== id);
+      }
+      if (prev.length >= 3) {
+        setErrorModal({ show: true, message: "No se pueden seleccionar más de tres carreras." });
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const openSelectionMode = () => {
+    setSelectedCareers(favoriteIds);
+    setIsSelectingCareers(true);
+  };
+
+  const handleSaveCareers = async () => {
+    // If we're on the empty state banner and they select nothing, error out
+    if (selectedCareers.length === 0 && hideMatches) {
+      setErrorModal({ show: true, message: "Debes escoger al menos una carrera." });
+      return;
+    }
+
+    if (!user) {
+      setErrorModal({ show: true, message: "Error interno: Usuario no autenticado." });
+      return;
+    }
+
+    // Calcula diferencias
+    const currentFavorites = new Set(favoriteIds);
+    const newFavorites = new Set(selectedCareers);
+
+    // Si ambos son cero, no hay cambios (aunque esto no debería pasar por validaciones)
+    if (currentFavorites.size === 0 && newFavorites.size === 0) {
+      setIsSelectingCareers(false);
+      return;
+    }
+
+    const toAdd = selectedCareers.filter(id => !currentFavorites.has(id));
+    const toRemove = favoriteIds.filter(id => !newFavorites.has(id));
+
+    // Si las selecciones son idénticas, cerramos sin llamadas a db
+    if (toAdd.length === 0 && toRemove.length === 0) {
+      setIsSelectingCareers(false);
+      return;
+    }
+
+    try {
+      // 1. Borrar los que ya no están seleccionados
+      if (toRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('user_carreras_favoritas')
+          .delete()
+          .eq('user_id', user.id)
+          .in('carrera_id', toRemove);
+
+        if (deleteError) throw new Error(`Error BD (Delete): ${deleteError.message}`);
+      }
+
+      // 2. Insertar los nuevos
+      if (toAdd.length > 0) {
+        const inserts = toAdd.map(carreraId => ({
+          user_id: user.id,
+          carrera_id: carreraId
+        }));
+
+        const { error: insertError } = await supabase
+          .from('user_carreras_favoritas')
+          .insert(inserts);
+
+        if (insertError) throw new Error(`Error BD (Insert): ${insertError.message}`);
+      }
+
+      await mutateFavoritos();
+      setIsSelectingCareers(false);
+      toast.success("Tus preferencias fueron actualizadas", { className: "bg-[#17130D] text-amber-500 border border-amber-500/30" });
+    } catch (error: any) {
+      console.error("Error saving careers:", error);
+      setErrorModal({ show: true, message: error.message || "Ocurrió un error al guardar tus carreras." });
+    }
+  };
+
+  const renderSelectionGrid = () => (
+    <div className="w-full mt-4 animate-in fade-in zoom-in-95 duration-300 border-t border-white/5 pt-4">
+      <div className="flex items-center justify-between mb-4 px-2">
+        <h4 className="text-sm font-black text-amber-500 tracking-[0.1em] uppercase">Selecciona tus carreras</h4>
+        <Button variant="ghost" size="sm" onClick={() => setIsSelectingCareers(false)} className="text-slate-400 hover:text-white h-8 text-xs">
+          Cancelar
+        </Button>
+      </div>
+      {carrerasLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-12 bg-white/5 animate-pulse rounded-xl" />)}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-2 text-left p-1 mb-4 custom-scrollbar">
+            {carreras.map(carrera => {
+              const isSelected = selectedCareers.includes(carrera.id);
+              return (
+                <button
+                  key={carrera.id}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Evitar que el click cierre el div contenedor si tiene evento click
+                    toggleCareerSelection(carrera.id);
+                  }}
+                  className={cn(
+                    "flex flex-col items-start gap-1 text-xs font-bold border p-3.5 rounded-xl transition-all w-full text-left relative overflow-hidden",
+                    isSelected
+                      ? "bg-amber-500/10 text-amber-500 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
+                      : "bg-[#221c13] text-slate-300 border-white/5 hover:border-amber-500/30 hover:bg-amber-500/5 hover:text-amber-400"
+                  )}
+                >
+                  <span className="truncate w-full z-10">{carrera.nombre}</span>
+                  {isSelected && (
+                    <div className="absolute top-0 right-0 p-1 bg-amber-500 rounded-bl-lg">
+                      <Star size={10} className="text-[#17130D] fill-current" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex justify-end pt-2 border-t border-white/5">
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSaveCareers();
+              }}
+              className="bg-amber-500 hover:bg-amber-600 text-black font-black uppercase tracking-widest px-6 shadow-[0_0_20px_rgba(245,158,11,0.2)] border-none"
+            >
+              Aceptar
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   const filteredPartidos = partidos.filter(p => {
     // Sport filter
-    if (activeFilter !== 'todos' && p.disciplinas?.name !== activeFilter) return false;
+    if (activeFilter !== 'todos' && activeFilter !== 'favoritos' && p.disciplinas?.name !== activeFilter) return false;
+
+    // Favoritos filter
+    if (activeFilter === 'favoritos' && favoriteNames.length > 0) {
+      const eqA = p.carrera_a?.nombre || p.equipo_a;
+      const eqB = p.carrera_b?.nombre || p.equipo_b;
+      if (!favoriteNames.includes(eqA) && !favoriteNames.includes(eqB)) {
+        return false;
+      }
+    }
+
     // Search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -111,6 +276,17 @@ export default function Home() {
       return eqA.toLowerCase().includes(q) || eqB.toLowerCase().includes(q) || p.disciplinas?.name.toLowerCase().includes(q);
     }
     return true;
+  });
+
+  const showLoginPrompt = activeFilter === 'favoritos' && !user;
+  const showEmptyFavoritesPrompt = activeFilter === 'favoritos' && user && favoriteIds.length === 0;
+  const hideMatches = showLoginPrompt || showEmptyFavoritesPrompt;
+
+  const filteredNews = latestNews.filter(news => {
+    if (activeFilter === 'favoritos' && favoriteNames.length > 0) {
+      return news.carrera && favoriteNames.includes(news.carrera);
+    }
+    return true; // Si es 'todos' u otro filtro, mostramos todas. (O se podría filtrar por deporte si las noticias tuvieran disciplina)
   });
 
   const allSports = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
@@ -169,6 +345,29 @@ export default function Home() {
                 <LayoutGrid size={60} className="absolute -bottom-4 -right-4 text-white/10" />
               )}
             </button>
+            <button
+              onClick={() => setActiveFilter('favoritos')}
+              className={cn(
+                "group relative min-w-[90px] h-20 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all duration-300 overflow-hidden shrink-0",
+                activeFilter === 'favoritos'
+                  ? "bg-[#1f1911] border-amber-500/50 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.25)] scale-105"
+                  : "bg-[#17130D] border-white/10 text-slate-400 hover:bg-white/10 hover:text-amber-400"
+              )}
+            >
+              <Star size={20} className={cn("transition-all z-10", activeFilter === 'favoritos' ? 'text-amber-500 drop-shadow-[0_0_8px_currentColor]' : 'text-slate-500 group-hover:text-amber-400')} />
+              <span className="text-[10px] font-black uppercase tracking-widest z-10 leading-none text-center px-1">
+                Favoritos
+              </span>
+
+              {activeFilter === 'favoritos' && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-transparent opacity-50" />
+                  <div className="absolute -bottom-2 -right-2 pointer-events-none select-none">
+                    <Star size={60} className="text-amber-500/20 opacity-20" />
+                  </div>
+                </>
+              )}
+            </button>
             {allSports.map(sport => {
               const isActive = activeFilter === sport;
               const hasLive = partidos.some(p => p.disciplinas?.name === sport && p.estado === 'en_vivo');
@@ -219,46 +418,129 @@ export default function Home() {
         </div>
 
         {/* Resto del contenido */}
-        <div className="grid gap-8">
-          {/* Live Slider if no specific filter */}
-          {activeFilter === 'todos' && partidos.some(p => p.estado === 'en_vivo') && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 px-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-                </span>
-                <h2 className="text-sm font-black text-white uppercase tracking-widest">En Vivo ahora</h2>
-              </div>
-              <HeroSlider matches={partidos} activeFilter="todos" />
-            </div>
-          )}
-
-          {/* QUINIELA CTA BANNER */}
-          <div className="relative rounded-[2rem] overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group cursor-pointer mb-8 bg-black">
+        {hideMatches ? (
+          <div className="relative rounded-[2rem] overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group my-8 bg-[#17130D] animate-in slide-in-from-bottom-8 fade-in duration-700">
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
             <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 to-transparent" />
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 gap-6">
-              <div className="flex items-center gap-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-black shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-                  <TrendingUp size={32} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-black text-white mb-1 tracking-tight">HAGAN SUS PREDICCIONES</h3>
-                  <p className="text-amber-200/60 text-sm font-medium">Lidera el tablero y gana premios exclusivos.</p>
-                </div>
+            <div className="relative z-10 flex flex-col items-center justify-center p-10 text-center gap-6">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-400/10 to-orange-600/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.15)] overflow-hidden">
+                <Star size={40} className="text-amber-500 drop-shadow-[0_0_12px_currentColor]" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-white mb-2 tracking-tight">CARRERAS FAVORITAS</h3>
+                <p className="text-slate-400 text-sm max-w-md mx-auto">
+                  {showLoginPrompt
+                    ? "Ingresa a tu cuenta o regístrate para escoger hasta tres carreras favoritas."
+                    : "Aún no has seleccionado ninguna carrera. Escoge hasta tres carreras para seguir sus resultados de cerca."}
+                </p>
               </div>
 
-              <Link href="/quiniela" className="w-full md:w-auto">
-                <Button className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-black font-black uppercase tracking-[0.2em] px-8 py-6 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.3)] transform group-hover:scale-105 transition-all outline-none border-none">
-                  Jugar Ahora <ArrowRight size={18} className="ml-2" />
-                </Button>
-              </Link>
+              {isSelectingCareers && !showLoginPrompt ? (
+                renderSelectionGrid()
+              ) : (
+                <Link
+                  href={showLoginPrompt ? "/login" : "#"}
+                  onClick={(e) => {
+                    if (!showLoginPrompt) {
+                      e.preventDefault();
+                      openSelectionMode();
+                    }
+                  }}
+                  className="w-full md:w-auto mt-2"
+                >
+                  <Button className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-black font-black uppercase tracking-[0.2em] px-8 py-6 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.3)] transform group-hover:scale-105 transition-all outline-none border-none">
+                    {showLoginPrompt ? "Ingresar a mi cuenta" : "Escoger Carreras"} <ArrowRight size={18} className="ml-2" />
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid gap-8">
+            {/* Live Slider if no specific filter */}
+            {activeFilter === 'todos' && partidos.some(p => p.estado === 'en_vivo') && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 px-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                  </span>
+                  <h2 className="text-sm font-black text-white uppercase tracking-widest">En Vivo ahora</h2>
+                </div>
+                <HeroSlider matches={partidos} activeFilter="todos" />
+              </div>
+            )}
 
+            {/* QUINIELA CTA BANNER */}
+            <div className="relative rounded-[2rem] overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group cursor-pointer mb-8 bg-black">
+              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 to-transparent" />
+
+              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 gap-6">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-black shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+                    <TrendingUp size={32} strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-white mb-1 tracking-tight">HAGAN SUS PREDICCIONES</h3>
+                    <p className="text-amber-200/60 text-sm font-medium">Lidera el tablero y gana premios exclusivos.</p>
+                  </div>
+                </div>
+
+                <Link href="/quiniela" className="w-full md:w-auto">
+                  <Button className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-black font-black uppercase tracking-[0.2em] px-8 py-6 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.3)] transform group-hover:scale-105 transition-all outline-none border-none">
+                    Jugar Ahora <ArrowRight size={18} className="ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* MANEJA TUS PREFERENCIAS (Only visible when activeFilter is 'favoritos' and user has favorites selected) */}
+            {activeFilter === 'favoritos' && !hideMatches && (
+              <div
+                className={cn(
+                  "relative rounded-[2rem] overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group mb-8 bg-[#17130D] transition-all",
+                  isSelectingCareers ? "cursor-default" : "cursor-pointer hover:border-amber-500/50"
+                )}
+                onClick={() => {
+                  if (!isSelectingCareers) {
+                    openSelectionMode();
+                  }
+                }}
+              >
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 to-transparent" />
+
+                <div className="relative z-10 flex flex-col items-center justify-between p-6 md:p-8 gap-6">
+                  <div className="flex flex-col md:flex-row items-center gap-6 w-full md:justify-between">
+                    <div className="flex items-center gap-6 text-center md:text-left flex-col md:flex-row">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400/10 to-orange-600/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.15)] overflow-hidden shrink-0">
+                        <Star size={32} className="text-amber-500 drop-shadow-[0_0_12px_currentColor]" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-black text-white mb-1 tracking-tight">MANEJA TUS PREFERENCIAS</h3>
+                        <p className="text-amber-200/60 text-sm font-medium">Modifica o elimina tus carreras favoritas.</p>
+                      </div>
+                    </div>
+
+                    {!isSelectingCareers && (
+                      <Button className="w-full md:w-auto bg-amber-500/20 hover:bg-amber-500/30 text-amber-500 font-black uppercase tracking-widest px-6 rounded-2xl border-none">
+                        Modificar
+                      </Button>
+                    )}
+                  </div>
+
+                  {isSelectingCareers && (
+                    <div className="w-full" onClick={(e) => e.stopPropagation()}>
+                      {renderSelectionGrid()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ÚLTIMAS NOTICIAS */}
         <section className="animate-in slide-in-from-bottom-8 fade-in duration-1000">
@@ -274,19 +556,21 @@ export default function Home() {
             </Link>
           </div>
 
-          {loading ? (
+          {loading || newsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[1, 2].map(i => <NewsListSkeleton key={i} />)}
             </div>
-          ) : latestNews.length > 0 ? (
+          ) : filteredNews.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4">
-              {latestNews.map(noticia => (
+              {filteredNews.map(noticia => (
                 <NewsListCard key={noticia.id} noticia={noticia} />
               ))}
             </div>
           ) : (
             <div className="text-center py-10 bg-[#17130D]/50 border border-white/5 rounded-2xl">
-              <p className="text-sm text-white/30 font-bold uppercase tracking-widest">No hay noticias publicadas aún</p>
+              <p className="text-sm text-white/30 font-bold uppercase tracking-widest">
+                {activeFilter === 'favoritos' ? 'No hay noticias recientes para tus carreras' : 'No hay noticias publicadas aún'}
+              </p>
             </div>
           )}
         </section>
@@ -295,7 +579,7 @@ export default function Home() {
 
 
         {/* Live Section */}
-        {liveMatches.length > 0 && (
+        {!hideMatches && liveMatches.length > 0 && (
           <section className="animate-in slide-in-from-bottom-6 fade-in duration-700">
             <div className="flex items-center gap-3 mb-5 px-1">
               <div className="relative">
@@ -320,68 +604,70 @@ export default function Home() {
         )}
 
         {/* Upcoming / Recent Section */}
-        <section className="animate-in slide-in-from-bottom-8 fade-in duration-1000 delay-100">
-          <div className="flex items-center justify-between mb-6 px-1">
-            <h2 className="text-xl font-black text-white tracking-widest flex items-center gap-2 uppercase">
-              <Calendar className="text-red-500" size={24} />
-              {activeFilter === 'todos' ? 'Encuentros' : activeFilter}
-            </h2>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map(i => <MatchCardSkeleton key={i} />)}
+        {!hideMatches && (
+          <section className="animate-in slide-in-from-bottom-8 fade-in duration-1000 delay-100">
+            <div className="flex items-center justify-between mb-6 px-1">
+              <h2 className="text-xl font-black text-white tracking-widest flex items-center gap-2 uppercase">
+                <Calendar className="text-red-500" size={24} />
+                {activeFilter === 'todos' ? 'Encuentros' : activeFilter}
+              </h2>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Mostrar Upcoming y Recent juntos si no hay filtro, o filtrados si hay */}
-              {/* Nota: la lógica original separaba upcoming y recent. Aquí simplificamos para mostrar la grilla unificada */}
 
-              {/* Próximos */}
-              {upcomingMatches.length > 0 && (
-                <>
-                  <div className="col-span-full flex items-center gap-2 mt-2 mb-1">
-                    <Zap size={14} className="text-red-500" />
-                    <span className="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Próximos</span>
-                    <div className="flex-1 h-px bg-white/10" />
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => <MatchCardSkeleton key={i} />)}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Mostrar Upcoming y Recent juntos si no hay filtro, o filtrados si hay */}
+                {/* Nota: la lógica original separaba upcoming y recent. Aquí simplificamos para mostrar la grilla unificada */}
+
+                {/* Próximos */}
+                {upcomingMatches.length > 0 && (
+                  <>
+                    <div className="col-span-full flex items-center gap-2 mt-2 mb-1">
+                      <Zap size={14} className="text-red-500" />
+                      <span className="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Próximos</span>
+                      <div className="flex-1 h-px bg-white/10" />
+                    </div>
+                    {[...upcomingMatches]
+                      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+                      .map(partido => (
+                        <UpcomingMatchCard key={partido.id} partido={partido} />
+                      ))}
+                  </>
+                )}
+
+                {/* Finalizados */}
+                {recentFinished.length > 0 && (
+                  <>
+                    <div className="col-span-full flex items-center gap-2 mt-4 mb-1">
+                      <Calendar size={14} className="text-slate-500" />
+                      <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Finalizados</span>
+                      <div className="flex-1 h-px bg-white/10" />
+                    </div>
+                    {[...recentFinished]
+                      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+                      .map(partido => (
+                        <ResultCard key={partido.id} partido={partido} />
+                      ))}
+                  </>
+                )}
+
+                {/* Si no hay nada */}
+                {upcomingMatches.length === 0 && recentFinished.length === 0 && (
+                  <div className="col-span-full flex flex-col items-center justify-center py-12 text-center opacity-50">
+                    <Trophy size={32} className="mb-2" />
+                    <p>No hay partidos encontrados.</p>
                   </div>
-                  {[...upcomingMatches]
-                    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-                    .map(partido => (
-                      <UpcomingMatchCard key={partido.id} partido={partido} />
-                    ))}
-                </>
-              )}
-
-              {/* Finalizados */}
-              {recentFinished.length > 0 && (
-                <>
-                  <div className="col-span-full flex items-center gap-2 mt-4 mb-1">
-                    <Calendar size={14} className="text-slate-500" />
-                    <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Finalizados</span>
-                    <div className="flex-1 h-px bg-white/10" />
-                  </div>
-                  {[...recentFinished]
-                    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-                    .map(partido => (
-                      <ResultCard key={partido.id} partido={partido} />
-                    ))}
-                </>
-              )}
-
-              {/* Si no hay nada */}
-              {upcomingMatches.length === 0 && recentFinished.length === 0 && (
-                <div className="col-span-full flex flex-col items-center justify-center py-12 text-center opacity-50">
-                  <Trophy size={32} className="mb-2" />
-                  <p>No hay partidos encontrados.</p>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
+                )}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Empty State */}
-        {!loading && filteredPartidos.length === 0 && (
+        {!hideMatches && !loading && filteredPartidos.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center animate-in zoom-in-95 duration-500">
             <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6">
               <Trophy size={40} className="text-slate-300" />
@@ -403,13 +689,45 @@ export default function Home() {
         )}
 
         {/* Loading Skeleton */}
-        {loading && (
+        {!hideMatches && loading && (
           <div className="space-y-8">
             <div className="grid gap-4 sm:grid-cols-2">
               {[1, 2].map(i => <div key={i} className="h-48 rounded-3xl bg-white/5 animate-pulse" />)}
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               {[1, 2, 3].map(i => <div key={i} className="h-24 rounded-2xl bg-white/5 animate-pulse" />)}
+            </div>
+          </div>
+        )}
+
+        {/* Custom Error Modal */}
+        {errorModal.show && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 animate-in fade-in duration-200">
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setErrorModal({ show: false, message: "" })}
+            />
+            <div className="relative bg-[#17130D] border border-red-500/50 shadow-[0_0_40px_rgba(239,68,68,0.2)] rounded-3xl p-6 md:p-8 max-w-sm w-full text-center animate-in zoom-in-95 duration-300">
+              <button
+                onClick={() => setErrorModal({ show: false, message: "" })}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+              >
+                <div className="text-xl leading-none">&times;</div>
+              </button>
+
+              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                <AlertCircle size={32} className="text-red-500" />
+              </div>
+
+              <h3 className="text-xl font-black text-white mb-2 uppercase tracking-tight">Atención</h3>
+              <p className="text-slate-300 text-sm font-medium">{errorModal.message}</p>
+
+              <Button
+                onClick={() => setErrorModal({ show: false, message: "" })}
+                className="w-full mt-6 bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest border-none"
+              >
+                Entendido
+              </Button>
             </div>
           </div>
         )}
