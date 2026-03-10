@@ -234,6 +234,12 @@ export default function PublicMatchDetail() {
                     )} />
 
                     <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-center">
+                        {/* Top-Left Timer Wrapper */}
+                        {isLive && hasTimer && (
+                            <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-30 bg-black/40 backdrop-blur-md border border-white/10 shadow-xl rounded-full px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-center scale-90 sm:scale-100 origin-top-left transition-all">
+                                <PublicLiveTimer detalle={match.marcador_detalle || {}} deporte={match.disciplinas?.name} />
+                            </div>
+                        )}
                         {/* Status Badges */}
                         <div className="flex flex-wrap justify-center items-center gap-2 mb-8 relative z-20 px-4">
                             {!isFinished && !isLive && (
@@ -399,16 +405,7 @@ export default function PublicMatchDetail() {
                                             ) : (
                                                 <span>{isLive ? 'EN CURSO' : isFinished ? 'FINAL' : 'PROGRAMADO'}</span>
                                             )}
-
-                                            {/* Timer */}
-                                            {isLive && hasTimer && (
-                                                <>
-                                                    <span className="opacity-50">•</span>
-                                                    <div className="scale-90 origin-left">
-                                                        <PublicLiveTimer detalle={match.marcador_detalle || {}} deporte={match.disciplinas?.name} />
-                                                    </div>
-                                                </>
-                                            )}
+                                            {/* Timer moved to top-left area */}
                                         </div>
 
                                         {/* Glowing Progress Status Bar */}

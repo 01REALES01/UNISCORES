@@ -79,8 +79,8 @@ export default function PartidosPage() {
         setDeletingId(matchToDelete.id);
         
         // 1. Clean related tables just in case DB cascade is missing
-        await supabase.from('eventos_partido').delete().eq('partido_id', matchToDelete.id);
-        await supabase.from('participantes_partido').delete().eq('partido_id', matchToDelete.id);
+        await supabase.from('olympics_eventos').delete().eq('partido_id', matchToDelete.id);
+        await supabase.from('olympics_jugadores').delete().eq('partido_id', matchToDelete.id);
         
         // 2. Delete Match
         const { error } = await supabase.from('partidos').delete().eq('id', matchToDelete.id);
