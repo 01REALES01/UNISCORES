@@ -804,8 +804,6 @@ export default function MatchControlPage() {
                                         <div className="bg-white/5 backdrop-blur-sm px-6 py-2 rounded-2xl border border-white/10">
                                             {match.marcador_detalle?.resultado_final === 'empate' ? (
                                                 <span className="text-xl md:text-3xl font-black text-slate-300 tracking-widest uppercase">Empate</span>
-                                            ) : match.estado === 'finalizado' ? (
-                                                <span className="text-xl md:text-3xl font-black text-white/40 tracking-widest uppercase">FINAL</span>
                                             ) : (
                                                 <span className="text-2xl md:text-4xl font-black text-white/40 tracking-widest">VS</span>
                                             )}

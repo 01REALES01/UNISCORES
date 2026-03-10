@@ -344,16 +344,10 @@ export default function PublicMatchDetail() {
 
                                     {sportName === 'Ajedrez' ? (
                                         <div className="flex flex-col items-center justify-center w-full min-h-[100px] sm:min-h-[140px]">
-                                            {isFinished && match.marcador_detalle?.resultado_final ? (
-                                                match.marcador_detalle.resultado_final === 'empate' ? (
-                                                    <div className="bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex flex-col items-center shadow-lg">
-                                                        <span className="text-sm sm:text-base uppercase font-black text-slate-300 tracking-[0.2em]">Empate</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex flex-col items-center shadow-lg">
-                                                        <span className="text-sm sm:text-base uppercase font-black text-white/40 tracking-[0.2em]">Final</span>
-                                                    </div>
-                                                )
+                                            {isFinished && match.marcador_detalle?.resultado_final === 'empate' ? (
+                                                <div className="bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex flex-col items-center shadow-lg">
+                                                    <span className="text-sm sm:text-base uppercase font-black text-slate-300 tracking-[0.2em]">Empate</span>
+                                                </div>
                                             ) : isLive ? (
                                                 <div className="flex items-center gap-3">
                                                     <span className="relative flex h-4 w-4">

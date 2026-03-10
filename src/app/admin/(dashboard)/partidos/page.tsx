@@ -410,16 +410,10 @@ export default function PartidosPage() {
                                         <div className="flex flex-col items-center justify-center">
                                             {sportName === 'Ajedrez' ? (
                                                 <div className="flex flex-col items-center gap-1.5">
-                                                    {isFinished && partido.marcador_detalle?.resultado_final ? (
-                                                        partido.marcador_detalle.resultado_final === 'empate' ? (
-                                                            <div className="bg-white/5 backdrop-blur-sm px-3 py-1 rounded-lg border border-white/10 flex flex-col items-center">
-                                                                <span className="text-[10px] uppercase font-bold text-slate-300 tracking-widest">Empate</span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="bg-white/5 backdrop-blur-sm px-3 py-1 rounded-lg border border-white/10 flex flex-col items-center">
-                                                                <span className="text-[10px] uppercase font-bold text-white/40 tracking-widest">Final</span>
-                                                            </div>
-                                                        )
+                                                    {isFinished && partido.marcador_detalle?.resultado_final === 'empate' ? (
+                                                        <div className="bg-white/5 backdrop-blur-sm px-3 py-1 rounded-lg border border-white/10 flex flex-col items-center">
+                                                            <span className="text-[10px] uppercase font-bold text-slate-300 tracking-widest">Empate</span>
+                                                        </div>
                                                     ) : isLive ? (
                                                         <span className="text-sm font-black text-rose-400 bg-rose-500/10 px-4 py-1.5 rounded-xl border border-rose-500/30 animate-pulse uppercase tracking-wide">
                                                             EN VIVO
