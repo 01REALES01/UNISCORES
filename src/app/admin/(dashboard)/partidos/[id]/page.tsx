@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button, Badge, Avatar, Card } from "@/components/ui-primitives";
-import { ArrowLeft, Clock, Play, Pause, Square, AlertCircle, Plus, Save, Users, Trophy, ChevronRight, Activity, Check, Trash2, Edit2, RotateCcw, X } from "lucide-react";
+import { ArrowLeft, Clock, Play, Pause, Square, AlertCircle, Plus, Save, Users, Trophy, ChevronRight, Activity, Check, Trash2, Edit2, RotateCcw, X, Crown, Handshake } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { cn } from "@/lib/utils";
 import { getCurrentScore, recalculateTotals, cambiarTiempoFutbol, cambiarCuartoBasket, removePoints, addPoints, isCountdownSport, getPeriodDuration, getCurrentPeriodNumber } from "@/lib/sport-scoring";
+import { getDisplayName, getCarreraName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import { toast } from "sonner";
 import { RaceControl } from "@/components/race-control";
 import { invalidateCache } from "@/lib/supabase-query";
@@ -81,8 +82,8 @@ const GET_SPORT_ACTIONS = (sport: string) => {
     // Ajedrez - solo resultado final
     if (sport === 'Ajedrez') {
         return [
-            { value: 'victoria', label: 'Victoria', icon: '👑', style: 'pill-gold' },
-            { value: 'empate', label: 'Empate', icon: '🤝', style: 'pill-neutral' },
+            { value: 'victoria', label: 'Victoria', icon: <Crown size={32} />, style: 'pill-gold' },
+            { value: 'empate', label: 'Empate', icon: <Handshake size={32} />, style: 'pill-neutral' },
         ];
     }
 
@@ -237,7 +238,7 @@ export default function MatchControlPage() {
             setLoading(true);
             const { data, error } = await supabase
                 .from('partidos')
-                .select(`*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`)
+                .select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`)
                 .eq('id', matchId)
                 .single();
 
@@ -477,17 +478,44 @@ export default function MatchControlPage() {
     };
 
 
+    // Helper: ¿Ya existe resultado terminal en ajedrez?
+    const chessHasTerminalResult = () => {
+        const det = match?.marcador_detalle || {};
+        return !!det.resultado_final; // 'victoria_a', 'victoria_b', o 'empate'
+    };
+
     const handleNuevoEvento = async (eventOverride?: any) => {
         const stateToUse = eventOverride || nuevoEvento;
         const disciplinaName = match.disciplinas?.name || 'Deporte';
 
-        // Jugador es opcional en Tenis, Ping Pong, Voleibol o eventos de equipo
-        const isPlayerRequired = !['Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName);
+        // Bloquear si el partido no está en vivo
+        if (match.estado !== 'en_vivo') {
+            toast.error('Solo se pueden registrar eventos en partidos EN VIVO.');
+            return;
+        }
 
-        if (!stateToUse.tipo || !stateToUse.equipo || (isPlayerRequired && !stateToUse.jugador_id)) return;
+        // Bloquear eventos terminales duplicados en ajedrez
+        if (disciplinaName === 'Ajedrez' && (stateToUse.tipo === 'victoria' || stateToUse.tipo === 'empate')) {
+            if (chessHasTerminalResult()) {
+                toast.error('Este partido ya tiene un resultado final registrado.');
+                setNuevoEvento({ tipo: '', equipo: '', jugador_id: null });
+                return;
+            }
+        }
+
+        // Deportes individuales (ajedrez, tenis, etc.) no requieren selección de jugador
+        const isIndividualSport = ['Ajedrez', 'Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName);
+        const isPlayerRequired = !isIndividualSport;
+
+        // Para empate de ajedrez no se requiere equipo
+        const requiresTeam = !(disciplinaName === 'Ajedrez' && stateToUse.tipo === 'empate');
+
+        if (!stateToUse.tipo) return;
+        if (requiresTeam && !stateToUse.equipo) return;
+        if (isPlayerRequired && !stateToUse.jugador_id) return;
 
         // Use stateToUse instead of nuevoEvento for values below
-        const equipo = stateToUse.equipo;
+        const equipo = stateToUse.equipo || 'sistema';
         const tipo = stateToUse.tipo;
         const jugador_id = stateToUse.jugador_id;
 
@@ -513,15 +541,52 @@ export default function MatchControlPage() {
                 .single();
             const currentDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
 
-            // Lógica de Puntos / Resultados
+            // --- Lógica especial para AJEDREZ: resultado terminal ---
+            if (disciplinaName === 'Ajedrez' && (tipo === 'victoria' || tipo === 'empate')) {
+                let resultadoFinal = '';
+                let scoreA = 0;
+                let scoreB = 0;
 
-            if (disciplinaName === 'Natación') {
-                // Lógica especial para deportes de Ranking/Tiempo
+                if (tipo === 'empate') {
+                    resultadoFinal = 'empate';
+                    scoreA = 0.5;
+                    scoreB = 0.5;
+                } else {
+                    // victoria
+                    resultadoFinal = equipo === 'equipo_a' ? 'victoria_a' : 'victoria_b';
+                    scoreA = equipo === 'equipo_a' ? 1 : 0;
+                    scoreB = equipo === 'equipo_b' ? 1 : 0;
+                }
+
+                const nuevoMarcador = {
+                    ...currentDetalle,
+                    resultado_final: resultadoFinal,
+                    score_a: scoreA,
+                    score_b: scoreB,
+                };
+
+                // Guardar marcador y finalizar partido
+                await supabase.from('partidos').update({
+                    marcador_detalle: nuevoMarcador,
+                    estado: 'finalizado'
+                }).eq('id', matchId);
+
+                setCronometroActivo(false);
+                setMatch((prev: any) => ({ ...prev, estado: 'finalizado', marcador_detalle: nuevoMarcador }));
+                invalidateCache('home-partidos');
+                invalidateCache('admin-dashboard');
+                invalidateCache('admin-partidos');
+                toast.success(
+                    tipo === 'empate'
+                        ? 'Empate registrado. Partido finalizado.'
+                        : `Victoria registrada para ${getDisplayName(match, equipo === 'equipo_a' ? 'a' : 'b')}. Partido finalizado.`
+                );
+            }
+            // --- Natación ---
+            else if (disciplinaName === 'Natación') {
                 const puesto = tipo === 'victoria' ? 1 : tipo === 'segundo' ? 2 : tipo === 'tercero' ? 3 : 0;
                 if (puesto > 0) {
                     const nuevosResultados = currentDetalle.resultados || [];
-
-                    // Find player name for display
                     const isTeamA = equipo === 'equipo_a';
                     const playerList = isTeamA ? jugadoresA : jugadoresB;
                     const playerObj = playerList.find(p => p.id === jugador_id);
@@ -545,7 +610,6 @@ export default function MatchControlPage() {
                 if (tipo === 'punto_2') puntos = 2;
                 if (tipo === 'punto_3') puntos = 3;
 
-                // Usar la nueva lógica de scoring con datos frescos de la DB
                 const nuevoMarcador = addPoints(
                     disciplinaName,
                     currentDetalle,
@@ -557,7 +621,6 @@ export default function MatchControlPage() {
                 setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
             } else {
                 // For non-scoring events (tarjetas, cambios, faltas), just sync local state
-                // with whatever is in the DB so local state stays fresh
                 setMatch((prev: any) => ({ ...prev, marcador_detalle: currentDetalle }));
             }
             setNuevoEvento({ tipo: '', equipo: '', jugador_id: null });
@@ -713,28 +776,52 @@ export default function MatchControlPage() {
 
                             {/* Team A */}
                             <div className="flex flex-col items-center group order-1">
+                                {disciplinaName === 'Ajedrez' && match.marcador_detalle?.resultado_final === 'victoria_a' && (
+                                    <div className="mb-2 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+                                        Ganador
+                                    </div>
+                                )}
                                 <div className="relative">
                                     <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/10 flex items-center justify-center text-xl md:text-3xl font-bold border-2 md:border-4 border-white/10 shadow-xl relative z-10 backdrop-blur-sm">
-                                        <Avatar name={match.equipo_a} size="lg" className="h-full w-full" />
+                                        <Avatar name={getDisplayName(match, 'a')} size="lg" className="h-full w-full" />
                                     </div>
                                 </div>
                                 <h2 className="text-sm md:text-2xl font-bold mt-2 md:mt-4 text-center leading-tight drop-shadow-md break-words max-w-[100px] md:max-w-none line-clamp-2">
-                                    {match.equipo_a}
+                                    {getDisplayName(match, 'a')}
                                 </h2>
+                                {getCarreraSubtitle(match, 'a') && (
+                                    <span className="text-xs text-white/50 font-medium mt-0.5 text-center">{getCarreraSubtitle(match, 'a')}</span>
+                                )}
                             </div>
 
                             {/* Center: Timer & Controls */}
                             <div className="flex flex-col items-center gap-2 md:gap-6 z-10 order-2 col-span-1">
+
+                                {/* CHESS: Visual Result instead of numeric score */}
+                                {disciplinaName === 'Ajedrez' ? (
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="bg-white/5 backdrop-blur-sm px-6 py-2 rounded-2xl border border-white/10">
+                                            {match.marcador_detalle?.resultado_final === 'empate' ? (
+                                                <span className="text-xl md:text-3xl font-black text-slate-300 tracking-widest uppercase">Empate</span>
+                                            ) : (
+                                                <span className="text-2xl md:text-4xl font-black text-white/40 tracking-widest">VS</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
                                 {/* STANDARD SCOREBOARD */}
                                 <div className="flex items-center justify-center gap-2 md:gap-4 leading-none relative group/score">
-                                    <button
-                                        onClick={() => setIsEditingScore(true)}
-                                        className="absolute -top-6 bg-white/10 hover:bg-white/20 p-1.5 rounded-full opacity-0 group-hover/score:opacity-100 transition-opacity"
-                                        title="Ajuste Manual de Marcador"
-                                    >
-                                        <Edit2 size={12} />
-                                    </button>
+                                    {match.estado === 'en_vivo' && (
+                                        <button
+                                            onClick={() => setIsEditingScore(true)}
+                                            className="absolute -top-6 bg-white/10 hover:bg-white/20 p-1.5 rounded-full opacity-0 group-hover/score:opacity-100 transition-opacity"
+                                            title="Ajuste Manual de Marcador"
+                                        >
+                                            <Edit2 size={12} />
+                                        </button>
+                                    )}
                                     <span className="text-5xl md:text-8xl font-black tabular-nums tracking-tighter drop-shadow-xl">{scoreA}</span>
                                     <span className="text-2xl md:text-4xl font-bold text-white/40">-</span>
                                     <span className="text-5xl md:text-8xl font-black tabular-nums tracking-tighter drop-shadow-xl">{scoreB}</span>
@@ -752,14 +839,14 @@ export default function MatchControlPage() {
                                 {/* Period/Quarter/Set Indicator */}
                                 {disciplinaName === 'Baloncesto' ? (
                                     <select
-                                        className="bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold appearance-none text-center cursor-pointer hover:bg-white/20 outline-none focus:ring-2 focus:ring-primary/50"
+                                        className={`bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold appearance-none text-center outline-none focus:ring-2 focus:ring-primary/50 ${match.estado !== 'en_vivo' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/20'}`}
                                         value={match.marcador_detalle?.cuarto_actual || 1}
+                                        disabled={match.estado !== 'en_vivo'}
                                         onChange={async (e) => {
                                             const newQ = parseInt(e.target.value);
                                             const newDetalle = { ...match.marcador_detalle, cuarto_actual: newQ };
                                             await supabase.from('partidos').update({ marcador_detalle: newDetalle }).eq('id', matchId);
                                             setMatch({ ...match, marcador_detalle: newDetalle });
-                                            // registrarEventoSistema is available in scope
                                             registrarEventoSistema('periodo', `Corrección Manual: ${newQ}º Cuarto`);
                                         }}
                                     >
@@ -772,10 +859,10 @@ export default function MatchControlPage() {
                                     </select>
                                 ) : ['Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName) ? (
                                     <select
-                                        className="bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold appearance-none text-center cursor-pointer hover:bg-white/20 outline-none focus:ring-2 focus:ring-primary/50 uppercase"
+                                        className={`bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold appearance-none text-center uppercase outline-none focus:ring-2 focus:ring-primary/50 ${match.estado !== 'en_vivo' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/20'}`}
                                         value={extra || 'Set 1'}
+                                        disabled={match.estado !== 'en_vivo'}
                                         onChange={async (e) => {
-                                            // Lógica simple para sets, idealmente usaríamos algo más robusto
                                             const setNum = parseInt(e.target.value.replace(/\D/g, ''));
                                             const newDetalle = { ...match.marcador_detalle, set_actual: setNum };
                                             await supabase.from('partidos').update({ marcador_detalle: newDetalle }).eq('id', matchId);
@@ -792,6 +879,8 @@ export default function MatchControlPage() {
                                     <div className="bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 text-xs font-bold">
                                         {extra || (match.marcador_detalle?.tiempo_actual ? `${match.marcador_detalle.tiempo_actual}º Tiempo` : 'Tiempo Regular')}
                                     </div>
+                                )}
+                                    </>
                                 )}
 
                                 {/* Timer */}
@@ -840,18 +929,23 @@ export default function MatchControlPage() {
 
                             {/* Team B */}
                             <div className="flex flex-col items-center group order-3">
+                                {disciplinaName === 'Ajedrez' && match.marcador_detalle?.resultado_final === 'victoria_b' && (
+                                    <div className="mb-2 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+                                        Ganador
+                                    </div>
+                                )}
                                 <div className="relative">
                                     <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/10 flex items-center justify-center text-xl md:text-3xl font-bold border-2 md:border-4 border-white/10 shadow-xl relative z-10 backdrop-blur-sm">
-                                        <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" className="h-full w-full" />
-                                    </div>
-                                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[#0a0805] px-3 py-1 rounded-full border border-zinc-800 text-[10px] font-bold text-zinc-400 uppercase tracking-widest whitespace-nowrap shadow-lg">
-                                        Team B
+                                        <Avatar name={getDisplayName(match, 'b')} size="lg" className="h-full w-full" />
                                     </div>
                                 </div>
                                 <h2 className="text-sm md:text-2xl font-bold mt-2 md:mt-4 text-center leading-tight drop-shadow-md break-words max-w-[100px] md:max-w-none line-clamp-2">
-                                    {match.carrera_b?.nombre || match.equipo_b}
+                                    {getDisplayName(match, 'b')}
                                 </h2>
+                                {getCarreraSubtitle(match, 'b') && (
+                                    <span className="text-xs text-white/50 font-medium mt-0.5 text-center">{getCarreraSubtitle(match, 'b')}</span>
+                                )}
                             </div>
                         </div>
                     )}
@@ -911,7 +1005,7 @@ export default function MatchControlPage() {
                                 <tbody>
                                     {/* Equipo A */}
                                     <tr className="border-b border-white/5 hover:bg-white/5">
-                                        <td className="py-2 px-3 font-semibold">{match.carrera_a?.nombre || match.equipo_a}</td>
+                                        <td className="py-2 px-3 font-semibold">{getDisplayName(match, 'a')}</td>
                                         {disciplinaName === 'Fútbol' && (
                                             <>
                                                 <td className="text-center py-2 px-3">{match.marcador_detalle?.tiempos?.[1]?.goles_a || 0}</td>
@@ -960,7 +1054,7 @@ export default function MatchControlPage() {
                                     </tr>
                                     {/* Equipo B */}
                                     <tr className="hover:bg-white/5">
-                                        <td className="py-2 px-3 font-semibold">{match.carrera_b?.nombre || match.equipo_b}</td>
+                                        <td className="py-2 px-3 font-semibold">{getDisplayName(match, 'b')}</td>
                                         {disciplinaName === 'Fútbol' && (
                                             <>
                                                 <td className="text-center py-2 px-3">{match.marcador_detalle?.tiempos?.[1]?.goles_b || 0}</td>
@@ -1011,7 +1105,7 @@ export default function MatchControlPage() {
                             </table>
                         </div>
 
-                        {(match.estado === 'en_vivo' || match.estado === 'finalizado') && (
+                        {match.estado === 'en_vivo' && (
                             <div className="p-4 md:p-5 border-t border-white/5">
                                 {!showAdvancedEdit ? (
                                     <button onClick={openAdvancedEdit} className="w-full group relative overflow-hidden rounded-xl p-[1px] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,192,0,0.15)]">
@@ -1081,8 +1175,8 @@ export default function MatchControlPage() {
                                                     <div className={`grid gap-1.5 md:gap-2 items-center`} style={{ gridTemplateColumns: `1fr repeat(${colCount}, minmax(0, 1fr))` }}>
                                                         <div className="flex items-center gap-2 pl-1 min-w-0">
                                                             <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-[#FFC000]/10 border border-[#FFC000]/20 flex items-center justify-center text-[8px] md:text-[10px] font-bold text-[#FFC000] flex-shrink-0">A</div>
-                                                            <span className="text-[10px] md:text-xs font-bold truncate" title={match.carrera_a?.nombre || match.equipo_a}>
-                                                                {match.carrera_a?.nombre || match.equipo_a}
+                                                            <span className="text-[10px] md:text-xs font-bold truncate" title={getDisplayName(match, 'a')}>
+                                                                {getDisplayName(match, 'a')}
                                                             </span>
                                                         </div>
                                                         {periods.map(p => (
@@ -1108,8 +1202,8 @@ export default function MatchControlPage() {
                                                     <div className={`grid gap-1.5 md:gap-2 items-center`} style={{ gridTemplateColumns: `1fr repeat(${colCount}, minmax(0, 1fr))` }}>
                                                         <div className="flex items-center gap-2 pl-1 min-w-0">
                                                             <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-[#DB1406]/10 border border-[#DB1406]/20 flex items-center justify-center text-[8px] md:text-[10px] font-bold text-[#DB1406] flex-shrink-0">B</div>
-                                                            <span className="text-[10px] md:text-xs font-bold truncate" title={match.carrera_b?.nombre || match.equipo_b}>
-                                                                {match.carrera_b?.nombre || match.equipo_b}
+                                                            <span className="text-[10px] md:text-xs font-bold truncate" title={getDisplayName(match, 'b')}>
+                                                                {getDisplayName(match, 'b')}
                                                             </span>
                                                         </div>
                                                         {periods.map(p => (
@@ -1192,6 +1286,21 @@ export default function MatchControlPage() {
                             {/* Decorative background elements */}
                             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
 
+                            {/* Bloqueo si partido no está en vivo */}
+                            {match.estado !== 'en_vivo' && (
+                                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/70 backdrop-blur-sm rounded-[inherit]">
+                                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                        <AlertCircle size={28} className="text-slate-500" />
+                                    </div>
+                                    <p className="text-sm font-bold text-slate-400 text-center px-8">
+                                        Solo se pueden registrar eventos en partidos <span className="text-rose-400">EN VIVO</span>.
+                                    </p>
+                                    <p className="text-xs text-slate-600 font-medium">
+                                        Estado actual: <span className="uppercase">{match.estado}</span>
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="p-6 border-b border-white/5 bg-white/5 backdrop-blur-sm flex items-center justify-between">
                                 <h3 className="font-bold text-lg flex items-center gap-3">
                                     <div className="p-2 bg-primary/10 rounded-lg text-primary">
@@ -1199,79 +1308,125 @@ export default function MatchControlPage() {
                                     </div>
                                     Registrar Evento
                                 </h3>
-                                {nuevoEvento.tipo && (
-                                    <Badge variant="outline" className="animate-in fade-in zoom-in bg-primary/10 text-primary border-primary/20">
-                                        Paso {nuevoEvento.equipo ? (nuevoEvento.jugador_id ? '3/3' : '2/3') : '1/3'}
-                                    </Badge>
-                                )}
+                                {(() => {
+                                    // Calcular paso actual según deporte
+                                    const isChess = disciplinaName === 'Ajedrez';
+                                    const isEmpate = nuevoEvento.tipo === 'empate';
+                                    const isVictoria = nuevoEvento.tipo === 'victoria';
+                                    let stepText = '';
+
+                                    if (isChess && isEmpate) {
+                                        stepText = nuevoEvento.tipo ? '1/1' : '';
+                                    } else if (isChess && isVictoria) {
+                                        stepText = nuevoEvento.equipo ? '2/2' : '1/2';
+                                    } else if (['Ajedrez', 'Tenis', 'Tenis de Mesa'].includes(disciplinaName)) {
+                                        stepText = nuevoEvento.equipo ? '2/2' : '1/2';
+                                    } else {
+                                        stepText = nuevoEvento.equipo ? (nuevoEvento.jugador_id ? '3/3' : '2/3') : '1/3';
+                                    }
+
+                                    return nuevoEvento.tipo && stepText ? (
+                                        <Badge variant="outline" className="animate-in fade-in zoom-in bg-primary/10 text-primary border-primary/20">
+                                            Paso {stepText}
+                                        </Badge>
+                                    ) : null;
+                                })()}
                             </div>
 
                             <div className="p-6 space-y-8">
                                 {/* 1. ACTIONS GRID */}
-                                <div>
-                                    <p className="text-xs font-bold uppercase text-muted-foreground mb-3 tracking-wider ml-1">1. Selecciona Acción</p>
-                                    <div className="grid grid-cols-4 gap-3">
-                                        {actions.map(action => {
-                                            const isSelected = nuevoEvento.tipo === action.value;
+                                {(() => {
+                                    const isChess = disciplinaName === 'Ajedrez';
+                                    const hasTerminal = isChess && chessHasTerminalResult();
+                                    return (
+                                        <div>
+                                            <p className="text-xs font-bold uppercase text-muted-foreground mb-3 tracking-wider ml-1">1. Selecciona Acción</p>
+                                            {hasTerminal && (
+                                                <div className="mb-3 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+                                                    <Trophy size={18} className="text-amber-400 flex-shrink-0" />
+                                                    <p className="text-xs font-bold text-amber-300">
+                                                        Este partido ya tiene resultado final: <span className="uppercase text-white">{match.marcador_detalle?.resultado_final?.replace('_', ' ')}</span>
+                                                    </p>
+                                                </div>
+                                            )}
+                                            <div className="grid grid-cols-4 gap-3">
+                                                {actions.map(action => {
+                                                    const isSelected = nuevoEvento.tipo === action.value;
+                                                    const isTerminalAction = action.value === 'victoria' || action.value === 'empate';
+                                                    const isDisabled = hasTerminal && isTerminalAction;
 
-                                            // Dynamic Styling based on action type
-                                            let activeColors = "from-slate-700 to-slate-900 border-slate-600";
-                                            let iconColor = "text-slate-400";
+                                                    let activeColors = "from-slate-700 to-slate-900 border-slate-600";
+                                                    let iconColor = "text-slate-400";
 
-                                            if (action.style === 'pill-green') { activeColors = "from-emerald-600 to-emerald-800 border-emerald-400 shadow-[0_0_20px_-5px_rgba(16,185,129,0.5)]"; iconColor = "text-emerald-400"; }
-                                            else if (action.style === 'card-yellow') { activeColors = "from-yellow-500 to-amber-600 border-yellow-300 shadow-[0_0_20px_-5px_rgba(234,179,8,0.5)]"; iconColor = "text-yellow-400"; }
-                                            else if (action.style === 'card-red') { activeColors = "from-red-600 to-red-800 border-red-500 shadow-[0_0_20px_-5px_rgba(239,68,68,0.5)]"; iconColor = "text-red-500"; }
-                                            else if (action.style.includes('orange')) { activeColors = "from-orange-500 to-red-600 border-orange-400 shadow-[0_0_20px_-5px_rgba(249,115,22,0.5)]"; iconColor = "text-orange-400"; }
-                                            else if (action.style === 'pill-blue') { activeColors = "from-red-600 to-red-700 border-red-400 shadow-[0_0_20px_-5px_rgba(59,130,246,0.5)]"; iconColor = "text-red-400"; }
+                                                    if (action.style === 'pill-green') { activeColors = "from-emerald-600 to-emerald-800 border-emerald-400 shadow-[0_0_20px_-5px_rgba(16,185,129,0.5)]"; iconColor = "text-emerald-400"; }
+                                                    else if (action.style === 'card-yellow') { activeColors = "from-yellow-500 to-amber-600 border-yellow-300 shadow-[0_0_20px_-5px_rgba(234,179,8,0.5)]"; iconColor = "text-yellow-400"; }
+                                                    else if (action.style === 'card-red') { activeColors = "from-red-600 to-red-800 border-red-500 shadow-[0_0_20px_-5px_rgba(239,68,68,0.5)]"; iconColor = "text-red-500"; }
+                                                    else if (action.style.includes('orange')) { activeColors = "from-orange-500 to-red-600 border-orange-400 shadow-[0_0_20px_-5px_rgba(249,115,22,0.5)]"; iconColor = "text-orange-400"; }
+                                                    else if (action.style === 'pill-blue') { activeColors = "from-red-600 to-red-700 border-red-400 shadow-[0_0_20px_-5px_rgba(59,130,246,0.5)]"; iconColor = "text-red-400"; }
+                                                    else if (action.style === 'pill-gold') { activeColors = "from-amber-500 to-yellow-600 border-amber-400 shadow-[0_0_20px_-5px_rgba(245,158,11,0.5)]"; iconColor = "text-amber-400"; }
+                                                    else if (action.style === 'pill-neutral') { activeColors = "from-slate-600 to-slate-800 border-slate-400 shadow-[0_0_20px_-5px_rgba(148,163,184,0.3)]"; iconColor = "text-slate-400"; }
 
-                                            return (
-                                                <button
-                                                    key={action.value}
-                                                    onClick={() => setNuevoEvento({ ...nuevoEvento, tipo: action.value })}
-                                                    className={`relative h-24 rounded-2xl border transition-all duration-300 flex flex-col items-center justify-center gap-2 group/btn overflow-hidden ${isSelected
-                                                        ? `bg-gradient-to-br ${activeColors} text-white scale-[1.02] z-10 ring-2 ring-white/10`
-                                                        : "bg-zinc-900/40 border-white/5 hover:border-white/20 hover:bg-white/5 active:scale-95"
-                                                        }`}
-                                                >
-                                                    {/* Background Glow for selected */}
-                                                    {isSelected && <div className="absolute inset-0 bg-white/20 mix-blend-overlay" />}
-
-                                                    <span className={`text-3xl transition-transform duration-300 group-hover/btn:scale-110 drop-shadow-md ${isSelected ? 'text-white' : 'grayscale opacity-70 group-hover/btn:grayscale-0 group-hover/btn:opacity-100'}`}>
-                                                        {action.icon}
-                                                    </span>
-                                                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? 'text-white/90' : 'text-muted-foreground group-hover/btn:text-white'}`}>
-                                                        {action.label}
-                                                    </span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
+                                                    return (
+                                                        <button
+                                                            key={action.value}
+                                                            disabled={isDisabled}
+                                                            onClick={() => {
+                                                                if (isDisabled) return;
+                                                                setNuevoEvento({ ...nuevoEvento, tipo: action.value });
+                                                            }}
+                                                            className={`relative h-24 rounded-2xl border transition-all duration-300 flex flex-col items-center justify-center gap-2 group/btn overflow-hidden ${isDisabled
+                                                                ? 'opacity-30 cursor-not-allowed bg-zinc-900/20 border-white/5'
+                                                                : isSelected
+                                                                    ? `bg-gradient-to-br ${activeColors} text-white scale-[1.02] z-10 ring-2 ring-white/10`
+                                                                    : "bg-zinc-900/40 border-white/5 hover:border-white/20 hover:bg-white/5 active:scale-95"
+                                                                }`}
+                                                        >
+                                                            {isSelected && <div className="absolute inset-0 bg-white/20 mix-blend-overlay" />}
+                                                            <span className={`text-3xl transition-transform duration-300 group-hover/btn:scale-110 drop-shadow-md ${isSelected ? 'text-white' : 'grayscale opacity-70 group-hover/btn:grayscale-0 group-hover/btn:opacity-100'}`}>
+                                                                {action.icon}
+                                                            </span>
+                                                            <span className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? 'text-white/90' : 'text-muted-foreground group-hover/btn:text-white'}`}>
+                                                                {action.label}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* 2. TEAM & PLAYER SELECTOR (Animated Reveal) */}
                                 <div className={`space-y-6 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${nuevoEvento.tipo ? 'opacity-100 translate-y-0 filter-none' : 'opacity-30 translate-y-8 blur-sm pointer-events-none'}`}>
 
-                                    {/* TEAM SELECTOR */}
+                                    {/* TEAM / COMPETITOR SELECTOR — solo si no es empate de ajedrez */}
+                                    {!(disciplinaName === 'Ajedrez' && nuevoEvento.tipo === 'empate') && (
                                     <div>
-                                        <p className="text-xs font-bold uppercase text-muted-foreground mb-3 tracking-wider ml-1">2. ¿Para qué equipo?</p>
+                                        <p className="text-xs font-bold uppercase text-muted-foreground mb-3 tracking-wider ml-1">
+                                            {disciplinaName === 'Ajedrez' && nuevoEvento.tipo === 'victoria'
+                                                ? '2. ¿Quién ganó?'
+                                                : '2. ¿Para qué equipo?'
+                                            }
+                                        </p>
                                         <div className="grid grid-cols-2 gap-4">
                                             {[
-                                                { id: 'equipo_a', name: match.carrera_a?.nombre || match.equipo_a },
-                                                { id: 'equipo_b', name: match.carrera_b?.nombre || match.equipo_b }
+                                                { id: 'equipo_a', name: getDisplayName(match, 'a'), subtitle: getCarreraSubtitle(match, 'a') },
+                                                { id: 'equipo_b', name: getDisplayName(match, 'b'), subtitle: getCarreraSubtitle(match, 'b') }
                                             ].map(team => {
                                                 const isSelected = nuevoEvento.equipo === team.id;
                                                 return (
                                                     <button
                                                         key={team.id}
                                                         onClick={() => {
-                                                            const isPlayerRequired = !['Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName);
+                                                            const isIndividual = ['Ajedrez', 'Tenis', 'Tenis de Mesa'].includes(disciplinaName);
 
-                                                            if (!isPlayerRequired) {
-                                                                // AUTO SUBMIT para deportes rápidos
+                                                            if (isIndividual && disciplinaName !== 'Ajedrez') {
+                                                                // Non-chess individual sports: auto-submit
                                                                 const eventState = { ...nuevoEvento, equipo: team.id, jugador_id: null };
                                                                 setNuevoEvento(eventState);
                                                                 handleNuevoEvento(eventState);
                                                             } else {
+                                                                // Chess + collective: just set the equipo
                                                                 setNuevoEvento({ ...nuevoEvento, equipo: team.id, jugador_id: null });
                                                             }
                                                         }}
@@ -1288,7 +1443,7 @@ export default function MatchControlPage() {
                                                         <div className="text-left overflow-hidden">
                                                             <p className={`font-bold text-sm truncate ${isSelected ? 'text-white' : 'text-muted-foreground'}`}>{team.name}</p>
                                                             <p className="text-[10px] uppercase tracking-wider opacity-60">
-                                                                {team.id === 'equipo_a' ? 'Local' : 'Visitante'}
+                                                                {team.subtitle || (team.id === 'equipo_a' ? 'Local' : 'Visitante')}
                                                             </p>
                                                         </div>
 
@@ -1302,9 +1457,37 @@ export default function MatchControlPage() {
                                             })}
                                         </div>
                                     </div>
+                                    )}
 
-                                    {/* PLAYER SELECTOR - Only show if required */}
-                                    {(!['Tenis', 'Tenis de Mesa', 'Voleibol'].includes(disciplinaName)) && (
+                                    {/* --- CHESS CONFIRMATION BUTTON --- */}
+                                    {disciplinaName === 'Ajedrez' && (
+                                        <div className="mt-4">
+                                            {nuevoEvento.tipo === 'empate' ? (
+                                                <Button
+                                                    size="lg"
+                                                    className="w-full h-14 rounded-xl text-lg font-black tracking-wide shadow-lg bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black shadow-emerald-500/20"
+                                                    onClick={() => handleNuevoEvento({ tipo: 'empate', equipo: '', jugador_id: null })}
+                                                >
+                                                    <span className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+                                                        <Check strokeWidth={3} className="w-5 h-5" /> CONFIRMAR EMPATE
+                                                    </span>
+                                                </Button>
+                                            ) : nuevoEvento.tipo === 'victoria' && nuevoEvento.equipo ? (
+                                                <Button
+                                                    size="lg"
+                                                    className="w-full h-14 rounded-xl text-lg font-black tracking-wide shadow-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black shadow-amber-500/20"
+                                                    onClick={() => handleNuevoEvento()}
+                                                >
+                                                    <span className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+                                                        <Check strokeWidth={3} className="w-5 h-5" /> CONFIRMAR VICTORIA
+                                                    </span>
+                                                </Button>
+                                            ) : null}
+                                        </div>
+                                    )}
+
+                                    {/* PLAYER SELECTOR — Solo para deportes colectivos que requieren jugador */}
+                                    {!['Ajedrez', 'Tenis', 'Tenis de Mesa'].includes(disciplinaName) && (
                                         <div className={`transition-all duration-500 delay-100 ${nuevoEvento.equipo ? 'opacity-100 translate-x-0' : 'opacity-50 translate-x-4 pointer-events-none'}`}>
                                             <div className="flex justify-between items-center mb-3">
                                                 <p className="text-xs font-bold uppercase text-muted-foreground tracking-wider ml-1">3. Selecciona Jugador</p>

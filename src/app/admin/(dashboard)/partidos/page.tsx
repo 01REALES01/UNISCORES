@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
-import { Plus, Calendar, Clock, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity, Loader2 } from "lucide-react";
+import { Plus, Calendar, Clock, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity, Loader2, Crown, Handshake } from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { Card, Badge, Avatar, LiveIndicator } from "@/components/ui-primitives";
 import { CreateMatchModal } from "@/components/create-match-modal";
@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { SPORT_EMOJI } from "@/lib/constants";
+import { getDisplayName, getCarreraName, getCarreraSubtitle } from "@/lib/sport-helpers";
 
 const SPORT_GRADIENT: Record<string, string> = {
     'Fútbol': 'from-emerald-500/20 to-emerald-900/5',
@@ -47,7 +48,7 @@ export default function PartidosPage() {
 
     const fetchPartidos = useCallback(async () => {
         const { data } = await safeQuery(
-            supabase.from('partidos').select(`*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).order('created_at', { ascending: false }),
+            supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).order('created_at', { ascending: false }),
             'admin-partidos'
         );
         if (data) setPartidos(data);
@@ -88,9 +89,11 @@ export default function PartidosPage() {
         if (genderFilter !== 'todos' && (p.genero || 'masculino') !== genderFilter) return false;
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
-            const eqA = p.carrera_a?.nombre || p.equipo_a;
-            const eqB = p.carrera_b?.nombre || p.equipo_b;
-            if (!eqA.toLowerCase().includes(q) && !eqB.toLowerCase().includes(q)) return false;
+            const dispA = getDisplayName(p, 'a');
+            const dispB = getDisplayName(p, 'b');
+            const carA = getCarreraName(p, 'a');
+            const carB = getCarreraName(p, 'b');
+            if (!dispA.toLowerCase().includes(q) && !dispB.toLowerCase().includes(q) && !carA.toLowerCase().includes(q) && !carB.toLowerCase().includes(q)) return false;
         }
         return true;
     });
@@ -387,15 +390,43 @@ export default function PartidosPage() {
                                     <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center mb-5">
                                         {/* Team A */}
                                         <div className="flex flex-col items-center gap-2 text-center">
-                                            <Avatar name={partido.carrera_a?.nombre || partido.equipo_a} size="default" className="ring-2 ring-white/10 shadow-lg" />
-                                            <span className={cn("text-sm font-bold leading-tight truncate max-w-[90px]", score.a > score.b && isFinished ? "text-red-400" : "text-white")}>
-                                                {partido.carrera_a?.nombre || partido.equipo_a}
-                                            </span>
+                                            {sportName === 'Ajedrez' && isFinished && partido.marcador_detalle?.resultado_final === 'victoria_a' && (
+                                                <div className="mb-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
+                                                    Ganador
+                                                </div>
+                                            )}
+                                            <Avatar name={getDisplayName(partido, 'a')} size="default" className="ring-2 ring-white/10 shadow-lg relative z-10" />
+                                            <div className="flex flex-col items-center gap-0.5">
+                                                <span className={cn("text-sm font-bold leading-tight truncate max-w-[90px]", score.a > score.b && isFinished ? "text-red-400" : "text-white")}>
+                                                    {getDisplayName(partido, 'a')}
+                                                </span>
+                                                {getCarreraSubtitle(partido, 'a') && (
+                                                    <span className="text-[9px] text-slate-500 font-medium truncate max-w-[90px]">{getCarreraSubtitle(partido, 'a')}</span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Score */}
-                                        <div className="flex flex-col items-center">
-                                            <div className="bg-black/30 backdrop-blur-sm px-5 py-2 rounded-2xl border border-white/5">
+                                        <div className="flex flex-col items-center justify-center">
+                                            {sportName === 'Ajedrez' ? (
+                                                <div className="flex flex-col items-center gap-1.5">
+                                                    {isFinished && partido.marcador_detalle?.resultado_final === 'empate' ? (
+                                                        <div className="bg-white/5 backdrop-blur-sm px-3 py-1 rounded-lg border border-white/10 flex flex-col items-center">
+                                                            <span className="text-[10px] uppercase font-bold text-slate-300 tracking-widest">Empate</span>
+                                                        </div>
+                                                    ) : isLive ? (
+                                                        <span className="text-sm font-black text-rose-400 bg-rose-500/10 px-4 py-1.5 rounded-xl border border-rose-500/30 animate-pulse uppercase tracking-wide">
+                                                            EN VIVO
+                                                        </span>
+                                                    ) : (
+                                                        <div className="bg-white/5 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/10">
+                                                            <span className="text-xl font-black text-white/40 tracking-widest">VS</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <>
+                                            <div className="bg-black/30 backdrop-blur-sm px-5 py-2 rounded-2xl border border-white/5 flex items-center">
                                                 <span className={cn("text-3xl font-black font-mono tabular-nums", score.a > score.b && isFinished ? "text-red-400" : "text-white")}>
                                                     {score.a}
                                                 </span>
@@ -409,14 +440,26 @@ export default function PartidosPage() {
                                                     En Juego
                                                 </span>
                                             )}
+                                                </>
+                                            )}
                                         </div>
 
                                         {/* Team B */}
                                         <div className="flex flex-col items-center gap-2 text-center">
-                                            <Avatar name={partido.carrera_b?.nombre || partido.equipo_b} size="default" className="ring-2 ring-white/10 shadow-lg" />
-                                            <span className={cn("text-sm font-bold leading-tight text-slate-400 truncate max-w-[90px]", score.b > score.a && isFinished ? "text-red-400" : "")}>
-                                                {partido.carrera_b?.nombre || partido.equipo_b}
-                                            </span>
+                                            {sportName === 'Ajedrez' && isFinished && partido.marcador_detalle?.resultado_final === 'victoria_b' && (
+                                                <div className="mb-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
+                                                    Ganador
+                                                </div>
+                                            )}
+                                            <Avatar name={getDisplayName(partido, 'b')} size="default" className="ring-2 ring-white/10 shadow-lg relative z-10" />
+                                            <div className="flex flex-col items-center gap-0.5">
+                                                <span className={cn("text-sm font-bold leading-tight text-slate-400 truncate max-w-[90px]", score.b > score.a && isFinished ? "text-red-400" : "")}>
+                                                    {getDisplayName(partido, 'b')}
+                                                </span>
+                                                {getCarreraSubtitle(partido, 'b') && (
+                                                    <span className="text-[9px] text-slate-500 font-medium truncate max-w-[90px]">{getCarreraSubtitle(partido, 'b')}</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 

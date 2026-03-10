@@ -4,17 +4,47 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getPeriodDuration, isCountdownSport } from "@/lib/sport-scoring";
 
+/** Deportes que no usan cronómetro — solo muestran estado simple */
+const SPORTS_WITHOUT_TIMER = ['Ajedrez'];
+
 type TimerProps = {
     detalle: {
         minuto_actual?: number;
         estado_cronometro?: 'corriendo' | 'pausado' | 'detenido';
-        ultimo_update?: string; // Timestamp ISO de la última actualización
+        ultimo_update?: string;
     };
     deporte?: string;
 };
 
 export function PublicLiveTimer({ detalle, deporte = "" }: TimerProps) {
     const [displayTime, setDisplayTime] = useState("");
+
+    // Para deportes sin cronómetro (Ajedrez) mostramos solo indicador de estado
+    if (SPORTS_WITHOUT_TIMER.includes(deporte)) {
+        const isRunning = detalle?.estado_cronometro === 'corriendo';
+        return (
+            <div className={cn(
+                "flex items-center gap-2 transition-all duration-500",
+                isRunning ? "text-rose-500" : "text-slate-500/40"
+            )}>
+                {isRunning ? (
+                    <>
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400/80 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.8)]"></span>
+                        </span>
+                        <span className="font-mono font-black text-sm tracking-[0.15em] uppercase drop-shadow-[0_0_10px_rgba(244,63,94,0.9)]">
+                            LIVE
+                        </span>
+                    </>
+                ) : (
+                    <span className="font-mono font-black text-sm tracking-[0.15em] text-slate-600 uppercase select-none">
+                        —
+                    </span>
+                )}
+            </div>
+        );
+    }
 
     useEffect(() => {
         // Si no hay datos, mostrar 0' o duración inicial

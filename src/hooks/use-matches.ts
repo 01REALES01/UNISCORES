@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
 // ─── Column Selection (only what we need) ────────────────────────────────────
 const MATCH_COLUMNS = `
   id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle,
-  fase, grupo, bracket_order,
+  fase, grupo, bracket_order, delegacion_a, delegacion_b,
   disciplinas(name, icon),
   carrera_a:carreras!carrera_a_id(nombre),
   carrera_b:carreras!carrera_b_id(nombre)

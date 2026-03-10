@@ -7,6 +7,7 @@ import { Badge, Button } from "@/components/ui-primitives";
 import Link from "next/link";
 import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_GLOW, SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
 import { PublicLiveTimer } from "@/components/public-live-timer";
@@ -168,16 +169,35 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             className="flex flex-col items-center gap-3 flex-1 text-center"
                                         >
                                             <div className="w-14 h-14 md:w-24 md:h-24 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
-                                                <span className="text-2xl md:text-4xl font-black">{getInitials(currentMatch.carrera_a?.nombre || currentMatch.equipo_a)}</span>
+                                                <span className="text-2xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'a'))}</span>
                                             </div>
                                             <h3 className="text-lg md:text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
-                                                {currentMatch.delegacion_a || currentMatch.carrera_a?.nombre || currentMatch.equipo_a}
+                                                {getDisplayName(currentMatch, 'a')}
                                             </h3>
+                                            {getCarreraSubtitle(currentMatch, 'a') && (
+                                                <span className="text-[10px] md:text-xs text-slate-500 font-medium">{getCarreraSubtitle(currentMatch, 'a')}</span>
+                                            )}
                                         </m.div>
 
                                         {/* VS / Score */}
                                         <div className="flex flex-col items-center gap-1 z-20 mx-4 relative min-w-[120px] md:min-w-[180px]">
-                                            {currentMatch.estado === 'en_vivo' ? (
+                                            {sName === 'Ajedrez' ? (
+                                                currentMatch.estado === 'en_vivo' ? (
+                                                    <div className="flex flex-col items-center justify-center w-full min-h-[100px]">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="relative flex h-3 w-3 md:h-4 md:w-4">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                                                <span className="relative inline-flex rounded-full h-3 w-3 md:h-4 md:w-4 bg-rose-500"></span>
+                                                            </span>
+                                                            <span className="text-xl md:text-2xl font-black text-rose-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]">
+                                                                EN VIVO
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-4xl md:text-6xl font-black text-white/10 italic">VS</div>
+                                                )
+                                            ) : currentMatch.estado === 'en_vivo' ? (
                                                 <div className="flex flex-col items-center w-full">
                                                     <div className="text-[3rem] md:text-[5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-2 md:gap-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                                                         <span className="text-white text-right w-14 md:w-20">{scoreInfo.scoreA}</span>
@@ -232,11 +252,14 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             className="flex flex-col items-center gap-3 flex-1 text-center"
                                         >
                                             <div className="w-14 h-14 md:w-24 md:h-24 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
-                                                <span className="text-2xl md:text-4xl font-black">{getInitials(currentMatch.carrera_b?.nombre || currentMatch.equipo_b)}</span>
+                                                <span className="text-2xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'b'))}</span>
                                             </div>
                                             <h3 className="text-lg md:text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
-                                                {currentMatch.delegacion_b || currentMatch.carrera_b?.nombre || currentMatch.equipo_b}
+                                                {getDisplayName(currentMatch, 'b')}
                                             </h3>
+                                            {getCarreraSubtitle(currentMatch, 'b') && (
+                                                <span className="text-[10px] md:text-xs text-slate-500 font-medium">{getCarreraSubtitle(currentMatch, 'b')}</span>
+                                            )}
                                         </m.div>
                                     </>
                                 );

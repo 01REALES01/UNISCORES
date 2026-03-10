@@ -5,6 +5,7 @@ import { Button, Input, Badge } from "@/components/ui-primitives";
 import { X, Save, Trophy, Loader2, Calendar, Users, Activity, MapPin, Clock, Plus, GraduationCap, Swords } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { CARRERAS_UNINORTE, LUGARES_OLIMPICOS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 type CreateMatchModalProps = {
     isOpen: boolean;
@@ -49,9 +50,11 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
         try {
             if (isRaceSport) {
                 if (!equipoA) throw new Error("Por favor ingresa el nombre de la prueba/evento");
+            } else if (isIndividual) {
+                if (!delegacionA || !delegacionB) throw new Error('Debes seleccionar la carrera de cada participante');
+                if (!equipoA || !equipoB) throw new Error('Debes ingresar el nombre de cada participante');
             } else {
-                const labelParticipante = isIndividual ? 'participantes' : 'equipos';
-                if (!equipoA || !equipoB) throw new Error(`Por favor completa los nombres de los ${labelParticipante}`);
+                if (!equipoA || !equipoB) throw new Error('Por favor completa los nombres de los equipos');
             }
 
             const { data: disc, error: discError } = await supabase
@@ -279,12 +282,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                 </span>
                                 {isIndividual ? (
                                     <div className="space-y-2">
-                                        <Input
-                                            placeholder="Nombre Participante"
-                                            value={equipoA}
-                                            onChange={e => setEquipoA(e.target.value)}
-                                            className="h-10 bg-black/40 border-white/10 focus:border-primary/50 focus:bg-black/60 rounded-lg transition-all font-semibold text-sm text-center"
-                                        />
+                                        {/* 1. Carrera PRIMERO */}
+                                        <span className="text-[8px] font-bold uppercase text-amber-500/80 tracking-wider block">1. Carrera</span>
                                         <div className="relative">
                                             <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
                                             <select
@@ -292,10 +291,22 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                                 value={delegacionA}
                                                 onChange={(e) => setDelegacionA(e.target.value)}
                                             >
-                                                <option value="" disabled>Carrera / Delegación</option>
+                                                <option value="" disabled>Seleccionar Carrera...</option>
                                                 {CARRERAS_UNINORTE.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                         </div>
+                                        {/* 2. Participante DESPUÉS */}
+                                        <span className="text-[8px] font-bold uppercase text-amber-500/80 tracking-wider block mt-1">2. Deportista</span>
+                                        <Input
+                                            placeholder="Nombre del Participante"
+                                            value={equipoA}
+                                            onChange={e => setEquipoA(e.target.value)}
+                                            disabled={!delegacionA}
+                                            className={cn(
+                                                "h-10 bg-black/40 border-white/10 focus:border-primary/50 focus:bg-black/60 rounded-lg transition-all font-semibold text-sm text-center",
+                                                !delegacionA && "opacity-40 cursor-not-allowed"
+                                            )}
+                                        />
                                     </div>
                                 ) : (
                                     <select
@@ -319,12 +330,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                 </span>
                                 {isIndividual ? (
                                     <div className="space-y-2">
-                                        <Input
-                                            placeholder="Nombre Participante"
-                                            value={equipoB}
-                                            onChange={e => setEquipoB(e.target.value)}
-                                            className="h-10 bg-black/40 border-white/10 focus:border-primary/50 focus:bg-black/60 rounded-lg transition-all font-semibold text-sm text-center"
-                                        />
+                                        {/* 1. Carrera PRIMERO */}
+                                        <span className="text-[8px] font-bold uppercase text-amber-500/80 tracking-wider block">1. Carrera</span>
                                         <div className="relative">
                                             <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
                                             <select
@@ -332,10 +339,22 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                                 value={delegacionB}
                                                 onChange={(e) => setDelegacionB(e.target.value)}
                                             >
-                                                <option value="" disabled>Carrera / Delegación</option>
+                                                <option value="" disabled>Seleccionar Carrera...</option>
                                                 {CARRERAS_UNINORTE.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                         </div>
+                                        {/* 2. Participante DESPUÉS */}
+                                        <span className="text-[8px] font-bold uppercase text-amber-500/80 tracking-wider block mt-1">2. Deportista</span>
+                                        <Input
+                                            placeholder="Nombre del Participante"
+                                            value={equipoB}
+                                            onChange={e => setEquipoB(e.target.value)}
+                                            disabled={!delegacionB}
+                                            className={cn(
+                                                "h-10 bg-black/40 border-white/10 focus:border-primary/50 focus:bg-black/60 rounded-lg transition-all font-semibold text-sm text-center",
+                                                !delegacionB && "opacity-40 cursor-not-allowed"
+                                            )}
+                                        />
                                     </div>
                                 ) : (
                                     <select
