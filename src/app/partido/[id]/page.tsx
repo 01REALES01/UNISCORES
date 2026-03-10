@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { getDisplayName, getCarreraName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_ACCENT, SPORT_COLORS, SPORT_BORDER, SPORT_GLOW, SPORT_GRADIENT } from "@/lib/constants";
 import { SportIcon } from "@/components/sport-icons";
 
@@ -24,6 +25,8 @@ type Partido = {
     marcador_detalle: any;
     lugar?: string;
     genero?: string;
+    delegacion_a?: string;
+    delegacion_b?: string;
     disciplinas: { name: string };
     carrera_a?: { nombre: string } | null;
     carrera_b?: { nombre: string } | null;
@@ -60,7 +63,7 @@ export default function PublicMatchDetail() {
     const fetchData = async () => {
         try {
             const [matchRes, eventosRes, predsRes] = await Promise.all([
-                safeQuery(supabase.from('partidos').select(`*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).eq('id', matchId).single(), 'partido-detail'),
+                safeQuery(supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).eq('id', matchId).single(), 'partido-detail'),
                 safeQuery(supabase.from('olympics_eventos').select('*, jugadores:olympics_jugadores(nombre, numero)').eq('partido_id', matchId).order('id', { ascending: false }), 'partido-eventos'),
                 safeQuery(supabase.from('pronosticos').select('winner_pick, prediction_type').eq('match_id', matchId), 'partido-preds'),
             ]);
@@ -322,22 +325,62 @@ export default function PublicMatchDetail() {
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
                                             `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
                                         )} />
-                                        <Avatar name={match.carrera_a?.nombre || match.equipo_a} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
+                                        <Avatar name={getDisplayName(match, 'a')} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        {match.carrera_a?.nombre || match.equipo_a}
+                                        {getDisplayName(match, 'a')}
                                     </h2>
+                                    {getCarreraSubtitle(match, 'a') && (
+                                        <span className="text-[10px] sm:text-xs text-slate-500 font-medium">{getCarreraSubtitle(match, 'a')}</span>
+                                    )}
                                 </div>
 
                                 <div className="flex flex-col items-center relative z-20 min-w-[120px] sm:min-w-[220px]">
-                                    <div className={cn(
-                                        "flex items-center justify-center gap-2 sm:gap-6 font-black text-5xl sm:text-7xl tabular-nums tracking-tighter transition-all duration-300",
-                                        isLive ? "text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "text-white/80"
-                                    )}>
-                                        <span className="w-12 sm:w-24 text-right">{scoreA}</span>
-                                        <div className="w-3 sm:w-6 h-1 sm:h-2 bg-white/20 rounded-full" />
-                                        <span className="w-12 sm:w-24 text-left">{scoreB}</span>
-                                    </div>
+
+                                    {sportName === 'Ajedrez' ? (
+                                        <div className="flex flex-col items-center justify-center w-full min-h-[100px] sm:min-h-[140px]">
+                                            {isFinished && match.marcador_detalle?.resultado_final ? (
+                                                match.marcador_detalle.resultado_final === 'empate' ? (
+                                                    <div className="bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex flex-col items-center shadow-lg">
+                                                        <span className="text-4xl sm:text-6xl mb-1">🤝</span>
+                                                        <span className="text-sm sm:text-base uppercase font-black text-white tracking-[0.2em]">Empate</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-gradient-to-b from-amber-500/20 to-yellow-500/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-amber-500/30 flex flex-col items-center shadow-[0_0_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
+                                                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-300" />
+                                                        <span className="text-4xl sm:text-6xl mb-1 drop-shadow-md">👑</span>
+                                                        <span className="text-[10px] sm:text-xs uppercase font-bold text-amber-500/70 tracking-widest text-center mt-1">Ganador</span>
+                                                        <span className="text-base sm:text-lg font-black text-amber-300 tracking-wide text-center leading-tight mt-0.5">
+                                                            {getDisplayName(match, match.marcador_detalle.resultado_final === 'victoria_a' ? 'a' : 'b')}
+                                                        </span>
+                                                    </div>
+                                                )
+                                            ) : isLive ? (
+                                                <div className="flex items-center gap-3">
+                                                    <span className="relative flex h-4 w-4">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500"></span>
+                                                    </span>
+                                                    <span className="text-xl sm:text-3xl font-black text-rose-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]">
+                                                        EN VIVO
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-white/5 backdrop-blur-sm px-6 py-4 rounded-3xl border border-white/5 shadow-inner">
+                                                    <span className="text-3xl sm:text-5xl font-black text-white/20 tracking-widest">VS</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className={cn(
+                                            "flex items-center justify-center gap-2 sm:gap-6 font-black text-5xl sm:text-7xl tabular-nums tracking-tighter transition-all duration-300",
+                                            isLive ? "text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "text-white/80"
+                                        )}>
+                                            <span className="w-12 sm:w-24 text-right">{scoreA}</span>
+                                            <div className="w-3 sm:w-6 h-1 sm:h-2 bg-white/20 rounded-full" />
+                                            <span className="w-12 sm:w-24 text-left">{scoreB}</span>
+                                        </div>
+                                    )}
 
                                     {/* Info Row: Time, Quarter/Set, and Status Bar */}
                                     <div className="flex flex-col items-center mt-3 sm:mt-4 w-full px-2 sm:px-0">
@@ -345,7 +388,7 @@ export default function PublicMatchDetail() {
                                             "flex items-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-2 sm:mb-3",
                                             isLive ? (SPORT_LIVE_TEXT[match.disciplinas?.name] || SPORT_LIVE_TEXT.default) : "text-white/40"
                                         )}>
-                                            {/* Quarter or 'Finalizado' */}
+                                            {/* Quarter or 'Finalizado' / 'Programado' */}
                                             {extra ? (
                                                 <div className="flex items-center gap-2">
                                                     <span className={cn(
@@ -361,7 +404,7 @@ export default function PublicMatchDetail() {
                                                     )}
                                                 </div>
                                             ) : (
-                                                <span>{isLive ? 'EN CURSO' : 'FINAL'}</span>
+                                                <span>{isLive ? 'EN CURSO' : isFinished ? 'FINAL' : 'PROGRAMADO'}</span>
                                             )}
 
                                             {/* Timer */}
@@ -396,11 +439,14 @@ export default function PublicMatchDetail() {
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
                                             `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
                                         )} />
-                                        <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
+                                        <Avatar name={getDisplayName(match, 'b')} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        {match.carrera_b?.nombre || match.equipo_b}
+                                        {getDisplayName(match, 'b')}
                                     </h2>
+                                    {getCarreraSubtitle(match, 'b') && (
+                                        <span className="text-[10px] sm:text-xs text-slate-500 font-medium">{getCarreraSubtitle(match, 'b')}</span>
+                                    )}
                                 </div>
                             </div>
                         )}                      {/* Metadata Footer: Clean Location Label */}
@@ -450,7 +496,7 @@ export default function PublicMatchDetail() {
                                 {/* Labels */}
                                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest px-1">
                                     <div className="flex flex-col items-start gap-1">
-                                        <span className="text-white/40">{(match?.carrera_a?.nombre || match?.equipo_a)?.substring(0, 12)}</span>
+                                        <span className="text-white/40">{getDisplayName(match, 'a')?.substring(0, 12)}</span>
                                         <span className={cn("text-sm", SPORT_ACCENT[sportName] || "text-white")}>{total > 0 ? `${pctA}%` : '0%'}</span>
                                     </div>
                                     <div className="flex flex-col items-center gap-1">
@@ -458,7 +504,7 @@ export default function PublicMatchDetail() {
                                         <span className="text-sm text-slate-400">{total > 0 ? `${pctDraw}%` : '0%'}</span>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
-                                        <span className="text-white/40">{(match?.carrera_b?.nombre || match?.equipo_b)?.substring(0, 12)}</span>
+                                        <span className="text-white/40">{getDisplayName(match, 'b')?.substring(0, 12)}</span>
                                         <span className={cn("text-sm", SPORT_ACCENT[sportName] || "text-white")}>{total > 0 ? `${pctB}%` : '0%'}</span>
                                     </div>
                                 </div>
@@ -506,7 +552,7 @@ export default function PublicMatchDetail() {
                                             : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
-                                    {(match?.carrera_a?.nombre || match?.equipo_a)?.substring(0, 8)}
+                                    {getDisplayName(match, 'a')?.substring(0, 8)}
                                 </button>
                                 <button
                                     onClick={() => handleVote('DRAW')}
@@ -530,7 +576,7 @@ export default function PublicMatchDetail() {
                                             : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
                                     )}
                                 >
-                                    {(match?.carrera_b?.nombre || match?.equipo_b)?.substring(0, 8)}
+                                    {getDisplayName(match, 'b')?.substring(0, 8)}
                                 </button>
                             </div>
                         </div>
@@ -563,8 +609,8 @@ export default function PublicMatchDetail() {
                                     return userPrediction.winner_pick === result ? "text-emerald-400" : "text-rose-400";
                                 })() : "text-white"
                             )}>
-                                {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {match?.carrera_a?.nombre || match?.equipo_a}</> :
-                                    userPrediction.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {match?.carrera_b?.nombre || match?.equipo_b}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
+                                {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'a')}</> :
+                                    userPrediction.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'b')}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
                             </p>
                         </div>
                     ) : null}
@@ -636,7 +682,7 @@ export default function PublicMatchDetail() {
                                             )}>
                                                 <div className="text-right py-1">
                                                     <p className="text-[13px] sm:text-[15px] font-black leading-tight text-white/95 truncate max-w-[90px] sm:max-w-none">
-                                                        {e.jugadores?.nombre || (match.carrera_a?.nombre || match.equipo_a)}
+                                                        {e.jugadores?.nombre || getDisplayName(match, 'a')}
                                                     </p>
                                                     <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-[0.15em]">{eventLabel}</p>
                                                 </div>
@@ -657,7 +703,7 @@ export default function PublicMatchDetail() {
                                                 </div>
                                                 <div className="text-left py-1">
                                                     <p className="text-[13px] sm:text-[15px] font-black leading-tight text-white/95 truncate max-w-[90px] sm:max-w-none">
-                                                        {e.jugadores?.nombre || (match.carrera_b?.nombre || match.equipo_b)}
+                                                        {e.jugadores?.nombre || getDisplayName(match, 'b')}
                                                     </p>
                                                     <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-[0.15em]">{eventLabel}</p>
                                                 </div>
