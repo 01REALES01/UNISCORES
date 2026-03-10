@@ -123,6 +123,18 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                         <SportIcon sport={currentMatch.disciplinas?.name} size={400} className={cn("drop-shadow-[0_0_50px_currentColor]", SPORT_ACCENT[currentMatch.disciplinas?.name] || 'text-white')} />
                     </div>
 
+                    {/* Top-Left Absolute Timer */}
+                    {currentMatch.estado === 'en_vivo' && currentMatch.marcador_detalle?.timer && (
+                        <m.div 
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: 0.4 }}
+                            className="absolute top-5 left-5 md:top-7 md:left-7 z-30 bg-black/40 backdrop-blur-md border border-white/10 shadow-xl rounded-full px-3 py-1.5 md:px-4 md:py-2 flex items-center justify-center"
+                        >
+                            <PublicLiveTimer detalle={currentMatch.marcador_detalle} deporte={currentMatch.disciplinas?.name} />
+                        </m.div>
+                    )}
+
                     {/* Content Container */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
 
@@ -216,16 +228,6 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                         <div className={cn("flex flex-col items-center gap-1.5 mb-2 md:mb-3")}>
                                                             <div className={cn("flex items-center gap-2 text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] brightness-125", liveText)}>
                                                                 <span>{scoreInfo.extra || 'EN CURSO'}</span>
-
-                                                                {/* Timer */}
-                                                                {currentMatch.marcador_detalle?.timer && (
-                                                                    <>
-                                                                        <span className="opacity-50">•</span>
-                                                                        <div className="scale-75 md:scale-90 origin-left">
-                                                                            <PublicLiveTimer detalle={currentMatch.marcador_detalle} deporte={currentMatch.disciplinas?.name} />
-                                                                        </div>
-                                                                    </>
-                                                                )}
                                                             </div>
 
                                                             {/* Neon Gender Label */}
