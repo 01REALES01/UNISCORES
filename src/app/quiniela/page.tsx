@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { toast } from "sonner";
 import { Button, Badge } from "@/components/ui-primitives";
-import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Gauge, HandMetal, Users, X, Flame, Target, Zap, ChevronDown, Filter, History, Handshake, Loader2 } from "lucide-react";
+import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Gauge, HandMetal, Users, X, Flame, Target, Zap, ChevronDown, Filter, History, Handshake, Loader2, LayoutGrid } from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
 import Link from "next/link";
 import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_BORDER } from "@/lib/constants";
@@ -388,6 +388,7 @@ export default function QuinielaPage() {
     const [loading, setLoading] = useState(true);
     const [bettingMode, setBettingMode] = useState<'score' | 'winner'>('winner');
     const [viewFilter, setViewFilter] = useState<'upcoming' | 'live' | 'finished' | 'all'>('upcoming');
+    const [sportFilter, setSportFilter] = useState<string>('todos');
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -483,9 +484,14 @@ export default function QuinielaPage() {
 
     // Filtered matches
     const filteredMatches = matches.filter(m => {
-        if (viewFilter === 'upcoming') return m.estado === 'programado';
-        if (viewFilter === 'live') return m.estado === 'en_vivo';
-        if (viewFilter === 'finished') return m.estado === 'finalizado';
+        // Step 1: Status Filter
+        if (viewFilter === 'upcoming' && m.estado !== 'programado') return false;
+        if (viewFilter === 'live' && m.estado !== 'en_vivo') return false;
+        if (viewFilter === 'finished' && m.estado !== 'finalizado') return false;
+
+        // Step 2: Sport Filter
+        if (sportFilter !== 'todos' && m.disciplinas?.name !== sportFilter) return false;
+
         return true;
     });
 
@@ -573,6 +579,37 @@ export default function QuinielaPage() {
                 {/* ─── PLAY TAB ─── */}
                 {activeTab === 'play' ? (
                     <div className="space-y-5">
+                        {/* Sport Filters - ICON ONLY - 5 Main Sports */}
+                        <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1 custom-scrollbar no-scrollbar items-center justify-center">
+                            <button
+                                onClick={() => setSportFilter('todos')}
+                                title="Todos los deportes"
+                                className={cn(
+                                    "w-12 h-12 rounded-2xl transition-all shrink-0 border flex items-center justify-center",
+                                    sportFilter === 'todos'
+                                        ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-110"
+                                        : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:text-white"
+                                )}
+                            >
+                                <LayoutGrid size={22} />
+                            </button>
+                            {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa'].map(sport => (
+                                <button
+                                    key={sport}
+                                    onClick={() => setSportFilter(sport)}
+                                    title={sport}
+                                    className={cn(
+                                        "w-12 h-12 rounded-2xl transition-all shrink-0 border flex items-center justify-center text-xl",
+                                        sportFilter === sport
+                                            ? [SPORT_ACCENT[sport] || "text-white", "bg-white/10 border-current shadow-lg scale-110"]
+                                            : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    <span>{SPORT_EMOJI[sport]}</span>
+                                </button>
+                            ))}
+                        </div>
+
                         {/* Mode + Filter Row */}
                         <div className="flex flex-col sm:flex-row gap-3">
                             {/* Betting Mode */}
@@ -601,7 +638,10 @@ export default function QuinielaPage() {
                                 ] as const).map((f) => (
                                     <button
                                         key={f.key}
-                                        onClick={() => setViewFilter(f.key)}
+                                        onClick={() => {
+                                            setViewFilter(f.key);
+                                            // Reset active tab if switching to ranking or history? No, this is just for the play tab
+                                        }}
                                         className={cn(
                                             "px-2.5 py-2 rounded-lg text-[10px] font-black transition-all flex items-center gap-1",
                                             viewFilter === f.key
@@ -645,10 +685,43 @@ export default function QuinielaPage() {
                 ) : activeTab === 'history' ? (
                     /* ─── HISTORY TAB ─── */
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 mb-2 px-1">
-                            <History size={16} className="text-amber-400" />
-                            <h2 className="font-bold text-sm text-white">Mis Predicciones</h2>
-                            <span className="text-[10px] text-slate-500 font-bold">({predictions.length})</span>
+                        <div className="flex items-center justify-between mb-2 px-1">
+                            <div className="flex items-center gap-2">
+                                <History size={16} className="text-amber-400" />
+                                <h2 className="font-bold text-sm text-white">Mis Predicciones</h2>
+                                <span className="text-[10px] text-slate-500 font-bold">({predictions.length})</span>
+                            </div>
+                        </div>
+
+                        {/* Sport Filters for History - ICON ONLY - 5 Main Sports */}
+                        <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1 custom-scrollbar no-scrollbar items-center justify-center">
+                            <button
+                                onClick={() => setSportFilter('todos')}
+                                title="Todos los deportes"
+                                className={cn(
+                                    "w-12 h-12 rounded-2xl transition-all shrink-0 border flex items-center justify-center",
+                                    sportFilter === 'todos'
+                                        ? "bg-amber-500 text-black border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] scale-110"
+                                        : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:text-white"
+                                )}
+                            >
+                                <LayoutGrid size={22} />
+                            </button>
+                            {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa'].map(sport => (
+                                <button
+                                    key={sport}
+                                    onClick={() => setSportFilter(sport)}
+                                    title={sport}
+                                    className={cn(
+                                        "w-12 h-12 rounded-2xl transition-all shrink-0 border flex items-center justify-center text-xl",
+                                        sportFilter === sport
+                                            ? "bg-amber-500/20 border-amber-500 text-amber-500 shadow-lg scale-110"
+                                            : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    <span>{SPORT_EMOJI[sport]}</span>
+                                </button>
+                            ))}
                         </div>
 
                         {predictions.length === 0 ? (
@@ -659,8 +732,23 @@ export default function QuinielaPage() {
                             </div>
                         ) : (
                             (() => {
+                                // Filter by sport
+                                const historyFiltered = predictions.filter(pred => {
+                                    if (sportFilter === 'todos') return true;
+                                    const m = matches.find(match => match.id === pred.match_id);
+                                    return m?.disciplinas?.name === sportFilter;
+                                });
+
+                                if (historyFiltered.length === 0) {
+                                    return (
+                                        <div className="text-center py-10 text-white/40 bg-white/[0.02] rounded-3xl border border-white/5 border-dashed">
+                                            <p className="font-bold text-sm">No hay predicciones para este deporte</p>
+                                        </div>
+                                    );
+                                }
+
                                 // Sort: finished first (newest), then live, then upcoming
-                                const sortedPreds = [...predictions].sort((a, b) => {
+                                const sortedPreds = [...historyFiltered].sort((a, b) => {
                                     const matchA = matches.find(m => m.id === a.match_id);
                                     const matchB = matches.find(m => m.id === b.match_id);
                                     if (!matchA || !matchB) return 0;

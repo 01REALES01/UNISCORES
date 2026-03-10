@@ -12,7 +12,7 @@ import { LUGARES_OLIMPICOS, SPORT_EMOJI } from "@/lib/constants";
 // Coordenadas ajustadas al mapa generado (Dark Blueprint):
 const VENUE_COORDINATES: Record<string, { x: number; y: number; label: string }> = {
     'Coliseo Uninorte': { x: 44, y: 48, label: 'Coliseo' },
-    'Cancha de Fútbol': { x: 61, y: 57, label: 'Estadio' },
+    'Cancha de Fútbol': { x: 64, y: 64, label: 'Cancha de Fútbol' },
     'Piscina Centro Deportivo': { x: 82, y: 80, label: 'Piscinas' },
 };
 
