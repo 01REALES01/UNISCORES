@@ -1,8 +1,8 @@
 "use client";
 
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 import { supabase } from "@/lib/supabase";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 type UserCarreraFavorita = {
     id: string;
@@ -11,9 +11,29 @@ type UserCarreraFavorita = {
     created_at: string;
 };
 
-export function useFavoritos(userId: string | undefined | null) {
-    const channelRef = useRef<any>(null);
+const activeUserChannels = new Set<string>();
 
+function subscribeToFavoritos(userId: string) {
+    if (typeof window === 'undefined' || !userId) return;
+    if (activeUserChannels.has(userId)) return;
+
+    activeUserChannels.add(userId);
+    console.log(`[DEBUG] 🔵 global: Iniciando suscripción Realtime SINGLETON para favoritos de ${userId}`);
+
+    supabase
+        .channel(`global:favoritos:${userId}`)
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'user_carreras_favoritas', filter: `user_id=eq.${userId}` },
+            () => {
+                console.log(`[DEBUG] 🟢 global: Cambio en favoritos detectado para ${userId}`);
+                globalMutate(`favoritos-${userId}`);
+            }
+        )
+        .subscribe();
+}
+
+export function useFavoritos(userId: string | undefined | null) {
     const fetcher = async () => {
         if (!userId) return [];
 
@@ -34,42 +54,14 @@ export function useFavoritos(userId: string | undefined | null) {
         userId ? `favoritos-${userId}` : null,
         fetcher,
         {
-            revalidateOnFocus: true,
-            dedupingInterval: 5000,
+            revalidateOnFocus: false, // Prevent DB spam on tab switch
+            dedupingInterval: 60000,  // Cache for 60s
         }
     );
 
     useEffect(() => {
-        if (!userId) return;
-
-        if (channelRef.current) {
-            supabase.removeChannel(channelRef.current);
-        }
-
-        const channel = supabase
-            .channel(`favoritos-changes-${userId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'user_carreras_favoritas',
-                    filter: `user_id=eq.${userId}`
-                },
-                () => {
-                    mutate();
-                }
-            )
-            .subscribe();
-
-        channelRef.current = channel;
-
-        return () => {
-            if (channelRef.current) {
-                supabase.removeChannel(channelRef.current);
-            }
-        };
-    }, [userId, mutate]);
+        if (userId) subscribeToFavoritos(userId);
+    }, [userId]);
 
     return {
         favoritos: data || [],

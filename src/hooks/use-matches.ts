@@ -1,8 +1,8 @@
 "use client";
 
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 import { supabase } from "@/lib/supabase";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 // ─── Column Selection (only what we need) ────────────────────────────────────
 const MATCH_COLUMNS = `
@@ -60,41 +60,51 @@ const fetchMatches = async (): Promise<any[]> => {
     }
 };
 
+// ─── Global Realtime Subscription ────────────────────────────────────────────
+let isMatchesSubscribed = false;
+
+function subscribeToMatches() {
+    if (typeof window === 'undefined') return;
+    if (isMatchesSubscribed) return;
+    isMatchesSubscribed = true;
+
+    console.log('[DEBUG] 🔵 global: Iniciando suscripción Realtime SINGLETON para partidos');
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    supabase
+        .channel('global:partidos:changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                console.log('[DEBUG] 🟢 global: Cambio en partidos detectado (Realtime), invalidando caché...');
+                globalMutate('global:partidos');
+            }, 800);
+        })
+        .subscribe((status) => {
+            console.log('[DEBUG] 📡 global: Estado Singleon Realtime (partidos):', status);
+        });
+}
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 export function useMatches() {
     const { data, error, isLoading, mutate } = useSWR(
         'global:partidos',
         fetchMatches,
         {
-            revalidateOnFocus: true,      // Ensures fetching when returning to app
+            revalidateOnFocus: false,     // PREVENT CONNECTION SPAM ON TAB SWITCH
             revalidateOnReconnect: true,  // Refetch when network comes back
             revalidateOnMount: true,      // Force fetch on initial mount to fix empty cache
-            dedupingInterval: 2000,       // Dedup requests within 2s
+            dedupingInterval: 10000,      // Dedup requests within 10s
             keepPreviousData: true,       // Show stale data while revalidating
         }
     );
 
     // ─── Realtime subscription ───────────────────────────────────────────────
     useEffect(() => {
-        const debounceRef = { timer: null as ReturnType<typeof setTimeout> | null };
-
-        const debouncedMutate = () => {
-            if (debounceRef.timer) clearTimeout(debounceRef.timer);
-            debounceRef.timer = setTimeout(() => {
-                mutate(); // Revalidate from Supabase
-            }, 800);
-        };
-
-        const channel = supabase
-            .channel('swr:partidos')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, debouncedMutate)
-            .subscribe();
-
-        return () => {
-            if (debounceRef.timer) clearTimeout(debounceRef.timer);
-            supabase.removeChannel(channel);
-        };
-    }, [mutate]);
+        // Trigger singleton subscription inside useEffect to ensure it runs only on client
+        subscribeToMatches();
+    }, []);
 
     return {
         matches: data || [],

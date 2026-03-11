@@ -1,8 +1,8 @@
 "use client";
 
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 import { supabase } from "@/lib/supabase";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Noticia } from "@/components/news-card";
 
 // ─── Column Selection ────────────────────────────────────────────────────────
@@ -25,6 +25,25 @@ const fetchNews = async (): Promise<Noticia[]> => {
     return (data || []) as unknown as Noticia[];
 };
 
+// ─── Global Realtime Subscription ────────────────────────────────────────────
+let isNewsSubscribed = false;
+
+function subscribeToNews() {
+    if (typeof window === 'undefined') return;
+    if (isNewsSubscribed) return;
+    isNewsSubscribed = true;
+
+    console.log('[DEBUG] 🔵 global: Iniciando suscripción Realtime SINGLETON para noticias');
+
+    supabase
+        .channel('global:noticias:changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'noticias' }, () => {
+            console.log('[DEBUG] 🟢 global: Cambio en noticias detectado (Realtime), invalidando caché...');
+            globalMutate('global:noticias');
+        })
+        .subscribe();
+}
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 export function useNews(limit?: number) {
     const { data, error, isLoading, mutate } = useSWR(
@@ -32,22 +51,15 @@ export function useNews(limit?: number) {
         fetchNews,
         {
             revalidateOnFocus: false,
-            dedupingInterval: 10000,    // News changes less frequently
+            dedupingInterval: 60000,    // News changes less frequently (60s deduplication)
             keepPreviousData: true,
         }
     );
 
     // ─── Realtime subscription ───────────────────────────────────────────────
     useEffect(() => {
-        const channel = supabase
-            .channel('swr:noticias')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'noticias' }, () => {
-                mutate();
-            })
-            .subscribe();
-
-        return () => { supabase.removeChannel(channel); };
-    }, [mutate]);
+        subscribeToNews();
+    }, []);
 
     const news = limit ? (data || []).slice(0, limit) : (data || []);
 
