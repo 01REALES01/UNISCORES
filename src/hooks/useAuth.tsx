@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback,
 import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 
-export type UserRole = 'admin' | 'data_entry' | 'public';
+export type UserRole = 'admin' | 'data_entry' | 'periodista' | 'public';
 
 export type Profile = {
     id: string;
@@ -22,6 +22,7 @@ type AuthContextType = {
     profileLoading: boolean;
     isAdmin: boolean;
     isDataEntry: boolean;
+    isPeriodista: boolean;
     isStaff: boolean;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
@@ -34,6 +35,7 @@ const AuthContext = createContext<AuthContextType>({
     profileLoading: false,
     isAdmin: false,
     isDataEntry: false,
+    isPeriodista: false,
     isStaff: false,
     signOut: async () => { },
     refreshProfile: async () => { },
@@ -225,7 +227,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const isAdmin = profile?.role === 'admin';
     const isDataEntry = profile?.role === 'data_entry';
-    const isStaff = isAdmin || isDataEntry;
+    const isPeriodista = profile?.role === 'periodista';
+    const isStaff = isAdmin || isDataEntry || isPeriodista;
 
     return (
         <AuthContext.Provider value={{
@@ -235,6 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             profileLoading,
             isAdmin,
             isDataEntry,
+            isPeriodista,
             isStaff,
             signOut,
             refreshProfile,

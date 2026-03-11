@@ -10,6 +10,7 @@ import UniqueLoading from "@/components/ui/morph-loading";
 import { Card, Badge, Avatar, LiveIndicator } from "@/components/ui-primitives";
 import { CreateMatchModal } from "@/components/create-match-modal";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { SPORT_EMOJI } from "@/lib/constants";
@@ -46,7 +47,14 @@ export default function PartidosPage() {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [matchToDelete, setMatchToDelete] = useState<any>(null);
     const router = useRouter();
+    const { isPeriodista } = useAuth();
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        if (isPeriodista) {
+            router.push('/admin/noticias');
+        }
+    }, [isPeriodista, router]);
 
     const fetchPartidos = useCallback(async () => {
         const { data } = await safeQuery(

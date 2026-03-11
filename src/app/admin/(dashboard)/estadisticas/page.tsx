@@ -27,6 +27,8 @@ import UniqueLoading from "@/components/ui/morph-loading";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { SPORT_EMOJI } from "@/lib/constants";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 // ===== TYPES =====
 type Partido = {
@@ -63,6 +65,14 @@ export default function EstadisticasPage() {
     const [eventos, setEventos] = useState<Evento[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterDisciplina, setFilterDisciplina] = useState<string>("all");
+    const { isPeriodista } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (isPeriodista) {
+            router.push('/admin/noticias');
+        }
+    }, [isPeriodista, router]);
 
     // Fetch data
     const rtDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);

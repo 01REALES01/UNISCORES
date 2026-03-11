@@ -14,7 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [open, setOpen] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
-    const { user, profile, loading, isStaff, isAdmin, signOut, profileLoading } = useAuth();
+    const { user, profile, loading, isStaff, isAdmin, isPeriodista, signOut, profileLoading } = useAuth();
 
     // Redirect to login if not authenticated or not staff
     useEffect(() => {
@@ -74,7 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                     <div className="bg-muted/10 rounded-2xl p-4 border border-border/20">
                         <p className="text-sm text-muted-foreground">
-                            Contacta a un administrador para que te asigne el rol de <span className="text-primary font-bold">admin</span> o <span className="text-red-400 font-bold">data_entry</span>.
+                            Contacta a un administrador para que te asigne el rol de <span className="text-purple-400 font-bold">admin</span>, <span className="text-rose-400 font-bold">data_entry</span> o <span className="text-blue-400 font-bold">periodista</span>.
                         </p>
                     </div>
                     <div className="flex gap-3 justify-center">
@@ -96,13 +96,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         );
     }
 
-    const menuItems = [
-        { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-        { name: "Partidos", href: "/admin/partidos", icon: Calendar },
-        { name: "Noticias", href: "/admin/noticias", icon: Newspaper },
-        { name: "Estadísticas", href: "/admin/estadisticas", icon: BarChart3 },
-        ...(isAdmin ? [{ name: "Usuarios", href: "/admin/usuarios", icon: Users }] : []),
-    ];
+    const menuItems = isPeriodista
+        ? [
+            { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+            { name: "Noticias", href: "/admin/noticias", icon: Newspaper },
+        ]
+        : [
+            { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+            { name: "Partidos", href: "/admin/partidos", icon: Calendar },
+            { name: "Noticias", href: "/admin/noticias", icon: Newspaper },
+            { name: "Estadísticas", href: "/admin/estadisticas", icon: BarChart3 },
+            ...(isAdmin ? [{ name: "Usuarios", href: "/admin/usuarios", icon: Users }] : []),
+        ];
 
     return (
         <div className="min-h-screen flex flex-col md:flex-row bg-[#0a0805] text-slate-200 selection:bg-red-500/30">

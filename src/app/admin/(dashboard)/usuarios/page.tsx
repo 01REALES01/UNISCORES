@@ -6,7 +6,17 @@ import { supabase } from "@/lib/supabase";
 import { useAuth, type Profile, type UserRole } from "@/hooks/useAuth";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { Card, Badge, Avatar, Button } from "@/components/ui-primitives";
-import { Shield, Users, Search, ChevronDown, Check, Crown, UserCheck, User, AlertCircle, Loader2 } from "lucide-react";
+import {
+    Users,
+    Shield,
+    Crown,
+    UserCheck,
+    User,
+    ChevronDown,
+    Loader2,
+    Check,
+    PenTool
+} from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { useRouter } from "next/navigation";
 
@@ -20,10 +30,17 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
     },
     data_entry: {
         label: 'Data Entry',
-        color: 'text-red-400',
-        bg: 'bg-red-500/10 border-red-500/20',
+        color: 'text-rose-400',
+        bg: 'bg-rose-500/10 border-rose-500/20',
         icon: UserCheck,
         description: 'Puede gestionar partidos',
+    },
+    periodista: {
+        label: 'Periodista',
+        color: 'text-blue-400',
+        bg: 'bg-blue-500/10 border-blue-500/20',
+        icon: PenTool,
+        description: 'Puede gestionar noticias',
     },
     public: {
         label: 'Público',
@@ -101,57 +118,87 @@ export default function UsuariosPage() {
 
     const adminCount = profiles.filter(p => p.role === 'admin').length;
     const dataEntryCount = profiles.filter(p => p.role === 'data_entry').length;
+    const periodistaCount = profiles.filter(p => p.role === 'periodista').length;
     const publicCount = profiles.filter(p => p.role === 'public').length;
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-                        Gestión de Usuarios
-                    </h1>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                        Administra roles y permisos del equipo
-                    </p>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/5 border border-purple-500/10">
-                    <Shield size={16} className="text-purple-400" />
-                    <span className="text-xs font-bold text-purple-400">Solo Administradores</span>
-                </div>
-            </div>
+        <div className="space-y-6 animate-in fade-in duration-500 relative">
+            {/* Ambient Background */}
+            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-red-600/5 rounded-full blur-[80px] pointer-events-none" />
 
-            {/* Stats */}
-            <div className="grid gap-3 grid-cols-3">
-                {[
-                    { label: 'Admins', value: adminCount, color: 'text-purple-400', icon: '👑', filter: 'admin' },
-                    { label: 'Data Entry', value: dataEntryCount, color: 'text-red-400', icon: '📝', filter: 'data_entry' },
-                    { label: 'Públicos', value: publicCount, color: 'text-slate-400', icon: '👤', filter: 'public' },
-                ].map(stat => (
-                    <button
-                        key={stat.label}
-                        onClick={() => setRoleFilter(roleFilter === stat.filter ? 'all' : stat.filter)}
-                        className={`p-4 rounded-2xl border text-left transition-all ${roleFilter === stat.filter
-                            ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/20'
-                            : 'border-border/20 bg-muted/10 hover:border-border/40'
-                            }`}
-                    >
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-lg">{stat.icon}</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{stat.label}</span>
+            <div className="relative z-10 space-y-6">
+                {/* Header */}
+                <div className="relative overflow-hidden rounded-3xl bg-[#17130D]/60 backdrop-blur-xl border border-white/5 p-8 sm:p-10">
+                    <div className="absolute right-[-5%] top-[-20%] w-[300px] h-[300px] bg-purple-500/10 rounded-full blur-[60px] pointer-events-none" />
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg shadow-purple-500/25">
+                                    <Shield size={22} className="text-white" />
+                                </div>
+                                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/20 text-purple-400 text-[10px] font-black tracking-widest uppercase">
+                                    Solo Administradores
+                                </span>
+                            </div>
+                            <h1 className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-white/40 bg-clip-text text-transparent leading-tight">
+                                Gestión de Usuarios
+                            </h1>
+                            <p className="text-slate-500 mt-1.5 text-sm font-medium">
+                                Administra roles y permisos de acceso al sistema
+                            </p>
                         </div>
-                        <span className={`text-3xl font-black ${stat.color}`}>{stat.value}</span>
-                    </button>
-                ))}
-            </div>
+                    </div>
+                </div>
 
-            {/* Search */}
-            <SuggestiveSearch
-                value={searchQuery}
-                onChange={setSearchQuery}
-                suggestions={["Buscar por nombre...", "Buscar por correo...", "Encuentra un admin..."]}
-                className="h-11 rounded-xl border-2 border-border/30 bg-muted/10 focus-within:border-primary/50 focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/20 transition-all w-full"
-            />
+                {/* Stats */}
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                    {[
+                        { label: 'Administradores', value: adminCount, color: 'text-purple-400', gradient: 'from-purple-500 to-indigo-600', icon: Crown, filter: 'admin' },
+                        { label: 'Data Entry', value: dataEntryCount, color: 'text-rose-400', gradient: 'from-rose-500 to-red-600', icon: UserCheck, filter: 'data_entry' },
+                        { label: 'Periodistas', value: periodistaCount, color: 'text-blue-400', gradient: 'from-blue-500 to-cyan-600', icon: PenTool, filter: 'periodista' },
+                        { label: 'Públicos', value: publicCount, color: 'text-slate-400', gradient: 'from-slate-500 to-slate-600', icon: User, filter: 'public' },
+                    ].map(stat => {
+                        const isActive = roleFilter === stat.filter;
+                        const Icon = stat.icon;
+                        return (
+                            <button
+                                key={stat.label}
+                                onClick={() => setRoleFilter(roleFilter === stat.filter ? 'all' : stat.filter)}
+                                className={`relative group p-5 rounded-2xl border text-left transition-all duration-300 overflow-hidden backdrop-blur-md ${isActive
+                                    ? 'border-white/15 bg-white/10 shadow-lg ring-1 ring-white/10'
+                                    : 'border-white/5 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/10'
+                                    }`}
+                            >
+                                <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
+                                <div className="relative z-10 flex flex-col h-full justify-between gap-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className={`p-2 rounded-xl transition-all duration-300 ${isActive ? 'bg-gradient-to-br ' + stat.gradient + ' shadow-md' : 'bg-white/5 group-hover:bg-white/10'}`}>
+                                            <Icon size={18} className={isActive ? "text-white" : stat.color} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 mb-1">{stat.label}</p>
+                                        <p className={`text-3xl font-black tabular-nums tracking-tight transition-colors ${isActive ? 'text-white' : stat.color}`}>
+                                            {stat.value}
+                                        </p>
+                                    </div>
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+
+            {/* Filters & Search */}
+            <div className="relative overflow-hidden rounded-2xl bg-[#17130D]/40 backdrop-blur-md border border-white/5 p-4">
+                <SuggestiveSearch
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    suggestions={["Buscar por nombre...", "Buscar por correo...", "Encuentra un admin..."]}
+                    className="h-11 rounded-xl bg-white/5 border border-white/10 focus-within:border-purple-500/50 focus-within:bg-white/10 focus-within:ring-2 focus-within:ring-purple-500/10 transition-all w-full"
+                />
+            </div>
 
             {/* Users List */}
             {loading ? (
@@ -159,15 +206,17 @@ export default function UsuariosPage() {
                     <UniqueLoading size="lg" />
                 </div>
             ) : filteredProfiles.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <div className="p-6 rounded-3xl bg-muted/10 border-2 border-dashed border-border/30">
-                        <Users size={48} className="text-muted-foreground/20" />
+                <div className="flex flex-col items-center justify-center py-24 gap-5">
+                    <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                        <Users size={40} className="text-white/15" />
                     </div>
-                    <p className="font-bold text-lg">No hay usuarios</p>
-                    <p className="text-muted-foreground text-sm">{searchQuery ? 'Sin resultados para tu búsqueda' : 'Los usuarios registrados aparecerán aquí'}</p>
+                    <div className="text-center">
+                        <p className="font-bold text-lg text-white">No hay usuarios</p>
+                        <p className="text-slate-500 text-sm mt-1 max-w-xs">{searchQuery ? 'Sin resultados para tu búsqueda' : 'Los usuarios registrados aparecerán aquí'}</p>
+                    </div>
                 </div>
             ) : (
-                <div className="space-y-2">
+                <div className="grid gap-3 lg:grid-cols-2">
                     {filteredProfiles.map((userProfile) => {
                         const roleInfo = ROLE_CONFIG[userProfile.role];
                         const RoleIcon = roleInfo.icon;
@@ -177,42 +226,40 @@ export default function UsuariosPage() {
                         return (
                             <div
                                 key={userProfile.id}
-                                className={`group relative flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 ${isCurrentUser
-                                    ? 'border-primary/20 bg-primary/5'
-                                    : 'border-border/15 bg-muted/5 hover:bg-muted/10 hover:border-border/30'
-                                    }`}
+                                className={`group relative flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-2xl border transition-all duration-300 backdrop-blur-md ${isCurrentUser
+                                    ? 'border-purple-500/30 bg-purple-500/[0.03] shadow-lg shadow-purple-500/5'
+                                    : 'border-white/5 bg-[#17130D]/40 hover:bg-[#17130D]/60 hover:border-white/15'
+                                    } ${openDropdown === userProfile.id ? 'z-40' : 'z-10'}`}
                             >
-                                {/* Avatar */}
-                                <Avatar name={userProfile.full_name || userProfile.email} size="default" className="ring-2 ring-white/5 shrink-0" />
-
-                                {/* Info */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-0.5">
-                                        <span className="font-bold text-sm truncate">
-                                            {userProfile.full_name || 'Sin nombre'}
-                                        </span>
-                                        {isCurrentUser && (
-                                            <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-primary/20 text-primary tracking-wider shrink-0">
-                                                Tú
+                                {/* Left Content */}
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    <Avatar name={userProfile.full_name || userProfile.email} size="lg" className="ring-2 ring-white/5 shrink-0 shadow-lg" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-bold text-base text-white truncate">
+                                                {userProfile.full_name || 'Sin nombre'}
                                             </span>
-                                        )}
+                                            {isCurrentUser && (
+                                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 tracking-widest shrink-0 border border-purple-500/30">
+                                                    Tú
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-slate-400 truncate mb-1.5">{userProfile.email}</p>
+                                        <p className="text-[10px] text-slate-600 font-medium">
+                                            Registrado {new Date(userProfile.created_at).toLocaleDateString('es-CO', {
+                                                day: '2-digit', month: 'short', year: 'numeric'
+                                            })}
+                                        </p>
                                     </div>
-                                    <p className="text-xs text-muted-foreground truncate">{userProfile.email}</p>
-                                    <p className="text-[10px] text-muted-foreground/50 mt-1">
-                                        Registrado {new Date(userProfile.created_at).toLocaleDateString('es-CO', {
-                                            day: 'numeric',
-                                            month: 'long',
-                                            year: 'numeric',
-                                        })}
-                                    </p>
                                 </div>
 
-                                {/* Role Selector */}
-                                <div className="relative shrink-0">
+                                {/* Right Content - Role Selector */}
+                                <div className="relative shrink-0 w-full sm:w-[180px] mt-2 sm:mt-0">
                                     {isUpdating ? (
-                                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted/30">
-                                            <Loader2 size={14} className="animate-spin" />
-                                            <span className="text-xs font-bold text-muted-foreground">Guardando...</span>
+                                        <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 h-11">
+                                            <Loader2 size={14} className="animate-spin text-slate-400" />
+                                            <span className="text-xs font-bold text-slate-400">Guardando...</span>
                                         </div>
                                     ) : (
                                         <>
@@ -222,46 +269,50 @@ export default function UsuariosPage() {
                                                     setOpenDropdown(openDropdown === userProfile.id ? null : userProfile.id);
                                                 }}
                                                 disabled={isCurrentUser}
-                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${isCurrentUser
-                                                    ? 'opacity-60 cursor-not-allowed'
-                                                    : 'hover:border-primary/30 hover:bg-muted/20 cursor-pointer'
-                                                    } ${roleInfo.bg}`}
+                                                className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border h-11 transition-all ${isCurrentUser
+                                                    ? 'opacity-60 cursor-not-allowed bg-black/20 border-white/5'
+                                                    : 'cursor-pointer hover:border-white/30 hover:bg-white/[0.05] border-white/10 bg-black/40'
+                                                    }`}
                                             >
-                                                <RoleIcon size={14} className={roleInfo.color} />
-                                                <span className={`text-xs font-bold ${roleInfo.color}`}>{roleInfo.label}</span>
-                                                {!isCurrentUser && <ChevronDown size={12} className="text-muted-foreground ml-1" />}
+                                                <div className="flex items-center gap-2">
+                                                    <RoleIcon size={14} className={roleInfo.color} />
+                                                    <span className={`text-xs font-bold ${roleInfo.color}`}>{roleInfo.label}</span>
+                                                </div>
+                                                {!isCurrentUser && <ChevronDown size={14} className="text-slate-500 transition-transform group-hover:text-white/80" />}
                                             </button>
 
-                                            {/* Dropdown */}
+                                            {/* Dropdown Menu */}
                                             {openDropdown === userProfile.id && (
                                                 <>
                                                     <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-                                                    <div className="absolute right-0 top-full mt-2 z-50 w-64 bg-card border border-border/30 rounded-2xl shadow-2xl shadow-black/30 p-2 animate-in fade-in slide-in-from-top-2">
-                                                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-3 pt-2 pb-1.5">Cambiar Rol</p>
-                                                        {(Object.keys(ROLE_CONFIG) as UserRole[]).map(role => {
-                                                            const config = ROLE_CONFIG[role];
-                                                            const Icon = config.icon;
-                                                            const isSelected = userProfile.role === role;
-                                                            return (
-                                                                <button
-                                                                    key={role}
-                                                                    onClick={() => updateRole(userProfile.id, role)}
-                                                                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left ${isSelected
-                                                                        ? 'bg-primary/10 border border-primary/20'
-                                                                        : 'hover:bg-muted/30 border border-transparent'
-                                                                        }`}
-                                                                >
-                                                                    <div className={`p-1.5 rounded-lg ${config.bg}`}>
-                                                                        <Icon size={14} className={config.color} />
-                                                                    </div>
-                                                                    <div className="flex-1">
-                                                                        <span className={`text-sm font-bold ${config.color}`}>{config.label}</span>
-                                                                        <p className="text-[10px] text-muted-foreground/60">{config.description}</p>
-                                                                    </div>
-                                                                    {isSelected && <Check size={14} className="text-primary shrink-0" />}
-                                                                </button>
-                                                            );
-                                                        })}
+                                                    <div className="absolute right-0 sm:right-0 top-full mt-2 z-50 w-full sm:w-64 bg-[#1A1612] border border-white/10 rounded-2xl shadow-2xl shadow-black p-2 animate-in fade-in slide-in-from-top-2">
+                                                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-3 pt-2 pb-2">Seleccionar Rol</p>
+                                                        <div className="space-y-1">
+                                                            {(Object.keys(ROLE_CONFIG) as UserRole[]).map(role => {
+                                                                const config = ROLE_CONFIG[role];
+                                                                const Icon = config.icon;
+                                                                const isSelected = userProfile.role === role;
+                                                                return (
+                                                                    <button
+                                                                        key={role}
+                                                                        onClick={() => updateRole(userProfile.id, role)}
+                                                                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${isSelected
+                                                                            ? 'bg-white/10 border border-white/10'
+                                                                            : 'hover:bg-white/5 border border-transparent group-hover:bg-white/5'
+                                                                            }`}
+                                                                    >
+                                                                        <div className={`p-2 rounded-lg ${isSelected ? config.bg : 'bg-black/30'}`}>
+                                                                            <Icon size={14} className={isSelected ? config.color : 'text-slate-400 group-hover:scale-110 transition-transform'} />
+                                                                        </div>
+                                                                        <div className="flex-1">
+                                                                            <span className={`text-sm font-bold ${isSelected ? config.color : 'text-slate-300 group-hover:text-white'}`}>{config.label}</span>
+                                                                            <p className="text-[10px] text-slate-500/80 leading-snug mt-0.5">{config.description}</p>
+                                                                        </div>
+                                                                        {isSelected && <Check size={14} className={config.color} />}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
                                                     </div>
                                                 </>
                                             )}
@@ -274,12 +325,13 @@ export default function UsuariosPage() {
                 </div>
             )}
 
-            {/* Count */}
+            {/* Counter */}
             {!loading && filteredProfiles.length > 0 && (
-                <p className="text-center text-xs text-muted-foreground/50 pt-4">
-                    {filteredProfiles.length} de {profiles.length} usuarios
+                <p className="text-center text-xs text-slate-600 font-medium pt-4">
+                    Mostrando {filteredProfiles.length} de {profiles.length} usuarios en total
                 </p>
             )}
+            </div>
         </div>
     );
 }
