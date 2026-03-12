@@ -134,7 +134,7 @@ export default function PublicMatchDetail() {
                 .single();
             if (userPred) setUserPrediction(userPred);
 
-            toast.success('¡Predicción guardada!');
+            toast.success('¡Acierto guardado!');
         } catch (err: any) {
             toast.error('Error al guardar: ' + err.message);
         } finally {
@@ -466,7 +466,7 @@ export default function PublicMatchDetail() {
                             <BarChart3 size={20} className="drop-shadow-[0_0_8px_currentColor]" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white tracking-tight">Predicciones</h3>
+                            <h3 className="text-lg font-bold text-white tracking-tight">Acierta y Gana</h3>
                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1">
                                 <Users size={10} /> {matchPredictions.length} votos
                             </p>
@@ -537,7 +537,7 @@ export default function PublicMatchDetail() {
                     {match?.estado === 'programado' && user ? (
                         <div className="mt-5 pt-4 border-t border-white/5">
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center">
-                                {userPrediction ? 'Cambiar tu predicción' : '¿Quién ganará?'}
+                                {userPrediction ? 'Cambiar tu acierto' : '¿Quién ganará?'}
                             </p>
                             <div className="grid grid-cols-3 gap-2">
                                 <button
@@ -597,7 +597,7 @@ export default function PublicMatchDetail() {
                                 })() ? "bg-emerald-500/10 border border-emerald-500/15" : "bg-rose-500/10 border border-rose-500/15")
                                 : "bg-white/5"
                         )}>
-                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu predicción</p>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu acierto</p>
                             <p className={cn("text-sm font-black",
                                 match?.estado === 'finalizado' ? (() => {
                                     const md = match?.marcador_detalle || {};

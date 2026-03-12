@@ -93,7 +93,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                             { title: "Noticias", icon: Newspaper },
                             { title: "Mapa", icon: MapPin },
                             { title: "Medallería", icon: Trophy },
-                            { title: "Predicciones", icon: BarChart3 },
+                            { title: "Acierta y Gana", icon: BarChart3 },
                             { title: "Brackets", icon: Swords },
                             { type: "separator" },
                             { title: "TV", icon: Tv },
@@ -199,7 +199,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                             <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                                                 <BarChart3 size={16} />
                                             </div>
-                                            Mis Predicciones
+                                            Acierta y Gana
                                         </button>
                                         <div className="my-1.5 h-px bg-white/5" />
                                         <button
@@ -256,7 +256,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                         <Link href="/quiniela" onClick={() => setMobileMenuOpen(false)}>
                             <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/quiniela') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
                                 <BarChart3 size={20} />
-                                <span className="font-medium text-sm">Predicciones</span>
+                                <span className="font-medium text-sm">Acierta y Gana</span>
                             </div>
                         </Link>
                         <Link href="/brackets" onClick={() => setMobileMenuOpen(false)}>
