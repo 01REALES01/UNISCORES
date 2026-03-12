@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { m, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Calendar, MapPin, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, MapPin, Zap, Users, Clock } from "lucide-react";
 import { Badge, Button } from "@/components/ui-primitives";
 import Link from "next/link";
 import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_GLOW, SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
-import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
+import { getDisplayName, getCarreraSubtitle, isRaceMatch, getSwimmingEventTitle } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
 import { PublicLiveTimer } from "@/components/public-live-timer";
@@ -169,10 +169,78 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                             </div>
                         </div>
 
-                        {/* Teams & Score */}
+                        {/* Teams & Score — Conditional for Swimming/Race */}
                         <div className="flex items-center justify-center gap-4 md:gap-12 w-full max-w-4xl">
                             {(() => {
                                 const sName = currentMatch.disciplinas?.name || '';
+                                const isRace = isRaceMatch(currentMatch);
+                                const gender = (currentMatch.genero || 'masculino').toLowerCase();
+
+                                if (isRace) {
+                                    // ── Swimming / Race Layout ──────────────────────
+                                    return (
+                                        <m.div
+                                            initial={{ scale: 0.9, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="flex flex-col items-center gap-6 w-full"
+                                        >
+                                            {/* Event Title */}
+                                            <div className="flex flex-col items-center gap-2">
+                                                <h3 className="text-[2.5rem] md:text-[4.5rem] font-black tracking-tighter leading-none text-white drop-shadow-2xl">
+                                                    {getSwimmingEventTitle(currentMatch)}
+                                                </h3>
+                                                {currentMatch.marcador_detalle?.serie && (
+                                                    <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 px-4 py-1 font-black uppercase tracking-widest text-[10px] md:text-sm">
+                                                        Serie {currentMatch.marcador_detalle.serie}
+                                                    </Badge>
+                                                )}
+                                            </div>
+
+                                            {/* Status info */}
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="flex items-center gap-4 text-slate-300">
+                                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+                                                        <Users size={16} className="text-cyan-400" />
+                                                        <span className="text-xs md:text-sm font-bold uppercase tracking-wider">
+                                                            {(currentMatch.marcador_detalle?.participantes || []).length} Nadadores
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    {/* Category/Gender */}
+                                                    <div className={cn(
+                                                        "px-3 py-1.5 rounded-full border backdrop-blur-sm flex items-center gap-2",
+                                                        gender === 'femenino' ? "bg-pink-500/10 border-pink-500/30 text-pink-400" :
+                                                        gender === 'mixto' ? "bg-purple-500/10 border-purple-500/30 text-purple-400" :
+                                                        "bg-blue-500/10 border-blue-500/30 text-blue-400"
+                                                    )}>
+                                                        <span className="text-xs md:text-sm font-bold uppercase tracking-wider">
+                                                            {gender}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Live indicator specific for swimming */}
+                                                {currentMatch.estado === 'en_vivo' && (
+                                                    <div className="flex flex-col items-center gap-3">
+                                                        <div className="flex items-center gap-2 text-cyan-400 text-sm md:text-md font-black tracking-[0.3em] uppercase animate-pulse">
+                                                            <div className="relative flex h-3 w-3">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                                                                <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,1)]" />
+                                                            </div>
+                                                            <span>Prueba en Curso</span>
+                                                        </div>
+                                                        <div className="w-48 h-1.5 bg-cyan-900/40 rounded-full overflow-hidden border border-cyan-500/20">
+                                                            <div className="h-full bg-cyan-500 w-full animate-pulse shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </m.div>
+                                    );
+                                }
+
+                                // ── Bilateral VS Layout (Original) ──────────────
                                 const liveText = SPORT_LIVE_TEXT[sName] || SPORT_LIVE_TEXT.default;
                                 const liveBg = SPORT_LIVE_BG_WRAPPER[sName] || SPORT_LIVE_BG_WRAPPER.default;
                                 const liveBar = SPORT_LIVE_BAR[sName] || SPORT_LIVE_BAR.default;
