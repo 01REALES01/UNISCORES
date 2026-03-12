@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { toast } from "sonner";
 import { Button, Badge } from "@/components/ui-primitives";
-import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Gauge, HandMetal, Users, X, Flame, Target, Zap, ChevronDown, Filter, History, Handshake, Loader2, LayoutGrid } from "lucide-react";
+import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Gauge, HandMetal, Users, X, Flame, Target, Zap, ChevronDown, Filter, History, Handshake, Loader2, LayoutGrid, Info } from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
 import Link from "next/link";
 import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_BORDER } from "@/lib/constants";
@@ -389,6 +389,7 @@ export default function QuinielaPage() {
     const [bettingMode, setBettingMode] = useState<'score' | 'winner'>('winner');
     const [viewFilter, setViewFilter] = useState<'upcoming' | 'live' | 'finished' | 'all'>('upcoming');
     const [sportFilter, setSportFilter] = useState<string>('todos');
+    const [showDisclaimer, setShowDisclaimer] = useState(false);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -434,6 +435,21 @@ export default function QuinielaPage() {
 
         return () => { supabase.removeChannel(channel); };
     }, [user]);
+
+    // Disclaimer Modal Logic
+    useEffect(() => {
+        if (!authLoading && user) {
+            const hasSeenDisclaimer = sessionStorage.getItem('quiniela_disclaimer_v2_shown');
+            if (!hasSeenDisclaimer) {
+                setShowDisclaimer(true);
+            }
+        }
+    }, [authLoading, user]);
+
+    const handleDismissDisclaimer = () => {
+        sessionStorage.setItem('quiniela_disclaimer_v2_shown', 'true');
+        setShowDisclaimer(false);
+    };
 
     const handlePredict = async (matchId: any, data: any) => {
         if (!user) return;
@@ -519,6 +535,30 @@ export default function QuinielaPage() {
 
     return (
         <div className="min-h-screen bg-black text-white font-sans pb-20">
+            {/* Modal Disclaimer */}
+            {showDisclaimer && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-[#0a0805] border border-blue-500/30 rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl shadow-blue-500/10 relative overflow-hidden zoom-in duration-300">
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 to-cyan-400" />
+                        <div className="flex flex-col items-center text-center gap-4 pt-4">
+                            <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-2 border border-blue-500/20 shadow-inner">
+                                <Info size={32} />
+                            </div>
+                            <h3 className="text-2xl font-black text-white tracking-tight">Aviso Institucional</h3>
+                            <p className="text-sm text-slate-300 leading-relaxed max-w-[260px]">
+                                Este espacio es <strong className="text-white">100% recreativo</strong>. Aquí no se realizan apuestas económicas ni se involucra dinero real. ¡Diviértete prediciendo! 🏅
+                            </p>
+                            <Button 
+                                onClick={handleDismissDisclaimer} 
+                                className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl mt-4 font-bold h-12 shadow-lg shadow-blue-600/20 text-md"
+                            >
+                                Entendido, ¡A jugar!
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <div className="max-w-xl mx-auto p-4 space-y-6">
