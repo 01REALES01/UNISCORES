@@ -24,7 +24,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
     }, [activeFilter]);
 
     // Filtrar partidos destacados: En vivo primero, luego programados cercanos
-    const filteredBySport = activeFilter === 'todos'
+    const filteredBySport = (activeFilter === 'todos' || activeFilter === 'favoritos')
         ? matches
         : matches.filter(m => m.disciplinas?.name === activeFilter);
 
@@ -73,7 +73,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                         OLIMPIADAS 2026
                     </h2>
                     <p className="text-slate-400 max-w-lg mx-auto text-lg mb-8 leading-relaxed">
-                        Prepárate para vivir la emoción del deporte universitario. Revisa el calendario y haz tus predicciones.
+                        Prepárate para vivir la emoción del deporte universitario. Revisa el calendario y participa en Acierta y Gana.
                     </p>
                     <div className="flex gap-4 justify-center">
                         <Link href="/calendario">

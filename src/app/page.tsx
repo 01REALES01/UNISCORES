@@ -515,7 +515,7 @@ export default function Home() {
                       </>
                     )}
                   </div>
-                  <HeroSlider matches={partidos} activeFilter={activeFilter} />
+                  <HeroSlider matches={activeFilter === 'favoritos' ? filteredPartidos : partidos} activeFilter={activeFilter} />
                 </div>
               );
             })()}
@@ -531,7 +531,7 @@ export default function Home() {
                     <TrendingUp size={32} strokeWidth={2.5} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-white mb-1 tracking-tight">HAGAN SUS PREDICCIONES</h3>
+                    <h3 className="text-2xl font-black text-white mb-1 tracking-tight">ACIERTA Y GANA</h3>
                     <p className="text-amber-200/60 text-sm font-medium">Lidera el tablero y gana premios exclusivos.</p>
                   </div>
                 </div>

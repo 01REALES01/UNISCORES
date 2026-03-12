@@ -35,7 +35,7 @@ const VotePercentageBar = ({ matchId, allPredictions, teamA, teamB, sportName }:
     if (total === 0) return (
         <div className="flex items-center gap-2 text-[10px] text-slate-600 justify-center py-1">
             <Users size={10} />
-            <span>Sin predicciones aún</span>
+            <span>Sin aciertos aún</span>
         </div>
     );
 
@@ -49,7 +49,7 @@ const VotePercentageBar = ({ matchId, allPredictions, teamA, teamB, sportName }:
     return (
         <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] px-0.5">
-                <span className="flex items-center gap-1"><Users size={10} /> {total} predicciones</span>
+                <span className="flex items-center gap-1"><Users size={10} /> {total} aciertos</span>
             </div>
             <div className="flex gap-[2px] h-2.5 rounded-full overflow-hidden bg-white/5 shadow-inner">
                 {pctA > 0 && (
@@ -260,7 +260,7 @@ const PredictionCard = ({
                         ? "bg-emerald-500/10 border-emerald-500/20"
                         : "bg-rose-500/10 border-rose-500/20"
                 )}>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu predicción</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu acierto</p>
                     {prediction.prediction_type === 'score' || (prediction.goles_a !== null && prediction.goles_a !== undefined) ? (
                         <p className={cn("text-xl font-black tabular-nums font-mono", predictionCorrect ? "text-emerald-400" : "text-rose-400")}>
                             {prediction.goles_a} - {prediction.goles_b}
@@ -273,7 +273,7 @@ const PredictionCard = ({
                 </div>
             ) : isLive && isPredicted ? (
                 <div className="p-3 rounded-xl bg-rose-500/5 border border-rose-500/15 text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu predicción</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu acierto</p>
                     {prediction.winner_pick ? (
                         <p className="text-sm font-black text-rose-300">
                             {prediction.winner_pick === 'A' ? `Gana ${match.carrera_a?.nombre || match.equipo_a}` : prediction.winner_pick === 'B' ? `Gana ${match.carrera_b?.nombre || match.equipo_b}` : 'Empate'}
@@ -364,9 +364,9 @@ const PredictionCard = ({
                             disabled={mode === 'score' ? (scoreA === "" || scoreB === "") : (!winnerPick)}
                         >
                             {isPredicted ? (
-                                <><Target size={14} className="mr-2" /> Actualizar Predicción</>
+                                <><Target size={14} className="mr-2" /> Actualizar Acierto</>
                             ) : (
-                                <><Flame size={14} className="mr-2" /> Guardar Predicción</>
+                                <><Flame size={14} className="mr-2" /> Guardar Acierto</>
                             )}
                         </Button>
                     </div>
@@ -491,8 +491,8 @@ export default function QuinielaPage() {
                 if (allPreds.data) setAllPredictions(allPreds.data);
             },
             {
-                loading: 'Guardando predicción...',
-                success: '¡Predicción guardada! 🔥',
+                loading: 'Guardando acierto...',
+                success: '¡Acierto guardado! 🔥',
                 error: (e) => `Error: ${e.message}`
             }
         );
@@ -567,7 +567,7 @@ export default function QuinielaPage() {
                 <div className="grid grid-cols-3 gap-3">
                     <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/5 text-center">
                         <p className="text-2xl font-black tabular-nums text-white">{totalPredictions}</p>
-                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Predicciones</p>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Aciertos</p>
                     </div>
                     <div className="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-center">
                         <p className="text-2xl font-black tabular-nums text-emerald-400">{correctPredictions}</p>
@@ -728,7 +728,7 @@ export default function QuinielaPage() {
                         <div className="flex items-center justify-between mb-2 px-1">
                             <div className="flex items-center gap-2">
                                 <History size={16} className="text-amber-400" />
-                                <h2 className="font-bold text-sm text-white">Mis Predicciones</h2>
+                                <h2 className="font-bold text-sm text-white">Mis Aciertos</h2>
                                 <span className="text-[10px] text-slate-500 font-bold">({predictions.length})</span>
                             </div>
                         </div>
@@ -767,7 +767,7 @@ export default function QuinielaPage() {
                         {predictions.length === 0 ? (
                             <div className="text-center py-20 text-white/40 bg-white/[0.02] rounded-3xl border border-white/5 border-dashed">
                                 <Target className="mx-auto mb-4 opacity-30 w-10 h-10" />
-                                <p className="font-bold text-sm">No has hecho predicciones aún</p>
+                                <p className="font-bold text-sm">No has intentado acertar aún</p>
                                 <p className="text-xs text-slate-600 mt-1">Ve a la pestaña Jugar para comenzar</p>
                             </div>
                         ) : (
@@ -782,7 +782,7 @@ export default function QuinielaPage() {
                                 if (historyFiltered.length === 0) {
                                     return (
                                         <div className="text-center py-10 text-white/40 bg-white/[0.02] rounded-3xl border border-white/5 border-dashed">
-                                            <p className="font-bold text-sm">No hay predicciones para este deporte</p>
+                                            <p className="font-bold text-sm">No hay aciertos para este deporte</p>
                                         </div>
                                     );
                                 }
@@ -909,7 +909,7 @@ export default function QuinielaPage() {
                                                         isFinished && correct === false ? "bg-rose-500/10 border-rose-500/15" :
                                                             "bg-white/5 border-white/5"
                                                 )}>
-                                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu predicción</p>
+                                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu acierto</p>
                                                     {(pred.goles_a !== null && pred.goles_a !== undefined && (pred.prediction_type === 'score' || !pred.winner_pick)) ? (
                                                         <p className={cn(
                                                             "text-lg font-black tabular-nums font-mono",
