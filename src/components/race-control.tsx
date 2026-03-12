@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { CARRERAS_UNINORTE, NATACION_PUNTOS } from "@/lib/constants";
 import { parseTimeToMs, isValidTimeFormat } from "@/lib/sport-helpers";
 import { toast } from "sonner";
+import { stampAudit } from "@/lib/audit-helpers";
+import type { Profile } from "@/hooks/useAuth";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,6 +33,7 @@ type RaceControlProps = {
     detalle: any;
     onUpdate: () => void;
     isLocked?: boolean;
+    profile?: Profile | null;
 };
 
 // ── Status config ────────────────────────────────────────────────────────────
@@ -44,7 +47,7 @@ const STATUS_CONFIG: Record<ParticipantStatus, { label: string; color: string; i
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function RaceControl({ matchId, detalle, onUpdate, isLocked = false }: RaceControlProps) {
+export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, profile }: RaceControlProps) {
     const [participantes, setParticipantes] = useState<Participante[]>([]);
     const [newCarrera, setNewCarrera] = useState("");
     const [newNombre, setNewNombre] = useState("");
@@ -146,10 +149,10 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false }: Ra
             const { error } = await supabase
                 .from('partidos')
                 .update({
-                    marcador_detalle: {
+                    marcador_detalle: stampAudit({
                         ...detalle,
                         participantes: data,
-                    }
+                    }, profile)
                 })
                 .eq('id', matchId);
 
@@ -200,10 +203,10 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false }: Ra
             // Save final state
             await supabase.from('partidos').update({
                 estado: 'finalizado',
-                marcador_detalle: {
+                marcador_detalle: stampAudit({
                     ...detalle,
                     participantes: finalData,
-                }
+                }, profile)
             }).eq('id', matchId);
 
             // Assign medals to carreras

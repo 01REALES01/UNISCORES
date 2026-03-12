@@ -6,6 +6,8 @@ import { X, Save, Trophy, Loader2, Calendar, Users, Activity, MapPin, Clock, Plu
 import { supabase } from "@/lib/supabase";
 import { CARRERAS_UNINORTE, LUGARES_OLIMPICOS, NATACION_ESTILOS, NATACION_DISTANCIAS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { stampAudit } from "@/lib/audit-helpers";
 
 type CreateMatchModalProps = {
     isOpen: boolean;
@@ -23,6 +25,7 @@ const DISCIPLINES = [
 ];
 
 export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
+    const { profile } = useAuth();
     const [loading, setLoading] = useState(false);
     const [disciplina, setDisciplina] = useState("Fútbol");
     const [equipoA, setEquipoA] = useState("");
@@ -163,7 +166,7 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                 estado: estado,
                 genero: genero,
                 lugar: lugar || 'Coliseo Central',
-                marcador_detalle: marcadorInicial,
+                marcador_detalle: stampAudit(marcadorInicial, profile),
                 ...(fase ? { fase } : {}),
                 ...(grupo ? { grupo } : {}),
                 ...(bracketOrder ? { bracket_order: parseInt(bracketOrder) } : {}),

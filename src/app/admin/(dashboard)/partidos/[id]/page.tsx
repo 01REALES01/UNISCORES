@@ -13,6 +13,8 @@ import { getDisplayName, getCarreraName, getCarreraSubtitle } from "@/lib/sport-
 import { toast } from "sonner";
 import { RaceControl } from "@/components/race-control";
 import { invalidateCache } from "@/lib/supabase-query";
+import { useAuth } from "@/hooks/useAuth";
+import { stampAudit, formatUltimaEdicion } from "@/lib/audit-helpers";
 
 // Tipos
 type Jugador = {
@@ -106,6 +108,10 @@ export default function MatchControlPage() {
     const params = useParams();
     const router = useRouter();
     const matchId = params.id as string;
+    const { profile } = useAuth();
+
+    // Helper: stamp audit on any marcador_detalle before DB save
+    const auditDetalle = (detalle: Record<string, any>) => stampAudit(detalle, profile);
 
     const [match, setMatch] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -194,7 +200,7 @@ export default function MatchControlPage() {
 
         const { error } = await supabase
             .from('partidos')
-            .update({ marcador_detalle: finalDetalle })
+            .update({ marcador_detalle: auditDetalle(finalDetalle) })
             .eq('id', matchId);
 
         if (error) {
@@ -336,7 +342,7 @@ export default function MatchControlPage() {
                 nuevoDetalle.minuto_actual = isCountdown ? getPeriodDuration(sportName) : 0;
                 const { error } = await supabase.from('partidos').update({
                     estado: 'en_vivo',
-                    marcador_detalle: nuevoDetalle
+                    marcador_detalle: auditDetalle(nuevoDetalle)
                 }).eq('id', matchId);
 
                 if (error) throw error;
@@ -348,7 +354,7 @@ export default function MatchControlPage() {
                 invalidateCache('admin-partidos');
                 registrarEventoSistema('inicio', 'Inicio del partido');
             } else {
-                const { error } = await supabase.from('partidos').update({ marcador_detalle: nuevoDetalle }).eq('id', matchId);
+                const { error } = await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoDetalle) }).eq('id', matchId);
                 if (error) throw error;
                 setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoDetalle }));
             }
@@ -401,7 +407,7 @@ export default function MatchControlPage() {
                 nuevoMarcador.estado_cronometro = 'pausado'; // Forzar pausa en DB
                 nuevoMarcador.ultimo_update = new Date().toISOString();
 
-                const { error } = await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
+                const { error } = await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
                 if (error) throw error;
 
                 setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
@@ -567,7 +573,7 @@ export default function MatchControlPage() {
 
                 // Guardar marcador y finalizar partido
                 await supabase.from('partidos').update({
-                    marcador_detalle: nuevoMarcador,
+                    marcador_detalle: auditDetalle(nuevoMarcador),
                     estado: 'finalizado'
                 }).eq('id', matchId);
 
@@ -601,7 +607,7 @@ export default function MatchControlPage() {
                     });
 
                     const nuevoMarcador = { ...currentDetalle, resultados: nuevosResultados };
-                    await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
+                    await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
                     setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
                 }
             }
@@ -617,7 +623,7 @@ export default function MatchControlPage() {
                     puntos
                 );
 
-                await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
+                await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
                 setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
             } else {
                 // For non-scoring events (tarjetas, cambios, faltas), just sync local state
@@ -662,7 +668,7 @@ export default function MatchControlPage() {
                 puntos
             );
 
-            await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
+            await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
             setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
         }
 
@@ -689,7 +695,7 @@ export default function MatchControlPage() {
         const oldVal = nuevoMarcador[field] || 0;
         nuevoMarcador[field] = value;
 
-        const { error } = await supabase.from('partidos').update({ marcador_detalle: nuevoMarcador }).eq('id', matchId);
+        const { error } = await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
         if (!error) {
             setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
             registrarEventoSistema('ajuste', `Ajuste manual marquador: ${field.replace('_', ' ')} de ${oldVal} a ${value}`);
@@ -761,6 +767,18 @@ export default function MatchControlPage() {
                         </div>
                     </div>
 
+                    {/* Audit: Last Edited By */}
+                    {(() => {
+                        const auditInfo = formatUltimaEdicion(match.marcador_detalle);
+                        if (!auditInfo) return null;
+                        return (
+                            <div className="flex items-center gap-2 mb-4 text-white/50 text-[11px]" title={`Editado: ${auditInfo.fecha}`}>
+                                <Edit2 size={12} />
+                                <span>Última edición por <strong className="text-white/70">{auditInfo.nombre}</strong> · {auditInfo.relativo}</span>
+                            </div>
+                        );
+                    })()}
+
                     {/* Scoreboard Control Center */}
                     {match.marcador_detalle?.tipo === 'carrera' ? (
                         <div className="w-full max-w-4xl mx-auto py-4 animate-in fade-in slide-in-from-bottom-4">
@@ -769,6 +787,7 @@ export default function MatchControlPage() {
                                 detalle={match.marcador_detalle}
                                 onUpdate={fetchMatchDetails}
                                 isLocked={match.estado === 'finalizado'}
+                                profile={profile}
                             />
                         </div>
                     ) : (
@@ -845,7 +864,7 @@ export default function MatchControlPage() {
                                         onChange={async (e) => {
                                             const newQ = parseInt(e.target.value);
                                             const newDetalle = { ...match.marcador_detalle, cuarto_actual: newQ };
-                                            await supabase.from('partidos').update({ marcador_detalle: newDetalle }).eq('id', matchId);
+                                            await supabase.from('partidos').update({ marcador_detalle: auditDetalle(newDetalle) }).eq('id', matchId);
                                             setMatch({ ...match, marcador_detalle: newDetalle });
                                             registrarEventoSistema('periodo', `Corrección Manual: ${newQ}º Cuarto`);
                                         }}
@@ -865,7 +884,7 @@ export default function MatchControlPage() {
                                         onChange={async (e) => {
                                             const setNum = parseInt(e.target.value.replace(/\D/g, ''));
                                             const newDetalle = { ...match.marcador_detalle, set_actual: setNum };
-                                            await supabase.from('partidos').update({ marcador_detalle: newDetalle }).eq('id', matchId);
+                                            await supabase.from('partidos').update({ marcador_detalle: auditDetalle(newDetalle) }).eq('id', matchId);
                                             setMatch({ ...match, marcador_detalle: newDetalle });
                                         }}
                                     >
