@@ -68,3 +68,60 @@ export function formatUltimaEdicion(detalle: Record<string, any> | null | undefi
         relativo,
     };
 }
+/**
+ * Stamps audit info into a JSON string for the `descripcion` column in olympics_eventos.
+ */
+export function stampEventAudit(
+    text: string | null | undefined,
+    profile: Profile | null | undefined
+): string {
+    const auditObj = {
+        autor: profile ? {
+            nombre: profile.full_name || profile.email,
+            email: profile.email,
+            role: profile.role,
+        } : null,
+        fecha: new Date().toISOString(),
+        texto: text || '',
+    };
+
+    return JSON.stringify(auditObj);
+}
+
+export type EventAudit = {
+    autor: {
+        nombre: string;
+        email: string;
+        role: string;
+    } | null;
+    fecha: string;
+    texto: string;
+};
+
+/**
+ * Safely parses event audit from the `descripcion` column.
+ * Returns a semi-structured object even for legacy plain-text descriptions.
+ */
+export function parseEventAudit(descripcion: string | null | undefined): EventAudit {
+    if (!descripcion) {
+        return { autor: null, fecha: '', texto: '' };
+    }
+
+    try {
+        // Check if it's a JSON string
+        if (descripcion.trim().startsWith('{') && descripcion.trim().endsWith('}')) {
+            const parsed = JSON.parse(descripcion);
+            if (parsed.autor || parsed.fecha) {
+                return parsed as EventAudit;
+            }
+        }
+    } catch (e) {
+        // Fallback to plain text
+    }
+
+    return {
+        autor: null,
+        fecha: '',
+        texto: descripcion,
+    };
+}

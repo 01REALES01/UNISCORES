@@ -5,11 +5,14 @@ import { Button, Input, Badge, Avatar } from "@/components/ui-primitives";
 import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle, Minus, Edit2, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { addPoints, removePoints, setPoints, getCurrentScore, ScoreDetail, recalculateTotals } from "@/lib/sport-scoring";
+import { useAuth } from "@/hooks/useAuth";
+import { stampAudit, stampEventAudit, parseEventAudit } from "@/lib/audit-helpers";
 
 type EditMatchModalProps = {
     match: any;
     isOpen: boolean;
     onClose: () => void;
+    profile?: any; // Added to support audit
 };
 
 type Jugador = {
@@ -36,7 +39,7 @@ const EVENTOS_TIPOS = [
     { value: 'tarjeta_roja', label: '🟥 Tarjeta Roja', color: 'danger' },
 ];
 
-export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) {
+export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchModalProps) {
     const [loading, setLoading] = useState(false);
     const [jugadoresA, setJugadoresA] = useState<Jugador[]>([]);
     const [jugadoresB, setJugadoresB] = useState<Jugador[]>([]);
@@ -101,7 +104,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
 
         const { error } = await supabase
             .from('partidos')
-            .update({ marcador_detalle: finalDetalle })
+            .update({ marcador_detalle: stampAudit(finalDetalle, profile) })
             .eq('id', match.id);
 
         if (error) {
@@ -211,7 +214,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
 
         const { error } = await supabase
             .from('partidos')
-            .update({ marcador_detalle: nuevoDetalle })
+            .update({ marcador_detalle: stampAudit(nuevoDetalle, profile) })
             .eq('id', match.id);
 
         if (error) {
@@ -232,7 +235,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
         const deporte = match.disciplinas?.name || 'Genérico';
         const nuevoDetalle = removePoints(deporte, detalleActual, equipo, puntos);
 
-        await supabase.from('partidos').update({ marcador_detalle: nuevoDetalle }).eq('id', match.id);
+        await supabase.from('partidos').update({ marcador_detalle: stampAudit(nuevoDetalle, profile) }).eq('id', match.id);
     };
 
     const handleSetScore = async (equipo: 'equipo_a' | 'equipo_b', valorNuevo: number) => {
@@ -244,7 +247,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
 
         const { error } = await supabase
             .from('partidos')
-            .update({ marcador_detalle: nuevoDetalle })
+            .update({ marcador_detalle: stampAudit(nuevoDetalle, profile) })
             .eq('id', match.id);
 
         if (error) {
@@ -406,7 +409,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                 tipo_evento: 'inicio',
                 minuto: 0,
                 equipo: 'sistema',
-                descripcion: 'Inicio del partido'
+                descripcion: stampEventAudit('Inicio del partido', profile)
             });
 
         if (eventError) {
@@ -466,7 +469,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                 tipo_evento: 'fin',
                 minuto: minutoActual,
                 equipo: 'sistema',
-                descripcion: 'Fin del partido'
+                descripcion: stampEventAudit('Fin del partido', profile)
             });
 
         if (eventError) {
@@ -493,6 +496,7 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                 minuto: minutoActual,
                 equipo: nuevoEvento.equipo,
                 jugador_id: nuevoEvento.jugador_id,
+                descripcion: stampEventAudit(null, profile)
             });
 
         if (error) {
@@ -931,7 +935,10 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                         </span>
                                         <div className="flex-1">
                                             <p className="font-semibold text-sm">
-                                                {evento.tipo_evento.replace('_', ' ').toUpperCase()}
+                                                {(() => {
+                                                    const audit = parseEventAudit(evento.descripcion);
+                                                    return audit.texto || evento.tipo_evento.replace('_', ' ').toUpperCase();
+                                                })()}
                                             </p>
                                             {evento.jugadores && (
                                                 <p className="text-xs text-muted-foreground">
@@ -939,6 +946,15 @@ export function EditMatchModal({ match, isOpen, onClose }: EditMatchModalProps) 
                                                     {evento.jugadores.nombre}
                                                 </p>
                                             )}
+                                            {(() => {
+                                                const audit = parseEventAudit(evento.descripcion);
+                                                if (!audit.autor) return null;
+                                                return (
+                                                    <p className="text-[9px] text-primary/50 font-medium">
+                                                        ✍️ {audit.autor.nombre}
+                                                    </p>
+                                                );
+                                            })()}
                                         </div>
                                         <Badge variant={evento.equipo === 'equipo_a' ? 'default' : 'secondary'} className="text-xs">
                                             {evento.equipo === 'equipo_a' ? (match.carrera_a?.nombre || match.equipo_a) : evento.equipo === 'equipo_b' ? (match.carrera_b?.nombre || match.equipo_b) : 'Sistema'}

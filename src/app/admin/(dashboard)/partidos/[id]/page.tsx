@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { RaceControl } from "@/components/race-control";
 import { invalidateCache } from "@/lib/supabase-query";
 import { useAuth } from "@/hooks/useAuth";
-import { stampAudit, formatUltimaEdicion } from "@/lib/audit-helpers";
+import { stampAudit, formatUltimaEdicion, stampEventAudit, parseEventAudit } from "@/lib/audit-helpers";
 
 // Tipos
 type Jugador = {
@@ -29,6 +29,7 @@ type Evento = {
     tipo_evento: string;
     minuto: number;
     equipo: string;
+    descripcion?: string | null;
     periodo?: number | null;
     jugadores?: Jugador;
 };
@@ -282,7 +283,9 @@ export default function MatchControlPage() {
             .eq('partido_id', matchId)
             .order('id', { ascending: false });
 
-        if (data) setEventos(data);
+        if (data) {
+            setEventos(data);
+        }
     };
 
 
@@ -477,7 +480,7 @@ export default function MatchControlPage() {
             tipo_evento: tipo,
             minuto: minutoActual,
             equipo: 'sistema',
-            descripcion: desc,
+            descripcion: stampEventAudit(desc, profile),
             periodo: periodo
         });
         fetchEventos();
@@ -533,7 +536,8 @@ export default function MatchControlPage() {
             minuto: minutoActual,
             equipo: equipo,
             jugador_id: jugador_id,
-            periodo: periodo
+            periodo: periodo,
+            descripcion: stampEventAudit(null, profile)
         });
 
 
@@ -1636,15 +1640,31 @@ export default function MatchControlPage() {
                                                     {e.tipo_evento === 'fin' && '🏁'}
                                                 </span>
                                                 <div className="flex-1">
-                                                    <p className="font-bold text-sm capitalize mb-0.5">{e.tipo_evento.replace(/_/g, ' ').replace('punto', 'Punto')}</p>
+                                                    <p className="font-bold text-sm capitalize mb-0.5">
+                                                        {(() => {
+                                                            const audit = parseEventAudit(e.descripcion);
+                                                            return audit.texto || e.tipo_evento.replace(/_/g, ' ').replace('punto', 'Punto');
+                                                        })()}
+                                                    </p>
                                                     {e.jugadores && (
                                                         <p className="text-xs text-muted-foreground">{e.jugadores.nombre} <span className="opacity-50">#{e.jugadores.numero}</span></p>
                                                     )}
-                                                    {e.equipo !== 'sistema' && (
-                                                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mt-1">
-                                                            {e.equipo === 'equipo_a' ? (match.carrera_a?.nombre || match.equipo_a) : (match.carrera_b?.nombre || match.equipo_b)}
-                                                        </p>
-                                                    )}
+                                                    <div className="flex items-center justify-between mt-1">
+                                                        {e.equipo !== 'sistema' && (
+                                                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+                                                                {e.equipo === 'equipo_a' ? (match.carrera_a?.nombre || match.equipo_a) : (match.carrera_b?.nombre || match.equipo_b)}
+                                                            </p>
+                                                        )}
+                                                        {(() => {
+                                                            const audit = parseEventAudit(e.descripcion);
+                                                            if (!audit.autor) return null;
+                                                            return (
+                                                                <span className="text-[9px] font-bold text-primary/60 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10" title={`Añadido por: ${audit.autor.nombre} (${audit.autor.email})`}>
+                                                                    ✍️ {audit.autor.nombre.split(' ')[0]}
+                                                                </span>
+                                                            );
+                                                        })()}
+                                                    </div>
                                                 </div>
 
                                                 <button
