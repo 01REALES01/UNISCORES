@@ -5,13 +5,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { toast } from "sonner";
-import { Button, Badge } from "@/components/ui-primitives";
-import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Gauge, HandMetal, Users, X, Flame, Target, Zap, ChevronDown, Filter, History, Handshake, Loader2, LayoutGrid, Info } from "lucide-react";
+import { Button, Badge, Avatar } from "@/components/ui-primitives";
+import { Trophy, Clock, Lock, CheckCircle, AlertTriangle, ArrowLeft, TrendingUp, Gauge, HandMetal, Users, X, Flame, Target, Zap, ChevronDown, Filter, History, Handshake, Loader2, LayoutGrid, Info, Diamond, Star, Award, TrendingDown } from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
 import Link from "next/link";
 import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_BORDER } from "@/lib/constants";
 import { SportIcon } from "@/components/sport-icons";
-
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { getCurrentScore } from "@/lib/sport-scoring";
@@ -75,6 +74,158 @@ const VotePercentageBar = ({ matchId, allPredictions, teamA, teamB, sportName }:
                 <span className={cn(SPORT_ACCENT[sportName] || "text-white/60")}>{teamA.substring(0, 8).toUpperCase()} {pctA}%</span>
                 <span className="text-slate-500">Empate {pctDraw}%</span>
                 <span className={cn(SPORT_ACCENT[sportName] || "text-white/60")}>{teamB.substring(0, 8).toUpperCase()} {pctB}%</span>
+            </div>
+        </div>
+    );
+};
+
+// ─── NEW: Quiniela Header Component ───
+const QuinielaHeader = ({ user, profile, points }: { user: any, profile: any, points: number }) => {
+    return (
+        <div className="flex items-center justify-between py-6 px-1">
+            <div className="flex items-center gap-3">
+                <div className="relative">
+                    <Avatar name={profile?.full_name || user?.email} size="default" className="border-2 border-white/10 ring-2 ring-red-500/20 shadow-xl" />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-black flex items-center justify-center">
+                        <div className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                    </div>
+                </div>
+                <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Hey,</p>
+                    <p className="text-lg font-black text-white tracking-tight leading-none">
+                        {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || "Markus"}
+                    </p>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 p-1.5 pr-4 rounded-full shadow-inner group hover:bg-white/10 transition-all cursor-default">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <Diamond size={14} className="text-black fill-current" />
+                </div>
+                <div>
+                    <span className="text-lg font-black text-white tabular-nums leading-none block">{points}</span>
+                    <span className="text-[8px] font-bold text-yellow-500 uppercase tracking-tighter leading-none block">Total Puntos</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ─── NEW: Quiniela Podium Component ───
+// ─── NEW: Quiniela Podium Component ───
+const QuinielaPodium = ({ top3 }: { top3: any[] }) => {
+    // Ensure we have 3 slots even if ranking is small
+    const podiumSlots = [
+        { pos: 2, profile: top3[1], color: 'slate-400', trophy: '🥈', size: 'small' },
+        { pos: 1, profile: top3[0], color: 'yellow-400', trophy: '🥇', size: 'large' },
+        { pos: 3, profile: top3[2], color: 'orange-600', trophy: '🥉', size: 'small' }
+    ];
+
+    return (
+        <div className="flex items-end justify-center gap-4 py-10 px-2 relative min-h-[220px]">
+             {/* Background Glow */}
+             <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-red-600/5 to-transparent blur-3xl -z-10" />
+
+            {podiumSlots.map((slot, idx) => {
+                if (!slot.profile) return <div key={idx} className="flex-1" />;
+                
+                const isWinner = slot.pos === 1;
+                const accuracy = slot.profile.accuracy || 0;
+
+                return (
+                    <div key={idx} className={cn(
+                        "flex flex-col items-center flex-1 transition-all duration-700 animate-in slide-in-from-bottom",
+                        isWinner ? "pb-4 scale-110 z-10" : "opacity-80 scale-95"
+                    )} style={{ animationDelay: `${idx * 150}ms` }}>
+                        
+                        <div className="relative mb-3 group">
+                            {/* Laurel Wreath Simulation via CSS or Icons */}
+                            <div className={cn(
+                                "absolute -inset-4 border-2 rounded-full border-dashed opacity-20 group-hover:opacity-40 transition-opacity rotate-[25deg]",
+                                isWinner ? "border-yellow-400" : "border-slate-500"
+                            )} />
+                            
+                            <div className="relative">
+                                <Avatar 
+                                    name={slot.profile.display_name || slot.profile.email} 
+                                    className={cn(
+                                        "shadow-2xl transition-transform group-hover:scale-105",
+                                        isWinner ? "w-20 h-20 border-2 border-yellow-400" : "w-16 h-16 border-2 border-white/10"
+                                    )} 
+                                />
+                                
+                                {/* Rank Badge */}
+                                <div className={cn(
+                                    "absolute -bottom-2 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-xl",
+                                    slot.pos === 1 ? "bg-yellow-400 text-black border-2 border-black" :
+                                    slot.pos === 2 ? "bg-slate-300 text-black border-2 border-black" :
+                                    "bg-orange-600 text-white border-2 border-black"
+                                )}>
+                                    {slot.pos}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="text-center">
+                            <p className="text-xs font-black text-white truncate max-w-[80px]">
+                                {slot.profile.display_name?.split('@')[0] || "Invitado"}
+                            </p>
+                            <p className={cn(
+                                "text-sm font-black mt-1",
+                                isWinner ? "text-red-500" : "text-slate-500"
+                            )}>
+                                {accuracy}%
+                            </p>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+// ─── NEW: Quiniela Ranking Item ───
+const QuinielaRankingItem = ({ profile, rank, isMe }: { profile: any, rank: number, isMe: boolean }) => {
+    return (
+        <div className={cn(
+            "group relative flex items-center justify-between p-4 mb-3 rounded-[2.5rem] bg-zinc-900/40 border transition-all duration-300",
+            isMe ? "border-red-500/30 bg-red-500/5 ring-1 ring-red-500/10" : "border-white/5 hover:bg-white/5 hover:border-white/10"
+        )}>
+            <div className="flex items-center gap-4">
+                <div className="relative">
+                    <Avatar 
+                        name={profile.display_name || profile.email} 
+                        className="w-14 h-14 border border-white/10 group-hover:scale-105 transition-transform" 
+                    />
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-zinc-800 border-2 border-black flex items-center justify-center text-[10px] font-black text-white">
+                        {rank}
+                    </div>
+                </div>
+                
+                <div className="space-y-0.5">
+                    <p className="font-black text-sm text-white flex items-center gap-1.5">
+                        {profile.display_name?.split('@')[0] || "Usuario"}
+                        {isMe && <Badge className="bg-red-500/20 text-red-400 border-0 text-[8px] h-4 px-1">TÚ</Badge>}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-500/20 flex items-center justify-center">
+                            <Users size={8} className="text-blue-500" />
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate max-w-[120px]">
+                            {profile.email?.split('@')[0] || "Uninorte"}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="text-right pr-2">
+                <p className="text-lg font-black text-white tabular-nums leading-none">
+                    {profile.accuracy || 0}<span className="text-[10px] ml-0.5 text-slate-500">%</span>
+                </p>
+                <div className="flex items-center justify-end gap-1 mt-1">
+                    <TrendingUp size={10} className="text-emerald-500" />
+                    <span className="text-[9px] font-black text-emerald-500 tabular-nums uppercase">Top {rank}</span>
+                </div>
             </div>
         </div>
     );
@@ -164,214 +315,207 @@ const PredictionCard = ({
     };
 
     return (
-        <div className={cn("relative p-5 rounded-3xl border transition-all duration-500 overflow-hidden group", getCardStyle())}>
-            {/* Subtle gradient overlay for finished + correct */}
-            {isFinished && predictionCorrect === true && (
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
-            )}
-            {isFinished && predictionCorrect === false && (
-                <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
-            )}
-
-            {/* Lock icon */}
-            {isLocked && !isFinished && !isLive && (
-                <div className="absolute top-3 right-3 text-white/40 bg-black/40 p-1.5 rounded-full backdrop-blur-sm z-10">
-                    <Lock size={12} />
+        <div className={cn(
+            "relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden group",
+            getCardStyle()
+        )}>
+            {/* Visual Accents */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            
+            {/* Header: Sport & Status */}
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
+                        <SportIcon sport={match.disciplinas?.name} size={14} className="opacity-80" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-0.5">
+                            {match.disciplinas?.name}
+                        </p>
+                        <p className="text-[9px] font-bold text-white/40 uppercase tracking-tight leading-none tabular-nums">
+                            {new Date(match.fecha).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} • {new Date(match.fecha).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false })}
+                        </p>
+                    </div>
                 </div>
-            )}
 
-            {/* Header: Sport + Date + Status */}
-            <div className="relative flex justify-between items-center mb-4 pb-3 border-b border-white/5">
-                <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-white/60 uppercase">
-                    <SportIcon sport={match.disciplinas?.name} size={16} className="text-current opacity-70" />
-                    <span>{new Date(match.fecha).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                    <span className="mx-0.5">•</span>
-                    <span>{new Date(match.fecha).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
                 <div className="flex items-center gap-2">
-                    {isLive && (
-                        <Badge className="bg-rose-500/15 text-rose-400 border-rose-500/20 text-[9px] px-2 py-0.5 animate-pulse">
-                            <Zap size={8} className="mr-1 fill-current" /> EN VIVO
+                    {isLive ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]">
+                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                            <span className="text-[9px] font-black text-rose-400 uppercase tracking-wider">En Vivo</span>
+                        </div>
+                    ) : isFinished ? (
+                        <Badge variant={predictionCorrect ? "success" : "destructive"} className="text-[9px] font-black shadow-lg">
+                            {predictionCorrect ? "Acertado" : "Fallado"}
                         </Badge>
-                    )}
-                    {isFinished && predictionCorrect === true && (
-                        <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-[9px] px-2 py-0.5">
-                            <CheckCircle size={10} className="mr-1" /> ¡Acertaste!
-                        </Badge>
-                    )}
-                    {isFinished && predictionCorrect === false && (
-                        <Badge className="bg-rose-500/15 text-rose-400 border-rose-500/20 text-[9px] px-2 py-0.5">
-                            <X size={10} className="mr-1" /> Fallaste
-                        </Badge>
-                    )}
-                    {!isFinished && !isLive && isPredicted && (
-                        <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] px-2 py-0.5">
-                            <CheckCircle size={10} className="mr-1" /> Guardado
-                        </Badge>
+                    ) : (
+                        <div className="px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Próximo</span>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* Teams + Score */}
-            <div className="relative flex items-center gap-3 mb-4">
-                <div className="flex-1 text-center">
-                    <div className="w-12 h-12 mx-auto rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg font-black mb-2">
+            {/* Teams & Central Score */}
+            <div className="relative flex items-center justify-between mb-8 px-2">
+                <div className="flex flex-col items-center flex-1 max-w-[100px]">
+                    <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center text-xl font-black mb-3 shadow-2xl group-hover:scale-105 transition-transform duration-500">
                         {(match.carrera_a?.nombre || match.equipo_a).substring(0, 2).toUpperCase()}
                     </div>
-                    <p className={cn("font-bold text-xs leading-tight", isFinished && matchResult === 'A' ? "text-emerald-400" : "text-white")}>{match.carrera_a?.nombre || match.equipo_a}</p>
+                    <p className="text-[11px] font-black text-white text-center leading-tight uppercase tracking-tight">
+                        {match.carrera_a?.nombre || match.equipo_a}
+                    </p>
                 </div>
 
-                <div className="flex flex-col items-center min-w-[60px]">
+                <div className="flex flex-col items-center justify-center min-w-[80px]">
                     {(isLive || isFinished) ? (
-                        <div className="text-2xl font-black tabular-nums font-mono flex items-center gap-1.5">
-                            <span className={cn(isFinished && matchResult === 'A' ? "text-emerald-400" : "text-white")}>{scoreInfo.scoreA}</span>
-                            <span className="text-white/20">:</span>
-                            <span className={cn(isFinished && matchResult === 'B' ? "text-emerald-400" : "text-white")}>{scoreInfo.scoreB}</span>
+                        <div className="space-y-1">
+                             <div className="text-3xl font-black tabular-nums font-mono tracking-tighter text-white flex items-center gap-2">
+                                <span>{scoreInfo.scoreA}</span>
+                                <span className="opacity-20">:</span>
+                                <span>{scoreInfo.scoreB}</span>
+                            </div>
+                            <p className="text-[8px] font-black text-center text-slate-500 uppercase tracking-[0.2em]">Marcador</p>
                         </div>
                     ) : (
-                        <span className="text-lg font-black text-white/15 italic">VS</span>
+                        <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center shadow-inner mb-4">
+                            <span className="text-xs font-black text-white/20 italic">VS</span>
+                        </div>
                     )}
                 </div>
 
-                <div className="flex-1 text-center">
-                    <div className="w-12 h-12 mx-auto rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg font-black mb-2">
+                <div className="flex flex-col items-center flex-1 max-w-[100px]">
+                    <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center text-xl font-black mb-3 shadow-2xl group-hover:scale-105 transition-transform duration-500">
                         {(match.carrera_b?.nombre || match.equipo_b).substring(0, 2).toUpperCase()}
                     </div>
-                    <p className={cn("font-bold text-xs leading-tight", isFinished && matchResult === 'B' ? "text-emerald-400" : "text-white")}>{match.carrera_b?.nombre || match.equipo_b}</p>
+                    <p className="text-[11px] font-black text-white text-center leading-tight uppercase tracking-tight">
+                        {match.carrera_b?.nombre || match.equipo_b}
+                    </p>
                 </div>
             </div>
 
-            {/* Community Vote Percentages */}
-            <div className="mb-4 p-3 rounded-xl bg-black/20 border border-white/5">
-                <VotePercentageBar
-                    matchId={match.id}
-                    allPredictions={allPredictions}
-                    teamA={match.carrera_a?.nombre || match.equipo_a}
-                    teamB={match.carrera_b?.nombre || match.equipo_b}
-                    sportName={match.disciplinas?.name}
-                />
-            </div>
+            {/* Prediction Input / Display Area */}
+            <div className="bg-zinc-900/60 backdrop-blur-md rounded-[2rem] border border-white/5 p-4 shadow-inner relative overflow-hidden">
+                {isFinished || isLive ? (
+                    <div className="text-center">
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Tu Predicción</p>
+                        <div className="flex items-center justify-center gap-3">
+                             {prediction?.prediction_type === 'score' ? (
+                                <p className={cn(
+                                    "text-2xl font-black tabular-nums font-mono tracking-tight",
+                                    isFinished ? (predictionCorrect ? "text-emerald-400" : "text-rose-400") : "text-white"
+                                )}>
+                                    {prediction.goles_a} <span className="opacity-20">-</span> {prediction.goles_b}
+                                </p>
+                             ) : (
+                                <div className={cn(
+                                    "flex items-center gap-2 px-4 py-2 rounded-full border",
+                                    isFinished ? (predictionCorrect ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400") : "bg-white/5 border-white/10 text-white"
+                                )}>
+                                    <Trophy size={14} className="fill-current" />
+                                    <span className="text-xs font-black uppercase tracking-widest">
+                                        {prediction?.winner_pick === 'A' ? match.carrera_a?.nombre || match.equipo_a : 
+                                         prediction?.winner_pick === 'B' ? match.carrera_b?.nombre || match.equipo_b : 'Empate'}
+                                    </span>
+                                </div>
+                             )}
+                        </div>
+                    </div>
+                ) : !isLocked ? (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-1">
+                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">¿Cuál será el resultado?</p>
+                             <div className="flex gap-1">
+                                <button 
+                                    onClick={() => onPredict(match.id, { ...prediction, mode: 'score' })} 
+                                    className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-all", mode === 'score' ? "bg-red-500 text-white" : "bg-white/5 text-slate-500")}
+                                >
+                                    <Target size={12} />
+                                </button>
+                                <button 
+                                    onClick={() => onPredict(match.id, { ...prediction, mode: 'winner' })}
+                                    className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-all", mode === 'winner' ? "bg-red-500 text-white" : "bg-white/5 text-slate-500")}
+                                >
+                                    <Award size={12} />
+                                </button>
+                             </div>
+                        </div>
 
-            {/* Your Prediction Section */}
-            {isFinished && isPredicted ? (
-                <div className={cn(
-                    "p-3 rounded-xl border text-center",
-                    predictionCorrect
-                        ? "bg-emerald-500/10 border-emerald-500/20"
-                        : "bg-rose-500/10 border-rose-500/20"
-                )}>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu acierto</p>
-                    {prediction.prediction_type === 'score' || (prediction.goles_a !== null && prediction.goles_a !== undefined) ? (
-                        <p className={cn("text-xl font-black tabular-nums font-mono", predictionCorrect ? "text-emerald-400" : "text-rose-400")}>
-                            {prediction.goles_a} - {prediction.goles_b}
-                        </p>
-                    ) : (
-                        <p className={cn("text-sm font-black", predictionCorrect ? "text-emerald-400" : "text-rose-400")}>
-                            {prediction.winner_pick === 'A' ? `Gana ${match.carrera_a?.nombre || match.equipo_a}` : prediction.winner_pick === 'B' ? `Gana ${match.carrera_b?.nombre || match.equipo_b}` : 'Empate'}
-                        </p>
-                    )}
-                </div>
-            ) : isLive && isPredicted ? (
-                <div className="p-3 rounded-xl bg-rose-500/5 border border-rose-500/15 text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu acierto</p>
-                    {prediction.winner_pick ? (
-                        <p className="text-sm font-black text-rose-300">
-                            {prediction.winner_pick === 'A' ? `Gana ${match.carrera_a?.nombre || match.equipo_a}` : prediction.winner_pick === 'B' ? `Gana ${match.carrera_b?.nombre || match.equipo_b}` : 'Empate'}
-                        </p>
-                    ) : (
-                        <p className="text-xl font-black tabular-nums font-mono text-rose-300">
-                            {prediction.goles_a} - {prediction.goles_b}
-                        </p>
-                    )}
-                </div>
-            ) : !isLocked ? (
-                <>
-                    {/* Prediction Input */}
-                    <div className="bg-black/30 rounded-xl p-3 border border-white/5">
                         {mode === 'score' ? (
-                            <div className="flex items-center justify-center gap-3">
+                            <div className="flex items-center justify-center gap-4 py-2">
                                 <input
                                     type="number"
-                                    className="w-14 h-12 bg-white/5 border border-white/10 rounded-xl text-center font-mono text-2xl font-black focus:border-red-500 focus:bg-red-500/10 focus:ring-0 outline-none transition-all placeholder:text-white/10"
+                                    className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl text-center font-mono text-3xl font-black focus:border-red-500 focus:bg-red-500/5 focus:ring-1 focus:ring-red-500/20 outline-none transition-all placeholder:text-white/5 shadow-inner"
                                     value={scoreA}
                                     onChange={(e) => setScoreA(e.target.value)}
-                                    disabled={isLocked}
                                     placeholder="0"
                                 />
-                                <span className="text-white/50 font-black">-</span>
+                                <div className="w-4 h-1 bg-white/10 rounded-full" />
                                 <input
                                     type="number"
-                                    className="w-14 h-12 bg-white/5 border border-white/10 rounded-xl text-center font-mono text-2xl font-black focus:border-red-500 focus:bg-red-500/10 focus:ring-0 outline-none transition-all placeholder:text-white/10"
+                                    className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl text-center font-mono text-3xl font-black focus:border-red-500 focus:bg-red-500/5 focus:ring-1 focus:ring-red-500/20 outline-none transition-all placeholder:text-white/5 shadow-inner"
                                     value={scoreB}
                                     onChange={(e) => setScoreB(e.target.value)}
-                                    disabled={isLocked}
                                     placeholder="0"
                                 />
                             </div>
                         ) : (
                             <div className="grid grid-cols-3 gap-2">
-                                <button
-                                    onClick={() => setWinnerPick('A')}
-                                    disabled={isLocked}
-                                    className={cn(
-                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
-                                        winnerPick === 'A'
-                                            ? [SPORT_ACCENT[match.disciplinas?.name] || "bg-white/10 text-white", "border-current shadow-lg scale-[1.03] bg-white/5"]
-                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
-                                    )}
-                                >
-                                    Gana<br />{(match.carrera_a?.nombre || match.equipo_a).substring(0, 8)}
-                                </button>
-                                <button
-                                    onClick={() => setWinnerPick('DRAW')}
-                                    disabled={isLocked}
-                                    className={cn(
-                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
-                                        winnerPick === 'DRAW'
-                                            ? "bg-white/10 border-slate-400 text-white shadow-lg scale-[1.03]"
-                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
-                                    )}
-                                >
-                                    Empate
-                                </button>
-                                <button
-                                    onClick={() => setWinnerPick('B')}
-                                    disabled={isLocked}
-                                    className={cn(
-                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
-                                        winnerPick === 'B'
-                                            ? [SPORT_ACCENT[match.disciplinas?.name] || "bg-white/10 text-white", "border-current shadow-lg scale-[1.03] bg-white/5"]
-                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
-                                    )}
-                                >
-                                    Gana<br />{(match.carrera_b?.nombre || match.equipo_b).substring(0, 8)}
-                                </button>
+                                {[
+                                    { key: 'A', name: (match.carrera_a?.nombre || match.equipo_a) },
+                                    { key: 'DRAW', name: 'Empate' },
+                                    { key: 'B', name: (match.carrera_b?.nombre || match.equipo_b) }
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.key}
+                                        onClick={() => setWinnerPick(opt.key)}
+                                        className={cn(
+                                            "relative group/btn py-4 px-2 rounded-2xl text-[9px] font-black tracking-widest transition-all border-2 uppercase",
+                                            winnerPick === opt.key
+                                                ? "bg-red-500/10 border-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                                                : "bg-white/5 border-transparent text-slate-500 hover:bg-white/10 hover:text-white"
+                                        )}
+                                    >
+                                        <div className="truncate">{opt.name.substring(0, 10)}</div>
+                                        {winnerPick === opt.key && <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-zinc-900" />}
+                                    </button>
+                                ))}
                             </div>
                         )}
-                    </div>
-
-                    {/* Save Button */}
-                    <div className="mt-4">
+                        
                         <Button
-                            size="sm"
                             className={cn(
-                                "w-full rounded-xl text-xs font-black tracking-wide transition-all h-11",
-                                isPredicted
-                                    ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 shadow-lg shadow-red-500/20"
-                                    : "bg-white hover:bg-slate-200 text-black"
+                                "w-full rounded-2xl h-12 text-[11px] font-black uppercase tracking-[0.2em] transition-all",
+                                isPredicted 
+                                    ? "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 shadow-xl shadow-red-600/20"
+                                    : "bg-white text-black hover:bg-slate-200"
                             )}
                             onClick={handleSave}
                             disabled={mode === 'score' ? (scoreA === "" || scoreB === "") : (!winnerPick)}
                         >
-                            {isPredicted ? (
-                                <><Target size={14} className="mr-2" /> Actualizar Acierto</>
-                            ) : (
-                                <><Flame size={14} className="mr-2" /> Guardar Acierto</>
-                            )}
+                            {isPredicted ? <><History size={14} className="mr-2" /> Actualizar Predicción</> : <><Zap size={14} className="mr-2" /> Guardar Acierto</>}
                         </Button>
                     </div>
-                </>
-            ) : null}
+                ) : (
+                    <div className="py-4 text-center opacity-40 grayscale flex flex-col items-center gap-2">
+                        <Lock size={20} />
+                        <p className="text-[10px] font-black uppercase tracking-widest">Predicciones Cerradas</p>
+                    </div>
+                )}
+            </div>
+            
+            {/* Percentage Bar simplified at bottom */}
+            {!isFinished && (
+                <div className="mt-4 px-1">
+                    <VotePercentageBar
+                        matchId={match.id}
+                        allPredictions={allPredictions}
+                        teamA={match.carrera_a?.nombre || match.equipo_a}
+                        teamB={match.carrera_b?.nombre || match.equipo_b}
+                        sportName={match.disciplinas?.name}
+                    />
+                </div>
+            )}
         </div>
     );
 };
@@ -390,6 +534,8 @@ export default function QuinielaPage() {
     const [viewFilter, setViewFilter] = useState<'upcoming' | 'live' | 'finished' | 'all'>('upcoming');
     const [sportFilter, setSportFilter] = useState<string>('todos');
     const [showDisclaimer, setShowDisclaimer] = useState(false);
+    const [userPublicProfile, setUserPublicProfile] = useState<any>(null);
+    const userPoints = userPublicProfile?.points || 0;
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -403,17 +549,19 @@ export default function QuinielaPage() {
         const fetchData = async () => {
             setLoading(true);
 
-            const [matchesRes, predsRes, allPredsRes, rankingRes] = await Promise.all([
+            const [matchesRes, predsRes, allPredsRes, rankingRes, userPubRes] = await Promise.all([
                 safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)').order('fecha', { ascending: true }), 'quiniela-matches'),
                 safeQuery(supabase.from('pronosticos').select('*').eq('user_id', user.id), 'quiniela-preds'),
                 safeQuery(supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'), 'quiniela-allPreds'),
                 safeQuery(supabase.from('public_profiles').select('*').order('points', { ascending: false }).limit(50), 'quiniela-ranking'),
+                safeQuery(supabase.from('public_profiles').select('*').eq('id', user.id).single(), 'user-public-profile'),
             ]);
 
             if (matchesRes.data) setMatches(matchesRes.data);
             if (predsRes.data) setPredictions(predsRes.data);
             if (allPredsRes.data) setAllPredictions(allPredsRes.data);
             if (rankingRes.data) setRanking(rankingRes.data);
+            if (userPubRes.data) setUserPublicProfile(userPubRes.data);
 
             setLoading(false);
         };
@@ -534,7 +682,12 @@ export default function QuinielaPage() {
     );
 
     return (
-        <div className="min-h-screen bg-black text-white font-sans pb-20">
+        <div className="min-h-screen bg-[#0a0816] text-white font-sans pb-20 selection:bg-indigo-500/30">
+            {/* Ambient Background Gradient */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+            </div>
             {/* Modal Disclaimer */}
             {showDisclaimer && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
@@ -561,7 +714,7 @@ export default function QuinielaPage() {
 
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
-            <div className="max-w-xl mx-auto p-4 space-y-6">
+            <div className="max-w-xl mx-auto p-4 space-y-6 relative z-10">
 
                 {/* Stats Row */}
                 <div className="grid grid-cols-3 gap-3">
@@ -937,52 +1090,48 @@ export default function QuinielaPage() {
                         )}
                     </div>
                 ) : (
-                    /* ─── RANKING TAB ─── */
-                    <div className="bg-white/[0.02] rounded-3xl border border-white/5 overflow-hidden">
-                        <div className="p-6 bg-gradient-to-r from-red-600/10 to-orange-600/5 border-b border-red-600/10 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-red-600/25">
-                                <Trophy size={24} strokeWidth={2.5} />
-                            </div>
-                            <div>
-                                <h2 className="font-black text-xl bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent tracking-tight">TABLA DE LÍDERES</h2>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Top Analistas Uninorte</p>
-                            </div>
-                        </div>
+                    /* ─── RANKING TAB (REDESIGN) ─── */
+                    <div className="space-y-6 animate-in fade-in duration-700">
+                        {/* Header del Usuario */}
+                        <QuinielaHeader user={user} profile={profile} points={userPoints} />
 
-                        <div className="divide-y divide-white/5">
-                            {ranking.length === 0 ? (
-                                <div className="p-12 text-center text-slate-500">
-                                    <Trophy size={32} className="mx-auto mb-3 opacity-20" />
-                                    <p className="text-sm font-medium">Aún no hay ranking</p>
-                                </div>
+                        {/* Contenedor Principal del Ranking */}
+                        <div className="bg-zinc-950/20 backdrop-blur-xl rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl">
+                            {/* Podio Visual */}
+                            {ranking.length > 0 ? (
+                                <QuinielaPodium top3={ranking.slice(0, 3)} />
                             ) : (
-                                ranking.map((profile, idx) => (
-                                    <div key={profile.id} className={cn(
-                                        "flex items-center justify-between p-4 hover:bg-white/5 transition-all group",
-                                        profile.id === user?.id && "bg-red-500/5 border-l-2 border-l-red-500"
-                                    )}>
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn(
-                                                "w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-transform group-hover:scale-110",
-                                                idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-600 text-black shadow-lg shadow-yellow-500/20' :
-                                                    idx === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-black shadow-lg' :
-                                                        idx === 2 ? 'bg-gradient-to-br from-orange-600 to-orange-800 text-white shadow-lg' :
-                                                            'bg-white/10 text-white'
-                                            )}>
-                                                {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-sm text-white">{profile.display_name?.split('@')[0] || 'Usuario'}</p>
-                                                <p className="text-[10px] text-white/40 truncate max-w-[150px] font-medium">{profile.email}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-mono font-black text-lg text-red-400 tabular-nums">{profile.points}</span>
-                                            <span className="text-[9px] text-slate-600 font-bold uppercase">pts</span>
-                                        </div>
-                                    </div>
-                                ))
+                                <div className="py-20 text-center opacity-20">
+                                    <Trophy size={48} className="mx-auto mb-2" />
+                                    <p className="text-sm font-bold uppercase tracking-widest">Esperando Analistas</p>
+                                </div>
                             )}
+
+                            {/* Pestañas de Sub-Ranking (Estilo Referencia) */}
+                            <div className="flex items-center gap-8 px-8 py-2 border-b border-white/5 overflow-x-auto no-scrollbar">
+                                <button className="pb-4 border-b-2 border-red-500 text-white text-xs font-black uppercase tracking-widest whitespace-nowrap">Leaderboard</button>
+                                <button className="pb-4 border-b-2 border-transparent text-slate-500 text-xs font-black uppercase tracking-widest whitespace-nowrap hover:text-white transition-colors">Streaks</button>
+                                <button className="pb-4 border-b-2 border-transparent text-slate-500 text-xs font-black uppercase tracking-widest whitespace-nowrap hover:text-white transition-colors">Yield / ROI</button>
+                            </div>
+
+                            {/* Lista de Ranking */}
+                            <div className="p-4 sm:p-6 space-y-1 max-h-[600px] overflow-y-auto no-scrollbar custom-scrollbar">
+                                {ranking.length === 0 ? (
+                                    <div className="p-12 text-center text-slate-500">
+                                        <Trophy size={32} className="mx-auto mb-3 opacity-20" />
+                                        <p className="text-sm font-medium">Aún no hay ranking</p>
+                                    </div>
+                                ) : (
+                                    ranking.map((prof, idx) => (
+                                        <QuinielaRankingItem 
+                                            key={prof.id} 
+                                            profile={prof} 
+                                            rank={idx + 1} 
+                                            isMe={prof.id === user?.id} 
+                                        />
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

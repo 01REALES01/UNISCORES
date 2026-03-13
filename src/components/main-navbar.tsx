@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { HomeIcon, Calendar, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords } from "lucide-react";
+import { HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords, Calendar as CalendarIcon } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { Button } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
@@ -26,12 +26,13 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
     const getActiveIndex = () => {
         if (pathname === '/') return 0;
         if (pathname.startsWith('/calendario')) return 1;
-        if (pathname.startsWith('/noticias')) return 2;
-        if (pathname.startsWith('/mapa')) return 3;
-        if (pathname.startsWith('/medallero')) return 4;
-        if (pathname.startsWith('/quiniela')) return 5;
-        if (pathname.startsWith('/brackets')) return 6;
-        if (pathname.startsWith('/tv')) return 8;
+        if (pathname.startsWith('/partidos')) return 2;
+        if (pathname.startsWith('/noticias')) return 3;
+        if (pathname.startsWith('/mapa')) return 4;
+        if (pathname.startsWith('/medallero')) return 5;
+        if (pathname.startsWith('/quiniela')) return 6;
+        if (pathname.startsWith('/clasificacion')) return 7;
+        if (pathname.startsWith('/tv')) return 9;
         if (pathname.startsWith('/admin') && isStaff) return 9;
         return null;
     };
@@ -89,12 +90,13 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                         alwaysShowLabels={false}
                         tabs={[
                             { title: "Inicio", icon: HomeIcon },
-                            { title: "Calendario", icon: Calendar },
+                            { title: "Calendario", icon: CalendarIcon },
+                            { title: "Partidos", icon: Gamepad2 },
                             { title: "Noticias", icon: Newspaper },
                             { title: "Mapa", icon: MapPin },
                             { title: "Medallería", icon: Trophy },
                             { title: "Acierta y Gana", icon: BarChart3 },
-                            { title: "Brackets", icon: Swords },
+                            { title: "Clasificación", icon: Swords },
                             { type: "separator" },
                             { title: "TV", icon: Tv },
                             ...(isStaff ? [{ title: "Admin", icon: Shield }] : []),
@@ -102,22 +104,23 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                         onChange={(index) => {
                             if (index === 0) router.push('/');
                             if (index === 1) router.push('/calendario');
-                            if (index === 2) router.push('/noticias');
-                            if (index === 3) router.push('/mapa');
-                            if (index === 4) router.push('/medallero');
-                            if (index === 5) router.push('/quiniela');
-                            if (index === 6) router.push('/brackets');
-                            if (index === 8) window.open('/tv', '_blank');
-                            if (index === 9 && isStaff) router.push('/admin');
+                            if (index === 2) router.push('/partidos');
+                            if (index === 3) router.push('/noticias');
+                            if (index === 4) router.push('/mapa');
+                            if (index === 5) router.push('/medallero');
+                            if (index === 6) router.push('/quiniela');
+                            if (index === 7) router.push('/clasificacion');
+                            if (index === 9) window.open('/tv', '_blank');
+                            if (index === 10 && isStaff) router.push('/admin');
                         }}
                         onHover={(index) => {
                             if (index === 0) router.prefetch('/');
-                            if (index === 1) router.prefetch('/calendario');
+                            if (index === 1) router.prefetch('/partidos');
                             if (index === 2) router.prefetch('/noticias');
                             if (index === 3) router.prefetch('/mapa');
                             if (index === 4) router.prefetch('/medallero');
                             if (index === 5) router.prefetch('/quiniela');
-                            if (index === 6) router.prefetch('/brackets');
+                            if (index === 6) router.prefetch('/clasificacion');
                             if (index === 9 && isStaff) router.prefetch('/admin');
                         }}
                     />
@@ -224,15 +227,21 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                 <div className="lg:hidden absolute top-full left-0 right-0 bg-[#0a0805]/95 backdrop-blur-xl border-b border-white/10 shadow-2xl animate-in slide-in-from-top-2 fade-in duration-200">
                     <nav className="flex flex-col p-4 gap-2">
                         <Link href="/" onClick={() => setMobileMenuOpen(false)}>
-                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname === '/' ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname === '/' ? 'bg-indigo-500/10 text-indigo-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
                                 <HomeIcon size={20} />
                                 <span className="font-medium text-sm">Inicio</span>
                             </div>
                         </Link>
                         <Link href="/calendario" onClick={() => setMobileMenuOpen(false)}>
-                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/calendario') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
-                                <Calendar size={20} />
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/calendario') ? 'bg-indigo-500/10 text-indigo-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                                <CalendarIcon size={20} />
                                 <span className="font-medium text-sm">Calendario</span>
+                            </div>
+                        </Link>
+                        <Link href="/partidos" onClick={() => setMobileMenuOpen(false)}>
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/partidos') ? 'bg-indigo-500/10 text-indigo-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                                <Gamepad2 size={20} />
+                                <span className="font-medium text-sm">Partidos</span>
                             </div>
                         </Link>
                         <Link href="/noticias" onClick={() => setMobileMenuOpen(false)}>
@@ -259,10 +268,10 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                 <span className="font-medium text-sm">Acierta y Gana</span>
                             </div>
                         </Link>
-                        <Link href="/brackets" onClick={() => setMobileMenuOpen(false)}>
-                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/brackets') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+                        <Link href="/clasificacion" onClick={() => setMobileMenuOpen(false)}>
+                            <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${pathname.startsWith('/clasificacion') ? 'bg-red-500/10 text-red-500' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
                                 <Swords size={20} />
-                                <span className="font-medium text-sm">Brackets</span>
+                                <span className="font-medium text-sm">Clasificación</span>
                             </div>
                         </Link>
                         <div className="h-px bg-white/10 my-2" />

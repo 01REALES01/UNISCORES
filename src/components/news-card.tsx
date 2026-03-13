@@ -70,7 +70,7 @@ export function NewsHeroCard({ noticia }: { noticia: Noticia }) {
 
     return (
         <Link href={`/noticias/${noticia.id}`} className="group block">
-            <div className="relative h-[450px] sm:h-[520px] rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl bg-[#0a0805]">
+            <div className="relative h-[450px] sm:h-[520px] rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl bg-[#0a0816]">
                 {/* Background Image */}
                 {noticia.imagen_url ? (
                     <Image
@@ -84,8 +84,8 @@ export function NewsHeroCard({ noticia }: { noticia: Noticia }) {
                 )}
 
                 {/* Gradient Overlays for perfect contrast */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0805] via-[#0a0805]/60 to-transparent opacity-90" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0805] via-transparent to-transparent opacity-60" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0816] via-[#0a0816]/60 to-transparent opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0816] via-transparent to-transparent opacity-60" />
 
                 {/* Content */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 transform transition-transform duration-500 group-hover:-translate-y-2">
@@ -127,7 +127,7 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
         <Link href={`/noticias/${noticia.id}`} className="group block">
             <div className="flex gap-4 sm:gap-6 bg-transparent rounded-2xl p-2 sm:p-3 hover:bg-white/[0.04] transition-all duration-300 border border-transparent hover:border-white/5">
                 {/* Thumbnail */}
-                <div className="w-[110px] h-[90px] sm:w-[160px] sm:h-[120px] rounded-2xl overflow-hidden shrink-0 relative bg-[#17130D] border border-white/5 shadow-lg">
+                <div className="w-[110px] h-[90px] sm:w-[160px] sm:h-[120px] rounded-2xl overflow-hidden shrink-0 relative bg-[#1a1625] border border-white/5 shadow-lg">
                     {noticia.imagen_url ? (
                         <Image
                             src={noticia.imagen_url}

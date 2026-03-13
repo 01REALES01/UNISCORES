@@ -323,11 +323,13 @@ export default function Home() {
   const recentFinished = [...finishedMatches].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-red-500/30">
+    <div className="min-h-screen bg-[#0a0816] text-white font-sans selection:bg-indigo-500/30">
       {/* Splash Screen - Solo se muestra 1 vez */}
       <SplashScreen />
-      {/* Background Ambient Effects (Removed to keep deep black tone) */}
-      <div className="fixed inset-0 pointer-events-none z-0">
+      {/* Ambient Background Gradient */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       {/* Header / Navbar */}
@@ -345,7 +347,7 @@ export default function Home() {
               value={searchQuery}
               onChange={setSearchQuery}
               suggestions={["Buscar equipo...", "Explorar fútbol...", "Deportes Uninorte...", "Resultados de tenis...", "Natación..."]}
-              className="h-12 rounded-2xl bg-[#17130D] border border-white/10 focus-within:border-amber-500/50 focus-within:bg-white/5 focus-within:ring-4 focus-within:ring-amber-500/10 transition-all shadow-sm w-full"
+              className="h-12 rounded-2xl bg-[#1a1625] border border-white/10 focus-within:border-indigo-500/50 focus-within:bg-[#1f1b2e] focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all shadow-sm w-full"
             />
           </div>
 
@@ -361,7 +363,7 @@ export default function Home() {
                 "group relative min-w-[90px] h-20 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all duration-300 overflow-hidden shrink-0",
                 activeFilter === 'todos'
                   ? "bg-red-600 text-white border-red-600 shadow-lg scale-105"
-                  : "bg-[#17130D] border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
+                  : "bg-[#1a1625] border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
               )}
             >
               <LayoutGrid size={20} className={cn("transition-all z-10 drop-shadow-md", activeFilter === 'todos' ? 'text-white' : 'text-slate-500 group-hover:text-white')} />
@@ -405,7 +407,7 @@ export default function Home() {
                     "group relative min-w-[90px] h-20 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all duration-300 overflow-hidden shrink-0",
                     isActive
                       ? `bg-[#1f1911] ${SPORT_BORDER[sport]} text-white scale-105 ${SPORT_GLOW[sport].replace('hover:', '')} shadow-xl`
-                      : "bg-[#17130D] border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
+                      : "bg-[#1a1625] border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
                   )}
                 >
                   {/* Watermark in filter */}
@@ -521,7 +523,7 @@ export default function Home() {
             })()}
 
             {/* QUINIELA CTA BANNER */}
-            <div className="relative rounded-[2rem] overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group cursor-pointer mb-8 bg-black">
+            <div className="relative rounded-[2rem] overflow-hidden border border-indigo-500/30 shadow-[0_0_40px_rgba(99,102,241,0.15)] group cursor-pointer mb-8 bg-[#0a0816]">
               <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
               <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 to-transparent" />
 
@@ -648,92 +650,6 @@ export default function Home() {
           )}
         </section>
 
-        {/* Upcoming / Recent Section */}
-        {!hideMatches && (
-          <section className="animate-in slide-in-from-bottom-8 fade-in duration-1000 delay-100">
-            <div className="flex items-center justify-between mb-6 px-1">
-              <h2 className="text-xl font-black text-white tracking-widest flex items-center gap-2 uppercase">
-                <Calendar className="text-red-500" size={24} />
-                {activeFilter === 'todos' ? 'Encuentros' : activeFilter}
-              </h2>
-            </div>
-
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3, 4, 5, 6].map(i => <MatchCardSkeleton key={i} />)}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Mostrar Upcoming y Recent juntos si no hay filtro, o filtrados si hay */}
-                {/* Nota: la lógica original separaba upcoming y recent. Aquí simplificamos para mostrar la grilla unificada */}
-
-                {/* Próximos */}
-                {upcomingMatches.length > 0 && (
-                  <>
-                    <div className="col-span-full flex items-center gap-2 mt-2 mb-1">
-                      <Zap size={14} className="text-red-500" />
-                      <span className="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Próximos</span>
-                      <div className="flex-1 h-px bg-white/10" />
-                    </div>
-                    {[...upcomingMatches]
-                      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-                      .map(partido => (
-                        <UpcomingMatchCard key={partido.id} partido={partido} />
-                      ))}
-                  </>
-                )}
-
-                {/* Finalizados */}
-                <div id="finalizados" className="scroll-mt-24 md:scroll-mt-32" />
-                {recentFinished.length > 0 && (
-                  <>
-                    <div className="col-span-full flex items-center gap-2 mt-4 mb-1">
-                      <Calendar size={14} className="text-slate-500" />
-                      <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Finalizados</span>
-                      <div className="flex-1 h-px bg-white/10" />
-                    </div>
-                    {[...recentFinished]
-                      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-                      .map(partido => (
-                        <ResultCard key={partido.id} partido={partido} />
-                      ))}
-                  </>
-                )}
-
-                {/* Si no hay nada */}
-                {upcomingMatches.length === 0 && recentFinished.length === 0 && (
-                  <div className="col-span-full flex flex-col items-center justify-center py-12 text-center opacity-50">
-                    <Trophy size={32} className="mb-2" />
-                    <p>No hay partidos encontrados.</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* Empty State */}
-        {!hideMatches && !loading && filteredPartidos.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center animate-in zoom-in-95 duration-500">
-            <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6">
-              <Trophy size={40} className="text-slate-300" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Sin partidos encontrados</h3>
-            <p className="text-slate-500 text-sm max-w-xs mx-auto">
-              No hay eventos que coincidan con tu búsqueda en este momento.
-            </p>
-            {activeFilter !== 'todos' && (
-              <Button
-                onClick={() => setActiveFilter('todos')}
-                variant="outline"
-                className="mt-6 border-white/10 hover:bg-white/5 text-orange-400"
-              >
-                Ver todos los deportes
-              </Button>
-            )}
-          </div>
-        )}
-
         {/* Loading Skeleton */}
         {!hideMatches && loading && (
           <div className="space-y-8">
@@ -794,9 +710,9 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
   return (
     <Link href={`/partido/${partido.id}`} className="group block h-full">
       <div className={cn(
-        "relative h-full overflow-hidden rounded-[2rem] border bg-[#17130D]/80 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
+        "relative h-full overflow-hidden rounded-[2rem] border bg-[#1a1625]/80 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
         SPORT_BORDER[sportName] || 'border-white/10',
-        SPORT_GLOW[sportName] || 'hover:shadow-orange-500/10'
+        SPORT_GLOW[sportName] || 'hover:shadow-indigo-500/10'
       )}>
         {/* Glowing Background gradient */}
         <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-50 group-hover:opacity-70 transition-opacity`} />

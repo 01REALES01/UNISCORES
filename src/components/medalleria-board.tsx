@@ -7,6 +7,10 @@ import { Trophy, Medal, Crown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MedalSkeleton } from "@/components/skeletons";
 import { TeamStatsModal } from "./team-stats-modal";
+import { SPORT_EMOJI, CARRERAS_UNINORTE } from "@/lib/constants";
+import { getCarreraName } from "@/lib/sport-helpers";
+import { Button } from "./ui-primitives";
+import { Filter, Users } from "lucide-react";
 
 export type MedalEntry = {
     id: number;
@@ -38,66 +42,134 @@ export function MedalLeaderboard() {
     const [medallero, setMedallero] = useState<MedalEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedTeam, setSelectedTeam] = useState<{ team: MedalEntry, rank: number } | null>(null);
-
-    const safeIncludes = (str1?: string, str2?: string) => {
-        if (!str1 || !str2) return false;
-        const s1 = str1.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        const s2 = str2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        return s1.includes(s2) || s2.includes(s1);
-    }
+    const [activeSport, setActiveSport] = useState<string>('todos');
+    const [activeGender, setActiveGender] = useState<string>('todos');
 
     const fetchMedallero = async () => {
         setLoading(true);
 
-        const [medalRes, matchRes] = await Promise.all([
-            safeQuery(supabase.from('medallero').select('*').order('puntos', { ascending: false }).order('oro', { ascending: false }).order('plata', { ascending: false }), 'medallero'),
-            safeQuery(supabase.from('partidos').select('*, carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)').eq('estado', 'finalizado'), 'medallero-matches'),
-        ]);
+        const { data: matches, error } = await safeQuery(
+            supabase.from('partidos')
+                .select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)')
+                .eq('estado', 'finalizado'),
+            'medallero-calc'
+        );
 
-        const data = medalRes.data;
-        const matches = matchRes.data;
+        if (error || !matches) {
+            setMedallero(SAMPLE_DATA);
+            setLoading(false);
+            return;
+        }
 
-        if (data && data.length > 0) {
-            const extendedData = data.map(team => {
-                let won = 0, draw = 0, lost = 0;
-                let calculatedPoints = 0;
-                matches?.forEach(m => {
-                    const isA = safeIncludes(m.carrera_a?.nombre || m.equipo_a, team.equipo_nombre);
-                    const isB = safeIncludes(m.carrera_b?.nombre || m.equipo_b, team.equipo_nombre);
-                    if (!isA && !isB) return;
+        // Initialize Career map
+        const careerStats: Record<string, MedalEntry> = {};
+        CARRERAS_UNINORTE.forEach((name, idx) => {
+            careerStats[name] = {
+                id: idx,
+                equipo_nombre: name,
+                oro: 0,
+                plata: 0,
+                bronce: 0,
+                puntos: 0,
+                won: 0,
+                draw: 0,
+                lost: 0,
+                played: 0
+            };
+        });
 
-                    const scoreA = m.marcador_detalle?.goles_a ?? m.marcador_detalle?.sets_a ?? m.marcador_detalle?.total_a ?? m.marcador_detalle?.puntos_a ?? m.marcador_detalle?.juegos_a ?? 0;
-                    const scoreB = m.marcador_detalle?.goles_b ?? m.marcador_detalle?.sets_b ?? m.marcador_detalle?.total_b ?? m.marcador_detalle?.puntos_b ?? m.marcador_detalle?.juegos_b ?? 0;
+        // Filter and Process Matches
+        const filteredMatches = matches.filter(m => {
+            if (activeSport !== 'todos' && m.disciplinas?.name !== activeSport) return false;
+            if (activeGender !== 'todos' && (m.genero || 'masculino') !== activeGender) return false;
+            return true;
+        });
 
-                    const myScore = isA ? scoreA : scoreB;
-                    const theirScore = isA ? scoreB : scoreA;
+        filteredMatches.forEach(m => {
+            const disc = m.disciplinas?.name;
+            const det = m.marcador_detalle || {};
+            const faseNormalizada = (m.fase || '').toLowerCase().trim();
+            const isFinal = faseNormalizada === 'final';
+            const isTercero = faseNormalizada === 'tercer puesto' || faseNormalizada === 'tercer_puesto' || faseNormalizada === '3er puesto';
 
-                    if (myScore > theirScore) {
-                        won++;
-                        calculatedPoints += 3;
+            // 1. Point-based common logic (for PJ/PG/PE/PP)
+            const carreraA = getCarreraName(m, 'a');
+            const carreraB = getCarreraName(m, 'b');
+
+            const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? det.puntos_a ?? det.juegos_a ?? 0;
+            const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? det.puntos_b ?? det.juegos_b ?? 0;
+
+            if (careerStats[carreraA]) careerStats[carreraA].played!++;
+            if (careerStats[carreraB]) careerStats[carreraB].played!++;
+
+            if (scoreA > scoreB) {
+                if (careerStats[carreraA]) { careerStats[carreraA].won!++; careerStats[carreraA].puntos += 3; }
+                if (careerStats[carreraB]) careerStats[carreraB].lost!++;
+                
+                // Medals Logic (Only for sports that are NOT races, races handle it differently)
+                if (det.tipo !== 'carrera') {
+                    if (isFinal) {
+                        if (careerStats[carreraA]) careerStats[carreraA].oro++;
+                        if (careerStats[carreraB]) careerStats[carreraB].plata++;
+                    } else if (isTercero) {
+                        if (careerStats[carreraA]) careerStats[carreraA].bronce++;
                     }
-                    else if (myScore < theirScore) {
-                        lost++;
+                }
+            } else if (scoreB > scoreA) {
+                if (careerStats[carreraB]) { careerStats[carreraB].won!++; careerStats[carreraB].puntos += 3; }
+                if (careerStats[carreraA]) careerStats[carreraA].lost!++;
+
+                // Medals Logic
+                if (det.tipo !== 'carrera') {
+                    if (isFinal) {
+                        if (careerStats[carreraB]) careerStats[carreraB].oro++;
+                        if (careerStats[carreraA]) careerStats[carreraA].plata++;
+                    } else if (isTercero) {
+                        if (careerStats[carreraB]) careerStats[carreraB].bronce++;
                     }
-                    else {
-                        draw++;
-                        calculatedPoints += 1;
+                }
+            } else {
+                if (careerStats[carreraA]) { careerStats[carreraA].draw!++; careerStats[carreraA].puntos += 1; }
+                if (careerStats[carreraB]) { careerStats[carreraB].draw!++; careerStats[carreraB].puntos += 1; }
+            }
+
+            // 2. Race-specific logic (Swimming / Athletics)
+            if (det.tipo === 'carrera' && det.resultados) {
+                const results = det.resultados as any[];
+                results.forEach(res => {
+                    // Try to match the career name from the result
+                    const possibleName = res.equipo_nombre || res.equipo || res.delegacion;
+                    if (!possibleName) return;
+                    
+                    // Direct match or search in stats
+                    let matchedCareer = possibleName;
+                    if (!careerStats[matchedCareer]) {
+                        matchedCareer = Object.keys(careerStats).find(k => 
+                            k.toLowerCase().includes(possibleName.toLowerCase()) || 
+                            possibleName.toLowerCase().includes(k.toLowerCase())
+                        ) || matchedCareer;
+                    }
+
+                    if (careerStats[matchedCareer]) {
+                        if (res.puesto === 1) careerStats[matchedCareer].oro++;
+                        else if (res.puesto === 2) careerStats[matchedCareer].plata++;
+                        else if (res.puesto === 3) careerStats[matchedCareer].bronce++;
                     }
                 });
+            }
+        });
 
-                return { ...team, puntos: calculatedPoints, won, draw, lost, played: won + draw + lost };
-            });
+        // Convert to Array and Sort
+        const result = Object.values(careerStats).filter(c => c.played! > 0 || c.oro > 0 || c.plata > 0 || c.bronce > 0);
+        
+        result.sort((a, b) => {
+            if (b.oro !== a.oro) return b.oro - a.oro;
+            if (b.plata !== a.plata) return b.plata - a.plata;
+            if (b.bronce !== a.bronce) return b.bronce - a.bronce;
+            return b.puntos - a.puntos;
+        });
 
-            extendedData.sort((a, b) => {
-                if (b.puntos !== a.puntos) return b.puntos - a.puntos;
-                return (b.won || 0) - (a.won || 0);
-            });
-
-            setMedallero(extendedData);
-        } else {
-            console.log("Usando datos simulados de medallería (fallback)");
-            setMedallero(SAMPLE_DATA);
-        }
+        setMedallero(result);
         setLoading(false);
     };
 
@@ -107,10 +179,10 @@ export function MedalLeaderboard() {
         fetchMedallero();
 
         const channel = supabase
-            .channel('public:medallero')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'medallero' }, () => {
+            .channel('realtime-medallero')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
                 if (rtDebounceRef.current) clearTimeout(rtDebounceRef.current);
-                rtDebounceRef.current = setTimeout(() => fetchMedallero(), 800);
+                rtDebounceRef.current = setTimeout(() => fetchMedallero(), 1000);
             })
             .subscribe();
 
@@ -118,7 +190,7 @@ export function MedalLeaderboard() {
             if (rtDebounceRef.current) clearTimeout(rtDebounceRef.current);
             supabase.removeChannel(channel);
         };
-    }, []);
+    }, [activeSport, activeGender]);
 
     // Helper para formatear nombres largos en Avatar
     const getInitials = (name: string) => {
@@ -177,7 +249,7 @@ export function MedalLeaderboard() {
 
                 {/* Vertical Pill Base (Representa el Pilar) */}
                 <div className={cn(
-                    "w-full bg-[#17130D] rounded-[2rem] border border-white/5 flex flex-col items-center justify-end pb-6 sm:pb-8 mt-auto relative transition-colors group-hover:bg-[#1f1911] overflow-hidden",
+                    "w-full bg-[#1a1625] rounded-[2rem] border border-white/5 flex flex-col items-center justify-end pb-6 sm:pb-8 mt-auto relative transition-colors group-hover:bg-[#1f1b2e] overflow-hidden",
                     "h-[220px] sm:h-[250px]" // Static height relative to bottom
                 )}>
                     {isFirst && (
@@ -188,14 +260,24 @@ export function MedalLeaderboard() {
                     <div className="absolute top-0 inset-x-0 h-1/2 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                     <div className="relative z-10 flex flex-col items-center">
-                        <span className={cn(
-                            "font-black tabular-nums leading-none tracking-tighter text-white",
-                            isFirst ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl"
-                        )}>
-                            {entry.puntos}
-                        </span>
-                        <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white/40 mt-2">
-                            Pts
+                        <div className="flex gap-1.5 mb-2">
+                             <div className="flex flex-col items-center">
+                                <span className="text-[10px] font-black text-amber-400">🥇</span>
+                                <span className="text-xl font-black text-white">{entry.oro}</span>
+                             </div>
+                             <div className="w-[1px] h-6 bg-white/10 mx-1" />
+                             <div className="flex flex-col items-center">
+                                <span className="text-[10px] font-black text-slate-300">🥈</span>
+                                <span className="text-xl font-black text-white">{entry.plata}</span>
+                             </div>
+                             <div className="w-[1px] h-6 bg-white/10 mx-1" />
+                             <div className="flex flex-col items-center">
+                                <span className="text-[10px] font-black text-amber-700">🥉</span>
+                                <span className="text-xl font-black text-white">{entry.bronce}</span>
+                             </div>
+                        </div>
+                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/30">
+                            Medallas de Torneo
                         </span>
                     </div>
                 </div>
@@ -221,23 +303,83 @@ export function MedalLeaderboard() {
     }
 
     return (
-        <section className="relative overflow-hidden rounded-[1rem] sm:rounded-[2.5rem] bg-[#0a0805] shadow-2xl pb-6">
+        <section className="relative overflow-hidden rounded-[1rem] sm:rounded-[2.5rem] bg-[#0a0816] shadow-2xl pb-6">
             {/* Ambient Background Glows */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-[400px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none" />
 
-            {/* Header */}
-            <div className="relative z-10 p-6 sm:p-10 border-b border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6 mb-8">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-red-600 text-white shadow-lg shadow-red-600/20">
-                        <Trophy className="w-8 h-8" />
+            {/* Header & Filters */}
+            <div className="relative z-10 p-6 sm:p-10 border-b border-white/5 space-y-8">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-2xl bg-gradient-to-br from-red-600 to-orange-600 text-white shadow-xl shadow-red-600/20">
+                            <Trophy className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tighter uppercase italic leading-none">
+                                Medallería Oficial
+                            </h2>
+                            <p className="text-[10px] sm:text-xs font-bold text-white/40 uppercase tracking-[0.2em] mt-2">
+                                Ranking por Medallas de Oro
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tighter uppercase italic">
-                            Leaderboard General
-                        </h2>
-                        <p className="text-xs sm:text-sm font-bold text-white/50 uppercase tracking-widest">
-                            Olimpiadas Oficiales
-                        </p>
+                </div>
+
+                {/* Filters Row */}
+                <div className="flex flex-col lg:flex-row gap-4">
+                    {/* Gender Selection */}
+                    <div className="flex p-1 bg-white/[0.03] border border-white/5 rounded-2xl shrink-0">
+                        {[
+                            { id: 'todos', label: 'Todos', icon: <Users size={14}/> },
+                            { id: 'masculino', label: '♂ Más', icon: '♂' },
+                            { id: 'femenino', label: '♀ Fem', icon: '♀' },
+                            { id: 'mixto', label: '⚤ Mix', icon: '⚤' },
+                        ].map(g => (
+                            <button
+                                key={g.id}
+                                onClick={() => setActiveGender(g.id)}
+                                className={cn(
+                                    "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                                    activeGender === g.id 
+                                        ? "bg-red-600 text-white shadow-lg shadow-red-600/30" 
+                                        : "text-white/40 hover:text-white hover:bg-white/5"
+                                )}
+                            >
+                                <span className="text-sm">{g.icon}</span>
+                                <span className="hidden sm:inline">{g.label}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Discipline Tabs */}
+                    <div className="flex-1 flex gap-2 overflow-x-auto no-scrollbar p-1 bg-white/[0.03] border border-white/5 rounded-2xl">
+                        <button
+                            onClick={() => setActiveSport('todos')}
+                            className={cn(
+                                "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                                activeSport === 'todos' 
+                                    ? "bg-white/10 text-white border border-white/10 shadow-xl" 
+                                    : "text-white/30 hover:text-white hover:bg-white/5"
+                            )}
+                        >
+                            <Filter size={14} />
+                            General
+                        </button>
+                        {Object.entries(SPORT_EMOJI).map(([name, emoji]) => (
+                            <button
+                                key={name}
+                                onClick={() => setActiveSport(name)}
+                                className={cn(
+                                    "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                                    activeSport === name 
+                                        ? "bg-gradient-to-r from-red-600 to-red-800 text-white shadow-lg" 
+                                        : "text-white/30 hover:text-white hover:bg-white/5"
+                                )}
+                            >
+                                <span className="text-lg">{emoji}</span>
+                                <span>{name}</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -260,7 +402,7 @@ export function MedalLeaderboard() {
                             <div
                                 key={entry.id}
                                 onClick={() => setSelectedTeam({ team: entry, rank: idx + 1 })}
-                                className="flex bg-[#17130D] border border-white/5 hover:border-white/20 transition-all duration-300 group cursor-pointer shadow-lg"
+                                className="flex bg-[#1a1625] border border-white/5 hover:border-white/20 transition-all duration-300 group cursor-pointer shadow-lg"
                                 style={{ height: '120px' }}
                             >
                                 {/* Avatar Column */}
@@ -293,37 +435,50 @@ export function MedalLeaderboard() {
                                     </div>
 
                                     {/* Stats matching the image */}
-                                    <div className="flex gap-4 sm:gap-10 mt-auto items-end">
-                                        <div className="flex flex-col gap-0.5 min-w-[36px]">
-                                            <span className="text-[8px] sm:text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none">Gan</span>
-                                            <span className="text-xs sm:text-sm font-black text-[#FFC000]/90 leading-none tabular-nums" style={{ color: '#FFC000' }}>
-                                                {(entry.won || 0).toString().padStart(2, '0')}
+                                    {/* Stats: Medals Row */}
+                                    <div className="flex gap-6 sm:gap-10 mt-auto items-end">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-amber-400/10 flex items-center justify-center text-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.2)]">
+                                                <Medal size={14} />
+                                            </div>
+                                            <span className="text-base sm:text-xl font-black text-white tabular-nums">
+                                                {entry.oro.toString().padStart(2, '0')}
                                             </span>
                                         </div>
-                                        <div className="flex flex-col gap-0.5 min-w-[36px]">
-                                            <span className="text-[8px] sm:text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none">Emp</span>
-                                            <span className="text-xs sm:text-sm font-black text-slate-300/90 leading-none tabular-nums" style={{ color: '#dcc62e' }}>
-                                                {(entry.draw || 0).toString().padStart(2, '0')}
+                                        <div className="flex items-center gap-2 opacity-60">
+                                            <div className="w-6 h-6 rounded-full bg-slate-300/10 flex items-center justify-center text-slate-300">
+                                                <Medal size={14} />
+                                            </div>
+                                            <span className="text-sm sm:text-base font-black text-white tabular-nums">
+                                                {entry.plata.toString().padStart(2, '0')}
                                             </span>
                                         </div>
-                                        <div className="flex flex-col gap-0.5 min-w-[36px]">
-                                            <span className="text-[8px] sm:text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none">Per</span>
-                                            <span className="text-xs sm:text-sm font-black text-orange-600/90 leading-none tabular-nums" style={{ color: '#e84a4a' }}>
-                                                {(entry.lost || 0).toString().padStart(2, '0')}
+                                        <div className="flex items-center gap-2 opacity-60">
+                                            <div className="w-6 h-6 rounded-full bg-amber-700/10 flex items-center justify-center text-amber-700">
+                                                <Medal size={14} />
+                                            </div>
+                                            <span className="text-sm sm:text-base font-black text-white tabular-nums">
+                                                {entry.bronce.toString().padStart(2, '0')}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Total Points Box (Right Column) */}
+                                {/* Total Points Box (Right Column) - Now shows Total Medals or Points as tiebreaker */}
                                 <div className="w-[80px] sm:w-[130px] shrink-0 border-l border-white/5 flex flex-col items-center justify-center bg-black/60 group-hover:bg-[#111111] transition-colors relative">
                                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-red-600/5" />
-                                    <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none mb-1 tabular-nums drop-shadow-lg relative z-10">
-                                        {entry.puntos}
-                                    </span>
-                                    <span className="text-[9px] sm:text-[11px] font-bold text-white/30 uppercase tracking-widest pt-1 relative z-10">
-                                        Total
-                                    </span>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none mb-1 tabular-nums drop-shadow-lg relative z-10">
+                                            {entry.oro + entry.plata + entry.bronce}
+                                        </span>
+                                        <span className="text-[7px] sm:text-[9px] font-black text-white/30 uppercase tracking-[0.2em] pt-1 relative z-10">
+                                            Total Medals
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="mt-2 text-[9px] font-bold text-red-500/60 font-mono">
+                                        {entry.puntos} PTS
+                                    </div>
                                 </div>
                             </div>
                         );

@@ -140,6 +140,7 @@ export default function MatchControlPage() {
     const [isEditingScore, setIsEditingScore] = useState(false);
     const [confirmingDeletion, setConfirmingDeletion] = useState<Evento | null>(null);
     const [deletingEventId, setDeletingEventId] = useState<number | null>(null);
+    const [activeEditors, setActiveEditors] = useState<any[]>([]);
 
     // Edición Avanzada — Todos los deportes
     const [showAdvancedEdit, setShowAdvancedEdit] = useState(false);
@@ -201,7 +202,10 @@ export default function MatchControlPage() {
 
         const { error } = await supabase
             .from('partidos')
-            .update({ marcador_detalle: auditDetalle(finalDetalle) })
+            .update({ 
+                marcador_detalle: auditDetalle(finalDetalle),
+                last_edited_by: profile?.id
+            })
             .eq('id', matchId);
 
         if (error) {
@@ -217,10 +221,72 @@ export default function MatchControlPage() {
         }
     };
 
-    // 1. Cargar Datos Iniciales
+    // 1. Cargar Datos Iniciales & Presence
     useEffect(() => {
         fetchMatchDetails();
-    }, [matchId]);
+
+        // Presencia en tiempo real
+        if (profile) {
+            const sessionId = Math.random().toString(36).substring(7); // ID de sesión único por pestaña
+            const channel = supabase.channel(`match-presence-${matchId}`, {
+                config: {
+                    presence: {
+                        key: `${profile.id}-${sessionId}`,
+                    },
+                },
+            });
+
+            channel
+                .on('presence', { event: 'sync' }, () => {
+                    const state = channel.presenceState();
+                    const editors = Object.values(state).flat();
+                    // Filtrar solo MI sesión actual, pero permitir ver OTRAS sesiones mías (en otras pestañas)
+                    setActiveEditors(editors.filter((e: any) => e.session_id !== sessionId));
+                })
+                .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+                    const otherSession = newPresences.find((p: any) => p.session_id !== sessionId);
+                    if (otherSession) {
+                        toast.info(`${otherSession.user_name || 'Alguien'} se ha unido a la edición`);
+                    }
+                })
+                .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+                    // Logic for leave if needed
+                })
+                .on('postgres_changes', { 
+                    event: 'UPDATE', 
+                    schema: 'public', 
+                    table: 'partidos',
+                    filter: `id=eq.${matchId}`
+                }, (payload: any) => {
+                    console.log('🔄 Sincronización Realtime - Cambio detectado:', payload.new);
+                    setMatch((prev: any) => {
+                        if (!prev) return payload.new;
+                        return { ...prev, ...payload.new };
+                    });
+                    
+                    if (payload.new.marcador_detalle) {
+                        const newDetalle = payload.new.marcador_detalle;
+                        if (newDetalle.estado_cronometro === 'corriendo') setCronometroActivo(true);
+                        else if (newDetalle.estado_cronometro === 'pausado' || newDetalle.estado_cronometro === 'detenido') setCronometroActivo(false);
+                        if (newDetalle.minuto_actual !== undefined) setMinutoActual(newDetalle.minuto_actual);
+                    }
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        await channel.track({
+                            user_id: profile.id,
+                            session_id: sessionId,
+                            user_name: profile.full_name || profile.email,
+                            online_at: new Date().toISOString(),
+                        });
+                    }
+                });
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
+        }
+    }, [matchId, profile]);
 
     // 2. Cronómetro (Lógica de servidor - cada 60s)
     useEffect(() => {
@@ -291,7 +357,7 @@ export default function MatchControlPage() {
 
     // Funciones de Acción
     const actualizarMinutoEnDB = async (minuto: number) => {
-        if (!match) return;
+        if (!match || !profile) return;
         // IMPORTANT: Fetch the LATEST marcador_detalle from DB to avoid
         // overwriting score changes made between timer ticks (stale closure bug)
         const { data: freshMatch } = await supabase
@@ -308,10 +374,13 @@ export default function MatchControlPage() {
             ultimo_update: new Date().toISOString()
         };
         await supabase.from('partidos')
-            .update({ marcador_detalle: nuevoDetalle })
+            .update({ 
+                marcador_detalle: nuevoDetalle,
+                last_edited_by: profile.id
+            })
             .eq('id', matchId);
         // Keep local state in sync
-        setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoDetalle }));
+        setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoDetalle, last_edited_by: profile.id }));
     };
 
 
@@ -357,7 +426,10 @@ export default function MatchControlPage() {
                 invalidateCache('admin-partidos');
                 registrarEventoSistema('inicio', 'Inicio del partido');
             } else {
-                const { error } = await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoDetalle) }).eq('id', matchId);
+            const { error } = await supabase.from('partidos').update({
+                marcador_detalle: auditDetalle(nuevoDetalle),
+                last_edited_by: profile?.id
+            }).eq('id', matchId);
                 if (error) throw error;
                 setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoDetalle }));
             }
@@ -410,7 +482,10 @@ export default function MatchControlPage() {
                 nuevoMarcador.estado_cronometro = 'pausado'; // Forzar pausa en DB
                 nuevoMarcador.ultimo_update = new Date().toISOString();
 
-                const { error } = await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
+                const { error } = await supabase.from('partidos').update({ 
+                    marcador_detalle: auditDetalle(nuevoMarcador),
+                    last_edited_by: profile?.id
+                }).eq('id', matchId);
                 if (error) throw error;
 
                 setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
@@ -456,7 +531,8 @@ export default function MatchControlPage() {
             .from('partidos')
             .update({
                 estado: 'finalizado',
-                marcador_detalle: nuevoDetalle
+                marcador_detalle: nuevoDetalle,
+                last_edited_by: profile?.id
             })
             .eq('id', matchId);
 
@@ -611,7 +687,10 @@ export default function MatchControlPage() {
                     });
 
                     const nuevoMarcador = { ...currentDetalle, resultados: nuevosResultados };
-                    await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
+                    await supabase.from('partidos').update({ 
+                        marcador_detalle: auditDetalle(nuevoMarcador),
+                        last_edited_by: profile?.id
+                    }).eq('id', matchId);
                     setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
                 }
             }
@@ -627,7 +706,10 @@ export default function MatchControlPage() {
                     puntos
                 );
 
-                await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
+                await supabase.from('partidos').update({ 
+                    marcador_detalle: auditDetalle(nuevoMarcador),
+                    last_edited_by: profile?.id
+                }).eq('id', matchId);
                 setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
             } else {
                 // For non-scoring events (tarjetas, cambios, faltas), just sync local state
@@ -672,7 +754,10 @@ export default function MatchControlPage() {
                 puntos
             );
 
-            await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
+            await supabase.from('partidos').update({ 
+                marcador_detalle: auditDetalle(nuevoMarcador),
+                last_edited_by: profile?.id
+            }).eq('id', matchId);
             setMatch((prev: any) => ({ ...prev, marcador_detalle: nuevoMarcador }));
         }
 
@@ -771,17 +856,47 @@ export default function MatchControlPage() {
                         </div>
                     </div>
 
-                    {/* Audit: Last Edited By */}
-                    {(() => {
-                        const auditInfo = formatUltimaEdicion(match.marcador_detalle);
-                        if (!auditInfo) return null;
-                        return (
-                            <div className="flex items-center gap-2 mb-4 text-white/50 text-[11px]" title={`Editado: ${auditInfo.fecha}`}>
-                                <Edit2 size={12} />
-                                <span>Última edición por <strong className="text-white/70">{auditInfo.nombre}</strong> · {auditInfo.relativo}</span>
+                    {/* Presence & Audit: Last Edited By */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        {/* Last Edit Info */}
+                        {(() => {
+                            const auditInfo = formatUltimaEdicion(match.marcador_detalle);
+                            if (!auditInfo) return <div />;
+                            return (
+                                <div className="flex items-center gap-2 text-white/50 text-[11px]" title={`Editado: ${auditInfo.fecha}`}>
+                                    <div className="p-1 px-2 rounded-full bg-white/5 border border-white/5 flex items-center gap-1.5">
+                                        <Edit2 size={10} className="text-primary" />
+                                        <span>Última edición por <strong className="text-white/70">{auditInfo.nombre}</strong> · {auditInfo.relativo}</span>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Presence: Who else is here? */}
+                        {activeEditors.length > 0 && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 animate-in fade-in slide-in-from-right-4">
+                                <div className="flex -space-x-2">
+                                    {activeEditors.slice(0, 3).map((editor, i) => (
+                                        <div key={i} className="w-5 h-5 rounded-full bg-emerald-600 border border-[#17130D] flex items-center justify-center text-[8px] font-black" title={editor.user_name}>
+                                            {editor.user_name?.substring(0, 1).toUpperCase()}
+                                        </div>
+                                    ))}
+                                    {activeEditors.length > 3 && (
+                                        <div className="w-5 h-5 rounded-full bg-zinc-800 border border-[#17130D] flex items-center justify-center text-[8px] font-black">
+                                            +{activeEditors.length - 3}
+                                        </div>
+                                    )}
+                                </div>
+                                <span className="text-[10px] font-bold text-emerald-400">
+                                    {activeEditors.length === 1 ? '1 editor activo' : `${activeEditors.length} editores activos`}
+                                </span>
+                                <span className="relative flex h-1.5 w-1.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                </span>
                             </div>
-                        );
-                    })()}
+                        )}
+                    </div>
 
                     {/* Scoreboard Control Center */}
                     {match.marcador_detalle?.tipo === 'carrera' ? (

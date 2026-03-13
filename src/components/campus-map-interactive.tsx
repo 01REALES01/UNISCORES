@@ -33,12 +33,24 @@ type Match = {
 
 interface CampusMapInteractiveProps {
     matches: Match[];
+    onVenueSelect?: (venueName: string | null) => void;
+    externalSelectedVenue?: string | null;
 }
 
-export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
-    const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
+export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedVenue }: CampusMapInteractiveProps) {
+    const [internalSelectedVenue, setInternalSelectedVenue] = useState<string | null>(null);
+    const selectedVenue = externalSelectedVenue !== undefined ? externalSelectedVenue : internalSelectedVenue;
+    
     const [calibrationMode, setCalibrationMode] = useState(false);
     const transformComponentRef = useRef<ReactZoomPanPinchRef | null>(null);
+
+    // Sync internal state if needed, or just use the derived one
+    const handleSetSelectedVenue = (name: string | null) => {
+        if (externalSelectedVenue === undefined) {
+            setInternalSelectedVenue(name);
+        }
+        onVenueSelect?.(name);
+    };
 
     // Agrupar partidos por lugar
     const venueMatches = useMemo(() => {
@@ -66,7 +78,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
 
     const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!calibrationMode) {
-            setSelectedVenue(null); // Click outside pin closes card
+            handleSetSelectedVenue(null); // Click outside pin closes card
             return;
         }
 
@@ -183,7 +195,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                                     style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
                                     onClick={(e) => {
                                         e.stopPropagation(); // Don't trigger map click
-                                        if (!calibrationMode) setSelectedVenue(venueName === selectedVenue ? null : venueName);
+                                        if (!calibrationMode) handleSetSelectedVenue(venueName === selectedVenue ? null : venueName);
                                     }}
                                 >
                                     {/* Pulse Effect for Live Matches */}
@@ -221,7 +233,7 @@ export function CampusMapInteractive({ matches }: CampusMapInteractiveProps) {
                                                     <h4 className="font-bold text-sm text-white flex items-center gap-2">
                                                         <MapPin size={14} className="text-[#FFC000]" /> {venueName}
                                                     </h4>
-                                                    <button onClick={() => setSelectedVenue(null)} className="text-zinc-500 hover:text-white">
+                                                    <button onClick={() => handleSetSelectedVenue(null)} className="text-zinc-500 hover:text-white">
                                                         <span className="sr-only">Cerrar</span>
                                                         &times;
                                                     </button>

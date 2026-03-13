@@ -16,7 +16,7 @@ const GENDERS = [
     { label: 'Femenino', value: 'femenino', icon: '♀', color: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
 ] as const;
 
-export default function BracketsPage() {
+export default function ClasificacionPage() {
     const { user, profile, isStaff } = useAuth();
     const { matches, loading } = useMatches();
 
@@ -54,11 +54,11 @@ export default function BracketsPage() {
     const accent = SPORT_ACCENT[selectedSport] || 'text-amber-400';
 
     return (
-        <div className="min-h-screen bg-black text-white selection:bg-red-500/30">
-            {/* Ambient Background */}
+        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-indigo-500/30 font-sans">
+            {/* Ambient Background Gradient */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-red-600/8 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-amber-600/5 rounded-full blur-[100px]" />
+                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
             </div>
 
             {/* Navbar */}
@@ -70,7 +70,7 @@ export default function BracketsPage() {
                     <div className="flex items-center gap-3 mb-2">
                         <Swords className={cn("w-6 h-6", accent)} />
                         <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-                            Brackets & Grupos
+                            Clasificación & Grupos
                         </h1>
                     </div>
                     <p className="text-white/40 text-sm max-w-lg">
@@ -119,14 +119,14 @@ export default function BracketsPage() {
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-24">
                         <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-                        <p className="text-white/30 text-xs mt-4 uppercase tracking-widest font-bold">Cargando brackets...</p>
+                        <p className="text-white/30 text-xs mt-4 uppercase tracking-widest font-bold">Cargando clasificación...</p>
                     </div>
                 ) : filteredMatches.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                         <Trophy size={56} className="text-white/10 mb-6" />
-                        <h3 className="text-lg font-bold text-white/30 mb-2">Sin brackets aún</h3>
+                        <h3 className="text-lg font-bold text-white/30 mb-2">Sin clasificación aún</h3>
                         <p className="text-white/20 text-sm max-w-md">
-                            Los brackets de {SPORT_EMOJI[selectedSport]} {selectedSport} ({selectedGender}) se mostrarán aquí cuando se configuren desde el panel de administración.
+                            La clasificación de {SPORT_EMOJI[selectedSport]} {selectedSport} ({selectedGender}) se mostrarán aquí cuando se configuren desde el panel de administración.
                         </p>
                     </div>
                 ) : (

@@ -44,6 +44,14 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
         })
         .slice(0, 5); // Top 5
 
+    console.log("HeroSlider debug:", {
+        activeFilter,
+        matchesLength: matches.length,
+        filteredBySportLength: filteredBySport.length,
+        featuredMatchesLength: featuredMatches.length,
+        featuredMatchesStates: featuredMatches.map(m => m.estado)
+    });
+
     // Auto-advance
     useEffect(() => {
         if (featuredMatches.length <= 1) return;
