@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export function WelcomeHero() {
     return (
-        <section className="relative w-full py-12 md:py-20 px-6 overflow-hidden bg-black rounded-[2.5rem] mb-12 border border-white/5 shadow-2xl">
+        <section className="relative w-full py-12 md:py-20 px-6 overflow-hidden bg-[#0d0b1a]/40 backdrop-blur-2xl rounded-[2.5rem] mb-12 border border-white/10 shadow-2xl">
             {/* Background elements */}
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay rotate-180" />
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/10 rounded-full blur-[120px] -mr-48 -mt-48 animate-pulse" />

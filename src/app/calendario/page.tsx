@@ -393,7 +393,7 @@ export default function CalendarioPage() {
                                 <Badge variant="outline" className="text-[10px] font-black bg-[#0a0805] border-white/10">{upcomingFixtures.length}</Badge>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto pr-2 custom-scrollbar content-start">
+                            <div className="grid grid-cols-1 gap-4 flex-1 overflow-y-auto pr-2 custom-scrollbar content-start">
                                 {loading && (
                                     <div className="text-center py-6 text-white/30 text-xs font-bold uppercase animate-pulse">Cargando...</div>
                                 )}

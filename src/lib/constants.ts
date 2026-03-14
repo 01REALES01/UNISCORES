@@ -2,8 +2,7 @@ export const DEPORTES_INDIVIDUALES = [
     'Tenis',
     'Tenis de Mesa',
     'Ajedrez',
-    'Natación',
-    'Atletismo'
+    'Natación'
 ];
 
 // ── Swimming-specific constants ──────────────────────────────────────────────
@@ -11,7 +10,7 @@ export const NATACION_ESTILOS = ['Libre', 'Pecho', 'Espalda', 'Mariposa', 'Combi
 export const NATACION_DISTANCIAS = ['25m', '50m', '100m', '200m'];
 export const NATACION_PUNTOS: Record<number, number> = { 1: 5, 2: 3, 3: 1 };
 
-export const RACE_SPORTS = ['Natación', 'Atletismo', 'Ciclismo', 'Triatlón'];
+export const RACE_SPORTS = ['Natación'];
 
 export function isRaceSport(sportName?: string): boolean {
     if (!sportName) return false;
@@ -57,7 +56,6 @@ export const CARRERAS_UNINORTE = [
 export const SPORT_EMOJI: Record<string, string> = {
     'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
     'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',
-    'Atletismo': '🏃', 'Ultimate': '🥏',
 };
 
 export const SPORT_GRADIENT: Record<string, string> = {
