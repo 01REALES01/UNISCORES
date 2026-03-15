@@ -728,10 +728,10 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
               <div className={cn("w-8 h-8 rounded-full bg-[#17130D] flex items-center justify-center border border-white/10 shadow-[0_0_15px_currentColor]", SPORT_ACCENT[sportName])}>
                 <SportIcon sport={sportName} size={18} className="drop-shadow-md" />
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-tight">{sportName}</span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest leading-tight truncate">{sportName}</span>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[13px] font-medium text-slate-400 leading-tight truncate">{partido.lugar || 'Coliseo Central'}</span>
+                  <span className="text-[11px] md:text-[13px] font-medium text-slate-400 leading-tight truncate">{partido.lugar || 'Coliseo Central'}</span>
                 </div>
               </div>
             </div>
@@ -768,12 +768,12 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
           ) : (
           <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
             {/* Team A */}
-            <div className="flex flex-col items-center gap-2 text-center">
-              <Avatar name={getDisplayName(partido, 'a')} size="lg" className="w-14 h-14 text-xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="text-lg font-bold text-white leading-tight line-clamp-2 px-1">{getDisplayName(partido, 'a')}</span>
+            <div className="flex flex-col items-center gap-1.5 md:gap-2 text-center min-w-0">
+              <Avatar name={getDisplayName(partido, 'a')} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-[#0a0805] shrink-0" />
+              <div className="flex flex-col items-center gap-0.5 w-full min-w-0">
+                <span className="text-sm md:text-lg font-bold text-white leading-tight line-clamp-2 px-1 break-words">{getDisplayName(partido, 'a')}</span>
                 {getCarreraSubtitle(partido, 'a') && (
-                  <span className="text-[10px] text-slate-400 font-medium leading-tight truncate max-w-[120px]">{getCarreraSubtitle(partido, 'a')}</span>
+                  <span className="hidden md:block text-[10px] text-slate-400 font-medium leading-tight truncate max-w-[120px]">{getCarreraSubtitle(partido, 'a')}</span>
                 )}
               </div>
             </div>
@@ -791,9 +791,9 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center justify-center gap-2 font-black text-6xl text-white tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+                <div className="flex items-center justify-center gap-1 md:gap-2 font-black text-3xl md:text-6xl text-white tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
                   <span>{scoreA}</span>
-                  <span className="text-slate-300/40 text-4xl -mt-2">:</span>
+                  <span className="text-slate-300/40 text-2xl md:text-4xl -mt-1 md:-mt-2">:</span>
                   <span>{scoreB}</span>
                 </div>
               )}
@@ -821,12 +821,12 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
             </div>
 
             {/* Team B */}
-            <div className="flex flex-col items-center gap-2 text-center">
-              <Avatar name={getDisplayName(partido, 'b')} size="lg" className="w-14 h-14 text-xl border-2 border-white/10 shadow-lg bg-[#0a0805]" />
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="text-lg font-bold text-white leading-tight line-clamp-2 px-1">{getDisplayName(partido, 'b')}</span>
+            <div className="flex flex-col items-center gap-1.5 md:gap-2 text-center min-w-0">
+              <Avatar name={getDisplayName(partido, 'b')} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-[#0a0805] shrink-0" />
+              <div className="flex flex-col items-center gap-0.5 w-full min-w-0">
+                <span className="text-sm md:text-lg font-bold text-white leading-tight line-clamp-2 px-1 break-words">{getDisplayName(partido, 'b')}</span>
                 {getCarreraSubtitle(partido, 'b') && (
-                  <span className="text-[10px] text-slate-400 font-medium leading-tight truncate max-w-[120px]">{getCarreraSubtitle(partido, 'b')}</span>
+                  <span className="hidden md:block text-[10px] text-slate-400 font-medium leading-tight truncate max-w-[120px]">{getCarreraSubtitle(partido, 'b')}</span>
                 )}
               </div>
             </div>

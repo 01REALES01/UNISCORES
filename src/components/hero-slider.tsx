@@ -260,16 +260,16 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             initial={{ x: -50, opacity: 0 }}
                                             animate={{ x: 0, opacity: 1 }}
                                             transition={{ delay: 0.3 }}
-                                            className="flex flex-col items-center gap-3 flex-1 text-center"
+                                            className="flex flex-col items-center gap-2 md:gap-3 flex-1 text-center"
                                         >
-                                            <div className="w-14 h-14 md:w-24 md:h-24 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
-                                                <span className="text-2xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'a'))}</span>
+                                            <div className="w-12 h-12 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm shrink-0">
+                                                <span className="text-xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'a'))}</span>
                                             </div>
-                                            <h3 className="text-lg md:text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
+                                            <h3 className="text-sm md:text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'a')}
                                             </h3>
                                             {getCarreraSubtitle(currentMatch, 'a') && (
-                                                <span className="text-[10px] md:text-xs text-slate-500 font-medium">{getCarreraSubtitle(currentMatch, 'a')}</span>
+                                                <span className="hidden md:block text-[10px] md:text-xs text-slate-500 font-medium">{getCarreraSubtitle(currentMatch, 'a')}</span>
                                             )}
                                         </m.div>
 
@@ -293,10 +293,10 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                 )
                                             ) : currentMatch.estado === 'en_vivo' ? (
                                                 <div className="flex flex-col items-center w-full">
-                                                    <div className="text-[3rem] md:text-[5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-2 md:gap-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                                                        <span className="text-white text-right w-14 md:w-20">{scoreInfo.scoreA}</span>
-                                                        <div className="w-3 md:w-5 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
-                                                        <span className="text-white text-left w-14 md:w-20">{scoreInfo.scoreB}</span>
+                                                    <div className="text-[2.2rem] md:text-[5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-1.5 md:gap-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                                                        <span className="text-white text-right w-10 md:w-20">{scoreInfo.scoreA}</span>
+                                                        <div className="w-2 md:w-5 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
+                                                        <span className="text-white text-left w-10 md:w-20">{scoreInfo.scoreB}</span>
                                                     </div>
 
                                                     {/* Dynamic Info Row */}
@@ -333,16 +333,16 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             initial={{ x: 50, opacity: 0 }}
                                             animate={{ x: 0, opacity: 1 }}
                                             transition={{ delay: 0.3 }}
-                                            className="flex flex-col items-center gap-3 flex-1 text-center"
+                                            className="flex flex-col items-center gap-2 md:gap-3 flex-1 text-center"
                                         >
-                                            <div className="w-14 h-14 md:w-24 md:h-24 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm">
-                                                <span className="text-2xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'b'))}</span>
+                                            <div className="w-12 h-12 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm shrink-0">
+                                                <span className="text-xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'b'))}</span>
                                             </div>
-                                            <h3 className="text-lg md:text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
+                                            <h3 className="text-sm md:text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'b')}
                                             </h3>
                                             {getCarreraSubtitle(currentMatch, 'b') && (
-                                                <span className="text-[10px] md:text-xs text-slate-500 font-medium">{getCarreraSubtitle(currentMatch, 'b')}</span>
+                                                <span className="hidden md:block text-[10px] md:text-xs text-slate-500 font-medium">{getCarreraSubtitle(currentMatch, 'b')}</span>
                                             )}
                                         </m.div>
                                     </>
@@ -385,11 +385,11 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
             {
                 featuredMatches.length > 1 && (
                     <>
-                        <button onClick={prevSlide} className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/30 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:bg-black/60 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-20">
-                            <ChevronLeft size={24} className="mr-0.5" />
+                        <button onClick={prevSlide} className="absolute left-1.5 md:left-4 top-1/2 -translate-y-1/2 w-8 h-8 md:w-12 md:h-12 rounded-full bg-black/40 md:bg-black/30 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:bg-black/60 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-20">
+                            <ChevronLeft size={20} className="md:size-[24px] mr-0.5" />
                         </button>
-                        <button onClick={nextSlide} className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/30 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:bg-black/60 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-20">
-                            <ChevronRight size={24} className="ml-0.5" />
+                        <button onClick={nextSlide} className="absolute right-1.5 md:right-4 top-1/2 -translate-y-1/2 w-8 h-8 md:w-12 md:h-12 rounded-full bg-black/40 md:bg-black/30 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:bg-black/60 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-20">
+                            <ChevronRight size={20} className="md:size-[24px] ml-0.5" />
                         </button>
 
                         {/* Dots */}

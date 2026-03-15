@@ -77,7 +77,12 @@ export function PublicLiveTimer({ detalle, deporte = "" }: TimerProps) {
             const mm = Math.floor(totalSeconds / 60);
             const ss = (totalSeconds % 60).toString().padStart(2, '0');
 
-            setDisplayTime(`${mm}:${ss}`);
+            // Sanity check: Si el tiempo es ridículamente alto (> 150 min), algo está mal con la sync
+            if (mm > 150) {
+                setDisplayTime("LIVE");
+            } else {
+                setDisplayTime(`${mm}:${ss}`);
+            }
         };
 
         // Iniciar loop local
