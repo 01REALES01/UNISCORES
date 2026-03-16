@@ -8,17 +8,7 @@ import { safeQuery } from "@/lib/supabase-query";
 import Link from "next/link";
 import { getCurrentScore } from "@/lib/sport-scoring";
 
-type Partido = {
-    id: number;
-    equipo_a: string;
-    equipo_b: string;
-    estado: string;
-    fecha: string;
-    marcador_detalle: any;
-    disciplinas: { name: string };
-    carrera_a?: { nombre: string } | null;
-    carrera_b?: { nombre: string } | null;
-};
+import type { PartidoWithRelations as Partido } from '@/modules/matches/types';
 
 export default function AdminDashboard() {
     const [partidos, setPartidos] = useState<Partido[]>([]);
@@ -107,7 +97,7 @@ export default function AdminDashboard() {
 
     const getScore = (p: Partido) => {
         // Usar la lógica centralizada que maneja sets, cuartos, y goles
-        const scoreInfo = getCurrentScore(p.disciplinas?.name, p.marcador_detalle || {});
+        const scoreInfo = getCurrentScore(p.disciplinas?.name ?? '', p.marcador_detalle || {});
         // Para la vista de lista, mostramos el score principal (Goles en fútbol, Puntos de Set en Volley)
         // O tal vez prefieran ver Sets en Volley? 
         // getCurrentScore para Volley devuelve: scoreA=PuntosSet, subScoreA=SetsGanados
@@ -216,7 +206,7 @@ export default function AdminDashboard() {
                                         href={`/admin/partidos/${p.id}`}
                                         className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-rose-500/30 transition-all group"
                                     >
-                                        <span className="text-3xl filter drop-shadow-md">{getSportEmoji(p.disciplinas?.name)}</span>
+                                        <span className="text-3xl filter drop-shadow-md">{getSportEmoji(p.disciplinas?.name ?? '')}</span>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-1">
                                                 <span className="text-sm font-bold text-slate-200 truncate">{p.carrera_a?.nombre || p.equipo_a}</span>
@@ -268,7 +258,7 @@ export default function AdminDashboard() {
                                         href={`/admin/partidos/${p.id}`}
                                         className="flex items-center gap-4 p-3.5 rounded-2xl hover:bg-white/5 transition-all group border border-transparent hover:border-white/5"
                                     >
-                                        <span className="text-2xl opacity-80">{getSportEmoji(p.disciplinas?.name)}</span>
+                                        <span className="text-2xl opacity-80">{getSportEmoji(p.disciplinas?.name ?? '')}</span>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-semibold text-slate-200 truncate">
                                                 {p.carrera_a?.nombre || p.equipo_a} <span className="text-slate-500 mx-1">vs</span> {p.carrera_b?.nombre || p.equipo_b}

@@ -14,19 +14,9 @@ import { getCarreraName } from "@/lib/sport-helpers";
 import { Button } from "./ui-primitives";
 import { SportIcon } from "./sport-icons";
 
-export type MedalEntry = {
-    id: number;
-    equipo_nombre: string;
-    oro: number;
-    plata: number;
-    bronce: number;
-    puntos: number;
-    won?: number;
-    draw?: number;
-    lost?: number;
-    played?: number;
-    updated_at?: string;
-};
+// Tipo centralizado en modules/medallero/types.ts — re-exportado para compatibilidad
+import type { MedalEntry } from '@/modules/medallero/types';
+export type { MedalEntry };
 
 // Datos simulados (Fallback)
 const SAMPLE_DATA: MedalEntry[] = [

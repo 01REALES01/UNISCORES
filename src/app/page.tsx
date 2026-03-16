@@ -39,24 +39,7 @@ import { useFavoritos } from "@/hooks/use-favoritos";
 import { useCarreras } from "@/hooks/use-carreras";
 import { supabase } from "@/lib/supabase";
 
-type Partido = {
-  id: number;
-  equipo_a: string;
-  equipo_b: string;
-  fecha: string;
-  estado: string;
-  lugar?: string;
-  genero?: string;
-  marcador_detalle: any;
-  delegacion_a?: string;
-  delegacion_b?: string;
-  disciplinas: {
-    name: string;
-    icon: string;
-  };
-  carrera_a?: { nombre: string } | null;
-  carrera_b?: { nombre: string } | null;
-};
+import type { PartidoWithRelations as Partido } from '@/modules/matches/types';
 
 
 

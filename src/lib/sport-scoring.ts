@@ -1,5 +1,11 @@
 import { getSportService } from "@/services/sports";
+import type { ScoreResult } from "@/modules/sports/types";
 
+// Re-export ScoreResult desde la ubicación canónica en modules/
+// ScoreDetail se mantiene como Record<string, any> en este archivo legacy
+// (usa acceso dinámico a propiedades que no sería compatible con el union strict)
+export type { ScoreResult } from "@/modules/sports/types";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ScoreDetail = Record<string, any>;
 
 /**
@@ -36,17 +42,7 @@ export function getCurrentPeriodNumber(deporte: string, detalle: ScoreDetail): n
     return 1;
 }
 
-export type ScoreResult = {
-    scoreA: number;
-    scoreB: number;
-    /** Sub-score: puntos del set/cuarto/tiempo actual */
-    subScoreA?: number;
-    subScoreB?: number;
-    /** Label del período actual (e.g. "1º Tiempo", "Cuarto 2", "Set 3") */
-    extra?: string;
-    /** Label corto del sub-score (e.g. "Pts", "Goles") */
-    subLabel?: string;
-};
+// ScoreResult movido a @/modules/sports/types — re-exportado arriba
 
 /**
  * Añade puntos al marcador según el deporte

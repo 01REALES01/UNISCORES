@@ -1,15 +1,3 @@
-import { ScoreDetail, ScoreResult } from "@/lib/sport-scoring";
-
-export interface ISportService {
-    getPeriodDuration(): number;
-    isCountdown(): boolean;
-    getCurrentPeriodNumber(detalle: ScoreDetail): number;
-    getCurrentScore(detalle: ScoreDetail): ScoreResult;
-    isFinished(detalle: ScoreDetail): boolean;
-    
-    // Core state mutations
-    addPoints(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b', puntos?: number): ScoreDetail;
-    removePoints(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b', puntos?: number): ScoreDetail;
-    setPoints(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b', puntos: number): ScoreDetail;
-    recalculateTotals(detalle: ScoreDetail): ScoreDetail;
-}
+// Re-exporta desde la ubicación canónica en modules/
+// Mantener este archivo para compatibilidad con imports existentes durante la migración.
+export type { ISportService, ScoreDetail, ScoreResult } from '@/modules/sports/types';

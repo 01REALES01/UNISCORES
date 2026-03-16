@@ -30,25 +30,8 @@ import { SPORT_EMOJI } from "@/lib/constants";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 
-// ===== TYPES =====
-type Partido = {
-    id: number;
-    equipo_a: string;
-    equipo_b: string;
-    estado: string;
-    fecha: string;
-    marcador_detalle: any;
-    disciplina_id: number;
-    disciplinas: { name: string };
-};
-
-type Evento = {
-    id: number;
-    tipo_evento: string;
-    minuto: number;
-    equipo: string;
-    partido_id: number;
-};
+// Tipos centralizados en modules/ — importados aquí
+import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
 
 const SPORT_COLORS: Record<string, string> = {
     Fútbol: "#34d399",
@@ -123,7 +106,7 @@ export default function EstadisticasPage() {
     }, [partidos, filterDisciplina]);
 
     const disciplinas = useMemo(() => {
-        const set = new Set(partidos.map((p) => p.disciplinas?.name).filter(Boolean));
+        const set = new Set(partidos.map((p) => p.disciplinas?.name).filter((n): n is string => Boolean(n)));
         return Array.from(set);
     }, [partidos]);
 
@@ -489,7 +472,7 @@ export default function EstadisticasPage() {
                         <div className="bg-gradient-to-br from-orange-500/5 to-red-500/5 rounded-2xl border border-orange-500/10 p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <span className="text-2xl">
-                                    {SPORT_EMOJI[biggestWin.disciplinas?.name] || "🏅"}
+                                    {SPORT_EMOJI[biggestWin.disciplinas?.name ?? ''] || "🏅"}
                                 </span>
                                 <span className="text-[10px] font-bold uppercase text-muted-foreground">
                                     {biggestWin.disciplinas?.name}

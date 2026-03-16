@@ -17,33 +17,7 @@ import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_ACCENT, S
 import { SportIcon } from "@/components/sport-icons";
 import { parseEventAudit } from "@/lib/audit-helpers";
 
-type Partido = {
-    id: number;
-    equipo_a: string;
-    equipo_b: string;
-    fecha: string;
-    estado: string;
-    marcador_detalle: any;
-    lugar?: string;
-    genero?: string;
-    delegacion_a?: string;
-    delegacion_b?: string;
-    carrera_a_id?: number | null;
-    carrera_b_id?: number | null;
-    disciplinas: { name: string };
-    carrera_a?: { nombre: string } | null;
-    carrera_b?: { nombre: string } | null;
-};
-
-type Evento = {
-    id: number;
-    tipo_evento: string;
-    minuto: number;
-    equipo: string;
-    descripcion: string;
-    periodo: number | null;
-    jugadores: { nombre: string; numero: number; profile_id?: string | null } | null;
-};
+import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
 
 import UniqueLoading from "@/components/ui/morph-loading";
 
@@ -399,14 +373,14 @@ export default function PublicMatchDetail() {
                                     <div className="flex flex-col items-center mt-3 sm:mt-4 w-full px-2 sm:px-0">
                                         <div className={cn(
                                             "flex items-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-2 sm:mb-3",
-                                            isLive ? (SPORT_LIVE_TEXT[match.disciplinas?.name] || SPORT_LIVE_TEXT.default) : "text-white/40"
+                                            isLive ? (SPORT_LIVE_TEXT[match.disciplinas?.name ?? ''] || SPORT_LIVE_TEXT.default) : "text-white/40"
                                         )}>
                                             {/* Quarter or 'Finalizado' / 'Programado' */}
                                             {extra ? (
                                                 <div className="flex items-center gap-2">
                                                     <span className={cn(
                                                         "brightness-125 drop-shadow-[0_0_8px_currentColor]",
-                                                        isLive ? (SPORT_ACCENT[match.disciplinas?.name] || 'text-white') : 'text-white/40'
+                                                        isLive ? (SPORT_ACCENT[match.disciplinas?.name ?? ''] || 'text-white') : 'text-white/40'
                                                     )}>
                                                         {extra}
                                                     </span>
@@ -425,10 +399,10 @@ export default function PublicMatchDetail() {
                                         {/* Glowing Progress Status Bar */}
                                         <div className={cn(
                                             "w-full h-1 sm:h-[6px] rounded-full overflow-hidden relative",
-                                            isLive ? (SPORT_LIVE_BG_WRAPPER[match.disciplinas?.name] || SPORT_LIVE_BG_WRAPPER.default) : "bg-white/10"
+                                            isLive ? (SPORT_LIVE_BG_WRAPPER[match.disciplinas?.name ?? ''] || SPORT_LIVE_BG_WRAPPER.default) : "bg-white/10"
                                         )}>
                                             {isLive ? (
-                                                <div className={cn("h-full rounded-full w-[100%] absolute top-0 left-0 animate-pulse", SPORT_LIVE_BAR[match.disciplinas?.name] || SPORT_LIVE_BAR.default)} />
+                                                <div className={cn("h-full rounded-full w-[100%] absolute top-0 left-0 animate-pulse", SPORT_LIVE_BAR[match.disciplinas?.name ?? ''] || SPORT_LIVE_BAR.default)} />
                                             ) : isFinished ? (
                                                 <div className="h-full bg-white/40 rounded-full w-[100%] absolute top-0 left-0" />
                                             ) : null}

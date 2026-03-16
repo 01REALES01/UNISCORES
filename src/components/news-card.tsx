@@ -5,32 +5,9 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Clock, ChevronRight, Trophy, GraduationCap } from "lucide-react";
 
-export type Noticia = {
-    id: string;
-    titulo: string;
-    contenido: string;
-    imagen_url: string | null;
-    categoria: 'cronica' | 'entrevista' | 'analisis' | 'flash';
-    autor_nombre: string;
-    partido_id: number | null;
-    carrera: string | null;
-    published: boolean;
-    created_at: string;
-    updated_at: string;
-    // Joined
-    partidos?: {
-        id?: number;
-        equipo_a: string;
-        equipo_b: string;
-        fecha?: string;
-        estado?: 'programado' | 'en_vivo' | 'finalizado' | string;
-        lugar?: string;
-        marcador_detalle?: any;
-        disciplinas: { name: string; icon?: string };
-        carrera_a?: { nombre: string } | null;
-        carrera_b?: { nombre: string } | null;
-    } | null;
-};
+// Tipo centralizado en modules/news/types.ts — re-exportado para compatibilidad
+import type { Noticia } from '@/modules/news/types';
+export type { Noticia };
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
     cronica: { label: 'Crónica', color: 'text-blue-400', bg: 'bg-blue-500/15 border-blue-500/20' },

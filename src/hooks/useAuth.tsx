@@ -4,33 +4,9 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback,
 import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 
-export type UserRole = 'admin' | 'data_entry' | 'periodista' | 'deportista' | 'public';
-
-export type Profile = {
-    id: string;
-    email: string;
-    roles: UserRole[];
-    full_name: string;
-    avatar_url?: string;
-    tagline?: string;
-    about_me?: string;
-    bio?: string;
-    points: number;
-    wins?: number;
-    losses?: number;
-    total_score_all_time?: number;
-    carrera_id?: number;
-    carreras_ids?: number[];
-    athlete_disciplina_id?: number;
-    athlete_stats?: any;
-    disciplina?: {
-        id: number;
-        name: string;
-        icon?: string;
-    };
-    is_public: boolean;
-    created_at: string;
-};
+// Tipos centralizados en modules/users/types.ts — importados y re-exportados para compatibilidad
+import type { UserRole, Profile } from '@/modules/users/types';
+export type { UserRole, Profile };
 
 type AuthContextType = {
     user: User | null;
