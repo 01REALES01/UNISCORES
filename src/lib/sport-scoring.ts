@@ -1,7 +1,4 @@
-/**
- * Sport Scoring Logic & Validation
- * Maneja las reglas específicas de cada deporte
- */
+import { getSportService } from "@/services/sports";
 
 export type ScoreDetail = Record<string, any>;
 
@@ -9,6 +6,9 @@ export type ScoreDetail = Record<string, any>;
  * Obtener la duración en minutos de un período/tiempo/cuarto
  */
 export function getPeriodDuration(deporte: string): number {
+    const service = getSportService(deporte);
+    if (service) return service.getPeriodDuration();
+
     if (deporte === 'Baloncesto') return 12; // 12 min por cuarto
     if (deporte === 'Fútbol') return 45; // 45 min por tiempo
     return 0; // Sin límite fijo (vóley, tenis, etc.)
@@ -18,6 +18,8 @@ export function getPeriodDuration(deporte: string): number {
  * Indica si el deporte usa cronómetro en cuenta regresiva
  */
 export function isCountdownSport(deporte: string): boolean {
+    const service = getSportService(deporte);
+    if (service) return service.isCountdown();
     return deporte === 'Baloncesto';
 }
 
@@ -25,6 +27,9 @@ export function isCountdownSport(deporte: string): boolean {
  * Obtiene el número de periodo actual (1, 2, 3...) según el deporte
  */
 export function getCurrentPeriodNumber(deporte: string, detalle: ScoreDetail): number {
+    const service = getSportService(deporte);
+    if (service) return service.getCurrentPeriodNumber(detalle);
+
     if (deporte === 'Fútbol') return detalle.tiempo_actual || 1;
     if (deporte === 'Baloncesto' || deporte === 'Futsal') return detalle.cuarto_actual || 1;
     if (['Voleibol', 'Tenis', 'Tenis de Mesa'].includes(deporte)) return detalle.set_actual || 1;
@@ -55,9 +60,11 @@ export function addPoints(
     const nuevo = JSON.parse(JSON.stringify(detalle)); // Deep copy to avoid mutations
 
     // Aplicar cambio específico del deporte
+    const service = getSportService(deporte);
+    if (service) return service.addPoints(nuevo, equipo, puntos);
+
     let resultado = nuevo;
     if (deporte === 'Fútbol') {
-        resultado = addGoalFutbol(nuevo, equipo);
     } else if (deporte === 'Baloncesto') {
         resultado = addPointsBasket(nuevo, equipo, puntos);
     } else if (deporte === 'Voleibol') {
@@ -91,9 +98,11 @@ export function setPoints(
     const nuevo = JSON.parse(JSON.stringify(detalle)); // Deep copy to avoid mutations
 
     // Aplicar cambio específico del deporte
+    const service = getSportService(deporte);
+    if (service) return service.setPoints(nuevo, equipo, puntosNuevos);
+
     let resultado = nuevo;
     if (deporte === 'Fútbol') {
-        resultado = setGoalFutbol(nuevo, equipo, puntosNuevos);
     } else if (deporte === 'Baloncesto') {
         resultado = setPointsBasket(nuevo, equipo, puntosNuevos);
     } else if (deporte === 'Voleibol') {
@@ -116,6 +125,9 @@ export function setPoints(
  * Esto corrige inconsistencias si se editaron los parciales manualmente
  */
 export function recalculateTotals(deporte: string, detalle: ScoreDetail): ScoreDetail {
+    const service = getSportService(deporte);
+    if (service) return service.recalculateTotals(detalle);
+
     const d = JSON.parse(JSON.stringify(detalle));
 
     if (deporte === 'Fútbol') {
@@ -212,6 +224,11 @@ function addGoalFutbol(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b'): S
  * Fútbol: Cambiar de tiempo
  */
 export function cambiarTiempoFutbol(detalle: ScoreDetail): ScoreDetail {
+    const service = getSportService('Fútbol');
+    if (service && 'cambiarTiempo' in service) {
+        return (service as any).cambiarTiempo(detalle);
+    }
+
     const nuevo = JSON.parse(JSON.stringify(detalle));
     const tiempoActual = nuevo.tiempo_actual || 1;
 
@@ -354,6 +371,9 @@ function addGameTennis(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b'): S
  * Obtener marcador actual para mostrar
  */
 export function getCurrentScore(deporte: string, detalle: ScoreDetail): ScoreResult {
+    const service = getSportService(deporte);
+    if (service) return service.getCurrentScore(detalle);
+
     if (deporte === 'Fútbol') {
         const tiempo = detalle.tiempo_actual || 1;
         return {
@@ -416,6 +436,9 @@ export function getCurrentScore(deporte: string, detalle: ScoreDetail): ScoreRes
  * Verificar si el partido ha terminado
  */
 export function isMatchFinished(deporte: string, detalle: ScoreDetail): boolean {
+    const service = getSportService(deporte);
+    if (service) return service.isFinished(detalle);
+
     if (deporte === 'Fútbol') {
         return detalle.tiempo_actual === 2 && (detalle.minuto_actual || 0) >= 90;
     } else if (deporte === 'Baloncesto') {
@@ -439,6 +462,8 @@ export function removePoints(
     puntos: number = 1
 ): ScoreDetail {
     const nuevo = JSON.parse(JSON.stringify(detalle)); // Deep copy
+    const service = getSportService(deporte);
+    if (service) return service.removePoints(nuevo, equipo, puntos);
 
     if (deporte === 'Fútbol') {
         removeGoalFutbol(nuevo, equipo);

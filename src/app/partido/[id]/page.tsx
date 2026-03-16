@@ -15,6 +15,7 @@ import { getCurrentScore } from "@/lib/sport-scoring";
 import { getDisplayName, getCarreraName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_ACCENT, SPORT_COLORS, SPORT_BORDER, SPORT_GLOW, SPORT_GRADIENT } from "@/lib/constants";
 import { SportIcon } from "@/components/sport-icons";
+import { parseEventAudit } from "@/lib/audit-helpers";
 
 type Partido = {
     id: number;
@@ -659,10 +660,11 @@ export default function PublicMatchDetail() {
                                     else if (e.tipo_evento === 'set') { eventIcon = <span className="text-sm">🏆</span>; eventLabel = 'Set'; }
 
                                     if (isSystem) {
+                                        const auditData = parseEventAudit(e.descripcion);
                                         return (
                                             <div key={e.id || idx} className="relative flex justify-center py-6 w-full">
                                                 <div className="bg-[#0a0805]/80 backdrop-blur-md px-6 font-black text-[11px] text-white/30 uppercase tracking-[0.3em] text-center border border-white/5 rounded-full py-1.5 shadow-xl">
-                                                    {e.descripcion || 'Evento de Sistema'}
+                                                    {auditData.texto || 'Evento de Sistema'}
                                                 </div>
                                             </div>
                                         );
