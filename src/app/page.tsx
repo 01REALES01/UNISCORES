@@ -328,8 +328,8 @@ export default function Home() {
       <SplashScreen />
       {/* Ambient Background Gradient */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       {/* Header / Navbar */}
@@ -487,10 +487,10 @@ export default function Home() {
           <div className="grid gap-8">
             {/* Live / Featured Slider */}
             {(() => {
-              const sliderMatches = activeFilter === 'todos' 
-                ? partidos 
+              const sliderMatches = activeFilter === 'todos'
+                ? partidos
                 : partidos.filter(m => m.disciplinas?.name === activeFilter);
-              
+
               const hasLive = sliderMatches.some(m => m.estado === 'en_vivo');
               const hasProgrammed = sliderMatches.some(m => m.estado === 'programado');
 
@@ -512,8 +512,8 @@ export default function Home() {
                       </>
                     ) : (
                       <>
-                         <Zap size={14} className="text-amber-500" />
-                         <h2 className="text-sm font-black text-amber-500/80 uppercase tracking-widest">Próximamente</h2>
+                        <Zap size={14} className="text-amber-500" />
+                        <h2 className="text-sm font-black text-amber-500/80 uppercase tracking-widest">Próximamente</h2>
                       </>
                     )}
                   </div>
@@ -523,7 +523,7 @@ export default function Home() {
             })()}
 
             {/* QUINIELA CTA BANNER */}
-            <div className="relative rounded-[2rem] overflow-hidden border border-indigo-500/30 shadow-[0_0_40px_rgba(99,102,241,0.15)] group cursor-pointer mb-8 bg-[#0a0816]">
+            <div className="relative rounded-[2rem] overflow-hidden border border-orange-500/30 shadow-[0_0_40px_rgba(249,115,22,0.15)] group cursor-pointer mb-8 bg-[#120e08]">
               <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
               <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 to-transparent" />
 
@@ -766,71 +766,71 @@ function LiveMatchCard({ partido }: { partido: Partido }) {
               )}>{genero}</div>
             </div>
           ) : (
-          <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-            {/* Team A */}
-            <div className="flex flex-col items-center gap-1.5 md:gap-2 text-center min-w-0">
-              <Avatar name={getDisplayName(partido, 'a')} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-[#0a0805] shrink-0" />
-              <div className="flex flex-col items-center gap-0.5 w-full min-w-0">
-                <span className="text-sm md:text-lg font-bold text-white leading-tight line-clamp-2 px-1 break-words">{getDisplayName(partido, 'a')}</span>
-                {getCarreraSubtitle(partido, 'a') && (
-                  <span className="hidden md:block text-[10px] text-slate-400 font-medium leading-tight truncate max-w-[120px]">{getCarreraSubtitle(partido, 'a')}</span>
-                )}
+            <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+              {/* Team A */}
+              <div className="flex flex-col items-center gap-1.5 md:gap-2 text-center min-w-0">
+                <Avatar name={getDisplayName(partido, 'a')} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-[#0a0805] shrink-0" />
+                <div className="flex flex-col items-center gap-0.5 w-full min-w-0">
+                  <span className="text-sm md:text-lg font-bold text-white leading-tight line-clamp-2 px-1 break-words">{getDisplayName(partido, 'a')}</span>
+                  {getCarreraSubtitle(partido, 'a') && (
+                    <span className="hidden md:block text-[10px] text-slate-400 font-medium leading-tight truncate max-w-[120px]">{getCarreraSubtitle(partido, 'a')}</span>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Score */}
-            <div className="flex flex-col items-center justify-center">
-              {sportName === 'Ajedrez' ? (
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_12px_rgba(239,68,68,1)]" />
-                  </span>
-                  <span className="text-sm font-black text-red-500 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">
-                    EN VIVO
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-1 md:gap-2 font-black text-3xl md:text-6xl text-white tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
-                  <span>{scoreA}</span>
-                  <span className="text-slate-300/40 text-2xl md:text-4xl -mt-1 md:-mt-2">:</span>
-                  <span>{scoreB}</span>
-                </div>
-              )}
-
-              <div className="flex flex-col items-center gap-1.5 mt-3">
-                <div className={cn(
-                  "text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-1000",
-                  genero === 'femenino' ? "text-pink-400 drop-shadow-[0_0_8px_rgba(244,114,182,0.8)]" :
-                    genero === 'mixto' ? "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]" :
-                      "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]"
-                )}>
-                  {genero}
-                </div>
-
-                {extra && (
-                  <div className={cn(
-                    "text-[10px] font-black tracking-[0.25em] uppercase transition-all duration-300",
-                    SPORT_ACCENT[sportName] || 'text-white/60',
-                    "drop-shadow-[0_0_8px_currentColor] brightness-125"
-                  )}>
-                    {extra}
+              {/* Score */}
+              <div className="flex flex-col items-center justify-center">
+                {sportName === 'Ajedrez' ? (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_12px_rgba(239,68,68,1)]" />
+                    </span>
+                    <span className="text-sm font-black text-red-500 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">
+                      EN VIVO
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-1 md:gap-2 font-black text-3xl md:text-6xl text-white tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+                    <span>{scoreA}</span>
+                    <span className="text-slate-300/40 text-2xl md:text-4xl -mt-1 md:-mt-2">:</span>
+                    <span>{scoreB}</span>
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* Team B */}
-            <div className="flex flex-col items-center gap-1.5 md:gap-2 text-center min-w-0">
-              <Avatar name={getDisplayName(partido, 'b')} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-[#0a0805] shrink-0" />
-              <div className="flex flex-col items-center gap-0.5 w-full min-w-0">
-                <span className="text-sm md:text-lg font-bold text-white leading-tight line-clamp-2 px-1 break-words">{getDisplayName(partido, 'b')}</span>
-                {getCarreraSubtitle(partido, 'b') && (
-                  <span className="hidden md:block text-[10px] text-slate-400 font-medium leading-tight truncate max-w-[120px]">{getCarreraSubtitle(partido, 'b')}</span>
-                )}
+                <div className="flex flex-col items-center gap-1.5 mt-3">
+                  <div className={cn(
+                    "text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-1000",
+                    genero === 'femenino' ? "text-pink-400 drop-shadow-[0_0_8px_rgba(244,114,182,0.8)]" :
+                      genero === 'mixto' ? "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]" :
+                        "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]"
+                  )}>
+                    {genero}
+                  </div>
+
+                  {extra && (
+                    <div className={cn(
+                      "text-[10px] font-black tracking-[0.25em] uppercase transition-all duration-300",
+                      SPORT_ACCENT[sportName] || 'text-white/60',
+                      "drop-shadow-[0_0_8px_currentColor] brightness-125"
+                    )}>
+                      {extra}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Team B */}
+              <div className="flex flex-col items-center gap-1.5 md:gap-2 text-center min-w-0">
+                <Avatar name={getDisplayName(partido, 'b')} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-[#0a0805] shrink-0" />
+                <div className="flex flex-col items-center gap-0.5 w-full min-w-0">
+                  <span className="text-sm md:text-lg font-bold text-white leading-tight line-clamp-2 px-1 break-words">{getDisplayName(partido, 'b')}</span>
+                  {getCarreraSubtitle(partido, 'b') && (
+                    <span className="hidden md:block text-[10px] text-slate-400 font-medium leading-tight truncate max-w-[120px]">{getCarreraSubtitle(partido, 'b')}</span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
           )}
 
           {/* Footer Action */}
@@ -911,27 +911,27 @@ function UpcomingMatchCard({ partido }: { partido: Partido }) {
             </span>
           </div>
         ) : (
-        <div className="relative z-10 space-y-3 my-2">
-          <div className="flex items-center gap-3">
-            <Avatar name={getDisplayName(partido, 'a')} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-[#0a0805]" />
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-bold text-white truncate">{getDisplayName(partido, 'a')}</span>
-              {getCarreraSubtitle(partido, 'a') && (
-                <span className="text-[9px] text-slate-500 font-medium truncate">{getCarreraSubtitle(partido, 'a')}</span>
-              )}
+          <div className="relative z-10 space-y-3 my-2">
+            <div className="flex items-center gap-3">
+              <Avatar name={getDisplayName(partido, 'a')} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-[#0a0805]" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-bold text-white truncate">{getDisplayName(partido, 'a')}</span>
+                {getCarreraSubtitle(partido, 'a') && (
+                  <span className="text-[9px] text-slate-500 font-medium truncate">{getCarreraSubtitle(partido, 'a')}</span>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <Avatar name={getDisplayName(partido, 'b')} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-[#0a0805]" />
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-bold text-white truncate">{getDisplayName(partido, 'b')}</span>
-              {getCarreraSubtitle(partido, 'b') && (
-                <span className="text-[9px] text-slate-500 font-medium truncate">{getCarreraSubtitle(partido, 'b')}</span>
-              )}
+            <div className="flex items-center gap-3">
+              <Avatar name={getDisplayName(partido, 'b')} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-[#0a0805]" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-bold text-white truncate">{getDisplayName(partido, 'b')}</span>
+                {getCarreraSubtitle(partido, 'b') && (
+                  <span className="text-[9px] text-slate-500 font-medium truncate">{getCarreraSubtitle(partido, 'b')}</span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* Footer Action */}

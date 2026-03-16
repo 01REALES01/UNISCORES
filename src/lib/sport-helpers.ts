@@ -146,3 +146,160 @@ export function isValidTimeFormat(timeStr: string): boolean {
     return parseTimeToMs(timeStr) !== Infinity;
 }
 
+// ── Career Stats Computation ─────────────────────────────────────────────────
+
+export type DisciplineStats = {
+    name: string;
+    oro: number;
+    plata: number;
+    bronce: number;
+    won: number;
+    lost: number;
+    draw: number;
+    played: number;
+    puntos: number;
+};
+
+export type CareerStats = {
+    oro: number;
+    plata: number;
+    bronce: number;
+    puntos: number;
+    won: number;
+    lost: number;
+    draw: number;
+    played: number;
+    byDiscipline: Record<string, DisciplineStats>;
+};
+
+/**
+ * Compute medal/wins/losses stats for a single career from a set of finished matches.
+ * Logic extracted from medalleria-board.tsx for reuse in career profile pages.
+ * 
+ * @param matches - Array of finished matches with disciplinas, carrera_a/b joins and marcador_detalle
+ * @param carreraName - The career name to compute stats for
+ */
+export function computeCareerStats(matches: any[], carreraName: string): CareerStats {
+    const normalize = (str: string) =>
+        str.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    const normTarget = normalize(carreraName);
+
+    const isTargetCarrera = (name: string): boolean => {
+        const n = normalize(name);
+        return n === normTarget || n.includes(normTarget) || normTarget.includes(n);
+    };
+
+    const stats: CareerStats = {
+        oro: 0, plata: 0, bronce: 0, puntos: 0,
+        won: 0, lost: 0, draw: 0, played: 0,
+        byDiscipline: {},
+    };
+
+    const ensureDiscipline = (name: string) => {
+        if (!stats.byDiscipline[name]) {
+            stats.byDiscipline[name] = {
+                name, oro: 0, plata: 0, bronce: 0,
+                won: 0, lost: 0, draw: 0, played: 0, puntos: 0,
+            };
+        }
+    };
+
+    // Only process finished matches
+    const finished = matches.filter(m =>
+        (m.estado || '').toLowerCase().trim() === 'finalizado'
+    );
+
+    finished.forEach(m => {
+        const disc = (Array.isArray(m.disciplinas) ? m.disciplinas[0] : m.disciplinas)?.name || 'Otro';
+        const det = m.marcador_detalle || {};
+        const fase = (m.fase || '').toLowerCase().trim();
+        const isFinal = fase.includes('final');
+        const isTercero = fase.includes('tercer') || fase.includes('3er') || fase.includes('3º');
+
+        const rawA = getCarreraName(m, 'a');
+        const rawB = getCarreraName(m, 'b');
+
+        const isA = isTargetCarrera(rawA);
+        const isB = isTargetCarrera(rawB);
+
+        if (!isA && !isB) {
+            // Check race results for this career
+            if (det.tipo === 'carrera' && det.resultados) {
+                (det.resultados as any[]).forEach(res => {
+                    const possibleName = res.equipo_nombre || res.equipo || res.delegacion;
+                    if (!possibleName || !isTargetCarrera(possibleName)) return;
+
+                    ensureDiscipline(disc);
+                    stats.played++;
+                    stats.byDiscipline[disc].played++;
+
+                    if (res.puesto === 1) { stats.oro++; stats.byDiscipline[disc].oro++; }
+                    else if (res.puesto === 2) { stats.plata++; stats.byDiscipline[disc].plata++; }
+                    else if (res.puesto === 3) { stats.bronce++; stats.byDiscipline[disc].bronce++; }
+                });
+            }
+            return;
+        }
+
+        ensureDiscipline(disc);
+        stats.played++;
+        stats.byDiscipline[disc].played++;
+
+        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? det.puntos_a ?? det.juegos_a ?? 0;
+        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? det.puntos_b ?? det.juegos_b ?? 0;
+
+        if (scoreA > scoreB) {
+            if (isA) {
+                stats.won++; stats.puntos += 3;
+                stats.byDiscipline[disc].won++; stats.byDiscipline[disc].puntos += 3;
+            } else {
+                stats.lost++;
+                stats.byDiscipline[disc].lost++;
+            }
+            // Medals (non-race)
+            if (det.tipo !== 'carrera') {
+                if (isFinal) {
+                    if (isA) { stats.oro++; stats.byDiscipline[disc].oro++; }
+                    else { stats.plata++; stats.byDiscipline[disc].plata++; }
+                } else if (isTercero && isA) {
+                    stats.bronce++; stats.byDiscipline[disc].bronce++;
+                }
+            }
+        } else if (scoreB > scoreA) {
+            if (isB) {
+                stats.won++; stats.puntos += 3;
+                stats.byDiscipline[disc].won++; stats.byDiscipline[disc].puntos += 3;
+            } else {
+                stats.lost++;
+                stats.byDiscipline[disc].lost++;
+            }
+            if (det.tipo !== 'carrera') {
+                if (isFinal) {
+                    if (isB) { stats.oro++; stats.byDiscipline[disc].oro++; }
+                    else { stats.plata++; stats.byDiscipline[disc].plata++; }
+                } else if (isTercero && isB) {
+                    stats.bronce++; stats.byDiscipline[disc].bronce++;
+                }
+            }
+        } else {
+            stats.draw++; stats.puntos += 1;
+            stats.byDiscipline[disc].draw++; stats.byDiscipline[disc].puntos += 1;
+        }
+
+        // Race results within this match
+        if (det.tipo === 'carrera' && det.resultados) {
+            (det.resultados as any[]).forEach(res => {
+                const possibleName = res.equipo_nombre || res.equipo || res.delegacion;
+                if (!possibleName || !isTargetCarrera(possibleName)) return;
+
+                if (res.puesto === 1) { stats.oro++; stats.byDiscipline[disc].oro++; }
+                else if (res.puesto === 2) { stats.plata++; stats.byDiscipline[disc].plata++; }
+                else if (res.puesto === 3) { stats.bronce++; stats.byDiscipline[disc].bronce++; }
+            });
+        }
+    });
+
+    return stats;
+}
+

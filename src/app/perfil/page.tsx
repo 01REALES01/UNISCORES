@@ -9,16 +9,16 @@ import { MainNavbar } from "@/components/main-navbar";
 import { supabase } from "@/lib/supabase";
 import { Button, Input, Avatar, Badge } from "@/components/ui-primitives";
 import { toast } from "sonner";
-import { 
-    User, 
-    Settings, 
-    Trophy, 
-    Star, 
-    Camera, 
-    LogOut, 
-    Mail, 
-    Shield, 
-    Medal, 
+import {
+    User,
+    Settings,
+    Trophy,
+    Star,
+    Camera,
+    LogOut,
+    Mail,
+    Shield,
+    Medal,
     Target,
     ChevronRight,
     Loader2,
@@ -35,7 +35,7 @@ export default function PerfilPage() {
     const { user, profile, isDeportista, isStaff, loading: authLoading, signOut } = useAuth();
     const { updating, uploading, updateProfile, uploadAvatar } = useProfile();
     const [activeTab, setActiveTab] = useState<ProfileTab>('general');
-    
+
     // Form states
     const [fullName, setFullName] = useState("");
     const [tagline, setTagline] = useState("");
@@ -54,10 +54,10 @@ export default function PerfilPage() {
     useEffect(() => {
         // Aseguramos que el componente inicie en vista pública (isEditing ya es false por defecto)
         setIsEditing(false);
-        
+
         fetchCarreras();
         fetchDisciplinas();
-        
+
         if (profile) {
             setFullName(profile.full_name || "");
             setTagline(profile.tagline || "");
@@ -73,14 +73,14 @@ export default function PerfilPage() {
         try {
             console.log("Fetching carreras...");
             const { data, error } = await supabase.from('carreras').select('*').order('nombre');
-            
+
             if (error) {
                 console.error("Error fetching carreras:", error);
                 setFetchError(error.message);
                 // No mostrar toast aquí para no ser intrusivo si es un error temporal
                 return;
             }
-            
+
             if (data) {
                 // Filtramos por las oficiales por si hay datos basura en la DB que el admin no ha purgado
                 const filtered = data.filter(c => CARRERAS_UNINORTE.includes(c.nombre));
@@ -111,8 +111,8 @@ export default function PerfilPage() {
         if (!profile?.id) return;
         setLoadingHistory(true);
         try {
-            const { data, error } = await supabase.rpc('get_athlete_event_history', { 
-                athlete_profile_id: profile.id 
+            const { data, error } = await supabase.rpc('get_athlete_event_history', {
+                athlete_profile_id: profile.id
             });
             if (data) setHistory(data);
         } catch (err) {
@@ -126,11 +126,11 @@ export default function PerfilPage() {
     if (!user) return null; // Redirect logic usually in useAuth or middleware
 
     const handleUpdate = async () => {
-        const success = await updateProfile({ 
-            full_name: fullName, 
+        const success = await updateProfile({
+            full_name: fullName,
             tagline,
             about_me: aboutMe,
-            carreras_ids: selectedCarreras 
+            carreras_ids: selectedCarreras
         });
         if (success) setIsEditing(false);
     };
@@ -171,10 +171,10 @@ export default function PerfilPage() {
                     <div className="relative group">
                         <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-orange-500 rounded-[2.5rem] blur-xl opacity-30 group-hover:opacity-50 transition-opacity" />
                         <div className="relative">
-                            <Avatar 
-                                name={profile?.full_name || user.email} 
+                            <Avatar
+                                name={profile?.full_name || user.email}
                                 src={profile?.avatar_url}
-                                className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] border-4 border-white/5 shadow-2xl" 
+                                className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] border-4 border-white/5 shadow-2xl"
                             />
                             <label className="absolute bottom-2 right-2 p-2.5 bg-[#1A1612] border border-white/10 rounded-2xl cursor-pointer hover:bg-red-600 transition-all shadow-xl group/icon">
                                 {uploading ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
@@ -195,7 +195,7 @@ export default function PerfilPage() {
                         <p className="text-white/40 font-bold flex items-center justify-center md:justify-start gap-2 mb-4">
                             <Mail size={14} /> {user.email}
                         </p>
-                        
+
                         <div className="flex flex-wrap justify-center md:justify-start gap-3">
                             <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2">
                                 <Trophy size={16} className="text-yellow-500" />
@@ -222,7 +222,7 @@ export default function PerfilPage() {
                 {/* Tab Content */}
                 <div className="min-h-[400px]">
                     {activeTab === 'general' && (
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, ease: "easeOut" }}
@@ -236,7 +236,7 @@ export default function PerfilPage() {
                                         <div className="absolute -inset-1 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 rounded-[3rem] blur opacity-25 group-hover:opacity-40 transition-opacity duration-1000" />
                                         <section className="relative py-12 px-8 md:px-12 rounded-[3rem] bg-[#0d0a07] border border-white/5 overflow-hidden">
                                             <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
-                                            
+
                                             <div className="relative z-10 flex flex-col items-center text-center space-y-6">
                                                 {profile?.tagline ? (
                                                     <div className="space-y-4">
@@ -251,7 +251,7 @@ export default function PerfilPage() {
                                                 )}
 
                                                 <div className="h-px w-24 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-30" />
-                                                
+
                                                 <div className="flex flex-wrap justify-center gap-6">
                                                     {isDeportista && (
                                                         <div className="flex flex-col items-center">
@@ -296,11 +296,11 @@ export default function PerfilPage() {
                                             </section>
 
                                             <div className="flex justify-center md:justify-start">
-                                                <Button 
+                                                <Button
                                                     onClick={() => setIsEditing(true)}
                                                     className="h-16 px-12 rounded-[2rem] bg-white/5 hover:bg-white text-white hover:text-black border border-white/10 transition-all duration-500 font-black uppercase tracking-[0.2em] text-[10px] group/edit"
                                                 >
-                                                    <Settings size={18} className="mr-3 group-hover/edit:rotate-90 transition-transform duration-500" /> 
+                                                    <Settings size={18} className="mr-3 group-hover/edit:rotate-90 transition-transform duration-500" />
                                                     Perfeccionar mi Perfil
                                                 </Button>
                                             </div>
@@ -310,7 +310,7 @@ export default function PerfilPage() {
                                         <div className="md:col-span-12 lg:col-span-4 space-y-6">
                                             <section className="relative overflow-hidden rounded-[2.5rem] bg-zinc-950 border border-white/10 p-10 shadow-3xl group/pride">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 via-transparent to-orange-500/10 opacity-40 group-hover/pride:opacity-70 transition-opacity duration-1000" />
-                                                
+
                                                 <div className="relative z-10 space-y-8">
                                                     <div className="flex items-center gap-4">
                                                         <div className="p-4 rounded-[1.5rem] bg-white/5 border border-white/10 shadow-inner group-hover/pride:scale-110 transition-transform duration-500">
@@ -328,11 +328,13 @@ export default function PerfilPage() {
                                                             profile.carreras_ids.map((cid: number) => {
                                                                 const carrera = carreras.find(c => c.id === cid);
                                                                 return (
-                                                                    <div key={cid} className="p-5 rounded-3xl bg-white/5 border border-white/10 hover:border-red-500/40 transition-all duration-500 group/career hover:shadow-2xl hover:shadow-red-500/10">
-                                                                        <p className="text-xs font-black text-white leading-tight uppercase tracking-tight group-hover/career:text-red-400">
-                                                                            {carrera?.nombre || "Cargando..."}
-                                                                        </p>
-                                                                    </div>
+                                                                    <Link key={cid} href={`/carrera/${cid}`}>
+                                                                        <div className="p-5 rounded-3xl bg-white/5 border border-white/10 hover:border-red-500/40 transition-all duration-500 group/career hover:shadow-2xl hover:shadow-red-500/10">
+                                                                            <p className="text-xs font-black text-white leading-tight uppercase tracking-tight group-hover/career:text-red-400">
+                                                                                {carrera?.nombre || "Cargando..."}
+                                                                            </p>
+                                                                        </div>
+                                                                    </Link>
                                                                 );
                                                             })
                                                         ) : (
@@ -360,19 +362,19 @@ export default function PerfilPage() {
                                             <h2 className="text-xl font-black tracking-tight flex items-center gap-2 font-outfit">
                                                 <Settings className="text-red-500" /> Editar Perfil
                                             </h2>
-                                            <Button 
-                                                variant="ghost" 
+                                            <Button
+                                                variant="ghost"
                                                 onClick={() => setIsEditing(false)}
                                                 className="text-white/40 hover:text-white h-8 text-[10px] font-black uppercase tracking-widest"
                                             >
                                                 Cancelar
                                             </Button>
                                         </div>
-                                    
+
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Nombre Completo</label>
-                                                <Input 
+                                                <Input
                                                     value={fullName}
                                                     onChange={(e) => setFullName(e.target.value)}
                                                     placeholder="Tu nombre"
@@ -381,7 +383,7 @@ export default function PerfilPage() {
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Frase destacada</label>
-                                                <Input 
+                                                <Input
                                                     value={tagline}
                                                     onChange={(e) => setTagline(e.target.value)}
                                                     placeholder="Una frase que te identifique..."
@@ -390,7 +392,7 @@ export default function PerfilPage() {
                                             </div>
                                             <div className="space-y-2 md:col-span-2">
                                                 <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Información sobre ti (Bio)</label>
-                                                <textarea 
+                                                <textarea
                                                     value={aboutMe}
                                                     onChange={(e) => setAboutMe(e.target.value)}
                                                     placeholder="Cuentanos algo sobre ti, tu carrera o tus logros..."
@@ -402,7 +404,7 @@ export default function PerfilPage() {
                                                     <div className="space-y-1">
                                                         <label id="careers-label" className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Mi Carrera Universitaria (Máximo 2)</label>
                                                         <div className="relative max-w-xs">
-                                                            <Input 
+                                                            <Input
                                                                 aria-label="Buscar carrera universitaria"
                                                                 placeholder="Buscar carrera..."
                                                                 value={searchCarrera}
@@ -415,8 +417,8 @@ export default function PerfilPage() {
                                                         {selectedCarreras.length}/2 Seleccionadas
                                                     </span>
                                                 </div>
-                                                <div 
-                                                    role="group" 
+                                                <div
+                                                    role="group"
                                                     aria-labelledby="careers-label"
                                                     className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto no-scrollbar p-1 focus-within:ring-1 focus-within:ring-white/10 rounded-2xl"
                                                 >
@@ -432,7 +434,7 @@ export default function PerfilPage() {
                                                             <p className="text-[10px] font-black uppercase tracking-widest text-red-500/60 max-w-[250px] text-center">
                                                                 {fetchError}
                                                             </p>
-                                                            <Button 
+                                                            <Button
                                                                 onClick={fetchCarreras}
                                                                 variant="outline"
                                                                 className="h-8 rounded-xl border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10"
@@ -450,8 +452,8 @@ export default function PerfilPage() {
                                                                 onClick={() => toggleCarrera(c.id)}
                                                                 className={cn(
                                                                     "p-4 rounded-2xl text-left transition-all border font-bold text-[11px] relative overflow-hidden group/opt min-h-[70px] flex items-center",
-                                                                    isSelected 
-                                                                        ? "bg-red-500/10 border-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.1)]" 
+                                                                    isSelected
+                                                                        ? "bg-red-500/10 border-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.1)]"
                                                                         : "bg-black/40 border-white/5 text-white/40 hover:border-white/20 hover:text-white/60"
                                                                 )}
                                                             >
@@ -480,7 +482,7 @@ export default function PerfilPage() {
                                             </div>
                                         </div>
 
-                                        <Button 
+                                        <Button
                                             onClick={handleUpdate}
                                             disabled={updating}
                                             className="w-full md:w-auto px-8 h-12 rounded-2xl bg-white text-black font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl disabled:opacity-50"
@@ -492,7 +494,7 @@ export default function PerfilPage() {
                                     <section className="bg-red-500/5 border border-red-500/10 rounded-[2.5rem] p-8 flex flex-col items-center text-center">
                                         <h2 className="text-lg font-black text-red-500 uppercase tracking-widest mb-2">Zona Peligrosa</h2>
                                         <p className="text-sm text-white/40 mb-6 font-bold">¿Deseas cerrar tu sesión en este dispositivo?</p>
-                                        <Button 
+                                        <Button
                                             variant="outline"
                                             onClick={() => signOut()}
                                             className="border-red-500/20 text-red-500 hover:bg-red-500/10 rounded-2xl px-10 font-bold"
@@ -515,7 +517,7 @@ export default function PerfilPage() {
                                 <div className="relative z-10">
                                     <p className="text-orange-400 text-[10px] font-black uppercase tracking-[0.3em] mb-2">{profile?.disciplina?.name || "Disciplina"}</p>
                                     <h3 className="text-4xl font-black tracking-tighter mb-4 font-outfit">Mi Rendimiento</h3>
-                                    
+
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div className="p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col items-center text-center group/card hover:border-red-500/30 transition-all">
                                             <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Victorias</span>
@@ -538,7 +540,7 @@ export default function PerfilPage() {
                                 <h4 className="text-sm font-black uppercase tracking-widest mb-8 flex items-center gap-2 font-outfit">
                                     <Target size={16} className="text-red-500" /> Historial Reciente
                                 </h4>
-                                
+
                                 <div className="space-y-4">
                                     {loadingHistory ? (
                                         <div className="flex flex-col items-center py-10 text-center">
@@ -613,7 +615,7 @@ export default function PerfilPage() {
 
                     {activeTab === 'quiniela' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                             <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-white/10 rounded-[2.5rem] p-8 relative overflow-hidden group">
+                            <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-white/10 rounded-[2.5rem] p-8 relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full" />
                                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                                     <div className="text-center md:text-left">
@@ -627,7 +629,7 @@ export default function PerfilPage() {
                                         </Button>
                                     </Link>
                                 </div>
-                             </div>
+                            </div>
                         </div>
                     )}
                 </div>

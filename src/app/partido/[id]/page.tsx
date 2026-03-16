@@ -28,6 +28,8 @@ type Partido = {
     genero?: string;
     delegacion_a?: string;
     delegacion_b?: string;
+    carrera_a_id?: number | null;
+    carrera_b_id?: number | null;
     disciplinas: { name: string };
     carrera_a?: { nombre: string } | null;
     carrera_b?: { nombre: string } | null;
@@ -64,7 +66,7 @@ export default function PublicMatchDetail() {
     const fetchData = async () => {
         try {
             const [matchRes, eventosRes, predsRes] = await Promise.all([
-                safeQuery(supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).eq('id', matchId).single(), 'partido-detail'),
+                safeQuery(supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a_id, carrera_b_id, carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).eq('id', matchId).single(), 'partido-detail'),
                 safeQuery(supabase.from('olympics_eventos').select('*, jugadores:olympics_jugadores(nombre, numero, profile_id)').eq('partido_id', matchId).order('id', { ascending: false }), 'partido-eventos'),
                 safeQuery(supabase.from('pronosticos').select('winner_pick, prediction_type').eq('match_id', matchId), 'partido-preds'),
             ]);
@@ -347,7 +349,11 @@ export default function PublicMatchDetail() {
                                         <Avatar name={getDisplayName(match, 'a')} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        {getDisplayName(match, 'a')}
+                                        {match.carrera_a_id ? (
+                                            <Link href={`/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}`} className="hover:text-red-400 transition-colors underline-offset-4 hover:underline">
+                                                {getDisplayName(match, 'a')}
+                                            </Link>
+                                        ) : getDisplayName(match, 'a')}
                                     </h2>
                                     {getCarreraSubtitle(match, 'a') && (
                                         <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'a')}</span>
@@ -429,7 +435,7 @@ export default function PublicMatchDetail() {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 {/* Team B */}
                                 <div className="flex flex-col items-center gap-4 group min-w-0 w-full">
                                     {sportName === 'Ajedrez' && isFinished && match.marcador_detalle?.resultado_final === 'victoria_b' && (
@@ -445,7 +451,11 @@ export default function PublicMatchDetail() {
                                         <Avatar name={getDisplayName(match, 'b')} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        {getDisplayName(match, 'b')}
+                                        {match.carrera_b_id ? (
+                                            <Link href={`/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}`} className="hover:text-red-400 transition-colors underline-offset-4 hover:underline">
+                                                {getDisplayName(match, 'b')}
+                                            </Link>
+                                        ) : getDisplayName(match, 'b')}
                                     </h2>
                                     {getCarreraSubtitle(match, 'b') && (
                                         <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'b')}</span>

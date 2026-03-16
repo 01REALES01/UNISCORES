@@ -6,11 +6,11 @@ import { supabase } from "@/lib/supabase";
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, Badge, Button, Card } from "@/components/ui-primitives";
-import { 
-    Trophy, 
-    Star, 
-    Mail, 
-    Medal, 
+import {
+    Trophy,
+    Star,
+    Mail,
+    Medal,
     Target,
     ChevronLeft,
     Loader2,
@@ -82,8 +82,8 @@ export default function PublicProfilePage() {
     const fetchHistory = async (id: string) => {
         setLoadingHistory(true);
         try {
-            const { data } = await supabase.rpc('get_athlete_event_history', { 
-                athlete_profile_id: id 
+            const { data } = await supabase.rpc('get_athlete_event_history', {
+                athlete_profile_id: id
             });
             if (data) setHistory(data);
         } catch (err) {
@@ -133,7 +133,7 @@ export default function PublicProfilePage() {
                 </div>
 
                 {/* Header Profile Section */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col md:flex-row items-center gap-8 mb-16"
@@ -141,10 +141,10 @@ export default function PublicProfilePage() {
                     <div className="relative group">
                         <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-orange-500 rounded-[3rem] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity" />
                         <div className="relative">
-                            <Avatar 
-                                name={profile.full_name} 
+                            <Avatar
+                                name={profile.full_name}
                                 src={profile.avatar_url}
-                                className="w-40 h-40 md:w-56 md:h-56 rounded-[3rem] border-4 border-white/10 shadow-2xl" 
+                                className="w-40 h-40 md:w-56 md:h-56 rounded-[3rem] border-4 border-white/10 shadow-2xl"
                             />
                             {isDeportista && (
                                 <div className="absolute -bottom-4 -right-4 p-4 bg-amber-500 text-black rounded-3xl shadow-2xl border-4 border-[#0a0805] animate-bounce-slow">
@@ -169,7 +169,7 @@ export default function PublicProfilePage() {
                                 &quot;{profile.tagline}&quot;
                             </p>
                         )}
-                        
+
                         <div className="flex flex-wrap justify-center md:justify-start gap-4">
                             <div className="px-5 py-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3 glass hover:border-white/20 transition-all">
                                 <Target size={20} className="text-red-500" />
@@ -178,16 +178,16 @@ export default function PublicProfilePage() {
                                     <span className="text-2xl font-black tabular-nums font-outfit leading-none">{profile.points || 0}</span>
                                 </div>
                             </div>
-                            
+
                             {carreras.length > 0 && (
                                 <div className="px-5 py-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3 glass hover:border-white/20 transition-all">
                                     <div className="flex flex-col">
                                         <span className="text-xs font-black text-white/40 uppercase tracking-widest leading-none mb-1">Carreras</span>
                                         <div className="flex gap-2">
                                             {carreras.map(c => (
-                                                <span key={c.id} className="text-[10px] font-black text-white bg-white/10 px-2 py-1 rounded-lg">
+                                                <Link key={c.id} href={`/carrera/${c.id}`} className="text-[10px] font-black text-white bg-white/10 px-2 py-1 rounded-lg hover:bg-red-500/20 hover:text-red-400 transition-all">
                                                     {c.nombre}
-                                                </span>
+                                                </Link>
                                             ))}
                                         </div>
                                     </div>
@@ -206,7 +206,7 @@ export default function PublicProfilePage() {
                                 <Medal size={120} />
                             </div>
                             <h3 className="text-sm font-black uppercase tracking-[0.3em] text-amber-500 mb-8 font-outfit">Estadísticas de Atleta</h3>
-                            
+
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Disciplina</span>
@@ -214,7 +214,7 @@ export default function PublicProfilePage() {
                                         {profile.disciplina?.name || "Multideporte"}
                                     </Badge>
                                 </div>
-                                
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-black/40 p-4 rounded-2xl border border-white/5 text-center">
                                         <p className="text-[9px] font-black text-white/30 uppercase mb-1">Wins</p>

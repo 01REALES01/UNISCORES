@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { Trophy, Medal, Award, Crown, TrendingUp, Filter, Users, LayoutGrid } from "lucide-react";
@@ -41,18 +43,31 @@ const SAMPLE_DATA: MedalEntry[] = [
 export function MedalLeaderboard() {
     const [medallero, setMedallero] = useState<MedalEntry[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedTeam, setSelectedTeam] = useState<{ team: MedalEntry, rank: number } | null>(null);
     const [activeSport, setActiveSport] = useState<string>('todos');
     const [activeGender, setActiveGender] = useState<string>('todos');
+    const [carreraMap, setCarreraMap] = useState<Record<string, number>>({});
+    const router = useRouter();
 
     const fetchMedallero = async () => {
         setLoading(true);
 
-        const { data: rawMatches, error } = await safeQuery(
-            supabase.from('partidos')
-                .select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)'),
-            'medallero-fetch'
-        );
+        const [matchesResult, carrerasResult] = await Promise.all([
+            safeQuery(
+                supabase.from('partidos')
+                    .select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)'),
+                'medallero-fetch'
+            ),
+            supabase.from('carreras').select('id, nombre'),
+        ]);
+
+        const { data: rawMatches, error } = matchesResult;
+
+        // Build name→id map for career links
+        if (carrerasResult.data) {
+            const map: Record<string, number> = {};
+            carrerasResult.data.forEach((c: any) => { map[c.nombre] = c.id; });
+            setCarreraMap(map);
+        }
 
         if (error || !rawMatches) {
             setMedallero(SAMPLE_DATA);
@@ -93,15 +108,15 @@ export function MedalLeaderboard() {
 
         // Helper for fuzzy matching careers
         const normalize = (str: string) => str.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        
+
         const getMatchedCareer = (name: string): string => {
             const normName = normalize(name);
             // 1. Direct match
             if (careerStats[name]) return name;
             // 2. Fuzzy match in constants
-            return Object.keys(careerStats).find(k => normalize(k) === normName) || 
-                   Object.keys(careerStats).find(k => normalize(k).includes(normName) || normName.includes(normalize(k))) || 
-                   name;
+            return Object.keys(careerStats).find(k => normalize(k) === normName) ||
+                Object.keys(careerStats).find(k => normalize(k).includes(normName) || normName.includes(normalize(k))) ||
+                name;
         };
 
         filteredMatches.forEach(m => {
@@ -114,7 +129,7 @@ export function MedalLeaderboard() {
             // 1. Point-based common logic (for PJ/PG/PE/PP)
             const rawCarreraA = getCarreraName(m, 'a');
             const rawCarreraB = getCarreraName(m, 'b');
-            
+
             const carreraA = getMatchedCareer(rawCarreraA);
             const carreraB = getMatchedCareer(rawCarreraB);
 
@@ -128,7 +143,7 @@ export function MedalLeaderboard() {
             if (scoreA > scoreB) {
                 if (careerStats[carreraA]) { careerStats[carreraA].won!++; careerStats[carreraA].puntos += 3; }
                 if (careerStats[carreraB]) careerStats[carreraB].lost!++;
-                
+
                 // Medals Logic (Only for sports that are NOT races, races handle it differently)
                 if (det.tipo !== 'carrera') {
                     if (isFinal) {
@@ -163,7 +178,7 @@ export function MedalLeaderboard() {
                     const possibleName = res.equipo_nombre || res.equipo || res.delegacion;
                     if (!possibleName) return;
                     const matchedCareer = getMatchedCareer(possibleName);
-                    
+
                     if (careerStats[matchedCareer]) {
                         if (res.puesto === 1) careerStats[matchedCareer].oro++;
                         else if (res.puesto === 2) careerStats[matchedCareer].plata++;
@@ -177,7 +192,7 @@ export function MedalLeaderboard() {
 
         // Convert to Array and Sort
         const result = Object.values(careerStats).filter(c => c.played! > 0 || c.oro > 0 || c.plata > 0 || c.bronce > 0);
-        
+
         result.sort((a, b) => {
             if (b.oro !== a.oro) return b.oro - a.oro;
             if (b.plata !== a.plata) return b.plata - a.plata;
@@ -222,28 +237,28 @@ export function MedalLeaderboard() {
     // Componente de Podio Individual Estilizado (NUEVO DISEÑO PREMIUM)
     const TopPodium = ({ entry, rank }: { entry: MedalEntry, rank: number }) => {
         const isFirst = rank === 1;
-        
+
         // Colores y Estilos según Ranking - Brighter version
         const podiumConfigs: Record<number, any> = {
-            1: { 
-                glow: "shadow-[0_0_50px_rgba(251,146,60,0.3)] border-orange-500/60 ring-2 ring-orange-500/20", 
-                height: "h-[300px] sm:h-[350px]", 
+            1: {
+                glow: "shadow-[0_0_50px_rgba(251,146,60,0.3)] border-orange-500/60 ring-2 ring-orange-500/20",
+                height: "h-[300px] sm:h-[350px]",
                 icon: <Trophy size={20} className="text-orange-400" />,
                 iconBg: "bg-orange-500/20",
                 number: "01",
                 numberColor: "text-orange-500 drop-shadow-[0_0_15px_rgba(251,146,60,0.6)]"
             },
-            2: { 
-                glow: "shadow-[0_0_30px_rgba(148,163,184,0.15)] border-slate-400/30", 
-                height: "h-[220px] sm:h-[260px]", 
+            2: {
+                glow: "shadow-[0_0_30px_rgba(148,163,184,0.15)] border-slate-400/30",
+                height: "h-[220px] sm:h-[260px]",
                 icon: <Medal size={18} className="text-slate-300" />,
                 iconBg: "bg-slate-300/10",
                 number: "02",
                 numberColor: "text-slate-400/80"
             },
-            3: { 
-                glow: "shadow-[0_0_30px_rgba(180,83,9,0.15)] border-amber-800/30", 
-                height: "h-[180px] sm:h-[220px]", 
+            3: {
+                glow: "shadow-[0_0_30px_rgba(180,83,9,0.15)] border-amber-800/30",
+                height: "h-[180px] sm:h-[220px]",
                 icon: <Award size={18} className="text-amber-700" />,
                 iconBg: "bg-amber-700/10",
                 number: "03",
@@ -255,7 +270,7 @@ export function MedalLeaderboard() {
 
         return (
             <div
-                onClick={() => setSelectedTeam({ team: entry, rank })}
+                onClick={() => carreraMap[entry.equipo_nombre] ? router.push(`/carrera/${carreraMap[entry.equipo_nombre]}`) : undefined}
                 className={cn(
                     "flex flex-col items-center group cursor-pointer relative",
                     isFirst ? "z-30 w-[140px] sm:w-[180px]" : "z-20 w-[110px] sm:w-[140px]"
@@ -290,7 +305,11 @@ export function MedalLeaderboard() {
                     {/* Info */}
                     <div className="text-center px-2 space-y-1 mb-6">
                         <h4 className="text-[10px] sm:text-[12px] font-black text-white uppercase tracking-tighter leading-tight line-clamp-2 px-1">
-                            {entry.equipo_nombre}
+                            {carreraMap[entry.equipo_nombre] ? (
+                                <Link href={`/carrera/${carreraMap[entry.equipo_nombre]}`} className="hover:text-orange-400 transition-colors">
+                                    {entry.equipo_nombre}
+                                </Link>
+                            ) : entry.equipo_nombre}
                         </h4>
                         <p className="text-[9px] sm:text-[11px] font-bold text-white/40 italic">
                             {entry.oro} Oros
@@ -341,72 +360,72 @@ export function MedalLeaderboard() {
                     <h2 className="text-4xl sm:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
                         Podio Olímpico
                     </h2>
-                            {/* Filters Row - Redesigned for Premium Appeal */}
-                <div className="flex flex-col gap-6">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        {/* Gender Selection */}
-                        <div className="flex p-1.5 bg-black/40 border border-white/5 rounded-2xl w-full sm:w-auto self-start">
-                            {[
-                                { id: 'todos', label: 'Todos', icon: <Users size={16}/> },
-                                { id: 'masculino', label: 'Masc', icon: '♂' },
-                                { id: 'femenino', label: 'Fem', icon: '♀' },
-                                { id: 'mixto', label: 'Mix', icon: '⚤' },
-                            ].map(g => (
-                                <button
-                                    key={g.id}
-                                    onClick={() => setActiveGender(g.id)}
-                                    className={cn(
-                                        "flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300",
-                                        activeGender === g.id 
-                                            ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20" 
-                                            : "text-white/30 hover:text-white hover:bg-white/5"
-                                    )}
-                                >
-                                    <span className="text-base">{g.icon}</span>
-                                    <span className="hidden sm:inline">{g.label}</span>
-                                </button>
-                            ))}
+                    {/* Filters Row - Redesigned for Premium Appeal */}
+                    <div className="flex flex-col gap-6">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                            {/* Gender Selection */}
+                            <div className="flex p-1.5 bg-black/40 border border-white/5 rounded-2xl w-full sm:w-auto self-start">
+                                {[
+                                    { id: 'todos', label: 'Todos', icon: <Users size={16} /> },
+                                    { id: 'masculino', label: 'Masc', icon: '♂' },
+                                    { id: 'femenino', label: 'Fem', icon: '♀' },
+                                    { id: 'mixto', label: 'Mix', icon: '⚤' },
+                                ].map(g => (
+                                    <button
+                                        key={g.id}
+                                        onClick={() => setActiveGender(g.id)}
+                                        className={cn(
+                                            "flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                                            activeGender === g.id
+                                                ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                                                : "text-white/30 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        <span className="text-base">{g.icon}</span>
+                                        <span className="hidden sm:inline">{g.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="flex items-center gap-2 text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">
+                                <Filter size={12} />
+                                <span>Búsqueda por Disciplina</span>
+                            </div>
                         </div>
 
-                        <div className="flex items-center gap-2 text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">
-                            <Filter size={12} />
-                            <span>Búsqueda por Disciplina</span>
-                        </div>
-                    </div>
-
-                    {/* Discipline Tabs */}
-                    <div className="relative group">
-                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mask-linear-r py-1">
-                            <button
-                                onClick={() => setActiveSport('todos')}
-                                className={cn(
-                                    "flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap border shrink-0",
-                                    activeSport === 'todos' 
-                                        ? "bg-white/10 text-white border-white/20 shadow-xl" 
-                                        : "bg-white/[0.02] border-white/5 text-white/30 hover:text-white hover:bg-white/5 hover:border-white/10"
-                                )}
-                            >
-                                <LayoutGrid size={16} />
-                                Visión General
-                            </button>
-                            {Object.keys(SPORT_COLORS).map((name) => (
+                        {/* Discipline Tabs */}
+                        <div className="relative group">
+                            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mask-linear-r py-1">
                                 <button
-                                    key={name}
-                                    onClick={() => setActiveSport(name)}
+                                    onClick={() => setActiveSport('todos')}
                                     className={cn(
-                                        "flex items-center gap-3 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap border shrink-0",
-                                        activeSport === name 
-                                            ? "bg-orange-500 text-white border-transparent shadow-[0_0_20px_rgba(249,115,22,0.3)]" 
+                                        "flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap border shrink-0",
+                                        activeSport === 'todos'
+                                            ? "bg-white/10 text-white border-white/20 shadow-xl"
                                             : "bg-white/[0.02] border-white/5 text-white/30 hover:text-white hover:bg-white/5 hover:border-white/10"
                                     )}
                                 >
-                                    <SportIcon sport={name} size={18} />
-                                    <span>{name}</span>
+                                    <LayoutGrid size={16} />
+                                    Visión General
                                 </button>
-                            ))}
+                                {Object.keys(SPORT_COLORS).map((name) => (
+                                    <button
+                                        key={name}
+                                        onClick={() => setActiveSport(name)}
+                                        className={cn(
+                                            "flex items-center gap-3 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap border shrink-0",
+                                            activeSport === name
+                                                ? "bg-orange-500 text-white border-transparent shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+                                                : "bg-white/[0.02] border-white/5 text-white/30 hover:text-white hover:bg-white/5 hover:border-white/10"
+                                        )}
+                                    >
+                                        <SportIcon sport={name} size={18} />
+                                        <span>{name}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
                 </div>
             </div>
 
@@ -427,7 +446,7 @@ export function MedalLeaderboard() {
                         return (
                             <div
                                 key={entry.id}
-                                onClick={() => setSelectedTeam({ team: entry, rank: idx + 1 })}
+                                onClick={() => carreraMap[entry.equipo_nombre] ? router.push(`/carrera/${carreraMap[entry.equipo_nombre]}`) : undefined}
                                 className="flex bg-[#1a1625] border border-white/5 hover:border-white/20 transition-all duration-300 group cursor-pointer shadow-lg"
                                 style={{ height: '120px' }}
                             >
@@ -452,7 +471,11 @@ export function MedalLeaderboard() {
 
                                         {/* Name */}
                                         <h2 className="text-lg sm:text-2xl font-bold text-white/90 leading-none tracking-tight truncate pb-1">
-                                            {entry.equipo_nombre}
+                                            {carreraMap[entry.equipo_nombre] ? (
+                                                <Link href={`/carrera/${carreraMap[entry.equipo_nombre]}`} className="hover:text-orange-400 transition-colors" onClick={(e) => e.stopPropagation()}>
+                                                    {entry.equipo_nombre}
+                                                </Link>
+                                            ) : entry.equipo_nombre}
                                         </h2>
 
                                         <span className="text-[9px] sm:text-[10px] font-bold text-white/30 uppercase tracking-widest mt-0.5 block truncate">
@@ -501,7 +524,7 @@ export function MedalLeaderboard() {
                                             Total Medals
                                         </span>
                                     </div>
-                                    
+
                                     <div className="mt-2 text-[9px] font-bold text-red-500/60 font-mono">
                                         {entry.puntos} PTS
                                     </div>
@@ -518,12 +541,7 @@ export function MedalLeaderboard() {
                 </div>
             )}
 
-            <TeamStatsModal
-                isOpen={!!selectedTeam}
-                onClose={() => setSelectedTeam(null)}
-                team={selectedTeam?.team || null}
-                rank={selectedTeam?.rank || 1}
-            />
+
         </section>
     );
 }

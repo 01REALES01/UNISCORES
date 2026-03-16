@@ -85,14 +85,14 @@ const QuinielaHeader = ({ user, profile, points }: { user: any, profile: any, po
         <div className="flex items-center justify-between py-8 px-2">
             <div className="flex items-center gap-4">
                 <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-indigo-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                    <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
                     <Avatar name={profile?.full_name || user?.email} src={profile?.avatar_url} size="lg" className="relative border-2 border-zinc-950 ring-1 ring-white/10 shadow-2xl scale-110" />
                     <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-[3px] border-zinc-950 flex items-center justify-center shadow-lg">
                         <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                     </div>
                 </div>
                 <div>
-                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] leading-none mb-1.5 font-outfit">HOLA,</p>
+                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] leading-none mb-1.5 font-outfit">HOLA,</p>
                     <p className="text-2xl font-black text-white tracking-tight leading-none font-outfit">
                         {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || "Usuario"}
                     </p>
@@ -124,27 +124,27 @@ const QuinielaPodium = ({ top3 }: { top3: any[] }) => {
 
     return (
         <div className="flex items-end justify-center gap-2 sm:gap-6 py-12 px-2 relative min-h-[280px]">
-             {/* Background Effects */}
-             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
-             <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-indigo-500/10 to-transparent blur-3xl -z-10" />
+            {/* Background Effects */}
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-orange-500/10 to-transparent blur-3xl -z-10" />
 
             {podiumSlots.map((slot, idx) => {
                 if (!slot.profile) return <div key={idx} className="flex-1 opacity-0" />;
-                
+
                 const isWinner = slot.pos === 1;
                 const points = slot.profile.points || 0;
 
                 return (
-                    <Link 
-                        key={idx} 
+                    <Link
+                        key={idx}
                         href={`/perfil/${slot.profile.id}`}
                         className={cn(
                             "flex flex-col items-center flex-1 transition-all duration-1000 ease-out animate-in fade-in slide-in-from-bottom-12 group/p-item",
                             isWinner ? "pb-8 scale-125 z-20" : "opacity-90 scale-100 z-10"
-                        )} 
+                        )}
                         style={{ animationDelay: `${idx * 200}ms` }}
                     >
-                        
+
                         <div className="relative mb-5 group">
                             {/* Animated Rings for Winner */}
                             {isWinner && (
@@ -156,19 +156,19 @@ const QuinielaPodium = ({ top3 }: { top3: any[] }) => {
                                     </div>
                                 </>
                             )}
-                            
+
                             <div className="relative">
-                                <Avatar 
-                                    name={slot.profile.display_name || slot.profile.email} 
+                                <Avatar
+                                    name={slot.profile.display_name || slot.profile.email}
                                     src={slot.profile.avatar_url}
                                     className={cn(
                                         "shadow-2xl transition-all duration-500 border-2",
-                                        isWinner 
-                                            ? "w-24 h-24 border-amber-400 group-hover:ring-4 ring-amber-400/20" 
+                                        isWinner
+                                            ? "w-24 h-24 border-amber-400 group-hover:ring-4 ring-amber-400/20"
                                             : "w-16 h-16 border-white/10 group-hover:border-white/30"
-                                    )} 
+                                    )}
                                 />
-                                
+
                                 {/* Rank Badge */}
                                 <div className={cn(
                                     "absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shadow-2xl rotate-45 transform bg-zinc-950 border border-white/20",
@@ -203,18 +203,18 @@ const QuinielaPodium = ({ top3 }: { top3: any[] }) => {
 // ─── NEW: Quiniela Ranking Item ───
 const QuinielaRankingItem = ({ profile, rank, isMe }: { profile: any, rank: number, isMe: boolean }) => {
     return (
-        <Link 
+        <Link
             href={`/perfil/${profile.id}`}
             className={cn(
                 "group relative flex items-center justify-between p-4 mb-3 rounded-3xl transition-all duration-500 overflow-hidden",
-                isMe 
-                    ? "bg-amber-500/10 border-2 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/20" 
+                isMe
+                    ? "bg-amber-500/10 border-2 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/20"
                     : "bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10"
             )}
         >
             {/* Background Texture/Gradient */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white/[0.01] pointer-events-none" />
-            
+
             <div className="flex items-center gap-5 relative z-10">
                 <div className="w-8 flex justify-center">
                     <span className={cn(
@@ -224,12 +224,12 @@ const QuinielaRankingItem = ({ profile, rank, isMe }: { profile: any, rank: numb
                         #{rank}
                     </span>
                 </div>
-                
+
                 <div className="relative">
-                    <Avatar 
-                        name={profile.display_name || profile.email} 
+                    <Avatar
+                        name={profile.display_name || profile.email}
                         src={profile.avatar_url}
-                        className="w-12 h-12 border border-white/10 group-hover:scale-110 transition-transform duration-500" 
+                        className="w-12 h-12 border border-white/10 group-hover:scale-110 transition-transform duration-500"
                     />
                     {isMe && (
                         <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 border-2 border-zinc-950 flex items-center justify-center">
@@ -237,7 +237,7 @@ const QuinielaRankingItem = ({ profile, rank, isMe }: { profile: any, rank: numb
                         </div>
                     )}
                 </div>
-                
+
                 <div className="space-y-0.5">
                     <p className="font-black text-sm text-white flex items-center gap-2 font-outfit group-hover:text-red-500 transition-colors">
                         {profile.display_name || "Usuario"}
@@ -356,7 +356,7 @@ const PredictionCard = ({
         )}>
             {/* Visual Accents */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            
+
             {/* Header: Sport & Status */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2.5">
@@ -405,7 +405,7 @@ const PredictionCard = ({
                 <div className="flex flex-col items-center justify-center min-w-[80px]">
                     {(isLive || isFinished) ? (
                         <div className="space-y-1">
-                             <div className="text-3xl font-black tabular-nums font-mono tracking-tighter text-white flex items-center gap-2">
+                            <div className="text-3xl font-black tabular-nums font-mono tracking-tighter text-white flex items-center gap-2">
                                 <span>{scoreInfo.scoreA}</span>
                                 <span className="opacity-20">:</span>
                                 <span>{scoreInfo.scoreB}</span>
@@ -435,45 +435,45 @@ const PredictionCard = ({
                     <div className="text-center">
                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Tu Predicción</p>
                         <div className="flex items-center justify-center gap-3">
-                             {prediction?.prediction_type === 'score' ? (
+                            {prediction?.prediction_type === 'score' ? (
                                 <p className={cn(
                                     "text-2xl font-black tabular-nums font-mono tracking-tight",
                                     isFinished ? (predictionCorrect ? "text-emerald-400" : "text-rose-400") : "text-white"
                                 )}>
                                     {prediction.goles_a} <span className="opacity-20">-</span> {prediction.goles_b}
                                 </p>
-                             ) : (
+                            ) : (
                                 <div className={cn(
                                     "flex items-center gap-2 px-4 py-2 rounded-full border",
                                     isFinished ? (predictionCorrect ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400") : "bg-white/5 border-white/10 text-white"
                                 )}>
                                     <Trophy size={14} className="fill-current" />
                                     <span className="text-xs font-black uppercase tracking-widest">
-                                        {prediction?.winner_pick === 'A' ? match.carrera_a?.nombre || match.equipo_a : 
-                                         prediction?.winner_pick === 'B' ? match.carrera_b?.nombre || match.equipo_b : 'Empate'}
+                                        {prediction?.winner_pick === 'A' ? match.carrera_a?.nombre || match.equipo_a :
+                                            prediction?.winner_pick === 'B' ? match.carrera_b?.nombre || match.equipo_b : 'Empate'}
                                     </span>
                                 </div>
-                             )}
+                            )}
                         </div>
                     </div>
                 ) : !isLocked ? (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between mb-1">
-                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">¿Cuál será el resultado?</p>
-                             <div className="flex gap-1">
-                                <button 
-                                    onClick={() => onPredict(match.id, { ...prediction, mode: 'score' })} 
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">¿Cuál será el resultado?</p>
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => onPredict(match.id, { ...prediction, mode: 'score' })}
                                     className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-all", mode === 'score' ? "bg-red-500 text-white" : "bg-white/5 text-slate-500")}
                                 >
                                     <Target size={12} />
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => onPredict(match.id, { ...prediction, mode: 'winner' })}
                                     className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-all", mode === 'winner' ? "bg-red-500 text-white" : "bg-white/5 text-slate-500")}
                                 >
                                     <Award size={12} />
                                 </button>
-                             </div>
+                            </div>
                         </div>
 
                         {mode === 'score' ? (
@@ -517,11 +517,11 @@ const PredictionCard = ({
                                 ))}
                             </div>
                         )}
-                        
+
                         <Button
                             className={cn(
                                 "w-full rounded-2xl h-12 text-[11px] font-black uppercase tracking-[0.2em] transition-all",
-                                isPredicted 
+                                isPredicted
                                     ? "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 shadow-xl shadow-red-600/20"
                                     : "bg-white text-black hover:bg-slate-200"
                             )}
@@ -538,7 +538,7 @@ const PredictionCard = ({
                     </div>
                 )}
             </div>
-            
+
             {/* Percentage Bar simplified at bottom */}
             {!isFinished && (
                 <div className="mt-4 px-1">
@@ -718,11 +718,11 @@ export default function QuinielaPage() {
     );
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white font-sans pb-20 selection:bg-indigo-500/30">
+        <div className="min-h-screen bg-[#0d0906] text-white font-sans pb-20 selection:bg-orange-500/30">
             {/* Ambient Background Gradient */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-orange-500/10 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-amber-600/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
             </div>
             {/* Modal Disclaimer */}
             {showDisclaimer && (
@@ -737,8 +737,8 @@ export default function QuinielaPage() {
                             <p className="text-sm text-slate-300 leading-relaxed max-w-[260px]">
                                 Este espacio es <strong className="text-white">100% recreativo</strong>. Aquí no se realizan apuestas económicas ni se involucra dinero real. ¡Diviértete prediciendo! 🏅
                             </p>
-                            <Button 
-                                onClick={handleDismissDisclaimer} 
+                            <Button
+                                onClick={handleDismissDisclaimer}
                                 className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl mt-4 font-bold h-12 shadow-lg shadow-blue-600/20 text-md"
                             >
                                 Entendido, ¡A jugar!
@@ -1135,7 +1135,7 @@ export default function QuinielaPage() {
                         <div className="bg-zinc-950/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] relative">
                             {/* Texture Overlay */}
                             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] pointer-events-none mix-blend-overlay" />
-                            
+
                             {/* Podio Visual (Solo en Líderes) */}
                             {rankingSubTab === 'leaders' && (
                                 ranking.length > 0 ? (
@@ -1152,7 +1152,7 @@ export default function QuinielaPage() {
 
                             {/* Pestañas de Sub-Ranking */}
                             <nav className="flex items-center gap-10 px-10 py-2 border-y border-white/10 bg-white/[0.02] overflow-x-auto no-scrollbar relative z-10" aria-label="Filtros de ranking">
-                                <button 
+                                <button
                                     onClick={() => setRankingSubTab('leaders')}
                                     className={cn(
                                         "pb-4 border-b-2 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap font-outfit transition-all",
@@ -1161,7 +1161,7 @@ export default function QuinielaPage() {
                                 >
                                     Líderes
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => setRankingSubTab('streaks')}
                                     className={cn(
                                         "pb-4 border-b-2 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap font-outfit transition-all",
@@ -1170,7 +1170,7 @@ export default function QuinielaPage() {
                                 >
                                     Rachas
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => setRankingSubTab('consistency')}
                                     className={cn(
                                         "pb-4 border-b-2 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap font-outfit transition-all",
@@ -1205,12 +1205,12 @@ export default function QuinielaPage() {
 
                                             return sortedRanking.map((prof, idx) => (
                                                 <div key={prof.id} className="relative group">
-                                                    <QuinielaRankingItem 
-                                                        profile={prof} 
-                                                        rank={idx + 1} 
-                                                        isMe={prof.id === user?.id} 
+                                                    <QuinielaRankingItem
+                                                        profile={prof}
+                                                        rank={idx + 1}
+                                                        isMe={prof.id === user?.id}
                                                     />
-                                                    
+
                                                     {/* Overlay de métrica específica */}
                                                     <div className="absolute right-24 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-4 pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity">
                                                         {rankingSubTab === 'streaks' && prof.current_streak > 0 && (
