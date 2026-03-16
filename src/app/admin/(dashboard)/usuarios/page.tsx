@@ -147,6 +147,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
         if (error) {
             alert('Error al actualizar roles: ' + error.message);
         } else {
+            // Optional: You could add a toast here if sonner is available
             await fetchProfiles();
         }
 

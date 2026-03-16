@@ -1,153 +1,133 @@
-"use client";
-
-import useSWR, { mutate as globalMutate } from "swr";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
-import { useEffect } from "react";
 import { toast } from "sonner";
-import type { Prediction, QuinielaLeaderboardEntry } from "@/modules/quiniela/types";
-import type { PartidoWithRelations } from "@/modules/matches/types";
+import { useAuth } from "@/hooks/useAuth";
+import { getMatchResult } from "@/modules/quiniela/helpers";
 
-// ─── Column selection ─────────────────────────────────────────────────────────
-const MATCH_COLUMNS = '*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)';
-const LEADERBOARD_COLUMNS = '*, display_name, avatar_url, points, current_streak, max_streak, total_predictions, correct_predictions';
+export function useQuiniela() {
+    const { user, profile } = useAuth();
+    const [matches, setMatches] = useState<any[]>([]);
+    const [predictions, setPredictions] = useState<any[]>([]);
+    const [allPredictions, setAllPredictions] = useState<any[]>([]);
+    const [ranking, setRanking] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [userPublicProfile, setUserPublicProfile] = useState<any>(null);
 
-// ─── Realtime (singleton) ─────────────────────────────────────────────────────
-let isQuinielaSubscribed = false;
+    const fetchData = useCallback(async () => {
+        if (!user) return;
+        setLoading(true);
 
-function subscribeToQuiniela(userId: string) {
-    if (typeof window === 'undefined') return;
-    if (isQuinielaSubscribed) return;
-    isQuinielaSubscribed = true;
+        const [matchesRes, predsRes, allPredsRes, rankingRes, userPubRes] = await Promise.all([
+            safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)').order('fecha', { ascending: true }), 'quiniela-matches'),
+            safeQuery(supabase.from('pronosticos').select('*').eq('user_id', user.id), 'quiniela-preds'),
+            safeQuery(supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'), 'quiniela-allPreds'),
+            safeQuery(supabase.from('public_profiles').select('*, display_name, avatar_url, points, current_streak, max_streak, total_predictions, correct_predictions').order('points', { ascending: false }).limit(50), 'quiniela-ranking'),
+            safeQuery(supabase.from('public_profiles').select('*').eq('id', user.id).single(), 'user-public-profile'),
+        ]);
 
-    supabase
-        .channel('quiniela:realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'pronosticos' }, () => {
-            globalMutate(`quiniela:allPredictions`);
-            globalMutate(`quiniela:userPredictions:${userId}`);
-            globalMutate('quiniela:leaderboard');
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
-            globalMutate('quiniela:matches');
-        })
-        .subscribe();
-}
+        if (matchesRes.data) setMatches(matchesRes.data);
+        if (predsRes.data) setPredictions(predsRes.data);
+        if (allPredsRes.data) setAllPredictions(allPredsRes.data);
+        if (rankingRes.data) setRanking(rankingRes.data);
+        if (userPubRes.data) setUserPublicProfile(userPubRes.data);
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-export function useQuiniela(userId: string | null | undefined) {
-    // All matches (for quiniela — scheduled/live/finished)
-    const { data: matches, isLoading: matchesLoading } = useSWR<PartidoWithRelations[]>(
-        'quiniela:matches',
-        async () => {
-            const { data, error } = await safeQuery(
-                supabase.from('partidos').select(MATCH_COLUMNS).order('fecha', { ascending: true }),
-                'quiniela-matches'
-            );
-            if (error) throw error;
-            return (data || []) as unknown as PartidoWithRelations[];
-        },
-        { revalidateOnFocus: false, dedupingInterval: 10000 }
-    );
+        setLoading(false);
+    }, [user]);
 
-    // User's own predictions
-    const { data: predictions, mutate: mutatePredictions, isLoading: predsLoading } = useSWR<Prediction[]>(
-        userId ? `quiniela:userPredictions:${userId}` : null,
-        async () => {
-            if (!userId) return [];
-            const { data, error } = await supabase.from('pronosticos').select('*').eq('user_id', userId);
-            if (error) throw error;
-            return (data || []) as unknown as Prediction[];
-        },
-        { revalidateOnFocus: false, dedupingInterval: 5000 }
-    );
-
-    // All predictions (for vote %)
-    const { data: allPredictions, isLoading: allPredsLoading } = useSWR(
-        'quiniela:allPredictions',
-        async () => {
-            const { data, error } = await supabase
-                .from('pronosticos')
-                .select('match_id, winner_pick, prediction_type');
-            if (error) throw error;
-            return data || [];
-        },
-        { revalidateOnFocus: false, dedupingInterval: 10000 }
-    );
-
-    // Leaderboard
-    const { data: leaderboard, isLoading: leaderboardLoading } = useSWR<QuinielaLeaderboardEntry[]>(
-        'quiniela:leaderboard',
-        async () => {
-            const { data, error } = await safeQuery(
-                supabase.from('public_profiles').select(LEADERBOARD_COLUMNS).order('points', { ascending: false }).limit(50),
-                'quiniela-ranking'
-            );
-            if (error) throw error;
-            return (data || []) as unknown as QuinielaLeaderboardEntry[];
-        },
-        { revalidateOnFocus: false, dedupingInterval: 30000 }
-    );
-
-    // User public profile (points, streak, etc.)
-    const { data: userPublicProfile } = useSWR(
-        userId ? `quiniela:publicProfile:${userId}` : null,
-        async () => {
-            if (!userId) return null;
-            const { data } = await supabase.from('public_profiles').select('*').eq('id', userId).single();
-            return data;
-        },
-        { revalidateOnFocus: false, dedupingInterval: 30000 }
-    );
-
-    // ─── Realtime ────────────────────────────────────────────────────────────
     useEffect(() => {
-        if (userId) subscribeToQuiniela(userId);
-    }, [userId]);
+        if (!user) return;
+        fetchData();
 
-    // ─── Actions ─────────────────────────────────────────────────────────────
-    const submitPrediction = async (matchId: number, data: Partial<Prediction>): Promise<void> => {
-        if (!userId) return;
+        const channel = supabase
+            .channel('quiniela-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'pronosticos' }, async () => {
+                const { data } = await safeQuery(supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'), 'rt-allPreds');
+                if (data) setAllPredictions(data);
+                // Also refresh user predictions if needed
+                const { data: userPreds } = await supabase.from('pronosticos').select('*').eq('user_id', user.id);
+                if (userPreds) setPredictions(userPreds);
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, async () => {
+                const { data } = await safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)').order('fecha', { ascending: true }), 'rt-matches');
+                if (data) setMatches(data);
+            })
+            .subscribe();
 
-        toast.promise(
+        return () => { supabase.removeChannel(channel); };
+    }, [user, fetchData]);
+
+    const handlePredict = async (matchId: any, data: any) => {
+        if (!user) return;
+
+        return toast.promise(
             async () => {
                 // Ensure public profile exists
-                await supabase
-                    .from('public_profiles')
-                    .upsert({ id: userId, email: '' }, { onConflict: 'id' });
+                const { error: profileError } = await supabase.from('public_profiles').upsert(
+                    { id: user.id, email: user.email },
+                    { onConflict: 'id' }
+                );
 
-                const existing = (predictions || []).find(p => p.match_id === matchId);
-                const payload = { user_id: userId, match_id: matchId, ...data };
+                if (profileError) console.error("Profile auto-creation failed:", profileError);
 
+                const existing = predictions.find(p => p.match_id === matchId);
+                const payload = { user_id: user.id, match_id: matchId, ...data };
+
+                let error;
                 if (existing) {
-                    const { error } = await supabase.from('pronosticos').update(payload).eq('id', existing.id);
-                    if (error) throw error;
+                    const { error: e } = await supabase.from('pronosticos').update(payload).eq('id', existing.id);
+                    error = e;
                 } else {
-                    const { error } = await supabase.from('pronosticos').insert(payload);
-                    if (error) throw error;
+                    const { error: e } = await supabase.from('pronosticos').insert(payload);
+                    error = e;
                 }
 
-                await Promise.all([
-                    globalMutate(`quiniela:userPredictions:${userId}`),
-                    globalMutate('quiniela:allPredictions'),
+                if (error) throw error;
+
+                // Refresh state
+                const [userPreds, allPreds] = await Promise.all([
+                    supabase.from('pronosticos').select('*').eq('user_id', user.id),
+                    supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'),
                 ]);
+                if (userPreds.data) setPredictions(userPreds.data);
+                if (allPreds.data) setAllPredictions(allPreds.data);
             },
             {
                 loading: 'Guardando acierto...',
                 success: '¡Acierto guardado! 🔥',
-                error: (e: Error) => `Error: ${e.message}`,
+                error: (e) => `Error: ${e.message}`
             }
         );
     };
 
+    const stats = useMemo(() => {
+        const totalPredictions = predictions.length;
+        const correctPredictions = predictions.filter(p => {
+            const m = matches.find(match => match.id === p.match_id);
+            if (!m || m.estado !== 'finalizado') return false;
+            const result = getMatchResult(m);
+            if (!result) return false;
+            if (p.winner_pick) return p.winner_pick === result;
+            return false;
+        }).length;
+        const finishedWithPrediction = predictions.filter(p => {
+            const m = matches.find(match => match.id === p.match_id);
+            return m && m.estado === 'finalizado';
+        }).length;
+        const accuracy = finishedWithPrediction > 0 ? Math.round((correctPredictions / finishedWithPrediction) * 100) : 0;
+
+        return { totalPredictions, correctPredictions, accuracy };
+    }, [matches, predictions]);
+
     return {
-        matches: matches || [],
-        predictions: predictions || [],
-        allPredictions: allPredictions || [],
-        leaderboard: leaderboard || [],
+        matches,
+        predictions,
+        allPredictions,
+        ranking,
+        loading,
         userPublicProfile,
-        userPoints: userPublicProfile?.points || 0,
-        loading: matchesLoading || predsLoading || allPredsLoading || leaderboardLoading,
-        mutatePredictions,
-        submitPrediction,
+        handlePredict,
+        stats,
+        refresh: fetchData
     };
 }
