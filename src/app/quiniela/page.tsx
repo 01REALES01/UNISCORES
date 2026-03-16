@@ -82,29 +82,31 @@ const VotePercentageBar = ({ matchId, allPredictions, teamA, teamB, sportName }:
 // ─── NEW: Quiniela Header Component ───
 const QuinielaHeader = ({ user, profile, points }: { user: any, profile: any, points: number }) => {
     return (
-        <div className="flex items-center justify-between py-6 px-1">
-            <div className="flex items-center gap-3">
-                <div className="relative">
-                    <Avatar name={profile?.full_name || user?.email} size="default" className="border-2 border-white/10 ring-2 ring-red-500/20 shadow-xl" />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-black flex items-center justify-center">
-                        <div className="w-1 h-1 rounded-full bg-white animate-pulse" />
+        <div className="flex items-center justify-between py-8 px-2">
+            <div className="flex items-center gap-4">
+                <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-indigo-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                    <Avatar name={profile?.full_name || user?.email} src={profile?.avatar_url} size="lg" className="relative border-2 border-zinc-950 ring-1 ring-white/10 shadow-2xl scale-110" />
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-[3px] border-zinc-950 flex items-center justify-center shadow-lg">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                     </div>
                 </div>
                 <div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Hey,</p>
-                    <p className="text-lg font-black text-white tracking-tight leading-none">
-                        {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || "Markus"}
+                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] leading-none mb-1.5 font-outfit">HOLA,</p>
+                    <p className="text-2xl font-black text-white tracking-tight leading-none font-outfit">
+                        {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || "Usuario"}
                     </p>
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 p-1.5 pr-4 rounded-full shadow-inner group hover:bg-white/10 transition-all cursor-default">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                    <Diamond size={14} className="text-black fill-current" />
+            <div className="flex items-center gap-3 bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-2 pr-5 rounded-[2rem] shadow-2xl group hover:bg-white/[0.08] transition-all cursor-default overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform relative z-10">
+                    <Diamond size={18} className="text-black fill-current" />
                 </div>
-                <div>
-                    <span className="text-lg font-black text-white tabular-nums leading-none block">{points}</span>
-                    <span className="text-[8px] font-bold text-yellow-500 uppercase tracking-tighter leading-none block">Total Puntos</span>
+                <div className="relative z-10">
+                    <span className="text-xl font-black text-white tabular-nums leading-none block font-outfit">{points}</span>
+                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest leading-none block mt-0.5">Puntos</span>
                 </div>
             </div>
         </div>
@@ -112,70 +114,79 @@ const QuinielaHeader = ({ user, profile, points }: { user: any, profile: any, po
 };
 
 // ─── NEW: Quiniela Podium Component ───
-// ─── NEW: Quiniela Podium Component ───
 const QuinielaPodium = ({ top3 }: { top3: any[] }) => {
     // Ensure we have 3 slots even if ranking is small
     const podiumSlots = [
-        { pos: 2, profile: top3[1], color: 'slate-400', trophy: '🥈', size: 'small' },
-        { pos: 1, profile: top3[0], color: 'yellow-400', trophy: '🥇', size: 'large' },
-        { pos: 3, profile: top3[2], color: 'orange-600', trophy: '🥉', size: 'small' }
+        { pos: 2, profile: top3[1], color: 'text-slate-300', trophy: '🥈', accent: 'bg-slate-500', glow: 'shadow-slate-500/20' },
+        { pos: 1, profile: top3[0], color: 'text-yellow-400', trophy: '🥇', accent: 'bg-amber-500', glow: 'shadow-amber-500/40' },
+        { pos: 3, profile: top3[2], color: 'text-orange-600', trophy: '🥉', accent: 'bg-orange-600', glow: 'shadow-orange-600/20' }
     ];
 
     return (
-        <div className="flex items-end justify-center gap-4 py-10 px-2 relative min-h-[220px]">
-             {/* Background Glow */}
-             <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-red-600/5 to-transparent blur-3xl -z-10" />
+        <div className="flex items-end justify-center gap-2 sm:gap-6 py-12 px-2 relative min-h-[280px]">
+             {/* Background Effects */}
+             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
+             <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-indigo-500/10 to-transparent blur-3xl -z-10" />
 
             {podiumSlots.map((slot, idx) => {
-                if (!slot.profile) return <div key={idx} className="flex-1" />;
+                if (!slot.profile) return <div key={idx} className="flex-1 opacity-0" />;
                 
                 const isWinner = slot.pos === 1;
-                const accuracy = slot.profile.accuracy || 0;
+                const points = slot.profile.points || 0;
 
                 return (
                     <div key={idx} className={cn(
-                        "flex flex-col items-center flex-1 transition-all duration-700 animate-in slide-in-from-bottom",
-                        isWinner ? "pb-4 scale-110 z-10" : "opacity-80 scale-95"
-                    )} style={{ animationDelay: `${idx * 150}ms` }}>
+                        "flex flex-col items-center flex-1 transition-all duration-1000 ease-out animate-in fade-in slide-in-from-bottom-12",
+                        isWinner ? "pb-8 scale-125 z-20" : "opacity-90 scale-100 z-10"
+                    )} style={{ animationDelay: `${idx * 200}ms` }}>
                         
-                        <div className="relative mb-3 group">
-                            {/* Laurel Wreath Simulation via CSS or Icons */}
-                            <div className={cn(
-                                "absolute -inset-4 border-2 rounded-full border-dashed opacity-20 group-hover:opacity-40 transition-opacity rotate-[25deg]",
-                                isWinner ? "border-yellow-400" : "border-slate-500"
-                            )} />
+                        <div className="relative mb-5 group">
+                            {/* Animated Rings for Winner */}
+                            {isWinner && (
+                                <>
+                                    <div className="absolute -inset-4 border-2 border-amber-500/20 rounded-full animate-[spin_10s_linear_infinite]" />
+                                    <div className="absolute -inset-8 border border-white/5 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+                                        <Award className="text-amber-500 fill-amber-500/20 animate-bounce" size={24} />
+                                    </div>
+                                </>
+                            )}
                             
                             <div className="relative">
                                 <Avatar 
                                     name={slot.profile.display_name || slot.profile.email} 
+                                    src={slot.profile.avatar_url}
                                     className={cn(
-                                        "shadow-2xl transition-transform group-hover:scale-105",
-                                        isWinner ? "w-20 h-20 border-2 border-yellow-400" : "w-16 h-16 border-2 border-white/10"
+                                        "shadow-2xl transition-all duration-500 border-2",
+                                        isWinner 
+                                            ? "w-24 h-24 border-amber-400 group-hover:ring-4 ring-amber-400/20" 
+                                            : "w-16 h-16 border-white/10 group-hover:border-white/30"
                                     )} 
                                 />
                                 
                                 {/* Rank Badge */}
                                 <div className={cn(
-                                    "absolute -bottom-2 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-xl",
-                                    slot.pos === 1 ? "bg-yellow-400 text-black border-2 border-black" :
-                                    slot.pos === 2 ? "bg-slate-300 text-black border-2 border-black" :
-                                    "bg-orange-600 text-white border-2 border-black"
+                                    "absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shadow-2xl rotate-45 transform bg-zinc-950 border border-white/20",
+                                    slot.color
                                 )}>
-                                    {slot.pos}
+                                    <span className="-rotate-45">{slot.pos}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="text-center">
-                            <p className="text-xs font-black text-white truncate max-w-[80px]">
-                                {slot.profile.display_name?.split('@')[0] || "Invitado"}
-                            </p>
+                        <div className="text-center relative">
                             <p className={cn(
-                                "text-sm font-black mt-1",
-                                isWinner ? "text-red-500" : "text-slate-500"
+                                "text-[11px] font-black truncate max-w-[80px] uppercase tracking-wider mb-1 font-outfit",
+                                isWinner ? "text-white" : "text-slate-400"
                             )}>
-                                {accuracy}%
+                                {slot.profile.display_name?.split(' ')[0] || "Invitado"}
                             </p>
+                            <div className={cn(
+                                "px-3 py-1 rounded-full text-xs font-black font-outfit flex items-center gap-1 shadow-lg",
+                                isWinner ? "bg-amber-500 text-black" : "bg-white/5 text-slate-300 border border-white/5"
+                            )}>
+                                {points} <span className="text-[8px] opacity-70">PTS</span>
+                            </div>
                         </div>
                     </div>
                 );
@@ -188,43 +199,59 @@ const QuinielaPodium = ({ top3 }: { top3: any[] }) => {
 const QuinielaRankingItem = ({ profile, rank, isMe }: { profile: any, rank: number, isMe: boolean }) => {
     return (
         <div className={cn(
-            "group relative flex items-center justify-between p-4 mb-3 rounded-[2.5rem] bg-zinc-900/40 border transition-all duration-300",
-            isMe ? "border-red-500/30 bg-red-500/5 ring-1 ring-red-500/10" : "border-white/5 hover:bg-white/5 hover:border-white/10"
+            "group relative flex items-center justify-between p-4 mb-3 rounded-3xl transition-all duration-500 overflow-hidden",
+            isMe 
+                ? "bg-amber-500/10 border-2 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/20" 
+                : "bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10"
         )}>
-            <div className="flex items-center gap-4">
+            {/* Background Texture/Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white/[0.01] pointer-events-none" />
+            
+            <div className="flex items-center gap-5 relative z-10">
+                <div className="w-8 flex justify-center">
+                    <span className={cn(
+                        "text-lg font-black font-outfit italic",
+                        rank <= 3 ? "text-amber-500/50" : "text-white/10"
+                    )}>
+                        #{rank}
+                    </span>
+                </div>
+                
                 <div className="relative">
                     <Avatar 
                         name={profile.display_name || profile.email} 
-                        className="w-14 h-14 border border-white/10 group-hover:scale-105 transition-transform" 
+                        src={profile.avatar_url}
+                        className="w-12 h-12 border border-white/10 group-hover:scale-110 transition-transform duration-500" 
                     />
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-zinc-800 border-2 border-black flex items-center justify-center text-[10px] font-black text-white">
-                        {rank}
-                    </div>
+                    {isMe && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 border-2 border-zinc-950 flex items-center justify-center">
+                            <Star size={8} className="text-black fill-current" />
+                        </div>
+                    )}
                 </div>
                 
                 <div className="space-y-0.5">
-                    <p className="font-black text-sm text-white flex items-center gap-1.5">
-                        {profile.display_name?.split('@')[0] || "Usuario"}
-                        {isMe && <Badge className="bg-red-500/20 text-red-400 border-0 text-[8px] h-4 px-1">TÚ</Badge>}
+                    <p className="font-black text-sm text-white flex items-center gap-2 font-outfit">
+                        {profile.display_name || "Usuario"}
+                        {isMe && <Badge className="bg-amber-400 text-black border-0 text-[8px] font-black h-4 px-1.5 rounded-md">TÚ</Badge>}
                     </p>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-500/20 flex items-center justify-center">
-                            <Users size={8} className="text-blue-500" />
-                        </div>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate max-w-[120px]">
-                            {profile.email?.split('@')[0] || "Uninorte"}
-                        </p>
-                    </div>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.1em] truncate max-w-[140px]">
+                        {profile.email?.split('@')[0] || "Uninorte"}
+                    </p>
                 </div>
             </div>
 
-            <div className="text-right pr-2">
-                <p className="text-lg font-black text-white tabular-nums leading-none">
-                    {profile.accuracy || 0}<span className="text-[10px] ml-0.5 text-slate-500">%</span>
-                </p>
-                <div className="flex items-center justify-end gap-1 mt-1">
-                    <TrendingUp size={10} className="text-emerald-500" />
-                    <span className="text-[9px] font-black text-emerald-500 tabular-nums uppercase">Top {rank}</span>
+            <div className="text-right pr-2 relative z-10">
+                <div className="flex items-baseline justify-end gap-1">
+                    <span className="text-2xl font-black text-white tabular-nums font-outfit">
+                        {profile.points || 0}
+                    </span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pts</span>
+                </div>
+                <div className="flex items-center justify-end gap-1.5 mt-1">
+                    <div className="h-1 w-12 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-amber-500/50" style={{ width: `${Math.min(100, (profile.points || 0) / 5)}%` }} />
+                    </div>
                 </div>
             </div>
         </div>
@@ -524,7 +551,8 @@ const PredictionCard = ({
 export default function QuinielaPage() {
     const { user, profile, isStaff, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'play' | 'history' | 'ranking'>('play');
+    const [activeTab, setActiveTab] = useState<'play' | 'history' | 'ranking'>('ranking');
+    const [rankingSubTab, setRankingSubTab] = useState<'leaders' | 'streaks' | 'consistency'>('leaders');
     const [matches, setMatches] = useState<any[]>([]);
     const [predictions, setPredictions] = useState<any[]>([]);
     const [allPredictions, setAllPredictions] = useState<any[]>([]);
@@ -553,7 +581,7 @@ export default function QuinielaPage() {
                 safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)').order('fecha', { ascending: true }), 'quiniela-matches'),
                 safeQuery(supabase.from('pronosticos').select('*').eq('user_id', user.id), 'quiniela-preds'),
                 safeQuery(supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'), 'quiniela-allPreds'),
-                safeQuery(supabase.from('public_profiles').select('*').order('points', { ascending: false }).limit(50), 'quiniela-ranking'),
+                safeQuery(supabase.from('public_profiles').select('*, display_name, avatar_url, points, current_streak, max_streak, total_predictions, correct_predictions').order('points', { ascending: false }).limit(50), 'quiniela-ranking'),
                 safeQuery(supabase.from('public_profiles').select('*').eq('id', user.id).single(), 'user-public-profile'),
             ]);
 
@@ -1096,40 +1124,127 @@ export default function QuinielaPage() {
                         <QuinielaHeader user={user} profile={profile} points={userPoints} />
 
                         {/* Contenedor Principal del Ranking */}
-                        <div className="bg-zinc-950/20 backdrop-blur-xl rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl">
-                            {/* Podio Visual */}
-                            {ranking.length > 0 ? (
-                                <QuinielaPodium top3={ranking.slice(0, 3)} />
-                            ) : (
-                                <div className="py-20 text-center opacity-20">
-                                    <Trophy size={48} className="mx-auto mb-2" />
-                                    <p className="text-sm font-bold uppercase tracking-widest">Esperando Analistas</p>
-                                </div>
+                        <div className="bg-zinc-950/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] relative">
+                            {/* Texture Overlay */}
+                            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] pointer-events-none mix-blend-overlay" />
+                            
+                            {/* Podio Visual (Solo en Líderes) */}
+                            {rankingSubTab === 'leaders' && (
+                                ranking.length > 0 ? (
+                                    <QuinielaPodium top3={ranking.slice(0, 3)} />
+                                ) : (
+                                    <div className="py-24 text-center">
+                                        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 border border-white/10">
+                                            <Trophy size={32} className="text-white/20" />
+                                        </div>
+                                        <p className="text-sm font-black uppercase tracking-[0.2em] text-white/30 font-outfit">Preparando Ranking...</p>
+                                    </div>
+                                )
                             )}
 
-                            {/* Pestañas de Sub-Ranking (Estilo Referencia) */}
-                            <div className="flex items-center gap-8 px-8 py-2 border-b border-white/5 overflow-x-auto no-scrollbar">
-                                <button className="pb-4 border-b-2 border-red-500 text-white text-xs font-black uppercase tracking-widest whitespace-nowrap">Leaderboard</button>
-                                <button className="pb-4 border-b-2 border-transparent text-slate-500 text-xs font-black uppercase tracking-widest whitespace-nowrap hover:text-white transition-colors">Streaks</button>
-                                <button className="pb-4 border-b-2 border-transparent text-slate-500 text-xs font-black uppercase tracking-widest whitespace-nowrap hover:text-white transition-colors">Yield / ROI</button>
-                            </div>
+                            {/* Pestañas de Sub-Ranking */}
+                            <nav className="flex items-center gap-10 px-10 py-2 border-y border-white/10 bg-white/[0.02] overflow-x-auto no-scrollbar relative z-10" aria-label="Filtros de ranking">
+                                <button 
+                                    onClick={() => setRankingSubTab('leaders')}
+                                    className={cn(
+                                        "pb-4 border-b-2 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap font-outfit transition-all",
+                                        rankingSubTab === 'leaders' ? "border-amber-500 text-white" : "border-transparent text-slate-500 hover:text-white"
+                                    )}
+                                >
+                                    Líderes
+                                </button>
+                                <button 
+                                    onClick={() => setRankingSubTab('streaks')}
+                                    className={cn(
+                                        "pb-4 border-b-2 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap font-outfit transition-all",
+                                        rankingSubTab === 'streaks' ? "border-rose-500 text-white" : "border-transparent text-slate-500 hover:text-white"
+                                    )}
+                                >
+                                    Rachas
+                                </button>
+                                <button 
+                                    onClick={() => setRankingSubTab('consistency')}
+                                    className={cn(
+                                        "pb-4 border-b-2 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap font-outfit transition-all",
+                                        rankingSubTab === 'consistency' ? "border-blue-500 text-white" : "border-transparent text-slate-500 hover:text-white"
+                                    )}
+                                >
+                                    Consistencia
+                                </button>
+                            </nav>
 
                             {/* Lista de Ranking */}
-                            <div className="p-4 sm:p-6 space-y-1 max-h-[600px] overflow-y-auto no-scrollbar custom-scrollbar">
-                                {ranking.length === 0 ? (
-                                    <div className="p-12 text-center text-slate-500">
-                                        <Trophy size={32} className="mx-auto mb-3 opacity-20" />
-                                        <p className="text-sm font-medium">Aún no hay ranking</p>
+                            <div className="relative group/ranking-list">
+                                <div className="p-4 sm:p-8 space-y-1 max-h-[600px] overflow-y-auto no-scrollbar custom-scrollbar relative z-10 pb-20">
+                                    {ranking.length === 0 ? (
+                                        <div className="py-20 text-center text-slate-500">
+                                            <Users size={40} className="mx-auto mb-4 opacity-10" />
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-600">Calculando posiciones</p>
+                                        </div>
+                                    ) : (
+                                        (() => {
+                                            const sortedRanking = [...ranking].sort((a, b) => {
+                                                if (rankingSubTab === 'streaks') {
+                                                    return (b.current_streak || 0) - (a.current_streak || 0) || (b.max_streak || 0) - (a.max_streak || 0);
+                                                }
+                                                if (rankingSubTab === 'consistency') {
+                                                    const accA = a.total_predictions > 0 ? (a.correct_predictions / a.total_predictions) : 0;
+                                                    const accB = b.total_predictions > 0 ? (b.correct_predictions / b.total_predictions) : 0;
+                                                    return accB - accA;
+                                                }
+                                                return (b.points || 0) - (a.points || 0);
+                                            });
+
+                                            return sortedRanking.map((prof, idx) => (
+                                                <div key={prof.id} className="relative group">
+                                                    <QuinielaRankingItem 
+                                                        profile={prof} 
+                                                        rank={idx + 1} 
+                                                        isMe={prof.id === user?.id} 
+                                                    />
+                                                    
+                                                    {/* Overlay de métrica específica */}
+                                                    <div className="absolute right-24 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-4 pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity">
+                                                        {rankingSubTab === 'streaks' && prof.current_streak > 0 && (
+                                                            <div className="flex items-center gap-1.5 text-rose-500">
+                                                                <Zap size={14} className="fill-current animate-pulse" />
+                                                                <span className="text-xs font-black font-outfit">{prof.current_streak}</span>
+                                                            </div>
+                                                        )}
+                                                        {rankingSubTab === 'consistency' && prof.total_predictions > 0 && (
+                                                            <div className="text-[10px] font-black text-blue-400 font-outfit uppercase tracking-tighter">
+                                                                {Math.round((prof.correct_predictions / prof.total_predictions) * 100)}% ACC
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })()
+                                    )}
+                                </div>
+
+                                {/* Sticky User Footer Banner */}
+                                {user && ranking.length > 0 && (
+                                    <div className="absolute bottom-4 left-4 right-4 sm:left-8 sm:right-8 z-50 animate-in slide-in-from-bottom-4 duration-500">
+                                        <div className="bg-[#1A1612]/95 backdrop-blur-xl border-2 border-amber-500/50 rounded-2xl p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-black font-black font-outfit">
+                                                    #{(() => {
+                                                        const userIdx = ranking.findIndex(r => r.id === user.id);
+                                                        return userIdx !== -1 ? userIdx + 1 : '??';
+                                                    })()}
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest font-outfit">TÚ ESTÁS AQUÍ</p>
+                                                    <p className="text-sm font-black text-white font-outfit uppercase">{profile?.full_name || "Tu Perfil"}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xl font-black text-white font-outfit leading-none">{userPoints}</p>
+                                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">PUNTOS</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                ) : (
-                                    ranking.map((prof, idx) => (
-                                        <QuinielaRankingItem 
-                                            key={prof.id} 
-                                            profile={prof} 
-                                            rank={idx + 1} 
-                                            isMe={prof.id === user?.id} 
-                                        />
-                                    ))
                                 )}
                             </div>
                         </div>

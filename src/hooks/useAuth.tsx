@@ -4,14 +4,28 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback,
 import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 
-export type UserRole = 'admin' | 'data_entry' | 'periodista' | 'public';
+export type UserRole = 'admin' | 'data_entry' | 'periodista' | 'deportista' | 'public';
 
 export type Profile = {
     id: string;
     email: string;
-    role: UserRole;
+    roles: UserRole[];
     full_name: string;
     avatar_url?: string;
+    bio?: string;
+    points: number;
+    wins?: number;
+    losses?: number;
+    total_score_all_time?: number;
+    carrera_id?: number;
+    athlete_disciplina_id?: number;
+    athlete_stats?: any;
+    disciplina?: {
+        id: number;
+        name: string;
+        icon?: string;
+    };
+    is_public: boolean;
     created_at: string;
 };
 
@@ -23,6 +37,7 @@ type AuthContextType = {
     isAdmin: boolean;
     isDataEntry: boolean;
     isPeriodista: boolean;
+    isDeportista: boolean;
     isStaff: boolean;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
@@ -36,6 +51,7 @@ const AuthContext = createContext<AuthContextType>({
     isAdmin: false,
     isDataEntry: false,
     isPeriodista: false,
+    isDeportista: false,
     isStaff: false,
     signOut: async () => { },
     refreshProfile: async () => { },
@@ -59,7 +75,7 @@ async function fetchProfileWithRetry(
         try {
             const { data, error } = await supabase
                 .from('profiles')
-                .select('*')
+                .select('*, disciplina:disciplinas(id, name, icon)')
                 .eq('id', userId)
                 .single();
 
@@ -163,10 +179,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(currentUser);
 
                 if (currentUser) {
+                    console.log('[useAuth] User session identified:', currentUser.id);
                     // CRITICAL: Wait for profile before setting loading=false
                     // This prevents the brief "no profile" flash that causes
                     // "Acceso Restringido" on admin pages
-                    await fetchProfile(currentUser.id);
+                    const p = await fetchProfile(currentUser.id);
+                    console.log('[useAuth] Profile post-fetch status:', p ? 'FOUND' : 'MISSING');
+                } else {
+                    console.log('[useAuth] No active session found');
                 }
             } catch (err: any) {
                 if (err?.name === 'AbortError' || err?.message?.includes('abort')) {
@@ -192,10 +212,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(currentUser);
 
                 if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+                    console.log(`[useAuth] Auth Event: ${event} for user: ${currentUser.id}`);
                     // Fetch profile WITH retry — covers the OAuth callback race
                     // where profile was just created server-side
-                    await fetchProfile(currentUser.id);
+                    const p = await fetchProfile(currentUser.id);
+                    console.log('[useAuth] Profile refresh status:', p ? 'SUCCESS' : 'FAILED');
                 } else if (!currentUser) {
+                    console.log('[useAuth] user signed out / no user');
                     setProfile(null);
                 }
 
@@ -225,9 +248,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
     };
 
-    const isAdmin = profile?.role === 'admin';
-    const isDataEntry = profile?.role === 'data_entry';
-    const isPeriodista = profile?.role === 'periodista';
+    const roles = profile?.roles || ['public'];
+    const isAdmin = roles.includes('admin');
+    const isDataEntry = roles.includes('data_entry');
+    const isPeriodista = roles.includes('periodista');
+    const isDeportista = roles.includes('deportista');
     const isStaff = isAdmin || isDataEntry || isPeriodista;
 
     return (
@@ -239,6 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isAdmin,
             isDataEntry,
             isPeriodista,
+            isDeportista,
             isStaff,
             signOut,
             refreshProfile,

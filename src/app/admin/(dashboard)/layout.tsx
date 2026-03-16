@@ -202,7 +202,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                             isAdmin ? "text-purple-400 bg-purple-400" : "text-red-400 bg-red-400"
                                         )} />
                                         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                                            {profile?.role || 'public'}
+                                            {(profile?.roles || ['public']).join(' / ')}
                                         </span>
                                     </div>
                                 </div>

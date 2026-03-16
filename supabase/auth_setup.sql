@@ -14,20 +14,34 @@
 -- ============================================
 
 -- Crear tabla profiles si no existe
--- (Si ya la creaste con schema.sql, esto no hará nada)
 CREATE TABLE IF NOT EXISTS profiles (
     id uuid REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
     email text,
-    role text DEFAULT 'public',
+    roles text[] DEFAULT ARRAY['public'],
     full_name text,
     avatar_url text,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Agregar columnas que podrían faltar si la tabla ya existía
+-- Migración segura de role a roles si la tabla ya existe
 DO $$
 BEGIN
+    -- 1. Si existe columna 'role' (singular) y no existe 'roles' (plural)
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'role') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'roles') THEN
+        
+        -- Añadir la nueva columna
+        ALTER TABLE profiles ADD COLUMN roles text[] DEFAULT ARRAY['public'];
+        
+        -- Migrar datos: Convertir el texto a un array de un solo elemento
+        UPDATE profiles SET roles = ARRAY[role];
+        
+        -- Eliminar la columna vieja
+        ALTER TABLE profiles DROP COLUMN role;
+    END IF;
+
+    -- 2. Asegurar otras columnas
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'updated_at') THEN
         ALTER TABLE profiles ADD COLUMN updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL;
     END IF;
@@ -39,18 +53,15 @@ END $$;
 -- ============================================
 -- PARTE 2: TRIGGER AUTO-CREAR PROFILE
 -- ============================================
--- Cuando alguien se registra en auth.users, 
--- automáticamente se crea un perfil en profiles
-
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-    INSERT INTO public.profiles (id, email, full_name, role, created_at, updated_at)
+    INSERT INTO public.profiles (id, email, full_name, roles, created_at, updated_at)
     VALUES (
         NEW.id,
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
-        'public',
+        ARRAY['public'],
         NOW(),
         NOW()
     )
@@ -72,22 +83,28 @@ CREATE TRIGGER on_auth_user_created
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- Eliminar políticas anteriores (por si acaso)
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 DROP POLICY IF EXISTS "Admins can update all profiles" ON profiles;
 DROP POLICY IF EXISTS "Anyone can insert profile" ON profiles;
 
--- Todos pueden ver perfiles
 CREATE POLICY "Public profiles are viewable by everyone" 
     ON profiles FOR SELECT USING (true);
 
--- Usuarios pueden actualizar su propio perfil
 CREATE POLICY "Users can update own profile" 
     ON profiles FOR UPDATE 
     USING (auth.uid() = id);
 
--- Permitir insertar perfiles (necesario para crear el primer admin)
+-- Permitir a admins editar cualquier perfil (usando el nuevo sistema de array)
+CREATE POLICY "Admins can update all profiles"
+    ON profiles FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles 
+            WHERE id = auth.uid() AND 'admin' = ANY(roles)
+        )
+    );
+
 CREATE POLICY "Anyone can insert profile" 
     ON profiles FOR INSERT 
     WITH CHECK (true);
@@ -95,15 +112,12 @@ CREATE POLICY "Anyone can insert profile"
 -- ============================================
 -- PARTE 4: SINCRONIZAR USUARIOS EXISTENTES
 -- ============================================
--- Si ya tienes usuarios en auth.users pero no en profiles,
--- esto les crea un perfil
-
-INSERT INTO public.profiles (id, email, full_name, role, created_at, updated_at)
+INSERT INTO public.profiles (id, email, full_name, roles, created_at, updated_at)
 SELECT 
     u.id,
     u.email,
     COALESCE(u.raw_user_meta_data->>'full_name', u.email),
-    'public',
+    ARRAY['public'],
     u.created_at,
     NOW()
 FROM auth.users u
@@ -112,8 +126,5 @@ WHERE NOT EXISTS (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- ============================================
 -- VERIFICACIÓN
--- ============================================
--- Muestra todos los perfiles creados
-SELECT id, email, role, full_name, created_at FROM profiles ORDER BY created_at;
+SELECT id, email, roles, full_name, created_at FROM profiles ORDER BY created_at;

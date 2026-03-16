@@ -108,7 +108,7 @@ export default function PartidosPage() {
     }, [loading, groupedMatches.length]);
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white font-sans pb-24 overflow-x-hidden">
+        <div className="min-h-screen bg-[#0a0816] text-white font-sans pb-24">
             {/* Ambient Background - MORE PURPLE/COBALT */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse" />
@@ -284,7 +284,11 @@ function UnifiedCard({
                     <div className="flex-1 grid grid-cols-[1.2fr_auto_1.2fr] items-center gap-6 py-1">
                         {/* Team A */}
                         <div className="flex flex-col items-center gap-2 text-center relative">
-                            <Avatar name={getDisplayName(partido, 'a')} size="lg" className={cn(
+                            <Avatar 
+                                name={getDisplayName(partido, 'a')} 
+                                src={partido.atleta_a?.avatar_url}
+                                size="lg" 
+                                className={cn(
                                 "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
                                 winnerA ? (
                                     sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
@@ -342,12 +346,16 @@ function UnifiedCard({
 
                         {/* Team B */}
                         <div className="flex flex-col items-center gap-2 text-center relative">
-                            <Avatar name={getDisplayName(partido, 'b')} size="lg" className={cn(
+                            <Avatar 
+                                name={getDisplayName(partido, 'b')} 
+                                src={partido.atleta_b?.avatar_url}
+                                size="lg" 
+                                className={cn(
                                 "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
                                 winnerB ? (
                                     sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
                                     sportName === 'Baloncesto' ? "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-110" :
-                                    sportName === 'Voleibol' ? "border-indigo-500 shadow-[0_0_20_rgba(99,102,241,0.5)] scale-110" :
+                                    sportName === 'Voleibol' ? "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110" :
                                     sportName === 'Tenis' ? "border-lime-500 shadow-[0_0_20px_rgba(132,204,22,0.5)] scale-110" :
                                     sportName === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.5)] scale-110" :
                                     sportName === 'Ajedrez' ? "border-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)] scale-110" :

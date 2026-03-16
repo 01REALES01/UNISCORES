@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 // ===== CARD =====
@@ -123,10 +124,12 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
 export function Avatar({
     name,
     size = "default",
+    src,
     className
 }: {
     name?: string | null;
     size?: "sm" | "default" | "lg";
+    src?: string | null;
     className?: string;
 }) {
     const sizes = {
@@ -150,12 +153,22 @@ export function Avatar({
 
     return (
         <div className={cn(
-            "rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-white shadow-lg",
-            colors[colorIndex],
+            "rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-white shadow-lg overflow-hidden flex-shrink-0",
+            !src && colors[colorIndex],
             sizes[size],
             className
         )}>
-            {initials}
+            {src ? (
+                <Image 
+                    src={src} 
+                    alt={safeName} 
+                    width={size === "lg" ? 64 : size === "sm" ? 32 : 48}
+                    height={size === "lg" ? 64 : size === "sm" ? 32 : 48}
+                    className="w-full h-full object-cover" 
+                />
+            ) : (
+                initials
+            )}
         </div>
     );
 }

@@ -8,7 +8,7 @@ import { User } from "@supabase/supabase-js";
 import { AnimatePresence, m } from "framer-motion";
 import { HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords, Calendar as CalendarIcon, ChevronRight } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
-import { Button } from "@/components/ui-primitives";
+import { Button, Avatar } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -92,11 +92,13 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                         {/* Premium Avatar with Ring */}
                                         <div className="relative">
                                             <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-orange-500 rounded-full blur-sm opacity-40 group-hover:opacity-100 transition-opacity animate-pulse" />
-                                            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#1A1612] border-2 border-white/10 flex items-center justify-center overflow-hidden shadow-2xl transition-transform duration-300 group-hover:scale-110">
-                                                <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 to-orange-500/20" />
-                                                <span className="relative z-10 text-white font-black text-[12px] sm:text-[14px] tracking-tighter uppercase drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
-                                                    {user.email?.substring(0, 2).toUpperCase()}
-                                                </span>
+                                            <div className="relative">
+                                                <Avatar 
+                                                    name={profile?.full_name || user.email} 
+                                                    src={profile?.avatar_url}
+                                                    size="default"
+                                                    className="w-9 h-9 sm:w-10 sm:h-10 border-2 border-white/10 group-hover:scale-110 transition-transform duration-300"
+                                                />
                                             </div>
                                             {/* Status Dot */}
                                             <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-[#0a0805] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
@@ -122,6 +124,15 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                                         Admin Dashboard
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => { setProfileMenuOpen(false); router.push('/perfil'); }}
+                                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all group/item"
+                                                >
+                                                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:scale-110 transition-transform">
+                                                        <UserIcon size={16} />
+                                                    </div>
+                                                    Mi Perfil
+                                                </button>
                                                 <button
                                                     onClick={() => { setProfileMenuOpen(false); router.push('/quiniela'); }}
                                                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all group/item"
@@ -264,6 +275,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                             {/* Sidebar Navigation */}
                             <nav className="relative flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar">
                                 {[
+                                    ...(user ? [{ title: "Mi Perfil", icon: UserIcon, href: "/perfil" }] : []),
                                     { title: "Inicio", icon: HomeIcon, href: "/" },
                                     { title: "Calendario", icon: CalendarIcon, href: "/calendario" },
                                     { title: "Partidos", icon: Gamepad2, href: "/partidos" },

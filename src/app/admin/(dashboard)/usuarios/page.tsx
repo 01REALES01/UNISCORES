@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 import { supabase } from "@/lib/supabase";
 import { useAuth, type Profile, type UserRole } from "@/hooks/useAuth";
@@ -15,7 +15,9 @@ import {
     ChevronDown,
     Loader2,
     Check,
-    PenTool
+    PenTool,
+    Trophy,
+    Edit
 } from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { useRouter } from "next/navigation";
@@ -49,15 +51,22 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
         icon: User,
         description: 'Solo lectura',
     },
-};
-
-export default function UsuariosPage() {
+    deportista: {
+        label: 'Deportista',
+        color: 'text-emerald-400',
+        bg: 'bg-emerald-500/10 border-emerald-500/20',
+        icon: UserCheck,
+        description: 'Atleta con perfil público y stats',
+    },
+};export default function UsuariosPage() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState<string>('all');
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+    const [disciplinas, setDisciplinas] = useState<any[]>([]);
+    const [selectedDisciplina, setSelectedDisciplina] = useState<string | null>(null);
     const { profile: currentProfile, isAdmin } = useAuth();
     const router = useRouter();
 
@@ -70,7 +79,13 @@ export default function UsuariosPage() {
 
     useEffect(() => {
         fetchProfiles();
+        fetchDisciplinas();
     }, []);
+
+    const fetchDisciplinas = async () => {
+        const { data } = await supabase.from('disciplinas').select('id, name').order('name');
+        if (data) setDisciplinas(data);
+    };
 
     const fetchProfiles = async () => {
         const { data, error } = await supabase
@@ -84,45 +99,85 @@ export default function UsuariosPage() {
         setLoading(false);
     };
 
-    const updateRole = async (userId: string, newRole: UserRole) => {
+    const toggleRole = async (userId: string, targetRole: UserRole, disciplinaId?: number) => {
         if (userId === currentProfile?.id) {
             alert('No puedes cambiar tu propio rol');
             return;
         }
 
+        const userToUpdate = profiles.find(p => p.id === userId);
+        if (!userToUpdate) return;
+
+        let currentRoles = userToUpdate.roles || ['public'];
+        let updatedRoles: UserRole[] = [...currentRoles];
+
+        if (updatedRoles.includes(targetRole)) {
+            // REMOVE ROLE (Minimum 1 role)
+            if (updatedRoles.length <= 1) {
+                alert('Un usuario debe tener al menos un rol');
+                return;
+            }
+            updatedRoles = updatedRoles.filter(r => r !== targetRole);
+        } else {
+            // ADD ROLE (Maximum 2 roles)
+            if (updatedRoles.length >= 2) {
+                alert('Un usuario puede tener un máximo de 2 roles');
+                return;
+            }
+            updatedRoles.push(targetRole);
+        }
+
         setUpdatingId(userId);
         setOpenDropdown(null);
 
+        const updates: any = { 
+            roles: updatedRoles, 
+            updated_at: new Date().toISOString() 
+        };
+
+        if (targetRole === 'deportista' && !currentRoles.includes('deportista') && disciplinaId) {
+            updates.athlete_disciplina_id = disciplinaId;
+        }
+
         const { error } = await supabase
             .from('profiles')
-            .update({ role: newRole, updated_at: new Date().toISOString() })
+            .update(updates)
             .eq('id', userId);
 
         if (error) {
-            alert('Error al actualizar rol: ' + error.message);
+            alert('Error al actualizar roles: ' + error.message);
         } else {
             await fetchProfiles();
         }
 
         setUpdatingId(null);
+        setSelectedDisciplina(null);
     };
 
-    const filteredProfiles = profiles.filter(p => {
-        if (roleFilter !== 'all' && p.role !== roleFilter) return false;
-        if (searchQuery) {
-            const q = searchQuery.toLowerCase();
-            if (!p.email.toLowerCase().includes(q) && !(p.full_name || '').toLowerCase().includes(q)) return false;
-        }
-        return true;
-    });
+    const { filteredProfiles, stats } = useMemo(() => {
+        const filtered = profiles.filter(p => {
+            const userRoles = p.roles || ['public'];
+            if (roleFilter !== 'all' && !userRoles.includes(roleFilter as UserRole)) return false;
+            if (searchQuery) {
+                const q = searchQuery.toLowerCase();
+                if (!p.email.toLowerCase().includes(q) && !(p.full_name || '').toLowerCase().includes(q)) return false;
+            }
+            return true;
+        });
 
-    const adminCount = profiles.filter(p => p.role === 'admin').length;
-    const dataEntryCount = profiles.filter(p => p.role === 'data_entry').length;
-    const periodistaCount = profiles.filter(p => p.role === 'periodista').length;
-    const publicCount = profiles.filter(p => p.role === 'public').length;
+        const counts = {
+            admin: profiles.filter(p => p.roles?.includes('admin')).length,
+            data_entry: profiles.filter(p => p.roles?.includes('data_entry')).length,
+            deportista: profiles.filter(p => p.roles?.includes('deportista')).length,
+            periodista: profiles.filter(p => p.roles?.includes('periodista')).length,
+            public: profiles.filter(p => p.roles?.length === 1 && p.roles[0] === 'public').length,
+        };
+
+        return { filteredProfiles: filtered, stats: counts };
+    }, [profiles, roleFilter, searchQuery]);
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 relative">
+        <div className="space-y-6 animate-in fade-in duration-500 relative texture-grain min-h-screen">
             {/* Ambient Background */}
             <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
             <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-red-600/5 rounded-full blur-[80px] pointer-events-none" />
@@ -142,7 +197,7 @@ export default function UsuariosPage() {
                                     Solo Administradores
                                 </span>
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-white/40 bg-clip-text text-transparent leading-tight">
+                            <h1 className="text-3xl sm:text-4xl font-black tracking-tighter bg-gradient-to-r from-white via-white to-white/40 bg-clip-text text-transparent leading-tight font-outfit">
                                 Gestión de Usuarios
                             </h1>
                             <p className="text-slate-500 mt-1.5 text-sm font-medium">
@@ -152,14 +207,15 @@ export default function UsuariosPage() {
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Stats Grid - High Craft Asymmetrical */}
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                     {[
-                        { label: 'Administradores', value: adminCount, color: 'text-purple-400', gradient: 'from-purple-500 to-indigo-600', icon: Crown, filter: 'admin' },
-                        { label: 'Data Entry', value: dataEntryCount, color: 'text-rose-400', gradient: 'from-rose-500 to-red-600', icon: UserCheck, filter: 'data_entry' },
-                        { label: 'Periodistas', value: periodistaCount, color: 'text-blue-400', gradient: 'from-blue-500 to-cyan-600', icon: PenTool, filter: 'periodista' },
-                        { label: 'Públicos', value: publicCount, color: 'text-slate-400', gradient: 'from-slate-500 to-slate-600', icon: User, filter: 'public' },
-                    ].map(stat => {
+                        { label: 'Administradores', value: stats.admin, color: 'text-purple-400', gradient: 'from-purple-500 to-indigo-600', icon: Crown, filter: 'admin' },
+                        { label: 'Data Entry', value: stats.data_entry, color: 'text-rose-400', gradient: 'from-rose-500 to-red-600', icon: UserCheck, filter: 'data_entry' },
+                        { label: 'Deportistas', value: stats.deportista, color: 'text-emerald-400', gradient: 'from-emerald-500 to-teal-600', icon: Trophy, filter: 'deportista' },
+                        { label: 'Periodistas', value: stats.periodista, color: 'text-blue-400', gradient: 'from-blue-500 to-cyan-600', icon: PenTool, filter: 'periodista' },
+                        { label: 'Públicos', value: stats.public, color: 'text-slate-400', gradient: 'from-slate-500 to-slate-600', icon: User, filter: 'public' },
+                    ].map((stat, i) => {
                         const isActive = roleFilter === stat.filter;
                         const Icon = stat.icon;
                         return (
@@ -180,7 +236,7 @@ export default function UsuariosPage() {
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 mb-1">{stat.label}</p>
-                                        <p className={`text-3xl font-black tabular-nums tracking-tight transition-colors ${isActive ? 'text-white' : stat.color}`}>
+                                        <p className={`text-3xl font-black tabular-nums tracking-tighter transition-colors font-outfit ${isActive ? 'text-white' : stat.color}`}>
                                             {stat.value}
                                         </p>
                                     </div>
@@ -218,8 +274,6 @@ export default function UsuariosPage() {
             ) : (
                 <div className="grid gap-3 lg:grid-cols-2">
                     {filteredProfiles.map((userProfile) => {
-                        const roleInfo = ROLE_CONFIG[userProfile.role];
-                        const RoleIcon = roleInfo.icon;
                         const isCurrentUser = userProfile.id === currentProfile?.id;
                         const isUpdating = updatingId === userProfile.id;
 
@@ -254,8 +308,8 @@ export default function UsuariosPage() {
                                     </div>
                                 </div>
 
-                                {/* Right Content - Role Selector */}
-                                <div className="relative shrink-0 w-full sm:w-[180px] mt-2 sm:mt-0">
+                                {/* Right Content - Role Selector (Multiple Badges) */}
+                                <div className="relative shrink-0 w-full sm:w-[200px] mt-2 sm:mt-0">
                                     {isUpdating ? (
                                         <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 h-11">
                                             <Loader2 size={14} className="animate-spin text-slate-400" />
@@ -263,53 +317,87 @@ export default function UsuariosPage() {
                                         </div>
                                     ) : (
                                         <>
-                                            <button
+                                            <div
                                                 onClick={() => {
                                                     if (isCurrentUser) return;
                                                     setOpenDropdown(openDropdown === userProfile.id ? null : userProfile.id);
                                                 }}
-                                                disabled={isCurrentUser}
-                                                className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border h-11 transition-all ${isCurrentUser
+                                                className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border min-h-11 transition-all ${isCurrentUser
                                                     ? 'opacity-60 cursor-not-allowed bg-black/20 border-white/5'
                                                     : 'cursor-pointer hover:border-white/30 hover:bg-white/[0.05] border-white/10 bg-black/40'
                                                     }`}
                                             >
-                                                <div className="flex items-center gap-2">
-                                                    <RoleIcon size={14} className={roleInfo.color} />
-                                                    <span className={`text-xs font-bold ${roleInfo.color}`}>{roleInfo.label}</span>
+                                                <div className="flex flex-wrap gap-1 py-0.5">
+                                                    {(userProfile.roles || ['public']).map(r => {
+                                                        const cfg = ROLE_CONFIG[r];
+                                                        const RIcon = cfg.icon;
+                                                        return (
+                                                            <div key={r} className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border shadow-sm ${cfg.bg}`}>
+                                                                <RIcon size={10} className={cfg.color} />
+                                                                <span className={`text-[9px] font-black uppercase tracking-wider ${cfg.color}`}>{cfg.label}</span>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                                 {!isCurrentUser && <ChevronDown size={14} className="text-slate-500 transition-transform group-hover:text-white/80" />}
-                                            </button>
+                                            </div>
 
                                             {/* Dropdown Menu */}
                                             {openDropdown === userProfile.id && (
                                                 <>
                                                     <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-                                                    <div className="absolute right-0 sm:right-0 top-full mt-2 z-50 w-full sm:w-64 bg-[#1A1612] border border-white/10 rounded-2xl shadow-2xl shadow-black p-2 animate-in fade-in slide-in-from-top-2">
-                                                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-3 pt-2 pb-2">Seleccionar Rol</p>
-                                                        <div className="space-y-1">
+                                                    <div className="absolute right-0 top-full mt-2 z-50 w-64 bg-[#1A1612] border border-white/10 rounded-2xl shadow-2xl shadow-black p-2 animate-in fade-in slide-in-from-top-2">
+                                                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-3 pt-2 pb-2">Seleccionar Roles (Máx 2)</p>
+                                                        <div className="space-y-1 overflow-y-auto max-h-[350px] custom-scrollbar">
                                                             {(Object.keys(ROLE_CONFIG) as UserRole[]).map(role => {
                                                                 const config = ROLE_CONFIG[role];
                                                                 const Icon = config.icon;
-                                                                const isSelected = userProfile.role === role;
+                                                                const isSelected = userProfile.roles?.includes(role) || (role === 'public' && (!userProfile.roles || userProfile.roles.length === 0));
+                                                                const isAthlete = role === 'deportista';
+
                                                                 return (
-                                                                    <button
-                                                                        key={role}
-                                                                        onClick={() => updateRole(userProfile.id, role)}
-                                                                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${isSelected
-                                                                            ? 'bg-white/10 border border-white/10'
-                                                                            : 'hover:bg-white/5 border border-transparent group-hover:bg-white/5'
-                                                                            }`}
-                                                                    >
-                                                                        <div className={`p-2 rounded-lg ${isSelected ? config.bg : 'bg-black/30'}`}>
-                                                                            <Icon size={14} className={isSelected ? config.color : 'text-slate-400 group-hover:scale-110 transition-transform'} />
-                                                                        </div>
-                                                                        <div className="flex-1">
-                                                                            <span className={`text-sm font-bold ${isSelected ? config.color : 'text-slate-300 group-hover:text-white'}`}>{config.label}</span>
-                                                                            <p className="text-[10px] text-slate-500/80 leading-snug mt-0.5">{config.description}</p>
-                                                                        </div>
-                                                                        {isSelected && <Check size={14} className={config.color} />}
-                                                                    </button>
+                                                                    <div key={role} className="space-y-1">
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                if (isAthlete && !userProfile.roles?.includes('deportista')) {
+                                                                                    setSelectedDisciplina(selectedDisciplina === userProfile.id ? null : userProfile.id);
+                                                                                } else {
+                                                                                    toggleRole(userProfile.id, role);
+                                                                                }
+                                                                            }}
+                                                                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all text-left group ${isSelected
+                                                                                ? 'bg-white/10 border border-white/10'
+                                                                                : 'hover:bg-white/5 border border-transparent'
+                                                                                }`}
+                                                                        >
+                                                                            <div className={`p-2 rounded-lg transition-colors ${isSelected ? config.bg : 'bg-black/30 group-hover:bg-black/50'}`}>
+                                                                                <Icon size={14} className={isSelected ? config.color : 'text-slate-500 group-hover:text-slate-300'} />
+                                                                            </div>
+                                                                            <div className="flex-1">
+                                                                                <span className={`text-sm font-bold ${isSelected ? config.color : 'text-slate-300'}`}>{config.label}</span>
+                                                                                <p className="text-[10px] text-slate-500/80 leading-snug mt-0.5">{config.description}</p>
+                                                                            </div>
+                                                                            {isSelected && <Check size={14} className={config.color} />}
+                                                                            {isAthlete && !isSelected && <ChevronDown size={14} className="text-slate-400" />}
+                                                                        </button>
+
+                                                                        {isAthlete && selectedDisciplina === userProfile.id && (
+                                                                            <div className="mx-1 p-2 bg-white/5 rounded-xl border border-white/5 space-y-2 animate-in slide-in-from-top-2">
+                                                                                <p className="text-[9px] font-black uppercase text-slate-500 px-2 tracking-widest">Selecciona Deporte</p>
+                                                                                <div className="grid grid-cols-1 gap-1 max-h-40 overflow-y-auto custom-scrollbar">
+                                                                                    {disciplinas.map(d => (
+                                                                                        <button
+                                                                                            key={d.id}
+                                                                                            onClick={() => toggleRole(userProfile.id, 'deportista', d.id)}
+                                                                                            className="w-full px-3 py-2 rounded-lg hover:bg-emerald-500/20 text-xs font-bold text-slate-300 hover:text-emerald-400 text-left transition-colors"
+                                                                                        >
+                                                                                            {d.name}
+                                                                                        </button>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
                                                                 );
                                                             })}
                                                         </div>

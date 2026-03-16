@@ -4,7 +4,7 @@ export type UltimaEdicion = {
     user_id: string;
     nombre: string;
     email: string;
-    role: string;
+    role: string; // We'll keep it as string for DB compatibility, store joined roles
     fecha: string;
 };
 
@@ -27,7 +27,7 @@ export function stampAudit(
             user_id: profile.id,
             nombre: profile.full_name || profile.email,
             email: profile.email,
-            role: profile.role,
+            role: (profile.roles || ['public']).join(', '),
             fecha: new Date().toISOString(),
         } satisfies UltimaEdicion,
     };
@@ -79,7 +79,7 @@ export function stampEventAudit(
         autor: profile ? {
             nombre: profile.full_name || profile.email,
             email: profile.email,
-            role: profile.role,
+            role: (profile.roles || ['public']).join(', '),
         } : null,
         fecha: new Date().toISOString(),
         texto: text || '',
