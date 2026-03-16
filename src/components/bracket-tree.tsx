@@ -34,13 +34,14 @@ function getScoreFromMatch(match: Match): { scoreA: number; scoreB: number } {
     if (sport === 'Fútbol') {
         return { scoreA: md.goles_a ?? 0, scoreB: md.goles_b ?? 0 };
     }
-    if (sport === 'Baloncesto') {
-        return { scoreA: md.puntos_a ?? 0, scoreB: md.puntos_b ?? 0 };
-    }
-    if (sport === 'Voleibol') {
+    if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
         return { scoreA: md.sets_a ?? 0, scoreB: md.sets_b ?? 0 };
     }
-    return { scoreA: md.goles_a ?? md.puntos_a ?? 0, scoreB: md.goles_b ?? md.puntos_b ?? 0 };
+    // Baloncesto y otros deportes usan total_a y total_b (con puntos_a/puntos_b como fallback histórico)
+    return { 
+        scoreA: md.total_a ?? md.puntos_a ?? md.goles_a ?? 0, 
+        scoreB: md.total_b ?? md.puntos_b ?? md.goles_b ?? 0 
+    };
 }
 
 // ─── Match Card for each slot in the bracket ────────────────────────────────

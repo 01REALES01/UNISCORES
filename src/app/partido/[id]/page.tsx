@@ -39,7 +39,7 @@ type Evento = {
     equipo: string;
     descripcion: string;
     periodo: number | null;
-    jugadores: { nombre: string; numero: number } | null;
+    jugadores: { nombre: string; numero: number; profile_id?: string | null } | null;
 };
 
 import UniqueLoading from "@/components/ui/morph-loading";
@@ -64,7 +64,7 @@ export default function PublicMatchDetail() {
         try {
             const [matchRes, eventosRes, predsRes] = await Promise.all([
                 safeQuery(supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).eq('id', matchId).single(), 'partido-detail'),
-                safeQuery(supabase.from('olympics_eventos').select('*, jugadores:olympics_jugadores(nombre, numero)').eq('partido_id', matchId).order('id', { ascending: false }), 'partido-eventos'),
+                safeQuery(supabase.from('olympics_eventos').select('*, jugadores:olympics_jugadores(nombre, numero, profile_id)').eq('partido_id', matchId).order('id', { ascending: false }), 'partido-eventos'),
                 safeQuery(supabase.from('pronosticos').select('winner_pick, prediction_type').eq('match_id', matchId), 'partido-preds'),
             ]);
 
@@ -304,7 +304,11 @@ export default function PublicMatchDetail() {
 
                                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                                                     <div className="font-bold text-base sm:text-xl truncate leading-tight text-white/90">
-                                                        {p.nombre}
+                                                        {p.profile_id ? (
+                                                            <Link href={`/perfil/${p.profile_id}`} className="hover:text-amber-400 transition-colors">
+                                                                {p.nombre}
+                                                            </Link>
+                                                        ) : p.nombre}
                                                     </div>
                                                     <div className="text-xs sm:text-sm font-medium opacity-60 uppercase tracking-wide truncate mt-0.5 text-white/70">
                                                         {p.equipo}
@@ -680,7 +684,11 @@ export default function PublicMatchDetail() {
                                             )}>
                                                 <div className="text-right py-1">
                                                     <p className="text-[13px] sm:text-[15px] font-black leading-tight text-white/95 truncate max-w-[90px] sm:max-w-none">
-                                                        {e.jugadores?.nombre || getDisplayName(match, 'a')}
+                                                        {e.jugadores?.profile_id ? (
+                                                            <Link href={`/perfil/${e.jugadores.profile_id}`} className="hover:text-red-400 transition-colors">
+                                                                {e.jugadores.nombre}
+                                                            </Link>
+                                                        ) : (e.jugadores?.nombre || getDisplayName(match, 'a'))}
                                                     </p>
                                                     <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-[0.15em]">{eventLabel}</p>
                                                 </div>
@@ -701,7 +709,11 @@ export default function PublicMatchDetail() {
                                                 </div>
                                                 <div className="text-left py-1">
                                                     <p className="text-[13px] sm:text-[15px] font-black leading-tight text-white/95 truncate max-w-[90px] sm:max-w-none">
-                                                        {e.jugadores?.nombre || getDisplayName(match, 'b')}
+                                                        {e.jugadores?.profile_id ? (
+                                                            <Link href={`/perfil/${e.jugadores.profile_id}`} className="hover:text-cyan-400 transition-colors">
+                                                                {e.jugadores.nombre}
+                                                            </Link>
+                                                        ) : (e.jugadores?.nombre || getDisplayName(match, 'b'))}
                                                     </p>
                                                     <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-[0.15em]">{eventLabel}</p>
                                                 </div>

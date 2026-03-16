@@ -12,12 +12,15 @@ export type Profile = {
     roles: UserRole[];
     full_name: string;
     avatar_url?: string;
+    tagline?: string;
+    about_me?: string;
     bio?: string;
     points: number;
     wins?: number;
     losses?: number;
     total_score_all_time?: number;
     carrera_id?: number;
+    carreras_ids?: number[];
     athlete_disciplina_id?: number;
     athlete_stats?: any;
     disciplina?: {

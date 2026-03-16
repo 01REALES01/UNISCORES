@@ -12,6 +12,7 @@ import { CreateMatchModal } from "@/components/create-match-modal";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { SPORT_EMOJI } from "@/lib/constants";
 import { getDisplayName, getCarreraName, getCarreraSubtitle } from "@/lib/sport-helpers";
@@ -180,157 +181,209 @@ export default function PartidosPage() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            {/* ─── HERO HEADER ─── */}
-            <div className="relative overflow-hidden rounded-3xl bg-[#17130D]/60 backdrop-blur-xl border border-white/5 p-8 sm:p-10">
-                {/* Ambient orbs */}
-                <div className="absolute top-[-40%] right-[-10%] w-[400px] h-[400px] bg-red-600/15 rounded-full blur-[80px] pointer-events-none" />
-                <div className="absolute bottom-[-30%] left-[-5%] w-[300px] h-[300px] bg-orange-600/10 rounded-full blur-[60px] pointer-events-none" />
+            {/* ─── HERO HEADER "Cyber-Olympic Luxury" ─── */}
+            <motion.div 
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="relative overflow-hidden rounded-[2.5rem] bg-[#0c0a09]/60 backdrop-blur-2xl border border-white/5 p-10 group"
+            >
+                {/* Background Pattern - Moving Noise & Orbs */}
+                <motion.div 
+                    animate={{ 
+                        backgroundPosition: ["0% 0%", "100% 100%"],
+                        opacity: [0.3, 0.4, 0.3]
+                    }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:200%_200%] mix-blend-overlay pointer-events-none"
+                />
+                
+                <div className="absolute top-[-30%] right-[-5%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none animate-pulse" />
+                <div className="absolute bottom-[-20%] left-0 w-[400px] h-[400px] bg-orange-600/10 rounded-full blur-[100px] pointer-events-none" />
 
-                <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2.5 rounded-xl bg-gradient-to-br from-red-500 to-orange-600 shadow-lg shadow-red-500/25">
-                                <Activity size={22} className="text-white" />
+                <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-8">
+                    <div className="space-y-4">
+                        <motion.div 
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="flex items-center gap-3"
+                        >
+                            <div className="px-3 py-1 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white/60">
+                                Admin Control Center
                             </div>
                             {liveCount > 0 && (
-                                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/20 text-rose-400 text-[10px] font-black tracking-widest uppercase animate-pulse">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                    {liveCount} EN VIVO
-                                </span>
+                                <motion.span 
+                                    animate={{ scale: [1, 1.05, 1] }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className="flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-400 text-[10px] font-black tracking-widest uppercase"
+                                >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]" />
+                                    {liveCount} En Juego
+                                </motion.span>
                             )}
+                        </motion.div>
+                        
+                        <div className="space-y-1">
+                            <h1 className="text-4xl sm:text-6xl font-black tracking-tighter text-white leading-[0.9] flex flex-col">
+                                <span className="text-primary/80">Gestión de</span>
+                                <span>Partidos</span>
+                            </h1>
+                            <p className="text-zinc-400 text-sm font-medium tracking-tight max-w-md">
+                                Monitorea y controla eventos deportivos en tiempo real con precisión milimétrica.
+                            </p>
                         </div>
-                        <h1 className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-white/40 bg-clip-text text-transparent leading-tight">
-                            Gestión de Partidos
-                        </h1>
-                        <p className="text-slate-500 mt-1.5 text-sm font-medium">
-                            Administra marcadores y eventos en tiempo real
-                        </p>
                     </div>
-                    <Button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="shrink-0 h-12 px-6 rounded-2xl bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-400 hover:to-orange-500 text-white font-bold shadow-xl shadow-red-500/25 hover:shadow-red-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all border-0"
-                    >
-                        <Plus size={18} className="mr-2" />
-                        Nuevo Partido
-                    </Button>
-                </div>
-            </div>
 
-            {/* ─── STATS CARDS ─── */}
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <Button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-primary via-primary to-orange-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(239,68,68,0.4)] border-0 relative overflow-hidden group/btn"
+                        >
+                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                            <div className="relative flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-white/20">
+                                    <Plus size={20} strokeWidth={3} />
+                                </div>
+                                Lanzar Nuevo Partido
+                            </div>
+                        </Button>
+                    </motion.div>
+                </div>
+            </motion.div>
+             {/* ─── STATS CARDS "Tech Pods" ─── */}
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-                {statsConfig.map((stat) => {
+                {statsConfig.map((stat, index) => {
                     const isActive = filter === stat.filterKey;
                     const Icon = stat.icon;
                     return (
-                        <button
+                        <motion.button
                             key={stat.label}
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: index * 0.1 + 0.4 }}
+                            whileHover={{ y: -5, scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => setFilter(filter === stat.filterKey ? 'todos' : stat.filterKey)}
                             className={cn(
-                                "relative group p-5 rounded-2xl border text-left transition-all duration-300 overflow-hidden backdrop-blur-md",
+                                "relative group p-6 rounded-[2rem] border text-left transition-all duration-500 overflow-hidden backdrop-blur-xl",
                                 isActive
-                                    ? "border-white/15 bg-white/10 shadow-lg ring-1 ring-white/10"
-                                    : "border-white/5 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/10"
+                                    ? "border-primary/20 bg-primary/5 shadow-2xl ring-1 ring-primary/20"
+                                    : "border-white/5 bg-zinc-900/40 hover:bg-zinc-800/60 hover:border-white/10"
                             )}
                         >
-                            {/* Hover glow */}
-                            <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
-
+                            {/* Inner Shine Effect */}
+                            <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+                            
                             <div className="relative z-10">
-                                <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center justify-between mb-6">
                                     <div className={cn(
-                                        "p-2 rounded-xl transition-all duration-300",
+                                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500",
                                         isActive
-                                            ? `bg-gradient-to-br ${stat.gradient} shadow-md`
+                                            ? `bg-gradient-to-br ${stat.gradient} shadow-lg shadow-primary/25`
                                             : "bg-white/5 group-hover:bg-white/10"
                                     )}>
-                                        <Icon size={16} className={isActive ? "text-white" : "text-slate-400"} />
+                                        <Icon size={20} className={isActive ? "text-white" : "text-zinc-500"} />
                                     </div>
                                     {stat.pulse && (
-                                        <span className="flex h-3 w-3">
-                                            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-rose-500 opacity-75" />
-                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500 shadow-lg shadow-rose-500/50" />
-                                        </span>
+                                        <div className="relative flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20">
+                                            <span className="flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-rose-500 opacity-75" />
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+                                            </span>
+                                            <span className="text-[8px] font-black text-rose-500 uppercase">Live</span>
+                                        </div>
                                     )}
                                 </div>
-                                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500 mb-1">{stat.label}</p>
-                                <p className={cn(
-                                    "text-3xl font-black tabular-nums tracking-tight transition-colors",
-                                    isActive ? "text-white" : "text-white/60"
-                                )}>
-                                    {stat.value}
-                                </p>
+                                <div className="space-y-0.5">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 group-hover:text-zinc-400 transition-colors uppercase">{stat.label}</p>
+                                    <p className={cn(
+                                        "text-4xl font-black tabular-nums tracking-tighter transition-all duration-500",
+                                        isActive ? "text-white drop-shadow-md lg:text-5xl" : "text-white/40 group-hover:text-white/60"
+                                    )}>
+                                        {stat.value}
+                                    </p>
+                                </div>
                             </div>
-                        </button>
+                        </motion.button>
                     );
                 })}
             </div>
-
-            {/* ─── FILTERS BAR ─── */}
-            <div className="relative overflow-hidden rounded-2xl bg-[#17130D]/40 backdrop-blur-md border border-white/5 p-4 space-y-3">
-                {/* Search */}
-                <SuggestiveSearch
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    suggestions={["Buscar por equipo...", "Buscar por jugador...", "Filtra por universidad..."]}
-                    className="h-11 rounded-xl bg-white/5 border border-white/10 focus-within:border-red-500/50 focus-within:bg-white/10 focus-within:ring-2 focus-within:ring-red-500/10 transition-all w-full"
-                />
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                    {/* Sport Filter */}
-                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar flex-1 p-1 rounded-xl bg-white/[0.03] border border-white/5">
-                        <button
-                            onClick={() => setSportFilter('todos')}
-                            className={cn(
-                                "px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200",
-                                sportFilter === 'todos'
-                                    ? "bg-gradient-to-r from-red-500 to-orange-600 text-white shadow-md shadow-red-500/25"
-                                    : "text-slate-500 hover:text-white hover:bg-white/10"
-                            )}
-                        >
-                            Todos
-                        </button>
-                        {uniqueSports.map(sport => (
-                            <button
-                                key={sport}
-                                onClick={() => setSportFilter(sportFilter === sport ? 'todos' : sport)}
-                                className={cn(
-                                    "px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 flex items-center gap-1.5",
-                                    sportFilter === sport
-                                        ? "bg-gradient-to-r from-red-500 to-orange-600 text-white shadow-md shadow-red-500/25"
-                                        : "text-slate-500 hover:text-white hover:bg-white/10"
-                                )}
-                            >
-                                <span className="text-sm leading-none">{SPORT_EMOJI[sport] || '🏅'}</span>
-                                <span className="hidden sm:inline">{sport}</span>
-                            </button>
-                        ))}
+             {/* ─── FILTERS BAR "Glass Bar" ─── */}
+            <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                className="relative overflow-hidden rounded-[2rem] bg-zinc-950/40 backdrop-blur-xl border border-white/5 p-6 space-y-5"
+            >
+                <div className="flex flex-col lg:flex-row gap-4 items-center">
+                    {/* Search Premium */}
+                    <div className="relative w-full lg:flex-1">
+                        <SuggestiveSearch
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            suggestions={["Buscar por equipo...", "Buscar por jugador...", "Filtra por universidad..."]}
+                            className="h-14 rounded-2xl bg-black/40 border border-white/10 focus-within:border-primary/50 focus-within:bg-black/60 focus-within:ring-4 focus-within:ring-primary/10 transition-all w-full text-sm font-bold placeholder:text-zinc-600"
+                        />
                     </div>
 
-                    {/* Gender Filter */}
-                    <div className="flex gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/5 shrink-0">
-                        {[
-                            { value: 'todos', label: 'Todos', icon: '🏅', activeClass: 'from-red-500 to-orange-600' },
-                            { value: 'masculino', label: 'M', icon: '♂', activeClass: 'from-red-500 to-red-600' },
-                            { value: 'femenino', label: 'F', icon: '♀', activeClass: 'from-pink-500 to-pink-600' },
-                            { value: 'mixto', label: 'Mix', icon: '⚤', activeClass: 'from-purple-500 to-purple-600' },
-                        ].map(g => (
+                    <div className="flex flex-wrap gap-3 w-full lg:w-auto">
+                        {/* Sport Filter Scrollable */}
+                        <div className="flex gap-2 p-1.5 rounded-[1.25rem] bg-black/40 border border-white/5 overflow-x-auto no-scrollbar max-w-full">
                             <button
-                                key={g.value}
-                                onClick={() => setGenderFilter(genderFilter === g.value ? 'todos' : g.value)}
+                                onClick={() => setSportFilter('todos')}
                                 className={cn(
-                                    "px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 flex items-center gap-1.5",
-                                    genderFilter === g.value
-                                        ? `bg-gradient-to-r ${g.activeClass} text-white shadow-md`
-                                        : "text-slate-500 hover:text-white hover:bg-white/10"
+                                    "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-500",
+                                    sportFilter === 'todos'
+                                        ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                        : "text-zinc-500 hover:text-white hover:bg-white/5"
                                 )}
                             >
-                                <span>{g.icon}</span>
-                                <span>{g.label}</span>
+                                All
                             </button>
-                        ))}
+                            {uniqueSports.map(sport => (
+                                <button
+                                    key={sport}
+                                    onClick={() => setSportFilter(sportFilter === sport ? 'todos' : sport)}
+                                    className={cn(
+                                        "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-500 whitespace-nowrap flex items-center gap-2",
+                                        sportFilter === sport
+                                            ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                            : "text-zinc-500 hover:text-white hover:bg-white/5"
+                                    )}
+                                >
+                                    <span>{SPORT_EMOJI[sport]}</span>
+                                    <span>{sport}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Gender Filter Buttons */}
+                        <div className="flex gap-1.5 p-1.5 rounded-[1.25rem] bg-black/40 border border-white/5 shrink-0">
+                            {[
+                                { value: 'masculino', label: '♂', color: 'bg-primary' },
+                                { value: 'femenino', label: '♀', color: 'bg-pink-600' },
+                                { value: 'mixto', label: '⚤', color: 'bg-purple-600' },
+                            ].map(g => (
+                                <button
+                                    key={g.value}
+                                    onClick={() => setGenderFilter(genderFilter === g.value ? 'todos' : g.value)}
+                                    className={cn(
+                                        "w-10 h-10 rounded-xl text-lg font-black transition-all duration-500 flex items-center justify-center",
+                                        genderFilter === g.value
+                                            ? `${g.color} text-white shadow-lg scale-110`
+                                            : "text-zinc-600 hover:text-zinc-400 hover:bg-white/5"
+                                    )}
+                                >
+                                    {g.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
-            </div>
+            </motion.div>
 
             {/* ─── MATCHES GRID ─── */}
             {loading ? (
@@ -358,8 +411,9 @@ export default function PartidosPage() {
                     )}
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {filteredPartidos.map((partido) => {
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <AnimatePresence mode="popLayout">
+                    {filteredPartidos.map((partido, index) => {
                         const isLive = partido.estado === 'en_vivo';
                         const isFinished = partido.estado === 'finalizado';
                         const score = getScore(partido);
@@ -369,212 +423,184 @@ export default function PartidosPage() {
                         const accent = SPORT_ACCENT[sportName] || 'border-white/5';
 
                         return (
-                            <div
+                            <motion.div
                                 key={partido.id}
+                                layout
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.9, opacity: 0 }}
+                                transition={{ delay: index * 0.05 + 1 }}
+                                whileHover={{ y: -8 }}
                                 onClick={() => router.push(`/admin/partidos/${partido.id}`)}
                                 className={cn(
-                                    "relative group rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 backdrop-blur-md",
+                                    "group relative rounded-[2.5rem] border overflow-hidden cursor-pointer transition-all duration-700 backdrop-blur-3xl",
                                     isLive
-                                        ? "border-rose-500/30 shadow-lg shadow-rose-500/10 ring-1 ring-rose-500/10"
-                                        : `${accent} bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/15`
+                                        ? "border-rose-500/40 bg-rose-500/[0.03] shadow-2xl shadow-rose-500/10"
+                                        : "border-white/5 bg-zinc-900/40 hover:bg-zinc-800/40 hover:border-white/20 hover:shadow-2xl"
                                 )}
                             >
-                                {/* Sport gradient background */}
-                                <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-40 group-hover:opacity-60 transition-opacity duration-500`} />
-
-                                {/* Content */}
-                                <div className="relative p-5">
-                                    {/* Top row - sport + status */}
-                                    <div className="flex justify-between items-center mb-5">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center text-lg border border-white/10">
+                                {/* Sport Backdrop Gradient */}
+                                <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-20 group-hover:opacity-40 transition-opacity duration-700`} />
+                                
+                                {/* Top Content Container */}
+                                <div className="relative p-6 space-y-6">
+                                    {/* Header: Sport & Status Info */}
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">
                                                 {emoji}
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">{sportName}</span>
+                                                <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 group-hover:text-zinc-300 transition-colors">{sportName}</h4>
                                                 <span className={cn(
-                                                    "text-[9px] font-bold px-0 leading-tight",
-                                                    (partido.genero || 'masculino') === 'femenino' ? 'text-pink-400' :
-                                                        (partido.genero || 'masculino') === 'mixto' ? 'text-purple-400' :
-                                                            'text-red-400'
+                                                    "text-[9px] font-black uppercase px-2 py-0.5 rounded-full border w-fit mt-1",
+                                                    (partido.genero || 'masculino') === 'femenino' ? 'border-pink-500/30 text-pink-400 bg-pink-500/5' :
+                                                    (partido.genero || 'masculino') === 'mixto' ? 'border-purple-500/30 text-purple-400 bg-purple-500/5' :
+                                                    'border-blue-500/30 text-blue-400 bg-blue-500/5'
                                                 )}>
-                                                    {(partido.genero || 'masculino') === 'femenino' ? '♀ Femenino' : (partido.genero || 'masculino') === 'mixto' ? '⚤ Mixto' : '♂ Masculino'}
+                                                    {partido.genero || 'masculino'}
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            {isLive && <LiveIndicator />}
-                                            {isFinished && (
-                                                <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-white/5 text-slate-500 tracking-wider border border-white/10">
-                                                    Final
+                                        <div className="flex flex-col items-end gap-2">
+                                            {isLive ? (
+                                                <motion.div 
+                                                    animate={{ opacity: [1, 0.5, 1] }} 
+                                                    transition={{ duration: 1.5, repeat: Infinity }}
+                                                    className="px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+                                                >
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> ON AIR
+                                                </motion.div>
+                                            ) : isFinished ? (
+                                                <span className="px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 text-[9px] font-black uppercase tracking-widest border border-white/5">
+                                                    Archive
+                                                </span>
+                                            ) : (
+                                                <span className="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-[9px] font-black uppercase tracking-widest border border-cyan-500/30 flex items-center gap-1.5">
+                                                    <Calendar size={10} /> SCHED
                                                 </span>
                                             )}
-                                            {!isLive && !isFinished && (
-                                                <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 tracking-wider border border-cyan-500/20">
-                                                    Programado
+                                            {isLive && (
+                                                <span className="text-[10px] font-mono font-black text-rose-400/80 tracking-tighter italic">
+                                                    LIVE CONTROL
                                                 </span>
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Teams & Score — or Swimming Event */}
+                                    {/* Scoreboard Area */}
                                     {partido.marcador_detalle?.tipo === 'carrera' ? (
-                                        /* ── Swimming / Race Event Card ────────────────── */
-                                        <div className="flex flex-col items-center gap-3 mb-5">
-                                            <div className="text-center">
-                                                <h3 className="text-lg font-black text-white tracking-tight leading-tight">
+                                        <div className="py-2 flex flex-col items-center gap-4">
+                                            <div className="text-center group-hover:scale-105 transition-transform">
+                                                <h3 className="text-xl font-black text-white tracking-tighter">
                                                     {partido.marcador_detalle?.distancia && partido.marcador_detalle?.estilo
                                                         ? `${partido.marcador_detalle.distancia} ${partido.marcador_detalle.estilo}`
                                                         : partido.equipo_a}
                                                 </h3>
                                                 {partido.marcador_detalle?.serie && (
-                                                    <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">
-                                                        Serie {partido.marcador_detalle.serie}
+                                                    <span className="text-[10px] text-primary font-black uppercase tracking-[0.3em] opacity-80 mt-1 block">
+                                                        Heat #{partido.marcador_detalle.serie}
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                                                <Users size={12} />
-                                                <span className="font-bold">{(partido.marcador_detalle?.participantes || []).length} participantes</span>
+                                            <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/5 flex items-center gap-3">
+                                                <Users size={14} className="text-zinc-600" />
+                                                <span className="text-[10px] font-black text-zinc-500 uppercase">{(partido.marcador_detalle?.participantes || []).length} Competidores</span>
                                             </div>
-                                            {isFinished && (partido.marcador_detalle?.participantes || []).length > 0 && (
-                                                <div className="flex gap-3 items-end">
-                                                    {(partido.marcador_detalle.participantes as any[])
-                                                        .filter((p: any) => p.posicion && p.posicion <= 3 && p.estado === 'valid')
-                                                        .sort((a: any, b: any) => a.posicion - b.posicion)
-                                                        .map((p: any) => (
-                                                            <div key={p.id} className="flex flex-col items-center gap-1 text-center">
-                                                                <span className="text-lg">{p.posicion === 1 ? '🥇' : p.posicion === 2 ? '🥈' : '🥉'}</span>
-                                                                <span className="text-[10px] font-bold text-white truncate max-w-[70px]">{p.nombre}</span>
-                                                                <span className="text-[9px] text-cyan-400/60 font-mono">{p.tiempo || '—'}</span>
-                                                            </div>
-                                                        ))
-                                                    }
-                                                </div>
-                                            )}
                                         </div>
                                     ) : (
-                                    <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center mb-5">
-                                        {/* Team A */}
-                                        <div className="flex flex-col items-center gap-2 text-center">
-                                            {sportName === 'Ajedrez' && isFinished && partido.marcador_detalle?.resultado_final === 'victoria_a' && (
-                                                <div className="mb-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
-                                                    Ganador
-                                                </div>
-                                            )}
-                                            <Avatar name={getDisplayName(partido, 'a')} size="default" className="ring-2 ring-white/10 shadow-lg relative z-10" />
-                                            <div className="flex flex-col items-center gap-0.5">
-                                                <span className={cn("text-sm font-bold leading-tight truncate max-w-[90px]", score.a > score.b && isFinished ? "text-red-400" : "text-white")}>
-                                                    {getDisplayName(partido, 'a')}
-                                                </span>
-                                                {getCarreraSubtitle(partido, 'a') && (
-                                                    <span className="text-[9px] text-slate-500 font-medium truncate max-w-[90px]">{getCarreraSubtitle(partido, 'a')}</span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Score */}
-                                        <div className="flex flex-col items-center justify-center">
-                                            {sportName === 'Ajedrez' ? (
-                                                <div className="flex flex-col items-center gap-1.5">
-                                                    {isFinished && partido.marcador_detalle?.resultado_final === 'empate' ? (
-                                                        <div className="bg-white/5 backdrop-blur-sm px-3 py-1 rounded-lg border border-white/10 flex flex-col items-center">
-                                                            <span className="text-[10px] uppercase font-bold text-slate-300 tracking-widest">Empate</span>
-                                                        </div>
-                                                    ) : isLive ? (
-                                                        <span className="text-sm font-black text-rose-400 bg-rose-500/10 px-4 py-1.5 rounded-xl border border-rose-500/30 animate-pulse uppercase tracking-wide">
-                                                            EN VIVO
-                                                        </span>
-                                                    ) : (
-                                                        <div className="bg-white/5 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/10">
-                                                            <span className="text-xl font-black text-white/40 tracking-widest">VS</span>
+                                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-4">
+                                            {/* Local */}
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="relative group/avatar">
+                                                    <Avatar name={getDisplayName(partido, 'a')} className="w-16 h-16 rounded-[1.25rem] border-2 border-white/5 ring-4 ring-black/20 group-hover/avatar:scale-105 transition-all duration-500" />
+                                                    {score.a > score.b && isFinished && (
+                                                        <div className="absolute -top-2 -right-2 bg-primary p-1.5 rounded-lg shadow-xl shadow-primary/40 rotate-12">
+                                                            <Trophy size={14} className="text-white" />
                                                         </div>
                                                     )}
                                                 </div>
-                                            ) : (
-                                                <>
-                                            <div className="bg-black/30 backdrop-blur-sm px-5 py-2 rounded-2xl border border-white/5 flex items-center">
-                                                <span className={cn("text-3xl font-black font-mono tabular-nums", score.a > score.b && isFinished ? "text-red-400" : "text-white")}>
-                                                    {score.a}
-                                                </span>
-                                                <span className="text-xl font-bold text-white/15 mx-1.5">:</span>
-                                                <span className={cn("text-3xl font-black font-mono tabular-nums", score.b > score.a && isFinished ? "text-red-400" : "text-white")}>
-                                                    {score.b}
-                                                </span>
-                                            </div>
-                                            {isLive && (
-                                                <span className="mt-2 text-[10px] font-black text-rose-400 bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-500/20 animate-pulse uppercase tracking-wider">
-                                                    En Juego
-                                                </span>
-                                            )}
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {/* Team B */}
-                                        <div className="flex flex-col items-center gap-2 text-center">
-                                            {sportName === 'Ajedrez' && isFinished && partido.marcador_detalle?.resultado_final === 'victoria_b' && (
-                                                <div className="mb-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">
-                                                    Ganador
+                                                <div className="text-center">
+                                                    <p className="text-sm font-black text-white truncate max-w-[100px] leading-tight">{getDisplayName(partido, 'a')}</p>
+                                                    <p className="text-[9px] font-bold text-zinc-500 uppercase">{getCarreraSubtitle(partido, 'a')}</p>
                                                 </div>
-                                            )}
-                                            <Avatar name={getDisplayName(partido, 'b')} size="default" className="ring-2 ring-white/10 shadow-lg relative z-10" />
-                                            <div className="flex flex-col items-center gap-0.5">
-                                                <span className={cn("text-sm font-bold leading-tight text-slate-400 truncate max-w-[90px]", score.b > score.a && isFinished ? "text-red-400" : "")}>
-                                                    {getDisplayName(partido, 'b')}
-                                                </span>
-                                                {getCarreraSubtitle(partido, 'b') && (
-                                                    <span className="text-[9px] text-slate-500 font-medium truncate max-w-[90px]">{getCarreraSubtitle(partido, 'b')}</span>
+                                            </div>
+
+                                            {/* CENTER SCORE */}
+                                            <div className="flex flex-col items-center justify-center p-4 rounded-3xl bg-black/40 border border-white/5 shadow-inner">
+                                                <div className="flex items-center gap-3">
+                                                    <span className={cn("text-4xl font-black font-mono tracking-tighter tabular-nums", score.a > score.b && isFinished ? "text-primary" : "text-white")}>{score.a}</span>
+                                                    <span className="text-2xl font-black text-zinc-800">:</span>
+                                                    <span className={cn("text-4xl font-black font-mono tracking-tighter tabular-nums", score.b > score.a && isFinished ? "text-primary" : "text-white")}>{score.b}</span>
+                                                </div>
+                                                {isLive && (
+                                                    <div className="mt-2 flex items-center gap-1.5">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                                        <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest whitespace-nowrap">Gaming</span>
+                                                    </div>
                                                 )}
                                             </div>
+
+                                            {/* Visitante */}
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="relative group/avatar">
+                                                    <Avatar name={getDisplayName(partido, 'b')} className="w-16 h-16 rounded-[1.25rem] border-2 border-white/5 ring-4 ring-black/20 group-hover/avatar:scale-105 transition-all duration-500" />
+                                                    {score.b > score.a && isFinished && (
+                                                        <div className="absolute -top-2 -left-2 bg-primary p-1.5 rounded-lg shadow-xl shadow-primary/40 -rotate-12">
+                                                            <Trophy size={14} className="text-white" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-sm font-black text-white truncate max-w-[100px] leading-tight">{getDisplayName(partido, 'b')}</p>
+                                                    <p className="text-[9px] font-bold text-zinc-500 uppercase">{getCarreraSubtitle(partido, 'b')}</p>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
                                     )}
 
-                                    {/* Bottom bar */}
-                                    <div className="flex justify-between items-center pt-4 border-t border-white/5">
-                                        <div className="flex flex-col gap-1 text-xs text-slate-500">
-                                            <div className="flex items-center gap-1.5">
-                                                <Clock size={11} />
-                                                <span className="text-[11px]">
-                                                    {new Date(partido.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
-                                                    {' · '}
+                                    {/* Action Footer */}
+                                    <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2 text-zinc-500 group-hover:text-zinc-400 transition-colors">
+                                                <Clock size={12} className="text-primary/60" />
+                                                <span className="text-[11px] font-black tracking-tight italic">
                                                     {new Date(partido.fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-1.5">
+                                            <div className="flex items-center gap-2 text-zinc-600">
                                                 <MapPin size={11} />
-                                                <span className="text-[10px] text-slate-600">{partido.lugar || 'Coliseo Central'}</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-tighter truncate max-w-[120px]">{partido.lugar || 'Arena'}</span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <button
+
+                                        <div className="flex items-center gap-2">
+                                            <motion.button
+                                                whileHover={{ scale: 1.1, rotate: 10 }}
+                                                whileTap={{ scale: 0.9 }}
                                                 onClick={(e) => { e.stopPropagation(); setMatchToDelete(partido); }}
-                                                className="p-2 rounded-lg text-slate-700 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
-                                                title="Eliminar partido"
+                                                className="p-3 rounded-2xl bg-zinc-950/60 border border-white/5 text-zinc-600 hover:text-rose-500 hover:border-rose-500/30 transition-all opacity-0 group-hover:opacity-100"
                                             >
-                                                {deletingId === partido.id ? (
-                                                    <Loader2 size={14} className="animate-spin" />
-                                                ) : (
-                                                    <Trash2 size={14} />
-                                                )}
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    router.push(`/admin/partidos/${partido.id}`);
-                                                }}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 transition-all"
+                                                {deletingId === partido.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                                            </motion.button>
+                                            
+                                            <motion.button
+                                                whileHover={{ x: 3 }}
+                                                className="px-5 py-3 rounded-2xl bg-primary text-white text-[11px] font-black uppercase tracking-[0.1em] shadow-lg shadow-primary/20 flex items-center gap-2 group/btn"
                                             >
-                                                Controlar
-                                                <ArrowUpRight size={12} />
-                                            </button>
+                                                Control
+                                                <ArrowUpRight size={14} className="group-hover/btn:rotate-45 transition-transform" />
+                                            </motion.button>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+
+                                {/* Bottom Shine Line */}
+                                <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </motion.div>
                         );
                     })}
+                </AnimatePresence>
                 </div>
             )}
 

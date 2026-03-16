@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button, Input, Badge } from "@/components/ui-primitives";
 import { X, Save, Trophy, Loader2, Calendar, Users, Activity, MapPin, Clock, Plus, GraduationCap, Swords } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +8,7 @@ import { CARRERAS_UNINORTE, LUGARES_OLIMPICOS, NATACION_ESTILOS, NATACION_DISTAN
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { stampAudit } from "@/lib/audit-helpers";
+import { motion, AnimatePresence } from "framer-motion";
 
 type CreateMatchModalProps = {
     isOpen: boolean;
@@ -15,13 +16,13 @@ type CreateMatchModalProps = {
 };
 
 const DISCIPLINES = [
-    { name: 'Fútbol', emoji: '⚽', color: 'from-emerald-500 to-green-600', individual: false },
-    { name: 'Baloncesto', emoji: '🏀', color: 'from-orange-500 to-amber-600', individual: false },
-    { name: 'Voleibol', emoji: '🏐', color: 'from-blue-500 to-cyan-600', individual: false },
-    { name: 'Tenis', emoji: '🎾', color: 'from-lime-500 to-green-500', individual: true },
-    { name: 'Tenis de Mesa', emoji: '🏓', color: 'from-red-500 to-pink-600', individual: true },
-    { name: 'Ajedrez', emoji: '♟️', color: 'from-slate-600 to-zinc-800', individual: true },
-    { name: 'Natación', emoji: '🏊', color: 'from-cyan-500 to-blue-600', individual: true },
+    { name: 'Fútbol', emoji: '⚽', color: 'from-emerald-500 to-green-600', glow: 'shadow-emerald-500/20', individual: false },
+    { name: 'Baloncesto', emoji: '🏀', color: 'from-orange-500 to-amber-600', glow: 'shadow-orange-500/20', individual: false },
+    { name: 'Voleibol', emoji: '🏐', color: 'from-blue-500 to-cyan-600', glow: 'shadow-blue-500/20', individual: false },
+    { name: 'Tenis', emoji: '🎾', color: 'from-lime-500 to-green-500', glow: 'shadow-lime-500/20', individual: true },
+    { name: 'Tenis de Mesa', emoji: '🏓', color: 'from-red-500 to-pink-600', glow: 'shadow-red-500/20', individual: true },
+    { name: 'Ajedrez', emoji: '♟️', color: 'from-slate-600 to-zinc-800', glow: 'shadow-slate-500/20', individual: true },
+    { name: 'Natación', emoji: '🏊', color: 'from-cyan-500 to-blue-600', glow: 'shadow-cyan-500/20', individual: true },
 ];
 
 export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
@@ -44,6 +45,37 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
     const [natEstilo, setNatEstilo] = useState('Libre');
     const [natDistancia, setNatDistancia] = useState('50m');
     const [natSerie, setNatSerie] = useState('');
+    const [carreras, setCarreras] = useState<{id: number, nombre: string}[]>([]);
+    const [loadingCarreras, setLoadingCarreras] = useState(false);
+    const [fetchError, setFetchError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (isOpen) fetchCarreras();
+    }, [isOpen]);
+
+    const fetchCarreras = async () => {
+        setLoadingCarreras(true);
+        setFetchError(null);
+        try {
+            console.log("[CreateMatchModal] Fetching carreras...");
+            const { data, error } = await supabase.from('carreras').select('id, nombre').order('nombre');
+            if (error) {
+                console.error("[CreateMatchModal] Error fetching carreras:", error);
+                setFetchError(error.message);
+                return;
+            }
+            if (data) {
+                const filtered = data.filter(c => CARRERAS_UNINORTE.includes(c.nombre));
+                setCarreras(filtered);
+                console.log(`[CreateMatchModal] Cargadas ${filtered.length} carreras`);
+            }
+        } catch (err: any) {
+            console.error("[CreateMatchModal] Critical error:", err);
+            setFetchError(err.message || "Error desconocido");
+        } finally {
+            setLoadingCarreras(false);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -144,10 +176,12 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
             let carreraBId = null;
 
             if (!isRaceSport && !isIndividual) {
+                // For team sports, equipoA/B are stored as delegacion_a/b but linked by name to carreras
                 const { data: cData } = await supabase.from('carreras').select('id, nombre').in('nombre', [equipoA, equipoB]);
                 carreraAId = cData?.find(c => c.nombre === equipoA)?.id || null;
                 carreraBId = cData?.find(c => c.nombre === equipoB)?.id || null;
             } else if (isIndividual) {
+                // For individual sports, delegacionA/B are the career names
                 const { data: cData } = await supabase.from('carreras').select('id, nombre').in('nombre', [delegacionA, delegacionB]);
                 carreraAId = cData?.find(c => c.nombre === delegacionA)?.id || null;
                 carreraBId = cData?.find(c => c.nombre === delegacionB)?.id || null;
@@ -199,28 +233,50 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
             <div className="w-full max-w-lg bg-card border border-border/50 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-300">
 
-                {/* Header Dinámico Premium (Compacto) */}
-                <div className={`relative p-5 bg-gradient-to-br ${selectedDiscColor} text-white overflow-hidden transition-all duration-500 shrink-0`}>
-                    {/* Background Pattern */}
-                    <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat mix-blend-overlay"></div>
-                    <div className="absolute top-0 right-0 p-4 opacity-20 transform translate-x-4 -translate-y-4 hue-rotate-15">
-                        <Trophy size={120} />
+                {/* Header Dinámico Premium "Cyber-Olympic Luxury" */}
+                <motion.div 
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className={`relative p-6 bg-gradient-to-br ${selectedDiscColor} text-white overflow-hidden transition-all duration-700 shrink-0 shadow-2xl z-20`}
+                >
+                    {/* Background Pattern - Moving Noise */}
+                    <motion.div 
+                        animate={{ 
+                            backgroundPosition: ["0% 0%", "100% 100%"],
+                            opacity: [0.15, 0.2, 0.15]
+                        }}
+                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                        className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:200%_200%] mix-blend-overlay"
+                    />
+                    
+                    <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-6 -translate-y-6 rotate-12 scale-150">
+                        <Trophy size={160} />
                     </div>
 
                     <div className="relative z-10 flex justify-between items-center">
                         <div>
-                            <h2 className="text-2xl font-black tracking-tight drop-shadow-sm flex items-center gap-2">
-                                <Plus size={20} className="text-white/80" /> Crear Partido
+                            <motion.div 
+                                initial={{ x: -10, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                transition={{ delay: 0.2 }}
+                                className="flex items-center gap-2 mb-1"
+                            >
+                                <span className="px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-black uppercase tracking-widest border border-white/20">
+                                    Nuevo Encuentro
+                                </span>
+                            </motion.div>
+                            <h2 className="text-3xl font-black tracking-tighter drop-shadow-md flex items-center gap-2">
+                                <Plus size={24} className="text-white/80" /> {disciplina}
                             </h2>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-all backdrop-blur-sm border border-white/10 hover:scale-110 active:scale-95 group"
+                            className="p-2 bg-white/10 hover:bg-white/20 rounded-2xl transition-all backdrop-blur-md border border-white/10 hover:scale-110 active:scale-95 group shadow-lg"
                         >
-                            <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+                            <X size={24} className="group-hover:rotate-90 transition-transform duration-500" />
                         </button>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Body con Scroll */}
                 <div className="p-5 space-y-5 bg-zinc-950/50 overflow-y-auto max-h-[70vh] custom-scrollbar">
@@ -232,270 +288,336 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                         </div>
                     )}
 
-                    {/* 1. Selección de Disciplina (Grid Compacto) */}
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 ml-1">
-                            <Trophy size={12} className="text-primary" /> 1. Deporte
-                        </label>
-                        <div className="grid grid-cols-4 gap-2">
-                            {DISCIPLINES.map((d) => {
+                    {/* 1. Selección de Disciplina (Grid Premium) */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end px-1">
+                            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                1. Seleccionar Deporte
+                            </label>
+                            <span className="text-[10px] font-bold text-zinc-600">PASO 1 DE 3</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                            {DISCIPLINES.map((d, index) => {
                                 const isSelected = disciplina === d.name;
                                 return (
-                                    <button
+                                    <motion.button
                                         key={d.name}
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ delay: index * 0.05 + 0.3 }}
+                                        whileHover={{ y: -4, scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
                                         onClick={() => setDisciplina(d.name)}
-                                        className={`relative group flex flex-col items-center justify-center p-2 h-20 rounded-xl border transition-all duration-300 overflow-hidden ${isSelected
-                                            ? `border-transparent ring-2 ring-primary ring-offset-1 ring-offset-zinc-900 bg-gradient-to-br ${d.color} text-white shadow-lg shadow-black/50 scale-[1.02]`
-                                            : 'border-white/5 bg-zinc-900/40 hover:bg-white/5 hover:border-white/10'
-                                            }`}
+                                        className={`relative group flex flex-col items-center justify-center p-2 h-24 rounded-2xl border transition-all duration-500 overflow-hidden ${
+                                            isSelected
+                                            ? `border-transparent ring-2 ring-primary ring-offset-2 ring-offset-zinc-950 bg-gradient-to-br ${d.color} ${d.glow} text-white shadow-2xl z-10`
+                                            : 'border-white/5 bg-zinc-900/60 hover:bg-zinc-800 hover:border-white/20'
+                                        }`}
                                     >
-                                        {isSelected && <div className="absolute inset-0 bg-white/20 mix-blend-overlay animate-pulse" />}
-                                        <span className={`text-2xl mb-1 filter drop-shadow-sm transition-transform duration-300 group-hover:scale-110 ${isSelected ? 'scale-110' : 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100'}`}>
+                                        {isSelected && (
+                                            <motion.div 
+                                                layoutId="active-disc-bg"
+                                                className="absolute inset-0 bg-white/20 mix-blend-overlay" 
+                                            />
+                                        )}
+                                        <span className={`text-3xl mb-1.5 filter drop-shadow-md transition-all duration-500 ${isSelected ? 'scale-110 rotate-3' : 'grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110'}`}>
                                             {d.emoji}
                                         </span>
-                                        <span className={`text-[9px] font-bold truncate w-full text-center tracking-wide ${isSelected ? 'text-white' : 'text-muted-foreground group-hover:text-white'}`}>
+                                        <span className={`text-[10px] font-black truncate w-full text-center tracking-tighter uppercase ${isSelected ? 'text-white' : 'text-zinc-500 group-hover:text-white'}`}>
                                             {d.name}
                                         </span>
-                                    </button>
+                                        
+                                        {/* Hover Glow Effect */}
+                                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-t from-white/10 to-transparent transition-opacity" />
+                                    </motion.button>
                                 );
                             })}
                         </div>
                     </div>
 
-                    {/* 2. Equipos / Evento */}
-                    {isRaceSport ? (
-                        <div className="space-y-3 animate-in fade-in slide-in-from-left-4">
-                            {disciplina === 'Natación' ? (
-                                <>
-                                    {/* Swimming: Style + Distance + Serie */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Estilo</label>
-                                            <select
-                                                value={natEstilo}
-                                                onChange={(e) => setNatEstilo(e.target.value)}
-                                                className="w-full h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-sm font-semibold text-white focus:border-cyan-500 outline-none"
-                                            >
-                                                {NATACION_ESTILOS.map(e => <option key={e} value={e}>{e}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Distancia</label>
-                                            <select
-                                                value={natDistancia}
-                                                onChange={(e) => setNatDistancia(e.target.value)}
-                                                className="w-full h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-sm font-semibold text-white focus:border-cyan-500 outline-none"
-                                            >
-                                                {NATACION_DISTANCIAS.map(d => <option key={d} value={d}>{d}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Serie (opcional)</label>
-                                        <Input
-                                            type="number"
-                                            placeholder="Ej: 1, 2, 3..."
-                                            value={natSerie}
-                                            onChange={(e) => setNatSerie(e.target.value)}
-                                            className="bg-black/40 border-white/5 focus:border-cyan-500 h-10 text-sm font-medium w-32"
-                                            min={1}
-                                        />
-                                    </div>
-                                    <div className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl">
-                                        <p className="text-xs text-cyan-400 font-semibold">📋 Nombre del evento: <span className="text-white">{natDistancia} {natEstilo}{natSerie ? ` - Serie ${natSerie}` : ''}</span></p>
-                                        <p className="text-[10px] text-cyan-400/60 mt-1">* Los nadadores se agregarán en la pantalla de gestión.</p>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 ml-1">
-                                        <Trophy size={12} className="text-primary" /> Nombre de la Prueba / Evento
-                                    </label>
-                                    <Input
-                                        placeholder="Ej: 100m Salto de longitúd - Final"
-                                        value={equipoA}
-                                        onChange={(e) => setEquipoA(e.target.value)}
-                                        className="bg-black/40 border-white/5 focus:border-primary/50 h-10 text-sm font-medium"
-                                    />
-                                    <p className="text-[10px] text-muted-foreground ml-1">
-                                        * Se agregarán los participantes en la pantalla de gestión.
-                                    </p>
-                                </>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="relative flex flex-col sm:flex-row items-stretch justify-between gap-4 p-4 rounded-2xl bg-zinc-900/50 border border-white/5 shadow-inner">
-                            {/* VS Badge Absolute Center (Hidden on small screens) */}
-                            <div className="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
-                                <div className="w-8 h-8 rounded-full bg-black border-2 border-zinc-800 flex items-center justify-center shadow-lg">
-                                    <span className="text-[9px] font-black text-white/40 italic">VS</span>
-                                </div>
-                            </div>
-
-                            {/* Equipo A */}
-                            <div className="flex-1 space-y-1">
-                                <span className="text-[9px] font-bold uppercase text-muted-foreground ml-1">
-                                    {isIndividual ? 'Participante A' : 'Equipo Local'}
-                                </span>
-                                {isIndividual ? (
-                                    <div className="space-y-2">
-                                        {/* 1. Carrera PRIMERO */}
-                                        <span className="text-[8px] font-bold uppercase text-amber-500/80 tracking-wider block">1. Carrera</span>
-                                        <div className="relative">
-                                            <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
-                                            <select
-                                                className="w-full h-9 bg-zinc-900/50 border border-white/10 rounded-lg pl-9 pr-2 text-xs text-zinc-300 focus:border-cyan-500 outline-none"
-                                                value={delegacionA}
-                                                onChange={(e) => setDelegacionA(e.target.value)}
-                                            >
-                                                <option value="" disabled>Seleccionar Carrera...</option>
-                                                {CARRERAS_UNINORTE.map(c => <option key={c} value={c}>{c}</option>)}
-                                            </select>
-                                        </div>
-                                        {/* 2. Participante DESPUÉS */}
-                                        <span className="text-[8px] font-bold uppercase text-amber-500/80 tracking-wider block mt-1">2. Deportista</span>
-                                        <Input
-                                            placeholder="Nombre del Participante"
-                                            value={equipoA}
-                                            onChange={e => setEquipoA(e.target.value)}
-                                            disabled={!delegacionA}
-                                            className={cn(
-                                                "h-10 bg-black/40 border-white/10 focus:border-primary/50 focus:bg-black/60 rounded-lg transition-all font-semibold text-sm text-center",
-                                                !delegacionA && "opacity-40 cursor-not-allowed"
-                                            )}
-                                        />
-                                    </div>
-                                ) : (
-                                    <select
-                                        className="w-full h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-sm font-semibold text-white focus:border-primary/50 focus:bg-zinc-900 outline-none"
-                                        value={equipoA}
-                                        onChange={(e) => setEquipoA(e.target.value)}
-                                    >
-                                        <option value="" disabled>Seleccionar Carrera...</option>
-                                        {CARRERAS_UNINORTE.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                )}
-                            </div>
-
-                            {/* Spacer for VS */}
-                            <div className="w-4 hidden sm:block" />
-
-                            {/* Equipo B */}
-                            <div className="flex-1 space-y-1 text-right">
-                                <span className="text-[9px] font-bold uppercase text-muted-foreground mr-1 block">
-                                    {isIndividual ? 'Participante B' : 'Equipo Visitante'}
-                                </span>
-                                {isIndividual ? (
-                                    <div className="space-y-2">
-                                        {/* 1. Carrera PRIMERO */}
-                                        <span className="text-[8px] font-bold uppercase text-amber-500/80 tracking-wider block">1. Carrera</span>
-                                        <div className="relative">
-                                            <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
-                                            <select
-                                                className="w-full h-9 bg-zinc-900/50 border border-white/10 rounded-lg pl-9 pr-2 text-xs text-zinc-300 focus:border-pink-500 outline-none"
-                                                value={delegacionB}
-                                                onChange={(e) => setDelegacionB(e.target.value)}
-                                            >
-                                                <option value="" disabled>Seleccionar Carrera...</option>
-                                                {CARRERAS_UNINORTE.map(c => <option key={c} value={c}>{c}</option>)}
-                                            </select>
-                                        </div>
-                                        {/* 2. Participante DESPUÉS */}
-                                        <span className="text-[8px] font-bold uppercase text-amber-500/80 tracking-wider block mt-1">2. Deportista</span>
-                                        <Input
-                                            placeholder="Nombre del Participante"
-                                            value={equipoB}
-                                            onChange={e => setEquipoB(e.target.value)}
-                                            disabled={!delegacionB}
-                                            className={cn(
-                                                "h-10 bg-black/40 border-white/10 focus:border-primary/50 focus:bg-black/60 rounded-lg transition-all font-semibold text-sm text-center",
-                                                !delegacionB && "opacity-40 cursor-not-allowed"
-                                            )}
-                                        />
-                                    </div>
-                                ) : (
-                                    <select
-                                        className="w-full h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-sm font-semibold text-white focus:border-primary/50 focus:bg-zinc-900 outline-none text-right"
-                                        style={{ direction: 'rtl' }} // Trick for right align select arrow? No, text right.
-                                        value={equipoB}
-                                        onChange={(e) => setEquipoB(e.target.value)}
-                                    >
-                                        <option value="" disabled>Seleccionar Carrera...</option>
-                                        {CARRERAS_UNINORTE.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* 3. Categoría y Detalles */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Categoría Género */}
-                        <div className="col-span-1 sm:col-span-2 space-y-1.5">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 ml-1">
-                                <Users size={12} className="text-primary" /> 3. Categoría
+                    {/* 2. Equipos / Evento (Glassmorphism Pods) */}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={isRaceSport ? 'race' : 'vs'}
+                            initial={{ x: 20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: -20, opacity: 0 }}
+                            transition={{ duration: 0.4, ease: "easeOut" }}
+                            className="space-y-4"
+                        >
+                            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-2 px-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                2. Configurar Competidores
                             </label>
-                            <div className="flex p-1 bg-black/40 rounded-lg border border-white/5 h-10">
-                                <button
-                                    onClick={() => setGenero('masculino')}
-                                    className={`flex-1 rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 ${genero === 'masculino' ? 'bg-blue-600 text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
-                                >
-                                    ♂ Masculino
-                                </button>
-                                <button
-                                    onClick={() => setGenero('femenino')}
-                                    className={`flex-1 rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 ${genero === 'femenino' ? 'bg-pink-600 text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
-                                >
-                                    ♀ Femenino
-                                </button>
-                                <button
-                                    onClick={() => setGenero('mixto')}
-                                    className={`flex-1 rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 ${genero === 'mixto' ? 'bg-purple-600 text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
-                                >
-                                    ⚤ Mixto
-                                </button>
+
+                            {isRaceSport ? (
+                                <div className="p-5 rounded-3xl bg-zinc-900/40 border border-white/5 backdrop-blur-sm space-y-4 shadow-inner relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                                    
+                                    {disciplina === 'Natación' ? (
+                                        <div className="space-y-4 relative z-10">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-bold uppercase text-zinc-500 px-1">Estilo</label>
+                                                    <select
+                                                        value={natEstilo}
+                                                        onChange={(e) => setNatEstilo(e.target.value)}
+                                                        className="w-full h-11 bg-black/60 border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all"
+                                                    >
+                                                        {NATACION_ESTILOS.map(e => <option key={e} value={e}>{e}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-bold uppercase text-zinc-500 px-1">Distancia</label>
+                                                    <select
+                                                        value={natDistancia}
+                                                        onChange={(e) => setNatDistancia(e.target.value)}
+                                                        className="w-full h-11 bg-black/60 border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all"
+                                                    >
+                                                        {NATACION_DISTANCIAS.map(d => <option key={d} value={d}>{d}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-end gap-4">
+                                                <div className="flex-1 space-y-1.5">
+                                                    <label className="text-[10px] font-bold uppercase text-zinc-500 px-1">Serie (opcional)</label>
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="Nº Serie"
+                                                        value={natSerie}
+                                                        onChange={(e) => setNatSerie(e.target.value)}
+                                                        className="bg-black/60 border-white/10 focus:border-cyan-500 h-11 text-sm font-bold rounded-xl"
+                                                        min={1}
+                                                    />
+                                                </div>
+                                                <div className="flex-[2] p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-center gap-3">
+                                                    <div className="h-8 w-8 rounded-full bg-cyan-500/20 flex items-center justify-center shrink-0">
+                                                        <Activity size={16} className="text-cyan-400" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black uppercase text-cyan-500/60 leading-none mb-1">Preview Evento</p>
+                                                        <p className="text-xs text-white font-bold leading-none">{natDistancia} {natEstilo}{natSerie ? ` · S${natSerie}` : ''}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2 relative z-10">
+                                            <Input
+                                                placeholder="Ej: Final 100m Planos Varones"
+                                                value={equipoA}
+                                                onChange={(e) => setEquipoA(e.target.value)}
+                                                className="bg-black/60 border-white/10 focus:border-primary/50 h-12 text-sm font-bold rounded-xl placeholder:text-zinc-600"
+                                            />
+                                            <div className="flex items-center gap-2 px-1">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+                                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                                                    Los participantes se gestionan después de crear el evento
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-3">
+                                    {/* Local Pod */}
+                                    <div className="p-4 rounded-3xl bg-zinc-900/40 border border-white/5 backdrop-blur-sm space-y-3 relative group overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-16 h-16 bg-blue-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        
+                                        <div className="flex justify-between items-center px-1">
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-blue-500/80">Local / A</span>
+                                            {isIndividual && <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">Atleta</span>}
+                                        </div>
+
+                                        {isIndividual ? (
+                                            <div className="space-y-3">
+                                                <div className="relative">
+                                                    <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500/50" size={16} />
+                                                    <select
+                                                        className="w-full h-10 bg-black/60 border border-white/10 rounded-xl pl-10 pr-4 text-xs font-bold text-white focus:border-blue-500/50 outline-none transition-all appearance-none"
+                                                        value={delegacionA}
+                                                        onChange={(e) => setDelegacionA(e.target.value)}
+                                                    >
+                                                    <option value="" disabled>
+                                                        {loadingCarreras ? "Cargando catálogo..." : fetchError ? `Error: ${fetchError}` : "Seleccionar Carrera..."}
+                                                    </option>
+                                                    {carreras.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                                                    </select>
+                                                </div>
+                                                <Input
+                                                    placeholder="Nombre del Atleta"
+                                                    value={equipoA}
+                                                    onChange={e => setEquipoA(e.target.value)}
+                                                    disabled={!delegacionA}
+                                                    className={cn(
+                                                        "h-11 bg-black/60 border-white/10 focus:border-blue-500/50 rounded-xl font-black text-sm text-center transition-all",
+                                                        !delegacionA && "opacity-30 saturation-0"
+                                                    )}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="relative group/sel">
+                                                <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500/50 transition-colors group-focus-within/sel:text-blue-400" size={18} />
+                                                <select
+                                                    className="w-full h-12 bg-black/60 border border-white/10 rounded-xl pl-11 pr-4 text-sm font-black text-white focus:border-blue-500/50 outline-none transition-all appearance-none"
+                                                    value={equipoA}
+                                                    onChange={(e) => setEquipoA(e.target.value)}
+                                                >
+                                                    <option value="" disabled>
+                                                        {loadingCarreras ? "Cargando catálogo..." : fetchError ? `Error: ${fetchError}` : "Elegir Carrera..."}
+                                                    </option>
+                                                    {carreras.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* VS Badge */}
+                                    <div className="flex sm:flex-col items-center justify-center gap-2 py-1">
+                                        <div className="h-px w-full sm:w-px sm:h-8 bg-zinc-800" />
+                                        <div className="w-10 h-10 rounded-2xl bg-black border-2 border-zinc-900 flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.8)] z-10">
+                                            <span className="text-[10px] font-black text-white italic tracking-tighter">VS</span>
+                                        </div>
+                                        <div className="h-px w-full sm:w-px sm:h-8 bg-zinc-800" />
+                                    </div>
+
+                                    {/* Visitante Pod */}
+                                    <div className="p-4 rounded-3xl bg-zinc-900/40 border border-white/5 backdrop-blur-sm space-y-3 relative group overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-16 h-16 bg-pink-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        
+                                        <div className="flex justify-between items-center px-1">
+                                            {isIndividual && <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20 uppercase">Atleta</span>}
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-pink-500/80">Visitante / B</span>
+                                        </div>
+
+                                        {isIndividual ? (
+                                            <div className="space-y-3">
+                                                <div className="relative">
+                                                    <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-500/50" size={16} />
+                                                    <select
+                                                        className="w-full h-10 bg-black/60 border border-white/10 rounded-xl pl-10 pr-4 text-xs font-bold text-white focus:border-pink-500/50 outline-none transition-all appearance-none text-right"
+                                                        value={delegacionB}
+                                                        onChange={(e) => setDelegacionB(e.target.value)}
+                                                    >
+                                                        <option value="" disabled>
+                                                            {loadingCarreras ? "Cargando catálogo..." : fetchError ? `Error: ${fetchError}` : "Seleccionar Carrera..."}
+                                                        </option>
+                                                        {carreras.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                                                    </select>
+                                                </div>
+                                                <Input
+                                                    placeholder="Nombre del Atleta"
+                                                    value={equipoB}
+                                                    onChange={e => setEquipoB(e.target.value)}
+                                                    disabled={!delegacionB}
+                                                    className={cn(
+                                                        "h-11 bg-black/60 border-white/10 focus:border-pink-500/50 rounded-xl font-black text-sm text-center transition-all",
+                                                        !delegacionB && "opacity-30 saturation-0"
+                                                    )}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="relative group/sel">
+                                                <Users className="absolute right-3 top-1/2 -translate-y-1/2 text-pink-500/50 transition-colors group-focus-within/sel:text-pink-400" size={18} />
+                                                <select
+                                                    className="w-full h-12 bg-black/60 border border-white/10 rounded-xl pl-4 pr-11 text-sm font-black text-white focus:border-pink-500/50 outline-none transition-all appearance-none text-right"
+                                                    value={equipoB}
+                                                    onChange={(e) => setEquipoB(e.target.value)}
+                                                >
+                                                    <option value="" disabled>
+                                                        {loadingCarreras ? "Cargando catálogo..." : fetchError ? `Error: ${fetchError}` : "Elegir Carrera..."}
+                                                    </option>
+                                                    {carreras.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
+
+                    {/* 3. Categoría y Detalles (Premium Grid) */}
+                    <motion.div 
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    >
+                        <div className="col-span-1 sm:col-span-2 space-y-3">
+                            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-2 px-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                3. Categoría y Logística
+                            </label>
+                            
+                            {/* Género Switcher Premium */}
+                            <div className="flex p-1.5 bg-zinc-900/60 rounded-2xl border border-white/5 backdrop-blur-sm h-14">
+                                {[
+                                    { id: 'masculino', label: 'Masculino', emoji: '♂', color: 'bg-blue-600', glow: 'shadow-blue-500/40' },
+                                    { id: 'femenino', label: 'Femenino', emoji: '♀', color: 'bg-pink-600', glow: 'shadow-pink-500/40' },
+                                    { id: 'mixto', label: 'Mixto', emoji: '⚤', color: 'bg-purple-600', glow: 'shadow-purple-500/40' }
+                                ].map((g) => (
+                                    <button
+                                        key={g.id}
+                                        onClick={() => setGenero(g.id)}
+                                        className={`relative flex-1 rounded-xl text-[11px] font-black transition-all duration-500 flex items-center justify-center gap-2 overflow-hidden ${
+                                            genero === g.id 
+                                            ? `${g.color} text-white shadow-lg ${g.glow} scale-[1.02] z-10` 
+                                            : 'text-zinc-500 hover:text-zinc-300'
+                                        }`}
+                                    >
+                                        <span className="text-sm">{g.emoji}</span>
+                                        <span className="uppercase tracking-tighter">{g.label}</span>
+                                        {genero === g.id && (
+                                            <motion.div 
+                                                layoutId="active-gender"
+                                                className="absolute inset-0 bg-white/10 mix-blend-overlay"
+                                            />
+                                        )}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
-                        {/* Bracket / Fase Info — Only for team sports */}
+                        {/* Bracket / Fase — Refined */}
                         {!isIndividual && !isRaceSport && (
-                            <div className="col-span-1 sm:col-span-2 space-y-1.5 animate-in fade-in slide-in-from-top-1">
-                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 ml-1">
-                                    <Swords size={12} className="text-primary" /> Bracket / Torneo <span className="text-white/20">(Opcional)</span>
+                            <div className="col-span-1 sm:col-span-2 p-4 rounded-3xl bg-zinc-900/40 border border-white/5 space-y-3">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1 border-l-2 border-primary ml-1">
+                                    Fase de Torneo (Opcional)
                                 </label>
-                                <div className="flex gap-2">
-                                    <select
-                                        className="flex-1 h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-xs font-bold text-white focus:border-primary/50 outline-none"
-                                        value={fase}
-                                        onChange={(e) => { setFase(e.target.value); if (e.target.value !== 'grupos') setGrupo(''); }}
-                                    >
-                                        <option value="">Sin fase</option>
-                                        <option value="grupos">Fase de Grupos</option>
-                                        <option value="cuartos">Cuartos de Final</option>
-                                        <option value="semifinal">Semifinal</option>
-                                        <option value="tercer_puesto">Tercer Puesto</option>
-                                        <option value="final">Final</option>
-                                    </select>
+                                <div className="flex gap-3">
+                                    <div className="flex-1 relative">
+                                        <Swords className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+                                        <select
+                                            className="w-full h-11 bg-black/60 border border-white/10 rounded-xl pl-10 pr-4 text-xs font-bold text-white focus:border-primary/50 outline-none transition-all appearance-none"
+                                            value={fase}
+                                            onChange={(e) => { setFase(e.target.value); if (e.target.value !== 'grupos') setGrupo(''); }}
+                                        >
+                                            <option value="">Sin fase</option>
+                                            <option value="grupos">Fase de Grupos</option>
+                                            <option value="cuartos">Cuartos de Final</option>
+                                            <option value="semifinal">Semifinal</option>
+                                            <option value="tercer_puesto">Tercer Puesto</option>
+                                            <option value="final">Final</option>
+                                        </select>
+                                    </div>
                                     {fase === 'grupos' && (
                                         <select
-                                            className="w-20 h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-xs font-bold text-white focus:border-primary/50 outline-none"
+                                            className="w-24 h-11 bg-black/60 border border-white/10 rounded-xl px-4 text-xs font-black text-white focus:border-primary/50 outline-none appearance-none text-center"
                                             value={grupo}
                                             onChange={(e) => setGrupo(e.target.value)}
                                         >
-                                            <option value="" disabled>Grupo</option>
-                                            <option value="A">A</option>
-                                            <option value="B">B</option>
-                                            <option value="C">C</option>
-                                            <option value="D">D</option>
+                                            <option value="" disabled>Grup...</option>
+                                            {['A', 'B', 'C', 'D', 'E', 'F'].map(g => <option key={g} value={g}>G {g}</option>)}
                                         </select>
                                     )}
                                     {fase && fase !== 'grupos' && (
-                                        <input
+                                        <Input
                                             type="number"
-                                            min="1"
-                                            max="10"
                                             placeholder="#"
-                                            className="w-16 h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-xs font-bold text-white text-center focus:border-primary/50 outline-none"
+                                            className="w-16 h-11 bg-black/60 border-white/10 focus:border-primary/50 rounded-xl text-center font-black"
                                             value={bracketOrder}
                                             onChange={(e) => setBracketOrder(e.target.value)}
                                         />
@@ -504,79 +626,107 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                             </div>
                         )}
 
-                        {/* Estado Switch */}
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 ml-1">
-                                <Activity size={12} className="text-primary" /> Estado Inicial
-                            </label>
-                            <div className="flex p-1 bg-black/40 rounded-lg border border-white/5 h-10">
-                                <button
-                                    onClick={() => setEstado('programado')}
-                                    className={`flex-1 rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 ${estado === 'programado' ? 'bg-zinc-800 text-white shadow-sm ring-1 ring-white/10' : 'text-muted-foreground hover:text-white'}`}
-                                >
-                                    <Calendar size={12} /> Programado
-                                </button>
-                                <button
-                                    onClick={() => setEstado('en_vivo')}
-                                    className={`flex-1 rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 ${estado === 'en_vivo' ? 'bg-red-500 text-white shadow-sm shadow-red-500/20' : 'text-muted-foreground hover:text-red-400'}`}
-                                >
-                                    <Activity size={12} /> En Vivo
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Lugar Input */}
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 ml-1">
-                                <MapPin size={12} className="text-primary" /> Lugar
-                            </label>
+                        {/* Lugar y Estado - Compact Glass */}
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1">Lugar</label>
                             <div className="relative group">
-                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/60 group-focus-within:text-primary transition-colors" size={16} />
                                 <select
-                                    className="w-full h-10 bg-black/40 border border-white/10 rounded-lg pl-9 pr-3 text-sm font-medium text-white focus:border-primary/50 outline-none appearance-none"
+                                    className="w-full h-11 bg-zinc-900/60 border border-white/5 rounded-2xl pl-10 pr-4 text-sm font-bold text-white focus:border-primary/40 focus:bg-black/40 outline-none transition-all appearance-none"
                                     value={lugar}
                                     onChange={e => setLugar(e.target.value)}
                                 >
                                     <option value="" disabled>Seleccionar Sede...</option>
-                                    {LUGARES_OLIMPICOS.map(l => <option key={l} value={l} className="bg-zinc-900">{l}</option>)}
+                                    {LUGARES_OLIMPICOS.map(l => <option key={l} value={l} className="bg-zinc-900 text-white font-bold">{l}</option>)}
                                 </select>
                             </div>
                         </div>
 
-                        {/* Fecha Input (Full width if programmed) */}
-                        {estado === 'programado' && (
-                            <div className="col-span-1 sm:col-span-2 space-y-1.5 animate-in fade-in slide-in-from-top-1">
-                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 ml-1">
-                                    <Clock size={12} className="text-primary" /> Fecha Programada
-                                </label>
-                                <Input
-                                    type="datetime-local"
-                                    value={fecha}
-                                    onChange={e => setFecha(e.target.value)}
-                                    className="h-10 bg-black/40 border-white/10 focus:border-primary/50 rounded-lg font-medium text-sm [color-scheme:dark]"
-                                />
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1">Estado</label>
+                            <div className="flex p-1 bg-zinc-900/60 rounded-2xl border border-white/5 h-11">
+                                <button
+                                    onClick={() => setEstado('programado')}
+                                    className={`flex-1 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-2 ${estado === 'programado' ? 'bg-zinc-800 text-white shadow-lg border border-white/10' : 'text-zinc-600 hover:text-zinc-400'}`}
+                                >
+                                    <Clock size={14} /> PROGRAMADO
+                                </button>
+                                <button
+                                    onClick={() => setEstado('en_vivo')}
+                                    className={`flex-1 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-2 ${estado === 'en_vivo' ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-zinc-600 hover:text-red-500'}`}
+                                >
+                                    <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" /> VIVO
+                                </button>
                             </div>
+                        </div>
+
+                        {/* Fecha Premium */}
+                        {estado === 'programado' && (
+                            <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className="col-span-1 sm:col-span-2 space-y-3 pt-2"
+                            >
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1">Horario del Encuentro</label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/60 pointer-events-none" size={18} />
+                                    <Input
+                                        type="datetime-local"
+                                        value={fecha}
+                                        onChange={e => setFecha(e.target.value)}
+                                        className="h-14 bg-zinc-900/60 border-white/5 focus:border-primary/40 rounded-3xl pl-12 pr-6 font-black text-sm [color-scheme:dark] transition-all hover:bg-black/40"
+                                    />
+                                </div>
+                            </motion.div>
                         )}
-                    </div>
+                    </motion.div>
                 </div>
 
-                {/* Footer Actions (Fixed at bottom) */}
-                <div className="p-5 pt-0 bg-zinc-950/50 flex gap-3 border-t border-transparent">
-                    <Button
-                        variant="ghost"
-                        onClick={onClose}
-                        className="flex-1 h-12 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5"
+                {/* Footer Actions (Tactile & High Impact) */}
+                <div className="p-6 bg-zinc-950/80 backdrop-blur-xl flex gap-3 border-t border-white/5 relative z-30">
+                    <motion.div 
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.8 }}
+                        className="flex-1"
                     >
-                        Cancelar
-                    </Button>
-                    <Button
-                        onClick={handleCreate}
-                        disabled={loading || (!isRaceSport && (!equipoA || !equipoB)) || (isRaceSport && disciplina !== 'Natación' && !equipoA)}
-                        className={`flex-[2] h-12 rounded-xl text-sm font-bold shadow-xl transition-all duration-300 relative overflow-hidden group ${(!equipoA || (!isRaceSport && !equipoB)) ? 'opacity-50 cursor-not-allowed bg-zinc-800 text-muted-foreground' : `bg-gradient-to-r ${selectedDiscColor} hover:scale-[1.01] hover:shadow-2xl`}`}
+                        <Button
+                            variant="ghost"
+                            onClick={onClose}
+                            className="w-full h-14 rounded-2xl text-[11px] font-black uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 transition-all active:scale-95"
+                        >
+                            Cancelar
+                        </Button>
+                    </motion.div>
+                    
+                    <motion.div 
+                        initial={{ x: 20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.8 }}
+                        className="flex-[2]"
                     >
-                        {loading ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2" size={18} />}
-                        {loading ? "Creando..." : "Crear Encuentro"}
-                    </Button>
+                        <Button
+                            onClick={handleCreate}
+                            disabled={loading || (!isRaceSport && (!equipoA || !equipoB)) || (isRaceSport && disciplina !== 'Natación' && !equipoA)}
+                            className={`w-full h-14 rounded-2xl text-[12px] font-black uppercase tracking-[0.1em] shadow-2xl transition-all duration-500 relative overflow-hidden group ${
+                                (!equipoA || (!isRaceSport && !equipoB)) 
+                                ? 'bg-zinc-900 text-zinc-700 cursor-not-allowed opacity-50' 
+                                : `bg-gradient-to-r ${selectedDiscColor} hover:scale-[1.02] hover:shadow-primary/20 active:scale-[0.98]`
+                            }`}
+                        >
+                            {loading ? (
+                                <Loader2 className="animate-spin" size={20} />
+                            ) : (
+                                <div className="flex items-center justify-center gap-2">
+                                    <Save size={18} />
+                                    <span>Lanzar Encuentro</span>
+                                </div>
+                            )}
+                            
+                            {/* Inner Glow Shine */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                        </Button>
+                    </motion.div>
                 </div>
             </div>
         </div>

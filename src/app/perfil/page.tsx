@@ -1,10 +1,14 @@
 "use client";
 
+import { motion, AnimatePresence } from "framer-motion";
+import { CARRERAS_UNINORTE } from "@/lib/constants";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/use-profile";
 import { MainNavbar } from "@/components/main-navbar";
+import { supabase } from "@/lib/supabase";
 import { Button, Input, Avatar, Badge } from "@/components/ui-primitives";
+import { toast } from "sonner";
 import { 
     User, 
     Settings, 
@@ -18,7 +22,8 @@ import {
     Target,
     ChevronRight,
     Loader2,
-    CheckCircle2
+    CheckCircle2,
+    GraduationCap
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -33,20 +38,114 @@ export default function PerfilPage() {
     
     // Form states
     const [fullName, setFullName] = useState("");
-    const [bio, setBio] = useState("");
+    const [tagline, setTagline] = useState("");
+    const [aboutMe, setAboutMe] = useState("");
+
+    const [history, setHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [carreras, setCarreras] = useState<any[]>([]);
+    const [disciplinas, setDisciplinas] = useState<any[]>([]);
+    const [selectedCarreras, setSelectedCarreras] = useState<number[]>([]);
+    const [searchCarrera, setSearchCarrera] = useState("");
+    const [loadingCarreras, setLoadingCarreras] = useState(false);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
     useEffect(() => {
+        // Aseguramos que el componente inicie en vista pública (isEditing ya es false por defecto)
+        setIsEditing(false);
+        
+        fetchCarreras();
+        fetchDisciplinas();
+        
         if (profile) {
             setFullName(profile.full_name || "");
-            setBio(profile.bio || "");
+            setTagline(profile.tagline || "");
+            setAboutMe(profile.about_me || "");
+            setSelectedCarreras(profile.carreras_ids || []);
+            if (isDeportista) fetchHistory();
         }
-    }, [profile]);
+    }, [profile, isDeportista]);
+
+    const fetchCarreras = async () => {
+        setLoadingCarreras(true);
+        setFetchError(null);
+        try {
+            console.log("Fetching carreras...");
+            const { data, error } = await supabase.from('carreras').select('*').order('nombre');
+            
+            if (error) {
+                console.error("Error fetching carreras:", error);
+                setFetchError(error.message);
+                // No mostrar toast aquí para no ser intrusivo si es un error temporal
+                return;
+            }
+            
+            if (data) {
+                // Filtramos por las oficiales por si hay datos basura en la DB que el admin no ha purgado
+                const filtered = data.filter(c => CARRERAS_UNINORTE.includes(c.nombre));
+                setCarreras(filtered);
+                console.log(`Cargadas ${filtered.length} carreras (filtradas de ${data.length})`);
+                if (filtered.length === 0) {
+                    setFetchError("No se encontraron carreras.");
+                }
+            }
+        } catch (err: any) {
+            console.error("Critical error in fetchCarreras:", err);
+            setFetchError("Error de conexión al cargar carreras.");
+        } finally {
+            setLoadingCarreras(false);
+        }
+    };
+
+    const fetchDisciplinas = async () => {
+        try {
+            const { data, error } = await supabase.from('disciplinas').select('id, name');
+            if (data) setDisciplinas(data);
+        } catch (err) {
+            console.error("Error fetching disciplinas:", err);
+        }
+    };
+
+    const fetchHistory = async () => {
+        if (!profile?.id) return;
+        setLoadingHistory(true);
+        try {
+            const { data, error } = await supabase.rpc('get_athlete_event_history', { 
+                athlete_profile_id: profile.id 
+            });
+            if (data) setHistory(data);
+        } catch (err) {
+            console.error("Error fetching history:", err);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
 
     if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-[#0a0805]"><UniqueLoading size="lg" /></div>;
     if (!user) return null; // Redirect logic usually in useAuth or middleware
 
     const handleUpdate = async () => {
-        await updateProfile({ full_name: fullName, bio });
+        const success = await updateProfile({ 
+            full_name: fullName, 
+            tagline,
+            about_me: aboutMe,
+            carreras_ids: selectedCarreras 
+        });
+        if (success) setIsEditing(false);
+    };
+
+    const toggleCarrera = (id: number) => {
+        setSelectedCarreras(prev => {
+            if (prev.includes(id)) {
+                return prev.filter(i => i !== id);
+            }
+            if (prev.length >= 2) {
+                toast.error("Máximo 2 carreras permitidas");
+                return prev;
+            }
+            return [...prev, id];
+        });
     };
 
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,55 +222,289 @@ export default function PerfilPage() {
                 {/* Tab Content */}
                 <div className="min-h-[400px]">
                     {activeTab === 'general' && (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                            <section className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 space-y-6 glass">
-                                <h2 className="text-xl font-black tracking-tight flex items-center gap-2 mb-2 font-outfit">
-                                    <Settings className="text-red-500" /> Información Personal
-                                </h2>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Nombre Completo</label>
-                                        <Input 
-                                            value={fullName}
-                                            onChange={(e) => setFullName(e.target.value)}
-                                            placeholder="Tu nombre"
-                                            className="bg-black/40 border-white/10 rounded-2xl focus:border-red-500 transition-all font-bold"
-                                        />
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, ease: "easeOut" }}
+                            className="space-y-8"
+                        >
+                            {!isEditing ? (
+                                /* ─── VIEW MODE (PÚBLICO) ─── */
+                                <div className="space-y-10 group animate-in fade-in slide-in-from-bottom-6 duration-1000">
+                                    {/* Cabecera de Identidad */}
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 rounded-[3rem] blur opacity-25 group-hover:opacity-40 transition-opacity duration-1000" />
+                                        <section className="relative py-12 px-8 md:px-12 rounded-[3rem] bg-[#0d0a07] border border-white/5 overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
+                                            
+                                            <div className="relative z-10 flex flex-col items-center text-center space-y-6">
+                                                {profile?.tagline ? (
+                                                    <div className="space-y-4">
+                                                        <div className="text-red-500/20 text-6xl font-serif h-8">&quot;</div>
+                                                        <p className="text-2xl md:text-5xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/40 leading-[1.1] font-outfit max-w-2xl mx-auto">
+                                                            {profile.tagline}
+                                                        </p>
+                                                        <div className="text-red-500/20 text-6xl font-serif h-8 flex justify-end items-end">&quot;</div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-white/20 font-bold uppercase tracking-[0.4em] text-[10px]">Sin biografía destacada</p>
+                                                )}
+
+                                                <div className="h-px w-24 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-30" />
+                                                
+                                                <div className="flex flex-wrap justify-center gap-6">
+                                                    {isDeportista && (
+                                                        <div className="flex flex-col items-center">
+                                                            <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Especialidad</span>
+                                                            <div className="flex items-center gap-2 text-red-500 font-black uppercase text-xs tracking-widest">
+                                                                <Star size={14} className="fill-current" />
+                                                                {disciplinas.find(d => d.id === profile?.athlete_disciplina_id)?.name || "Multidisciplina"}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Puntuación</span>
+                                                        <div className="flex items-center gap-2 text-amber-500 font-black text-xl tabular-nums">
+                                                            <Trophy size={16} />
+                                                            {profile?.points || 0}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </section>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Sobre mí (Bio)</label>
-                                        <Input 
-                                            value={bio}
-                                            onChange={(e) => setBio(e.target.value)}
-                                            placeholder="Cuentanos algo sobre ti..."
-                                            className="bg-black/40 border-white/10 rounded-2xl focus:border-red-500 transition-all font-bold"
-                                        />
+
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+                                        {/* Main Info Card */}
+                                        <div className="md:col-span-12 lg:col-span-8 space-y-10">
+                                            {/* About Section */}
+                                            <section className="bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-10 relative overflow-hidden group/about">
+                                                <div className="absolute top-0 right-0 p-8 opacity-[0.02] -rotate-12 group-hover/about:scale-110 transition-transform duration-1000">
+                                                    <User size={200} />
+                                                </div>
+                                                <div className="relative z-10 space-y-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2.5 rounded-2xl bg-red-600/10 border border-red-600/20 text-red-500">
+                                                            <Shield size={20} />
+                                                        </div>
+                                                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/80 font-outfit">Sobre {profile?.full_name?.split(' ')[0] || 'mí'}</h3>
+                                                    </div>
+                                                    <div className="text-lg md:text-xl text-white/70 font-medium leading-relaxed font-outfit">
+                                                        {profile?.about_me || "Este perfil está en construcción. Mantente al tanto de los próximos logros y actualizaciones."}
+                                                    </div>
+                                                </div>
+                                            </section>
+
+                                            <div className="flex justify-center md:justify-start">
+                                                <Button 
+                                                    onClick={() => setIsEditing(true)}
+                                                    className="h-16 px-12 rounded-[2rem] bg-white/5 hover:bg-white text-white hover:text-black border border-white/10 transition-all duration-500 font-black uppercase tracking-[0.2em] text-[10px] group/edit"
+                                                >
+                                                    <Settings size={18} className="mr-3 group-hover/edit:rotate-90 transition-transform duration-500" /> 
+                                                    Perfeccionar mi Perfil
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {/* Right Sidebar - Academic Card */}
+                                        <div className="md:col-span-12 lg:col-span-4 space-y-6">
+                                            <section className="relative overflow-hidden rounded-[2.5rem] bg-zinc-950 border border-white/10 p-10 shadow-3xl group/pride">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 via-transparent to-orange-500/10 opacity-40 group-hover/pride:opacity-70 transition-opacity duration-1000" />
+                                                
+                                                <div className="relative z-10 space-y-8">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="p-4 rounded-[1.5rem] bg-white/5 border border-white/10 shadow-inner group-hover/pride:scale-110 transition-transform duration-500">
+                                                            <GraduationCap className="text-red-500" size={28} />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Institución</h3>
+                                                            <p className="text-sm font-black text-white font-outfit">Uninorte</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-red-500/60 mb-2 px-1">Programa Académico</h4>
+                                                        {profile?.carreras_ids && profile.carreras_ids.length > 0 ? (
+                                                            profile.carreras_ids.map((cid: number) => {
+                                                                const carrera = carreras.find(c => c.id === cid);
+                                                                return (
+                                                                    <div key={cid} className="p-5 rounded-3xl bg-white/5 border border-white/10 hover:border-red-500/40 transition-all duration-500 group/career hover:shadow-2xl hover:shadow-red-500/10">
+                                                                        <p className="text-xs font-black text-white leading-tight uppercase tracking-tight group-hover/career:text-red-400">
+                                                                            {carrera?.nombre || "Cargando..."}
+                                                                        </p>
+                                                                    </div>
+                                                                );
+                                                            })
+                                                        ) : (
+                                                            <div className="p-6 rounded-3xl border-2 border-dashed border-white/5 text-center bg-black/20">
+                                                                <p className="text-[9px] font-black text-white/10 uppercase tracking-widest leading-relaxed">Sin carrera asignada aún</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="pt-4 border-t border-white/5">
+                                                        <p className="text-[11px] font-black italic text-white/30 leading-relaxed text-center group-hover/pride:text-white/50 transition-colors">
+                                                            &quot;En el campo y en el aula, la excelencia es nuestro único camino.&quot;
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </section>
+                                        </div>
                                     </div>
                                 </div>
+                            ) : (
+                                /* ─── EDIT MODE ─── */
+                                <div className="space-y-8">
+                                    <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 space-y-6 glass">
+                                        <div className="flex items-center justify-between px-1">
+                                            <h2 className="text-xl font-black tracking-tight flex items-center gap-2 font-outfit">
+                                                <Settings className="text-red-500" /> Editar Perfil
+                                            </h2>
+                                            <Button 
+                                                variant="ghost" 
+                                                onClick={() => setIsEditing(false)}
+                                                className="text-white/40 hover:text-white h-8 text-[10px] font-black uppercase tracking-widest"
+                                            >
+                                                Cancelar
+                                            </Button>
+                                        </div>
+                                    
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Nombre Completo</label>
+                                                <Input 
+                                                    value={fullName}
+                                                    onChange={(e) => setFullName(e.target.value)}
+                                                    placeholder="Tu nombre"
+                                                    className="bg-black/40 border-white/10 rounded-2xl focus:border-red-500 transition-all font-bold"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Frase destacada</label>
+                                                <Input 
+                                                    value={tagline}
+                                                    onChange={(e) => setTagline(e.target.value)}
+                                                    placeholder="Una frase que te identifique..."
+                                                    className="bg-black/40 border-white/10 rounded-2xl focus:border-red-500 transition-all font-bold"
+                                                />
+                                            </div>
+                                            <div className="space-y-2 md:col-span-2">
+                                                <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Información sobre ti (Bio)</label>
+                                                <textarea 
+                                                    value={aboutMe}
+                                                    onChange={(e) => setAboutMe(e.target.value)}
+                                                    placeholder="Cuentanos algo sobre ti, tu carrera o tus logros..."
+                                                    className="w-full min-h-[120px] bg-black/40 border border-white/10 rounded-2xl focus:border-red-500 transition-all font-bold p-4 text-sm outline-none resize-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-4 md:col-span-2">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-1">
+                                                    <div className="space-y-1">
+                                                        <label id="careers-label" className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Mi Carrera Universitaria (Máximo 2)</label>
+                                                        <div className="relative max-w-xs">
+                                                            <Input 
+                                                                aria-label="Buscar carrera universitaria"
+                                                                placeholder="Buscar carrera..."
+                                                                value={searchCarrera}
+                                                                onChange={(e) => setSearchCarrera(e.target.value)}
+                                                                className="h-9 text-[10px] bg-white/5 border-white/5 rounded-xl pl-3"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <span aria-live="polite" className="text-[10px] font-bold text-red-500/60 uppercase tracking-widest bg-red-500/5 px-3 py-1 rounded-full border border-red-500/10 h-fit">
+                                                        {selectedCarreras.length}/2 Seleccionadas
+                                                    </span>
+                                                </div>
+                                                <div 
+                                                    role="group" 
+                                                    aria-labelledby="careers-label"
+                                                    className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto no-scrollbar p-1 focus-within:ring-1 focus-within:ring-white/10 rounded-2xl"
+                                                >
+                                                    {loadingCarreras && (
+                                                        <div className="col-span-full py-12 flex flex-col items-center justify-center space-y-4">
+                                                            <Loader2 className="animate-spin text-red-500" size={32} />
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Cargando catálogo...</p>
+                                                        </div>
+                                                    )}
 
-                                <Button 
-                                    onClick={handleUpdate}
-                                    disabled={updating}
-                                    className="w-full md:w-auto px-8 h-12 rounded-2xl bg-white text-black font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl disabled:opacity-50"
-                                >
-                                    {updating ? <><Loader2 className="mr-2 animate-spin" size={18} /> Guardando...</> : "Guardar Cambios"}
-                                </Button>
-                            </section>
+                                                    {!loadingCarreras && fetchError && (
+                                                        <div className="col-span-full py-12 flex flex-col items-center justify-center space-y-4 bg-red-500/5 rounded-2xl border border-red-500/10">
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-red-500/60 max-w-[250px] text-center">
+                                                                {fetchError}
+                                                            </p>
+                                                            <Button 
+                                                                onClick={fetchCarreras}
+                                                                variant="outline"
+                                                                className="h-8 rounded-xl border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10"
+                                                            >
+                                                                Reintentar Carga
+                                                            </Button>
+                                                        </div>
+                                                    )}
 
-                            <section className="bg-red-500/5 border border-red-500/10 rounded-[2.5rem] p-8 flex flex-col items-center text-center">
-                                <h2 className="text-lg font-black text-red-500 uppercase tracking-widest mb-2">Zona Peligrosa</h2>
-                                <p className="text-sm text-white/40 mb-6 font-bold">¿Deseas cerrar tu sesión en este dispositivo?</p>
-                                <Button 
-                                    variant="outline"
-                                    onClick={() => signOut()}
-                                    className="border-red-500/20 text-red-500 hover:bg-red-500/10 rounded-2xl px-10 font-bold"
-                                >
-                                    <LogOut size={18} className="mr-2" /> Cerrar Sesión
-                                </Button>
-                            </section>
-                        </div>
+                                                    {!loadingCarreras && !fetchError && carreras.filter(c => c.nombre.toLowerCase().includes(searchCarrera.toLowerCase())).map(c => {
+                                                        const isSelected = selectedCarreras.includes(c.id);
+                                                        return (
+                                                            <button
+                                                                key={c.id}
+                                                                onClick={() => toggleCarrera(c.id)}
+                                                                className={cn(
+                                                                    "p-4 rounded-2xl text-left transition-all border font-bold text-[11px] relative overflow-hidden group/opt min-h-[70px] flex items-center",
+                                                                    isSelected 
+                                                                        ? "bg-red-500/10 border-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.1)]" 
+                                                                        : "bg-black/40 border-white/5 text-white/40 hover:border-white/20 hover:text-white/60"
+                                                                )}
+                                                            >
+                                                                {isSelected && (
+                                                                    <div className="absolute top-2 right-2">
+                                                                        <CheckCircle2 size={14} className="text-red-500" />
+                                                                    </div>
+                                                                )}
+                                                                <span className="relative z-10 leading-snug">{c.nombre}</span>
+                                                                <div className={cn(
+                                                                    "absolute inset-0 bg-gradient-to-br from-red-600/10 to-orange-500/10 opacity-0 group-hover/opt:opacity-100 transition-opacity",
+                                                                    isSelected && "opacity-100"
+                                                                )} />
+                                                            </button>
+                                                        );
+                                                    })}
+                                                    {carreras.length > 0 && carreras.filter(c => c.nombre.toLowerCase().includes(searchCarrera.toLowerCase())).length === 0 && (
+                                                        <div className="col-span-full py-10 text-center opacity-40 italic text-xs">
+                                                            No se encontraron carreras que coincidan con &quot;{searchCarrera}&quot;
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] text-white/20 font-bold mt-2 italic px-1">
+                                                    Selecciona hasta 2 opciones si aplicas a doble titulación o eres egresado. Las carreras se mostrarán en tu perfil público.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <Button 
+                                            onClick={handleUpdate}
+                                            disabled={updating}
+                                            className="w-full md:w-auto px-8 h-12 rounded-2xl bg-white text-black font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl disabled:opacity-50"
+                                        >
+                                            {updating ? <><Loader2 className="mr-2 animate-spin" size={18} /> Guardando...</> : "Guardar Cambios"}
+                                        </Button>
+                                    </div>
+
+                                    <section className="bg-red-500/5 border border-red-500/10 rounded-[2.5rem] p-8 flex flex-col items-center text-center">
+                                        <h2 className="text-lg font-black text-red-500 uppercase tracking-widest mb-2">Zona Peligrosa</h2>
+                                        <p className="text-sm text-white/40 mb-6 font-bold">¿Deseas cerrar tu sesión en este dispositivo?</p>
+                                        <Button 
+                                            variant="outline"
+                                            onClick={() => signOut()}
+                                            className="border-red-500/20 text-red-500 hover:bg-red-500/10 rounded-2xl px-10 font-bold"
+                                        >
+                                            <LogOut size={18} className="mr-2" /> Cerrar Sesión
+                                        </Button>
+                                    </section>
+                                </div>
+                            )}
+                        </motion.div>
                     )}
+
 
                     {activeTab === 'stats' && isDeportista && (
                         <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-8">
@@ -207,15 +540,59 @@ export default function PerfilPage() {
                                 </h4>
                                 
                                 <div className="space-y-4">
-                                    {/* Nota: En un futuro esto vendrá de un query filtrado, por ahora usamos un placeholder estilizado 
-                                        que indique que el sistema de vinculación está activo */}
-                                    <div className="flex flex-col items-center py-10 text-center">
-                                        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
-                                            <Loader2 size={24} className="text-white/20 animate-spin" />
+                                    {loadingHistory ? (
+                                        <div className="flex flex-col items-center py-10 text-center">
+                                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                                                <Loader2 size={24} className="text-white/20 animate-spin" />
+                                            </div>
+                                            <p className="text-xs font-black uppercase tracking-widest text-white/20">Cargando historial...</p>
                                         </div>
-                                        <p className="text-xs font-black uppercase tracking-widest text-white/20">Sincronizando últimos encuentros...</p>
-                                        <p className="text-[10px] font-bold text-white/10 mt-2 max-w-[200px]">Tus participaciones en {profile?.disciplina?.name} aparecerán aquí automáticamente.</p>
-                                    </div>
+                                    ) : history.length > 0 ? (
+                                        history.map((h, i) => (
+                                            <Link key={i} href={`/partido/${h.match_id}`} className="block group/item">
+                                                <div className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-3xl bg-white/[0.02] border border-white/5 group-hover/item:border-white/10 group-hover/item:bg-white/[0.04] transition-all gap-4">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
+                                                            {h.disciplina.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-black tracking-widest uppercase text-white/40 mb-1">{h.disciplina}</p>
+                                                            <h5 className="text-sm font-bold flex items-center gap-2">
+                                                                {h.equipo_a} <span className="text-[10px] text-white/20">VS</span> {h.equipo_b}
+                                                            </h5>
+                                                            {h.puntos_personales > 0 && (
+                                                                <div className="flex items-center gap-1 mt-1">
+                                                                    <Star size={10} className="text-amber-500 fill-amber-500" />
+                                                                    <span className="text-[10px] font-black uppercase text-amber-500/80">
+                                                                        {h.puntos_personales} {h.disciplina.toLowerCase().includes('f') ? 'Goles' : 'Puntos'} aportados
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-6">
+                                                        <div className="text-right hidden sm:block">
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Resultado</p>
+                                                            <p className="text-sm font-black tabular-nums">
+                                                                {h.marcador_final?.goles_a ?? h.marcador_final?.sets_a ?? h.marcador_final?.total_a ?? 0} - {h.marcador_final?.goles_b ?? h.marcador_final?.sets_b ?? h.marcador_final?.total_b ?? 0}
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-[10px] font-bold text-white/20 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
+                                                            {new Date(h.fecha).toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        ))
+                                    ) : (
+                                        <div className="flex flex-col items-center py-10 text-center">
+                                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                                                <Trophy size={24} className="text-white/10" />
+                                            </div>
+                                            <p className="text-xs font-black uppercase tracking-widest text-white/20">Sin encuentros registrados</p>
+                                            <p className="text-[10px] font-bold text-white/10 mt-2 max-w-[200px]">Tus participaciones en {profile?.disciplina?.name} aparecerán aquí automáticamente.</p>
+                                        </div>
+                                    )}
                                 </div>
                             </section>
 

@@ -10,18 +10,19 @@ export function useProfile() {
     const [updating, setUpdating] = useState(false);
     const [uploading, setUploading] = useState(false);
 
-    const updateProfile = async (updates: Partial<any>) => {
-        if (!user) return;
+    const updateProfile = async (updates: Partial<any>): Promise<boolean> => {
+        if (!user) return false;
         setUpdating(true);
 
         try {
-            // 1. Security Sanitization
             if (updates.full_name) {
                 updates.full_name = updates.full_name.trim().substring(0, 50).replace(/[<>]/g, "");
             }
-            if (updates.bio) {
-                // Basic XSS sanitization: remove any HTML-like tags
-                updates.bio = updates.bio.trim().substring(0, 500).replace(/<[^>]*>?/gm, '');
+            if (updates.tagline) {
+                updates.tagline = updates.tagline.trim().substring(0, 100).replace(/<[^>]*>?/gm, '');
+            }
+            if (updates.about_me) {
+                updates.about_me = updates.about_me.trim().substring(0, 2000).replace(/<[^>]*>?/gm, '');
             }
 
             const { error: profileError } = await supabase
@@ -30,24 +31,14 @@ export function useProfile() {
                 .eq('id', user.id);
 
             if (profileError) throw profileError;
-
-            // 2. Redundant Sync: Update public_profiles too (Fallback for trigger)
-            const publicUpdates: any = {};
-            if (updates.full_name) publicUpdates.display_name = updates.full_name;
-            if (updates.avatar_url) publicUpdates.avatar_url = updates.avatar_url;
-
-            if (Object.keys(publicUpdates).length > 0) {
-                await supabase
-                    .from('public_profiles')
-                    .update(publicUpdates)
-                    .eq('id', user.id);
-            }
             
             await refreshProfile();
             toast.success("Perfil actualizado correctamente");
+            return true;
         } catch (error: any) {
             console.error("Error updating profile:", error);
             toast.error("Error al actualizar perfil: " + error.message);
+            return false;
         } finally {
             setUpdating(false);
         }

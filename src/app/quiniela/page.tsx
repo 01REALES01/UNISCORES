@@ -135,10 +135,15 @@ const QuinielaPodium = ({ top3 }: { top3: any[] }) => {
                 const points = slot.profile.points || 0;
 
                 return (
-                    <div key={idx} className={cn(
-                        "flex flex-col items-center flex-1 transition-all duration-1000 ease-out animate-in fade-in slide-in-from-bottom-12",
-                        isWinner ? "pb-8 scale-125 z-20" : "opacity-90 scale-100 z-10"
-                    )} style={{ animationDelay: `${idx * 200}ms` }}>
+                    <Link 
+                        key={idx} 
+                        href={`/perfil/${slot.profile.id}`}
+                        className={cn(
+                            "flex flex-col items-center flex-1 transition-all duration-1000 ease-out animate-in fade-in slide-in-from-bottom-12 group/p-item",
+                            isWinner ? "pb-8 scale-125 z-20" : "opacity-90 scale-100 z-10"
+                        )} 
+                        style={{ animationDelay: `${idx * 200}ms` }}
+                    >
                         
                         <div className="relative mb-5 group">
                             {/* Animated Rings for Winner */}
@@ -176,7 +181,7 @@ const QuinielaPodium = ({ top3 }: { top3: any[] }) => {
 
                         <div className="text-center relative">
                             <p className={cn(
-                                "text-[11px] font-black truncate max-w-[80px] uppercase tracking-wider mb-1 font-outfit",
+                                "text-[11px] font-black truncate max-w-[80px] uppercase tracking-wider mb-1 font-outfit group-hover/p-item:text-red-500 transition-colors",
                                 isWinner ? "text-white" : "text-slate-400"
                             )}>
                                 {slot.profile.display_name?.split(' ')[0] || "Invitado"}
@@ -188,7 +193,7 @@ const QuinielaPodium = ({ top3 }: { top3: any[] }) => {
                                 {points} <span className="text-[8px] opacity-70">PTS</span>
                             </div>
                         </div>
-                    </div>
+                    </Link>
                 );
             })}
         </div>
@@ -198,12 +203,15 @@ const QuinielaPodium = ({ top3 }: { top3: any[] }) => {
 // ─── NEW: Quiniela Ranking Item ───
 const QuinielaRankingItem = ({ profile, rank, isMe }: { profile: any, rank: number, isMe: boolean }) => {
     return (
-        <div className={cn(
-            "group relative flex items-center justify-between p-4 mb-3 rounded-3xl transition-all duration-500 overflow-hidden",
-            isMe 
-                ? "bg-amber-500/10 border-2 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/20" 
-                : "bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10"
-        )}>
+        <Link 
+            href={`/perfil/${profile.id}`}
+            className={cn(
+                "group relative flex items-center justify-between p-4 mb-3 rounded-3xl transition-all duration-500 overflow-hidden",
+                isMe 
+                    ? "bg-amber-500/10 border-2 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/20" 
+                    : "bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10"
+            )}
+        >
             {/* Background Texture/Gradient */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white/[0.01] pointer-events-none" />
             
@@ -231,7 +239,7 @@ const QuinielaRankingItem = ({ profile, rank, isMe }: { profile: any, rank: numb
                 </div>
                 
                 <div className="space-y-0.5">
-                    <p className="font-black text-sm text-white flex items-center gap-2 font-outfit">
+                    <p className="font-black text-sm text-white flex items-center gap-2 font-outfit group-hover:text-red-500 transition-colors">
                         {profile.display_name || "Usuario"}
                         {isMe && <Badge className="bg-amber-400 text-black border-0 text-[8px] font-black h-4 px-1.5 rounded-md">TÚ</Badge>}
                     </p>
@@ -254,7 +262,7 @@ const QuinielaRankingItem = ({ profile, rank, isMe }: { profile: any, rank: numb
                     </div>
                 </div>
             </div>
-        </div>
+        </Link>
     );
 };
 

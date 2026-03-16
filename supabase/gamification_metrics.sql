@@ -83,32 +83,22 @@ BEGIN
         SELECT name INTO sport_name FROM public.disciplinas WHERE id = NEW.disciplina_id;
         details := NEW.marcador_detalle;
         
+        -- Determinar ganador estandarizado
         IF sport_name = 'Fútbol' OR sport_name = 'Futsal' THEN
             score_a := COALESCE((details->>'goles_a')::int, 0);
             score_b := COALESCE((details->>'goles_b')::int, 0);
-            IF score_a > score_b THEN real_winner := 'A';
-            ELSIF score_b > score_a THEN real_winner := 'B';
-            ELSE real_winner := 'DRAW';
-            END IF;
         ELSIF sport_name = 'Voleibol' OR sport_name = 'Tenis' OR sport_name = 'Tenis de Mesa' THEN
             score_a := COALESCE((details->>'sets_a')::int, 0);
             score_b := COALESCE((details->>'sets_b')::int, 0);
-            IF score_a > score_b THEN real_winner := 'A';
-            ELSE real_winner := 'B';
-            END IF;
-        ELSIF sport_name = 'Baloncesto' THEN
-            score_a := COALESCE((details->>'total_a')::int, 0);
-            score_b := COALESCE((details->>'total_b')::int, 0);
-            IF score_a > score_b THEN real_winner := 'A';
-            ELSE real_winner := 'B';
-            END IF;
         ELSE
-            score_a := COALESCE((details->>'total_a')::int, 0);
-            score_b := COALESCE((details->>'total_b')::int, 0);
-            IF score_a > score_b THEN real_winner := 'A';
-            ELSIF score_b > score_a THEN real_winner := 'B';
-            ELSE real_winner := 'DRAW';
-            END IF;
+            -- Baloncesto y otros deportes usan total_a y total_b (con puntos_a como fallback)
+            score_a := COALESCE((details->>'total_a')::int, (details->>'puntos_a')::int, 0);
+            score_b := COALESCE((details->>'total_b')::int, (details->>'puntos_b')::int, 0);
+        END IF;
+
+        IF score_a > score_b THEN real_winner := 'A';
+        ELSIF score_b > score_a THEN real_winner := 'B';
+        ELSE real_winner := 'DRAW';
         END IF;
 
         FOR prediction IN SELECT * FROM public.pronosticos WHERE match_id = NEW.id LOOP
@@ -144,6 +134,14 @@ BEGIN
 END;
 $$;
 
+-- 4. Create the Trigger
+DROP TRIGGER IF EXISTS trigger_calculate_match_results ON public.partidos;
+CREATE TRIGGER trigger_calculate_match_results
+    AFTER UPDATE ON public.partidos
+    FOR EACH ROW
+    WHEN (NEW.estado = 'finalizado')
+    EXECUTE FUNCTION public.calculate_match_results();
+
 -- 5. ESTADÍSTICAS DE DEPORTISTA
 -- 5.1 Asegurar columnas en profiles para deportistas
 DO $$
@@ -174,35 +172,61 @@ DECLARE
     real_winner text;
     sport_name text;
     details jsonb;
+    score_a integer;
+    score_b integer;
 BEGIN
-    -- Iterar por todos los partidos finalizados donde participó el atleta
+    -- Iterar por todos los partidos finalizados donde participó el atleta (individual o en equipo)
     FOR m IN 
-        SELECT p.*, d.name as d_name
+        SELECT p.*, d.name as d_name,
+               (CASE 
+                    WHEN p.athlete_a_id = athlete_id THEN true 
+                    WHEN p.athlete_b_id = athlete_id THEN false
+                    ELSE (SELECT j.equipo = 'equipo_a' FROM public.olympics_jugadores j WHERE j.partido_id = p.id AND j.profile_id = athlete_id LIMIT 1)
+                END) as is_a_player
         FROM public.partidos p
         JOIN public.disciplinas d ON p.disciplina_id = d.id
-        WHERE (p.athlete_a_id = athlete_id OR p.athlete_b_id = athlete_id)
+        WHERE (p.athlete_a_id = athlete_id OR p.athlete_b_id = athlete_id OR 
+               EXISTS (SELECT 1 FROM public.olympics_jugadores j WHERE j.partido_id = p.id AND j.profile_id = athlete_id))
         AND p.estado = 'finalizado'
     LOOP
-        is_a := (m.athlete_a_id = athlete_id);
+        is_a := m.is_a_player;
         details := m.marcador_detalle;
         sport_name := m.d_name;
 
-        -- Determinar ganador (Lógica simplificada basada en calculate_match_results)
+        -- DETERMINAR PUNTOS APORTADOS POR EL ATLETA EN ESTE PARTIDO
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN e.tipo_evento = 'gol' THEN 1
+                WHEN e.tipo_evento = 'punto_1' THEN 1
+                WHEN e.tipo_evento = 'punto_2' THEN 2
+                WHEN e.tipo_evento = 'punto_3' THEN 3
+                WHEN e.tipo_evento = 'punto' THEN 1
+                ELSE 0 
+            END
+        ), 0)
+        INTO score_own
+        FROM public.olympics_eventos e
+        WHERE e.partido_id = m.id 
+          AND e.jugador_id IN (SELECT id FROM public.olympics_jugadores j2 WHERE j2.profile_id = athlete_id);
+
+        t_score := t_score + score_own;
+
+        -- Winner logic (Esto sigue basándose en el marcador del equipo)
         IF sport_name = 'Fútbol' OR sport_name = 'Futsal' THEN
-            score_own := (CASE WHEN is_a THEN (details->>'goles_a')::int ELSE (details->>'goles_b')::int END);
-            IF (details->>'goles_a')::int > (details->>'goles_b')::int THEN real_winner := 'A';
-            ELSIF (details->>'goles_b')::int > (details->>'goles_a')::int THEN real_winner := 'B';
-            ELSE real_winner := 'DRAW';
-            END IF;
+            score_a := COALESCE((details->>'goles_a')::int, 0);
+            score_b := COALESCE((details->>'goles_b')::int, 0);
+        ELSIF sport_name = 'Voleibol' OR sport_name = 'Tenis' OR sport_name = 'Tenis de Mesa' THEN
+            score_a := COALESCE((details->>'sets_a')::int, 0);
+            score_b := COALESCE((details->>'sets_b')::int, 0);
         ELSE
-            score_own := (CASE WHEN is_a THEN (details->>'total_a')::int ELSE (details->>'total_b')::int END);
-            IF (details->>'total_a')::int > (details->>'total_b')::int THEN real_winner := 'A';
-            ELSIF (details->>'total_b')::int > (details->>'total_a')::int THEN real_winner := 'B';
-            ELSE real_winner := 'DRAW';
-            END IF;
+            score_a := COALESCE((details->>'total_a')::int, (details->>'puntos_a')::int, 0);
+            score_b := COALESCE((details->>'total_b')::int, (details->>'puntos_b')::int, 0);
         END IF;
 
-        t_score := t_score + COALESCE(score_own, 0);
+        IF score_a > score_b THEN real_winner := 'A';
+        ELSIF score_b > score_a THEN real_winner := 'B';
+        ELSE real_winner := 'DRAW';
+        END IF;
 
         IF real_winner = (CASE WHEN is_a THEN 'A' ELSE 'B' END) THEN
             w_count := w_count + 1;

@@ -26,12 +26,8 @@ export function useCarreras() {
             throw error;
         }
 
-        // Filtrar: solo devolver carreras que estén en la lista oficial
-        const validCarreras = (data || []).filter(c =>
-            CARRERAS_UNINORTE.includes(c.nombre)
-        );
-
-        return validCarreras as Carrera[];
+        const all = data || [];
+        return all.filter(c => CARRERAS_UNINORTE.includes(c.nombre)) as Carrera[];
     };
 
     const { data, error, isLoading } = useSWR(
