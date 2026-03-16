@@ -148,7 +148,7 @@ export default function ClasificacionPage() {
                                         return (
                                             <GroupStageTable
                                                 key={grupo}
-                                                matches={gMatches}
+                                                matches={gMatches as any[]}
                                                 sportName={selectedSport}
                                                 grupo={grupo}
                                             />
@@ -174,7 +174,7 @@ export default function ClasificacionPage() {
                                     SPORT_BORDER[selectedSport] || "border-white/10"
                                 )}>
                                     <BracketTree
-                                        matches={bracketMatches}
+                                        matches={bracketMatches as any[]}
                                         sportName={selectedSport}
                                     />
                                 </div>

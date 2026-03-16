@@ -94,6 +94,11 @@ export class FutbolService implements ISportService {
         return d;
     }
 
+    /** Implementa ISportService.nextPeriod — delega a cambiarTiempo */
+    nextPeriod(detalle: ScoreDetail): ScoreDetail {
+        return this.cambiarTiempo(detalle);
+    }
+
     // Método extra específico de Fútbol
     cambiarTiempo(detalle: ScoreDetail): ScoreDetail {
         const d = JSON.parse(JSON.stringify(detalle));

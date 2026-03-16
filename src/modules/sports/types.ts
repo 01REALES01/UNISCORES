@@ -114,4 +114,6 @@ export interface ISportService {
     puntos: number
   ): ScoreDetail;
   recalculateTotals(detalle: ScoreDetail): ScoreDetail;
+  /** Avanza al siguiente período (tiempo, cuarto, set, ronda) */
+  nextPeriod(detalle: ScoreDetail): ScoreDetail;
 }

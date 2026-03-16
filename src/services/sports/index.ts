@@ -1,18 +1,7 @@
-import { FutbolService } from "./futbol-service";
-import { ISportService } from "./types";
+// ─────────────────────────────────────────────────────────────────────────────
+// Backwards-compat shim — delega al registry centralizado en modules/sports
+// Mantiene el export getSportService() que usan los importadores legacy
+// ─────────────────────────────────────────────────────────────────────────────
 
-const services: Record<string, ISportService> = {
-    "Fútbol": new FutbolService(),
-    // Los demás deportes se irán añadiendo aquí...
-};
-
-/**
- * Obtiene el servicio correspondiente a un deporte.
- * Si no existe un servicio específico, devuelve null.
- */
-export function getSportService(deporte: string): ISportService | null {
-    return services[deporte] || null;
-}
-
-// Exportar instancias individuales para acceso directo si es necesario
-export const futbolService = new FutbolService();
+export { getSportService } from '@/modules/sports/index';
+export type { ISportService } from '@/modules/sports/types';

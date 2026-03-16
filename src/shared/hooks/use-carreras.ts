@@ -1,0 +1,38 @@
+"use client";
+
+import useSWR from "swr";
+import { supabase } from "@/lib/supabase";
+import { CARRERAS_UNINORTE } from "@/lib/constants";
+
+export type Carrera = {
+    id: number;
+    nombre: string;
+};
+
+/**
+ * Hook para obtener la lista de carreras VÁLIDAS.
+ * Filtra contra CARRERAS_UNINORTE para evitar que nombres de deportistas
+ * que fueron insertados por error en la tabla aparezcan como opciones.
+ */
+export function useCarreras() {
+    const { data, error, isLoading } = useSWR(
+        'carreras-list',
+        async () => {
+            const { data, error } = await supabase
+                .from('carreras')
+                .select('*')
+                .order('nombre', { ascending: true });
+
+            if (error) throw error;
+            const all = data || [];
+            return all.filter(c => CARRERAS_UNINORTE.includes(c.nombre)) as Carrera[];
+        },
+        { revalidateOnFocus: false, dedupingInterval: 60000 }
+    );
+
+    return {
+        carreras: data || [],
+        loading: isLoading,
+        error,
+    };
+}

@@ -225,7 +225,7 @@ export default function CalendarioPage() {
                                                             e.estado === 'en_vivo' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' :
                                                                 e.estado === 'finalizado' ? 'border-white/10 text-white/30' : 'border-indigo-500/30 text-indigo-400'
                                                         )}>
-                                                            <SportIcon sport={e.disciplinas?.name} size={10} className="scale-75 sm:scale-100 transition-transform" />
+                                                            <SportIcon sport={e.disciplinas?.name ?? ''} size={10} className="scale-75 sm:scale-100 transition-transform" />
                                                         </div>
                                                     ))}
                                                     {eventsToday.length > 3 && (
@@ -273,7 +273,7 @@ export default function CalendarioPage() {
                                     </div>
 
                                     <div className="text-[10px] text-white/70 font-bold uppercase tracking-widest mb-4 flex items-center gap-2 bg-white/5 px-3 py-1 rounded-md">
-                                        <SportIcon sport={matchOfTheDay.disciplinas?.name} size={14} /> {matchOfTheDay.disciplinas?.name}
+                                        <SportIcon sport={matchOfTheDay.disciplinas?.name ?? ''} size={14} /> {matchOfTheDay.disciplinas?.name}
                                     </div>
 
                                     <div className="flex items-center justify-between w-full mb-8 relative">
@@ -415,8 +415,8 @@ export default function CalendarioPage() {
                                 )}
 
                                 {!loading && upcomingFixtures.map(match => {
-                                    const sportBorder = SPORT_BORDER[match.disciplinas?.name] || 'border-indigo-500/20';
-                                    const sportAccent = SPORT_ACCENT[match.disciplinas?.name] || 'text-indigo-400';
+                                    const sportBorder = SPORT_BORDER[match.disciplinas?.name ?? ''] || 'border-indigo-500/20';
+                                    const sportAccent = SPORT_ACCENT[match.disciplinas?.name ?? ''] || 'text-indigo-400';
                                     const isLive = match.estado === 'en_vivo';
 
                                     return (
@@ -426,7 +426,7 @@ export default function CalendarioPage() {
                                                 sportBorder
                                             )}>
                                                 {/* Optional fade overlay based on sport */}
-                                                <div className={`absolute inset-0 bg-gradient-to-r ${SPORT_GRADIENT[match.disciplinas?.name] || 'from-indigo-500/5'} to-transparent opacity-20 group-hover:opacity-40 transition-opacity pointer-events-none`} />
+                                                <div className={`absolute inset-0 bg-gradient-to-r ${SPORT_GRADIENT[match.disciplinas?.name ?? ''] || 'from-indigo-500/5'} to-transparent opacity-20 group-hover:opacity-40 transition-opacity pointer-events-none`} />
 
                                                 <div className="relative z-10 flex flex-col h-full justify-between">
                                                     <div className="flex items-center justify-between mb-3 text-[10px] sm:text-xs uppercase font-black text-white/40 tracking-widest">
@@ -435,7 +435,7 @@ export default function CalendarioPage() {
                                                                 "w-6 h-6 rounded-full flex items-center justify-center border",
                                                                 isLive ? "bg-rose-500/20 border-rose-500/30 text-rose-400" : "bg-white/5 border-white/10 text-white/70"
                                                             )}>
-                                                                <SportIcon sport={match.disciplinas?.name} size={12} />
+                                                                <SportIcon sport={match.disciplinas?.name ?? ''} size={12} />
                                                             </span>
                                                             <span className={sportAccent}>{match.disciplinas?.name}</span>
                                                             <span className="opacity-50">• {new Date(match.fecha).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
