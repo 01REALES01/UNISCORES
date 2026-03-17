@@ -265,7 +265,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             <div className="w-12 h-12 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm shrink-0">
                                                 <span className="text-xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'a'))}</span>
                                             </div>
-                                            <h3 className="text-sm md:text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
+                                            <h3 className="text-sm md:text-2xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'a')}
                                             </h3>
                                             {getCarreraSubtitle(currentMatch, 'a') && (
@@ -274,29 +274,29 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                         </m.div>
 
                                         {/* VS / Score */}
-                                        <div className="flex flex-col items-center gap-1 z-20 mx-4 relative min-w-[120px] md:min-w-[180px]">
+                                        <div className="flex flex-col items-center gap-1 z-20 mx-1 md:mx-4 relative min-w-[70px] md:min-w-[180px]">
                                             {sName === 'Ajedrez' ? (
                                                 currentMatch.estado === 'en_vivo' ? (
-                                                    <div className="flex flex-col items-center justify-center w-full min-h-[100px]">
+                                                    <div className="flex flex-col items-center justify-center w-full min-h-[80px] md:min-h-[100px]">
                                                         <div className="flex items-center gap-3">
                                                             <span className="relative flex h-3 w-3 md:h-4 md:w-4">
                                                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                                                                 <span className="relative inline-flex rounded-full h-3 w-3 md:h-4 md:w-4 bg-rose-500"></span>
                                                             </span>
-                                                            <span className="text-xl md:text-2xl font-black text-rose-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]">
+                                                            <span className="text-lg md:text-2xl font-black text-rose-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]">
                                                                 EN VIVO
                                                             </span>
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="text-4xl md:text-6xl font-black text-white/10 italic">VS</div>
+                                                    <div className="text-3xl md:text-6xl font-black text-white/10 italic">VS</div>
                                                 )
                                             ) : currentMatch.estado === 'en_vivo' ? (
                                                 <div className="flex flex-col items-center w-full">
-                                                    <div className="text-[2.2rem] md:text-[5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-1.5 md:gap-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                                                        <span className="text-white text-right w-10 md:w-20">{scoreInfo.scoreA}</span>
-                                                        <div className="w-2 md:w-5 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
-                                                        <span className="text-white text-left w-10 md:w-20">{scoreInfo.scoreB}</span>
+                                                    <div className="text-[2rem] md:text-[5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-1.5 md:gap-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                                                        <span className="text-white text-right w-8 md:w-20">{scoreInfo.scoreA}</span>
+                                                        <div className="w-1.5 md:w-5 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
+                                                        <span className="text-white text-left w-8 md:w-20">{scoreInfo.scoreB}</span>
                                                     </div>
 
                                                     {/* Dynamic Info Row */}
@@ -324,7 +324,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="text-4xl md:text-6xl font-black text-white/10 italic">VS</div>
+                                                <div className="text-3xl md:text-6xl font-black text-white/10 italic">VS</div>
                                             )}
                                         </div>
 
@@ -335,10 +335,10 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             transition={{ delay: 0.3 }}
                                             className="flex flex-col items-center gap-2 md:gap-3 flex-1 text-center"
                                         >
-                                            <div className="w-12 h-12 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm shrink-0">
+                                            <div className="w-14 h-14 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm shrink-0">
                                                 <span className="text-xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'b'))}</span>
                                             </div>
-                                            <h3 className="text-sm md:text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
+                                            <h3 className="text-sm md:text-2xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'b')}
                                             </h3>
                                             {getCarreraSubtitle(currentMatch, 'b') && (

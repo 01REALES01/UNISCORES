@@ -57,7 +57,7 @@ export function WelcomeHero() {
                     <div className="mt-12 flex items-center justify-center gap-8 text-slate-500 font-bold uppercase tracking-widest text-[10px] sm:text-xs">
                         <div className="flex items-center gap-2">
                             <Calendar size={14} className="text-red-500" />
-                            <span>8 - 24 Abril</span>
+                            <span>8 Abr - 14 May</span>
                         </div>
                         <div className="w-1 h-1 rounded-full bg-white/10" />
                         <div className="flex items-center gap-2">
