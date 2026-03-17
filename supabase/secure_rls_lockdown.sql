@@ -26,31 +26,49 @@ DROP POLICY IF EXISTS "Partidos are viewable by everyone" ON partidos;
 CREATE POLICY "Partidos are viewable by everyone" ON partidos FOR SELECT USING (true);
 
 -- Inserción/Borrado solo para ADMINS
-CREATE POLICY "Admins can insert partidos" ON partidos FOR INSERT 
-WITH CHECK ( (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin' );
+DROP POLICY IF EXISTS "Admins can insert partidos" ON partidos;
+CREATE POLICY "Admins can insert partidos" ON partidos FOR INSERT
+WITH CHECK ( public.has_role(auth.uid(), 'admin') );
 
-CREATE POLICY "Admins can delete partidos" ON partidos FOR DELETE 
-USING ( (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin' );
+DROP POLICY IF EXISTS "Admins can delete partidos" ON partidos;
+CREATE POLICY "Admins can delete partidos" ON partidos FOR DELETE
+USING ( public.has_role(auth.uid(), 'admin') );
 
 -- Actualización para ADMINS y DATA ENTRY asignados
 DROP POLICY IF EXISTS "Data Entry can update own matches" ON partidos;
-CREATE POLICY "Admins and assigned Data Entry can update partidos" ON partidos FOR UPDATE 
-USING ( 
-    (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin' 
-    OR 
-    (auth.uid() = responsable_id) 
+DROP POLICY IF EXISTS "Admins and assigned Data Entry can update partidos" ON partidos;
+CREATE POLICY "Admins and assigned Data Entry can update partidos" ON partidos FOR UPDATE
+USING (
+    public.has_role(auth.uid(), 'admin')
+    OR public.has_role(auth.uid(), 'data_entry')
+    OR auth.uid() = responsable_id
 );
 
 -- 4. Crear Políticas Seguras para NOTICIAS
--- Lectura pública (solo publicadas, o todas si es admin)
+-- Lectura pública (solo publicadas, o staff ve todas)
 DROP POLICY IF EXISTS "Noticias are viewable by everyone" ON noticias;
-CREATE POLICY "Noticias are viewable by everyone" ON noticias FOR SELECT 
-USING ( published = true OR (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin' );
+DROP POLICY IF EXISTS "Noticias public read" ON noticias;
+CREATE POLICY "Noticias are viewable by everyone" ON noticias FOR SELECT
+USING (
+    published = true
+    OR public.has_role(auth.uid(), 'admin')
+    OR public.has_role(auth.uid(), 'data_entry')
+    OR public.has_role(auth.uid(), 'periodista')
+);
 
--- Mutaciones solo para ADMINS
+-- Mutaciones solo para ADMINS y staff editorial
+DROP POLICY IF EXISTS "Admins can modify noticias" ON noticias;
 CREATE POLICY "Admins can modify noticias" ON noticias FOR ALL
-USING ( (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin' )
-WITH CHECK ( (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin' );
+USING (
+    public.has_role(auth.uid(), 'admin')
+    OR public.has_role(auth.uid(), 'data_entry')
+    OR public.has_role(auth.uid(), 'periodista')
+)
+WITH CHECK (
+    public.has_role(auth.uid(), 'admin')
+    OR public.has_role(auth.uid(), 'data_entry')
+    OR public.has_role(auth.uid(), 'periodista')
+);
 
 -- 5. Crear Políticas Seguras para CARRERAS y DISCIPLINAS (Catálogos)
 -- Lectura pública
@@ -61,11 +79,13 @@ DROP POLICY IF EXISTS "Disciplinas viewable by everyone" ON disciplinas;
 CREATE POLICY "Disciplinas viewable by everyone" ON disciplinas FOR SELECT USING (true);
 
 -- Mutaciones solo admins
+DROP POLICY IF EXISTS "Admins can modify carreras" ON carreras;
 CREATE POLICY "Admins can modify carreras" ON carreras FOR ALL
-USING ( (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin' );
+USING ( public.has_role(auth.uid(), 'admin') );
 
+DROP POLICY IF EXISTS "Admins can modify disciplinas" ON disciplinas;
 CREATE POLICY "Admins can modify disciplinas" ON disciplinas FOR ALL
-USING ( (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin' );
+USING ( public.has_role(auth.uid(), 'admin') );
 
 -- 6. User Favoritos (El usuario solo puede ver y editar sus propios favoritos)
 ALTER TABLE user_carreras_favoritas ENABLE ROW LEVEL SECURITY;
