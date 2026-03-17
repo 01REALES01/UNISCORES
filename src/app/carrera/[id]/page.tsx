@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
-import { useCarreraProfile } from "@/hooks/use-carrera-profile";
+import { useCarreraProfile } from "@/modules/users/hooks/use-carrera-profile";
 import { MainNavbar } from "@/components/main-navbar";
 import { NewsListCard } from "@/components/news-card";
 import { SportIcon } from "@/components/sport-icons";

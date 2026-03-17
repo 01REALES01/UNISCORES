@@ -1,4 +1,4 @@
-import type { Profile } from '@/hooks/useAuth';
+import type { Profile } from '@/modules/users/types';
 
 export type UltimaEdicion = {
     user_id: string;
