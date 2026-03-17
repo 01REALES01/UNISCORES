@@ -10,8 +10,18 @@
 CREATE OR REPLACE FUNCTION public.sync_user_roles()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Si se actualizó 'roles' (array), sincronizar 'role' (enum/legacy)
-    IF NEW.roles IS DISTINCT FROM OLD.roles THEN
+    -- Si es un INSERT o si los roles han cambiado en un UPDATE
+    IF (TG_OP = 'INSERT') OR (NEW.roles IS DISTINCT FROM OLD.roles) THEN
+        IF 'admin' = ANY(NEW.roles) THEN NEW.role := 'admin';
+        ELSIF 'data_entry' = ANY(NEW.roles) THEN NEW.role := 'data_entry';
+        ELSIF 'periodista' = ANY(NEW.roles) THEN NEW.role := 'periodista';
+        ELSE NEW.role := 'public';
+        END IF;
+    END IF;
+    RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+    -- En caso de error (ej: OLD no definido en INSERT en algunas versiones)
+    IF (TG_OP = 'INSERT') THEN
         IF 'admin' = ANY(NEW.roles) THEN NEW.role := 'admin';
         ELSIF 'data_entry' = ANY(NEW.roles) THEN NEW.role := 'data_entry';
         ELSIF 'periodista' = ANY(NEW.roles) THEN NEW.role := 'periodista';
@@ -61,24 +71,22 @@ $$ LANGUAGE sql SECURITY DEFINER;
 -- 3. REEMPLAZO MASIVO DE POLÍTICAS (TRÁFICO PESADO)
 
 -- 3.1 PARTIDOS
-DROP POLICY IF EXISTS "Staff can update partidos" ON public.partidos;
-DROP POLICY IF EXISTS "Admins and Data Entry can update partidos" ON public.partidos;
-DROP POLICY IF EXISTS "Admins and assigned Data Entry can update partidos" ON public.partidos;
+DROP POLICY IF EXISTS "Staff can update partidos optimized" ON public.partidos;
 CREATE POLICY "Staff can update partidos optimized" ON public.partidos 
     FOR UPDATE USING ( public.is_staff_fast() );
 
 -- 3.2 EVENTOS (Muy pesado)
-DROP POLICY IF EXISTS "Admins and Data Entry can modify olympics_eventos" ON public.olympics_eventos;
+DROP POLICY IF EXISTS "Staff can modify eventos optimized" ON public.olympics_eventos;
 CREATE POLICY "Staff can modify eventos optimized" ON public.olympics_eventos 
     FOR ALL USING ( public.is_staff_fast() );
 
 -- 3.3 JUGADORES
-DROP POLICY IF EXISTS "Admins and Data Entry can modify olympics_jugadores" ON public.olympics_jugadores;
+DROP POLICY IF EXISTS "Staff can modify jugadores optimized" ON public.olympics_jugadores;
 CREATE POLICY "Staff can modify jugadores optimized" ON public.olympics_jugadores 
     FOR ALL USING ( public.is_staff_fast() );
 
 -- 3.4 NOTICIAS
-DROP POLICY IF EXISTS "Admins and Data Entry can modify noticias" ON public.noticias;
+DROP POLICY IF EXISTS "Staff can modify noticias optimized" ON public.noticias;
 CREATE POLICY "Staff can modify noticias optimized" ON public.noticias 
     FOR ALL USING ( (public.get_my_roles() && ARRAY['admin', 'periodista', 'data_entry']::text[]) );
 
