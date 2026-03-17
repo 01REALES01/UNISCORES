@@ -120,6 +120,16 @@ body {
   scrollbar-width: none;
 }
 
+/* Scrollbar hide utility (Tailwind-style class name) */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Glass Card Effect */
 .glass {
   background: var(--glass-bg);

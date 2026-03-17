@@ -9,9 +9,9 @@ import { SPORT_ACCENT, SPORT_BORDER, SPORT_GRADIENT, SPORT_GLOW, SPORT_EMOJI } f
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { SportIcon } from "@/components/sport-icons";
 import { cn } from "@/lib/utils";
-import { 
-    Calendar as CalendarIcon, Trophy, Zap, Search, Activity, 
-    MapPin, LayoutGrid, Clock, ChevronRight, MoveRight
+import {
+    Calendar as CalendarIcon, Trophy, Zap, Search, Activity,
+    MapPin, LayoutGrid, Clock, ChevronRight, MoveRight, Filter
 } from "lucide-react";
 import { Avatar, Badge, Button } from "@/components/ui-primitives";
 import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
@@ -24,17 +24,31 @@ export default function PartidosPage() {
     const { user, profile, isStaff } = useAuth();
     const { matches: rawMatches, loading } = useMatches();
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedSport, setSelectedSport] = useState("Todos");
 
-    // 1. Filter by search
+    // Derive unique sport names from all matches
+    const availableSports = useMemo(() => {
+        const sports = new Set<string>();
+        rawMatches.forEach(m => {
+            const name = m.disciplinas?.name;
+            if (name) sports.add(name);
+        });
+        return Array.from(sports).sort();
+    }, [rawMatches]);
+
+    // 1. Filter by search + sport
     const filteredMatches = useMemo(() => {
         const q = searchQuery.toLowerCase();
         return rawMatches.filter(m => {
+            // Sport filter
+            if (selectedSport !== "Todos" && m.disciplinas?.name !== selectedSport) return false;
+            // Text search filter
             const teamA = (m.carrera_a?.nombre || m.equipo_a || "").toLowerCase();
             const teamB = (m.carrera_b?.nombre || m.equipo_b || "").toLowerCase();
             const sport = (m.disciplinas?.name || "").toLowerCase();
             return teamA.includes(q) || teamB.includes(q) || sport.includes(q);
         });
-    }, [rawMatches, searchQuery]);
+    }, [rawMatches, searchQuery, selectedSport]);
 
     // 2. Grouping Function
     const groupedMatches = useMemo(() => {
@@ -53,10 +67,10 @@ export default function PartidosPage() {
 
         return Object.keys(groups).sort().map(fecha => {
             const dateObj = new Date(fecha + 'T12:00:00');
-            let label = dateObj.toLocaleDateString('es-ES', { 
+            let label = dateObj.toLocaleDateString('es-ES', {
                 weekday: 'long', day: 'numeric', month: 'short'
             });
-            
+
             const isToday = fecha === todayStr;
             const isYesterday = fecha === yesterdayStr;
             const isTomorrow = fecha === tomorrowStr;
@@ -70,7 +84,7 @@ export default function PartidosPage() {
                 const stateOrder = { "en_vivo": 0, "programado": 1, "finalizado": 2 };
                 const orderA = stateOrder[a.estado as keyof typeof stateOrder] ?? 99;
                 const orderB = stateOrder[b.estado as keyof typeof stateOrder] ?? 99;
-                
+
                 if (orderA !== orderB) return orderA - orderB;
                 return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
             });
@@ -85,13 +99,13 @@ export default function PartidosPage() {
             const todayStr = new Date().toISOString().split('T')[0];
             // Find today or the first date after today
             const targetDate = groupedMatches.find(g => g.fecha >= todayStr)?.fecha;
-            
+
             if (targetDate) {
                 setTimeout(() => {
                     const element = document.getElementById(`date-${targetDate}`);
                     if (element) {
                         const isMobile = window.innerWidth < 768;
-                        const offset = isMobile ? 80 : 120; // Adjusted offsets for mobile vs desktop
+                        const offset = isMobile ? 140 : 180; // Adjusted offsets for sticky filter bar
                         const bodyRect = document.body.getBoundingClientRect().top;
                         const elementRect = element.getBoundingClientRect().top;
                         const elementPosition = elementRect - bodyRect;
@@ -122,7 +136,7 @@ export default function PartidosPage() {
                 <header className="mb-12 flex flex-col items-center text-center gap-4">
                     <div className="animate-in fade-in zoom-in duration-1000">
                         <div className="flex items-center justify-center gap-2 mb-2">
-                             <div className="p-1.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+                            <div className="p-1.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
                                 <Activity size={20} />
                             </div>
                             <h4 className="text-[10px] font-black text-red-500 uppercase tracking-[0.4em]">Temporada Regular</h4>
@@ -144,6 +158,51 @@ export default function PartidosPage() {
                     </div>
                 </header>
 
+                {/* ── Fixed Sport Filter Bar (frozen row) ── */}
+                <div className="fixed top-16 sm:top-[4.5rem] left-0 right-0 z-40 bg-[#0a0816]/90 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
+                    <div className="max-w-6xl mx-auto px-4 py-3">
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                            {/* "Todos" chip */}
+                            <button
+                                onClick={() => setSelectedSport("Todos")}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider whitespace-nowrap border transition-all duration-300 shrink-0",
+                                    selectedSport === "Todos"
+                                        ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.2)] scale-105"
+                                        : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/60"
+                                )}
+                            >
+                                <LayoutGrid size={14} />
+                                Todos
+                            </button>
+
+                            {availableSports.map(sport => (
+                                <button
+                                    key={sport}
+                                    onClick={() => setSelectedSport(sport)}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider whitespace-nowrap border transition-all duration-300 shrink-0",
+                                        selectedSport === sport
+                                            ? `${SPORT_BORDER[sport]?.split(' ')[0] || 'border-white/30'} ${SPORT_ACCENT[sport] || 'text-white'} bg-white/10 shadow-lg scale-105`
+                                            : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/60"
+                                    )}
+                                >
+                                    <SportIcon sport={sport} size={14} />
+                                    <span>{sport}</span>
+                                </button>
+                            ))}
+                        </div>
+                        {!loading && (
+                            <p className="text-[10px] font-bold text-white/20 mt-1.5 tracking-wider uppercase">
+                                Mostrando {filteredMatches.length} partido{filteredMatches.length !== 1 ? 's' : ''}
+                            </p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Spacer for fixed filter bar */}
+                <div className="h-[4.5rem]" />
+
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[1, 2, 3, 4, 5, 6].map(i => (
@@ -153,8 +212,8 @@ export default function PartidosPage() {
                 ) : groupedMatches.length > 0 ? (
                     <div className="space-y-16">
                         {groupedMatches.map(group => (
-                            <section 
-                                key={group.fecha} 
+                            <section
+                                key={group.fecha}
                                 id={`date-${group.fecha}`}
                                 className="animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-24"
                             >
@@ -165,8 +224,8 @@ export default function PartidosPage() {
                                     )} />
                                     <h2 className={cn(
                                         "text-[10px] font-black px-6 py-2 rounded-full border backdrop-blur-md uppercase tracking-[0.3em] transition-all duration-500",
-                                        group.isToday 
-                                            ? "text-white border-indigo-500/50 bg-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.2)] scale-110" 
+                                        group.isToday
+                                            ? "text-white border-indigo-500/50 bg-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.2)] scale-110"
                                             : "text-white/60 border-white/10 bg-white/5"
                                     )}>
                                         {group.isToday && <span className="mr-2 text-indigo-400">●</span>}
@@ -177,7 +236,7 @@ export default function PartidosPage() {
                                         group.isToday ? "via-indigo-500/50 to-indigo-500/80" : "via-white/5 to-white/10"
                                     )} />
                                 </div>
-                                
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {group.partidos.map(partido => (
                                         <div key={partido.id} className="h-full">
@@ -210,16 +269,16 @@ export default function PartidosPage() {
 
 // --- Unified Match Card Component Base ---
 
-function UnifiedCard({ 
-    partido, 
-    statusLabel, 
-    statusIcon, 
+function UnifiedCard({
+    partido,
+    statusLabel,
+    statusIcon,
     statusColor,
     scoreDisplay, // For Results/Live
     timeDisplay,  // For Upcoming
     highlightWinner = false
-}: { 
-    partido: any, 
+}: {
+    partido: any,
     statusLabel: string,
     statusIcon?: React.ReactNode,
     statusColor?: string,
@@ -264,7 +323,7 @@ function UnifiedCard({
                                 <span className="text-[11px] font-medium text-white/60 leading-tight truncate max-w-[120px] mt-0.5">{partido.lugar || 'Sede'}</span>
                             </div>
                         </div>
-                        
+
                         <div className="flex flex-col items-end gap-1">
                             {statusLabel === 'LIVE' ? (
                                 <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportName} />
@@ -284,23 +343,23 @@ function UnifiedCard({
                     <div className="flex-1 grid grid-cols-[1.2fr_auto_1.2fr] items-center gap-6 py-1">
                         {/* Team A */}
                         <div className="flex flex-col items-center gap-2 text-center relative">
-                            <Avatar 
-                                name={getDisplayName(partido, 'a')} 
+                            <Avatar
+                                name={getDisplayName(partido, 'a')}
                                 src={partido.atleta_a?.avatar_url}
-                                size="lg" 
+                                size="lg"
                                 className={cn(
-                                "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
-                                winnerA ? (
-                                    sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
-                                    sportName === 'Baloncesto' ? "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-110" :
-                                    sportName === 'Voleibol' ? "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110" :
-                                    sportName === 'Tenis' ? "border-lime-500 shadow-[0_0_20px_rgba(132,204,22,0.5)] scale-110" :
-                                    sportName === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.5)] scale-110" :
-                                    sportName === 'Ajedrez' ? "border-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)] scale-110" :
-                                    sportName === 'Natación' ? "border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.5)] scale-110" :
-                                    "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110"
-                                ) : "border-white/10 grayscale-[0.5] opacity-80"
-                            )} />
+                                    "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                    winnerA ? (
+                                        sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
+                                            sportName === 'Baloncesto' ? "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-110" :
+                                                sportName === 'Voleibol' ? "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110" :
+                                                    sportName === 'Tenis' ? "border-lime-500 shadow-[0_0_20px_rgba(132,204,22,0.5)] scale-110" :
+                                                        sportName === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.5)] scale-110" :
+                                                            sportName === 'Ajedrez' ? "border-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)] scale-110" :
+                                                                sportName === 'Natación' ? "border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.5)] scale-110" :
+                                                                    "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110"
+                                    ) : "border-white/10 grayscale-[0.5] opacity-80"
+                                )} />
                             <span className={cn("text-[11px] font-black uppercase tracking-tight leading-tight line-clamp-2 max-w-[90px]", (winnerA || (sportName === 'Ajedrez' && isChessDraw)) ? "text-white" : "text-white/40")}>
                                 {getDisplayName(partido, 'a')}
                             </span>
@@ -333,12 +392,12 @@ function UnifiedCard({
                                     )}
                                 </div>
                             )}
-                            
+
                             <div className={cn(
                                 "text-[9px] font-black tracking-[0.2em] uppercase transition-all",
                                 genero === 'femenino' ? "text-pink-500/80" :
-                                genero === 'mixto' ? "text-purple-500/80" :
-                                "text-blue-500/80"
+                                    genero === 'mixto' ? "text-purple-500/80" :
+                                        "text-blue-500/80"
                             )}>
                                 {genero}
                             </div>
@@ -346,23 +405,23 @@ function UnifiedCard({
 
                         {/* Team B */}
                         <div className="flex flex-col items-center gap-2 text-center relative">
-                            <Avatar 
-                                name={getDisplayName(partido, 'b')} 
+                            <Avatar
+                                name={getDisplayName(partido, 'b')}
                                 src={partido.atleta_b?.avatar_url}
-                                size="lg" 
+                                size="lg"
                                 className={cn(
-                                "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
-                                winnerB ? (
-                                    sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
-                                    sportName === 'Baloncesto' ? "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-110" :
-                                    sportName === 'Voleibol' ? "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110" :
-                                    sportName === 'Tenis' ? "border-lime-500 shadow-[0_0_20px_rgba(132,204,22,0.5)] scale-110" :
-                                    sportName === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.5)] scale-110" :
-                                    sportName === 'Ajedrez' ? "border-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)] scale-110" :
-                                    sportName === 'Natación' ? "border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.5)] scale-110" :
-                                    "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110"
-                                ) : "border-white/10 grayscale-[0.5] opacity-80"
-                            )} />
+                                    "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                    winnerB ? (
+                                        sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
+                                            sportName === 'Baloncesto' ? "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-110" :
+                                                sportName === 'Voleibol' ? "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110" :
+                                                    sportName === 'Tenis' ? "border-lime-500 shadow-[0_0_20px_rgba(132,204,22,0.5)] scale-110" :
+                                                        sportName === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.5)] scale-110" :
+                                                            sportName === 'Ajedrez' ? "border-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)] scale-110" :
+                                                                sportName === 'Natación' ? "border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.5)] scale-110" :
+                                                                    "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110"
+                                    ) : "border-white/10 grayscale-[0.5] opacity-80"
+                                )} />
                             <span className={cn("text-[11px] font-black uppercase tracking-tight leading-tight line-clamp-2 max-w-[90px]", (winnerB || (sportName === 'Ajedrez' && isChessDraw)) ? "text-white" : "text-white/40")}>
                                 {getDisplayName(partido, 'b')}
                             </span>
@@ -391,9 +450,9 @@ function UnifiedCard({
 function LiveMatchCard({ partido }: { partido: any }) {
     const sportName = partido.disciplinas?.name || 'Deporte';
     const { scoreA, scoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
-    
+
     return (
-        <UnifiedCard 
+        <UnifiedCard
             partido={partido}
             statusLabel="LIVE"
             scoreDisplay={{ a: scoreA, b: scoreB }}
@@ -406,7 +465,7 @@ function UpcomingMatchCard({ partido }: { partido: any }) {
     const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 
     return (
-        <UnifiedCard 
+        <UnifiedCard
             partido={partido}
             statusLabel="PROGRAMADO"
             statusColor="text-white/30"
@@ -420,7 +479,7 @@ function ResultCard({ partido }: { partido: any }) {
     const { scoreA, scoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
 
     return (
-        <UnifiedCard 
+        <UnifiedCard
             partido={partido}
             statusLabel="FINALIZADO"
             statusColor="text-white/20"
