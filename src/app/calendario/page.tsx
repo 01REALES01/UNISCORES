@@ -14,20 +14,25 @@ import { SportIcon } from "@/components/sport-icons";
 import { useMatches } from "@/hooks/use-matches";
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
+import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
 
 const SPORTS_FILTERS = [
     { id: 'all', label: 'Todos', icon: Trophy },
     { id: 'Fútbol', label: 'Fútbol' },
     { id: 'Baloncesto', label: 'Baloncesto' },
     { id: 'Tenis', label: 'Tenis' },
+    { id: 'Tenis de Mesa', label: 'Tenis de Mesa' },
     { id: 'Voleibol', label: 'Voleibol' },
-    { id: 'Natación', label: 'Natación' }
+    { id: 'Natación', label: 'Natación' },
+    { id: 'Ajedrez', label: 'Ajedrez' }
 ];
 
 type Match = {
     id: number;
     equipo_a: string;
     equipo_b: string;
+    atleta_a?: any;
+    atleta_b?: any;
     carrera_a?: { nombre: string };
     carrera_b?: { nombre: string };
     estado: 'programado' | 'en_vivo' | 'finalizado';
@@ -50,6 +55,9 @@ export default function CalendarioPage() {
     // 0 is Sunday, let's make Monday 0 for standard display
     let firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay() - 1;
     if (firstDayOfMonth === -1) firstDayOfMonth = 6; // Sunday becomes 6
+
+    const totalCells = firstDayOfMonth + daysInMonth;
+    const trailingEmptyCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
 
     const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
     const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -111,20 +119,20 @@ export default function CalendarioPage() {
 
                 {/* Filters */}
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         {SPORTS_FILTERS.map((filter) => (
                             <button
                                 key={filter.id}
                                 onClick={() => setActiveFilter(filter.id)}
+                                title={filter.label}
                                 className={cn(
-                                    "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all duration-300 border",
+                                    "flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-2xl transition-all duration-300 border",
                                     activeFilter === filter.id
-                                        ? "bg-indigo-500/20 border-indigo-500/30 text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-                                        : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10 hover:text-white"
+                                        ? "bg-indigo-500/20 border-indigo-500/30 text-white shadow-[0_0_15px_rgba(99,102,241,0.2)] scale-110"
+                                        : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10 hover:text-white hover:scale-105"
                                 )}
                             >
-                                {filter.icon ? <filter.icon size={16} /> : <SportIcon sport={filter.id} size={16} />}
-                                {filter.label}
+                                {filter.icon ? <filter.icon size={20} /> : <SportIcon sport={filter.id} size={20} />}
                             </button>
                         ))}
                     </div>
@@ -183,7 +191,7 @@ export default function CalendarioPage() {
                             {/* Main Grid */}
                             <div className="grid grid-cols-7 bg-[#0a0805]/50 rounded-2xl sm:rounded-3xl border border-white/10 overflow-hidden divide-x divide-y divide-white/5">
                                 {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                                    <div key={`empty-${i}`} className="aspect-square bg-transparent border-transparent" />
+                                    <div key={`empty-start-${i}`} className="aspect-square pointer-events-none" />
                                 ))}
 
                                 {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -194,14 +202,30 @@ export default function CalendarioPage() {
                                     // Check events for this day
                                     const eventsToday = filteredMatches.filter(m => isSameDay(new Date(m.fecha), dayDate));
                                     const hasEvents = eventsToday.length > 0;
-                                    const hasLive = eventsToday.some(m => m.estado === 'en_vivo');
+                                    
+                                    // Group events by sport to only show one icon per sport
+                                    const uniqueSportsMap = new Map<string, string>();
+                                    eventsToday.forEach(e => {
+                                        const sportName = e.disciplinas?.name;
+                                        if (!sportName) return;
+                                        const currentStatus = uniqueSportsMap.get(sportName);
+                                        // Prioritize status: en_vivo > programado > finalizado
+                                        if (!currentStatus) {
+                                            uniqueSportsMap.set(sportName, e.estado);
+                                        } else if (e.estado === 'en_vivo') {
+                                            uniqueSportsMap.set(sportName, 'en_vivo');
+                                        } else if (e.estado === 'programado' && currentStatus === 'finalizado') {
+                                            uniqueSportsMap.set(sportName, 'programado');
+                                        }
+                                    });
+                                    const uniqueSportsEvents = Array.from(uniqueSportsMap.entries()).map(([name, estado]) => ({ name, estado }));
 
                                     return (
                                         <button
                                             key={i}
                                             onClick={() => setSelectedDate(dayDate)}
                                             className={cn(
-                                                "aspect-square flex flex-col items-center justify-start py-2 sm:py-3 transition-all relative group focus:outline-none",
+                                                "aspect-square flex flex-col items-center justify-start py-1 sm:py-3 transition-all relative group focus:outline-none",
                                                 isSelected
                                                     ? "bg-indigo-500/20 z-20 shadow-[inset_0_0_20px_rgba(99,102,241,0.3)] ring-1 ring-inset ring-indigo-500/50"
                                                     : (isToday
@@ -210,7 +234,7 @@ export default function CalendarioPage() {
                                             )}
                                         >
                                             <span className={cn(
-                                                "text-sm sm:text-lg font-bold z-10 transition-colors",
+                                                "text-[11px] sm:text-lg font-bold z-10 transition-colors",
                                                 isSelected ? "text-indigo-400" : (isToday ? "text-rose-400 font-black" : "text-white/60 group-hover:text-white")
                                             )}>
                                                 {i + 1}
@@ -218,19 +242,19 @@ export default function CalendarioPage() {
 
                                             {/* Event Indicators */}
                                             {hasEvents && !isSelected && (
-                                                <div className="absolute bottom-1.5 sm:bottom-2 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 sm:gap-1 w-[90%] flex-wrap">
-                                                    {eventsToday.slice(0, 3).map((e, idx) => (
+                                                <div className="absolute bottom-0.5 sm:bottom-2 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 sm:gap-1 w-[90%] flex-wrap cursor-pointer" title={`${eventsToday.length} eventos en total`}>
+                                                    {uniqueSportsEvents.slice(0, 3).map((s, idx) => (
                                                         <div key={idx} className={cn(
-                                                            "w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-[#0a0805] border",
-                                                            e.estado === 'en_vivo' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' :
-                                                                e.estado === 'finalizado' ? 'border-white/10 text-white/30' : 'border-indigo-500/30 text-indigo-400'
+                                                            "w-2.5 h-2.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-[#0a0805] border",
+                                                            s.estado === 'en_vivo' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' :
+                                                                s.estado === 'finalizado' ? 'border-white/10 text-white/30' : 'border-indigo-500/30 text-indigo-400'
                                                         )}>
-                                                            <SportIcon sport={e.disciplinas?.name ?? ''} size={10} className="scale-75 sm:scale-100 transition-transform" />
+                                                            <SportIcon sport={s.name} size={10} className="scale-[0.6] sm:scale-100 transition-transform" />
                                                         </div>
                                                     ))}
-                                                    {eventsToday.length > 3 && (
-                                                        <div className="text-[8px] sm:text-[9px] font-black text-white/50 pl-0.5">
-                                                            +{eventsToday.length - 3}
+                                                    {uniqueSportsEvents.length > 3 && (
+                                                        <div className="text-[7px] sm:text-[9px] font-black text-white/50 pl-0.5">
+                                                            +{uniqueSportsEvents.length - 3}
                                                         </div>
                                                     )}
                                                 </div>
@@ -238,7 +262,7 @@ export default function CalendarioPage() {
 
                                             {/* Extra details on selected */}
                                             {isSelected && hasEvents && (
-                                                <div className="absolute bottom-2 bg-[#0a0805] px-1.5 py-0.5 rounded-md border border-indigo-500/30 text-[9px] font-mono font-black text-indigo-400 z-10">
+                                                <div className="absolute bottom-1 sm:bottom-2 bg-[#0a0805] px-1 py-0 sm:py-0.5 rounded-md border border-indigo-500/30 text-[7px] sm:text-[9px] font-mono font-black text-indigo-400 z-10">
                                                     {eventsToday.length} EVTS
                                                 </div>
                                             )}
@@ -249,6 +273,10 @@ export default function CalendarioPage() {
                                         </button>
                                     );
                                 })}
+
+                                {Array.from({ length: trailingEmptyCells }).map((_, i) => (
+                                    <div key={`empty-end-${i}`} className="aspect-square pointer-events-none" />
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -276,87 +304,179 @@ export default function CalendarioPage() {
                                         <SportIcon sport={matchOfTheDay.disciplinas?.name ?? ''} size={14} /> {matchOfTheDay.disciplinas?.name}
                                     </div>
 
-                                    <div className="flex items-center justify-between w-full mb-8 relative">
-                                        <div className="flex flex-col items-center gap-3 w-[40%] text-center">
-                                            <Avatar 
-                                                name={matchOfTheDay.carrera_a?.nombre || matchOfTheDay.equipo_a} 
-                                                size="lg" 
-                                                className={cn(
-                                                    "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805]",
-                                                    matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0) > (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0)
-                                                        ? (
-                                                            matchOfTheDay.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Baloncesto' ? "border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Voleibol' ? "border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Tenis' ? "border-lime-500 shadow-[0_0_30px_rgba(132,204,22,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Ajedrez' ? "border-violet-500 shadow-[0_0_30px_rgba(139,92,246,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Natación' ? "border-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.5)] scale-110" :
-                                                            "border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.5)] scale-110"
-                                                        )
-                                                        : "border-white/10 opacity-60"
-                                                )} 
-                                            />
-                                            <span className={cn(
-                                                "text-xs sm:text-sm font-black line-clamp-2 leading-tight",
-                                                matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0) > (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0) ? "text-white" : "text-white/40"
-                                            )}>
-                                                {matchOfTheDay.carrera_a?.nombre || matchOfTheDay.equipo_a}
-                                            </span>
-                                        </div>
+                                    {matchOfTheDay.marcador_detalle?.tipo === 'carrera' ? (
+                                        <div className="flex flex-col items-center justify-center w-full relative z-10 py-2 sm:py-4 gap-4 mb-8">
+                                            {/* Race details */}
+                                            <div className="flex flex-col items-center bg-white/5 px-6 py-4 rounded-3xl border border-white/10 w-full max-w-sm shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]">
+                                                <h4 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight text-center">
+                                                    {matchOfTheDay.marcador_detalle?.distancia}
+                                                </h4>
+                                                <span className="text-xs sm:text-sm font-bold text-indigo-400 uppercase tracking-widest mt-1 text-center">
+                                                    {matchOfTheDay.marcador_detalle?.estilo}
+                                                </span>
+                                            </div>
 
-                                        <div className="flex flex-col items-center justify-center w-[20%] relative z-10 shrink-0">
-                                            {matchOfTheDay.estado === 'en_vivo' ? (
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-3xl sm:text-4xl font-black text-rose-500 tracking-tighter drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]">
-                                                        {(matchOfTheDay.marcador_detalle?.goles_a || matchOfTheDay.marcador_detalle?.sets_a || matchOfTheDay.marcador_detalle?.total_a || 0)}
-                                                        -
-                                                        {(matchOfTheDay.marcador_detalle?.goles_b || matchOfTheDay.marcador_detalle?.sets_b || matchOfTheDay.marcador_detalle?.total_b || 0)}
-                                                    </span>
-                                                    <div className="scale-75 origin-top mt-1">
-                                                        <PublicLiveTimer detalle={matchOfTheDay.marcador_detalle} deporte={matchOfTheDay.disciplinas?.name} />
-                                                    </div>
+                                            {/* Status/Participants */}
+                                            {matchOfTheDay.estado === 'finalizado' ? (
+                                                <div className="flex flex-col gap-2 w-full max-w-sm mt-2">
+                                                    <span className="text-[10px] font-black text-white/30 uppercase tracking-widest text-center mb-1">Resultados Finales</span>
+                                                    {Array.isArray(matchOfTheDay.marcador_detalle?.participantes) &&
+                                                    [...matchOfTheDay.marcador_detalle.participantes]
+                                                        .sort((a: any, b: any) => Number(a.posicion) - Number(b.posicion))
+                                                        .slice(0, 3)
+                                                        .map((p: any, idx: number) => (
+                                                        <div key={idx} className="flex items-center justify-between bg-black/40 px-4 py-3 rounded-2xl border border-white/5 backdrop-blur-md">
+                                                            <div className="flex items-center gap-3">
+                                                                <span className={cn(
+                                                                    "text-sm sm:text-base font-black w-6 text-center",
+                                                                    p.posicion === 1 ? "text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" :
+                                                                    p.posicion === 2 ? "text-slate-300 drop-shadow-[0_0_8px_rgba(203,213,225,0.6)]" :
+                                                                    p.posicion === 3 ? "text-amber-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.6)]" : "text-white/50"
+                                                                )}>
+                                                                    #{p.posicion}
+                                                                </span>
+                                                                <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[150px]">{p.nombre}</span>
+                                                            </div>
+                                                            <span className="text-xs sm:text-sm font-mono font-bold text-emerald-400 tabular-nums">{p.tiempo}</span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             ) : (
-                                                <>
-                                                    <span className="text-2xl sm:text-3xl font-black tracking-tighter text-[#FFC000]">
-                                                        {new Date(matchOfTheDay.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                    <span className="text-[9px] font-black text-white/30 uppercase mt-1">
-                                                        HOY
-                                                    </span>
-                                                </>
+                                                <div className="flex flex-col items-center">
+                                                    {matchOfTheDay.estado === 'en_vivo' ? (
+                                                        <div className="flex flex-col items-center gap-3 mt-2">
+                                                            <span className="text-sm font-black text-rose-500 uppercase tracking-widest bg-rose-500/10 px-4 py-2 rounded-xl border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.2)] flex items-center gap-2">
+                                                                <Activity size={16} className="animate-pulse" />
+                                                                En Progreso
+                                                            </span>
+                                                            <span className="text-xs font-bold text-white/50 bg-black/40 px-4 py-1.5 rounded-full">{matchOfTheDay.marcador_detalle?.participantes?.length || 0} Participantes</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-3 mt-2">
+                                                            <div className="flex flex-col items-center">
+                                                                <span className="text-3xl sm:text-4xl font-black tracking-tighter text-[#FFC000]">
+                                                                    {new Date(matchOfTheDay.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                                <span className="text-[9px] font-black text-white/30 uppercase mt-1">HOY</span>
+                                                            </div>
+                                                            <span className="text-xs font-bold text-white/50 bg-black/40 px-4 py-1.5 rounded-full">{matchOfTheDay.marcador_detalle?.participantes?.length || 0} Participantes registrados</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
+                                    ) : (
+                                        <div className="flex items-center justify-between w-full mb-8 relative">
+                                            <div className="flex flex-col items-center gap-2 sm:gap-3 flex-1 min-w-0 text-center px-2 sm:px-4">
+                                                <Avatar 
+                                                    name={getDisplayName(matchOfTheDay, 'a')} 
+                                                    src={matchOfTheDay.atleta_a?.avatar_url}
+                                                    size="lg" 
+                                                    className={cn(
+                                                        "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
+                                                        matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0) > (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0)
+                                                            ? (
+                                                                matchOfTheDay.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Baloncesto' ? "border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Voleibol' ? "border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Tenis' ? "border-lime-500 shadow-[0_0_30px_rgba(132,204,22,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Ajedrez' ? "border-violet-500 shadow-[0_0_30px_rgba(139,92,246,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Natación' ? "border-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.5)] scale-110" :
+                                                                "border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.5)] scale-110"
+                                                            )
+                                                            : "border-white/10 opacity-60"
+                                                    )} 
+                                                />
+                                                <div className="flex flex-col min-w-0 items-center w-full">
+                                                    <span className={cn(
+                                                        "text-xs sm:text-sm font-black w-full truncate block leading-tight",
+                                                        matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0) > (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0) ? "text-white" : "text-white/40"
+                                                    )}>
+                                                        {getDisplayName(matchOfTheDay, 'a')}
+                                                    </span>
+                                                    {getCarreraSubtitle(matchOfTheDay, 'a') && <span className="text-[10px] text-white/40 font-bold truncate block w-full">{getCarreraSubtitle(matchOfTheDay, 'a')}</span>}
+                                                </div>
+                                            </div>
 
-                                        <div className="flex flex-col items-center gap-3 w-[40%] text-center">
-                                            <Avatar 
-                                                name={matchOfTheDay.carrera_b?.nombre || matchOfTheDay.equipo_b} 
-                                                size="lg" 
-                                                className={cn(
-                                                    "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805]",
-                                                    matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0) > (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0)
-                                                        ? (
-                                                            matchOfTheDay.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Baloncesto' ? "border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Voleibol' ? "border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Tenis' ? "border-lime-500 shadow-[0_0_30px_rgba(132,204,22,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Ajedrez' ? "border-violet-500 shadow-[0_0_30px_rgba(139,92,246,0.5)] scale-110" :
-                                                            matchOfTheDay.disciplinas?.name === 'Natación' ? "border-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.5)] scale-110" :
-                                                            "border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.5)] scale-110"
-                                                        )
-                                                        : "border-white/10 opacity-60"
-                                                )} 
-                                            />
-                                            <span className={cn(
-                                                "text-xs sm:text-sm font-black line-clamp-2 leading-tight",
-                                                matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0) > (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0) ? "text-white" : "text-white/40"
-                                            )}>
-                                                {matchOfTheDay.carrera_b?.nombre || matchOfTheDay.equipo_b}
-                                            </span>
+                                            <div className="flex flex-col items-center justify-center shrink-0 min-w-[100px] sm:min-w-[140px] relative z-10">
+                                                {matchOfTheDay.estado === 'en_vivo' ? (
+                                                    <div className="flex flex-col items-center">
+                                                        {matchOfTheDay.disciplinas?.name === 'Ajedrez' ? (
+                                                            <span className="text-sm sm:text-base font-black text-rose-500 tracking-widest bg-rose-500/10 px-3 py-1 rounded-lg border border-rose-500/30">VS</span>
+                                                        ) : (
+                                                            <span className="text-3xl sm:text-4xl font-black text-rose-500 tracking-tighter drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]">
+                                                                {(matchOfTheDay.marcador_detalle?.goles_a || matchOfTheDay.marcador_detalle?.sets_a || matchOfTheDay.marcador_detalle?.total_a || 0)}
+                                                                -
+                                                                {(matchOfTheDay.marcador_detalle?.goles_b || matchOfTheDay.marcador_detalle?.sets_b || matchOfTheDay.marcador_detalle?.total_b || 0)}
+                                                            </span>
+                                                        )}
+                                                        <div className="scale-75 origin-top mt-1">
+                                                            <PublicLiveTimer detalle={matchOfTheDay.marcador_detalle} deporte={matchOfTheDay.disciplinas?.name} />
+                                                        </div>
+                                                    </div>
+                                                ) : matchOfTheDay.estado === 'finalizado' ? (
+                                                    <div className="flex flex-col items-center">
+                                                        {matchOfTheDay.disciplinas?.name === 'Ajedrez' ? (
+                                                            <span className="text-xs sm:text-sm font-black text-white uppercase tracking-widest bg-white/10 px-3 py-1 rounded-lg border border-white/20">
+                                                                {matchOfTheDay.marcador_detalle?.goles_a === matchOfTheDay.marcador_detalle?.goles_b ? 'EMPATE' : 'FINAL'}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-3xl sm:text-4xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                                                                {(matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.sets_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0)}
+                                                                -
+                                                                {(matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.sets_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0)}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[10px] font-black text-white/30 uppercase mt-1">
+                                                            FINALIZADO
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-2xl sm:text-3xl font-black tracking-tighter text-[#FFC000]">
+                                                            {new Date(matchOfTheDay.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                        <span className="text-[9px] font-black text-white/30 uppercase mt-1">
+                                                            HOY
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            <div className="flex flex-col items-center gap-2 sm:gap-3 flex-1 min-w-0 text-center px-2 sm:px-4">
+                                                <Avatar 
+                                                    name={getDisplayName(matchOfTheDay, 'b')} 
+                                                    src={matchOfTheDay.atleta_b?.avatar_url}
+                                                    size="lg" 
+                                                    className={cn(
+                                                        "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
+                                                        matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0) > (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0)
+                                                            ? (
+                                                                matchOfTheDay.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Baloncesto' ? "border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Voleibol' ? "border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Tenis' ? "border-lime-500 shadow-[0_0_30px_rgba(132,204,22,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Ajedrez' ? "border-violet-500 shadow-[0_0_30px_rgba(139,92,246,0.5)] scale-110" :
+                                                                matchOfTheDay.disciplinas?.name === 'Natación' ? "border-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.5)] scale-110" :
+                                                                "border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.5)] scale-110"
+                                                            )
+                                                            : "border-white/10 opacity-60"
+                                                    )} 
+                                                />
+                                                <div className="flex flex-col min-w-0 items-center w-full">
+                                                    <span className={cn(
+                                                        "text-xs sm:text-sm font-black w-full truncate block leading-tight",
+                                                        matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0) > (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0) ? "text-white" : "text-white/40"
+                                                    )}>
+                                                        {getDisplayName(matchOfTheDay, 'b')}
+                                                    </span>
+                                                    {getCarreraSubtitle(matchOfTheDay, 'b') && <span className="text-[10px] text-white/40 font-bold truncate block w-full">{getCarreraSubtitle(matchOfTheDay, 'b')}</span>}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
                                     <div className="flex flex-col w-full gap-3 text-center">
                                         <Link href={`/mapa?lugar=${encodeURIComponent(matchOfTheDay.lugar || '')}`} className="w-full">
@@ -443,85 +563,147 @@ export default function CalendarioPage() {
                                                         {isLive && <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse drop-shadow-[0_0_5px_rgba(244,63,94,0.8)]" />}
                                                     </div>
 
-                                                    <div className="flex items-center justify-between">
-                                                        {/* Team A */}
-                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                            <Avatar 
-                                                                name={match.carrera_a?.nombre || match.equipo_a} 
-                                                                className={cn(
-                                                                    "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-[#17130D] transition-all duration-500 border-2",
-                                                                    match.estado === 'finalizado' && (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0) > (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0)
-                                                                        ? (
-                                                                            match.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]" :
-                                                                            match.disciplinas?.name === 'Baloncesto' ? "border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)]" :
-                                                                            match.disciplinas?.name === 'Voleibol' ? "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]" :
-                                                                            match.disciplinas?.name === 'Tenis' ? "border-lime-500 shadow-[0_0_15px_rgba(132,204,22,0.4)]" :
-                                                                            match.disciplinas?.name === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.4)]" :
-                                                                            match.disciplinas?.name === 'Ajedrez' ? "border-violet-500 shadow-[0_0_15px_rgba(139,92,246,0.4)]" :
-                                                                            match.disciplinas?.name === 'Natación' ? "border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.4)]" :
-                                                                            "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]"
-                                                                        )
-                                                                        : "border-white/10 opacity-60"
-                                                                )} 
-                                                            />
-                                                            <span className={cn(
-                                                                "font-bold text-xs sm:text-sm truncate pr-2",
-                                                                match.estado === 'finalizado' && (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0) > (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0) ? "text-white" : "text-white/40"
-                                                            )}>
-                                                                {match.carrera_a?.nombre || match.equipo_a}
+                                                    {match.marcador_detalle?.tipo === 'carrera' ? (
+                                                        <div className="flex flex-col items-center justify-center w-full py-3 bg-black/20 rounded-xl border border-white/5 mt-2">
+                                                            <h5 className="text-sm font-black text-white uppercase tracking-tight truncate px-4 text-center">
+                                                                {match.marcador_detalle?.distancia}
+                                                            </h5>
+                                                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mt-0.5">
+                                                                {match.marcador_detalle?.estilo}
                                                             </span>
-                                                        </div>
-
-                                                        <div className="px-3 shrink-0 flex flex-col items-center justify-center">
-                                                            {isLive ? (
-                                                                <>
-                                                                    <span className="text-sm font-black text-rose-500 tabular-nums">
-                                                                        {(match.marcador_detalle?.goles_a || match.marcador_detalle?.sets_a || match.marcador_detalle?.total_a || 0)} - {(match.marcador_detalle?.goles_b || match.marcador_detalle?.sets_b || match.marcador_detalle?.total_b || 0)}
-                                                                    </span>
-                                                                    <div className="scale-75 origin-top mt-0 flex items-center">
-                                                                        <PublicLiveTimer detalle={match.marcador_detalle} deporte={match.disciplinas?.name} />
-                                                                    </div>
-                                                                </>
-                                                            ) : match.estado === 'finalizado' ? (
-                                                                <>
-                                                                    <span className="text-sm font-black text-white tabular-nums">
-                                                                        {(match.marcador_detalle?.goles_a ?? match.marcador_detalle?.sets_a ?? match.marcador_detalle?.total_a ?? 0)} - {(match.marcador_detalle?.goles_b ?? match.marcador_detalle?.sets_b ?? match.marcador_detalle?.total_b ?? 0)}
-                                                                    </span>
-                                                                    <span className="text-[8px] font-black text-white/30 uppercase mt-0.5">FINAL</span>
-                                                                </>
+                                                            
+                                                            {match.estado === 'finalizado' ? (
+                                                                <div className="flex flex-col gap-1 w-full px-6 mt-3">
+                                                                    {Array.isArray(match.marcador_detalle?.participantes) && 
+                                                                     [...match.marcador_detalle.participantes]
+                                                                        .sort((a: any, b: any) => Number(a.posicion) - Number(b.posicion))
+                                                                        .slice(0, 3)
+                                                                        .map((p: any, idx: number) => (
+                                                                        <div key={idx} className="flex justify-between items-center bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+                                                                            <div className="flex gap-2 items-center">
+                                                                                <span className={cn(
+                                                                                    "text-[10px] sm:text-xs font-black w-4 text-center",
+                                                                                    p.posicion === 1 ? "text-amber-400" :
+                                                                                    p.posicion === 2 ? "text-slate-300" :
+                                                                                    p.posicion === 3 ? "text-amber-600" : "text-white/50"
+                                                                                )}>#{p.posicion}</span>
+                                                                                <span className="text-[10px] sm:text-xs font-bold text-white/80 truncate max-w-[100px]">{p.nombre}</span>
+                                                                            </div>
+                                                                            <span className="text-[10px] font-mono text-emerald-400 tabular-nums">{p.tiempo}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
                                                             ) : (
-                                                                <span className="text-[10px] font-black text-white/20 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-md">VS</span>
+                                                                <div className="mt-3">
+                                                                    <span className="text-[10px] font-bold text-white/40 bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                                                                        {match.marcador_detalle?.participantes?.length || 0} Participantes
+                                                                    </span>
+                                                                </div>
                                                             )}
                                                         </div>
+                                                    ) : (
+                                                        <div className="flex items-center justify-between mt-2">
+                                                            {/* Team A */}
+                                                            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                                                <Avatar 
+                                                                    name={getDisplayName(match, 'a')} 
+                                                                    src={match.atleta_a?.avatar_url}
+                                                                    className={cn(
+                                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-[#17130D] transition-all duration-500 border-2 shrink-0",
+                                                                        match.estado === 'finalizado' && (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0) > (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0)
+                                                                            ? (
+                                                                                match.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]" :
+                                                                                match.disciplinas?.name === 'Baloncesto' ? "border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)]" :
+                                                                                match.disciplinas?.name === 'Voleibol' ? "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]" :
+                                                                                match.disciplinas?.name === 'Tenis' ? "border-lime-500 shadow-[0_0_15px_rgba(132,204,22,0.4)]" :
+                                                                                match.disciplinas?.name === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.4)]" :
+                                                                                match.disciplinas?.name === 'Ajedrez' ? "border-violet-500 shadow-[0_0_15px_rgba(139,92,246,0.4)]" :
+                                                                                match.disciplinas?.name === 'Natación' ? "border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.4)]" :
+                                                                                "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+                                                                            )
+                                                                            : "border-white/10 opacity-60"
+                                                                    )} 
+                                                                />
+                                                                <div className="flex flex-col flex-1 min-w-0 pr-2">
+                                                                    <span className={cn(
+                                                                        "font-bold text-xs sm:text-sm truncate block w-full",
+                                                                        match.estado === 'finalizado' && (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0) > (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0) ? "text-white" : "text-white/40"
+                                                                    )}>
+                                                                        {getDisplayName(match, 'a')}
+                                                                    </span>
+                                                                    {getCarreraSubtitle(match, 'a') && (
+                                                                        <span className="text-[9px] text-white/40 truncate block w-full font-bold">{getCarreraSubtitle(match, 'a')}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
 
-                                                        {/* Team B */}
-                                                        <div className="flex items-center gap-3 flex-1 min-w-0 flex-row-reverse justify-end">
-                                                            <Avatar 
-                                                                name={match.carrera_b?.nombre || match.equipo_b} 
-                                                                className={cn(
-                                                                    "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-[#17130D] transition-all duration-500 border-2",
-                                                                    match.estado === 'finalizado' && (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0) > (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0)
-                                                                        ? (
-                                                                            match.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]" :
-                                                                            match.disciplinas?.name === 'Baloncesto' ? "border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)]" :
-                                                                            match.disciplinas?.name === 'Voleibol' ? "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]" :
-                                                                            match.disciplinas?.name === 'Tenis' ? "border-lime-500 shadow-[0_0_15px_rgba(132,204,22,0.4)]" :
-                                                                            match.disciplinas?.name === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.4)]" :
-                                                                            match.disciplinas?.name === 'Ajedrez' ? "border-violet-500 shadow-[0_0_15px_rgba(139,92,246,0.4)]" :
-                                                                            match.disciplinas?.name === 'Natación' ? "border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.4)]" :
-                                                                            "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]"
-                                                                        )
-                                                                        : "border-white/10 opacity-60"
+                                                            <div className="px-2 sm:px-3 shrink-0 min-w-[70px] sm:min-w-[90px] flex flex-col items-center justify-center">
+                                                                {isLive ? (
+                                                                    <>
+                                                                        {match.disciplinas?.name === 'Ajedrez' ? (
+                                                                            <span className="text-xs font-black text-rose-500 uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30">VS</span>
+                                                                        ) : (
+                                                                            <span className="text-sm font-black text-rose-500 tabular-nums">
+                                                                                {(match.marcador_detalle?.goles_a || match.marcador_detalle?.sets_a || match.marcador_detalle?.total_a || 0)} - {(match.marcador_detalle?.goles_b || match.marcador_detalle?.sets_b || match.marcador_detalle?.total_b || 0)}
+                                                                            </span>
+                                                                        )}
+                                                                        <div className="scale-75 origin-top mt-0 flex items-center">
+                                                                            <PublicLiveTimer detalle={match.marcador_detalle} deporte={match.disciplinas?.name} />
+                                                                        </div>
+                                                                    </>
+                                                                ) : match.estado === 'finalizado' ? (
+                                                                    <>
+                                                                        {match.disciplinas?.name === 'Ajedrez' ? (
+                                                                            <span className="text-[10px] font-black text-white uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded border border-white/20">
+                                                                                {match.marcador_detalle?.goles_a === match.marcador_detalle?.goles_b ? 'EMPATE' : 'FIN'}
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-sm font-black text-white tabular-nums">
+                                                                                {(match.marcador_detalle?.goles_a ?? match.marcador_detalle?.sets_a ?? match.marcador_detalle?.total_a ?? 0)} - {(match.marcador_detalle?.goles_b ?? match.marcador_detalle?.sets_b ?? match.marcador_detalle?.total_b ?? 0)}
+                                                                            </span>
+                                                                        )}
+                                                                        <span className="text-[8px] font-black text-white/30 uppercase mt-0.5">{match.disciplinas?.name === 'Ajedrez' ? '' : 'FINAL'}</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-md">VS</span>
                                                                 )}
-                                                            />
-                                                            <span className={cn(
-                                                                "font-bold text-xs sm:text-sm truncate pl-2 text-right",
-                                                                match.estado === 'finalizado' && (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0) > (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0) ? "text-white" : "text-white/40"
-                                                            )}>
-                                                                {match.carrera_b?.nombre || match.equipo_b}
-                                                            </span>
+                                                            </div>
+
+                                                            {/* Team B */}
+                                                            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 flex-row-reverse justify-end">
+                                                                <Avatar 
+                                                                    name={getDisplayName(match, 'b')} 
+                                                                    src={match.atleta_b?.avatar_url}
+                                                                    className={cn(
+                                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-[#17130D] transition-all duration-500 border-2 shrink-0",
+                                                                        match.estado === 'finalizado' && (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0) > (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0)
+                                                                            ? (
+                                                                                match.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]" :
+                                                                                match.disciplinas?.name === 'Baloncesto' ? "border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)]" :
+                                                                                match.disciplinas?.name === 'Voleibol' ? "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]" :
+                                                                                match.disciplinas?.name === 'Tenis' ? "border-lime-500 shadow-[0_0_15px_rgba(132,204,22,0.4)]" :
+                                                                                match.disciplinas?.name === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.4)]" :
+                                                                                match.disciplinas?.name === 'Ajedrez' ? "border-violet-500 shadow-[0_0_15px_rgba(139,92,246,0.4)]" :
+                                                                                match.disciplinas?.name === 'Natación' ? "border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.4)]" :
+                                                                                "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+                                                                            )
+                                                                            : "border-white/10 opacity-60"
+                                                                    )}
+                                                                />
+                                                                <div className="flex flex-col flex-1 min-w-0 items-end text-right pl-2">
+                                                                    <span className={cn(
+                                                                        "font-bold text-xs sm:text-sm truncate block w-full",
+                                                                        match.estado === 'finalizado' && (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0) > (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0) ? "text-white" : "text-white/40"
+                                                                    )}>
+                                                                        {getDisplayName(match, 'b')}
+                                                                    </span>
+                                                                    {getCarreraSubtitle(match, 'b') && (
+                                                                        <span className="text-[9px] text-white/40 truncate block w-full font-bold">{getCarreraSubtitle(match, 'b')}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </Link>

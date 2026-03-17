@@ -129,40 +129,59 @@ export const PredictionCard = ({
       </div>
 
       <div className="relative flex items-center justify-between mb-8 px-2">
-        <div className="flex flex-col items-center flex-1 max-w-[100px]">
-          <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center text-xl font-black mb-3 shadow-2xl group-hover:scale-105 transition-transform duration-500">
-            {(match.carrera_a?.nombre || match.equipo_a).substring(0, 2).toUpperCase()}
+        {match.marcador_detalle?.tipo === 'carrera' ? (
+          <div className="flex flex-col items-center justify-center w-full py-2">
+            <span className="text-3xl font-black text-white text-center tracking-tighter">
+              {match.marcador_detalle?.distancia} {match.marcador_detalle?.estilo}
+            </span>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2 block shadow-sm">
+              Prueba de Velocidad
+            </span>
           </div>
-          <p className="text-[11px] font-black text-white text-center leading-tight uppercase tracking-tight">
-            {match.carrera_a?.nombre || match.equipo_a}
-          </p>
-        </div>
-
-        <div className="flex flex-col items-center justify-center min-w-[80px]">
-          {(isLive || isFinished) ? (
-            <div className="space-y-1">
-              <div className="text-3xl font-black tabular-nums font-mono tracking-tighter text-white flex items-center gap-2">
-                <span>{scoreInfo.scoreA}</span>
-                <span className="opacity-20">:</span>
-                <span>{scoreInfo.scoreB}</span>
+        ) : (
+          <>
+            <div className="flex flex-col items-center flex-1 max-w-[100px]">
+              <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center text-xl font-black mb-3 shadow-2xl group-hover:scale-105 transition-transform duration-500">
+                {(match.carrera_a?.nombre || match.equipo_a).substring(0, 2).toUpperCase()}
               </div>
-              <p className="text-[8px] font-black text-center text-slate-500 uppercase tracking-[0.2em]">Marcador</p>
+              <p className="text-[11px] font-black text-white text-center leading-tight uppercase tracking-tight">
+                {match.carrera_a?.nombre || match.equipo_a}
+              </p>
             </div>
-          ) : (
-            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center shadow-inner mb-4">
-              <span className="text-xs font-black text-white/20 italic">VS</span>
-            </div>
-          )}
-        </div>
 
-        <div className="flex flex-col items-center flex-1 max-w-[100px]">
-          <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center text-xl font-black mb-3 shadow-2xl group-hover:scale-105 transition-transform duration-500">
-            {(match.carrera_b?.nombre || match.equipo_b).substring(0, 2).toUpperCase()}
-          </div>
-          <p className="text-[11px] font-black text-white text-center leading-tight uppercase tracking-tight">
-            {match.carrera_b?.nombre || match.equipo_b}
-          </p>
-        </div>
+            <div className="flex flex-col items-center justify-center min-w-[80px]">
+              {(isLive || isFinished) ? (
+                <div className="space-y-1">
+                  <div className="text-3xl font-black tabular-nums font-mono tracking-tighter text-white flex items-center gap-2 justify-center">
+                    {match.disciplinas?.name === 'Ajedrez' ? (
+                      <span className="text-2xl">{isFinished ? 'FIN' : 'VS'}</span>
+                    ) : (
+                      <>
+                        <span>{scoreInfo.scoreA}</span>
+                        <span className="opacity-20">:</span>
+                        <span>{scoreInfo.scoreB}</span>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-[8px] font-black text-center text-slate-500 uppercase tracking-[0.2em]">{match.disciplinas?.name === 'Ajedrez' ? 'Estado' : 'Marcador'}</p>
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center shadow-inner mb-4">
+                  <span className="text-xs font-black text-white/20 italic">VS</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col items-center flex-1 max-w-[100px]">
+              <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center text-xl font-black mb-3 shadow-2xl group-hover:scale-105 transition-transform duration-500">
+                {(match.carrera_b?.nombre || match.equipo_b).substring(0, 2).toUpperCase()}
+              </div>
+              <p className="text-[11px] font-black text-white text-center leading-tight uppercase tracking-tight">
+                {match.carrera_b?.nombre || match.equipo_b}
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="bg-zinc-900/60 backdrop-blur-md rounded-[2rem] border border-white/5 p-4 shadow-inner relative overflow-hidden">

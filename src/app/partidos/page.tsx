@@ -122,10 +122,9 @@ export default function PartidosPage() {
                 <header className="mb-12 flex flex-col items-center text-center gap-4">
                     <div className="animate-in fade-in zoom-in duration-1000">
                         <div className="flex items-center justify-center gap-2 mb-2">
-                             <div className="p-1.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+                             <div className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]">
                                 <Activity size={20} />
                             </div>
-                            <h4 className="text-[10px] font-black text-red-500 uppercase tracking-[0.4em]">Temporada Regular</h4>
                             <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em]">Temporada Regular</h4>
                         </div>
                         <h1 className="text-5xl sm:text-6xl font-black tracking-tighter uppercase leading-none">
@@ -281,9 +280,47 @@ function UnifiedCard({
                     </div>
 
                     {/* Content */}
+                    {partido.marcador_detalle?.tipo === 'carrera' ? (
+                        /* ── RACE layout (Natación) ── */
+                        <div className="flex-1 flex flex-col items-center justify-center gap-3 py-2 text-center w-full min-w-0">
+                            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tighter truncate w-full px-4">
+                                {partido.marcador_detalle?.distancia} {partido.marcador_detalle?.estilo}
+                            </h3>
+                            <div className="flex flex-col items-center gap-1.5">
+                                {partido.estado === 'finalizado' ? (
+                                    <div className="flex flex-col gap-1">
+                                        {(['🥇', '🥈', '🥉'] as const).map((medal, i) => {
+                                            const p = (partido.marcador_detalle?.participantes || [])
+                                                .slice()
+                                                .sort((a: any, b: any) => (a.posicion ?? 99) - (b.posicion ?? 99))[i];
+                                            if (!p) return null;
+                                            return (
+                                                <span key={i} className="text-[11px] font-black text-white/70 tracking-tight">
+                                                    {medal} {p.nombre} {p.tiempo ? `• ${p.tiempo}` : ''}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <span className="text-sm font-bold text-cyan-400 uppercase tracking-widest">
+                                        {(partido.marcador_detalle?.participantes || []).length} PARTICIPANTES
+                                    </span>
+                                )}
+                                <span className={cn(
+                                    "text-[9px] font-black tracking-[0.2em] uppercase mt-1",
+                                    genero === 'femenino' ? "text-pink-500/80" :
+                                    genero === 'mixto' ? "text-purple-500/80" :
+                                    "text-blue-500/80"
+                                )}>
+                                    {genero}
+                                </span>
+                            </div>
+                        </div>
+                    ) : (
+                    /* ── NORMAL / AJEDREZ layout ── */
                     <div className="flex-1 grid grid-cols-[1.2fr_auto_1.2fr] items-center gap-6 py-1">
                         {/* Team A */}
-                        <div className="flex flex-col items-center gap-2 text-center relative">
+                        <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
                             <Avatar 
                                 name={getDisplayName(partido, 'a')} 
                                 src={partido.atleta_a?.avatar_url}
@@ -301,7 +338,7 @@ function UnifiedCard({
                                     "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110"
                                 ) : "border-white/10 grayscale-[0.5] opacity-80"
                             )} />
-                            <span className={cn("text-[11px] font-black uppercase tracking-tight leading-tight line-clamp-2 max-w-[90px]", (winnerA || (sportName === 'Ajedrez' && isChessDraw)) ? "text-white" : "text-white/40")}>
+                            <span className={cn("text-[10px] sm:text-[11px] font-black uppercase tracking-tighter leading-tight line-clamp-2 sm:line-clamp-3 w-full px-1", (winnerA || (sportName === 'Ajedrez' && isChessDraw)) ? "text-white" : "text-white/40")}>
                                 {getDisplayName(partido, 'a')}
                             </span>
                             {/* Special Badge for Chess Winner */}
@@ -320,11 +357,13 @@ function UnifiedCard({
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center">
-                                    <div className="flex items-center justify-center gap-2 font-black text-5xl text-white tracking-tighter tabular-nums drop-shadow-lg mb-1">
-                                        <span className={(winnerB && sportName !== 'Ajedrez') ? "opacity-30" : ""}>{scoreDisplay?.a}</span>
-                                        <span className="text-white/20 text-3xl -mt-1">:</span>
-                                        <span className={(winnerA && sportName !== 'Ajedrez') ? "opacity-30" : ""}>{scoreDisplay?.b}</span>
-                                    </div>
+                                    {sportName !== 'Ajedrez' && (
+                                        <div className="flex items-center justify-center gap-2 font-black text-5xl text-white tracking-tighter tabular-nums drop-shadow-lg mb-1">
+                                            <span className={(winnerB && sportName !== 'Ajedrez') ? "opacity-30" : ""}>{scoreDisplay?.a}</span>
+                                            <span className="text-white/20 text-3xl -mt-1">:</span>
+                                            <span className={(winnerA && sportName !== 'Ajedrez') ? "opacity-30" : ""}>{scoreDisplay?.b}</span>
+                                        </div>
+                                    )}
                                     {/* Draw Tag for Chess */}
                                     {sportName === 'Ajedrez' && isChessDraw && (
                                         <div className="bg-white/5 text-slate-300 border border-white/10 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] shadow-sm mb-2">
@@ -345,7 +384,7 @@ function UnifiedCard({
                         </div>
 
                         {/* Team B */}
-                        <div className="flex flex-col items-center gap-2 text-center relative">
+                        <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
                             <Avatar 
                                 name={getDisplayName(partido, 'b')} 
                                 src={partido.atleta_b?.avatar_url}
@@ -363,7 +402,7 @@ function UnifiedCard({
                                     "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110"
                                 ) : "border-white/10 grayscale-[0.5] opacity-80"
                             )} />
-                            <span className={cn("text-[11px] font-black uppercase tracking-tight leading-tight line-clamp-2 max-w-[90px]", (winnerB || (sportName === 'Ajedrez' && isChessDraw)) ? "text-white" : "text-white/40")}>
+                            <span className={cn("text-[10px] sm:text-[11px] font-black uppercase tracking-tighter leading-tight line-clamp-2 sm:line-clamp-3 w-full px-1", (winnerB || (sportName === 'Ajedrez' && isChessDraw)) ? "text-white" : "text-white/40")}>
                                 {getDisplayName(partido, 'b')}
                             </span>
                             {/* Special Badge for Chess Winner */}
@@ -374,6 +413,7 @@ function UnifiedCard({
                             )}
                         </div>
                     </div>
+                    )}
 
                     {/* Footer */}
                     <div className={cn(

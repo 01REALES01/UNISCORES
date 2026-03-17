@@ -8,6 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { LUGARES_OLIMPICOS, SPORT_EMOJI } from "@/lib/constants";
+import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
 
 // Coordenadas ajustadas al mapa generado (Dark Blueprint):
 const VENUE_COORDINATES: Record<string, { x: number; y: number; label: string }> = {
@@ -29,6 +30,8 @@ type Match = {
     lugar: string;
     marcador_detalle?: any;
     fecha?: string;
+    atleta_a?: any;
+    atleta_b?: any;
 };
 
 interface CampusMapInteractiveProps {
@@ -254,20 +257,35 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                                                                         </span>
                                                                     </div>
 
-                                                                    <div className="flex justify-between items-center">
-                                                                        <div className="text-center flex-1">
-                                                                            <p className="text-xs font-bold text-white truncate max-w-[80px] mx-auto" title={m.carrera_a?.nombre || m.equipo_a}>{m.delegacion_a || m.carrera_a?.nombre || m.equipo_a}</p>
+                                                                    {m.marcador_detalle?.tipo === 'carrera' ? (
+                                                                        <div className="flex flex-col items-center justify-center py-2 relative z-10 w-full">
+                                                                            <span className="text-xl font-black text-white px-2 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+                                                                                {m.marcador_detalle?.distancia} {m.marcador_detalle?.estilo}
+                                                                            </span>
+                                                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">Prueba de Velocidad</span>
                                                                         </div>
-                                                                        <div className="px-2 font-black text-lg text-[#FFC000] font-mono tabular-nums">
-                                                                            {m.estado === 'en_vivo'
-                                                                                ? `${(m.marcador_detalle?.goles_a || m.marcador_detalle?.total_a || m.marcador_detalle?.sets_a || 0)} - ${(m.marcador_detalle?.goles_b || m.marcador_detalle?.total_b || m.marcador_detalle?.sets_b || 0)}`
-                                                                                : 'VS'
-                                                                            }
+                                                                    ) : (
+                                                                        <div className="flex justify-between items-center">
+                                                                            <div className="flex flex-col items-center flex-1 min-w-0">
+                                                                                <p className="text-xs font-bold text-white truncate w-full text-center" title={getDisplayName(m, 'a')}>{getDisplayName(m, 'a')}</p>
+                                                                                {getCarreraSubtitle(m, 'a') && <p className="text-[9px] text-white/50 truncate w-full text-center uppercase font-bold">{getCarreraSubtitle(m, 'a')}</p>}
+                                                                            </div>
+                                                                            <div className="px-2 font-black text-lg text-[#FFC000] font-mono tabular-nums shrink-0">
+                                                                                {m.estado === 'en_vivo'
+                                                                                    ? m.disciplinas?.name === 'Ajedrez' 
+                                                                                        ? <span className="text-xs">VS</span> 
+                                                                                        : `${(m.marcador_detalle?.goles_a || m.marcador_detalle?.total_a || m.marcador_detalle?.sets_a || 0)} - ${(m.marcador_detalle?.goles_b || m.marcador_detalle?.total_b || m.marcador_detalle?.sets_b || 0)}`
+                                                                                    : m.disciplinas?.name === 'Ajedrez' && m.estado === 'finalizado' 
+                                                                                        ? <span className="text-xs">FIN</span> 
+                                                                                        : 'VS'
+                                                                                }
+                                                                            </div>
+                                                                            <div className="flex flex-col items-center flex-1 min-w-0">
+                                                                                <p className="text-xs font-bold text-white truncate w-full text-center" title={getDisplayName(m, 'b')}>{getDisplayName(m, 'b')}</p>
+                                                                                {getCarreraSubtitle(m, 'b') && <p className="text-[9px] text-white/50 truncate w-full text-center uppercase font-bold">{getCarreraSubtitle(m, 'b')}</p>}
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="text-center flex-1">
-                                                                            <p className="text-xs font-bold text-white truncate max-w-[80px] mx-auto" title={m.carrera_b?.nombre || m.equipo_b}>{m.delegacion_b || m.carrera_b?.nombre || m.equipo_b}</p>
-                                                                        </div>
-                                                                    </div>
+                                                                    )}
 
                                                                     <div className="mt-2 flex items-center justify-center gap-1 opacity-50 text-[10px] uppercase tracking-widest">
                                                                         <span>{m.disciplinas.emoji || SPORT_EMOJI[m.disciplinas.name] || '🏅'} {m.disciplinas.name}</span>

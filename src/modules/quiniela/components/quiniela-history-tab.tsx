@@ -118,15 +118,34 @@ export function QuinielaHistoryTab({ predictions, matches }: QuinielaHistoryTabP
                                 </div>
 
                                 <div className="flex items-center justify-between gap-4">
-                                    <div className="flex-1 text-center">
-                                        <div className="w-10 h-10 mx-auto bg-white/5 rounded-xl flex items-center justify-center font-black mb-1">{(m.carrera_a?.nombre || m.equipo_a).substring(0, 2)}</div>
-                                        <p className="text-[10px] font-bold truncate">{m.carrera_a?.nombre || m.equipo_a}</p>
-                                    </div>
-                                    <div className="text-lg font-black tabular-nums">{scoreInfo.scoreA} : {scoreInfo.scoreB}</div>
-                                    <div className="flex-1 text-center">
-                                        <div className="w-10 h-10 mx-auto bg-white/5 rounded-xl flex items-center justify-center font-black mb-1">{(m.carrera_b?.nombre || m.equipo_b).substring(0, 2)}</div>
-                                        <p className="text-[10px] font-bold truncate">{m.carrera_b?.nombre || m.equipo_b}</p>
-                                    </div>
+                                    {m.marcador_detalle?.tipo === 'carrera' ? (
+                                        <div className="flex flex-col items-center justify-center w-full">
+                                            <span className="text-lg font-black text-white text-center tracking-tighter">
+                                                {m.marcador_detalle?.distancia} {m.marcador_detalle?.estilo}
+                                            </span>
+                                            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1 block">
+                                                Prueba
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex-1 text-center">
+                                                <div className="w-10 h-10 mx-auto bg-white/5 rounded-xl flex items-center justify-center font-black mb-1 transition-transform group-hover:scale-105">{(m.carrera_a?.nombre || m.equipo_a).substring(0, 2).toUpperCase()}</div>
+                                                <p className="text-[10px] font-bold truncate">{m.carrera_a?.nombre || m.equipo_a}</p>
+                                            </div>
+                                            <div className="text-lg font-black tabular-nums">
+                                                {m.disciplinas?.name === 'Ajedrez' ? (
+                                                    <span className="text-sm">{isFinished ? 'FIN' : 'VS'}</span>
+                                                ) : (
+                                                    `${scoreInfo.scoreA} : ${scoreInfo.scoreB}`
+                                                )}
+                                            </div>
+                                            <div className="flex-1 text-center">
+                                                <div className="w-10 h-10 mx-auto bg-white/5 rounded-xl flex items-center justify-center font-black mb-1 transition-transform group-hover:scale-105">{(m.carrera_b?.nombre || m.equipo_b).substring(0, 2).toUpperCase()}</div>
+                                                <p className="text-[10px] font-bold truncate">{m.carrera_b?.nombre || m.equipo_b}</p>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
 
                                 <div className="mt-4 p-2.5 rounded-xl bg-black/20 border border-white/5 text-center">

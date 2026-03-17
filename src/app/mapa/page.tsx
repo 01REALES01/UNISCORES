@@ -22,6 +22,8 @@ import { LUGARES_OLIMPICOS } from "@/lib/constants";
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
+import { useMatches } from "@/hooks/use-matches";
 
 const FACILITIES_INFO = [
     {
@@ -52,40 +54,14 @@ const FACILITIES_INFO = [
 
 export default function CampusMapPage() {
     const { user, profile, isStaff } = useAuth();
-    const [loading, setLoading] = useState(true);
-    const [matches, setMatches] = useState<any[]>([]);
+    const { matches, loading: matchesLoading } = useMatches();
     const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
 
     const activeFacility = useMemo(() => 
         FACILITIES_INFO.find(f => f.mapVenue === selectedVenue),
     [selectedVenue]);
 
-    useEffect(() => {
-        const fetchMatches = async () => {
-            setLoading(true);
-
-            const { data, error } = await safeQuery(
-                supabase.from('partidos').select(`*, disciplinas ( name, icon )`).order('fecha', { ascending: false }).limit(50),
-                'mapa-matches'
-            );
-
-            if (data) {
-                console.log("🔍 [DEBUG MAPA] Partidos RAW:", data);
-                setMatches(data);
-            }
-            setLoading(false);
-        };
-
-        fetchMatches();
-
-        // Realtime updates
-        const subscription = supabase
-            .channel('public:mapa')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => fetchMatches())
-            .subscribe();
-
-        return () => { supabase.removeChannel(subscription); };
-    }, []);
+    const loading = matchesLoading;
 
     return (
         <div className="min-h-screen bg-black text-white relative overflow-hidden">
@@ -331,11 +307,29 @@ export default function CampusMapPage() {
                                                                 {new Date(currentOrNext.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                             </div>
                                                         </div>
-                                                        <div className="text-lg font-black text-white tracking-tight leading-tight group-hover/match:text-[#FFC000] transition-colors">
-                                                            {currentOrNext.delegacion_a || currentOrNext.equipo_a} 
-                                                            <span className="text-zinc-500 mx-2 text-sm italic">vs</span> 
-                                                            {currentOrNext.delegacion_b || currentOrNext.equipo_b}
-                                                        </div>
+                                                        {currentOrNext.marcador_detalle?.tipo === 'carrera' ? (
+                                                            <div className="text-xl font-black text-white text-center py-2 relative z-10 w-full">
+                                                                <span className="whitespace-nowrap overflow-hidden text-ellipsis max-w-full block">
+                                                                    {currentOrNext.marcador_detalle?.distancia} {currentOrNext.marcador_detalle?.estilo}
+                                                                </span>
+                                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1 block">Prueba de Velocidad</span>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="text-lg font-black text-white tracking-tight leading-tight group-hover/match:text-[#FFC000] transition-colors line-clamp-2">
+                                                                    {getDisplayName(currentOrNext, 'a')} 
+                                                                    <span className="text-zinc-500 mx-2 text-sm italic">
+                                                                        {currentOrNext.disciplinas?.name === 'Ajedrez' ? ' ' : 'vs'}
+                                                                    </span> 
+                                                                    {getDisplayName(currentOrNext, 'b')}
+                                                                </div>
+                                                                {(getCarreraSubtitle(currentOrNext, 'a') || getCarreraSubtitle(currentOrNext, 'b')) && (
+                                                                    <div className="mt-2 text-xs text-zinc-500 font-bold truncate">
+                                                                        {getCarreraSubtitle(currentOrNext, 'a') || getCarreraSubtitle(currentOrNext, 'b')}
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
                                                     </Link>
                                                 </div>
 
@@ -350,12 +344,25 @@ export default function CampusMapPage() {
                                                                     href={`/partido/${m.id}`}
                                                                     className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5"
                                                                 >
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-xs font-bold text-white/80 line-clamp-1">
-                                                                            {m.equipo_a} vs {m.equipo_b}
-                                                                        </span>
-                                                                        <span className="text-[10px] font-medium text-zinc-500">{m.disciplinas?.name}</span>
-                                                                    </div>
+                                                                    {m.marcador_detalle?.tipo === 'carrera' ? (
+                                                                        <div className="flex flex-col flex-1 min-w-0 pr-3">
+                                                                            <span className="text-xs font-bold text-white/80 line-clamp-1">
+                                                                                {m.marcador_detalle?.distancia} {m.marcador_detalle?.estilo}
+                                                                            </span>
+                                                                            <span className="text-[10px] font-medium text-zinc-500 truncate">
+                                                                                {m.disciplinas?.name} • Prueba
+                                                                            </span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex flex-col flex-1 min-w-0 pr-3">
+                                                                            <span className="text-xs font-bold text-white/80 line-clamp-1">
+                                                                                {getDisplayName(m, 'a')} {m.disciplinas?.name === 'Ajedrez' ? '-' : 'vs'} {getDisplayName(m, 'b')}
+                                                                            </span>
+                                                                            <span className="text-[10px] font-medium text-zinc-500 truncate">
+                                                                                {m.disciplinas?.name} {getCarreraSubtitle(m, 'a') ? `• ${getCarreraSubtitle(m, 'a')}` : ''}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
                                                                     <span className="font-mono text-[10px] text-zinc-400">
                                                                         {new Date(m.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                                     </span>
