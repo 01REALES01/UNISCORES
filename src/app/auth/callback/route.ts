@@ -70,7 +70,9 @@ export async function GET(request: NextRequest) {
                         id: user.id,
                         email: user.email || '',
                         full_name: fullName,
-                        role: 'public',
+                        roles: ['public'],
+                        is_public: true,
+                        points: 0,
                     }, { onConflict: 'id' })
 
                 if (insertError) {
