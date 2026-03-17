@@ -50,10 +50,10 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
             <header className="sticky top-0 z-50 w-full backdrop-blur-xl border-b border-white/5 bg-[#0a0805]/80">
                 <div className="flex h-16 sm:h-18 items-center px-4 sm:px-6 w-full max-w-7xl mx-auto gap-4">
                     
-                    {/* 1. MOBILE: Left Section (Menu + User) | DESKTOP: Right (User) */}
-                    <div className="flex-1 flex items-center justify-start lg:justify-end order-1 lg:order-3 gap-2">
-                        {/* Mobile Menu Toggle (Left on Mobile) */}
-                        <div className="flex lg:hidden items-center">
+                    {/* 1. LEFT: Menu + Logo (Mobile: Start, Desktop: Start) */}
+                    <div className="flex-1 flex items-center justify-start order-1 gap-4">
+                        {/* Mobile Menu Toggle */}
+                        <div className="flex lg:hidden items-center mr-1">
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -64,7 +64,71 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                             </Button>
                         </div>
 
-                        {/* User / Login Section */}
+                        {/* Logo (Visible on all views now) */}
+                        <Link href="/">
+                            <div className="flex items-center gap-2 sm:gap-5 group cursor-pointer relative">
+                                <div className="relative flex-shrink-0 flex items-center justify-center transition-all duration-500 group-hover:scale-105">
+                                    <div className="absolute inset-0 bg-red-600/30 rounded-full blur-[20px] sm:blur-[30px] opacity-20 group-hover:opacity-50 animate-pulse duration-[4s] transition-opacity" />
+                                    <Image
+                                        src="/uninorte_logo.png"
+                                        alt="Uninorte"
+                                        width={80}
+                                        height={80}
+                                        className="h-10 sm:h-18 w-auto object-contain flex-shrink-0 relative z-10 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] group-hover:drop-shadow-[0_0_15px_rgba(255,0,0,0.5)] transition-all duration-500"
+                                        priority
+                                    />
+                                </div>
+                                <div className="hidden sm:flex flex-col justify-center">
+                                    <h1 className="font-black text-[16px] sm:text-[24px] tracking-tighter leading-none text-white transition-all duration-500 group-hover:text-red-500">
+                                        OLIMPIADAS
+                                    </h1>
+                                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1.5">
+                                        <span className="h-px w-2 sm:w-4 bg-red-600/50" />
+                                        <p className="text-[8px] sm:text-[11px] font-black text-red-600 tracking-[0.3em] uppercase leading-none drop-shadow-[0_0_8px_rgba(220,38,38,0.4)] transition-all duration-500 group-hover:text-white">
+                                            UNINORTE 2026
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </Link>
+                    </div>
+
+                    {/* 2. CENTER: Navigation Dock (Hidden on mobile) */}
+                    <div className="hidden lg:flex flex-shrink-0 items-center justify-center order-2">
+                        <ExpandableTabs
+                            activeColor="text-red-500"
+                            activeItem={getActiveIndex()}
+                            alwaysShowLabels={false}
+                            tabs={[
+                                { title: "Inicio", icon: HomeIcon },
+                                { title: "Calendario", icon: CalendarIcon },
+                                { title: "Partidos", icon: Gamepad2 },
+                                { title: "Noticias", icon: Newspaper },
+                                { title: "Mapa", icon: MapPin },
+                                { title: "Medallería", icon: Trophy },
+                                { title: "Acierta y Gana", icon: BarChart3 },
+                                { title: "Clasificación", icon: Swords },
+                                { type: "separator" },
+                                { title: "TV", icon: Tv },
+                                ...(isStaff ? [{ title: "Admin", icon: Shield }] : []),
+                            ]}
+                            onChange={(index) => {
+                                if (index === 0) router.push('/');
+                                if (index === 1) router.push('/calendario');
+                                if (index === 2) router.push('/partidos');
+                                if (index === 3) router.push('/noticias');
+                                if (index === 4) router.push('/mapa');
+                                if (index === 5) router.push('/medallero');
+                                if (index === 6) router.push('/quiniela');
+                                if (index === 7) router.push('/clasificacion');
+                                if (index === 9) window.open('/tv', '_blank');
+                                if (index === 10 && isStaff) router.push('/admin');
+                            }}
+                        />
+                    </div>
+
+                    {/* 3. RIGHT: User / Login Section (Mobile: End, Desktop: End) */}
+                    <div className="flex-1 flex items-center justify-end order-3 gap-2">
                         <div className="flex items-center gap-2">
                             {!user ? (
                                 <Link href="/login">
@@ -107,7 +171,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
 
                                     {/* Profile Dropdown */}
                                     {profileMenuOpen && (
-                                        <div className="absolute left-0 lg:left-auto lg:right-0 top-full mt-3 w-64 bg-[#0F0D0A]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-4 duration-300 origin-top-left lg:origin-top-right">
+                                        <div className="absolute right-0 top-full mt-3 w-64 bg-[#0F0D0A]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-4 duration-300 origin-top-right">
                                             <div className="p-4 bg-gradient-to-br from-white/[0.03] to-transparent border-b border-white/5">
                                                 <p className="text-sm font-black text-white truncate drop-shadow-sm">{profile?.full_name || user.email?.split('@')[0]}</p>
                                                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5 truncate">{user.email}</p>
@@ -160,72 +224,6 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                         </div>
                     </div>
 
-                    {/* 2. Center: Navigation Dock (Hidden on mobile) */}
-                    <div className="hidden lg:flex flex-shrink-0 items-center justify-center order-2">
-                        <ExpandableTabs
-                            activeColor="text-red-500"
-                            activeItem={getActiveIndex()}
-                            alwaysShowLabels={false}
-                            tabs={[
-                                { title: "Inicio", icon: HomeIcon },
-                                { title: "Calendario", icon: CalendarIcon },
-                                { title: "Partidos", icon: Gamepad2 },
-                                { title: "Noticias", icon: Newspaper },
-                                { title: "Mapa", icon: MapPin },
-                                { title: "Medallería", icon: Trophy },
-                                { title: "Acierta y Gana", icon: BarChart3 },
-                                { title: "Clasificación", icon: Swords },
-                                { type: "separator" },
-                                { title: "TV", icon: Tv },
-                                ...(isStaff ? [{ title: "Admin", icon: Shield }] : []),
-                            ]}
-                            onChange={(index) => {
-                                if (index === 0) router.push('/');
-                                if (index === 1) router.push('/calendario');
-                                if (index === 2) router.push('/partidos');
-                                if (index === 3) router.push('/noticias');
-                                if (index === 4) router.push('/mapa');
-                                if (index === 5) router.push('/medallero');
-                                if (index === 6) router.push('/quiniela');
-                                if (index === 7) router.push('/clasificacion');
-                                if (index === 9) window.open('/tv', '_blank');
-                                if (index === 10 && isStaff) router.push('/admin');
-                            }}
-                        />
-                    </div>
-
-                    {/* 3. MOBILE: Right Section (Logo) | DESKTOP: Left Section (Logo) */}
-                    <div className="flex-1 flex items-center justify-end lg:justify-start order-2 lg:order-1">
-                        <Link href="/">
-                            <div className="flex items-center gap-2 sm:gap-5 group cursor-pointer relative">
-                                {/* Logo Wrapper */}
-                                <div className="relative flex-shrink-0 flex items-center justify-center transition-all duration-500 group-hover:scale-105">
-                                    <div className="absolute inset-0 bg-red-600/30 rounded-full blur-[20px] sm:blur-[30px] opacity-20 group-hover:opacity-50 animate-pulse duration-[4s] transition-opacity" />
-                                    <Image
-                                        src="/uninorte_logo.png"
-                                        alt="Uninorte"
-                                        width={80}
-                                        height={80}
-                                        className="h-10 sm:h-18 w-auto object-contain flex-shrink-0 relative z-10 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] group-hover:drop-shadow-[0_0_15px_rgba(255,0,0,0.5)] transition-all duration-500"
-                                        priority
-                                    />
-                                </div>
-
-                                {/* Text labels - Only on Desktop or slightly larger screens */}
-                                <div className="hidden sm:flex flex-col justify-center">
-                                    <h1 className="font-black text-[16px] sm:text-[24px] tracking-tighter leading-none text-white transition-all duration-500 group-hover:text-red-500">
-                                        OLIMPIADAS
-                                    </h1>
-                                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1.5">
-                                        <span className="h-px w-2 sm:w-4 bg-red-600/50" />
-                                        <p className="text-[8px] sm:text-[11px] font-black text-red-600 tracking-[0.3em] uppercase leading-none drop-shadow-[0_0_8px_rgba(220,38,38,0.4)] transition-all duration-500 group-hover:text-white">
-                                            UNINORTE 2026
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </Link>
-                    </div>
                 </div>
             </header>
 

@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Edit3 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export function WelcomeNotice() {
+    const router = useRouter();
     const [isVisible, setIsVisible] = useState(false);
     const [userCount, setUserCount] = useState<number | null>(null);
     const DURATION = 10000; // 10 segundos para leer bien
@@ -63,8 +65,12 @@ export function WelcomeNotice() {
                         animate={{ y: 0, opacity: 1, scale: 1, rotateX: 0 }}
                         exit={{ y: 20, opacity: 0, scale: 0.9, filter: "blur(10px)" }}
                         transition={{ type: "spring", damping: 20, stiffness: 100 }}
-                        className="relative w-full max-w-sm"
+                        className="relative w-full max-w-sm cursor-pointer"
                         style={{ perspective: "1000px" }}
+                        onClick={() => {
+                            handleClose();
+                            router.push('/perfil');
+                        }}
                     >
                         <div className="relative group overflow-hidden rounded-[3rem] border border-white/20 bg-zinc-900/90 backdrop-blur-3xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
                             {/* Top Accent Line */}
@@ -79,7 +85,7 @@ export function WelcomeNotice() {
                                         <Edit3 size={32} strokeWidth={2.5} />
                                     </div>
                                     <button 
-                                        onClick={handleClose}
+                                        onClick={(e) => { e.stopPropagation(); handleClose(); }}
                                         className="p-3 rounded-2xl text-white/20 hover:text-white hover:bg-white/10 transition-all active:scale-90"
                                     >
                                         <X size={24} strokeWidth={3} />
