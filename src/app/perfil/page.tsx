@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/use-profile";
 import { MainNavbar } from "@/components/main-navbar";
 import { supabase } from "@/lib/supabase";
-import { Button, Input, Avatar, Badge } from "@/components/ui-primitives";
+import { Button, Input, Avatar } from "@/components/ui-primitives";
 import { toast } from "sonner";
 import {
     User,
@@ -23,13 +23,15 @@ import {
     ChevronRight,
     Loader2,
     CheckCircle2,
-    GraduationCap
+    GraduationCap,
+    Users
 } from "lucide-react";
+import { FriendsList } from "@/modules/users/components/friends-list";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
 
-type ProfileTab = 'general' | 'stats' | 'quiniela';
+type ProfileTab = 'general' | 'stats' | 'quiniela' | 'amigos';
 
 export default function PerfilPage() {
     const { user, profile, isDeportista, isStaff, loading: authLoading, signOut } = useAuth();
@@ -45,7 +47,6 @@ export default function PerfilPage() {
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [carreras, setCarreras] = useState<any[]>([]);
-    const [disciplinas, setDisciplinas] = useState<any[]>([]);
     const [selectedCarreras, setSelectedCarreras] = useState<number[]>([]);
     const [searchCarrera, setSearchCarrera] = useState("");
     const [loadingCarreras, setLoadingCarreras] = useState(false);
@@ -56,7 +57,6 @@ export default function PerfilPage() {
         setIsEditing(false);
 
         fetchCarreras();
-        fetchDisciplinas();
 
         if (profile) {
             setFullName(profile.full_name || "");
@@ -95,15 +95,6 @@ export default function PerfilPage() {
             setFetchError("Error de conexión al cargar carreras.");
         } finally {
             setLoadingCarreras(false);
-        }
-    };
-
-    const fetchDisciplinas = async () => {
-        try {
-            const { data, error } = await supabase.from('disciplinas').select('id, name');
-            if (data) setDisciplinas(data);
-        } catch (err) {
-            console.error("Error fetching disciplinas:", err);
         }
     };
 
@@ -166,57 +157,77 @@ export default function PerfilPage() {
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <main className="max-w-4xl mx-auto px-4 pt-10 pb-20 relative z-10">
-                {/* Header Profile Section */}
-                <div className="flex flex-col md:flex-row items-center gap-8 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="relative group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-orange-500 rounded-[2.5rem] blur-xl opacity-30 group-hover:opacity-50 transition-opacity" />
-                        <div className="relative">
+                {/* ─── HERO HEADER ─── */}
+                <div className="relative mb-10 animate-in fade-in duration-700">
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-600/6 via-transparent to-orange-500/4 rounded-[2.5rem]" />
+                    <div className="absolute top-0 left-0 w-80 h-80 bg-red-600/5 blur-[100px] rounded-full pointer-events-none" />
+
+                    <div className="relative flex flex-col sm:flex-row gap-7 p-6 md:p-10">
+                        {/* Avatar */}
+                        <div className="relative self-start mx-auto sm:mx-0 flex-shrink-0 group">
+                            <div className="absolute -inset-2 bg-gradient-to-br from-red-600 to-orange-500 rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-700" />
                             <Avatar
                                 name={profile?.full_name || user.email}
                                 src={profile?.avatar_url}
-                                className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] border-4 border-white/5 shadow-2xl"
+                                className="relative w-28 h-28 md:w-40 md:h-40 rounded-[2rem] border-2 border-white/8 shadow-2xl"
                             />
-                            <label className="absolute bottom-2 right-2 p-2.5 bg-[#1A1612] border border-white/10 rounded-2xl cursor-pointer hover:bg-red-600 transition-all shadow-xl group/icon">
-                                {uploading ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
+                            <label className="absolute -bottom-2 -right-2 p-2.5 bg-[#100d0a] border border-white/10 rounded-2xl cursor-pointer hover:bg-red-600 hover:border-red-600 transition-all duration-200 shadow-xl">
+                                {uploading ? <Loader2 size={15} className="animate-spin" /> : <Camera size={15} />}
                                 <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} disabled={uploading} />
                             </label>
                         </div>
-                    </div>
 
-                    <div className="flex-1 text-center md:text-left">
-                        <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2">
-                            <h1 className="text-3xl font-black tracking-tighter font-outfit">{profile?.full_name || "Usuario"}</h1>
-                            {isDeportista && (
-                                <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[10px] font-black uppercase tracking-widest px-3 py-1 self-center md:self-auto">
-                                    <Star size={12} className="mr-1 fill-current" /> Deportista
-                                </Badge>
-                            )}
-                        </div>
-                        <p className="text-white/40 font-bold flex items-center justify-center md:justify-start gap-2 mb-4">
-                            <Mail size={14} /> {user.email}
-                        </p>
-
-                        <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                            <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2">
-                                <Trophy size={16} className="text-yellow-500" />
-                                <span className="text-sm font-black tabular-nums">{profile?.points || 0}</span>
-                                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Puntos</span>
+                        {/* Identity */}
+                        <div className="flex-1 flex flex-col justify-end text-center sm:text-left">
+                            {/* Role badges */}
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-3">
+                                {isDeportista && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-black uppercase tracking-widest">
+                                        <Star size={9} className="fill-current" />Deportista
+                                    </span>
+                                )}
+                                {isStaff && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest">
+                                        <Shield size={9} />Staff
+                                    </span>
+                                )}
                             </div>
-                            {isStaff && (
-                                <div className="px-4 py-2 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-2">
-                                    <Shield size={16} className="text-blue-400" />
-                                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Personal de Staff</span>
-                                </div>
+
+                            {/* Name */}
+                            <h1 className="text-5xl md:text-7xl font-black tracking-tighter font-outfit leading-[0.88] mb-3">
+                                {profile?.full_name || "Usuario"}
+                            </h1>
+
+                            {/* Tagline */}
+                            {profile?.tagline && (
+                                <p className="text-white/35 text-sm md:text-base italic font-bold mb-4 max-w-lg leading-relaxed">
+                                    &ldquo;{profile.tagline}&rdquo;
+                                </p>
                             )}
+
+                            {/* Stats row */}
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-5 gap-y-2">
+                                <span className="flex items-center gap-1.5 text-white/30 text-[11px] font-bold">
+                                    <Mail size={11} />{user.email}
+                                </span>
+                                <div className="w-px h-3 bg-white/10 hidden sm:block" />
+                                <span className="flex items-center gap-1.5 text-amber-400 font-black text-lg tabular-nums">
+                                    <Trophy size={14} />{profile?.points || 0}
+                                    <span className="text-white/25 font-bold text-[10px] uppercase tracking-widest ml-0.5">pts</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
+
+                    <div className="h-px mx-8 bg-gradient-to-r from-transparent via-white/8 to-transparent" />
                 </div>
 
                 {/* Tabs Navigation */}
-                <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/5 rounded-3xl mb-10 overflow-x-auto no-scrollbar">
-                    <TabButton active={activeTab === 'general'} onClick={() => setActiveTab('general')} icon={<Settings size={18} />} label="General" />
-                    {isDeportista && <TabButton active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<Medal size={18} />} label="Mi Deporte" />}
-                    <TabButton active={activeTab === 'quiniela'} onClick={() => setActiveTab('quiniela')} icon={<Target size={18} />} label="Quiniela" />
+                <div className="flex gap-0 mb-10 border-b border-white/8 overflow-x-auto no-scrollbar">
+                    <TabButton active={activeTab === 'general'} onClick={() => setActiveTab('general')} icon={<Settings size={15} />} label="General" />
+                    {isDeportista && <TabButton active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<Medal size={15} />} label="Mi Deporte" />}
+                    <TabButton active={activeTab === 'quiniela'} onClick={() => setActiveTab('quiniela')} icon={<Target size={15} />} label="Quiniela" />
+                    <TabButton active={activeTab === 'amigos'} onClick={() => setActiveTab('amigos')} icon={<Users size={15} />} label="Amigos" />
                 </div>
 
                 {/* Tab Content */}
@@ -230,53 +241,10 @@ export default function PerfilPage() {
                         >
                             {!isEditing ? (
                                 /* ─── VIEW MODE (PÚBLICO) ─── */
-                                <div className="space-y-10 group animate-in fade-in slide-in-from-bottom-6 duration-1000">
-                                    {/* Cabecera de Identidad */}
-                                    <div className="relative group">
-                                        <div className="absolute -inset-1 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 rounded-[3rem] blur opacity-25 group-hover:opacity-40 transition-opacity duration-1000" />
-                                        <section className="relative py-12 px-8 md:px-12 rounded-[3rem] bg-[#0d0a07] border border-white/5 overflow-hidden">
-                                            <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
-
-                                            <div className="relative z-10 flex flex-col items-center text-center space-y-6">
-                                                {profile?.tagline ? (
-                                                    <div className="space-y-4">
-                                                        <div className="text-red-500/20 text-6xl font-serif h-8">&quot;</div>
-                                                        <p className="text-2xl md:text-5xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/40 leading-[1.1] font-outfit max-w-2xl mx-auto">
-                                                            {profile.tagline}
-                                                        </p>
-                                                        <div className="text-red-500/20 text-6xl font-serif h-8 flex justify-end items-end">&quot;</div>
-                                                    </div>
-                                                ) : (
-                                                    <p className="text-white/20 font-bold uppercase tracking-[0.4em] text-[10px]">Sin biografía destacada</p>
-                                                )}
-
-                                                <div className="h-px w-24 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-30" />
-
-                                                <div className="flex flex-wrap justify-center gap-6">
-                                                    {isDeportista && (
-                                                        <div className="flex flex-col items-center">
-                                                            <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Especialidad</span>
-                                                            <div className="flex items-center gap-2 text-red-500 font-black uppercase text-xs tracking-widest">
-                                                                <Star size={14} className="fill-current" />
-                                                                {disciplinas.find(d => d.id === profile?.athlete_disciplina_id)?.name || "Multidisciplina"}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    <div className="flex flex-col items-center">
-                                                        <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Puntuación</span>
-                                                        <div className="flex items-center gap-2 text-amber-500 font-black text-xl tabular-nums">
-                                                            <Trophy size={16} />
-                                                            {profile?.points || 0}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </section>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                                         {/* Main Info Card */}
-                                        <div className="md:col-span-12 lg:col-span-8 space-y-10">
+                                        <div className="lg:col-span-7 space-y-8">
                                             {/* About Section */}
                                             <section className="bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-10 relative overflow-hidden group/about">
                                                 <div className="absolute top-0 right-0 p-8 opacity-[0.02] -rotate-12 group-hover/about:scale-110 transition-transform duration-1000">
@@ -307,7 +275,7 @@ export default function PerfilPage() {
                                         </div>
 
                                         {/* Right Sidebar - Academic Card */}
-                                        <div className="md:col-span-12 lg:col-span-4 space-y-6">
+                                        <div className="lg:col-span-5 space-y-6">
                                             <section className="relative overflow-hidden rounded-[2.5rem] bg-zinc-950 border border-white/10 p-10 shadow-3xl group/pride">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 via-transparent to-orange-500/10 opacity-40 group-hover/pride:opacity-70 transition-opacity duration-1000" />
 
@@ -632,6 +600,10 @@ export default function PerfilPage() {
                             </div>
                         </div>
                     )}
+
+                    {activeTab === 'amigos' && user && (
+                        <FriendsList userId={user.id} />
+                    )}
                 </div>
             </main>
         </div>
@@ -645,8 +617,10 @@ function TabButton({ active, onClick, icon, label }: { active: boolean, onClick:
             role="tab"
             aria-selected={active}
             className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-4 px-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all focus-visible:ring-2 focus-visible:ring-red-500 outline-none",
-                active ? "bg-white text-black shadow-[0_20px_40px_rgba(255,255,255,0.1)]" : "text-white/40 hover:text-white hover:bg-white/5"
+                "flex items-center justify-center gap-2 px-5 py-4 text-[10px] font-black uppercase tracking-widest transition-all outline-none relative border-b-2 -mb-px whitespace-nowrap focus-visible:ring-2 focus-visible:ring-red-500",
+                active
+                    ? "text-white border-red-500"
+                    : "text-white/30 border-transparent hover:text-white/60 hover:border-white/20"
             )}
         >
             {icon}

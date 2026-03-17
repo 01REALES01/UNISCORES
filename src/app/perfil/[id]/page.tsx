@@ -17,6 +17,7 @@ import {
     Calendar,
     ArrowUpRight
 } from "lucide-react";
+import { FriendButton } from "@/modules/users/components/friend-button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
@@ -193,6 +194,11 @@ export default function PublicProfilePage() {
                                     </div>
                                 </div>
                             )}
+
+                            <FriendButton
+                                currentUserId={user?.id}
+                                targetId={profileId}
+                            />
                         </div>
                     </div>
                 </motion.div>
