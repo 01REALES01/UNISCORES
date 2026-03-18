@@ -38,7 +38,7 @@ export function TeamStatsModal({ isOpen, onClose, team, rank }: TeamStatsModalPr
 
         const { data: allMatches, error } = await supabase
             .from('partidos')
-            .select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)')
+            .select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)')
             .eq('estado', 'finalizado')
             .order('fecha', { ascending: true });
 
@@ -185,7 +185,11 @@ export function TeamStatsModal({ isOpen, onClose, team, rank }: TeamStatsModalPr
                             {/* Circular Avatar */}
                             <div className="w-20 h-20 rounded-full bg-[#0a0805] shadow-xl relative overflow-hidden flex items-center justify-center border border-white/10 ring-4 ring-[#17130D]">
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent mix-blend-overlay" />
-                                <span className="text-2xl font-black text-white z-10">{getInitials(team.equipo_nombre)}</span>
+                                {team.escudo_url ? (
+                                    <img src={team.escudo_url} alt={team.equipo_nombre} className="w-full h-full object-cover z-10" />
+                                ) : (
+                                    <span className="text-2xl font-black text-white z-10">{getInitials(team.equipo_nombre)}</span>
+                                )}
                             </div>
                         </div>
 

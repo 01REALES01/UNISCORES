@@ -15,4 +15,5 @@ export type MedalEntry = {
   lost?: number;
   played?: number;
   updated_at?: string;
+  escudo_url?: string;
 };

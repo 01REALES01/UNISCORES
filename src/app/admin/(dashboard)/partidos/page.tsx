@@ -59,7 +59,7 @@ export default function PartidosPage() {
 
     const fetchPartidos = useCallback(async () => {
         const { data } = await safeQuery(
-            supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).order('created_at', { ascending: false }),
+            supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)`).order('created_at', { ascending: false }),
             'admin-partidos'
         );
         if (data) setPartidos(data);

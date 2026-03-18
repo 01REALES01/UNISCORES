@@ -370,7 +370,7 @@ export default function CalendarioPage() {
                                             <div className="flex flex-col items-center gap-2 sm:gap-3 flex-1 min-w-0 text-center px-2 sm:px-4">
                                                 <Avatar 
                                                     name={getDisplayName(matchOfTheDay, 'a')} 
-                                                    src={matchOfTheDay.atleta_a?.avatar_url}
+                                                    src={matchOfTheDay.atleta_a?.avatar_url || matchOfTheDay.carrera_a?.escudo_url}
                                                     size="lg" 
                                                     className={cn(
                                                         "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
@@ -447,7 +447,7 @@ export default function CalendarioPage() {
                                             <div className="flex flex-col items-center gap-2 sm:gap-3 flex-1 min-w-0 text-center px-2 sm:px-4">
                                                 <Avatar 
                                                     name={getDisplayName(matchOfTheDay, 'b')} 
-                                                    src={matchOfTheDay.atleta_b?.avatar_url}
+                                                    src={matchOfTheDay.atleta_b?.avatar_url || matchOfTheDay.carrera_b?.escudo_url}
                                                     size="lg" 
                                                     className={cn(
                                                         "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
@@ -607,7 +607,7 @@ export default function CalendarioPage() {
                                                             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                                                                 <Avatar 
                                                                     name={getDisplayName(match, 'a')} 
-                                                                    src={match.atleta_a?.avatar_url}
+                                                                    src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url}
                                                                     className={cn(
                                                                         "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-[#17130D] transition-all duration-500 border-2 shrink-0",
                                                                         match.estado === 'finalizado' && (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0) > (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0)
@@ -673,7 +673,7 @@ export default function CalendarioPage() {
                                                             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 flex-row-reverse justify-end">
                                                                 <Avatar 
                                                                     name={getDisplayName(match, 'b')} 
-                                                                    src={match.atleta_b?.avatar_url}
+                                                                    src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url}
                                                                     className={cn(
                                                                         "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-[#17130D] transition-all duration-500 border-2 shrink-0",
                                                                         match.estado === 'finalizado' && (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0) > (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0)

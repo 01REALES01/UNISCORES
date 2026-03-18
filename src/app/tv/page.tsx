@@ -64,7 +64,7 @@ const TvLiveMatch = ({ match }: { match: any }) => {
                         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-12">
                             {/* Team A */}
                             <div className="flex flex-col items-center gap-6">
-                                <Avatar name={match.carrera_a?.nombre || match.equipo_a} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
+                                <Avatar name={match.carrera_a?.nombre || match.equipo_a} src={match.carrera_a?.escudo_url} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
                                 <h1 className="text-4xl lg:text-5xl font-black text-white text-center leading-tight uppercase tracking-tight max-w-sm">
                                     {match.carrera_a?.nombre || match.equipo_a}
                                 </h1>
@@ -107,7 +107,7 @@ const TvLiveMatch = ({ match }: { match: any }) => {
 
                             {/* Team B */}
                             <div className="flex flex-col items-center gap-6">
-                                <Avatar name={match.carrera_b?.nombre || match.equipo_b} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
+                                <Avatar name={match.carrera_b?.nombre || match.equipo_b} src={match.carrera_b?.escudo_url} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
                                 <h1 className="text-4xl lg:text-5xl font-black text-white text-center leading-tight uppercase tracking-tight max-w-sm">
                                     {match.carrera_b?.nombre || match.equipo_b}
                                 </h1>
@@ -137,12 +137,12 @@ const TvUpcoming = ({ matches }: { matches: any[] }) => {
                         </div>
                         <div className="flex justify-between items-center text-4xl font-bold text-white mt-8">
                             <div className="flex flex-col items-center gap-4">
-                                <Avatar name={match.carrera_a?.nombre || match.equipo_a} size="lg" className="h-24 w-24 text-2xl" />
+                                <Avatar name={match.carrera_a?.nombre || match.equipo_a} src={match.carrera_a?.escudo_url} size="lg" className="h-24 w-24 text-2xl" />
                                 <span className="text-xl text-center line-clamp-1 max-w-[150px]">{match.carrera_a?.nombre || match.equipo_a}</span>
                             </div>
                             <div className="text-slate-500 font-light">vs</div>
                             <div className="flex flex-col items-center gap-4">
-                                <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" className="h-24 w-24 text-2xl" />
+                                <Avatar name={match.carrera_b?.nombre || match.equipo_b} src={match.carrera_b?.escudo_url} size="lg" className="h-24 w-24 text-2xl" />
                                 <span className="text-xl text-center line-clamp-1 max-w-[150px]">{match.carrera_b?.nombre || match.equipo_b}</span>
                             </div>
                         </div>
@@ -169,7 +169,7 @@ export default function TvPage() {
         // Fetch Live
         const { data: live } = await supabase
             .from('partidos')
-            .select('*, disciplinas(*), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)')
+            .select('*, disciplinas(*), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)')
             .eq('estado', 'en_vivo');
 
         if (live) setLiveMatches(live);
@@ -177,7 +177,7 @@ export default function TvPage() {
         // Fetch Upcoming
         const { data: upcoming } = await supabase
             .from('partidos')
-            .select('*, disciplinas(*), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)')
+            .select('*, disciplinas(*), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)')
             .eq('estado', 'programado')
             .gt('fecha', new Date().toISOString())
             .order('fecha', { ascending: true })

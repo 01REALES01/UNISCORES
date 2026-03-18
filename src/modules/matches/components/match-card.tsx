@@ -87,7 +87,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
           ) : (
             <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
               <div className="flex flex-col items-center gap-1.5 md:gap-2 text-center min-w-0">
-                <Avatar name={getDisplayName(partido, 'a')} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-[#0a0805] shrink-0" />
+                <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-[#0a0805] shrink-0" />
                 <div className="flex flex-col items-center gap-0.5 w-full min-w-0">
                   <span className="text-sm md:text-lg font-bold text-white leading-tight line-clamp-2 px-1 break-words">{getDisplayName(partido, 'a')}</span>
                   {getCarreraSubtitle(partido, 'a') && (
@@ -138,7 +138,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
               </div>
 
               <div className="flex flex-col items-center gap-1.5 md:gap-2 text-center min-w-0">
-                <Avatar name={getDisplayName(partido, 'b')} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-[#0a0805] shrink-0" />
+                <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-[#0a0805] shrink-0" />
                 <div className="flex flex-col items-center gap-0.5 w-full min-w-0">
                   <span className="text-sm md:text-lg font-bold text-white leading-tight line-clamp-2 px-1 break-words">{getDisplayName(partido, 'b')}</span>
                   {getCarreraSubtitle(partido, 'b') && (
@@ -207,7 +207,7 @@ export function UpcomingMatchCard({ partido }: { partido: Partido }) {
         ) : (
           <div className="relative z-10 space-y-3 my-2">
             <div className="flex items-center gap-3">
-              <Avatar name={getDisplayName(partido, 'a')} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-[#0a0805]" />
+              <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-[#0a0805]" />
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-bold text-white truncate">{getDisplayName(partido, 'a')}</span>
                 {getCarreraSubtitle(partido, 'a') && (
@@ -217,7 +217,7 @@ export function UpcomingMatchCard({ partido }: { partido: Partido }) {
             </div>
 
             <div className="flex items-center gap-3">
-              <Avatar name={getDisplayName(partido, 'b')} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-[#0a0805]" />
+              <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-[#0a0805]" />
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-bold text-white truncate">{getDisplayName(partido, 'b')}</span>
                 {getCarreraSubtitle(partido, 'b') && (
@@ -304,7 +304,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
             )}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Avatar name={getDisplayName(partido, 'a')} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-[#0a0805]" />
+                <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-[#0a0805]" />
                 <div className="flex flex-col min-w-0">
                   <span className={cn("text-[13px] font-bold truncate", partido.marcador_detalle?.resultado_final === 'victoria_a' || partido.marcador_detalle?.resultado_final === 'empate' ? "text-white" : "text-slate-500")}>
                     {getDisplayName(partido, 'a')}
@@ -323,7 +323,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Avatar name={getDisplayName(partido, 'b')} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-[#0a0805]" />
+                <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-[#0a0805]" />
                 <div className="flex flex-col min-w-0">
                   <span className={cn("text-[13px] font-bold truncate", partido.marcador_detalle?.resultado_final === 'victoria_b' || partido.marcador_detalle?.resultado_final === 'empate' ? "text-white" : "text-slate-500")}>
                     {getDisplayName(partido, 'b')}
@@ -344,7 +344,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Avatar name={getDisplayName(partido, 'a')} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-[#0a0805]" />
+                <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-[#0a0805]" />
                 <div className="flex flex-col min-w-0">
                   <span className={cn("text-[13px] font-bold truncate", winnerA || isDraw ? "text-white" : "text-slate-500")}>
                     {getDisplayName(partido, 'a')}
@@ -361,7 +361,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Avatar name={getDisplayName(partido, 'b')} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-[#0a0805]" />
+                <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-[#0a0805]" />
                 <div className="flex flex-col min-w-0">
                   <span className={cn("text-[13px] font-bold truncate", !winnerA && scoreB > scoreA ? "text-white" : isDraw ? "text-white" : "text-slate-500")}>
                     {getDisplayName(partido, 'b')}

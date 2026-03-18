@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -12,6 +12,8 @@ import { SportIcon } from "@/components/sport-icons";
 import { Avatar, Badge, Button } from "@/components/ui-primitives";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import {
     SPORT_EMOJI,
     SPORT_ACCENT,
@@ -37,6 +39,7 @@ import {
     Activity,
     Flame,
     ChevronDown,
+    Pencil,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -154,8 +157,46 @@ export default function CarreraProfilePage() {
     const carreraId = params.id ? Number(params.id) : null;
 
     const { user, profile, isStaff } = useAuth();
-    const { carrera, matches, news, athletes, stats, loading, error } =
+    const { carrera, matches, news, athletes, stats, loading, error, mutate } =
         useCarreraProfile(carreraId);
+
+    const escudoInputRef = useRef<HTMLInputElement>(null);
+    const [uploadingEscudo, setUploadingEscudo] = useState(false);
+
+    const handleEscudoUpload = async (file: File) => {
+        if (!carreraId || !isStaff) return;
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+        if (!allowedTypes.includes(file.type)) {
+            toast.error("Formato no soportado. Usa JPG, PNG, WebP o SVG.");
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error("La imagen es demasiado grande (máximo 2MB).");
+            return;
+        }
+        setUploadingEscudo(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const filePath = `carreras/${carreraId}_${Date.now()}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file, { upsert: true, cacheControl: '3600' });
+            if (uploadError) throw uploadError;
+            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+            const { error: updateError } = await supabase
+                .from('carreras')
+                .update({ escudo_url: publicUrl })
+                .eq('id', carreraId);
+            if (updateError) throw updateError;
+            toast.success('¡Escudo actualizado correctamente!');
+            mutate();
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            toast.error('Error al subir escudo: ' + msg);
+        } finally {
+            setUploadingEscudo(false);
+        }
+    };
 
     const searchParams = useSearchParams();
     const [activeTab, setActiveTab] = useState<CarreraTab>("partidos");
@@ -345,13 +386,54 @@ export default function CarreraProfilePage() {
                         <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
 
                         <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-                            {/* Career Avatar */}
-                            <div className="relative">
-                                <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-gradient-to-br from-red-600/30 to-orange-500/20 border-4 border-white/5 flex items-center justify-center shadow-2xl">
-                                    <span className="text-5xl md:text-6xl font-black text-white/30 font-outfit">
-                                        {getInitials(carrera.nombre)}
-                                    </span>
+                            {/* Career Avatar / Escudo */}
+                            <div className="relative group/escudo">
+                                <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-gradient-to-br from-red-600/30 to-orange-500/20 border-4 border-white/5 flex items-center justify-center shadow-2xl overflow-hidden">
+                                    {carrera.escudo_url ? (
+                                        <img
+                                            src={carrera.escudo_url}
+                                            alt={`Escudo de ${carrera.nombre}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <span className="text-5xl md:text-6xl font-black text-white/30 font-outfit">
+                                            {getInitials(carrera.nombre)}
+                                        </span>
+                                    )}
                                 </div>
+
+                                {/* Admin upload button */}
+                                {isStaff && (
+                                    <>
+                                        <input
+                                            ref={escudoInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) handleEscudoUpload(file);
+                                                e.target.value = '';
+                                            }}
+                                        />
+                                        <button
+                                            onClick={() => escudoInputRef.current?.click()}
+                                            disabled={uploadingEscudo}
+                                            title="Cambiar escudo"
+                                            className="absolute inset-0 rounded-[2.5rem] bg-black/60 opacity-0 group-hover/escudo:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                                        >
+                                            {uploadingEscudo ? (
+                                                <Loader2 size={28} className="text-white animate-spin" />
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <Pencil size={22} className="text-white" />
+                                                    <span className="text-[9px] font-black text-white uppercase tracking-widest">Escudo</span>
+                                                </div>
+                                            )}
+                                        </button>
+                                    </>
+                                )}
+
                                 <div className="absolute -bottom-3 -right-3 p-3 bg-red-600 text-white rounded-2xl shadow-2xl border-4 border-[#0d0a07]">
                                     <GraduationCap size={20} />
                                 </div>

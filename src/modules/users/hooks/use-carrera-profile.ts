@@ -11,8 +11,8 @@ const MATCH_COLUMNS = `
   id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle,
   fase, grupo, bracket_order, delegacion_a, delegacion_b,
   disciplinas(name, icon),
-  carrera_a:carreras!carrera_a_id(nombre),
-  carrera_b:carreras!carrera_b_id(nombre),
+  carrera_a:carreras!carrera_a_id(nombre, escudo_url),
+  carrera_b:carreras!carrera_b_id(nombre, escudo_url),
   atleta_a:profiles!athlete_a_id(full_name, avatar_url),
   atleta_b:profiles!athlete_b_id(full_name, avatar_url)
 `.replace(/\s+/g, ' ').trim();
@@ -20,20 +20,21 @@ const MATCH_COLUMNS = `
 const NEWS_COLUMNS = `
   id, titulo, contenido, imagen_url, categoria, created_at, published, autor_nombre, carrera,
   partidos(equipo_a, equipo_b, disciplinas(name),
-    carrera_a:carreras!carrera_a_id(nombre),
-    carrera_b:carreras!carrera_b_id(nombre))
+    carrera_a:carreras!carrera_a_id(nombre, escudo_url),
+    carrera_b:carreras!carrera_b_id(nombre, escudo_url))
 `.replace(/\s+/g, ' ').trim();
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type CarreraProfile = {
-    carrera: { id: number; nombre: string } | null;
+    carrera: { id: number; nombre: string; escudo_url?: string | null } | null;
     matches: any[];
     news: any[];
     athletes: any[];
     stats: CareerStats;
     loading: boolean;
     error: any;
+    mutate: () => void;
 };
 
 // ─── Fetcher ────────────────────────────────────────────────────────────────
@@ -42,7 +43,7 @@ async function fetchCarreraProfile(carreraId: number) {
     // 1. Fetch the career itself
     const { data: carrera, error: carreraErr } = await supabase
         .from('carreras')
-        .select('id, nombre')
+        .select('id, nombre, escudo_url')
         .eq('id', carreraId)
         .single();
 
@@ -154,5 +155,6 @@ export function useCarreraProfile(carreraId: number | null): CarreraProfile {
         },
         loading: isLoading,
         error,
+        mutate,
     };
 }

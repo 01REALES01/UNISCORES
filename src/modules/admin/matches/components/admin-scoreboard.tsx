@@ -29,7 +29,7 @@ export const AdminScoreboard = ({
         {/* Team A */}
         <div className="flex flex-col items-center gap-6 group">
           <div className="relative w-20 h-20 md:w-36 md:h-36 rounded-[2.5rem] bg-zinc-950/60 border-2 border-white/10 p-1">
-            <Avatar name={getDisplayName(match, 'a')} size="lg" className="h-full w-full rounded-[2.25rem]" />
+            <Avatar src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} name={getDisplayName(match, 'a')} size="lg" className="h-full w-full rounded-[2.25rem]" />
           </div>
           <h2 className="text-xl md:text-3xl font-black text-white">{getDisplayName(match, 'a')}</h2>
         </div>
@@ -86,7 +86,7 @@ export const AdminScoreboard = ({
         {/* Team B */}
         <div className="flex flex-col items-center gap-6 group">
           <div className="relative w-20 h-20 md:w-36 md:h-36 rounded-[2.5rem] bg-zinc-950/60 border-2 border-white/10 p-1">
-            <Avatar name={getDisplayName(match, 'b')} size="lg" className="h-full w-full rounded-[2.25rem]" />
+            <Avatar src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} name={getDisplayName(match, 'b')} size="lg" className="h-full w-full rounded-[2.25rem]" />
           </div>
           <h2 className="text-xl md:text-3xl font-black text-white">{getDisplayName(match, 'b')}</h2>
         </div>

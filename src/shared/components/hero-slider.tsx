@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { m, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Calendar, MapPin, Zap, Users, Clock } from "lucide-react";
-import { Badge, Button } from "@/components/ui-primitives";
+import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import Link from "next/link";
 import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_GLOW, SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
@@ -262,9 +262,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             transition={{ delay: 0.3 }}
                                             className="flex flex-col items-center gap-2 md:gap-3 flex-1 text-center"
                                         >
-                                            <div className="w-12 h-12 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm shrink-0">
-                                                <span className="text-xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'a'))}</span>
-                                            </div>
+                                            <Avatar name={getDisplayName(currentMatch, 'a')} src={currentMatch.atleta_a?.avatar_url || currentMatch.carrera_a?.escudo_url} className="w-12 h-12 md:w-24 md:h-24 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl shrink-0 text-xl md:text-4xl bg-[#0a0805]" />
                                             <h3 className="text-sm md:text-2xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'a')}
                                             </h3>
@@ -335,9 +333,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             transition={{ delay: 0.3 }}
                                             className="flex flex-col items-center gap-2 md:gap-3 flex-1 text-center"
                                         >
-                                            <div className="w-14 h-14 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm shrink-0">
-                                                <span className="text-xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'b'))}</span>
-                                            </div>
+                                            <Avatar name={getDisplayName(currentMatch, 'b')} src={currentMatch.atleta_b?.avatar_url || currentMatch.carrera_b?.escudo_url} className="w-14 h-14 md:w-24 md:h-24 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl shrink-0 text-xl md:text-4xl bg-[#0a0805]" />
                                             <h3 className="text-sm md:text-2xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'b')}
                                             </h3>

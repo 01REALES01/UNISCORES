@@ -27,8 +27,8 @@ export type Noticia = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     marcador_detalle?: any;
     disciplinas: { name: string; icon?: string };
-    carrera_a?: { nombre: string } | null;
-    carrera_b?: { nombre: string } | null;
+    carrera_a?: { nombre: string; escudo_url?: string } | null;
+    carrera_b?: { nombre: string; escudo_url?: string } | null;
   } | null;
 };
 
