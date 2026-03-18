@@ -158,50 +158,45 @@ export default function PartidosPage() {
                     </div>
                 </header>
 
-                {/* ── Fixed Sport Filter Bar (frozen row) ── */}
-                <div className="fixed top-16 sm:top-[4.5rem] left-0 right-0 z-40 bg-[#0a0816]/90 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
-                    <div className="max-w-6xl mx-auto px-4 py-3">
-                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                            {/* "Todos" chip */}
+                {/* ── Sticky Sport Filter Bar ── */}
+                <div className="sticky top-16 sm:top-[4.5rem] z-40 -mx-4 px-4 py-3 bg-[#0a0816]/90 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                        {/* "Todos" chip */}
+                        <button
+                            onClick={() => setSelectedSport("Todos")}
+                            className={cn(
+                                "flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider whitespace-nowrap border transition-all duration-300 shrink-0",
+                                selectedSport === "Todos"
+                                    ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.2)] scale-105"
+                                    : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/60"
+                            )}
+                        >
+                            <LayoutGrid size={14} />
+                            Todos
+                        </button>
+
+                        {availableSports.map(sport => (
                             <button
-                                onClick={() => setSelectedSport("Todos")}
+                                key={sport}
+                                onClick={() => setSelectedSport(sport)}
                                 className={cn(
                                     "flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider whitespace-nowrap border transition-all duration-300 shrink-0",
-                                    selectedSport === "Todos"
-                                        ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.2)] scale-105"
+                                    selectedSport === sport
+                                        ? `${SPORT_BORDER[sport]?.split(' ')[0] || 'border-white/30'} ${SPORT_ACCENT[sport] || 'text-white'} bg-white/10 shadow-lg scale-105`
                                         : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/60"
                                 )}
                             >
-                                <LayoutGrid size={14} />
-                                Todos
+                                <SportIcon sport={sport} size={14} />
+                                <span>{sport}</span>
                             </button>
-
-                            {availableSports.map(sport => (
-                                <button
-                                    key={sport}
-                                    onClick={() => setSelectedSport(sport)}
-                                    className={cn(
-                                        "flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider whitespace-nowrap border transition-all duration-300 shrink-0",
-                                        selectedSport === sport
-                                            ? `${SPORT_BORDER[sport]?.split(' ')[0] || 'border-white/30'} ${SPORT_ACCENT[sport] || 'text-white'} bg-white/10 shadow-lg scale-105`
-                                            : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/60"
-                                    )}
-                                >
-                                    <SportIcon sport={sport} size={14} />
-                                    <span>{sport}</span>
-                                </button>
-                            ))}
-                        </div>
-                        {!loading && (
-                            <p className="text-[10px] font-bold text-white/20 mt-1.5 tracking-wider uppercase">
-                                Mostrando {filteredMatches.length} partido{filteredMatches.length !== 1 ? 's' : ''}
-                            </p>
-                        )}
+                        ))}
                     </div>
+                    {!loading && (
+                        <p className="text-[10px] font-bold text-white/20 mt-1.5 tracking-wider uppercase">
+                            Mostrando {filteredMatches.length} partido{filteredMatches.length !== 1 ? 's' : ''}
+                        </p>
+                    )}
                 </div>
-
-                {/* Spacer for fixed filter bar */}
-                <div className="h-[4.5rem]" />
 
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

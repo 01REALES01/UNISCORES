@@ -15,8 +15,20 @@ import {
     ChevronLeft,
     Loader2,
     Calendar,
-    ArrowUpRight
+    ArrowUpRight,
+    UserPlus,
+    UserCheck,
+    UserX,
+    Users,
 } from "lucide-react";
+import {
+    getFriendshipStatus,
+    sendFriendRequest,
+    cancelFriendRequest,
+    respondFriendRequest,
+    type FriendRequestStatus,
+} from "@/services/notification-service";
+import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
@@ -31,8 +43,11 @@ export default function PublicProfilePage() {
     const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [friendStatus, setFriendStatus] = useState<{ status: FriendRequestStatus | 'none'; requestId?: string; isSender?: boolean } | null>(null);
+    const [loadingFriend, setLoadingFriend] = useState(false);
 
     const profileId = params.id as string;
+    const isOwnProfile = user?.id === profileId;
 
     useEffect(() => {
         if (profileId) {
@@ -72,6 +87,12 @@ export default function PublicProfilePage() {
             if (isAthlete) {
                 fetchHistory(p.id);
             }
+
+            // 4. Fetch friendship status if viewing another user's profile
+            if (user?.id && user.id !== profileId) {
+                const status = await getFriendshipStatus(user.id, profileId);
+                setFriendStatus(status);
+            }
         } catch (err) {
             console.error("Error fetching public profile:", err);
         } finally {
@@ -109,6 +130,41 @@ export default function PublicProfilePage() {
             </div>
         );
     }
+
+    const handleSendFriendRequest = async () => {
+        if (!user?.id) return;
+        setLoadingFriend(true);
+        const result = await sendFriendRequest(user.id, profileId);
+        if (result.success) {
+            toast.success("Solicitud enviada");
+            setFriendStatus({ status: 'pending', isSender: true });
+        } else {
+            toast.error(result.error || "Error al enviar solicitud");
+        }
+        setLoadingFriend(false);
+    };
+
+    const handleCancelFriendRequest = async () => {
+        if (!friendStatus?.requestId) return;
+        setLoadingFriend(true);
+        const success = await cancelFriendRequest(friendStatus.requestId);
+        if (success) {
+            toast("Solicitud cancelada");
+            setFriendStatus({ status: 'none' });
+        }
+        setLoadingFriend(false);
+    };
+
+    const handleAcceptFriendRequest = async () => {
+        if (!friendStatus?.requestId) return;
+        setLoadingFriend(true);
+        const success = await respondFriendRequest(friendStatus.requestId, true);
+        if (success) {
+            toast.success("¡Ahora son amigos!");
+            setFriendStatus({ ...friendStatus, status: 'accepted' });
+        }
+        setLoadingFriend(false);
+    };
 
     const isDeportista = profile.roles?.includes('deportista');
 
@@ -168,6 +224,48 @@ export default function PublicProfilePage() {
                             <p className="text-xl md:text-2xl text-red-500 font-black italic mb-6 max-w-2xl leading-tight font-outfit">
                                 &quot;{profile.tagline}&quot;
                             </p>
+                        )}
+
+                        {/* Friend Request Button */}
+                        {user && !isOwnProfile && friendStatus && (
+                            <div className="flex justify-center md:justify-start mb-4">
+                                {friendStatus.status === 'none' && (
+                                    <button
+                                        onClick={handleSendFriendRequest}
+                                        disabled={loadingFriend}
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all text-[11px] font-black uppercase tracking-widest disabled:opacity-50"
+                                    >
+                                        {loadingFriend ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
+                                        Agregar Amigo
+                                    </button>
+                                )}
+                                {friendStatus.status === 'pending' && friendStatus.isSender && (
+                                    <button
+                                        onClick={handleCancelFriendRequest}
+                                        disabled={loadingFriend}
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white/40 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-all text-[11px] font-black uppercase tracking-widest disabled:opacity-50"
+                                    >
+                                        {loadingFriend ? <Loader2 size={14} className="animate-spin" /> : <UserX size={14} />}
+                                        Solicitud enviada
+                                    </button>
+                                )}
+                                {friendStatus.status === 'pending' && !friendStatus.isSender && (
+                                    <button
+                                        onClick={handleAcceptFriendRequest}
+                                        disabled={loadingFriend}
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all text-[11px] font-black uppercase tracking-widest disabled:opacity-50"
+                                    >
+                                        {loadingFriend ? <Loader2 size={14} className="animate-spin" /> : <UserCheck size={14} />}
+                                        Aceptar solicitud
+                                    </button>
+                                )}
+                                {friendStatus.status === 'accepted' && (
+                                    <div className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-emerald-500/60 text-[11px] font-black uppercase tracking-widest">
+                                        <Users size={14} />
+                                        Amigos
+                                    </div>
+                                )}
+                            </div>
                         )}
 
                         <div className="flex flex-wrap justify-center md:justify-start gap-4">

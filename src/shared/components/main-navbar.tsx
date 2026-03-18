@@ -6,11 +6,12 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import { AnimatePresence, m } from "framer-motion";
-import { HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords, Calendar as CalendarIcon, ChevronRight } from "lucide-react";
+import { HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords, Calendar as CalendarIcon, ChevronRight, Bell } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { Button, Avatar } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/notification-bell";
 
 interface MainNavbarProps {
     user: User | null;
@@ -127,8 +128,10 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                         />
                     </div>
 
-                    {/* 3. RIGHT: User / Login Section (Mobile: End, Desktop: End) */}
+                    {/* 3. RIGHT: Notifications + User / Login Section (Mobile: End, Desktop: End) */}
                     <div className="flex-1 flex items-center justify-end order-3 gap-2">
+                        {/* Notification Bell (only when logged in) */}
+                        {user && <NotificationBell />}
                         <div className="flex items-center gap-2">
                             {!user ? (
                                 <Link href="/login">
@@ -274,6 +277,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                             <nav className="relative flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar">
                                 {[
                                     ...(user ? [{ title: "Mi Perfil", icon: UserIcon, href: "/perfil" }] : []),
+                                    ...(user ? [{ title: "Notificaciones", icon: Bell, href: "/notificaciones" }] : []),
                                     { title: "Inicio", icon: HomeIcon, href: "/" },
                                     { title: "Calendario", icon: CalendarIcon, href: "/calendario" },
                                     { title: "Partidos", icon: Gamepad2, href: "/partidos" },
