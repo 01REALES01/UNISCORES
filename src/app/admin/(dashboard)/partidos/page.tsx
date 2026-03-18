@@ -11,6 +11,7 @@ import { Card, Badge, Avatar, LiveIndicator } from "@/components/ui-primitives";
 import { CreateMatchModal } from "@/components/create-match-modal";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuditLogger } from "@/hooks/useAuditLogger";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
@@ -49,6 +50,7 @@ export default function PartidosPage() {
     const [matchToDelete, setMatchToDelete] = useState<any>(null);
     const router = useRouter();
     const { isPeriodista } = useAuth();
+    const { logAction } = useAuditLogger();
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -103,6 +105,14 @@ export default function PartidosPage() {
                 toast.error("Alerta BBDD: Permisos insuficientes (RLS) para borrar, contacta soporte.");
             } else {
                 toast.success("Partido eliminado permanentemente.");
+                
+                // Log Action
+                await logAction('DELETE_MATCH', 'partido', matchToDelete.id, {
+                    equipoA: matchToDelete.equipo_a,
+                    equipoB: matchToDelete.equipo_b,
+                    disciplina: matchToDelete.disciplinas?.name
+                });
+
                 await fetchPartidos();
             }
         } catch (err: any) {
@@ -513,7 +523,7 @@ export default function PartidosPage() {
                                             {/* Local */}
                                             <div className="flex flex-col items-center gap-3">
                                                 <div className="relative group/avatar">
-                                                    <Avatar name={getDisplayName(partido, 'a')} className="w-16 h-16 rounded-[1.25rem] border-2 border-white/5 ring-4 ring-black/20 group-hover/avatar:scale-105 transition-all duration-500" />
+                                                    <Avatar name={getDisplayName(partido, 'a')} src={partido.carrera_a?.escudo_url} className="w-16 h-16 rounded-[1.25rem] border-2 border-white/5 ring-4 ring-black/20 group-hover/avatar:scale-105 transition-all duration-500" />
                                                     {score.a > score.b && isFinished && (
                                                         <div className="absolute -top-2 -right-2 bg-primary p-1.5 rounded-lg shadow-xl shadow-primary/40 rotate-12">
                                                             <Trophy size={14} className="text-white" />
@@ -544,7 +554,7 @@ export default function PartidosPage() {
                                             {/* Visitante */}
                                             <div className="flex flex-col items-center gap-3">
                                                 <div className="relative group/avatar">
-                                                    <Avatar name={getDisplayName(partido, 'b')} className="w-16 h-16 rounded-[1.25rem] border-2 border-white/5 ring-4 ring-black/20 group-hover/avatar:scale-105 transition-all duration-500" />
+                                                    <Avatar name={getDisplayName(partido, 'b')} src={partido.carrera_b?.escudo_url} className="w-16 h-16 rounded-[1.25rem] border-2 border-white/5 ring-4 ring-black/20 group-hover/avatar:scale-105 transition-all duration-500" />
                                                     {score.b > score.a && isFinished && (
                                                         <div className="absolute -top-2 -left-2 bg-primary p-1.5 rounded-lg shadow-xl shadow-primary/40 -rotate-12">
                                                             <Trophy size={14} className="text-white" />

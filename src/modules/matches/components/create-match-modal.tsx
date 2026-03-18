@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { CARRERAS_UNINORTE, LUGARES_OLIMPICOS, NATACION_ESTILOS, NATACION_DISTANCIAS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuditLogger } from "@/hooks/useAuditLogger";
 import { stampAudit } from "@/lib/audit-helpers";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,6 +28,7 @@ const DISCIPLINES = [
 
 export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
     const { profile } = useAuth();
+    const { logAction } = useAuditLogger();
     const [loading, setLoading] = useState(false);
     const [disciplina, setDisciplina] = useState("Fútbol");
     const [equipoA, setEquipoA] = useState("");
@@ -188,7 +190,7 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
             }
 
             // Insertar partido
-            const { error } = await supabase.from('partidos').insert({
+            const { data: newMatch, error } = await supabase.from('partidos').insert({
                 disciplina_id: disc?.id,
                 equipo_a: isRaceSport && disciplina === 'Natación' ? `${natDistancia} ${natEstilo}` : equipoA,
                 equipo_b: isRaceSport ? 'Evento Múltiple' : equipoB,
@@ -204,9 +206,19 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                 ...(fase ? { fase } : {}),
                 ...(grupo ? { grupo } : {}),
                 ...(bracketOrder ? { bracket_order: parseInt(bracketOrder) } : {}),
-            });
+            }).select().single();
 
             if (error) throw error;
+
+            // Log Action
+            if (newMatch) {
+                await logAction('CREATE_MATCH', 'partido', newMatch.id, {
+                    equipoA: newMatch.equipo_a,
+                    equipoB: newMatch.equipo_b,
+                    disciplina: disciplina,
+                    estado: estado
+                });
+            }
 
             // Clean & Close
             setEquipoA("");
