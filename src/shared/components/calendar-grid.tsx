@@ -29,24 +29,24 @@ export function CalendarGrid({
     isSameDay
 }: CalendarGridProps) {
     return (
-        <div className="xl:col-span-2 bg-white/5 backdrop-blur-xl rounded-[2.5rem] border border-white/5 p-6 sm:p-8 shadow-2xl relative overflow-hidden flex flex-col min-h-[500px]">
+        <div className="xl:col-span-2 bg-[#110e20]/60 backdrop-blur-2xl rounded-[3rem] border border-white/5 p-6 sm:p-10 shadow-3xl relative overflow-hidden flex flex-col min-h-[550px]">
             {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl sm:text-3xl font-black text-white capitalize">
+            <div className="flex items-center justify-between mb-10">
+                <h2 className="text-3xl sm:text-4xl font-black text-white capitalize tracking-tight">
                     {currentDate.toLocaleString('es-ES', { month: 'long' })} {currentDate.getFullYear()}
                 </h2>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                     <button
                         onClick={onPrevMonth}
-                        className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 hover:bg-white/10 transition-colors shadow-lg"
+                        className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center border border-white/10 hover:bg-white/10 transition-all hover:scale-110 shadow-xl"
                     >
-                        <ChevronLeft size={20} className="text-white/70" />
+                        <ChevronLeft size={24} className="text-white/70" />
                     </button>
                     <button
                         onClick={onNextMonth}
-                        className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 hover:bg-white/10 transition-colors shadow-lg"
+                        className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center border border-white/10 hover:bg-white/10 transition-all hover:scale-110 shadow-xl"
                     >
-                        <ChevronRight size={20} className="text-white/70" />
+                        <ChevronRight size={24} className="text-white/70" />
                     </button>
                 </div>
             </div>
@@ -54,18 +54,18 @@ export function CalendarGrid({
             {/* Calendar Grid */}
             <div className="flex-1">
                 {/* Days of week */}
-                <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
+                <div className="grid grid-cols-7 gap-2 mb-4">
                     {['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'].map((day) => (
-                        <div key={day} className="text-center text-[10px] sm:text-xs font-black text-white/30 uppercase tracking-widest">
+                        <div key={day} className="text-center text-[11px] sm:text-xs font-black text-white/20 uppercase tracking-[0.2em]">
                             {day}
                         </div>
                     ))}
                 </div>
 
                 {/* Main Grid */}
-                <div className="grid grid-cols-7 bg-[#0a0805]/50 rounded-2xl sm:rounded-3xl border border-white/10 overflow-hidden divide-x divide-y divide-white/5">
+                <div className="grid grid-cols-7 bg-[#05040a] rounded-[2rem] border border-white/10 overflow-hidden divide-x divide-y divide-white/5 shadow-2xl">
                     {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                        <div key={`empty-${i}`} className="aspect-square bg-transparent border-transparent" />
+                        <div key={`empty-${i}`} className="aspect-square bg-transparent" />
                     ))}
 
                     {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -99,49 +99,49 @@ export function CalendarGrid({
                                 key={i}
                                 onClick={() => onDateSelect(dayDate)}
                                 className={cn(
-                                    "aspect-square flex flex-col items-center justify-start py-1 sm:py-3 transition-all relative group focus:outline-none",
+                                    "aspect-square flex flex-col items-center justify-start py-2 sm:py-4 transition-all relative group focus:outline-none",
                                     isSelected
-                                        ? "bg-indigo-500/20 z-20 shadow-[inset_0_0_20px_rgba(99,102,241,0.3)] ring-1 ring-inset ring-indigo-500/50"
+                                        ? "bg-indigo-600/40 z-20 shadow-[inset_0_0_25px_rgba(79,70,229,0.4)] ring-1 ring-inset ring-indigo-500/50"
                                         : (isToday
-                                            ? "bg-rose-500/10 z-10 shadow-[inset_0_0_15px_rgba(244,63,94,0.1)] ring-1 ring-inset ring-rose-500/30 hover:bg-rose-500/20"
+                                            ? "bg-rose-500/10 z-10 shadow-[inset_0_0_15px_rgba(244,63,94,0.1)] ring-1 ring-inset ring-rose-500/30 hover:bg-white/5"
                                             : "hover:bg-white/5 hover:z-10")
                                 )}
                             >
                                 <span className={cn(
-                                    "text-[11px] sm:text-lg font-bold z-10 transition-colors",
-                                    isSelected ? "text-indigo-400" : (isToday ? "text-rose-400 font-black" : "text-white/60 group-hover:text-white")
+                                    "text-sm sm:text-xl font-bold z-10 transition-colors",
+                                    isSelected ? "text-white" : (isToday ? "text-rose-400 font-black" : "text-white/40 group-hover:text-white")
                                 )}>
                                     {i + 1}
                                 </span>
 
                                 {/* Event Indicators */}
                                 {hasEvents && !isSelected && (
-                                    <div className="absolute bottom-0.5 sm:bottom-2 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 sm:gap-1 w-[90%] flex-wrap cursor-pointer" title={`${eventsToday.length} eventos en total`}>
-                                        {uniqueSportsEvents.slice(0, 3).map((s, idx) => (
+                                    <div className="absolute bottom-1 sm:bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 sm:gap-1.5 w-[95%] flex-wrap cursor-pointer">
+                                        {uniqueSportsEvents.slice(0, isToday ? 2 : 3).map((s, idx) => (
                                             <div key={idx} className={cn(
-                                                "w-2.5 h-2.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-[#0a0805] border",
-                                                s.estado === 'en_vivo' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' :
+                                                "w-2 h-2 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-[#05040a] border transition-all",
+                                                s.estado === 'en_vivo' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] scale-110' :
                                                     s.estado === 'finalizado' ? 'border-white/10 text-white/30' : 'border-indigo-500/30 text-indigo-400'
                                             )}>
-                                                <SportIcon sport={s.name} size={10} className="scale-[0.6] sm:scale-100 transition-transform" />
+                                                <SportIcon sport={s.name} size={10} className="scale-[0.5] sm:scale-100" />
                                             </div>
                                         ))}
-                                        {uniqueSportsEvents.length > 3 && (
-                                            <div className="text-[7px] sm:text-[9px] font-black text-white/50 pl-0.5">
-                                                +{uniqueSportsEvents.length - 3}
+                                        {uniqueSportsEvents.length > (isToday ? 2 : 3) && (
+                                            <div className="text-[7px] sm:text-[10px] font-black text-white/30 pl-0.5">
+                                                +{uniqueSportsEvents.length - (isToday ? 2 : 3)}
                                             </div>
                                         )}
                                     </div>
                                 )}
 
                                 {isSelected && hasEvents && (
-                                    <div className="absolute bottom-1 sm:bottom-2 bg-[#0a0805] px-1 py-0 sm:py-0.5 rounded-md border border-indigo-500/30 text-[7px] sm:text-[9px] font-mono font-black text-indigo-400 z-10">
+                                    <div className="absolute bottom-1 sm:bottom-2 bg-black/60 backdrop-blur-md px-1.5 sm:px-2 py-0.5 rounded-full border border-white/10 text-[7px] sm:text-[10px] font-black text-white z-10 uppercase tracking-widest shadow-lg">
                                         {eventsToday.length} EVTS
                                     </div>
                                 )}
 
                                 {isSelected && (
-                                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/10 to-transparent pointer-events-none" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/20 to-transparent pointer-events-none" />
                                 )}
                             </button>
                         );

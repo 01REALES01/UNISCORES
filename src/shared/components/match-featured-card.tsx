@@ -124,20 +124,21 @@ export function MatchFeaturedCard({ match }: MatchFeaturedCardProps) {
                     </div>
                 ) : (
                     /* REGULAR MATCH VIEW */
-                    <div className="flex items-center justify-between w-full mb-8 relative">
-                        <div className="flex flex-col items-center gap-3 w-[40%] text-center px-1 sm:px-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full mb-8 relative gap-6 sm:gap-2">
+                        {/* Team A */}
+                        <div className="flex sm:flex-col items-center gap-4 sm:gap-3 w-full sm:w-[40%] text-center px-1 sm:px-4">
                             <Avatar 
                                 name={getDisplayName(match, 'a')} 
                                 src={match.atleta_a?.avatar_url}
                                 size="lg" 
                                 className={cn(
-                                    "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
+                                    "w-14 h-14 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
                                     getWinnerStyle(sport, wonA)
                                 )} 
                             />
-                            <div className="flex flex-col min-w-0 items-center w-full">
+                            <div className="flex flex-col min-w-0 items-start sm:items-center w-full">
                                 <span className={cn(
-                                    "text-xs sm:text-sm font-black w-full line-clamp-2 leading-tight",
+                                    "text-sm sm:text-base font-black w-full line-clamp-2 leading-tight",
                                     (isFinished && !wonA) ? "text-white/40" : "text-white"
                                 )}>
                                     {getDisplayName(match, 'a')}
@@ -148,17 +149,18 @@ export function MatchFeaturedCard({ match }: MatchFeaturedCardProps) {
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-center justify-center w-[20%] relative z-10 shrink-0 min-w-[100px] sm:min-w-[140px]">
+                        {/* Middle: Score/Time */}
+                        <div className="flex flex-col items-center justify-center w-full sm:w-[20%] relative z-10 shrink-0 min-w-0 py-4 sm:py-0 bg-white/5 sm:bg-transparent rounded-2xl border border-white/5 sm:border-none">
                             {isLive ? (
                                 <div className="flex flex-col items-center">
                                     {sport === 'Ajedrez' ? (
                                         <span className="text-sm sm:text-base font-black text-rose-500 tracking-widest bg-rose-500/10 px-3 py-1 rounded-lg border border-rose-500/30">VS</span>
                                     ) : (
-                                        <span className="text-3xl sm:text-4xl font-black text-rose-500 tracking-tighter drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]">
+                                        <span className="text-4xl sm:text-5xl font-black text-rose-500 tracking-tighter drop-shadow-[0_0_20px_rgba(244,63,94,0.6)]">
                                             {scoreA} - {scoreB}
                                         </span>
                                     )}
-                                    <div className="scale-75 origin-top mt-1">
+                                    <div className="scale-90 sm:scale-75 origin-top mt-1">
                                         <PublicLiveTimer detalle={match.marcador_detalle} deporte={sport} />
                                     </div>
                                 </div>
@@ -177,7 +179,7 @@ export function MatchFeaturedCard({ match }: MatchFeaturedCardProps) {
                                 </div>
                             ) : (
                                 <>
-                                    <span className="text-2xl sm:text-3xl font-black tracking-tighter text-[#FFC000]">
+                                    <span className="text-3xl sm:text-4xl font-black tracking-tighter text-[#FFC000]">
                                         {new Date(match.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                     <span className="text-[9px] font-black text-white/30 uppercase mt-1">HOY</span>
@@ -185,19 +187,20 @@ export function MatchFeaturedCard({ match }: MatchFeaturedCardProps) {
                             )}
                         </div>
 
-                        <div className="flex flex-col items-center gap-3 w-[40%] text-center px-1 sm:px-4">
+                        {/* Team B */}
+                        <div className="flex flex-row-reverse sm:flex-col items-center gap-4 sm:gap-3 w-full sm:w-[40%] text-center px-1 sm:px-4">
                             <Avatar 
                                 name={getDisplayName(match, 'b')} 
                                 src={match.atleta_b?.avatar_url}
                                 size="lg" 
                                 className={cn(
-                                    "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
+                                    "w-14 h-14 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
                                     getWinnerStyle(sport, wonB)
                                 )} 
                             />
-                            <div className="flex flex-col min-w-0 items-center w-full">
+                            <div className="flex flex-col min-w-0 items-end sm:items-center w-full">
                                 <span className={cn(
-                                    "text-xs sm:text-sm font-black w-full line-clamp-2 leading-tight",
+                                    "text-sm sm:text-base font-black w-full line-clamp-2 leading-tight",
                                     (isFinished && !wonB) ? "text-white/40" : "text-white"
                                 )}>
                                     {getDisplayName(match, 'b')}
