@@ -77,12 +77,29 @@ export function CalendarGrid({
                         const eventsToday = filteredMatches.filter(m => isSameDay(new Date(m.fecha), dayDate));
                         const hasEvents = eventsToday.length > 0;
 
+                        // Group events by sport to only show one icon per sport, maintaining status priority
+                        const uniqueSportsMap = new Map<string, string>();
+                        eventsToday.forEach(e => {
+                            const sportName = e.disciplinas?.name;
+                            if (!sportName) return;
+                            const currentStatus = uniqueSportsMap.get(sportName);
+                            // Prioritize status: en_vivo > programado > finalizado
+                            if (!currentStatus) {
+                                uniqueSportsMap.set(sportName, e.estado);
+                            } else if (e.estado === 'en_vivo') {
+                                uniqueSportsMap.set(sportName, 'en_vivo');
+                            } else if (e.estado === 'programado' && currentStatus === 'finalizado') {
+                                uniqueSportsMap.set(sportName, 'programado');
+                            }
+                        });
+                        const uniqueSportsEvents = Array.from(uniqueSportsMap.entries()).map(([name, estado]) => ({ name, estado }));
+
                         return (
                             <button
                                 key={i}
                                 onClick={() => onDateSelect(dayDate)}
                                 className={cn(
-                                    "aspect-square flex flex-col items-center justify-start py-2 sm:py-3 transition-all relative group focus:outline-none",
+                                    "aspect-square flex flex-col items-center justify-start py-1 sm:py-3 transition-all relative group focus:outline-none",
                                     isSelected
                                         ? "bg-indigo-500/20 z-20 shadow-[inset_0_0_20px_rgba(99,102,241,0.3)] ring-1 ring-inset ring-indigo-500/50"
                                         : (isToday
@@ -91,7 +108,7 @@ export function CalendarGrid({
                                 )}
                             >
                                 <span className={cn(
-                                    "text-sm sm:text-lg font-bold z-10 transition-colors",
+                                    "text-[11px] sm:text-lg font-bold z-10 transition-colors",
                                     isSelected ? "text-indigo-400" : (isToday ? "text-rose-400 font-black" : "text-white/60 group-hover:text-white")
                                 )}>
                                     {i + 1}
@@ -99,26 +116,26 @@ export function CalendarGrid({
 
                                 {/* Event Indicators */}
                                 {hasEvents && !isSelected && (
-                                    <div className="absolute bottom-1.5 sm:bottom-2 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 sm:gap-1 w-[90%] flex-wrap">
-                                        {eventsToday.slice(0, 3).map((e, idx) => (
+                                    <div className="absolute bottom-0.5 sm:bottom-2 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 sm:gap-1 w-[90%] flex-wrap cursor-pointer" title={`${eventsToday.length} eventos en total`}>
+                                        {uniqueSportsEvents.slice(0, 3).map((s, idx) => (
                                             <div key={idx} className={cn(
-                                                "w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-[#0a0805] border",
-                                                e.estado === 'en_vivo' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' :
-                                                    e.estado === 'finalizado' ? 'border-white/10 text-white/30' : 'border-indigo-500/30 text-indigo-400'
+                                                "w-2.5 h-2.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-[#0a0805] border",
+                                                s.estado === 'en_vivo' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' :
+                                                    s.estado === 'finalizado' ? 'border-white/10 text-white/30' : 'border-indigo-500/30 text-indigo-400'
                                             )}>
-                                                <SportIcon sport={e.disciplinas?.name ?? ''} size={10} className="scale-75 sm:scale-100 transition-transform" />
+                                                <SportIcon sport={s.name} size={10} className="scale-[0.6] sm:scale-100 transition-transform" />
                                             </div>
                                         ))}
-                                        {eventsToday.length > 3 && (
-                                            <div className="text-[8px] sm:text-[9px] font-black text-white/50 pl-0.5">
-                                                +{eventsToday.length - 3}
+                                        {uniqueSportsEvents.length > 3 && (
+                                            <div className="text-[7px] sm:text-[9px] font-black text-white/50 pl-0.5">
+                                                +{uniqueSportsEvents.length - 3}
                                             </div>
                                         )}
                                     </div>
                                 )}
 
                                 {isSelected && hasEvents && (
-                                    <div className="absolute bottom-2 bg-[#0a0805] px-1.5 py-0.5 rounded-md border border-indigo-500/30 text-[9px] font-mono font-black text-indigo-400 z-10">
+                                    <div className="absolute bottom-1 sm:bottom-2 bg-[#0a0805] px-1 py-0 sm:py-0.5 rounded-md border border-indigo-500/30 text-[7px] sm:text-[9px] font-mono font-black text-indigo-400 z-10">
                                         {eventsToday.length} EVTS
                                     </div>
                                 )}
