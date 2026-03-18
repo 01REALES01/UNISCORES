@@ -6,19 +6,20 @@ import type { PartidoWithRelations } from "@/modules/matches/types";
 
 export function useCalendar() {
     const { matches, loading, error } = useMatches();
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-    const [activeFilter, setActiveFilter] = useState('all');
+    const [sportFilter, setSportFilter] = useState('all');
+    const [showLiveOnly, setShowLiveOnly] = useState(false);
 
     // Calendar logic
-    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+    const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
     
     // 0 is Sunday, let's make Monday 0 for standard display
-    let firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay() - 1;
+    let firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay() - 1;
     if (firstDayOfMonth === -1) firstDayOfMonth = 6; // Sunday becomes 6
 
-    const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-    const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
 
     const isSameDay = (d1: Date, d2: Date) => {
         return d1.getDate() === d2.getDate() &&
@@ -28,10 +29,11 @@ export function useCalendar() {
 
     // Filtered data
     const filteredMatches = useMemo(() => {
-        if (activeFilter === 'all') return (matches as unknown as PartidoWithRelations[]);
-        if (activeFilter === 'live') return (matches as unknown as PartidoWithRelations[]).filter(m => m.estado === 'en_vivo');
-        return (matches as unknown as PartidoWithRelations[]).filter(m => m.disciplinas?.name === activeFilter);
-    }, [matches, activeFilter]);
+        let list = (matches as unknown as PartidoWithRelations[]) || [];
+        if (showLiveOnly) list = list.filter(m => m.estado === 'en_vivo');
+        if (sportFilter !== 'all') list = list.filter(m => m.disciplinas?.name === sportFilter);
+        return list;
+    }, [matches, showLiveOnly, sportFilter]);
 
     // Matches for selected date
     const selectedDateMatches = useMemo(() => {
@@ -64,18 +66,20 @@ export function useCalendar() {
 
     return {
         // State
-        currentDate,
+        currentMonth,
         selectedDate,
-        activeFilter,
+        sportFilter,
+        showLiveOnly,
         loading,
         error,
 
         // Actions
-        setCurrentDate,
+        setCurrentMonth,
         setSelectedDate,
-        setActiveFilter,
-        handlePrevMonth,
-        handleNextMonth,
+        setSportFilter,
+        setShowLiveOnly,
+        prevMonth,
+        nextMonth,
 
         // Data
         matches,

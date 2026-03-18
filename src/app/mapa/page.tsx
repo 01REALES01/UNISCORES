@@ -299,7 +299,7 @@ export default function CampusMapPage() {
                                                         <div className="flex items-center justify-between mb-4">
                                                             <div className="flex items-center gap-2">
                                                                 <div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center border border-white/10 text-[#FFC000]">
-                                                                    <SportIcon sport={currentOrNext.disciplinas?.name} size={16} />
+                                                                    <SportIcon sport={currentOrNext.disciplinas?.name || ''} size={16} />
                                                                 </div>
                                                                 <span className="text-xs font-bold text-zinc-300">{currentOrNext.disciplinas?.name}</span>
                                                             </div>

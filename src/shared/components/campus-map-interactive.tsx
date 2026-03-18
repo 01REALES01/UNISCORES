@@ -25,9 +25,9 @@ type Match = {
     carrera_b?: { nombre: string } | null;
     delegacion_a?: string;
     delegacion_b?: string;
-    disciplinas: { name: string; icon?: string; emoji?: string };
-    estado: 'programado' | 'en_vivo' | 'finalizado';
-    lugar: string;
+    disciplinas?: { name: string; icon?: string; emoji?: string } | null;
+    estado: 'programado' | 'en_vivo' | 'finalizado' | 'cancelado';
+    lugar?: string;
     marcador_detalle?: any;
     fecha?: string;
     atleta_a?: any;
@@ -288,7 +288,7 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                                                                     )}
 
                                                                     <div className="mt-2 flex items-center justify-center gap-1 opacity-50 text-[10px] uppercase tracking-widest">
-                                                                        <span>{m.disciplinas.emoji || SPORT_EMOJI[m.disciplinas.name] || '🏅'} {m.disciplinas.name}</span>
+                                                                        <span>{(m.disciplinas?.emoji || (m.disciplinas?.name ? SPORT_EMOJI[m.disciplinas.name] : '') || '🏅')} {m.disciplinas?.name || 'Deporte'}</span>
                                                                     </div>
                                                                 </Link>
                                                             ))}

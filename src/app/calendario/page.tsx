@@ -1,7 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Navbar } from "@/shared/components/navbar";
+import { MainNavbar as Navbar } from "@/shared/components/main-navbar";
+import { useAuth } from "@/hooks/useAuth";
 import { useCalendar } from "@/hooks/use-calendar";
 import { CalendarFilters } from "@/shared/components/calendar-filters";
 import { CalendarGrid } from "@/shared/components/calendar-grid";
@@ -9,6 +10,7 @@ import { MatchFeaturedCard } from "@/shared/components/match-featured-card";
 import { CalendarMatchList } from "@/shared/components/calendar-match-list";
 
 export default function CalendarioPage() {
+    const { user, profile, isStaff } = useAuth();
     const {
         loading,
         currentMonth,
@@ -23,12 +25,13 @@ export default function CalendarioPage() {
         setSelectedDate,
         setSportFilter,
         setShowLiveOnly,
-        isSameDay
+        isSameDay,
+        firstDayOfMonth
     } = useCalendar();
 
     return (
         <div className="min-h-screen bg-[#0a0805] selection:bg-indigo-500/30">
-            <Navbar />
+            <Navbar user={user} profile={profile} isStaff={isStaff} />
             
             <main className="relative pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
                 {/* Background effects */}
@@ -54,10 +57,16 @@ export default function CalendarioPage() {
                         </div>
 
                         <CalendarFilters 
-                            sportFilter={sportFilter}
-                            showLiveOnly={showLiveOnly}
-                            setSportFilter={setSportFilter}
-                            setShowLiveOnly={setShowLiveOnly}
+                            activeFilter={showLiveOnly ? 'live' : sportFilter}
+                            onFilterChange={(id) => {
+                                if (id === 'live') {
+                                    setShowLiveOnly(!showLiveOnly);
+                                    if (!showLiveOnly) setSportFilter('all');
+                                } else {
+                                    setSportFilter(id);
+                                    setShowLiveOnly(false);
+                                }
+                            }}
                         />
                     </div>
 
@@ -79,14 +88,15 @@ export default function CalendarioPage() {
                         {/* Calendar Grid Section */}
                         <div className="lg:col-span-4 space-y-6">
                             <CalendarGrid 
-                                currentMonth={currentMonth}
+                                currentDate={currentMonth}
                                 selectedDate={selectedDate}
+                                onDateSelect={setSelectedDate}
+                                onPrevMonth={prevMonth}
+                                onNextMonth={nextMonth}
                                 daysInMonth={daysInMonth}
-                                prevMonth={prevMonth}
-                                nextMonth={nextMonth}
-                                setSelectedDate={setSelectedDate}
+                                firstDayOfMonth={firstDayOfMonth}
+                                filteredMatches={filteredMatches}
                                 isSameDay={isSameDay}
-                                matches={filteredMatches}
                             />
 
                             {/* Info Card */}
