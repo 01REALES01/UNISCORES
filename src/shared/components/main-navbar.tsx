@@ -9,6 +9,7 @@ import { AnimatePresence, m } from "framer-motion";
 import { HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords, Calendar as CalendarIcon, ChevronRight } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { Button, Avatar } from "@/components/ui-primitives";
+import { NotificationBell } from "@/components/notification-bell";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -129,6 +130,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
 
                     {/* 3. RIGHT: User / Login Section (Mobile: End, Desktop: End) */}
                     <div className="flex-1 flex items-center justify-end order-3 gap-2">
+                        {user && <NotificationBell />}
                         <div className="flex items-center gap-2">
                             {!user ? (
                                 <Link href="/login">

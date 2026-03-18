@@ -6,12 +6,14 @@ import { LazyMotion, domAnimation } from "framer-motion";
 
 import { ToastProvider } from "@/components/toast-provider";
 import { WelcomeNotice } from "@/components/welcome-notice";
+import { ServiceWorkerRegister } from "@/shared/components/sw-register";
 
 export function Providers({ children }: { children: ReactNode }) {
     return (
         <AuthProvider>
             <ToastProvider />
             <WelcomeNotice />
+            <ServiceWorkerRegister />
             <LazyMotion features={domAnimation}>
                 {children}
             </LazyMotion>

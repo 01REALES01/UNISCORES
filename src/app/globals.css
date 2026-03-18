@@ -120,6 +120,20 @@ body {
   scrollbar-width: none;
 }
 
+.mask-linear-fade {
+  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+}
+
 /* Glass Card Effect */
 .glass {
   background: var(--glass-bg);
@@ -211,6 +225,26 @@ a,
 input,
 .interactive {
   transition: all 0.2s ease;
+}
+
+/* Scrollbar hide utility (Tailwind-style class name) */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Notification bell wiggle */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(12deg); }
+  30% { transform: rotate(-10deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-6deg); }
+  75% { transform: rotate(3deg); }
 }
 
 /* Focus styles */

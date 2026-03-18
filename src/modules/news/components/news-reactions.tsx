@@ -6,8 +6,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
-import data from "@emoji-mart/data";
-import Picker from "@emoji-mart/react";
+import dynamic from "next/dynamic";
+
+// Carga emoji-mart SOLO cuando el picker se abre — evita 424KB en el bundle inicial
+const Picker = dynamic(() => import("@emoji-mart/react"), { ssr: false });
+const getEmojiData = () => import("@emoji-mart/data").then((m) => m.default);
 
 // ─── Default visible reactions ───────────────────────────────────────────────
 const DEFAULT_EMOJIS = ["🔥", "👏", "💪", "😮", "❤️", "🏆"];
@@ -23,6 +26,7 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
     const [animating, setAnimating] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [pickerOpen, setPickerOpen] = useState(false);
+    const [emojiData, setEmojiData] = useState<unknown>(null);
     const pickerRef = useRef<HTMLDivElement>(null);
 
     // Close picker on outside click
@@ -234,11 +238,11 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
                         />
                     </button>
 
-                    {/* emoji-mart Full Picker */}
+                    {/* emoji-mart Full Picker — carga lazy cuando se abre */}
                     {pickerOpen && (
                         <div className="absolute bottom-full mb-2 right-0 z-50">
                             <Picker
-                                data={data}
+                                data={emojiData ?? getEmojiData}
                                 onEmojiSelect={(emoji: any) => toggleReaction(emoji.native)}
                                 theme="dark"
                                 locale="es"
