@@ -423,23 +423,23 @@ export default function Home() {
             })()}
 
             {/* QUINIELA CTA BANNER */}
-            <div className="relative rounded-[2rem] overflow-hidden border border-orange-500/30 shadow-[0_0_40px_rgba(249,115,22,0.15)] group cursor-pointer mb-8 bg-[#120e08]">
+            <div className="relative rounded-[2rem] overflow-hidden border border-red-600/30 shadow-[0_0_40px_rgba(220,38,38,0.15)] group cursor-pointer mb-8 bg-[#120e08]">
               <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-red-600/10 to-transparent" />
 
               <div className="relative z-10 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 gap-6">
                 <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-black shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(220,38,38,0.3)]">
                     <TrendingUp size={32} strokeWidth={2.5} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-white mb-1 tracking-tight">ACIERTA Y GANA</h3>
-                    <p className="text-amber-200/60 text-sm font-medium">Lidera el tablero y gana premios exclusivos.</p>
+                    <h3 className="text-2xl font-black text-white mb-1 tracking-tight uppercase">ACIERTA Y GANA</h3>
+                    <p className="text-orange-200/60 text-sm font-medium">Lidera el tablero y gana premios exclusivos.</p>
                   </div>
                 </div>
 
                 <Link href="/quiniela" className="w-full md:w-auto">
-                  <Button className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-black font-black uppercase tracking-[0.2em] px-8 py-6 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.3)] transform group-hover:scale-105 transition-all outline-none border-none">
+                  <Button className="w-full md:w-auto bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-black uppercase tracking-[0.2em] px-8 py-6 rounded-2xl shadow-[0_0_30px_rgba(220,38,38,0.3)] transform group-hover:scale-105 transition-all outline-none border-none">
                     Jugar Ahora <ArrowRight size={18} className="ml-2" />
                   </Button>
                 </Link>

@@ -3,7 +3,7 @@
 import { BatteryCharging, Activity } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Badge, Avatar } from "@/shared/components/ui-primitives";
+import { Avatar } from "@/shared/components/ui-primitives";
 import { SportIcon } from "@/shared/components/sport-icons";
 import { PublicLiveTimer } from "@/shared/components/public-live-timer";
 import { SPORT_BORDER, SPORT_ACCENT, SPORT_GRADIENT } from "@/lib/constants";
@@ -33,21 +33,16 @@ interface CalendarMatchListProps {
 }
 
 export function CalendarMatchList({ loading, selectedDate, matches, isSameDay }: CalendarMatchListProps) {
-    return (
-        <div className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] border border-white/5 p-6 sm:p-8 shadow-2xl flex-1 flex flex-col min-h-[400px]">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-black text-white">
-                    {isSameDay(selectedDate, new Date()) ? 'Encuentros de Hoy' : `Partidos (${selectedDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })})`}
-                </h3>
-                <Badge variant="outline" className="text-[10px] font-black bg-[#0a0805] border-white/10">{matches.length}</Badge>
-            </div>
+    const dayMatches = matches.filter(m => isSameDay(new Date(m.fecha), selectedDate));
 
-            <div className="grid grid-cols-1 gap-4 flex-1 overflow-y-auto pr-2 custom-scrollbar content-start">
+    return (
+        <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-3 content-start">
                 {loading && (
                     <div className="text-center py-6 text-white/30 text-xs font-bold uppercase animate-pulse">Cargando...</div>
                 )}
 
-                {!loading && matches.length === 0 && (
+                {!loading && dayMatches.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-gradient-to-b from-white/5 to-transparent border border-white/5 rounded-3xl relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                         <div className="w-16 h-16 mb-4 relative z-10 flex items-center justify-center group-hover:-translate-y-2 transition-transform duration-500">
@@ -63,7 +58,7 @@ export function CalendarMatchList({ loading, selectedDate, matches, isSameDay }:
                     </div>
                 )}
 
-                {!loading && matches.map(match => {
+                {!loading && dayMatches.map(match => {
                     const sportName = match.disciplinas?.name ?? '';
                     const sportBorder = SPORT_BORDER[sportName] || 'border-indigo-500/20';
                     const sportAccent = SPORT_ACCENT[sportName] || 'text-indigo-400';
