@@ -8,6 +8,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { respondFriendRequest } from "@/services/notification-service";
 import { Avatar } from "@/components/ui-primitives";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 function timeAgo(dateStr: string): string {
     const now = new Date();
@@ -107,10 +108,31 @@ export function NotificationBell() {
     const totalBadge = unreadCount + friendRequests.length;
 
     return (
-        <div className="relative" ref={dropdownRef}>
-            {/* Bell Button */}
+        <div className="flex items-center gap-2">
+            {/* Test Button */}
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={async () => {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+                    await supabase.from('notifications').insert({
+                        user_id: user.id,
+                        type: 'match_start',
+                        title: '🔴 [TEST] Partido en vivo',
+                        body: 'Ingeniería vs Sistemas ha comenzado',
+                        metadata: { match_id: 'test', sport: 'Fútbol', teams: 'Ingeniería vs Sistemas' }
+                    });
+                }}
+                className="px-3 py-1.5 hidden sm:flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-yellow-500/80 bg-yellow-500/10 hover:bg-yellow-500/20 hover:text-yellow-400 transition-colors rounded-full border border-yellow-500/20 cursor-pointer"
+                title="Probar Notificación"
+            >
+                <Zap size={14} />
+                <span>Test</span>
+            </button>
+
+            <div className="relative" ref={dropdownRef}>
+                {/* Bell Button */}
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
                 className={cn(
                     "relative p-2 rounded-full transition-all duration-300",
                     isOpen
@@ -282,6 +304,7 @@ export function NotificationBell() {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 }

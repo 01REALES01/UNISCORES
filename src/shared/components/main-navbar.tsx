@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import { AnimatePresence, m } from "framer-motion";
-import { HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords, Calendar as CalendarIcon, ChevronRight } from "lucide-react";
+import { HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords, Calendar as CalendarIcon, ChevronRight, Zap } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { Button, Avatar } from "@/components/ui-primitives";
 import { NotificationBell } from "@/components/notification-bell";
@@ -130,7 +130,29 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
 
                     {/* 3. RIGHT: User / Login Section (Mobile: End, Desktop: End) */}
                     <div className="flex-1 flex items-center justify-end order-3 gap-2">
-                        {user && <NotificationBell />}
+                        {user && (
+                            <>
+                                <button
+                                    onClick={async () => {
+                                        const { error } = await supabase.from('notifications').insert({
+                                            user_id: user.id,
+                                            type: 'match_start',
+                                            title: '🔴 [TEST] Partido en vivo',
+                                            body: 'Ingeniería vs Medicina ha comenzado',
+                                            metadata: { match_id: 'test', sport: 'Fútbol', teams: 'Ingeniería vs Medicina' }
+                                        });
+                                        if (error) console.error("Error sending test notif:", error);
+                                        else console.log("Test notification sent");
+                                    }}
+                                    className="px-3 py-1.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-yellow-500/80 bg-yellow-500/10 hover:bg-yellow-500/20 hover:text-yellow-400 transition-colors rounded-full border border-yellow-500/20 mr-2"
+                                    title="Enviar Notificación de Prueba"
+                                >
+                                    <Zap size={14} />
+                                    <span>Test</span>
+                                </button>
+                                <NotificationBell />
+                            </>
+                        )}
                         <div className="flex items-center gap-2">
                             {!user ? (
                                 <Link href="/login">
