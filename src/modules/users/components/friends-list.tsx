@@ -111,36 +111,39 @@ function PendingRequestCard({
     onAccept,
     onReject,
 }: {
-    request: Friendship;
+    request: any;
     onAccept: (id: string) => Promise<void>;
     onReject: (id: string) => Promise<void>;
 }) {
     const [acting, setActing] = useState<'accept' | 'reject' | null>(null);
-    const [requesterProfile, setRequesterProfile] = useState<{ full_name: string; avatar_url?: string } | null>(null);
-
-    useEffect(() => {
-        supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', request.requester_id)
-            .single()
-            .then(({ data }) => {
-                if (data) setRequesterProfile(data as { full_name: string; avatar_url?: string });
-            });
-    }, [request.requester_id]);
+    const requesterProfile = request.sender;
 
     const handleAccept = async () => {
         setActing('accept');
-        try { await onAccept(request.id); toast.success('¡Ahora son amigos!'); }
-        catch { toast.error('Error al aceptar'); }
-        finally { setActing(null); }
+        try { 
+            await onAccept(request.id); 
+            toast.success('¡Ahora son amigos!'); 
+        }
+        catch { 
+            toast.error('Error al aceptar'); 
+        }
+        finally { 
+            setActing(null); 
+        }
     };
 
     const handleReject = async () => {
         setActing('reject');
-        try { await onReject(request.id); toast.success('Solicitud rechazada'); }
-        catch { toast.error('Error al rechazar'); }
-        finally { setActing(null); }
+        try { 
+            await onReject(request.id); 
+            toast.success('Solicitud rechazada'); 
+        }
+        catch { 
+            toast.error('Error al rechazar'); 
+        }
+        finally { 
+            setActing(null); 
+        }
     };
 
     return (
@@ -374,7 +377,7 @@ export function FriendsList({ userId }: FriendsListProps) {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <AnimatePresence mode="popLayout">
-                            {friends.map((f) => (
+                            {(friends as any[]).map((f) => (
                                 <FriendCard
                                     key={f.friendship_id}
                                     friend={f}

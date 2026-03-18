@@ -2,69 +2,30 @@
 
 import useSWR from 'swr';
 import { useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { FriendProfile, FriendRelation, Friendship } from '@/modules/users/types';
+import {
+    getFriends,
+    getPendingFriendRequests,
+    getFriendshipStatus,
+    sendFriendRequest as sendRequestApi,
+    respondFriendRequest as respondRequestApi,
+    cancelFriendRequest as cancelRequestApi,
+    removeFriend as removeFriendApi,
+    type FriendRequest
+} from '@/services/notification-service';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Fetchers
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function fetchFriends(userId: string): Promise<FriendProfile[]> {
-    const { data, error } = await supabase.rpc('get_friends_with_profiles', {
-        p_user_id: userId,
-    });
-    if (error) throw error;
-    return (data as FriendProfile[]) ?? [];
-}
-
-async function fetchPendingReceived(userId: string): Promise<Friendship[]> {
-    const { data, error } = await supabase
-        .from('user_friends')
-        .select('*')
-        .eq('addressee_id', userId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-    if (error) throw error;
-    return (data as Friendship[]) ?? [];
-}
-
-async function fetchRelation(userId: string, targetId: string): Promise<FriendRelation> {
-    const { data, error } = await supabase
-        .from('user_friends')
-        .select('id, requester_id, addressee_id, status')
-        .or(
-            `and(requester_id.eq.${userId},addressee_id.eq.${targetId}),` +
-            `and(requester_id.eq.${targetId},addressee_id.eq.${userId})`
-        )
-        .maybeSingle();
-
-    if (error) throw error;
-    if (!data) return { status: 'none' };
-
-    const row = data as Friendship;
-    if (row.status === 'accepted') return { status: 'accepted', friendship_id: row.id };
-    if (row.status === 'blocked')  return { status: 'blocked',  friendship_id: row.id };
-    if (row.status === 'pending') {
-        return row.requester_id === userId
-            ? { status: 'pending_sent',     friendship_id: row.id }
-            : { status: 'pending_received', friendship_id: row.id };
-    }
-    return { status: 'none' };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Hook: lista de amigos del usuario actual
+// Hook: User's friend list and pending requests
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useFriends(userId: string | null | undefined) {
     const {
-        data: friends = [],
+        data: friendRequests = [],
         isLoading,
         error,
         mutate,
     } = useSWR(
         userId ? ['friends', userId] : null,
-        ([, uid]) => fetchFriends(uid),
+        ([, uid]) => getFriends(uid),
         { revalidateOnFocus: false }
     );
 
@@ -73,43 +34,46 @@ export function useFriends(userId: string | null | undefined) {
         mutate: mutatePending,
     } = useSWR(
         userId ? ['friends-pending', userId] : null,
-        ([, uid]) => fetchPendingReceived(uid),
+        ([, uid]) => getPendingFriendRequests(uid),
         { revalidateOnFocus: false }
     );
 
+    // Transform FriendRequest[] into a simpler profile list for the UI
+    const friends = friendRequests.map(fr => {
+        const isReceiver = fr.receiver_id === userId;
+        const profile = isReceiver ? fr.sender : fr.receiver;
+        if (!profile) return null;
+        
+        return {
+            ...profile,
+            friend_id: profile.id,
+            friendship_id: fr.id,
+            since: fr.updated_at
+        };
+    }).filter(Boolean);
+
     const sendRequest = useCallback(async (targetId: string) => {
         if (!userId) return;
-        const { error } = await supabase
-            .from('user_friends')
-            .insert({ requester_id: userId, addressee_id: targetId });
-        if (error) throw error;
-        await mutate();
-    }, [userId, mutate]);
+        const result = await sendRequestApi(userId, targetId);
+        if (!result.success) throw new Error(result.error);
+        await Promise.all([mutate(), mutatePending()]);
+    }, [userId, mutate, mutatePending]);
 
-    const acceptRequest = useCallback(async (friendshipId: string) => {
-        const { error } = await supabase
-            .from('user_friends')
-            .update({ status: 'accepted' })
-            .eq('id', friendshipId);
-        if (error) throw error;
+    const acceptRequest = useCallback(async (requestId: string) => {
+        const success = await respondRequestApi(requestId, true);
+        if (!success) throw new Error('Failed to accept');
         await Promise.all([mutate(), mutatePending()]);
     }, [mutate, mutatePending]);
 
-    const rejectRequest = useCallback(async (friendshipId: string) => {
-        const { error } = await supabase
-            .from('user_friends')
-            .delete()
-            .eq('id', friendshipId);
-        if (error) throw error;
+    const rejectRequest = useCallback(async (requestId: string) => {
+        const success = await respondRequestApi(requestId, false);
+        if (!success) throw new Error('Failed to reject');
         await mutatePending();
     }, [mutatePending]);
 
-    const removeFriend = useCallback(async (friendshipId: string) => {
-        const { error } = await supabase
-            .from('user_friends')
-            .delete()
-            .eq('id', friendshipId);
-        if (error) throw error;
+    const removeFriend = useCallback(async (requestId: string) => {
+        const success = await removeFriendApi(requestId);
+        if (!success) throw new Error('Failed to remove');
         await mutate();
     }, [mutate]);
 
@@ -127,8 +91,7 @@ export function useFriends(userId: string | null | undefined) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hook: relación entre el usuario actual y un perfil específico
-// Usado en la página pública de perfil para mostrar el botón correcto
+// Hook: Relationship between the current user and a specific profile
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useFriendRelation(
@@ -136,47 +99,45 @@ export function useFriendRelation(
     targetId: string | null | undefined
 ) {
     const {
-        data: relation = { status: 'none' } as FriendRelation,
+        data: relation = { status: 'none' },
         isLoading,
         mutate,
     } = useSWR(
         currentUserId && targetId && currentUserId !== targetId
             ? ['friend-relation', currentUserId, targetId]
             : null,
-        ([, uid, tid]) => fetchRelation(uid, tid),
+        ([, uid, tid]) => getFriendshipStatus(uid, tid),
         { revalidateOnFocus: false }
     );
 
     const sendRequest = useCallback(async () => {
         if (!currentUserId || !targetId) return;
-        const { error } = await supabase
-            .from('user_friends')
-            .insert({ requester_id: currentUserId, addressee_id: targetId });
-        if (error) throw error;
+        const result = await sendRequestApi(currentUserId, targetId);
+        if (!result.success) throw new Error(result.error);
         await mutate();
     }, [currentUserId, targetId, mutate]);
 
     const cancelOrRemove = useCallback(async () => {
-        if (relation.status === 'none') return;
-        const { friendship_id } = relation as { friendship_id: string; status: string };
-        const { error } = await supabase
-            .from('user_friends')
-            .delete()
-            .eq('id', friendship_id);
-        if (error) throw error;
+        if (relation.status === 'none' || !relation.requestId) return;
+        const success = await cancelRequestApi(relation.requestId);
+        if (!success) throw new Error('Failed to cancel');
         await mutate();
     }, [relation, mutate]);
 
     const acceptRequest = useCallback(async () => {
-        if (relation.status !== 'pending_received') return;
-        const { friendship_id } = relation as { friendship_id: string; status: string };
-        const { error } = await supabase
-            .from('user_friends')
-            .update({ status: 'accepted' })
-            .eq('id', friendship_id);
-        if (error) throw error;
+        if (relation.status !== 'pending' || !relation.requestId || relation.isSender) return;
+        const success = await respondRequestApi(relation.requestId, true);
+        if (!success) throw new Error('Failed to accept');
         await mutate();
     }, [relation, mutate]);
 
-    return { relation, isLoading, sendRequest, cancelOrRemove, acceptRequest };
+    // Map status to match the old 'pending_sent' and 'pending_received' for compatibility
+    const compatibleRelation = {
+        ...relation,
+        status: relation.status === 'pending'
+            ? (relation.isSender ? 'pending_sent' : 'pending_received')
+            : (relation.status === 'accepted' ? 'accepted' : 'none')
+    };
+
+    return { relation: compatibleRelation, isLoading, sendRequest, cancelOrRemove, acceptRequest };
 }

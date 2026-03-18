@@ -16,7 +16,7 @@ export const options = {
   },
 };
 
-const BASE_URL = 'http://localhost:3000'; // CAMBIAR POR URL DE VERCEL (PRODUCCIÓN)
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3001'; // Pasar -e BASE_URL=https://... para producción
 
 export default function () {
   // 1. Visita Home
