@@ -60,7 +60,7 @@ export function useMatchControl(matchId: string) {
             setLoading(true);
             const { data, error } = await supabase
                 .from('partidos')
-                .select(`*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`)
+                .select(`*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)`)
                 .eq('id', matchId)
                 .single();
 

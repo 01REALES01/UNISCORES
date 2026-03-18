@@ -37,7 +37,7 @@ export default function NoticiaDetailPage() {
 
             const { data, error } = await safeQuery<any>(
                 supabase.from('noticias')
-                    .select('id, titulo, contenido, imagen_url, categoria, autor_nombre, partido_id, carrera, published, created_at, partidos(id, equipo_a, equipo_b, fecha, estado, lugar, marcador_detalle, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre))')
+                    .select('id, titulo, contenido, imagen_url, categoria, autor_nombre, partido_id, carrera, published, created_at, partidos(id, equipo_a, equipo_b, fecha, estado, lugar, marcador_detalle, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url))')
                     .eq('id', id)
                     .single(),
                 'noticia-detail'
@@ -198,7 +198,7 @@ export default function NoticiaDetailPage() {
                             <div className="flex items-center justify-center gap-1 sm:gap-4 flex-1 px-1 sm:px-4 relative z-10">
                                 <div className="flex items-center justify-end gap-2 sm:gap-3 flex-1">
                                     <span className="text-xs sm:text-sm font-black truncate text-right">{noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a}</span>
-                                    <Avatar name={noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
+                                    <Avatar name={noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a} src={noticia.partidos.carrera_a?.escudo_url} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
                                 </div>
 
                                 {noticia.partidos.estado === 'programado' ? (
@@ -214,7 +214,7 @@ export default function NoticiaDetailPage() {
                                 )}
 
                                 <div className="flex items-center justify-start gap-2 sm:gap-3 flex-1">
-                                    <Avatar name={noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
+                                    <Avatar name={noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b} src={noticia.partidos.carrera_b?.escudo_url} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
                                     <span className="text-xs sm:text-sm font-black truncate text-left">{noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b}</span>
                                 </div>
                             </div>

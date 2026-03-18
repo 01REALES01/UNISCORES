@@ -39,8 +39,8 @@ export type Partido = {
 
 export type PartidoWithRelations = Partido & {
   disciplinas?: { name: string; icon: string } | null;
-  carrera_a?: { nombre: string } | null;
-  carrera_b?: { nombre: string } | null;
+  carrera_a?: { nombre: string; escudo_url?: string } | null;
+  carrera_b?: { nombre: string; escudo_url?: string } | null;
   atleta_a?: { id: string; full_name: string; avatar_url?: string } | null;
   atleta_b?: { id: string; full_name: string; avatar_url?: string } | null;
 };

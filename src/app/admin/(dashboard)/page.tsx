@@ -17,7 +17,7 @@ export default function AdminDashboard() {
 
     const fetchData = useCallback(async () => {
         const { data } = await safeQuery(
-            supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)').order('fecha', { ascending: false }),
+            supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)').order('fecha', { ascending: false }),
             'admin-dashboard'
         );
         if (data) setPartidos(data as any);

@@ -44,7 +44,7 @@ export function MedalLeaderboard() {
         const [matchesResult, carrerasResult] = await Promise.all([
             safeQuery(
                 supabase.from('partidos')
-                    .select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)'),
+                    .select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)'),
                 'medallero-fetch'
             ),
             supabase.from('carreras').select('id, nombre'),
@@ -127,8 +127,14 @@ export function MedalLeaderboard() {
             const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? det.puntos_a ?? det.juegos_a ?? 0;
             const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? det.puntos_b ?? det.juegos_b ?? 0;
 
-            if (careerStats[carreraA]) careerStats[carreraA].played!++;
-            if (careerStats[carreraB]) careerStats[carreraB].played!++;
+            if (careerStats[carreraA]) {
+                careerStats[carreraA].played!++;
+                if (m.carrera_a?.escudo_url) careerStats[carreraA].escudo_url = m.carrera_a.escudo_url;
+            }
+            if (careerStats[carreraB]) {
+                careerStats[carreraB].played!++;
+                if (m.carrera_b?.escudo_url) careerStats[carreraB].escudo_url = m.carrera_b.escudo_url;
+            }
 
             if (scoreA > scoreB) {
                 if (careerStats[carreraA]) { careerStats[carreraA].won!++; careerStats[carreraA].puntos += 3; }
@@ -289,7 +295,11 @@ export function MedalLeaderboard() {
 
                     {/* Team Avatar/Initial */}
                     <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/5 rounded-xl flex items-center justify-center mb-4 border border-white/5 overflow-hidden">
-                        <span className="text-lg sm:text-xl font-black text-white/50">{getInitials(entry.equipo_nombre)}</span>
+                        {entry.escudo_url ? (
+                            <img src={entry.escudo_url} alt={entry.equipo_nombre} className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="text-lg sm:text-xl font-black text-white/50">{getInitials(entry.equipo_nombre)}</span>
+                        )}
                     </div>
 
                     {/* Info */}
@@ -443,9 +453,15 @@ export function MedalLeaderboard() {
                                 {/* Avatar Column */}
                                 <div className="w-[100px] sm:w-[130px] shrink-0 border-r border-white/5 relative overflow-hidden flex items-center justify-center bg-black/40">
                                     <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent mix-blend-overlay" />
-                                    <span className="text-4xl sm:text-5xl font-black text-white/10 uppercase tracking-tighter mix-blend-plus-lighter z-10 filter grayscale contrast-200">
-                                        {getInitials(entry.equipo_nombre)}
-                                    </span>
+                                    {entry.escudo_url ? (
+                                        <div className="w-16 h-16 sm:w-20 sm:h-20 z-10 drop-shadow-lg relative flex items-center justify-center">
+                                            <img src={entry.escudo_url} alt={entry.equipo_nombre} className="w-full h-full object-contain" />
+                                        </div>
+                                    ) : (
+                                        <span className="text-4xl sm:text-5xl font-black text-white/10 uppercase tracking-tighter mix-blend-plus-lighter z-10 filter grayscale contrast-200">
+                                            {getInitials(entry.equipo_nombre)}
+                                        </span>
+                                    )}
                                     {/* Optional hovering glow */}
                                     <div className="absolute inset-0 bg-red-600/0 group-hover:bg-red-600/10 transition-colors duration-500" />
                                 </div>

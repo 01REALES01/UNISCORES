@@ -321,7 +321,7 @@ export default function PublicMatchDetail() {
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
                                             `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
                                         )} />
-                                        <Avatar name={getDisplayName(match, 'a')} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
+                                        <Avatar name={getDisplayName(match, 'a')} src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
                                         {match.carrera_a_id ? (
@@ -423,7 +423,7 @@ export default function PublicMatchDetail() {
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
                                             `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
                                         )} />
-                                        <Avatar name={getDisplayName(match, 'b')} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
+                                        <Avatar name={getDisplayName(match, 'b')} src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0805]" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
                                         {match.carrera_b_id ? (

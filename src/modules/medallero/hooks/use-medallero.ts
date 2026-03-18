@@ -151,7 +151,7 @@ export function useMedallero(activeSport: string = 'todos', activeGender: string
         async () => {
             const { data: rawMatches, error } = await safeQuery(
                 supabase.from('partidos').select(
-                    '*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)'
+                    '*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)'
                 ),
                 'medallero-fetch'
             );

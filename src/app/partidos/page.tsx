@@ -323,7 +323,7 @@ function UnifiedCard({
                         <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
                             <Avatar 
                                 name={getDisplayName(partido, 'a')} 
-                                src={partido.atleta_a?.avatar_url}
+                                src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url}
                                 size="lg" 
                                 className={cn(
                                 "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
@@ -387,7 +387,7 @@ function UnifiedCard({
                         <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
                             <Avatar 
                                 name={getDisplayName(partido, 'b')} 
-                                src={partido.atleta_b?.avatar_url}
+                                src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url}
                                 size="lg" 
                                 className={cn(
                                 "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
