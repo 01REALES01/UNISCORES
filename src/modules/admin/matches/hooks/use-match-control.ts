@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { invalidateCache } from "@/lib/supabase-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuditLogger } from "@/hooks/useAuditLogger";
 import { stampAudit, stampEventAudit } from "@/lib/audit-helpers";
 import { 
   getCurrentScore, 
@@ -19,6 +20,7 @@ import type { PartidoWithRelations as Partido, Evento, Jugador } from "@/modules
 
 export function useMatchControl(matchId: string) {
     const { profile } = useAuth();
+    const { logAction } = useAuditLogger();
     const [match, setMatch] = useState<Partido | null>(null);
     const [loading, setLoading] = useState(true);
     const [errorCtx, setErrorCtx] = useState<string | null>(null);
@@ -218,6 +220,12 @@ export function useMatchControl(matchId: string) {
 
                 if (error) throw error;
                 registrarEventoSistema('inicio', 'Inicio del partido');
+                
+                // Log Action
+                await logAction('UPDATE_MATCH', 'partido', matchId, {
+                    nuevo_estado: 'en_vivo',
+                    info: 'El partido ha comenzado'
+                });
             } else {
                 const { error } = await supabase.from('partidos').update({
                     marcador_detalle: auditDetalle(nuevoDetalle),
@@ -264,6 +272,21 @@ export function useMatchControl(matchId: string) {
                 if (tipo === 'punto_3') puntos = 3;
                 const nuevoMarcador = addPoints(disciplinaName, currentDetalle, equipo as any, puntos);
                 await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
+
+                // Log Action (Score change by event)
+                await logAction('UPDATE_SCORE', 'partido', matchId, {
+                    tipo_evento: tipo,
+                    equipo: equipo,
+                    puntos: puntos,
+                    nuevo_marcador: nuevoMarcador
+                });
+            } else {
+                // Log Action (Other event)
+                await logAction('ADD_EVENT', 'evento', matchId, {
+                    tipo_evento: tipo,
+                    equipo: equipo,
+                    jugador_id: jugador_id
+                });
             }
             fetchEventos();
         }
@@ -279,6 +302,13 @@ export function useMatchControl(matchId: string) {
             marcador_detalle: auditDetalle(finalDetalle),
             last_edited_by: profile.id
         }).eq('id', matchId);
+
+        // Log Action
+        await logAction('UPDATE_SCORE', 'partido', matchId, {
+            campo_editado: field,
+            nuevo_valor: value,
+            marcador_completo: finalDetalle
+        });
     };
 
     const handleCambiarPeriodo = async () => {
@@ -337,6 +367,13 @@ export function useMatchControl(matchId: string) {
         if (!error) {
             invalidateCache('admin-partidos');
             registrarEventoSistema('fin', 'Partido finalizado oficialmente');
+            
+            // Log Action
+            await logAction('UPDATE_MATCH', 'partido', matchId, {
+                nuevo_estado: 'finalizado',
+                marcador_final: nuevoDetalle
+            });
+
             toast.success("Partido finalizado");
         }
     };
@@ -354,6 +391,14 @@ export function useMatchControl(matchId: string) {
             await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
         }
         await supabase.from('olympics_eventos').delete().eq('id', evento.id);
+
+        // Log Action
+        await logAction('DELETE_EVENT', 'evento', matchId, {
+            tipo_evento: tipo,
+            evento_id: evento.id,
+            equipo: evento.equipo
+        });
+
         fetchEventos();
     };
 

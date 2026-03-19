@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
+import { useAuditLogger } from "@/hooks/useAuditLogger";
 
 type Noticia = {
     id: string;
@@ -32,6 +33,7 @@ const CAT_COLORS: Record<string, string> = {
 
 export default function AdminNoticiasPage() {
     const router = useRouter();
+    const { logAction } = useAuditLogger();
     const [noticias, setNoticias] = useState<Noticia[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -50,23 +52,33 @@ export default function AdminNoticiasPage() {
     }, []);
 
     const togglePublished = async (id: string, current: boolean) => {
+        const noticia = noticias.find(n => n.id === id);
         const { error } = await supabase.from('noticias').update({ published: !current }).eq('id', id);
         if (error) {
             toast.error('Error al cambiar estado');
         } else {
             toast.success(current ? 'Noticia despublicada' : 'Noticia publicada');
+            logAction('TOGGLE_PUBLISH', 'noticia', id, {
+                titulo: noticia?.titulo,
+                published: !current,
+            });
             fetchNoticias();
         }
     };
 
     const deleteNoticia = async (id: string) => {
         if (!confirm('¿Eliminar esta noticia permanentemente?')) return;
+        const noticia = noticias.find(n => n.id === id);
         setDeletingId(id);
         const { error } = await supabase.from('noticias').delete().eq('id', id);
         if (error) {
             toast.error('Error al eliminar');
         } else {
             toast.success('Noticia eliminada');
+            logAction('DELETE_NEWS', 'noticia', id, {
+                titulo: noticia?.titulo,
+                categoria: noticia?.categoria,
+            });
             fetchNoticias();
         }
         setDeletingId(null);

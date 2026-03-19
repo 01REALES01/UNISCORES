@@ -63,6 +63,15 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
 
           {partido.marcador_detalle?.tipo === 'carrera' ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-3">
+              {/* Logos for careers if they exist */}
+              <div className="flex -space-x-3 mb-1">
+                {partido.carrera_a?.escudo_url && (
+                  <Avatar name={getDisplayName(partido, 'a')} src={partido.carrera_a.escudo_url} size="sm" className="w-10 h-10 border-2 border-white/10 shadow-lg bg-[#0a0805]" />
+                )}
+                {partido.carrera_b?.escudo_url && (
+                  <Avatar name={getDisplayName(partido, 'b')} src={partido.carrera_b.escudo_url} size="sm" className="w-10 h-10 border-2 border-white/10 shadow-lg bg-[#0a0805]" />
+                )}
+              </div>
               <h3 className="text-2xl font-black text-white tracking-tight text-center leading-tight">
                 {partido.marcador_detalle?.distancia && partido.marcador_detalle?.estilo
                   ? `${partido.marcador_detalle.distancia} ${partido.marcador_detalle.estilo}`

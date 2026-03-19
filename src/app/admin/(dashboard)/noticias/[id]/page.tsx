@@ -8,6 +8,7 @@ import { Button, Input } from "@/components/ui-primitives";
 import { ArrowLeft, Save, Loader2, Image as ImageIcon, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAuditLogger } from "@/hooks/useAuditLogger";
 
 const CATEGORIES = [
     { value: 'cronica', label: 'Crónica', desc: 'Narrativa de un evento deportivo' },
@@ -21,6 +22,7 @@ export default function EditNoticiaPage() {
     const id = params.id as string;
     const router = useRouter();
 
+    const { logAction } = useAuditLogger();
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -110,6 +112,12 @@ export default function EditNoticiaPage() {
         // Invalidar caché para reflejar cambios al volver
         invalidateCache('home-noticias');
         invalidateCache('admin-noticias');
+
+        logAction('UPDATE_NEWS', 'noticia', id, {
+            titulo: payload.titulo,
+            categoria: payload.categoria,
+            published: payload.published,
+        });
 
         toast.success('Noticia actualizada');
         router.push('/admin/noticias');

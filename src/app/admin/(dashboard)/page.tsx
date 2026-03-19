@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Card } from "@/components/ui-primitives";
-import { Activity, Calendar, Trophy, Users, TrendingUp, Zap, Clock, ArrowUpRight } from "lucide-react";
+import { Activity, Calendar, Trophy, Users, TrendingUp, Zap, Clock, ArrowUpRight, History } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import Link from "next/link";
@@ -137,13 +137,22 @@ export default function AdminDashboard() {
                         Resumen en tiempo real de las Olimpiadas UNINORTE 2026
                     </p>
                 </div>
-                <Link
-                    href="/admin/partidos"
-                    className="hidden md:flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-                >
-                    Ver todos los partidos
-                    <ArrowUpRight size={16} />
-                </Link>
+                <div className="hidden md:flex items-center gap-3">
+                    <Link
+                        href="/admin/bitacora"
+                        className="flex items-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-primary transition-colors px-4 py-2 rounded-xl hover:bg-white/5"
+                    >
+                        <History size={16} />
+                        Bitácora
+                    </Link>
+                    <Link
+                        href="/admin/partidos"
+                        className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                    >
+                        Ver todos los partidos
+                        <ArrowUpRight size={16} />
+                    </Link>
+                </div>
             </div>
 
             {/* Stats Grid */}

@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 
 import { supabase } from "@/lib/supabase";
 import { useAuth, type Profile, type UserRole } from "@/hooks/useAuth";
+import { useAuditLogger } from "@/hooks/useAuditLogger";
 import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { Card, Badge, Avatar, Button } from "@/components/ui-primitives";
 import {
@@ -68,6 +69,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
     const [disciplinas, setDisciplinas] = useState<any[]>([]);
     const [selectedDisciplina, setSelectedDisciplina] = useState<string | null>(null);
     const { profile: currentProfile, isAdmin } = useAuth();
+    const { logAction } = useAuditLogger();
     const router = useRouter();
 
     // Redirect if not admin
@@ -147,6 +149,14 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
         if (error) {
             alert('Error al actualizar roles: ' + error.message);
         } else {
+            // Log Action
+            await logAction('UPDATE_ROLE', 'usuario', userId, {
+                email: userToUpdate.email,
+                viejos_roles: currentRoles,
+                nuevos_roles: updatedRoles,
+                disciplina_atleta_id: disciplinaId
+            });
+
             // Optional: You could add a toast here if sonner is available
             await fetchProfiles();
         }

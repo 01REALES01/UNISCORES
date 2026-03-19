@@ -41,7 +41,7 @@ export default function PublicMatchDetail() {
     const fetchData = async () => {
         try {
             const [matchRes, eventosRes, predsRes] = await Promise.all([
-                safeQuery(supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a_id, carrera_b_id, carrera_a:carreras!carrera_a_id(nombre), carrera_b:carreras!carrera_b_id(nombre)`).eq('id', matchId).single(), 'partido-detail'),
+                safeQuery(supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a_id, carrera_b_id, carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)`).eq('id', matchId).single(), 'partido-detail'),
                 safeQuery(supabase.from('olympics_eventos').select('*, jugadores:olympics_jugadores(nombre, numero, profile_id)').eq('partido_id', matchId).order('id', { ascending: false }), 'partido-eventos'),
                 safeQuery(supabase.from('pronosticos').select('winner_pick, prediction_type').eq('match_id', matchId), 'partido-preds'),
             ]);
