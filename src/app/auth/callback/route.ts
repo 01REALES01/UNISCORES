@@ -47,8 +47,18 @@ export async function GET(request: NextRequest) {
             return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
         }
 
-        // ── Ensure profile row exists (critical for new OAuth users) ─────────
+        // ── Domain Restriction Check ──────────────────────────────────────────
         const user = data.session.user
+        const email = user.email || ''
+        
+        if (!email.endsWith('@uninorte.edu.co')) {
+            console.warn('[Auth Callback] Forbidden domain:', email)
+            // CRITICAL: Sign out the unauthorized user session immediately
+            await supabase.auth.signOut()
+            return NextResponse.redirect(`${origin}/login?error=domain_not_allowed`)
+        }
+
+        // ── Ensure profile row exists (critical for new OAuth users) ─────────
         try {
             const { data: existingProfile } = await supabase
                 .from('profiles')

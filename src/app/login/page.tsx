@@ -46,6 +46,7 @@ function LoginPageContent() {
             const messages: Record<string, string> = {
                 auth_callback_failed: 'Error al autenticar con Microsoft. Intenta de nuevo.',
                 otp_failed: 'El enlace de verificación ha expirado o es inválido.',
+                domain_not_allowed: 'Solo se permiten correos institucionales (@uninorte.edu.co).',
             };
             setError(messages[callbackError] || 'Ocurrió un error durante la autenticación.');
         }
@@ -160,6 +161,9 @@ function LoginPageContent() {
             options: {
                 scopes: "email profile",
                 redirectTo: `${window.location.origin}/auth/callback`,
+                queryParams: {
+                    domain_hint: "uninorte.edu.co",
+                }
             },
         });
         if (error) {
