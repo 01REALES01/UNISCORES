@@ -5,15 +5,20 @@ import { supabase } from "@/lib/supabase";
 import { useEffect } from "react";
 import type { PartidoWithRelations } from "@/modules/matches/types";
 
-const MATCH_COLUMNS = `
-  id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle,
-  fase, grupo, bracket_order, delegacion_a, delegacion_b,
-  disciplinas(name, icon),
-  carrera_a:carreras!carrera_a_id(nombre, escudo_url),
-  carrera_b:carreras!carrera_b_id(nombre, escudo_url),
-  atleta_a:profiles!athlete_a_id(full_name, avatar_url),
-  atleta_b:profiles!athlete_b_id(full_name, avatar_url)
-`.replace(/\s+/g, ' ').trim();
+// Columnas con FK explícita según el schema confirmado:
+// partidos.disciplina_id → disciplinas
+// partidos.carrera_a_id / carrera_b_id → carreras
+// partidos.athlete_a_id / athlete_b_id → profiles
+const MATCH_COLUMNS = [
+    'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle',
+    'fase, grupo, bracket_order, delegacion_a, delegacion_b',
+    'carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
+    'disciplinas:disciplina_id(name)',
+    'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
+    'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
+    'atleta_a:profiles!athlete_a_id(full_name, avatar_url)',
+    'atleta_b:profiles!athlete_b_id(full_name, avatar_url)',
+].join(', ');
 
 const activeMatchChannels = new Set<number>();
 
