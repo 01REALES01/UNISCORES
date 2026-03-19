@@ -124,15 +124,16 @@ export default function Home() {
   };
 
   const toggleCareerSelection = (id: number) => {
+    const numId = Number(id); // Ensure always a number, not a bigint string
     setSelectedCareers(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(c => c !== id);
+      if (prev.map(Number).includes(numId)) {
+        return prev.filter(c => Number(c) !== numId);
       }
       if (prev.length >= 3) {
         setErrorModal({ show: true, message: "No se pueden seleccionar más de tres carreras." });
         return prev;
       }
-      return [...prev, id];
+      return [...prev, numId];
     });
   };
 
@@ -153,18 +154,24 @@ export default function Home() {
       return;
     }
 
-    // Calcula diferencias
-    const currentFavorites = new Set(favoriteIds);
-    const newFavorites = new Set(selectedCareers);
+    // Normalize IDs to numbers to avoid bigint-as-string type mismatch from Supabase
+    const currentFavoriteNums = favoriteIds.map(Number);
+    const selectedNums = selectedCareers.map(Number);
 
-    // Si ambos son cero, no hay cambios (aunque esto no debería pasar por validaciones)
+    const currentFavorites = new Set(currentFavoriteNums);
+    const newFavorites = new Set(selectedNums);
+
+    // Si ambos son cero, no hay cambios
     if (currentFavorites.size === 0 && newFavorites.size === 0) {
       setIsSelectingCareers(false);
       return;
     }
 
-    const toAdd = selectedCareers.filter(id => !currentFavorites.has(id));
-    const toRemove = favoriteIds.filter(id => !newFavorites.has(id));
+    const toAdd = selectedNums.filter(id => !currentFavorites.has(id));
+    const toRemove = currentFavoriteNums.filter(id => !newFavorites.has(id));
+
+    console.log('[Favoritos] currentFavorites:', currentFavoriteNums, '| newSelection:', selectedNums);
+    console.log('[Favoritos] toAdd:', toAdd, '| toRemove:', toRemove);
 
     // Si las selecciones son idénticas, cerramos sin llamadas a db
     if (toAdd.length === 0 && toRemove.length === 0) {
@@ -191,6 +198,7 @@ export default function Home() {
           carrera_id: carreraId
         }));
 
+        console.log('[Favoritos] Inserting:', inserts);
         const { error: insertError } = await supabase
           .from('user_carreras_favoritas')
           .insert(inserts);
@@ -202,7 +210,8 @@ export default function Home() {
       setIsSelectingCareers(false);
       toast.success("Tus preferencias fueron actualizadas", { className: "bg-[#17130D] text-amber-500 border border-amber-500/30" });
     } catch (error: any) {
-      console.error("Error saving careers:", error);
+      console.error('[Favoritos] Error saving careers:', error);
+      toast.error(error.message || "Error al guardar carreras");
       setErrorModal({ show: true, message: error.message || "Ocurrió un error al guardar tus carreras." });
     }
   };
@@ -223,13 +232,13 @@ export default function Home() {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-2 text-left p-1 mb-4 custom-scrollbar">
             {carreras.map(carrera => {
-              const isSelected = selectedCareers.includes(carrera.id);
+              const isSelected = selectedCareers.map(Number).includes(Number(carrera.id));
               return (
                 <button
                   key={carrera.id}
                   onClick={(e) => {
                     e.stopPropagation(); // Evitar que el click cierre el div contenedor si tiene evento click
-                    toggleCareerSelection(carrera.id);
+                    toggleCareerSelection(Number(carrera.id));
                   }}
                   className={cn(
                     "flex flex-col items-start gap-1 text-xs font-bold border p-3.5 rounded-xl transition-all w-full text-left relative overflow-hidden",
@@ -389,34 +398,39 @@ export default function Home() {
             {(() => {
               const sliderMatches = activeFilter === 'todos'
                 ? partidos
-                : partidos.filter(m => m.disciplinas?.name === activeFilter);
+                : activeFilter === 'favoritos'
+                  ? filteredPartidos
+                  : partidos.filter(m => m.disciplinas?.name === activeFilter);
 
               const hasLive = sliderMatches.some(m => m.estado === 'en_vivo');
               const hasProgrammed = sliderMatches.some(m => m.estado === 'programado');
 
               return (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-2">
-                    {hasLive ? (
-                      <>
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-                        </span>
-                        <h2 className="text-sm font-black text-white uppercase tracking-widest">En Vivo ahora</h2>
-                      </>
-                    ) : hasProgrammed ? (
-                      <>
-                        <Calendar size={14} className="text-orange-400" />
-                        <h2 className="text-sm font-black text-slate-300 uppercase tracking-widest">Próximos Partidos</h2>
-                      </>
-                    ) : (
-                      <>
-                        <Zap size={14} className="text-amber-500" />
-                        <h2 className="text-sm font-black text-amber-500/80 uppercase tracking-widest">Próximamente</h2>
-                      </>
-                    )}
-                  </div>
+                  {/* Sin encabezado en favoritos */}
+                  {activeFilter !== 'favoritos' && (
+                    <div className="flex items-center gap-3 px-2">
+                      {hasLive ? (
+                        <>
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                          </span>
+                          <h2 className="text-sm font-black text-white uppercase tracking-widest">En Vivo ahora</h2>
+                        </>
+                      ) : hasProgrammed ? (
+                        <>
+                          <Calendar size={14} className="text-orange-400" />
+                          <h2 className="text-sm font-black text-slate-300 uppercase tracking-widest">Próximos Partidos</h2>
+                        </>
+                      ) : (
+                        <>
+                          <Zap size={14} className="text-amber-500" />
+                          <h2 className="text-sm font-black text-amber-500/80 uppercase tracking-widest">Próximamente</h2>
+                        </>
+                      )}
+                    </div>
+                  )}
                   <HeroSlider matches={activeFilter === 'favoritos' ? filteredPartidos : partidos} activeFilter={activeFilter} />
                 </div>
               );

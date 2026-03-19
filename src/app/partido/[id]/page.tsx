@@ -36,17 +36,67 @@ export default function PublicMatchDetail() {
     const [votingPick, setVotingPick] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
     // Cargar datos
     const fetchData = async () => {
+        setLoading(true);
+        setFetchError(null);
         try {
-            const [matchRes, eventosRes, predsRes] = await Promise.all([
-                safeQuery(supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a_id, carrera_b_id, carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)`).eq('id', matchId).single(), 'partido-detail'),
-                safeQuery(supabase.from('olympics_eventos').select('*, jugadores:olympics_jugadores(nombre, numero, profile_id)').eq('partido_id', matchId).order('id', { ascending: false }), 'partido-eventos'),
-                safeQuery(supabase.from('pronosticos').select('winner_pick, prediction_type').eq('match_id', matchId), 'partido-preds'),
+            const PARTIDO_SELECT = [
+                'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle',
+                'fase, grupo, bracket_order, delegacion_a, delegacion_b',
+                'carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
+                'disciplinas:disciplina_id(name)',
+                'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
+                'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
+                'atleta_a:profiles!athlete_a_id(full_name, avatar_url)',
+                'atleta_b:profiles!athlete_b_id(full_name, avatar_url)',
+            ].join(', ');
+
+            const matchRes = await safeQuery(
+                supabase
+                    .from('partidos')
+                    .select(PARTIDO_SELECT)
+                    .eq('id', matchId)
+                    .single(),
+                'partido-detail'
+            );
+
+            if (matchRes.error && !matchRes.data) {
+                console.warn('[fetchData] Full query failed, trying fallback:', matchRes.error.message);
+                const fallbackRes = await safeQuery(
+                    supabase
+                        .from('partidos')
+                        .select('id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, fase, grupo, bracket_order, delegacion_a, delegacion_b, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id')
+                        .eq('id', matchId)
+                        .single(),
+                    'partido-detail-fallback'
+                );
+
+                if (fallbackRes.error && !fallbackRes.data) {
+                    setFetchError(fallbackRes.error.message || matchRes.error.message || 'Error al cargar el partido');
+                    return;
+                }
+                if (fallbackRes.data) setMatch(fallbackRes.data as unknown as Partido);
+            } else if (matchRes.data) {
+                setMatch(matchRes.data);
+            }
+
+            const [eventosRes, predsRes] = await Promise.all([
+                safeQuery(
+                    supabase.from('olympics_eventos')
+                        .select('*, jugadores:olympics_jugadores(nombre, numero, profile_id)')
+                        .eq('partido_id', matchId)
+                        .order('id', { ascending: false }),
+                    'partido-eventos'
+                ),
+                safeQuery(
+                    supabase.from('pronosticos').select('winner_pick, prediction_type').eq('match_id', matchId),
+                    'partido-preds'
+                ),
             ]);
 
-            if (matchRes.data) setMatch(matchRes.data);
             if (eventosRes.data) setEventos(eventosRes.data);
             if (predsRes.data) setMatchPredictions(predsRes.data);
 
@@ -60,8 +110,9 @@ export default function PublicMatchDetail() {
                     setVotingPick(userPred.winner_pick);
                 }
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('[fetchData] error:', err);
+            setFetchError(err?.message || 'Error de red');
         } finally {
             setLoading(false);
         }
@@ -153,10 +204,26 @@ export default function PublicMatchDetail() {
     );
 
     if (!match) return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805] text-white p-8 text-center">
-            <Trophy size={48} className="text-slate-700 mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Partido no encontrado</h1>
-            <Link href="/" className="text-red-400 hover:text-red-300 transition-colors">Volver al inicio</Link>
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805] text-white p-8 text-center gap-4">
+            <Trophy size={48} className="text-slate-700 mb-2" />
+            <h1 className="text-2xl font-bold">Partido no encontrado</h1>
+            {fetchError && (
+                <div className="max-w-md bg-red-500/10 border border-red-500/30 rounded-2xl px-5 py-3 text-sm text-red-300 font-mono text-left">
+                    <p className="font-bold text-red-400 mb-1 uppercase tracking-wider text-[10px]">Error de consulta</p>
+                    <p className="break-words">{fetchError}</p>
+                </div>
+            )}
+            <div className="flex gap-3 mt-2">
+                <button
+                    onClick={() => fetchData()}
+                    className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-bold transition-all"
+                >
+                    🔄 Reintentar
+                </button>
+                <Link href="/" className="px-5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-bold transition-all">
+                    ← Volver al inicio
+                </Link>
+            </div>
         </div>
     );
 

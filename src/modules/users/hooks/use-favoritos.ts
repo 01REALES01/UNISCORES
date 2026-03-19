@@ -50,7 +50,8 @@ export function useFavoritos(userId: string | undefined | null) {
 
     return {
         favoritos: data || [],
-        favoriteIds: (data || []).map(f => f.carrera_id),
+        // Explicitly cast to number to avoid bigint-as-string mismatch from Supabase
+        favoriteIds: (data || []).map(f => Number(f.carrera_id)),
         loading: isLoading,
         error,
         mutate,
