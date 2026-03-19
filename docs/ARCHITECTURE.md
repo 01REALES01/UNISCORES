@@ -1,10 +1,16 @@
 # Arquitectura del Sistema — Giga Olympics UNINORTE 2026
 
-> Última actualización: 2026-03-18
+> Última actualización: 2026-03-19
 
 ---
 
-**NOTA IMPORTANTE:** Este documento refleja la arquitectura con las 3 migraciones críticas aplicadas (20260319_validate_marcador, 20260319_quiniela_deadline, 20260319_normalize_jugadores). Ver sección 4 para detalles sobre cambios en el modelo de datos.
+**NOTA IMPORTANTE:** Este documento refleja la arquitectura con las 3 migraciones críticas aplicadas y verificadas en producción:
+
+- `20260319_validate_marcador.sql` — BEFORE UPDATE trigger que valida JSONB por deporte
+- `20260319_quiniela_deadline.sql` — RLS policies que bloquean pronósticos después del inicio del partido
+- `20260319_normalize_jugadores.sql` — Normalización de jugadores: tabla catálogo + junction table `roster_partido`
+
+Ver secciones 4 y 7 para detalles.
 
 ---
 
@@ -91,6 +97,7 @@ flowchart LR
 ```
 
 Cada módulo sigue la estructura:
+
 ```
 module/
 ├── types.ts          # Tipos TypeScript centralizados
@@ -164,7 +171,7 @@ erDiagram
     profiles ||--o{ push_subscriptions : "suscribe"
     profiles ||--o{ admin_audit_logs : "ejecuta"
     profiles ||--o{ news_reactions : "reacciona"
-    profiles ||--o{ jugadores : "es atletase"
+    profiles ||--o{ jugadores : "es atleta"
 
     disciplinas ||--o{ partidos : "categoriza"
     carreras ||--o{ partidos : "compite (A/B)"
@@ -236,19 +243,19 @@ erDiagram
     }
 
     jugadores {
-        uuid id PK
+        bigint id PK
         text nombre
         int numero
-        int carrera_id FK
+        bigint carrera_id FK
         uuid profile_id FK
         timestamptz created_at
         timestamptz updated_at
     }
 
     roster_partido {
-        uuid id PK
-        int partido_id FK
-        uuid jugador_id FK
+        bigint id PK
+        bigint partido_id FK
+        bigint jugador_id FK
         text equipo_a_or_b
         timestamptz created_at
     }
@@ -485,6 +492,7 @@ classDiagram
 ```
 
 **Registry:**
+
 ```typescript
 // src/modules/sports/index.ts
 getSportService('Fútbol')      → FutbolService
@@ -530,29 +538,31 @@ getSportService('Natación')    → NatacionService
 
 ### Protecciones Críticas Implementadas
 
-1. **Scoring Validation** — Trigger `validate_marcador()` valida estructura JSONB por deporte antes de UPDATE en partidos
-2. **Quiniela Deadline** — RLS + CHECK constraint previene pronósticos después de `partidos.fecha`
-3. **Roster Immutability** — RLS en `roster_partido` solo permite cambios si `partido.estado = 'programado'`
-4. **Audit Trail** — `admin_audit_logs` registra todas las acciones de admin con timestamps
+1. **Scoring Validation** — BEFORE UPDATE trigger `validate_marcador()` valida estructura JSONB por deporte (campos requeridos según disciplina: goles para Fútbol, sets para Voleibol, etc.)
+2. **Quiniela Deadline** — RLS policies bloquean INSERT/UPDATE de pronósticos si `partidos.fecha <= now()`. DELETE completamente prohibido (`USING (false)`). No se usa CHECK constraint (PostgreSQL no soporta CHECK que referencie otras tablas)
+3. **Roster Immutability** — RLS en `roster_partido` solo permite UPDATE/DELETE si `partido.estado = 'programado'`. Una vez iniciado el partido, el roster queda congelado
+4. **Audit Trail** — `admin_audit_logs` es inmutable: solo INSERT + SELECT para admins, sin UPDATE/DELETE. 17 tipos de acción rastreados
 
 ---
 
 ## 8. Stack Tecnológico
 
 ### Frontend
+
 | Tecnología | Versión | Uso |
 |-----------|---------|-----|
 | Next.js | 16.1.6 | Framework (App Router, ISR, SSR) |
 | React | 19.2.3 | UI Library |
 | TypeScript | 5.x | Type Safety |
-| Tailwind CSS | 4.x | Styling |
-| SWR | 2.4.1 | Data Fetching + Cache |
-| Framer Motion | latest | Animaciones |
-| Recharts | 3.7.0 | Gráficas (Estadísticas) |
-| Lucide React | latest | Iconografía |
-| Sonner | latest | Toast Notifications |
+| Tailwind CSS | 4.x | Styling (utility-first) |
+| SWR | 2.4.1 | Data Fetching + Cache + Revalidation |
+| Framer Motion | 11.18.2 | Animaciones y transiciones |
+| Recharts | 3.7.0 | Gráficas (Estadísticas admin) |
+| Lucide React | 0.563.0 | Iconografía (tree-shakeable) |
+| Sonner | 2.0.7 | Toast Notifications |
 
 ### Backend (Supabase)
+
 | Servicio | Uso |
 |----------|-----|
 | PostgreSQL | Base de datos relacional con RLS |
@@ -562,15 +572,17 @@ getSportService('Natación')    → NatacionService
 | Storage | Avatares y escudos de carreras |
 
 ### DevOps & Testing
+
 | Herramienta | Uso |
 |------------|-----|
 | Vercel | Hosting (Edge CDN + Serverless) |
-| k6 | Load Testing (hasta 150 VUs) |
-| Jest | 30.2.0 | Unit Tests |
-| ESLint | 9.x | Linting |
+| k6 | Load Testing (hasta 150 VUs, p95=14ms) |
+| Jest 30.2.0 | Unit Tests |
+| ESLint 9.x | Linting |
 | Web Push API | Push Notifications (PWA) |
 
 ### Resultados de Load Test (150 VUs, producción)
+
 ```
 p95 latencia:     14.2ms
 p99 latencia:     106ms
@@ -594,11 +606,21 @@ project_olympics/
 │   └── load-test.js             # k6 load test script
 ├── supabase/
 │   └── migrations/
-│       ├── 20260318_add_escudo_to_carreras.sql
-│       ├── 20260318_admin_audit_logs.sql
-│       ├── 20260319_validate_marcador.sql       ← Scoring validation
-│       ├── 20260319_quiniela_deadline.sql       ← Deadline constraint
-│       └── 20260319_normalize_jugadores.sql     ← Normalized schema
+│       ├── 20260217_add_winner_pick.sql
+│       ├── 20260225_update_user_carreras_favoritas.sql
+│       ├── 20260315_athlete_sync.sql
+│       ├── 20260316_multi_carreras.sql
+│       ├── 20260317_profile_fields.sql
+│       ├── 20260317_sync_carreras.sql
+│       ├── 20260317_notifications.sql           ← Notificaciones + friend_requests
+│       ├── 20260318_clean_carreras.sql
+│       ├── 20260318_push_subscriptions.sql      ← Web Push
+│       ├── 20260318_add_escudo_to_carreras.sql  ← Escudos de carreras
+│       ├── 20260318_admin_audit_logs.sql        ← Audit log inmutable
+│       ├── 20260319_validate_marcador.sql       ← BEFORE UPDATE trigger scoring
+│       ├── 20260319_quiniela_deadline.sql       ← RLS deadline pronósticos
+│       ├── 20260319_normalize_jugadores.sql     ← Normalización jugadores + roster
+│       └── news_reactions.sql
 ├── src/
 │   ├── app/                     # 29 páginas (Next.js App Router)
 │   │   ├── admin/(dashboard)/   # 9 páginas admin
@@ -629,7 +651,5 @@ project_olympics/
 │   │   └── users/               # types, hooks, components (friends)
 │   └── shared/                  # Componentes y utilidades compartidas
 │       └── components/          # Navbar, Calendar, UI Primitives, Sport Icons
-├── supabase/
-│   └── migrations/              # SQL migrations (schema + RLS + triggers)
 └── package.json
 ```
