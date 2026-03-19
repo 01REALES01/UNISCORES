@@ -4,6 +4,10 @@
 
 ---
 
+**NOTA IMPORTANTE:** Este documento refleja la arquitectura con las 3 migraciones críticas aplicadas (20260319_validate_marcador, 20260319_quiniela_deadline, 20260319_normalize_jugadores). Ver sección 4 para detalles sobre cambios en el modelo de datos.
+
+---
+
 ## 1. Visión General del Sistema
 
 ```mermaid
@@ -160,16 +164,19 @@ erDiagram
     profiles ||--o{ push_subscriptions : "suscribe"
     profiles ||--o{ admin_audit_logs : "ejecuta"
     profiles ||--o{ news_reactions : "reacciona"
+    profiles ||--o{ jugadores : "es atletase"
 
     disciplinas ||--o{ partidos : "categoriza"
     carreras ||--o{ partidos : "compite (A/B)"
+    carreras ||--o{ jugadores : "pertenece"
 
     partidos ||--o{ eventos_partido : "tiene"
-    partidos ||--o{ jugadores : "participan"
+    partidos ||--o{ roster_partido : "tiene roster"
     partidos ||--o{ pronosticos : "sobre"
     partidos ||--o{ noticias : "cubre"
 
-    jugadores ||--o{ eventos_partido : "protagoniza"
+    jugadores ||--o{ roster_partido : "en el"
+    roster_partido ||--o{ eventos_partido : "menciona en"
 
     noticias ||--o{ news_reactions : "recibe"
 
@@ -229,12 +236,21 @@ erDiagram
     }
 
     jugadores {
-        int id PK
+        uuid id PK
         text nombre
         int numero
-        text equipo
-        int partido_id FK
+        int carrera_id FK
         uuid profile_id FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    roster_partido {
+        uuid id PK
+        int partido_id FK
+        uuid jugador_id FK
+        text equipo_a_or_b
+        timestamptz created_at
     }
 
     noticias {
@@ -502,13 +518,22 @@ getSportService('Natación')    → NatacionService
 | **partidos** | SELECT | SELECT | SELECT | INSERT/UPDATE/DELETE | ALL |
 | **eventos_partido** | SELECT | SELECT | SELECT | INSERT/DELETE | ALL |
 | **noticias** | SELECT (published) | SELECT (published) | ALL | SELECT (published) | ALL |
-| **pronosticos** | Own CRUD | Own CRUD | Own CRUD | Own CRUD | ALL |
+| **pronosticos** | Own CRUD (antes de fecha) | Own CRUD (antes de fecha) | Own CRUD (antes de fecha) | Own CRUD | ALL |
+| **jugadores** | SELECT | SELECT | SELECT | SELECT | ALL |
+| **roster_partido** | SELECT | SELECT | SELECT | INSERT/UPDATE (solo si partido.estado='programado') | ALL |
 | **notifications** | Own SELECT/UPDATE/DELETE | Own SELECT/UPDATE/DELETE | Own SELECT/UPDATE/DELETE | Own SELECT/UPDATE/DELETE | ALL |
 | **friend_requests** | Own CRUD | Own CRUD | Own CRUD | Own CRUD | ALL |
 | **admin_audit_logs** | --- | --- | --- | --- | SELECT + INSERT |
 | **push_subscriptions** | Own CRUD | Own CRUD | Own CRUD | Own CRUD | ALL |
 
 **Función helper:** `public.has_role(auth.uid(), 'admin')` — verifica si el usuario tiene un rol específico en el array `profiles.roles`.
+
+### Protecciones Críticas Implementadas
+
+1. **Scoring Validation** — Trigger `validate_marcador()` valida estructura JSONB por deporte antes de UPDATE en partidos
+2. **Quiniela Deadline** — RLS + CHECK constraint previene pronósticos después de `partidos.fecha`
+3. **Roster Immutability** — RLS en `roster_partido` solo permite cambios si `partido.estado = 'programado'`
+4. **Audit Trail** — `admin_audit_logs` registra todas las acciones de admin con timestamps
 
 ---
 
@@ -567,6 +592,13 @@ project_olympics/
 │   └── manifest.json            # PWA manifest
 ├── scripts/
 │   └── load-test.js             # k6 load test script
+├── supabase/
+│   └── migrations/
+│       ├── 20260318_add_escudo_to_carreras.sql
+│       ├── 20260318_admin_audit_logs.sql
+│       ├── 20260319_validate_marcador.sql       ← Scoring validation
+│       ├── 20260319_quiniela_deadline.sql       ← Deadline constraint
+│       └── 20260319_normalize_jugadores.sql     ← Normalized schema
 ├── src/
 │   ├── app/                     # 29 páginas (Next.js App Router)
 │   │   ├── admin/(dashboard)/   # 9 páginas admin
