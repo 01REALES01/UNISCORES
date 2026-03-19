@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS public.jugadores (
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
 
-    -- Constraint: must have either carrera_id or profile_id (or both)
-    CONSTRAINT jugador_profile_or_carrera CHECK (carrera_id IS NOT NULL OR profile_id IS NOT NULL)
+    -- Both carrera_id and profile_id are optional (players may not have user accounts)
+    CONSTRAINT jugador_has_nombre CHECK (nombre IS NOT NULL AND nombre != '')
 );
 
 COMMENT ON TABLE public.jugadores IS
@@ -206,12 +206,11 @@ DO $$
 BEGIN
     UPDATE public.olympics_eventos oe
     SET jugador_id_normalized = j.id
-    FROM public.jugadores j
     FROM public.olympics_jugadores_old oj
-    WHERE oj.id = oe.jugador_id
-    AND j.nombre = oj.nombre
-    AND j.numero IS NOT DISTINCT FROM oj.numero
-    AND j.profile_id IS NOT DISTINCT FROM oj.profile_id;
+    JOIN public.jugadores j ON j.nombre = oj.nombre
+        AND j.numero IS NOT DISTINCT FROM oj.numero
+        AND j.profile_id IS NOT DISTINCT FROM oj.profile_id
+    WHERE oj.id = oe.jugador_id;
 
     RAISE NOTICE 'olympics_eventos updated with normalized jugador references';
 END $$;
