@@ -171,9 +171,9 @@ describe("UI Primitives", () => {
 
     // ===== LIVE INDICATOR =====
     describe("LiveIndicator", () => {
-        it("renders En Vivo text", () => {
+        it("renders En Curso text", () => {
             render(<LiveIndicator />);
-            expect(screen.getByText("En Vivo")).toBeInTheDocument();
+            expect(screen.getByText("En Curso")).toBeInTheDocument();
         });
 
         it("contains animated ping element", () => {

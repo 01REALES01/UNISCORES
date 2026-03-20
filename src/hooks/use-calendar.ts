@@ -30,7 +30,7 @@ export function useCalendar() {
     // Filtered data
     const filteredMatches = useMemo(() => {
         let list = (matches as unknown as PartidoWithRelations[]) || [];
-        if (showLiveOnly) list = list.filter(m => m.estado === 'en_vivo');
+        if (showLiveOnly) list = list.filter(m => m.estado === 'en_curso');
         if (sportFilter !== 'all') list = list.filter(m => m.disciplinas?.name === sportFilter);
         return list;
     }, [matches, showLiveOnly, sportFilter]);
@@ -45,7 +45,7 @@ export function useCalendar() {
 
     // Match of the Day (First live or next upcoming overall, or last finished)
     const matchOfTheDay = useMemo(() => {
-        const liveMatch = filteredMatches.find(m => m.estado === 'en_vivo');
+        const liveMatch = filteredMatches.find(m => m.estado === 'en_curso');
         if (liveMatch) return liveMatch;
         const upcomingMatches = filteredMatches.filter(m => new Date(m.fecha) >= new Date() && m.estado === 'programado');
         if (upcomingMatches.length > 0) return upcomingMatches[0];

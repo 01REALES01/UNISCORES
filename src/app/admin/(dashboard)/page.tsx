@@ -41,14 +41,14 @@ export default function AdminDashboard() {
         };
     }, [fetchData]);
 
-    const enVivo = partidos.filter(p => p.estado === 'en_vivo');
+    const enVivo = partidos.filter(p => p.estado === 'en_curso');
     const finalizados = partidos.filter(p => p.estado === 'finalizado');
     const programados = partidos.filter(p => p.estado === 'programado');
     const disciplinasSet = new Set(partidos.map(p => p.disciplinas?.name).filter(Boolean));
 
     const stats = [
         {
-            name: "En Vivo",
+            name: "En Curso",
             value: enVivo.length,
             icon: Zap,
             color: "text-red-500",
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
         // En la lista dashboard, espacio es pequeño.
 
         // Si es Volley/Tenis, mostramos Sets si no están jugando (o resumen), 
-        // pero "En Vivo" queremos ver qué está pasando.
+        // pero "En Curso" queremos ver qué está pasando.
         // getCurrentScore ya decide qué es lo "importante".
 
         return { a: scoreInfo.scoreA, b: scoreInfo.scoreB };
@@ -195,7 +195,7 @@ export default function AdminDashboard() {
                             <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500">
                                 <Zap size={18} />
                             </div>
-                            En Vivo Ahora
+                            En Curso Ahora
                         </h3>
                         {enVivo.length > 0 && (
                             <span className="flex items-center gap-2 text-[10px] font-black tracking-wider text-rose-400 bg-rose-500/10 px-3 py-1.5 rounded-full border border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.2)] animate-pulse">
@@ -237,7 +237,7 @@ export default function AdminDashboard() {
                                 <div className="inline-flex p-4 rounded-full bg-white/5 mb-3">
                                     <Activity size={24} className="text-slate-500" />
                                 </div>
-                                <p className="text-sm font-medium text-slate-400">No hay partidos en vivo</p>
+                                <p className="text-sm font-medium text-slate-400">No hay partidos en curso</p>
                             </div>
                         )}
                     </div>
@@ -310,7 +310,7 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 relative z-10">
                     {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'].map(sport => {
                         const count = partidos.filter(p => p.disciplinas?.name === sport).length;
-                        const liveCount = partidos.filter(p => p.disciplinas?.name === sport && p.estado === 'en_vivo').length;
+                        const liveCount = partidos.filter(p => p.disciplinas?.name === sport && p.estado === 'en_curso').length;
                         return (
                             <div
                                 key={sport}

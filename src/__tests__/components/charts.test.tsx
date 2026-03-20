@@ -55,7 +55,7 @@ describe("Chart Components", () => {
     describe("DonutChart", () => {
         const mockData = [
             { label: "Finalizados", value: 15, color: "#34d399" },
-            { label: "En Vivo", value: 3, color: "#f87171" },
+            { label: "En Curso", value: 3, color: "#f87171" },
             { label: "Programados", value: 7, color: "#60a5fa" },
         ];
 
@@ -79,7 +79,7 @@ describe("Chart Components", () => {
         it("renders legend items", () => {
             render(<DonutChart data={mockData} />);
             expect(screen.getByText("Finalizados")).toBeInTheDocument();
-            expect(screen.getByText("En Vivo")).toBeInTheDocument();
+            expect(screen.getByText("En Curso")).toBeInTheDocument();
             expect(screen.getByText("Programados")).toBeInTheDocument();
         });
 

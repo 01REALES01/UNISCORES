@@ -37,7 +37,7 @@ export const AdminScoreboard = ({
         {/* Center */}
         <div className="flex flex-col items-center gap-8 min-w-[300px]">
           <div className="relative group/score">
-            {match.estado === 'en_vivo' && (
+            {match.estado === 'en_curso' && (
               <button 
                 onClick={onEditScore} 
                 className="absolute -top-12 left-1/2 -translate-x-1/2 p-3 rounded-2xl bg-primary text-white opacity-0 group-hover/score:opacity-100 transition-all z-20 shadow-xl"

@@ -12,7 +12,7 @@ export type Partido = {
   equipo_a: string;
   equipo_b: string;
   fecha: string;
-  estado: 'programado' | 'en_vivo' | 'finalizado' | 'cancelado';
+  estado: 'programado' | 'en_curso' | 'finalizado' | 'cancelado';
   lugar?: string;
   genero?: string;
   // Las páginas UI usan acceso dinámico (md.goles_a ?? md.total_a, etc.)

@@ -55,7 +55,7 @@ export const PredictionCard = ({
   const isPredicted = prediction !== undefined && prediction !== null;
   const isLocked = locked || match.estado !== 'programado';
   const isFinished = match.estado === 'finalizado';
-  const isLive = match.estado === 'en_vivo';
+  const isLive = match.estado === 'en_curso';
 
   const matchResult = getMatchResult(match);
   let predictionCorrect: boolean | null = null;
@@ -114,7 +114,7 @@ export const PredictionCard = ({
           {isLive ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]">
               <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-              <span className="text-[9px] font-black text-rose-400 uppercase tracking-wider">En Vivo</span>
+              <span className="text-[9px] font-black text-rose-400 uppercase tracking-wider">En Curso</span>
             </div>
           ) : isFinished ? (
             <Badge variant={predictionCorrect ? "success" : "destructive"} className="text-[9px] font-black shadow-lg">

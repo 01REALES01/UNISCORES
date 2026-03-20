@@ -214,7 +214,7 @@ export function useMatchControl(matchId: string) {
                 nuevoDetalle.minuto_actual = isCountdown ? getPeriodDuration(sportName) : 0;
                 
                 const { error } = await supabase.from('partidos').update({
-                    estado: 'en_vivo',
+                    estado: 'en_curso',
                     marcador_detalle: auditDetalle(nuevoDetalle)
                 }).eq('id', matchId);
 
@@ -223,7 +223,7 @@ export function useMatchControl(matchId: string) {
                 
                 // Log Action
                 await logAction('UPDATE_MATCH', 'partido', matchId, {
-                    nuevo_estado: 'en_vivo',
+                    nuevo_estado: 'en_curso',
                     info: 'El partido ha comenzado'
                 });
             } else {
@@ -243,9 +243,9 @@ export function useMatchControl(matchId: string) {
         if (!match || !profile) return;
         const disciplinaName = match.disciplinas?.name || 'Deporte';
 
-        if (match.estado !== 'en_vivo') {
+        if (match.estado !== 'en_curso') {
             if (!(match.estado === 'programado' && tipo === 'cambio')) {
-                toast.error('Solo se pueden registrar eventos de juego en partidos EN VIVO.');
+                toast.error('Solo se pueden registrar eventos de juego en partidos EN CURSO.');
                 return;
             }
         }

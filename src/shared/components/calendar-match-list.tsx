@@ -62,7 +62,7 @@ export function CalendarMatchList({ loading, selectedDate, matches, isSameDay }:
                     const sportName = match.disciplinas?.name ?? '';
                     const sportBorder = SPORT_BORDER[sportName] || 'border-indigo-500/20';
                     const sportAccent = SPORT_ACCENT[sportName] || 'text-indigo-400';
-                    const isLive = match.estado === 'en_vivo';
+                    const isLive = match.estado === 'en_curso';
                     const isFinished = match.estado === 'finalizado';
                     const isRace = isRaceMatch(match);
 

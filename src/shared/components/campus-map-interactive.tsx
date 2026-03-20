@@ -26,7 +26,7 @@ type Match = {
     delegacion_a?: string;
     delegacion_b?: string;
     disciplinas?: { name: string; icon?: string; emoji?: string } | null;
-    estado: 'programado' | 'en_vivo' | 'finalizado' | 'cancelado';
+    estado: 'programado' | 'en_curso' | 'finalizado' | 'cancelado';
     lugar?: string;
     marcador_detalle?: any;
     fecha?: string;
@@ -185,7 +185,7 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                         {Object.keys(VENUE_COORDINATES).map((venueName) => {
                             const coords = VENUE_COORDINATES[venueName];
                             const activeMatches = venueMatches[venueName] || [];
-                            const liveMatch = activeMatches.find(m => m.estado === 'en_vivo');
+                            const liveMatch = activeMatches.find(m => m.estado === 'en_curso');
                             const nextMatch = activeMatches.find(m => m.estado === 'programado');
 
                             const statusColor = liveMatch ? 'bg-[#DB1406]' : (nextMatch ? 'bg-[#FFC000]' : 'bg-[#0a0805]/80');
@@ -249,8 +249,8 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                                                             {activeMatches.map((m) => (
                                                                 <Link key={m.id} href={`/partido/${m.id}`} className="block p-3 hover:bg-white/5 transition-colors">
                                                                     <div className="flex justify-between items-start mb-2">
-                                                                        <Badge variant="secondary" className={`text-[10px] h-5 ${m.estado === 'en_vivo' ? 'bg-[#DB1406]/20 text-[#DB1406] animate-pulse border-[#DB1406]/20' : 'bg-[#FFC000]/10 text-[#FFC000] border-[#FFC000]/20'}`}>
-                                                                            {m.estado === 'en_vivo' ? 'EN JUEGO' : 'PROGRAMADO'}
+                                                                        <Badge variant="secondary" className={`text-[10px] h-5 ${m.estado === 'en_curso' ? 'bg-[#DB1406]/20 text-[#DB1406] animate-pulse border-[#DB1406]/20' : 'bg-[#FFC000]/10 text-[#FFC000] border-[#FFC000]/20'}`}>
+                                                                            {m.estado === 'en_curso' ? 'EN JUEGO' : 'PROGRAMADO'}
                                                                         </Badge>
                                                                         <span className="text-[10px] text-white/50 font-mono flex items-center gap-1">
                                                                             {m.fecha ? new Date(m.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ahora'}
@@ -271,7 +271,7 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                                                                                 {getCarreraSubtitle(m, 'a') && <p className="text-[9px] text-white/50 truncate w-full text-center uppercase font-bold">{getCarreraSubtitle(m, 'a')}</p>}
                                                                             </div>
                                                                             <div className="px-2 font-black text-lg text-[#FFC000] font-mono tabular-nums shrink-0">
-                                                                                {m.estado === 'en_vivo'
+                                                                                {m.estado === 'en_curso'
                                                                                     ? m.disciplinas?.name === 'Ajedrez' 
                                                                                         ? <span className="text-xs">VS</span> 
                                                                                         : `${(m.marcador_detalle?.goles_a || m.marcador_detalle?.total_a || m.marcador_detalle?.sets_a || 0)} - ${(m.marcador_detalle?.goles_b || m.marcador_detalle?.total_b || m.marcador_detalle?.sets_b || 0)}`

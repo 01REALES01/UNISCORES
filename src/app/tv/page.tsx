@@ -19,7 +19,7 @@ const TvLiveMatch = ({ match }: { match: any }) => {
     return (
         <div className="h-full flex flex-col items-center justify-center p-8 animate-in zoom-in-95 duration-700">
             <div className="bg-rose-500 text-white px-6 py-2 rounded-full font-black uppercase tracking-widest text-xl mb-8 animate-pulse shadow-[0_0_30px_rgba(244,63,94,0.5)]">
-                🔴 En Vivo Ahora
+                🔴 En Curso Ahora
             </div>
 
             <div className="w-full max-w-6xl bg-black/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-12 shadow-2xl relative overflow-hidden">
@@ -170,7 +170,7 @@ export default function TvPage() {
         const { data: live } = await supabase
             .from('partidos')
             .select('*, disciplinas(*), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)')
-            .eq('estado', 'en_vivo');
+            .eq('estado', 'en_curso');
 
         if (live) setLiveMatches(live);
 
@@ -202,7 +202,7 @@ export default function TvPage() {
                     return 'medals';
                 }
                 if (current === 'live') {
-                    // Si hay más partidos en vivo, rotar entre ellos? 
+                    // Si hay más partidos en curso, rotar entre ellos? 
                     // Por simplicidad, pasamos a upcoming tras ver uno
                     // (O rota índices de liveMatches si quisieramos ser pro)
                     if (upcomingMatches.length > 0) return 'upcoming';

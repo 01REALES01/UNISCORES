@@ -20,7 +20,7 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
 
     const filteredMatches = matches.filter(m => {
         if (viewFilter === 'upcoming' && m.estado !== 'programado') return false;
-        if (viewFilter === 'live' && m.estado !== 'en_vivo') return false;
+        if (viewFilter === 'live' && m.estado !== 'en_curso') return false;
         if (viewFilter === 'finished' && m.estado !== 'finalizado') return false;
         if (sportFilter !== 'todos' && m.disciplinas?.name !== sportFilter) return false;
         return true;
@@ -114,7 +114,7 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
                         match={m}
                         prediction={predictions.find(p => p.match_id === m.id)}
                         onPredict={onPredict}
-                        locked={m.estado === 'finalizado' || m.estado === 'en_vivo'}
+                        locked={m.estado === 'finalizado' || m.estado === 'en_curso'}
                         mode={bettingMode}
                         allPredictions={allPredictions}
                     />

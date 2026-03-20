@@ -113,7 +113,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                       <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_12px_rgba(239,68,68,1)]" />
                     </span>
                     <span className="text-sm font-black text-red-500 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">
-                      EN VIVO
+                      EN CURSO
                     </span>
                   </div>
                 ) : (

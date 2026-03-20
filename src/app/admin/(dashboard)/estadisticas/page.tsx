@@ -111,7 +111,7 @@ export default function EstadisticasPage() {
     }, [partidos]);
 
     const finalizados = filteredPartidos.filter((p) => p.estado === "finalizado");
-    const enVivo = filteredPartidos.filter((p) => p.estado === "en_vivo");
+    const enVivo = filteredPartidos.filter((p) => p.estado === "en_curso");
     const programados = filteredPartidos.filter((p) => p.estado === "programado");
 
     // Partidos por disciplina (for bar chart)
@@ -134,7 +134,7 @@ export default function EstadisticasPage() {
     // Estado de partidos (for donut chart)
     const estadoData = useMemo(() => [
         { label: "Finalizados", value: finalizados.length, color: "#34d399", icon: "✅" },
-        { label: "En Vivo", value: enVivo.length, color: "#f87171", icon: "🔴" },
+        { label: "En Curso", value: enVivo.length, color: "#f87171", icon: "🔴" },
         { label: "Programados", value: programados.length, color: "#60a5fa", icon: "📅" },
     ], [finalizados, enVivo, programados]);
 
@@ -274,7 +274,7 @@ export default function EstadisticasPage() {
                     icon="📊"
                     label="Total Partidos"
                     value={filteredPartidos.length}
-                    change={enVivo.length > 0 ? `${enVivo.length} en vivo` : undefined}
+                    change={enVivo.length > 0 ? `${enVivo.length} en curso` : undefined}
                     changeType={enVivo.length > 0 ? "up" : "neutral"}
                 />
                 <StatMiniCard

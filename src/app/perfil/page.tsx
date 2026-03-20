@@ -21,12 +21,15 @@ import {
     Calendar,
     ArrowUpRight,
     Zap,
-    Flame
+    Flame,
+    Crown,
+    BadgeCheck
 } from "lucide-react";
 import { FriendsList } from "@/modules/users/components/friends-list";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
+import { isCreator } from "@/lib/constants";
 
 type ProfileTab = 'general' | 'stats' | 'quiniela' | 'amigos';
 
@@ -75,12 +78,24 @@ export default function PerfilPage() {
         ? new Date(profile.created_at).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })
         : null;
 
+    const isProjectCreator = user ? isCreator(user.email) : false;
+
     return (
         <div className="min-h-screen bg-[#0a0805] text-white selection:bg-red-500/30 texture-grain overflow-x-hidden">
             {/* Ambient glow */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute -top-40 right-0 w-[600px] h-[600px] bg-red-600/4 rounded-full blur-[150px]" />
-                <div className="absolute bottom-0 -left-40 w-[500px] h-[500px] bg-orange-600/4 rounded-full blur-[120px]" />
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                {isProjectCreator ? (
+                    <>
+                        <div className="absolute -top-40 right-0 w-[800px] h-[800px] bg-amber-600/10 rounded-full blur-[180px] animate-pulse duration-[10s]" />
+                        <div className="absolute bottom-0 -left-40 w-[600px] h-[600px] bg-yellow-600/5 rounded-full blur-[150px]" />
+                        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
+                    </>
+                ) : (
+                    <>
+                        <div className="absolute -top-40 right-0 w-[600px] h-[600px] bg-red-600/4 rounded-full blur-[150px]" />
+                        <div className="absolute bottom-0 -left-40 w-[500px] h-[500px] bg-orange-600/4 rounded-full blur-[120px]" />
+                    </>
+                )}
             </div>
 
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
@@ -96,17 +111,33 @@ export default function PerfilPage() {
                     {/* Gradient accent line */}
                     <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
 
-                    <div className="flex flex-col sm:flex-row gap-8 pt-8 pb-10 px-2">
+                    <div className="flex flex-col sm:flex-row gap-8 pt-8 pb-10 px-2 relative z-10">
                         {/* Avatar — large, read-only */}
-                        <div className="relative self-center sm:self-start flex-shrink-0">
-                            <div className="absolute -inset-3 bg-gradient-to-br from-red-600 to-orange-500 rounded-[2.5rem] blur-2xl opacity-15" />
+                        <div className="relative self-center sm:self-start flex-shrink-0 group">
+                            <div className={cn(
+                                "absolute -inset-3 rounded-[2.5rem] blur-2xl transition-opacity",
+                                isProjectCreator ? "bg-gradient-to-br from-amber-400 to-yellow-600 opacity-30 group-hover:opacity-50" : "bg-gradient-to-br from-red-600 to-orange-500 opacity-15"
+                            )} />
+                            
+                            {isProjectCreator && (
+                                <div className="absolute -inset-1 bg-gradient-to-r from-amber-300 via-yellow-500 to-amber-700 rounded-[2.8rem] opacity-50 blur-sm animate-pulse" />
+                            )}
+
                             <Avatar
                                 name={profile?.full_name || user.email}
                                 src={profile?.avatar_url}
-                                className="relative w-32 h-32 md:w-44 md:h-44 rounded-[2rem] border-2 border-white/8 shadow-2xl"
+                                className={cn(
+                                    "relative w-32 h-32 md:w-44 md:h-44 rounded-[2rem] shadow-2xl z-10 bg-[#0a0805]",
+                                    isProjectCreator ? "border-[3px] border-amber-500/80" : "border-2 border-white/8"
+                                )}
                             />
-                            {isDeportista && (
-                                <div className="absolute -bottom-3 -right-3 p-3 bg-amber-500 text-black rounded-2xl shadow-xl border-4 border-[#0a0805]">
+                            {isProjectCreator && (
+                                <div className="absolute -bottom-4 -right-4 p-3.5 bg-gradient-to-br from-amber-300 to-yellow-600 text-[#050505] rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.5)] border-[3px] border-[#0a0805] animate-bounce-slow z-20">
+                                    <Crown size={22} className="drop-shadow-sm" />
+                                </div>
+                            )}
+                            {isDeportista && !isProjectCreator && (
+                                <div className="absolute -bottom-3 -right-3 p-3 bg-amber-500 text-black rounded-2xl shadow-xl border-4 border-[#0a0805] z-20">
                                     <Flame size={18} />
                                 </div>
                             )}

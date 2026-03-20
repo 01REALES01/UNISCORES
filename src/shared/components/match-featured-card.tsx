@@ -32,7 +32,7 @@ export function MatchFeaturedCard({ match }: MatchFeaturedCardProps) {
     if (!match) return null;
 
     const sport = match.disciplinas?.name ?? '';
-    const isLive = match.estado === 'en_vivo';
+    const isLive = match.estado === 'en_curso';
     const isFinished = match.estado === 'finalizado';
     const isRace = isRaceMatch(match);
 
@@ -55,7 +55,7 @@ export function MatchFeaturedCard({ match }: MatchFeaturedCardProps) {
                     isLive ? 'bg-rose-600 shadow-rose-500/50' : 'bg-indigo-600 shadow-indigo-500/50'
                 )}>
                     {isLive ? <Activity size={14} className="animate-pulse" /> : <Trophy size={14} />}
-                    {isLive ? 'En Vivo Ahora' : 'Partido del Día'}
+                    {isLive ? 'En Curso Ahora' : 'Partido del Día'}
                 </div>
 
                 <div className="text-[10px] text-white/70 font-bold uppercase tracking-widest mb-4 flex items-center gap-2 bg-white/5 px-3 py-1 rounded-md">

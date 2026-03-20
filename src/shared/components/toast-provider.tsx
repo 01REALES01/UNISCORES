@@ -74,7 +74,7 @@ export function ToastProvider() {
 
                     // Caso 1: Cambio de estado
                     if (newItem.estado !== oldItem.estado) {
-                        if (newItem.estado === 'en_vivo') {
+                        if (newItem.estado === 'en_curso') {
                             const title = `¡Comenzó el partido!`;
                             const body = `${newItem.equipo_a} vs ${newItem.equipo_b}`;
                             toast.success(title, {

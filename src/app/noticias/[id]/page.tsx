@@ -184,8 +184,8 @@ export default function NoticiaDetailPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <span className={cn("text-[10px] sm:text-xs font-black tracking-widest uppercase", noticia.partidos.estado === 'en_vivo' ? 'text-rose-500 animate-pulse' : 'text-white/60')}>
-                                            {noticia.partidos.estado === 'en_vivo' ? 'EN VIVO' : 'FINAL'}
+                                        <span className={cn("text-[10px] sm:text-xs font-black tracking-widest uppercase", noticia.partidos.estado === 'en_curso' ? 'text-rose-500 animate-pulse' : 'text-white/60')}>
+                                            {noticia.partidos.estado === 'en_curso' ? 'EN CURSO' : 'FINAL'}
                                         </span>
                                         <span className="text-[9px] font-bold text-white/30 uppercase mt-1">
                                             {noticia.partidos.fecha ? new Date(noticia.partidos.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '--'}
@@ -206,7 +206,7 @@ export default function NoticiaDetailPage() {
                                         VS
                                     </div>
                                 ) : (
-                                    <div className={cn("flex items-center text-sm sm:text-xl font-black tabular-nums tracking-tighter shrink-0 px-2", noticia.partidos.estado === 'en_vivo' ? 'text-rose-500' : 'text-white/90')}>
+                                    <div className={cn("flex items-center text-sm sm:text-xl font-black tabular-nums tracking-tighter shrink-0 px-2", noticia.partidos.estado === 'en_curso' ? 'text-rose-500' : 'text-white/90')}>
                                         <span>{(noticia.partidos.marcador_detalle?.goles_a ?? noticia.partidos.marcador_detalle?.sets_a ?? noticia.partidos.marcador_detalle?.total_a ?? 0)}</span>
                                         <span className="text-white/20 mx-1 font-medium">-</span>
                                         <span>{(noticia.partidos.marcador_detalle?.goles_b ?? noticia.partidos.marcador_detalle?.sets_b ?? noticia.partidos.marcador_detalle?.total_b ?? 0)}</span>

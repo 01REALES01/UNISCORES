@@ -54,7 +54,7 @@ export function MatchFilters({ activeFilter, setActiveFilter, matches }: MatchFi
 
       {allSports.map(sport => {
         const isActive = activeFilter === sport;
-        const hasLive = matches.some(p => p.disciplinas?.name === sport && p.estado === 'en_vivo');
+        const hasLive = matches.some(p => p.disciplinas?.name === sport && p.estado === 'en_curso');
 
         return (
           <button

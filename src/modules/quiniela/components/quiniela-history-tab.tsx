@@ -24,7 +24,7 @@ export function QuinielaHistoryTab({ predictions, matches }: QuinielaHistoryTabP
         const matchA = matches.find(m => m.id === a.match_id);
         const matchB = matches.find(m => m.id === b.match_id);
         if (!matchA || !matchB) return 0;
-        const order: Record<string, number> = { 'finalizado': 0, 'en_vivo': 1, 'programado': 2 };
+        const order: Record<string, number> = { 'finalizado': 0, 'en_curso': 1, 'programado': 2 };
         const orderA = order[matchA.estado] ?? 3;
         const orderB = order[matchB.estado] ?? 3;
         if (orderA !== orderB) return orderA - orderB;
@@ -79,7 +79,7 @@ export function QuinielaHistoryTab({ predictions, matches }: QuinielaHistoryTabP
 
                     const result = getMatchResult(m);
                     const isFinished = m.estado === 'finalizado';
-                    const isLive = m.estado === 'en_vivo';
+                    const isLive = m.estado === 'en_curso';
                     let correct: boolean | null = null;
 
                     if (isFinished && result) {

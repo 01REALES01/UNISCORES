@@ -201,7 +201,7 @@ export function GroupStageTable({ matches, sportName, grupo }: GroupStageTablePr
                             <Link href={`/partido/${m.id}`} key={m.id} className="block group">
                                 <div className={cn(
                                     "flex items-center justify-between px-3 py-2 rounded-lg border border-white/5 hover:border-white/15 transition-all text-xs",
-                                    m.estado === 'en_vivo' && "border-red-500/30 bg-red-500/5"
+                                    m.estado === 'en_curso' && "border-red-500/30 bg-red-500/5"
                                 )}>
                                     <span className={cn(
                                         "font-bold truncate max-w-[100px]",
@@ -214,7 +214,7 @@ export function GroupStageTable({ matches, sportName, grupo }: GroupStageTablePr
                                             <span className="font-black text-white">
                                                 {scoreA} - {scoreB}
                                             </span>
-                                        ) : m.estado === 'en_vivo' ? (
+                                        ) : m.estado === 'en_curso' ? (
                                             <span className="font-black text-red-400 animate-pulse">
                                                 {scoreA} - {scoreB}
                                             </span>

@@ -83,11 +83,11 @@ export function CalendarGrid({
                             const sportName = e.disciplinas?.name;
                             if (!sportName) return;
                             const currentStatus = uniqueSportsMap.get(sportName);
-                            // Prioritize status: en_vivo > programado > finalizado
+                            // Prioritize status: en_curso > programado > finalizado
                             if (!currentStatus) {
                                 uniqueSportsMap.set(sportName, e.estado);
-                            } else if (e.estado === 'en_vivo') {
-                                uniqueSportsMap.set(sportName, 'en_vivo');
+                            } else if (e.estado === 'en_curso') {
+                                uniqueSportsMap.set(sportName, 'en_curso');
                             } else if (e.estado === 'programado' && currentStatus === 'finalizado') {
                                 uniqueSportsMap.set(sportName, 'programado');
                             }
@@ -120,7 +120,7 @@ export function CalendarGrid({
                                         {uniqueSportsEvents.slice(0, isToday ? 2 : 3).map((s, idx) => (
                                             <div key={idx} className={cn(
                                                 "w-2 h-2 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-[#05040a] border transition-all",
-                                                s.estado === 'en_vivo' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] scale-110' :
+                                                s.estado === 'en_curso' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] scale-110' :
                                                     s.estado === 'finalizado' ? 'border-white/10 text-white/30' : 'border-indigo-500/30 text-indigo-400'
                                             )}>
                                                 <SportIcon sport={s.name} size={10} className="scale-[0.5] sm:scale-100" />

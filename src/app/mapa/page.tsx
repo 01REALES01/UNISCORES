@@ -76,7 +76,7 @@ export default function CampusMapPage() {
                 <div className="flex items-center gap-3 bg-white/5 p-2 rounded-xl backdrop-blur-md border border-white/5 w-fit">
                     <div className="flex items-center gap-1.5 px-2">
                         <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                        <span className="text-xs font-bold text-zinc-300">En Vivo</span>
+                        <span className="text-xs font-bold text-zinc-300">En Curso</span>
                     </div>
                     <div className="w-px h-4 bg-white/10" />
                     <div className="flex items-center gap-1.5 px-2">
@@ -247,8 +247,8 @@ export default function CampusMapPage() {
                         const venueMatches = matches.filter(m => m.lugar?.includes(venue));
                         // Sort by date: live first, then upcoming
                         const sortedMatches = [...venueMatches].sort((a, b) => {
-                            if (a.estado === 'en_vivo' && b.estado !== 'en_vivo') return -1;
-                            if (a.estado !== 'en_vivo' && b.estado === 'en_vivo') return 1;
+                            if (a.estado === 'en_curso' && b.estado !== 'en_curso') return -1;
+                            if (a.estado !== 'en_curso' && b.estado === 'en_curso') return 1;
                             return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
                         });
                         
@@ -273,7 +273,7 @@ export default function CampusMapPage() {
                                             <h3 className="text-xl font-black text-white tracking-tighter group-hover:text-[#FFC000] transition-colors uppercase">
                                                 {venue}
                                             </h3>
-                                            {currentOrNext?.estado === 'en_vivo' && (
+                                            {currentOrNext?.estado === 'en_curso' && (
                                                 <Badge className="bg-red-500/10 text-red-500 border-red-500/20 flex items-center gap-1.5 font-black px-3 py-1 animate-pulse">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                                                     LIVE
@@ -290,7 +290,7 @@ export default function CampusMapPage() {
                                                 {/* Current/Featured Event */}
                                                 <div>
                                                     <span className="text-[10px] font-black text-[#FFC000] uppercase tracking-widest mb-3 block">
-                                                        {currentOrNext.estado === 'en_vivo' ? 'En este momento' : 'Próximo Evento'}
+                                                        {currentOrNext.estado === 'en_curso' ? 'En este momento' : 'Próximo Evento'}
                                                     </span>
                                                     <Link 
                                                         href={`/partido/${currentOrNext.id}`}

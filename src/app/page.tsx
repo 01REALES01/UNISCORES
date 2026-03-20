@@ -74,7 +74,7 @@ export default function Home() {
   }, [carreras, favoriteIds]);
 
   const getSortScore = (p: Partido) => {
-    if (p.estado === 'en_vivo') return -10000000000;
+    if (p.estado === 'en_curso') return -10000000000;
     if (p.estado === 'programado') return new Date(p.fecha).getTime();
     return new Date(p.fecha).getTime() + 10000000000;
   };
@@ -310,7 +310,7 @@ export default function Home() {
   });
 
   const allSports = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
-  const liveMatches = filteredPartidos.filter(p => p.estado === 'en_vivo');
+  const liveMatches = filteredPartidos.filter(p => p.estado === 'en_curso');
   const upcomingMatches = filteredPartidos.filter(p => p.estado === 'programado');
   const finishedMatches = filteredPartidos.filter(p => p.estado === 'finalizado'); // We'll reverse logic in render for recent finished
 
@@ -402,7 +402,7 @@ export default function Home() {
                   ? filteredPartidos
                   : partidos.filter(m => m.disciplinas?.name === activeFilter);
 
-              const hasLive = sliderMatches.some(m => m.estado === 'en_vivo');
+              const hasLive = sliderMatches.some(m => m.estado === 'en_curso');
               const hasProgrammed = sliderMatches.some(m => m.estado === 'programado');
 
               return (
@@ -416,7 +416,7 @@ export default function Home() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
                           </span>
-                          <h2 className="text-sm font-black text-white uppercase tracking-widest">En Vivo ahora</h2>
+                          <h2 className="text-sm font-black text-white uppercase tracking-widest">En Curso ahora</h2>
                         </>
                       ) : hasProgrammed ? (
                         <>

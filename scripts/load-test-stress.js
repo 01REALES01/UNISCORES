@@ -56,7 +56,7 @@ export default function () {
       };
 
       // Fetch partidos en vivo
-      let res = http.get(`${SUPABASE_URL}/rest/v1/partidos?estado=eq.en_vivo&limit=20`, { headers });
+      let res = http.get(`${SUPABASE_URL}/rest/v1/partidos?estado=eq.en_curso&limit=20`, { headers });
       check(res, {
         'Partidos API 200': (r) => r.status === 200,
         'API < 500ms': (r) => r.timings.duration < 500,

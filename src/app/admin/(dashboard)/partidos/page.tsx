@@ -124,7 +124,7 @@ export default function PartidosPage() {
     };
 
     const filteredPartidos = partidos.filter(p => {
-        if (filter === 'en_vivo' && p.estado !== 'en_vivo') return false;
+        if (filter === 'en_curso' && p.estado !== 'en_curso') return false;
         if (filter === 'programados' && p.estado !== 'programado') return false;
         if (filter === 'finalizados' && p.estado !== 'finalizado') return false;
         if (sportFilter !== 'todos' && p.disciplinas?.name !== sportFilter) return false;
@@ -140,7 +140,7 @@ export default function PartidosPage() {
         return true;
     });
 
-    const liveCount = partidos.filter(p => p.estado === 'en_vivo').length;
+    const liveCount = partidos.filter(p => p.estado === 'en_curso').length;
     const programadosCount = partidos.filter(p => p.estado === 'programado').length;
     const finalizadosCount = partidos.filter(p => p.estado === 'finalizado').length;
     const uniqueSports = Array.from(new Set(partidos.map(p => p.disciplinas?.name).filter(Boolean)));
@@ -163,12 +163,12 @@ export default function PartidosPage() {
             filterKey: 'todos',
         },
         {
-            label: 'En Vivo',
+            label: 'En Curso',
             value: liveCount,
             icon: Zap,
             gradient: 'from-rose-500 to-orange-500',
             glowColor: 'rose',
-            filterKey: 'en_vivo',
+            filterKey: 'en_curso',
             pulse: liveCount > 0,
         },
         {
@@ -424,7 +424,7 @@ export default function PartidosPage() {
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <AnimatePresence mode="popLayout">
                     {filteredPartidos.map((partido, index) => {
-                        const isLive = partido.estado === 'en_vivo';
+                        const isLive = partido.estado === 'en_curso';
                         const isFinished = partido.estado === 'finalizado';
                         const score = getScore(partido);
                         const sportName = partido.disciplinas?.name || 'Deporte';

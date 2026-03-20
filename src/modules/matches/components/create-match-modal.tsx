@@ -664,8 +664,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                     <Clock size={14} /> PROGRAMADO
                                 </button>
                                 <button
-                                    onClick={() => setEstado('en_vivo')}
-                                    className={`flex-1 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-2 ${estado === 'en_vivo' ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-zinc-600 hover:text-red-500'}`}
+                                    onClick={() => setEstado('en_curso')}
+                                    className={`flex-1 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-2 ${estado === 'en_curso' ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-zinc-600 hover:text-red-500'}`}
                                 >
                                     <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" /> VIVO
                                 </button>

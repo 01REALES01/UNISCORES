@@ -86,9 +86,9 @@ export default function PublicMatchDetail() {
             const [eventosRes, predsRes] = await Promise.all([
                 safeQuery(
                     supabase.from('olympics_eventos')
-                        .select('*, jugadores:olympics_jugadores(nombre, numero, profile_id)')
+                        .select('*, jugadores:jugadores(*)')
                         .eq('partido_id', matchId)
-                        .order('id', { ascending: false }),
+                        .order('minuto', { ascending: false }),
                     'partido-eventos'
                 ),
                 safeQuery(
@@ -128,7 +128,7 @@ export default function PublicMatchDetail() {
 
         try {
             // Ensure profile exists
-            await supabase.from('public_profiles').upsert(
+            await supabase.from('profiles').upsert(
                 { id: user.id, email: user.email },
                 { onConflict: 'id' }
             );
@@ -227,7 +227,7 @@ export default function PublicMatchDetail() {
         </div>
     );
 
-    const isLive = match.estado === 'en_vivo';
+    const isLive = match.estado === 'en_curso';
     const isFinished = match.estado === 'finalizado';
     const sportName = match.disciplinas?.name || 'Deporte';
     const sportEmoji = getSportEmoji(sportName);
@@ -417,7 +417,7 @@ export default function PublicMatchDetail() {
                                                         <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500"></span>
                                                     </span>
                                                     <span className="text-xl sm:text-3xl font-black text-rose-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]">
-                                                        EN VIVO
+                                                        EN CURSO
                                                     </span>
                                                 </div>
                                             ) : (

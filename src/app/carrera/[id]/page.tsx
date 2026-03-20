@@ -271,9 +271,9 @@ export default function CarreraProfilePage() {
             else if (isYesterday) label = `Ayer — ${label}`;
             else if (isTomorrow) label = `Mañana — ${label}`;
 
-            // Internal sorting: en_vivo (0), programado (1), finalizado (2)
+            // Internal sorting: en_curso (0), programado (1), finalizado (2)
             const sorted = groups[fecha].sort((a: any, b: any) => {
-                const order: Record<string, number> = { en_vivo: 0, programado: 1, finalizado: 2 };
+                const order: Record<string, number> = { en_curso: 0, programado: 1, finalizado: 2 };
                 const oA = order[(a.estado || '').toLowerCase().trim()] ?? 99;
                 const oB = order[(b.estado || '').toLowerCase().trim()] ?? 99;
                 if (oA !== oB) return oA - oB;
@@ -947,7 +947,7 @@ function MatchRow({
         det.juegos_b ??
         null;
 
-    const isLive = estado === "en_vivo";
+    const isLive = estado === "en_curso";
     const isFinal = estado === "finalizado";
 
     const accent = SPORT_ACCENT[disc || ""] || "text-white/60";
@@ -992,7 +992,7 @@ function MatchRow({
                             </p>
                             {isLive && (
                                 <Badge className="bg-red-500 text-white border-none text-[8px] font-black px-2 py-0.5 animate-pulse">
-                                    EN VIVO
+                                    EN CURSO
                                 </Badge>
                             )}
                             {match.genero && (

@@ -79,9 +79,9 @@ export default function PartidosPage() {
             else if (isYesterday) label = `Ayer — ${label}`;
             else if (isTomorrow) label = `Mañana — ${label}`;
 
-            // Internal sorting: en_vivo (0), programado (1), finalizado (2)
+            // Internal sorting: en_curso (0), programado (1), finalizado (2)
             const sorted = groups[fecha].sort((a, b) => {
-                const stateOrder = { "en_vivo": 0, "programado": 1, "finalizado": 2 };
+                const stateOrder = { "en_curso": 0, "programado": 1, "finalizado": 2 };
                 const orderA = stateOrder[a.estado as keyof typeof stateOrder] ?? 99;
                 const orderB = stateOrder[b.estado as keyof typeof stateOrder] ?? 99;
 
@@ -234,7 +234,7 @@ export default function PartidosPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {group.partidos.map(partido => (
                                         <div key={partido.id} className="h-full">
-                                            {partido.estado === 'en_vivo' ? (
+                                            {partido.estado === 'en_curso' ? (
                                                 <LiveMatchCard partido={partido} />
                                             ) : partido.estado === 'finalizado' ? (
                                                 <ResultCard partido={partido} />

@@ -18,7 +18,7 @@ export function LiveMatchesSection({ matches }: LiveMatchesSectionProps) {
             <Zap size={18} fill="currentColor" />
           </div>
         </div>
-        <h2 className="text-xl font-black text-white tracking-widest uppercase">EN VIVO AHORA</h2>
+        <h2 className="text-xl font-black text-white tracking-widest uppercase">EN CURSO AHORA</h2>
         <span className="ml-auto flex items-center gap-1.5 text-[10px] font-black text-white bg-red-600 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(220,38,38,0.4)] animate-pulse uppercase tracking-widest">
           <span className="w-1.5 h-1.5 rounded-full bg-white" />
           Live

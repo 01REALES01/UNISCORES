@@ -214,7 +214,7 @@ export function LiveIndicator({ className }: { className?: string }) {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-red-500">En Vivo</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-red-500">En Curso</span>
         </div>
     );
 }

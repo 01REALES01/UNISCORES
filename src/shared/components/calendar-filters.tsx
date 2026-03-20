@@ -58,7 +58,7 @@ export function CalendarFilters({ activeFilter, onFilterChange }: CalendarFilter
                         activeFilter === 'live' && "hidden"
                     )} />
                     <Activity size={16} className={cn(activeFilter === 'live' ? "animate-bounce" : "animate-pulse")} />
-                    En Vivo
+                    En Curso
                 </button>
                 {activeFilter !== 'all' && activeFilter !== 'live' && (
                     <span className="text-[10px] font-black text-indigo-400/50 uppercase tracking-widest animate-in fade-in slide-in-from-left-2">

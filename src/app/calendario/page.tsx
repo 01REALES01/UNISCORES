@@ -35,7 +35,7 @@ type Match = {
     atleta_b?: any;
     carrera_a?: { nombre: string };
     carrera_b?: { nombre: string };
-    estado: 'programado' | 'en_vivo' | 'finalizado';
+    estado: 'programado' | 'en_curso' | 'finalizado';
     fecha: string;
     lugar: string;
     marcador_detalle: any;
@@ -71,7 +71,7 @@ export default function CalendarioPage() {
     // Filtered data
     const filteredMatches = useMemo(() => {
         if (activeFilter === 'all') return matches;
-        if (activeFilter === 'live') return matches.filter(m => m.estado === 'en_vivo');
+        if (activeFilter === 'live') return matches.filter(m => m.estado === 'en_curso');
         return matches.filter(m => m.disciplinas?.name === activeFilter);
     }, [matches, activeFilter]);
 
@@ -85,7 +85,7 @@ export default function CalendarioPage() {
 
     // Match of the Day (First live or next upcoming overall, or last finished)
     const matchOfTheDay = useMemo(() => {
-        const liveMatch = filteredMatches.find(m => m.estado === 'en_vivo');
+        const liveMatch = filteredMatches.find(m => m.estado === 'en_curso');
         if (liveMatch) return liveMatch;
         const upcomingMatches = filteredMatches.filter(m => new Date(m.fecha) >= new Date() && m.estado === 'programado');
         if (upcomingMatches.length > 0) return upcomingMatches[0];
@@ -147,7 +147,7 @@ export default function CalendarioPage() {
                         )}
                     >
                         <Activity size={16} className={cn(activeFilter === 'live' ? "animate-bounce" : "animate-pulse")} />
-                        En Vivo
+                        En Curso
                     </button>
                 </div>
 
@@ -209,11 +209,11 @@ export default function CalendarioPage() {
                                         const sportName = e.disciplinas?.name;
                                         if (!sportName) return;
                                         const currentStatus = uniqueSportsMap.get(sportName);
-                                        // Prioritize status: en_vivo > programado > finalizado
+                                        // Prioritize status: en_curso > programado > finalizado
                                         if (!currentStatus) {
                                             uniqueSportsMap.set(sportName, e.estado);
-                                        } else if (e.estado === 'en_vivo') {
-                                            uniqueSportsMap.set(sportName, 'en_vivo');
+                                        } else if (e.estado === 'en_curso') {
+                                            uniqueSportsMap.set(sportName, 'en_curso');
                                         } else if (e.estado === 'programado' && currentStatus === 'finalizado') {
                                             uniqueSportsMap.set(sportName, 'programado');
                                         }
@@ -246,7 +246,7 @@ export default function CalendarioPage() {
                                                     {uniqueSportsEvents.slice(0, 3).map((s, idx) => (
                                                         <div key={idx} className={cn(
                                                             "w-2.5 h-2.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-[#0a0805] border",
-                                                            s.estado === 'en_vivo' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' :
+                                                            s.estado === 'en_curso' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' :
                                                                 s.estado === 'finalizado' ? 'border-white/10 text-white/30' : 'border-indigo-500/30 text-indigo-400'
                                                         )}>
                                                             <SportIcon sport={s.name} size={10} className="scale-[0.6] sm:scale-100 transition-transform" />
@@ -294,10 +294,10 @@ export default function CalendarioPage() {
                                 <div className="relative z-10 flex flex-col items-center">
                                     <div className={cn(
                                         "text-white text-[10px] sm:text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full mb-6 shadow-lg flex items-center gap-2",
-                                        matchOfTheDay.estado === 'en_vivo' ? 'bg-rose-600 shadow-rose-500/50' : 'bg-indigo-600 shadow-indigo-500/50'
+                                        matchOfTheDay.estado === 'en_curso' ? 'bg-rose-600 shadow-rose-500/50' : 'bg-indigo-600 shadow-indigo-500/50'
                                     )}>
-                                        {matchOfTheDay.estado === 'en_vivo' ? <Activity size={14} className="animate-pulse" /> : <Trophy size={14} />}
-                                        {matchOfTheDay.estado === 'en_vivo' ? 'En Vivo Ahora' : 'Partido del Día'}
+                                        {matchOfTheDay.estado === 'en_curso' ? <Activity size={14} className="animate-pulse" /> : <Trophy size={14} />}
+                                        {matchOfTheDay.estado === 'en_curso' ? 'En Curso Ahora' : 'Partido del Día'}
                                     </div>
 
                                     <div className="text-[10px] text-white/70 font-bold uppercase tracking-widest mb-4 flex items-center gap-2 bg-white/5 px-3 py-1 rounded-md">
@@ -343,7 +343,7 @@ export default function CalendarioPage() {
                                                 </div>
                                             ) : (
                                                 <div className="flex flex-col items-center">
-                                                    {matchOfTheDay.estado === 'en_vivo' ? (
+                                                    {matchOfTheDay.estado === 'en_curso' ? (
                                                         <div className="flex flex-col items-center gap-3 mt-2">
                                                             <span className="text-sm font-black text-rose-500 uppercase tracking-widest bg-rose-500/10 px-4 py-2 rounded-xl border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.2)] flex items-center gap-2">
                                                                 <Activity size={16} className="animate-pulse" />
@@ -400,7 +400,7 @@ export default function CalendarioPage() {
                                             </div>
 
                                             <div className="flex flex-col items-center justify-center shrink-0 min-w-[100px] sm:min-w-[140px] relative z-10">
-                                                {matchOfTheDay.estado === 'en_vivo' ? (
+                                                {matchOfTheDay.estado === 'en_curso' ? (
                                                     <div className="flex flex-col items-center">
                                                         {matchOfTheDay.disciplinas?.name === 'Ajedrez' ? (
                                                             <span className="text-sm sm:text-base font-black text-rose-500 tracking-widest bg-rose-500/10 px-3 py-1 rounded-lg border border-rose-500/30">VS</span>
@@ -537,7 +537,7 @@ export default function CalendarioPage() {
                                 {!loading && upcomingFixtures.map(match => {
                                     const sportBorder = SPORT_BORDER[match.disciplinas?.name ?? ''] || 'border-indigo-500/20';
                                     const sportAccent = SPORT_ACCENT[match.disciplinas?.name ?? ''] || 'text-indigo-400';
-                                    const isLive = match.estado === 'en_vivo';
+                                    const isLive = match.estado === 'en_curso';
 
                                     return (
                                         <Link key={match.id} href={`/partido/${match.id}`} className="block">

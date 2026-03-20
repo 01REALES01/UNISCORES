@@ -15,13 +15,15 @@ import {
     ChevronLeft,
     Loader2,
     Calendar,
-    ArrowUpRight
+    ArrowUpRight,
+    Crown
 } from "lucide-react";
 import { FriendButton } from "@/modules/users/components/friend-button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { motion } from "framer-motion";
+import { isCreator } from "@/lib/constants";
 
 export default function PublicProfilePage() {
     const params = useParams();
@@ -112,13 +114,24 @@ export default function PublicProfilePage() {
     }
 
     const isDeportista = profile.roles?.includes('deportista');
+    const isProjectCreator = isCreator(profile.email);
 
     return (
         <div className="min-h-screen bg-[#0a0805] text-white selection:bg-red-500/30 texture-grain overflow-x-hidden">
             {/* Ambient background */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[150px]" />
-                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-orange-600/5 rounded-full blur-[150px]" />
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                {isProjectCreator ? (
+                    <>
+                        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-amber-600/10 rounded-full blur-[180px] animate-pulse duration-[10s]" />
+                        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-yellow-600/5 rounded-full blur-[150px]" />
+                        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
+                    </>
+                ) : (
+                    <>
+                        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[150px]" />
+                        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-orange-600/5 rounded-full blur-[150px]" />
+                    </>
+                )}
             </div>
 
             <MainNavbar user={user} profile={currentUserProfile} isStaff={isStaff} />
@@ -137,32 +150,57 @@ export default function PublicProfilePage() {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col md:flex-row items-center gap-8 mb-16"
+                    className="flex flex-col md:flex-row items-center gap-8 mb-16 relative z-10"
                 >
                     <div className="relative group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-orange-500 rounded-[3rem] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity" />
+                        <div className={cn(
+                            "absolute inset-0 rounded-[3rem] blur-2xl transition-opacity",
+                            isProjectCreator ? "bg-gradient-to-br from-amber-400 to-yellow-600 opacity-40 group-hover:opacity-60" : "bg-gradient-to-br from-red-600 to-orange-500 opacity-20 group-hover:opacity-40"
+                        )} />
+                        
+                        {isProjectCreator && (
+                            <div className="absolute -inset-1 bg-gradient-to-r from-amber-300 via-yellow-500 to-amber-700 rounded-[3.2rem] opacity-50 blur-sm animate-pulse" />
+                        )}
+
                         <div className="relative">
                             <Avatar
                                 name={profile.full_name}
                                 src={profile.avatar_url}
-                                className="w-40 h-40 md:w-56 md:h-56 rounded-[3rem] border-4 border-white/10 shadow-2xl"
+                                className={cn(
+                                    "w-40 h-40 md:w-56 md:h-56 rounded-[3rem] shadow-2xl relative z-10 bg-[#0a0805]",
+                                    isProjectCreator ? "border-[4px] border-amber-500/80" : "border-4 border-white/10"
+                                )}
                             />
-                            {isDeportista && (
-                                <div className="absolute -bottom-4 -right-4 p-4 bg-amber-500 text-black rounded-3xl shadow-2xl border-4 border-[#0a0805] animate-bounce-slow">
+                            {isProjectCreator && (
+                                <div className="absolute -bottom-6 -right-6 p-4 bg-gradient-to-br from-amber-300 to-yellow-600 text-[#050505] rounded-3xl shadow-[0_0_30px_rgba(245,158,11,0.5)] border-4 border-[#0a0805] animate-bounce-slow z-20">
+                                    <Crown size={28} className="drop-shadow-md" />
+                                </div>
+                            )}
+                            {isDeportista && !isProjectCreator && (
+                                <div className="absolute -bottom-4 -right-4 p-4 bg-amber-500 text-black rounded-3xl shadow-2xl border-4 border-[#0a0805] animate-bounce-slow z-20">
                                     <Trophy size={24} />
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex-1 text-center md:text-left">
+                    <div className="flex-1 text-center md:text-left relative z-10">
                         <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-                            <h1 className="text-4xl md:text-6xl font-black tracking-tighter font-outfit">{profile.full_name}</h1>
-                            {isDeportista && (
+                            <h1 className={cn(
+                                "text-4xl md:text-6xl font-black tracking-tighter font-outfit",
+                                isProjectCreator ? "text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 drop-shadow-sm tracking-widest" : ""
+                            )}>
+                                {profile.full_name}
+                            </h1>
+                            {isProjectCreator ? (
+                                <Badge className="bg-gradient-to-r from-amber-500 to-yellow-600 text-[#050505] border-none text-[10px] font-black uppercase tracking-[0.3em] px-5 py-2 self-center md:self-auto rounded-full shadow-[0_0_15px_rgba(245,158,11,0.4)]">
+                                    <Crown size={14} className="mr-2" /> CREADOR DEL PROYECTO
+                                </Badge>
+                            ) : isDeportista ? (
                                 <Badge className="bg-amber-500 text-black border-none text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 self-center md:self-auto rounded-full">
                                     <Star size={12} className="mr-1 fill-current" /> Atleta Élite
                                 </Badge>
-                            )}
+                            ) : null}
                         </div>
 
                         {profile.tagline && (

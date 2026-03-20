@@ -59,7 +59,7 @@ function BracketMatchCard({ match, sportName }: { match: Match | null; sportName
     const { scoreA, scoreB } = getScoreFromMatch(match);
     const teamA = match.delegacion_a || match.equipo_a;
     const teamB = match.delegacion_b || match.equipo_b;
-    const isLive = match.estado === 'en_vivo';
+    const isLive = match.estado === 'en_curso';
     const isFinished = match.estado === 'finalizado';
     const winnerA = isFinished && scoreA > scoreB;
     const winnerB = isFinished && scoreB > scoreA;
@@ -74,7 +74,7 @@ function BracketMatchCard({ match, sportName }: { match: Match | null; sportName
                 {isLive && (
                     <div className="bg-red-500/10 border-b border-red-500/20 px-3 py-1 flex items-center gap-1.5">
                         <Activity size={10} className="text-red-400 animate-pulse" />
-                        <span className="text-[9px] font-black text-red-400 uppercase tracking-widest">En Vivo</span>
+                        <span className="text-[9px] font-black text-red-400 uppercase tracking-widest">En Curso</span>
                     </div>
                 )}
 

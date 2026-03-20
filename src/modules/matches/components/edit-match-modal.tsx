@@ -386,7 +386,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
         const { error: updateError } = await supabase
             .from('partidos')
             .update({
-                estado: 'en_vivo',
+                estado: 'en_curso',
                 marcador_detalle: {
                     ...match.marcador_detalle,
                     tiempo_inicio: new Date().toISOString(),
@@ -656,7 +656,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                                     </Button>
                                 )}
 
-                                {match.estado === 'en_vivo' && (
+                                {match.estado === 'en_curso' && (
                                     <div className="flex gap-2">
                                         {cronometroActivo ? (
                                             <Button onClick={pausarCronometro} variant="secondary" className="flex-1">
@@ -694,7 +694,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                                             <Play size={16} /> Iniciar
                                         </Button>
                                     )}
-                                    {match.estado === 'en_vivo' && (
+                                    {match.estado === 'en_curso' && (
                                         <Button onClick={finalizarPartido} variant="ghost" className="text-red-400 hover:text-red-500 hover:bg-red-500/10">
                                             <Square size={16} /> Finalizar Partido
                                         </Button>
@@ -702,7 +702,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                                     {match.estado === 'finalizado' && <Badge variant="outline">Finalizado</Badge>}
                                 </div>
 
-                                {(match.estado === 'en_vivo' || match.estado === 'finalizado') && (
+                                {(match.estado === 'en_curso' || match.estado === 'finalizado') && (
                                     <Button size="sm" variant="outline" onClick={openAdvancedEdit} className="mt-4 border-indigo-500/30 text-indigo-400 w-full bg-indigo-500/5 hover:bg-indigo-500/20">
                                         Modo Edición Avanzada
                                     </Button>
@@ -787,7 +787,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                     )}
 
                     {/* Crear Evento */}
-                    {(match.estado === 'en_vivo' && !showAdvancedEdit) && (
+                    {(match.estado === 'en_curso' && !showAdvancedEdit) && (
                         <div className="glass rounded-xl p-4 space-y-4">
                             <div className="flex items-center justify-between">
                                 <h4 className="font-bold flex items-center gap-2">
