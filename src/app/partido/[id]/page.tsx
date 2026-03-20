@@ -19,6 +19,7 @@ import { parseEventAudit } from "@/lib/audit-helpers";
 
 import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
 import { MatchTimeline } from '@/modules/matches/components/match-timeline';
+import { MatchStats } from '@/modules/matches/components/match-stats';
 
 import UniqueLoading from "@/components/ui/morph-loading";
 
@@ -676,6 +677,15 @@ export default function PublicMatchDetail() {
                     eventos={eventos}
                     sportName={sportName}
                 />
+
+                {/* Match Statistics */}
+                <div className="mt-8">
+                    <MatchStats
+                        match={match}
+                        eventos={eventos}
+                        sportName={sportName}
+                    />
+                </div>
 
                 {/* Footer */}
                 <div className="mt-20 text-center">

@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import { AnimatePresence, m } from "framer-motion";
-import { HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords, Calendar as CalendarIcon, ChevronRight, Zap } from "lucide-react";
+import { HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords, Calendar as CalendarIcon, ChevronRight, Zap, TrendingUp } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { Button, Avatar } from "@/components/ui-primitives";
 import { NotificationBell } from "@/components/notification-bell";
@@ -35,8 +35,9 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
         if (pathname.startsWith('/medallero')) return 5;
         if (pathname.startsWith('/quiniela')) return 6;
         if (pathname.startsWith('/clasificacion')) return 7;
-        if (pathname.startsWith('/tv')) return 9;
-        if (pathname.startsWith('/admin') && isStaff) return 9;
+        if (pathname.startsWith('/estadisticas') || pathname.startsWith('/lideres')) return 8;
+        if (pathname.startsWith('/tv')) return 10;
+        if (pathname.startsWith('/admin') && isStaff) return 11;
         return null;
     };
 
@@ -109,6 +110,8 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                 { title: "Medallería", icon: Trophy },
                                 { title: "Acierta y Gana", icon: BarChart3 },
                                 { title: "Clasificación", icon: Swords },
+                                
+                                { title: "Líderes", icon: TrendingUp },
                                 { type: "separator" },
                                 { title: "TV", icon: Tv },
                                 ...(isStaff ? [{ title: "Admin", icon: Shield }] : []),
@@ -122,8 +125,9 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                 if (index === 5) router.push('/medallero');
                                 if (index === 6) router.push('/quiniela');
                                 if (index === 7) router.push('/clasificacion');
-                                if (index === 9) window.open('/tv', '_blank');
-                                if (index === 10 && isStaff) router.push('/admin');
+                                if (index === 8) router.push('/estadisticas');
+                                if (index === 10) window.open('/tv', '_blank');
+                                if (index === 11 && isStaff) router.push('/admin');
                             }}
                         />
                     </div>
@@ -137,7 +141,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                         const { error } = await supabase.from('notifications').insert({
                                             user_id: user.id,
                                             type: 'match_start',
-                                            title: '🔴 [TEST] Partido en vivo',
+                                            title: '🔴 [TEST] Partido en curso',
                                             body: 'Ingeniería vs Medicina ha comenzado',
                                             metadata: { match_id: 'test', sport: 'Fútbol', teams: 'Ingeniería vs Medicina' }
                                         });
@@ -306,6 +310,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                     { title: "Medallería", icon: Trophy, href: "/medallero" },
                                     { title: "Acierta y Gana", icon: BarChart3, href: "/quiniela" },
                                     { title: "Clasificación", icon: Swords, href: "/clasificacion" },
+                                    { title: "Líderes", icon: TrendingUp, href: "/estadisticas" },
                                     { title: "TV", icon: Tv, href: "/tv", external: true },
                                     ...(isStaff ? [{ title: "Admin Panel", icon: Shield, href: "/admin", special: true }] : []),
                                 ].map((tab, idx) => {

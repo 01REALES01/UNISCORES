@@ -40,6 +40,7 @@ import {
     Flame,
     ChevronDown,
     Pencil,
+    TrendingUp,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -530,7 +531,44 @@ export default function CarreraProfilePage() {
                                             PJ
                                         </span>
                                     </div>
+
+                                    {/* Win Rate */}
+                                    {stats.played > 0 && (
+                                        <div className="px-5 py-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
+                                            <TrendingUp size={16} className="text-cyan-400" />
+                                            <span className="text-lg font-black tabular-nums text-cyan-400">
+                                                {Math.round((stats.won / stats.played) * 100)}%
+                                            </span>
+                                            <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">
+                                                Efectividad
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
+
+                                {/* Win Rate Progress Bar */}
+                                {stats.played > 0 && (
+                                    <div className="mt-4 space-y-1.5">
+                                        <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-white/20">
+                                            <span>{stats.won}V - {stats.draw}E - {stats.lost}D</span>
+                                            <span>{stats.played} partidos</span>
+                                        </div>
+                                        <div className="flex h-1.5 rounded-full overflow-hidden bg-white/5 gap-[1px]">
+                                            <div
+                                                className="h-full bg-green-500 rounded-l-full transition-all duration-700"
+                                                style={{ width: `${(stats.won / stats.played) * 100}%` }}
+                                            />
+                                            <div
+                                                className="h-full bg-white/20 transition-all duration-700"
+                                                style={{ width: `${(stats.draw / stats.played) * 100}%` }}
+                                            />
+                                            <div
+                                                className="h-full bg-red-500/50 rounded-r-full transition-all duration-700"
+                                                style={{ width: `${(stats.lost / stats.played) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
