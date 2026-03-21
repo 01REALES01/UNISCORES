@@ -216,7 +216,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                                 </div>
                                 <div className="flex-1">
                                     <p className="text-2xl font-black font-outfit leading-tight mb-2 text-white drop-shadow-lg">{mvp.full_name}</p>
-                                    <Badge title={`${mvpPoints} Ptos aportados`} className="bg-amber-500/20 text-amber-500 border border-amber-500/30 font-mono text-xl tabular-nums rounded-xl px-4 py-1.5 shadow-inner">
+                                    <Badge className="bg-amber-500/20 text-amber-500 border border-amber-500/30 font-mono text-xl tabular-nums rounded-xl px-4 py-1.5 shadow-inner">
                                         <Star size={14} className="inline mr-2 -translate-y-0.5 fill-amber-500" />
                                         {mvpPoints} pts
                                     </Badge>
