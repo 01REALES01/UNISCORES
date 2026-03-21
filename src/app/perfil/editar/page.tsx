@@ -16,8 +16,6 @@ export default function EditProfilePage() {
     
     const [carreras, setCarreras] = useState<any[]>([]);
     
-    const [fullName, setFullName] = useState("");
-    const [bio, setBio] = useState("");
     const [selectedCarreras, setSelectedCarreras] = useState<number[]>([]);
     
     const [loading, setLoading] = useState(false);
@@ -32,8 +30,6 @@ export default function EditProfilePage() {
     useEffect(() => {
         const initData = async () => {
             if (profile) {
-                setFullName(profile.full_name || "");
-                setBio(profile.bio || "");
                 setSelectedCarreras(profile.carreras_ids || []);
                 
                 // Fetch all available careers for selection
@@ -65,8 +61,6 @@ export default function EditProfilePage() {
             const { error } = await supabase
                 .from('profiles')
                 .update({
-                    full_name: fullName.trim(),
-                    bio: bio.trim(),
                     carreras_ids: selectedCarreras
                 })
                 .eq('id', user.id);
@@ -81,11 +75,11 @@ export default function EditProfilePage() {
         }
     };
 
-    if (authLoading || fetching) return <div className="min-h-screen flex items-center justify-center bg-[#0a0805]"><UniqueLoading size="lg" /></div>;
+    if (authLoading || fetching) return <div className="min-h-screen flex items-center justify-center bg-[#0a0816]"><UniqueLoading size="lg" /></div>;
     if (!profile) return null;
 
     return (
-        <div className="min-h-screen bg-[#060504] text-white selection:bg-amber-500/30 overflow-x-hidden">
+        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-amber-500/30 overflow-x-hidden">
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <main className="max-w-[1000px] mx-auto px-4 sm:px-8 pt-8 pb-24 relative z-10">
@@ -109,60 +103,16 @@ export default function EditProfilePage() {
                     </p>
                 </div>
 
-                <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <form onSubmit={handleSave} className="flex flex-col gap-8 max-w-4xl mx-auto w-full">
                     
-                    {/* LEFT COLUMN: Basic Info */}
+                    {/* Career Selection (Now full width centered) */}
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
-                        className="lg:col-span-5 space-y-6"
+                        className="space-y-6 w-full"
                     >
-                        <div className="rounded-[2.5rem] bg-[#0A0705] border border-white/5 p-8 shadow-2xl relative overflow-hidden group h-full">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 blur-3xl group-hover:bg-red-500/10 transition-colors pointer-events-none" />
-                            
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-8 flex items-center gap-2">
-                                <User size={14} /> INFORMACIÓN BÁSICA
-                            </h3>
-
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-white/60 ml-2">Nombre Completo</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={fullName}
-                                        onChange={(e) => setFullName(e.target.value)}
-                                        className="w-full bg-[#040302] border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-white placeholder:text-white/20 focus:outline-none focus:border-red-500/50 transition-colors shadow-inner"
-                                        placeholder="Tu nombre y apellido"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-white/60 ml-2 flex items-center gap-2">
-                                        <BookOpen size={12} className="text-white/40" /> Biografía / Sobre mí
-                                    </label>
-                                    <textarea
-                                        value={bio}
-                                        onChange={(e) => setBio(e.target.value)}
-                                        rows={6}
-                                        className="w-full bg-[#040302] border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-white placeholder:text-white/20 focus:outline-none focus:border-amber-500/50 transition-colors shadow-inner resize-none tracking-wide leading-relaxed"
-                                        placeholder="Escribe algo sobre ti, lo que estudias o tus metas..."
-                                    />
-                                    <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest ml-2 mt-2">Puedes usar saltos de línea para listar elementos.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    {/* RIGHT COLUMN: Careers */}
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.1 }}
-                        className="lg:col-span-7 space-y-6"
-                    >
-                        <div className="rounded-[2.5rem] bg-[#0A0705] border border-white/5 p-8 shadow-2xl h-full flex flex-col">
+                        <div className="rounded-[2.5rem] bg-[#0A0705] border border-white/5 p-8 shadow-2xl flex flex-col">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-8 flex items-center gap-2">
                                 <Trophy size={14} /> SELECCIÓN DE CARRERAS
                             </h3>
@@ -227,7 +177,7 @@ export default function EditProfilePage() {
                     </motion.div>
 
                     {/* Submit Bar */}
-                    <div className="lg:col-span-12 mt-4 mb-4 flex justify-end">
+                    <div className="mt-4 mb-4 flex justify-end">
                         <button
                             type="submit"
                             disabled={loading || selectedCarreras.length === 0}

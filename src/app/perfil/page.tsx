@@ -146,7 +146,7 @@ export default function PerfilPage() {
         }
     };
 
-    if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-[#0a0805]"><UniqueLoading size="lg" /></div>;
+    if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-[#0a0816]"><UniqueLoading size="lg" /></div>;
     if (!user) return null;
 
     const memberSince = profile?.created_at
@@ -165,7 +165,7 @@ export default function PerfilPage() {
     const firstName = profile?.full_name?.split(' ')[0] || "Usuario";
 
     return (
-        <div className="min-h-screen bg-[#060504] text-white selection:bg-amber-500/30 overflow-x-hidden">
+        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-amber-500/30 overflow-x-hidden">
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-8 pb-24 relative z-10">
@@ -211,7 +211,7 @@ export default function PerfilPage() {
                             name={profile?.full_name || user.email}
                             src={null}
                             className={cn(
-                                "relative w-48 h-48 md:w-60 md:h-60 rounded-[3rem] shadow-2xl z-10 bg-[#0a0805] text-5xl md:text-6xl border border-white/10",
+                                "relative w-48 h-48 md:w-60 md:h-60 rounded-[3rem] shadow-2xl z-10 bg-[#0a0816] text-5xl md:text-6xl border border-white/10",
                             )}
                         />
                         {isProjectCreator && (

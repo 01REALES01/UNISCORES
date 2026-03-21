@@ -101,14 +101,14 @@ export default function MatchControlPage() {
     const [showAdvancedEdit, setShowAdvancedEdit] = useState(false);
 
     if (loading) return (
-        <div className="min-h-screen bg-[#0a0805] flex flex-col items-center justify-center gap-4">
+        <div className="min-h-screen bg-[#0a0816] flex flex-col items-center justify-center gap-4">
             <Loader2 className="w-12 h-12 text-red-500 animate-spin" />
             <p className="text-white/40 font-black uppercase tracking-widest text-xs animate-pulse">Sincronizando...</p>
         </div>
     );
     
     if (errorCtx || !match) return (
-        <div className="min-h-screen bg-[#0a0805] flex flex-col items-center justify-center p-6 text-center">
+        <div className="min-h-screen bg-[#0a0816] flex flex-col items-center justify-center p-6 text-center">
             <AlertCircle size={40} className="text-red-500 mb-6" />
             <h1 className="text-2xl font-black text-white mb-2 uppercase">Error de Conexión</h1>
             <p className="text-slate-500 mb-8">{errorCtx || "No se pudo encontrar el partido."}</p>

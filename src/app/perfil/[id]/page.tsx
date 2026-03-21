@@ -171,11 +171,11 @@ export default function PublicProfilePage() {
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#0a0805]"><UniqueLoading size="lg" /></div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#0a0816]"><UniqueLoading size="lg" /></div>;
 
     if (!profile) {
         return (
-            <div className="min-h-screen bg-[#0a0805] text-white flex flex-col items-center justify-center p-4">
+            <div className="min-h-screen bg-[#0a0816] text-white flex flex-col items-center justify-center p-4">
                 <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
                     <Star className="text-red-500" size={32} />
                 </div>
@@ -205,7 +205,7 @@ export default function PublicProfilePage() {
     const firstName = profile.full_name?.split(' ')[0] || "Usuario";
 
     return (
-        <div className="min-h-screen bg-[#060504] text-white selection:bg-amber-500/30 overflow-x-hidden">
+        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-amber-500/30 overflow-x-hidden">
             <MainNavbar user={user} profile={currentUserProfile} isStaff={isStaff} />
 
             <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-8 pb-24 relative z-10">
@@ -235,7 +235,7 @@ export default function PublicProfilePage() {
                             name={profile.full_name}
                             src={null}
                             className={cn(
-                                "relative w-48 h-48 md:w-60 md:h-60 rounded-[3rem] shadow-2xl z-10 bg-[#0a0805] text-5xl md:text-6xl border border-white/10",
+                                "relative w-48 h-48 md:w-60 md:h-60 rounded-[3rem] shadow-2xl z-10 bg-[#0a0816] text-5xl md:text-6xl border border-white/10",
                             )}
                         />
                         {isProjectCreator && (

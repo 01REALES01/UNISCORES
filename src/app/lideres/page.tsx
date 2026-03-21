@@ -161,13 +161,13 @@ export default function LideresPage() {
     const currentLabel = activeSport === 'todos' ? 'Puntos' : scoringLabel(activeSport);
 
     if (loading) return (
-        <div className="min-h-screen bg-[#060510] flex items-center justify-center">
+        <div className="min-h-screen bg-[#0a0816] flex items-center justify-center">
             <UniqueLoading size="lg" />
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-[#060510] text-white selection:bg-amber-500/30 overflow-x-hidden">
+        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-amber-500/30 overflow-x-hidden">
             {/* Ambient */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
                 <div className="absolute -top-40 right-0 w-[700px] h-[700px] bg-amber-600/5 rounded-full blur-[160px]" />

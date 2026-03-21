@@ -314,7 +314,7 @@ export default function CarreraProfilePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#0a0805]">
+            <div className="min-h-screen flex items-center justify-center bg-[#0a0816]">
                 <UniqueLoading size="lg" />
             </div>
         );
@@ -322,7 +322,7 @@ export default function CarreraProfilePage() {
 
     if (!carrera || error) {
         return (
-            <div className="min-h-screen bg-[#0a0805] text-white flex flex-col items-center justify-center p-4">
+            <div className="min-h-screen bg-[#0a0816] text-white flex flex-col items-center justify-center p-4">
                 <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
                     <GraduationCap className="text-red-500" size={32} />
                 </div>
@@ -353,7 +353,7 @@ export default function CarreraProfilePage() {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white selection:bg-red-500/30 texture-grain overflow-x-hidden">
+        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-red-500/30 texture-grain overflow-x-hidden">
             {/* Ambient background */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[150px]" />

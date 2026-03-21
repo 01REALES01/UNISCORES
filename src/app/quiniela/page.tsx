@@ -32,7 +32,7 @@ export default function QuinielaPage() {
         setShowDisclaimer(false);
     };
 
-    if (authLoading || !user) return <div className="min-h-screen bg-[#0a0805] flex items-center justify-center"><UniqueLoading size="lg" /></div>;
+    if (authLoading || !user) return <div className="min-h-screen bg-[#0a0816] flex items-center justify-center"><UniqueLoading size="lg" /></div>;
 
     const navItems = [
         { id: 'play', label: 'Jugar', icon: Flame, className: 'bg-white text-black shadow-xl' },
@@ -49,7 +49,7 @@ export default function QuinielaPage() {
 
             {showDisclaimer && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-[#0a0805] border border-red-500/30 rounded-3xl p-8 max-w-sm w-full text-center">
+                    <div className="bg-[#0a0816] border border-red-500/30 rounded-3xl p-8 max-w-sm w-full text-center">
                         <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-6 text-red-500 border border-red-500/20"><Info size={32} /></div>
                         <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">Aviso Institucional</h3>
                         <p className="text-sm text-slate-300 mb-8 leading-relaxed">Este espacio es <strong className="text-white">100% recreativo</strong>. No se realizan apuestas económicas.</p>

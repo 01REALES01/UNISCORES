@@ -169,14 +169,14 @@ export default function NotificacionesPage() {
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-[#0a0805] flex items-center justify-center text-white">
+            <div className="min-h-screen bg-[#0a0816] flex items-center justify-center text-white">
                 <p className="text-white/40 font-bold">Inicia sesión para ver tus notificaciones.</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white">
+        <div className="min-h-screen bg-[#0a0816] text-white">
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/5 rounded-full blur-[120px]" />
                 <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px]" />

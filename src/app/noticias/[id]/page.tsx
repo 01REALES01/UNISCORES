@@ -83,7 +83,7 @@ export default function NoticiaDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805] text-white">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0816] text-white">
                 <UniqueLoading size="lg" />
             </div>
         );
@@ -91,7 +91,7 @@ export default function NoticiaDetailPage() {
 
     if (!noticia) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805] text-white">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0816] text-white">
                 <h1 className="text-2xl font-black mb-2">Artículo no encontrado</h1>
                 <Link href="/noticias"><Button variant="ghost">← Volver a Noticias</Button></Link>
             </div>
@@ -111,9 +111,9 @@ export default function NoticiaDetailPage() {
     const paragraphs = content.split(/\n\n+/).filter(Boolean);
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white selection:bg-red-500/30">
+        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-red-500/30">
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0805]/80 backdrop-blur-xl border-b border-white/5">
+            <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0816]/80 backdrop-blur-xl border-b border-white/5">
                 <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
                     <Link href="/noticias">
                         <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full">
@@ -198,7 +198,7 @@ export default function NoticiaDetailPage() {
                             <div className="flex items-center justify-center gap-1 sm:gap-4 flex-1 px-1 sm:px-4 relative z-10">
                                 <div className="flex items-center justify-end gap-2 sm:gap-3 flex-1">
                                     <span className="text-xs sm:text-sm font-black truncate text-right">{noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a}</span>
-                                    <Avatar name={noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a} src={noticia.partidos.carrera_a?.escudo_url} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
+                                    <Avatar name={noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a} src={noticia.partidos.carrera_a?.escudo_url} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-[#0a0816] text-[10px]" />
                                 </div>
 
                                 {noticia.partidos.estado === 'programado' ? (
@@ -214,7 +214,7 @@ export default function NoticiaDetailPage() {
                                 )}
 
                                 <div className="flex items-center justify-start gap-2 sm:gap-3 flex-1">
-                                    <Avatar name={noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b} src={noticia.partidos.carrera_b?.escudo_url} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-[#0a0805] text-[10px]" />
+                                    <Avatar name={noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b} src={noticia.partidos.carrera_b?.escudo_url} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-[#0a0816] text-[10px]" />
                                     <span className="text-xs sm:text-sm font-black truncate text-left">{noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b}</span>
                                 </div>
                             </div>

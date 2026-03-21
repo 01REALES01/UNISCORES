@@ -438,7 +438,7 @@ export default function Home() {
             })()}
 
             {/* QUINIELA CTA BANNER */}
-            <div className="relative rounded-[2rem] overflow-hidden border border-red-600/30 shadow-[0_0_40px_rgba(220,38,38,0.15)] group cursor-pointer mb-8 bg-[#120e08]">
+            <div className="relative rounded-[2rem] overflow-hidden border border-red-600/30 shadow-[0_0_40px_rgba(220,38,38,0.15)] group cursor-pointer mb-8 bg-[#0d0b18]">
               <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
               <div className="absolute inset-0 bg-gradient-to-r from-red-600/10 to-transparent" />
 

@@ -46,7 +46,7 @@ export default function OfflinePage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="min-h-screen bg-[#0a0816] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
             {/* Ambient background effects */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-500/5 rounded-full blur-[120px] animate-pulse" />
