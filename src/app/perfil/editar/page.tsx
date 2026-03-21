@@ -18,7 +18,7 @@ export default function EditProfilePage() {
     
     const [fullName, setFullName] = useState("");
     const [bio, setBio] = useState("");
-    const [selectedCarreras, setSelectedCarreras] = useState<string[]>([]);
+    const [selectedCarreras, setSelectedCarreras] = useState<number[]>([]);
     
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
@@ -48,7 +48,7 @@ export default function EditProfilePage() {
         }
     }, [profile, authLoading]);
 
-    const toggleCarrera = (id: string) => {
+    const toggleCarrera = (id: number) => {
         setSelectedCarreras(prev => 
             prev.includes(id) 
                 ? prev.filter(cId => cId !== id)
