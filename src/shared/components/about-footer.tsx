@@ -154,7 +154,7 @@ export function AboutFooter() {
               {/* Footer */}
               <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/5 text-center">
                 <p className="text-[9px] uppercase font-black tracking-[0.3em] text-white/20">
-                  © 2026 GIGA OLYMPICS
+                  © 2026 UNISCORES TEAM
                 </p>
               </div>
             </div>
