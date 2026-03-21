@@ -141,3 +141,15 @@ export const SPORT_COLORS: Record<string, string> = {
     'Ajedrez': '#8b5cf6',
     'Natación': '#06b6d4',
 };
+
+export const CREATOR_EMAILS = [
+    'ldsilva@uninorte.edu.co',
+    'donaldp@uninorte.edu.co',
+    'delaasuncionp@uninorte.edu.co',
+    'oapalma@uninorte.edu.co'
+];
+
+export function isCreator(email?: string): boolean {
+    if (!email) return false;
+    return CREATOR_EMAILS.includes(email.toLowerCase());
+}

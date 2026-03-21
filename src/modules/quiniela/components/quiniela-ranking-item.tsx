@@ -35,7 +35,6 @@ export const QuinielaRankingItem = ({ profile, rank, isMe }: QuinielaRankingItem
         <div className="relative">
           <Avatar
             name={profile.display_name || profile.email}
-            src={profile.avatar_url}
             className="w-12 h-12 border border-white/10 group-hover:scale-110 transition-transform duration-500"
           />
           {isMe && (

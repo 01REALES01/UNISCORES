@@ -43,6 +43,7 @@ import type { PartidoWithRelations as Partido } from '@/modules/matches/types';
 import { LiveMatchCard, UpcomingMatchCard, ResultCard } from '@/modules/matches/components/match-card';
 import { MatchFilters } from '@/modules/matches/components/match-filters';
 import { LiveMatchesSection } from '@/modules/matches/components/live-matches-section';
+import { AboutFooter } from '@/shared/components/about-footer';
 
 
 
@@ -587,6 +588,8 @@ export default function Home() {
             </div>
           </div>
         )}
+        
+        <AboutFooter />
       </main>
     </div >
   );

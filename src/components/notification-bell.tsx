@@ -117,7 +117,7 @@ export function NotificationBell() {
                     await supabase.from('notifications').insert({
                         user_id: user.id,
                         type: 'match_start',
-                        title: '🔴 [TEST] Partido en vivo',
+                        title: '🔴 [TEST] Partido en curso',
                         body: 'Ingeniería vs Sistemas ha comenzado',
                         metadata: { match_id: 'test', sport: 'Fútbol', teams: 'Ingeniería vs Sistemas' }
                     });

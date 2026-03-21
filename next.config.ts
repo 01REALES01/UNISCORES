@@ -15,9 +15,13 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    if (process.env.NODE_ENV === 'development') {
+        return [];
+    }
+
     return [
       {
-        // Assets de Next.js son inmutables (hash en el nombre)
+        // Assets de Next.js son inmutables (hash en el nombre) solo seguras en produccion
         source: "/_next/static/:path*",
         headers: [
           {

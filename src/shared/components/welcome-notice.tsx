@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Edit3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 
 export function WelcomeNotice() {
     const router = useRouter();
+    const { user } = useAuth();
     const [isVisible, setIsVisible] = useState(false);
     const [userCount, setUserCount] = useState<number | null>(null);
     const DURATION = 10000; // 10 segundos para leer bien
@@ -69,7 +71,11 @@ export function WelcomeNotice() {
                         style={{ perspective: "1000px" }}
                         onClick={() => {
                             handleClose();
-                            router.push('/perfil');
+                            if (!user) {
+                                router.push('/login');
+                            } else {
+                                router.push('/perfil');
+                            }
                         }}
                     >
                         <div className="relative group overflow-hidden rounded-[3rem] border border-white/20 bg-zinc-900/90 backdrop-blur-3xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.8)]">

@@ -440,7 +440,7 @@ export default function NotificacionesPage() {
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-black text-white">Activar notificaciones push</p>
-                                                            <p className="text-[10px] font-bold text-white/30">Recibe alertas de partidos en vivo, goles y más</p>
+                                                            <p className="text-[10px] font-bold text-white/30">Recibe alertas de partidos en curso, goles y más</p>
                                                         </div>
                                                     </div>
                                                     <button
@@ -469,7 +469,7 @@ export default function NotificacionesPage() {
                                         {[
                                             { key: 'match_start' as const, label: 'Inicio de partido', description: 'Cuando un partido comienza', emoji: '⚽' },
                                             { key: 'match_end' as const, label: 'Fin de partido', description: 'Cuando un partido termina', emoji: '🏁' },
-                                            { key: 'score_updates' as const, label: 'Actualización de marcador', description: 'Cambios en el marcador en vivo', emoji: '📊' },
+                                            { key: 'score_updates' as const, label: 'Actualización de marcador', description: 'Cambios en el marcador en curso', emoji: '📊' },
                                             { key: 'friend_requests' as const, label: 'Solicitudes de amistad', description: 'Nuevas solicitudes de conexión', emoji: '👥' },
                                         ].map(item => (
                                             <div key={item.key} className="flex items-center justify-between px-5 py-4">
