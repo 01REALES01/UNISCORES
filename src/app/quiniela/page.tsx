@@ -41,10 +41,10 @@ export default function QuinielaPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#0d0906] text-white font-sans pb-20 selection:bg-red-500/30">
+        <div className="min-h-screen bg-[#0a0816] text-white font-sans pb-20 selection:bg-indigo-500/30">
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-red-600/10 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-orange-500/5 rounded-full blur-[100px] animate-pulse" />
+                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[100px] animate-pulse" />
             </div>
 
             {showDisclaimer && (
