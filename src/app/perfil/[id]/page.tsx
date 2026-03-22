@@ -19,6 +19,7 @@ import {
     Trophy
 } from "lucide-react";
 import { FriendButton } from "@/modules/users/components/friend-button";
+import { FollowButton } from "@/modules/users/components/follow-button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
@@ -249,11 +250,16 @@ export default function PublicProfilePage() {
                     <div className="flex-1 flex flex-col justify-center text-center lg:text-left">
                         
                         <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8 mb-5">
-                            <h1 className="text-5xl md:text-7xl font-black font-outfit leading-tight text-transparent bg-clip-text bg-gradient-to-b from-[#FFEAA7] via-[#FFD369] to-[#D4AF37] drop-shadow-md">
+                            <h1 className={cn(
+                                "text-5xl md:text-7xl font-black font-outfit leading-tight",
+                                isProjectCreator
+                                    ? "text-transparent bg-clip-text bg-gradient-to-b from-[#FFEAA7] via-[#FFD369] to-[#D4AF37] drop-shadow-md"
+                                    : "text-white"
+                            )}>
                                 {profile.full_name?.split(' ').slice(0, 2).join('\n')}
                             </h1>
                             {isProjectCreator && (
-                                <div className="hidden lg:flex items-center self-start mt-3">
+                                <div className="flex justify-center lg:justify-start items-center lg:self-start lg:mt-3">
                                     <Badge className="bg-gradient-to-r from-amber-600 to-amber-900 border border-amber-500/50 text-white text-[10px] font-black uppercase tracking-[0.2em] px-5 py-2 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.2)]">
                                         <Crown size={12} className="mr-2" /> CREADOR DEL PROYECTO
                                     </Badge>
@@ -274,8 +280,11 @@ export default function PublicProfilePage() {
                                 </div>
                             </div>
 
+                            {/* Follow Button */}
+                            <FollowButton targetId={profileId} initialFollowersCount={profile.followers_count || 0} />
+
                             {/* Friend Status Pill */}
-                            <div className="flex items-center px-4 py-3 rounded-2xl bg-[#0F0D0B] border border-white/5 shadow-inner min-w-[180px]">
+                            <div className="flex items-center px-4 py-3 rounded-[1.5rem] bg-[#0F0D0B] border border-white/5 shadow-inner min-w-[180px]">
                                 <FriendButton
                                     currentUserId={user?.id}
                                     targetId={profileId}
