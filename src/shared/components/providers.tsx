@@ -7,6 +7,7 @@ import { LazyMotion, domAnimation } from "framer-motion";
 import { ToastProvider } from "@/components/toast-provider";
 import { WelcomeNotice } from "@/components/welcome-notice";
 import { ServiceWorkerRegister } from "@/shared/components/sw-register";
+import { VisibilityRevalidate } from "@/shared/components/visibility-revalidate";
 
 export function Providers({ children }: { children: ReactNode }) {
     return (
@@ -14,6 +15,7 @@ export function Providers({ children }: { children: ReactNode }) {
             <ToastProvider />
             <WelcomeNotice />
             <ServiceWorkerRegister />
+            <VisibilityRevalidate />
             <LazyMotion features={domAnimation}>
                 {children}
             </LazyMotion>
