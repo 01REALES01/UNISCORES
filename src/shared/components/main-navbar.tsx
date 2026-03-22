@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import { AnimatePresence, m } from "framer-motion";
-import { HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords, Calendar as CalendarIcon, ChevronRight, Zap, TrendingUp } from "lucide-react";
+import { HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Tv, Shield, User as UserIcon, BarChart3, LogOut, Menu, X, Swords, Calendar as CalendarIcon, ChevronRight, Zap, TrendingUp, Heart } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { Button, Avatar } from "@/components/ui-primitives";
 import { NotificationBell } from "@/components/notification-bell";
@@ -36,6 +36,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
         if (pathname.startsWith('/quiniela')) return 6;
         if (pathname.startsWith('/clasificacion')) return 7;
         if (pathname.startsWith('/estadisticas') || pathname.startsWith('/lideres')) return 8;
+        // 9 is separator
         if (pathname.startsWith('/tv')) return 10;
         if (pathname.startsWith('/admin') && isStaff) return 11;
         return null;
@@ -110,7 +111,6 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                 { title: "Medallería", icon: Trophy },
                                 { title: "Acierta y Gana", icon: BarChart3 },
                                 { title: "Clasificación", icon: Swords },
-                                
                                 { title: "Líderes", icon: TrendingUp },
                                 { type: "separator" },
                                 { title: "TV", icon: Tv },
@@ -126,6 +126,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                 if (index === 6) router.push('/quiniela');
                                 if (index === 7) router.push('/clasificacion');
                                 if (index === 8) router.push('/estadisticas');
+                                // index 9 is separator
                                 if (index === 10) window.open('/tv', '_blank');
                                 if (index === 11 && isStaff) router.push('/admin');
                             }}
@@ -199,47 +200,56 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
 
                                     {/* Profile Dropdown */}
                                     {profileMenuOpen && (
-                                        <div className="absolute right-0 top-full mt-3 w-64 bg-[#0F0D0A]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-4 duration-300 origin-top-right">
-                                            <div className="p-4 bg-gradient-to-br from-white/[0.03] to-transparent border-b border-white/5">
-                                                <p className="text-sm font-black text-white truncate drop-shadow-sm">{profile?.full_name || user.email?.split('@')[0]}</p>
-                                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5 truncate">{user.email}</p>
+                                        <div className="absolute right-0 top-full mt-4 w-72 bg-[#0A0705]/95 backdrop-blur-3xl border border-white/10 rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.9),0_0_20px_rgba(255,0,0,0.1)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-6 duration-300 origin-top-right ring-1 ring-white/5">
+                                            
+                                            {/* Header */}
+                                            <div className="relative p-5 bg-gradient-to-br from-red-600/10 to-transparent border-b border-white/5 overflow-hidden group">
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2 transition-opacity group-hover:opacity-100 opacity-60" />
+                                                <div className="relative z-10 flex items-center gap-4">
+                                                    <Avatar name={profile?.full_name || user.email} src={profile?.avatar_url} className="w-12 h-12 border-2 border-white/10 rounded-full" />
+                                                    <div className="flex flex-col flex-1 min-w-0">
+                                                        <p className="text-sm font-black font-outfit text-white truncate drop-shadow-sm">{profile?.full_name || user.email?.split('@')[0]}</p>
+                                                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mt-0.5 truncate">{user.email}</p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="p-1.5">
+
+                                            {/* Options */}
+                                            <div className="p-3 space-y-1">
                                                 {isStaff && (
-                                                    <button
-                                                        onClick={() => { setProfileMenuOpen(false); router.push('/admin'); }}
-                                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-400/10 transition-all group/item"
-                                                    >
-                                                        <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center group-hover/item:scale-110 transition-transform">
+                                                    <button onClick={() => { setProfileMenuOpen(false); router.push('/admin'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-400/10 transition-all group/item">
+                                                        <div className="w-9 h-9 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-amber-400/20 transition-all">
                                                             <Shield size={16} />
                                                         </div>
                                                         Admin Dashboard
                                                     </button>
                                                 )}
-                                                <button
-                                                    onClick={() => { setProfileMenuOpen(false); router.push('/perfil'); }}
-                                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all group/item"
-                                                >
-                                                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:scale-110 transition-transform">
+
+                                                <button onClick={() => { setProfileMenuOpen(false); router.push('/perfil'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all group/item">
+                                                    <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-white/10 transition-all">
                                                         <UserIcon size={16} />
                                                     </div>
                                                     Mi Perfil
                                                 </button>
-                                                <button
-                                                    onClick={() => { setProfileMenuOpen(false); router.push('/quiniela'); }}
-                                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all group/item"
-                                                >
-                                                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:scale-110 transition-transform">
+
+                                                <button onClick={() => { setProfileMenuOpen(false); router.push('/estadisticas'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-500/10 transition-all group/item">
+                                                    <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-red-500/20 transition-all">
+                                                        <Heart size={16} className="fill-current" />
+                                                    </div>
+                                                    Ranking de Popularidad
+                                                </button>
+
+                                                <button onClick={() => { setProfileMenuOpen(false); router.push('/quiniela'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-indigo-400 hover:bg-indigo-500/10 transition-all group/item">
+                                                    <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-indigo-500/20 transition-all">
                                                         <BarChart3 size={16} />
                                                     </div>
                                                     Acierta y Gana
                                                 </button>
-                                                <div className="my-1.5 h-px bg-white/5" />
-                                                <button
-                                                    onClick={handleLogout}
-                                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-500/10 transition-all group/item"
-                                                >
-                                                    <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center group-hover/item:scale-110 transition-transform">
+                                                
+                                                <div className="my-2 mx-3 h-px bg-white/5" />
+                                                
+                                                <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-stone-400 hover:bg-stone-500/10 transition-all group/item">
+                                                    <div className="w-9 h-9 rounded-xl bg-stone-500/10 border border-stone-500/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-stone-500/20 transition-all">
                                                         <LogOut size={16} />
                                                     </div>
                                                     Cerrar Sesión

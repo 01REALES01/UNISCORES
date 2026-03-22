@@ -16,6 +16,7 @@ import { SportBreakdown, type SportStat } from "@/modules/estadisticas/component
 import { DisciplineTracker, type CardedPlayer } from "@/modules/estadisticas/components/discipline-tracker";
 import { RecordBook, type RecordEntry } from "@/modules/estadisticas/components/record-book";
 import { HeadToHead, type Rivalry } from "@/modules/estadisticas/components/head-to-head";
+import { PopularityRanking, type TopCareer, type TopUser } from "@/modules/estadisticas/components/popularity-ranking";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -57,6 +58,8 @@ export default function EstadisticasPage() {
     const [allMatches, setAllMatches] = useState<any[]>([]);
     const [eventos, setEventos] = useState<any[]>([]);
     const [topScorers, setTopScorers] = useState<any[]>([]);
+    const [topCareers, setTopCareers] = useState<TopCareer[]>([]);
+    const [topUsers, setTopUsers] = useState<TopUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeSport, setActiveSport] = useState<string>("Todos");
 
@@ -67,7 +70,7 @@ export default function EstadisticasPage() {
     const fetchAll = async () => {
         setLoading(true);
         try {
-            const [matchesRes, allMatchesRes, eventosRes, scorersRes] = await Promise.all([
+            const [matchesRes, allMatchesRes, eventosRes, scorersRes, topCareersRes, topUsersRes] = await Promise.all([
                 // 1. Finalized matches with career joins
                 supabase
                     .from('partidos')
@@ -100,6 +103,11 @@ export default function EstadisticasPage() {
                     supabase.from('view_top_scorers').select('*'),
                     'estadisticas-scorers'
                 ),
+
+                // 5. Top Careers by followers
+                supabase.from('carreras').select('id, nombre, escudo_url, followers_count').order('followers_count', { ascending: false }).limit(5),
+                // 6. Top Users by followers
+                supabase.from('profiles').select('id, full_name, avatar_url, followers_count').order('followers_count', { ascending: false }).limit(5)
             ]);
 
             setMatches(matchesRes.data || []);
@@ -107,6 +115,8 @@ export default function EstadisticasPage() {
             // Only finalized events
             setEventos((eventosRes.data || []).filter((e: any) => e.partidos?.estado === 'finalizado'));
             setTopScorers(scorersRes.data || []);
+            setTopCareers(topCareersRes?.data || []);
+            setTopUsers(topUsersRes?.data || []);
         } catch (err) {
             console.error("Error fetching stats:", err);
         } finally {
@@ -547,6 +557,14 @@ export default function EstadisticasPage() {
                             <section>
                                 <SectionHeader title="Por Disciplina" delay={0.2} />
                                 <SportBreakdown sports={sportStats} />
+                            </section>
+                        )}
+
+                        {/* 2.5 Popularity Ranking */}
+                        {(topCareers.length > 0 || topUsers.length > 0) && (
+                            <section>
+                                <SectionHeader title="Ránking de Popularidad" delay={0.25} />
+                                <PopularityRanking topCareers={topCareers} topUsers={topUsers} />
                             </section>
                         )}
 

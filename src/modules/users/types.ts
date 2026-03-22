@@ -17,6 +17,7 @@ export type Profile = {
   about_me?: string;
   bio?: string;
   points: number;
+  followers_count?: number;
   wins?: number;
   losses?: number;
   total_score_all_time?: number;

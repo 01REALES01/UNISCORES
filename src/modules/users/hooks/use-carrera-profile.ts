@@ -27,7 +27,7 @@ const NEWS_COLUMNS = `
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type CarreraProfile = {
-    carrera: { id: number; nombre: string; escudo_url?: string | null } | null;
+    carrera: { id: number; nombre: string; escudo_url?: string | null; followers_count?: number } | null;
     matches: any[];
     news: any[];
     athletes: any[];
@@ -43,7 +43,7 @@ async function fetchCarreraProfile(carreraId: number) {
     // 1. Fetch the career itself
     const { data: carrera, error: carreraErr } = await supabase
         .from('carreras')
-        .select('id, nombre, escudo_url')
+        .select('id, nombre, escudo_url, followers_count')
         .eq('id', carreraId)
         .single();
 

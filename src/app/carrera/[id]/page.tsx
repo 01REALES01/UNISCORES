@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCarreraProfile } from "@/modules/users/hooks/use-carrera-profile";
 import { MainNavbar } from "@/components/main-navbar";
 import { NewsListCard } from "@/components/news-card";
+import { FollowCareerButton } from "@/modules/careers/components/follow-career-button";
 import { SportIcon } from "@/components/sport-icons";
 import { Avatar, Badge, Button } from "@/components/ui-primitives";
 import UniqueLoading from "@/components/ui/morph-loading";
@@ -450,6 +451,8 @@ export default function CarreraProfilePage() {
 
                                 {/* Stats row */}
                                 <div className="flex flex-wrap justify-center md:justify-start gap-3">
+                                    <FollowCareerButton careerId={carrera.id} initialFollowersCount={carrera.followers_count || 0} />
+
                                     {/* Medals */}
                                     <div className="px-5 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-3">
                                         <Trophy
