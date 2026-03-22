@@ -1,34 +1,41 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { mutate } from "swr";
 import { supabase } from "@/lib/supabase";
 
+const MIN_HIDDEN_MS = 3_000; // only revalidate if hidden for 3+ seconds
+
 /**
  * Listens for the page becoming visible after being hidden (mobile app switching).
- * When the user comes back to the app:
- *  1. Refreshes the Supabase auth session (triggers TOKEN_REFRESHED if expired)
- *  2. Revalidates all SWR cached data so pages don't show stale content
+ * When the user comes back after being away for 3+ seconds:
+ *  1. Refreshes the Supabase auth session (token refresh if expired)
+ *  2. Revalidates the SWR key for the current page only (not all keys at once)
  */
 export function VisibilityRevalidate() {
-    useEffect(() => {
-        let wasHidden = false;
+    const hiddenAtRef = useRef<number>(0);
 
-        const handleVisibilityChange = async () => {
+    useEffect(() => {
+        const handleVisibilityChange = () => {
             if (document.hidden) {
-                wasHidden = true;
+                hiddenAtRef.current = Date.now();
                 return;
             }
 
-            if (!wasHidden) return;
-            wasHidden = false;
+            // Only act if we were actually hidden for a meaningful period
+            if (!hiddenAtRef.current) return;
+            const elapsed = Date.now() - hiddenAtRef.current;
+            hiddenAtRef.current = 0;
+            if (elapsed < MIN_HIDDEN_MS) return;
 
-            // 1. Refresh auth session — if token expired, Supabase fires TOKEN_REFRESHED
-            //    which useAuth already handles to re-load the profile
-            await supabase.auth.getSession();
+            // 1. Refresh auth session — fire-and-forget, don't block the UI
+            supabase.auth.getSession().catch(() => {});
 
-            // 2. Revalidate all SWR keys so pages re-fetch their data
-            mutate(() => true);
+            // 2. Revalidate current page's SWR data after a short delay
+            //    so the auth refresh can land first
+            setTimeout(() => {
+                mutate(() => true, undefined, { revalidate: true });
+            }, 500);
         };
 
         document.addEventListener("visibilitychange", handleVisibilityChange);

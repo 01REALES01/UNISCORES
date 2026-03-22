@@ -1,5 +1,5 @@
 // Service Worker — Olimpiadas UNINORTE 2026
-// Handles Web Push notifications
+// Handles Web Push notifications only — no fetch interception.
 
 self.addEventListener('install', function () {
     self.skipWaiting();
@@ -66,9 +66,4 @@ self.addEventListener('notificationclick', function (event) {
             return self.clients.openWindow(targetUrl);
         })
     );
-});
-
-// ─── Pass through fetch (no offline caching) ──────────────────────────────
-self.addEventListener('fetch', function (event) {
-    event.respondWith(fetch(event.request));
 });
