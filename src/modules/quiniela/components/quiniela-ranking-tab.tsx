@@ -67,7 +67,7 @@ export function QuinielaRankingTab({ ranking, user, profile, userPoints }: Quini
                     ) : (
                         sortedRanking.map((prof, idx) => (
                             <div key={prof.id} className="relative group">
-                                <QuinielaRankingItem profile={prof} rank={idx + 1} isMe={prof.id === user?.id} />
+                                <QuinielaRankingItem profile={prof} rank={idx + 1} isMe={prof.id === user?.id} mode={rankingSubTab} />
                                 <div className="absolute right-24 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-4 opacity-40 group-hover:opacity-100 transition-opacity">
                                     {rankingSubTab === 'streaks' && prof.current_streak > 0 && (
                                         <div className="flex items-center gap-1.5 text-rose-500">

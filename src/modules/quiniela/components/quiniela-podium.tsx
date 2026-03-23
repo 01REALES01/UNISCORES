@@ -15,7 +15,7 @@ export const QuinielaPodium = ({ top3 }: QuinielaPodiumProps) => {
   ];
 
   return (
-    <div className="flex items-end justify-center gap-2 sm:gap-6 py-12 px-2 relative min-h-[280px]">
+    <div className="flex items-end justify-center gap-2 sm:gap-6 pt-20 pb-12 px-2 relative min-h-[320px]">
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-orange-500/10 to-transparent blur-3xl -z-10" />
 

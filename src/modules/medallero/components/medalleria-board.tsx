@@ -238,7 +238,7 @@ export function MedalLeaderboard() {
         const podiumConfigs: Record<number, any> = {
             1: {
                 glow: "shadow-[0_0_50px_rgba(251,146,60,0.3)] border-orange-500/60 ring-2 ring-orange-500/20",
-                height: "h-[300px] sm:h-[350px]",
+                height: "h-[320px] sm:h-[350px]",
                 icon: <Trophy size={20} className="text-orange-400" />,
                 iconBg: "bg-orange-500/20",
                 number: "01",
@@ -246,7 +246,7 @@ export function MedalLeaderboard() {
             },
             2: {
                 glow: "shadow-[0_0_30px_rgba(148,163,184,0.15)] border-slate-400/30",
-                height: "h-[220px] sm:h-[260px]",
+                height: "h-[280px] sm:h-[300px]",
                 icon: <Medal size={18} className="text-slate-300" />,
                 iconBg: "bg-slate-300/10",
                 number: "02",
@@ -254,7 +254,7 @@ export function MedalLeaderboard() {
             },
             3: {
                 glow: "shadow-[0_0_30px_rgba(180,83,9,0.15)] border-amber-800/30",
-                height: "h-[180px] sm:h-[220px]",
+                height: "h-[250px] sm:h-[260px]",
                 icon: <Award size={18} className="text-amber-700" />,
                 iconBg: "bg-amber-700/10",
                 number: "03",
@@ -281,22 +281,22 @@ export function MedalLeaderboard() {
 
                 {/* Vertical Pilar */}
                 <div className={cn(
-                    "w-full bg-[#0d0b1a] rounded-[2rem] border transition-all duration-500 group-hover:bg-[#110f22] flex flex-col items-center pt-8 sm:pt-10 overflow-hidden relative",
+                    "w-full bg-[#0d0b1a] rounded-[2rem] border transition-all duration-500 group-hover:bg-[#110f22] flex flex-col items-center pt-6 sm:pt-10 overflow-hidden relative",
                     config.height, config.glow,
                     "group-hover:scale-[1.02]"
                 )}>
                     {/* Top Medal Icon in Circle */}
                     <div className={cn(
-                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-4 border border-white/5",
+                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-3 sm:mb-4 border border-white/5 shrink-0",
                         config.iconBg
                     )}>
                         {config.icon}
                     </div>
 
                     {/* Team Avatar/Initial */}
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/5 rounded-xl flex items-center justify-center mb-4 border border-white/5 overflow-hidden">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/5 rounded-xl flex items-center justify-center mb-3 sm:mb-4 border border-white/5 overflow-hidden p-1 shrink-0">
                         {entry.escudo_url ? (
-                            <img src={entry.escudo_url} alt={entry.equipo_nombre} className="w-full h-full object-cover" />
+                            <img src={entry.escudo_url} alt={entry.equipo_nombre} className="w-full h-full object-contain" />
                         ) : (
                             <span className="text-lg sm:text-xl font-black text-white/50">{getInitials(entry.equipo_nombre)}</span>
                         )}
@@ -429,8 +429,8 @@ export function MedalLeaderboard() {
                 </div>
             </div>
 
-            <div className="px-4 sm:px-10 pb-10 border-b border-white/5 relative z-20">
-                <div className="flex justify-center items-end gap-2 sm:gap-4 mb-10 min-h-[300px]">
+            <div className="px-4 sm:px-10 pt-10 pb-10 border-b border-white/5 relative z-20">
+                <div className="flex justify-center items-end gap-2 sm:gap-4 mb-4 sm:mb-10 min-h-[350px]">
                     {podiumOrder.map((entry) => {
                         const realRank = top3.indexOf(entry) + 1;
                         return <TopPodium key={'podium-' + entry.id} entry={entry} rank={realRank} />;
@@ -491,28 +491,28 @@ export function MedalLeaderboard() {
 
                                     {/* Stats matching the image */}
                                     {/* Stats: Medals Row */}
-                                    <div className="flex gap-6 sm:gap-10 mt-auto items-end">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-amber-400/10 flex items-center justify-center text-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.2)]">
-                                                <Trophy size={14} />
+                                    <div className="flex gap-4 sm:gap-10 mt-auto items-end">
+                                        <div className="flex items-center gap-1.5 sm:gap-2">
+                                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-400/10 flex items-center justify-center text-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.2)]">
+                                                <Trophy size={12} />
                                             </div>
-                                            <span className="text-base sm:text-xl font-black text-white tabular-nums">
+                                            <span className="text-sm sm:text-xl font-black text-white tabular-nums">
                                                 {entry.oro.toString().padStart(2, '0')}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-2 opacity-60">
-                                            <div className="w-6 h-6 rounded-full bg-slate-300/10 flex items-center justify-center text-slate-300">
-                                                <Medal size={14} />
+                                        <div className="flex items-center gap-1.5 sm:gap-2 opacity-60">
+                                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-300/10 flex items-center justify-center text-slate-300">
+                                                <Medal size={12} />
                                             </div>
-                                            <span className="text-sm sm:text-base font-black text-white tabular-nums">
+                                            <span className="text-xs sm:text-base font-black text-white tabular-nums">
                                                 {entry.plata.toString().padStart(2, '0')}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-2 opacity-60">
-                                            <div className="w-6 h-6 rounded-full bg-amber-700/10 flex items-center justify-center text-amber-700">
-                                                <Award size={14} />
+                                        <div className="flex items-center gap-1.5 sm:gap-2 opacity-60">
+                                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-700/10 flex items-center justify-center text-amber-700">
+                                                <Award size={12} />
                                             </div>
-                                            <span className="text-sm sm:text-base font-black text-white tabular-nums">
+                                            <span className="text-xs sm:text-base font-black text-white tabular-nums">
                                                 {entry.bronce.toString().padStart(2, '0')}
                                             </span>
                                         </div>

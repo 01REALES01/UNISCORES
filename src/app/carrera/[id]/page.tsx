@@ -953,40 +953,17 @@ function EmptyState({
     );
 }
 
-function MatchRow({
-    match,
-    carreraName,
-}: {
-    match: any;
-    carreraName: string;
-}) {
+function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
     const estado = (match.estado || "").toLowerCase().trim();
-    const disc = (
-        Array.isArray(match.disciplinas)
-            ? match.disciplinas[0]
-            : match.disciplinas
-    )?.name;
+    const disc = (Array.isArray(match.disciplinas) ? match.disciplinas[0] : match.disciplinas)?.name;
     const det = match.marcador_detalle || {};
 
     const nameA = getDisplayName(match, "a");
     const nameB = getDisplayName(match, "b");
-    const subA = getCarreraSubtitle(match, "a");
-    const subB = getCarreraSubtitle(match, "b");
+    const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? det.puntos_a ?? det.juegos_a ?? null;
+    const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? det.puntos_b ?? det.juegos_b ?? null;
 
-    const scoreA =
-        det.goles_a ??
-        det.sets_a ??
-        det.total_a ??
-        det.puntos_a ??
-        det.juegos_a ??
-        null;
-    const scoreB =
-        det.goles_b ??
-        det.sets_b ??
-        det.total_b ??
-        det.puntos_b ??
-        det.juegos_b ??
-        null;
+    const isHoverC = (n: string) => n.toLowerCase().includes(carreraName.toLowerCase().substring(0, 8));
 
     const isLive = estado === "en_curso";
     const isFinal = estado === "finalizado";
@@ -996,123 +973,75 @@ function MatchRow({
 
     return (
         <Link href={`/partido/${match.id}`} className="block group/match">
-            <div
-                className={cn(
-                    "flex flex-col sm:flex-row items-center justify-between p-4 sm:p-5 rounded-2xl bg-white/[0.02] border transition-all duration-300 gap-4",
-                    border,
-                    "hover:bg-white/[0.04]"
-                )}
-            >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                    {/* Sport icon */}
-                    <div
-                        className={cn(
-                            "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5",
-                            isLive
-                                ? "bg-red-500/20"
-                                : "bg-white/5"
-                        )}
-                    >
-                        {disc ? (
-                            <SportIcon sport={disc} size={20} />
-                        ) : (
-                            <Swords size={16} className="text-white/30" />
-                        )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                            <p
-                                className={cn(
-                                    "text-[10px] font-black uppercase tracking-widest",
-                                    accent
-                                )}
-                            >
-                                {disc || "Deporte"}
-                            </p>
-                            {isLive && (
-                                <Badge className="bg-red-500 text-white border-none text-[8px] font-black px-2 py-0.5 animate-pulse">
-                                    EN CURSO
+            <div className={cn(
+                "relative overflow-hidden flex flex-col sm:flex-row items-center justify-between p-4 sm:p-5 rounded-2xl bg-[#0a0805]/80 backdrop-blur-xl border transition-all duration-300 gap-4 hover:shadow-xl hover:-translate-y-0.5",
+                border,
+                "hover:bg-white/[0.04]"
+            )}>
+                {/* Background glow specific to sport */}
+                <div className={cn("absolute inset-0 opacity-0 group-hover/match:opacity-10 transition-opacity duration-500", SPORT_GRADIENT[disc || ""])} />
+                
+                <div className="flex flex-col sm:flex-row w-full items-center gap-4 sm:gap-6 relative z-10">
+                    {/* Sport Badge & Status (Mobile Top, Desktop Left) */}
+                    <div className="flex sm:flex-col items-center justify-between w-full sm:w-auto shrink-0 gap-2 mb-2 sm:mb-0">
+                        <div className={cn(
+                            "w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner transition-colors",
+                            isLive ? "bg-red-500/10 border-red-500/20 shadow-red-500/10" : "bg-white/5 border-white/10"
+                        )}>
+                            {disc ? <SportIcon sport={disc} size={20} className={isLive ? "text-red-500 animate-pulse" : accent} /> : <Swords size={16} className="text-white/30" />}
+                        </div>
+                        <div className="flex flex-col items-end sm:items-center">
+                            {isLive ? (
+                                <Badge className="bg-red-500 text-white border-none text-[9px] font-black px-2 py-0.5 animate-pulse uppercase tracking-widest shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                                    LIVE
                                 </Badge>
-                            )}
-                            {match.genero && (
-                                <span className="text-[9px] font-bold text-white/20">
-                                    {match.genero === "masculino"
-                                        ? "♂"
-                                        : match.genero === "femenino"
-                                            ? "♀"
-                                            : "⚤"}
+                            ) : (
+                                <span className="text-[9px] font-black text-white/30 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                                    {new Date(match.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short" })}
                                 </span>
                             )}
                         </div>
-                        <h5 className="text-sm font-bold truncate">
-                            <span
-                                className={cn(
-                                    nameA
-                                        .toLowerCase()
-                                        .includes(
-                                            carreraName
-                                                .toLowerCase()
-                                                .substring(0, 8)
-                                        )
-                                        ? "text-white"
-                                        : "text-white/60"
-                                )}
-                            >
+                    </div>
+
+                    {/* V.S Content Center */}
+                    <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6 w-full">
+                        {/* Team A */}
+                        <div className="flex flex-col items-end text-right min-w-0">
+                            <span className={cn(
+                                "text-[11px] sm:text-xs font-black uppercase tracking-tight leading-tight line-clamp-2 w-full",
+                                isHoverC(nameA) ? "text-white" : "text-white/50"
+                            )}>
                                 {nameA}
                             </span>
-                            <span className="text-[10px] text-white/20 mx-2">
-                                VS
+                        </div>
+
+                        {/* Middle Score / VS */}
+                        <div className="flex flex-col items-center justify-center shrink-0 min-w-[60px] sm:min-w-[80px]">
+                            {isFinal || isLive ? (
+                                <div className="text-2xl sm:text-3xl font-black tabular-nums text-white tracking-tighter flex items-center gap-1.5 drop-shadow-lg">
+                                    <span className={(scoreA ?? 0) > (scoreB ?? 0) ? "text-white" : "text-white/60"}>{scoreA ?? 0}</span>
+                                    <span className="text-white/20 text-xl -mt-0.5">-</span>
+                                    <span className={(scoreB ?? 0) > (scoreA ?? 0) ? "text-white" : "text-white/60"}>{scoreB ?? 0}</span>
+                                </div>
+                            ) : (
+                                <div className="text-[10px] sm:text-xs font-black text-white/40 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                                    {new Date(match.fecha).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                                </div>
+                            )}
+                            <span className="text-[8px] sm:text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mt-1 sm:mt-1.5">
+                                {disc || 'VS'}
                             </span>
-                            <span
-                                className={cn(
-                                    nameB
-                                        .toLowerCase()
-                                        .includes(
-                                            carreraName
-                                                .toLowerCase()
-                                                .substring(0, 8)
-                                        )
-                                        ? "text-white"
-                                        : "text-white/60"
-                                )}
-                            >
+                        </div>
+
+                        {/* Team B */}
+                        <div className="flex flex-col items-start text-left min-w-0">
+                            <span className={cn(
+                                "text-[11px] sm:text-xs font-black uppercase tracking-tight leading-tight line-clamp-2 w-full",
+                                isHoverC(nameB) ? "text-white" : "text-white/50"
+                            )}>
                                 {nameB}
                             </span>
-                        </h5>
-                        {(subA || subB) && (
-                            <p className="text-[9px] font-bold text-white/20 mt-0.5 truncate">
-                                {subA || ""} vs {subB || ""}
-                            </p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Score / Date */}
-                <div className="flex items-center gap-4 shrink-0">
-                    {isFinal && scoreA !== null && scoreB !== null ? (
-                        <div className="text-right">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-white/20">
-                                Resultado
-                            </p>
-                            <p className="text-lg font-black tabular-nums">
-                                {scoreA} - {scoreB}
-                            </p>
                         </div>
-                    ) : isLive && scoreA !== null ? (
-                        <div className="text-right">
-                            <p className="text-lg font-black tabular-nums text-red-400">
-                                {scoreA} - {scoreB ?? 0}
-                            </p>
-                        </div>
-                    ) : null}
-
-                    <div className="text-[10px] font-bold text-white/20 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 whitespace-nowrap">
-                        {new Date(match.fecha).toLocaleDateString("es-CO", {
-                            day: "numeric",
-                            month: "short",
-                        })}
                     </div>
                 </div>
             </div>

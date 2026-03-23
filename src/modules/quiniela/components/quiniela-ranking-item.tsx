@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Avatar, Badge } from "@/components/ui-primitives";
-import { Star } from "lucide-react";
+import { Star, Zap } from "lucide-react";
 
 interface QuinielaRankingItemProps {
   profile: any;
   rank: number;
   isMe: boolean;
+  mode?: 'leaders' | 'streaks' | 'consistency';
 }
 
-export const QuinielaRankingItem = ({ profile, rank, isMe }: QuinielaRankingItemProps) => {
+export const QuinielaRankingItem = ({ profile, rank, isMe, mode = 'leaders' }: QuinielaRankingItemProps) => {
   return (
     <Link
       href={`/perfil/${profile.id}`}
@@ -56,17 +57,47 @@ export const QuinielaRankingItem = ({ profile, rank, isMe }: QuinielaRankingItem
       </div>
 
       <div className="text-right pr-2 relative z-10">
-        <div className="flex items-baseline justify-end gap-1">
-          <span className="text-2xl font-black text-white tabular-nums font-outfit">
-            {profile.points || 0}
-          </span>
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pts</span>
-        </div>
-        <div className="flex items-center justify-end gap-1.5 mt-1">
-          <div className="h-1 w-12 bg-white/5 rounded-full overflow-hidden">
-            <div className="h-full bg-amber-500/50" style={{ width: `${Math.min(100, (profile.points || 0) / 5)}%` }} />
+        {mode === 'leaders' && (
+          <>
+            <div className="flex items-baseline justify-end gap-1">
+              <span className="text-2xl font-black text-white tabular-nums font-outfit">
+                {profile.points || 0}
+              </span>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pts</span>
+            </div>
+            <div className="flex items-center justify-end gap-1.5 mt-1">
+              <div className="h-1 w-12 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-amber-500/50" style={{ width: `${Math.min(100, (profile.points || 0) / 5)}%` }} />
+              </div>
+            </div>
+          </>
+        )}
+
+        {mode === 'streaks' && (
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-gradient-to-r from-rose-500/20 to-orange-500/20 border border-orange-500/30">
+              <Zap size={12} className="text-orange-400 fill-orange-400 animate-pulse" />
+              <span className="text-sm font-black text-white font-outfit">{profile.current_streak || 0}</span>
+            </div>
+            <span className="text-[8px] font-black uppercase text-white/30 tracking-widest">
+              Mejor: {profile.max_streak || 0}
+            </span>
           </div>
-        </div>
+        )}
+
+        {mode === 'consistency' && (
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl font-black text-emerald-400 tabular-nums font-outfit">
+                {profile.total_predictions > 0 ? Math.round((profile.correct_predictions / profile.total_predictions) * 100) : 0}
+              </span>
+              <span className="text-[10px] font-black text-emerald-400/50">%</span>
+            </div>
+            <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
+              {profile.correct_predictions} / {profile.total_predictions} Aciertos
+            </div>
+          </div>
+        )}
       </div>
     </Link>
   );

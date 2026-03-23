@@ -159,7 +159,7 @@ export default function PartidosPage() {
 
                 {/* ── Sticky Sport Filter Bar ── */}
                 <div className="sticky top-16 sm:top-[4.5rem] z-40 -mx-4 px-4 py-3 bg-[#0a0816]/90 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                    <div className="flex items-center gap-2 overflow-x-auto pt-2 pb-3 px-1 scrollbar-hide -my-2">
                         {/* "Todos" chip */}
                         <button
                             onClick={() => setSelectedSport("Todos")}
