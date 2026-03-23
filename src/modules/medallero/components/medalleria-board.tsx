@@ -254,7 +254,7 @@ export function MedalLeaderboard() {
             },
             3: {
                 glow: "shadow-[0_0_30px_rgba(180,83,9,0.15)] border-amber-800/30",
-                height: "h-[250px] sm:h-[260px]",
+                height: "h-[270px] sm:h-[290px]",
                 icon: <Award size={18} className="text-amber-700" />,
                 iconBg: "bg-amber-700/10",
                 number: "03",

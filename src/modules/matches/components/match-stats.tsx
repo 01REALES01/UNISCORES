@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
 import { cn } from '@/lib/utils';
 import { Avatar, Badge } from '@/components/ui-primitives';
-import { Trophy, Star, Activity, Flame } from 'lucide-react';
+import { Trophy, Star, Activity, Flame, Target, Crosshair } from 'lucide-react';
+import { SPORT_COLORS, SPORT_GRADIENT } from '@/lib/constants';
 
 interface MatchStatsProps {
     match: Partido;
@@ -14,7 +15,6 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
     const isBasketball = sportName?.toLowerCase().includes('baloncesto') || sportName?.toLowerCase().includes('basket');
     const isFootball = sportName?.toLowerCase().includes('futbol') || sportName?.toLowerCase().includes('fútbol') || sportName?.toLowerCase().includes('micro') || sportName?.toLowerCase().includes('sala');
 
-    // 1. Calculate stats based on eventos
     const stats = useMemo(() => {
         const teamA = { 
             goals: 0, fouls: 0, yellowCards: 0, redCards: 0, pts1: 0, pts2: 0, pts3: 0, 
@@ -25,32 +25,23 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
             players: {} as Record<string, { points: number, goals: number, pts1: number, pts2: number, pts3: number, profile: any }> 
         };
 
-        let maxPoints = 0;
         let mvp: any = null;
         let mvpPoints = 0;
 
         eventos.forEach(evRaw => {
-            const ev = evRaw as any; // Bypass TS for joined DB properties
+            const ev = evRaw as any;
             const isTeamA = ev.equipo === 'equipo_a' || ev.equipo === match.equipo_a;
             const team = isTeamA ? teamA : teamB;
             
-            // Add point logic based on your event types (using 'tipo_evento' from DB)
             let pointsGained = 0;
             if (['gol', 'anotacion', 'punto'].includes(ev.tipo_evento)) {
-                team.goals += 1;
-                pointsGained = 1;
+                team.goals += 1; pointsGained = 1;
             } else if (ev.tipo_evento === 'punto_1') {
-                team.goals += 1; // 1 point added to total score
-                team.pts1 += 1;
-                pointsGained = 1;
+                team.goals += 1; team.pts1 += 1; pointsGained = 1;
             } else if (ev.tipo_evento === 'punto_2') {
-                team.goals += 2; // 2 points added to total score
-                team.pts2 += 1;
-                pointsGained = 2;
+                team.goals += 2; team.pts2 += 1; pointsGained = 2;
             } else if (ev.tipo_evento === 'punto_3') {
-                team.goals += 3; // 3 points added to total score
-                team.pts3 += 1;
-                pointsGained = 3;
+                team.goals += 3; team.pts3 += 1; pointsGained = 3;
             } else if (ev.tipo_evento === 'falta') {
                 team.fouls += 1;
             } else if (ev.tipo_evento === 'tarjeta_amarilla') {
@@ -65,7 +56,6 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                     team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, profile: ev.jugadores.perfiles };
                 }
                 team.players[pId].points += pointsGained;
-
                 if (['gol', 'anotacion'].includes(ev.tipo_evento)) team.players[pId].goals += 1;
                 if (ev.tipo_evento === 'punto_1') team.players[pId].pts1 += 1;
                 if (ev.tipo_evento === 'punto_2') team.players[pId].pts2 += 1;
@@ -80,14 +70,21 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
 
         const allPlayersA = Object.values(teamA.players);
         const allPlayersB = Object.values(teamB.players);
-
-        // Sort by goals if football, otherwise by raw points
         const topScorersA = allPlayersA.filter(p => p.goals > 0 || p.points > 0).sort((a, b) => b.points - a.points);
         const topScorersB = allPlayersB.filter(p => p.goals > 0 || p.points > 0).sort((a, b) => b.points - a.points);
-        const topContributors = [...allPlayersA, ...allPlayersB].filter(p => p.points > 0).sort((a, b) => b.points - a.points).slice(0, 3);
+
+        // Basketball leaders per category
+        const leaderTriples_A = allPlayersA.filter(p => p.pts3 > 0).sort((a, b) => b.pts3 - a.pts3)[0] || null;
+        const leaderDoubles_A = allPlayersA.filter(p => p.pts2 > 0).sort((a, b) => b.pts2 - a.pts2)[0] || null;
+        const leaderFreeThrows_A = allPlayersA.filter(p => p.pts1 > 0).sort((a, b) => b.pts1 - a.pts1)[0] || null;
+        const leaderTriples_B = allPlayersB.filter(p => p.pts3 > 0).sort((a, b) => b.pts3 - a.pts3)[0] || null;
+        const leaderDoubles_B = allPlayersB.filter(p => p.pts2 > 0).sort((a, b) => b.pts2 - a.pts2)[0] || null;
+        const leaderFreeThrows_B = allPlayersB.filter(p => p.pts1 > 0).sort((a, b) => b.pts1 - a.pts1)[0] || null;
 
         return {
-            teamA, teamB, mvp, mvpPoints, topScorersA, topScorersB, topContributors
+            teamA, teamB, mvp, mvpPoints, topScorersA, topScorersB,
+            leaderTriples_A, leaderDoubles_A, leaderFreeThrows_A,
+            leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B
         };
     }, [eventos, match.equipo_a]);
 
@@ -95,7 +92,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
 
     if (!hasEvents) {
         return (
-            <div className="rounded-[2.5rem] bg-[#0A0705] border border-white/5 p-8 text-center mt-8">
+            <div className="rounded-[2rem] bg-[#0A0705] border border-white/5 p-8 text-center mt-8">
                 <Activity size={32} className="text-white/10 mx-auto mb-4" />
                 <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30 font-outfit mb-2">Estadísticas del Encuentro</h3>
                 <p className="text-[10px] text-white/20 font-bold max-w-sm mx-auto">No hay eventos ni estadísticas registradas para este partido aún.</p>
@@ -103,121 +100,153 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
         );
     }
 
-    const { teamA, teamB, mvp, mvpPoints, topScorersA, topScorersB, topContributors } = stats;
-    const totalGoals = teamA.goals + teamB.goals || 1; // prevent div by zero
+    const sportColor = SPORT_COLORS[sportName || ''] || '#ef4444';
+    const teamBColor = '#64748b';
+
+    const { teamA, teamB, mvp, mvpPoints, topScorersA, topScorersB,
+        leaderTriples_A, leaderDoubles_A, leaderFreeThrows_A,
+        leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B } = stats;
+    const totalGoals = teamA.goals + teamB.goals || 1;
     const totalFouls = teamA.fouls + teamB.fouls || 1;
 
-    return (
-        <div className="rounded-[2.5rem] max-w-4xl mx-auto bg-gradient-to-b from-[#0A0705] to-[#040302] border border-white/5 p-10 mt-12 shadow-2xl relative overflow-hidden flex flex-col gap-12">
-            {/* Background Accent */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/5 blur-[120px] rounded-full pointer-events-none" />
+    // Comparative stat row helper
+    const StatRow = ({ label, valueA, valueB, colorA = sportColor, colorB = teamBColor }: { label: string, valueA: number, valueB: number, colorA?: string, colorB?: string }) => {
+        const total = valueA + valueB || 1;
+        return (
+            <div className="flex items-center gap-3 sm:gap-4 py-2.5 border-b border-white/[0.03] last:border-0">
+                <span className="text-base sm:text-lg font-black tabular-nums w-8 text-right" style={{ color: colorA }}>{valueA}</span>
+                <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden flex">
+                    <div className="h-full rounded-l-full transition-all duration-700" style={{ width: `${(valueA / total) * 100}%`, backgroundColor: colorA, opacity: 0.7 }} />
+                    <div className="h-full rounded-r-full transition-all duration-700" style={{ width: `${(valueB / total) * 100}%`, backgroundColor: colorB, opacity: 0.7 }} />
+                </div>
+                <span className="text-base sm:text-lg font-black tabular-nums w-8 text-left" style={{ color: colorB }}>{valueB}</span>
+                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-white/30 w-20 sm:w-24 text-right">{label}</span>
+            </div>
+        );
+    };
 
-            <div className="flex items-center justify-center relative z-10 w-full mb-4 border-b border-white/5 pb-8">
-                <h3 className="text-[16px] font-black uppercase tracking-[0.4em] text-white/90 font-outfit flex items-center gap-4">
-                    <Activity size={24} className="text-red-500 animate-pulse" /> Rendimiento Global
+    // Basketball leader card helper
+    const LeaderCard = ({ label, player, count, color }: { label: string, player: any, count: number, color: string }) => {
+        if (!player) return (
+            <div className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.02] border border-white/[0.03]">
+                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                    <Target size={12} className="text-white/15" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-white/20">{label}</p>
+                    <p className="text-[10px] text-white/15 italic">Sin datos</p>
+                </div>
+            </div>
+        );
+        return (
+            <div className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition-colors">
+                <Avatar name={player.profile.full_name} className="w-8 h-8 text-[10px] border border-white/10 shrink-0" />
+                <div className="flex-1 min-w-0">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-white/30">{label}</p>
+                    <p className="text-[10px] sm:text-xs font-black text-white/80 truncate">{player.profile.full_name}</p>
+                </div>
+                <span className="text-sm font-black tabular-nums shrink-0 px-2 py-0.5 rounded-lg border border-white/5 bg-black/40" style={{ color }}>{count}</span>
+            </div>
+        );
+    };
+
+    return (
+        <div className="rounded-[2rem] max-w-4xl mx-auto bg-gradient-to-b from-[#0A0705] to-[#040302] border border-white/5 p-5 sm:p-8 mt-10 shadow-2xl relative overflow-hidden flex flex-col gap-8">
+            {/* Background Glows */}
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] blur-[120px] rounded-full pointer-events-none opacity-10" style={{ backgroundColor: sportColor }} />
+            <div className="absolute bottom-0 left-0 w-[250px] h-[250px] blur-[100px] rounded-full pointer-events-none opacity-5" style={{ backgroundColor: teamBColor }} />
+
+            {/* Header */}
+            <div className="flex items-center justify-center relative z-10 w-full border-b border-white/5 pb-5">
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-white/80 font-outfit flex items-center gap-3">
+                    <Activity size={18} className="animate-pulse" style={{ color: sportColor }} /> Rendimiento Global
                 </h3>
             </div>
 
-            {/* Puntos / Goles Generales */}
+            {/* Score Bar */}
             <div className="relative z-10 w-full">
-                <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest text-white/60 mb-4 px-2">
-                    <span className="truncate flex-1 text-left text-white">{match.equipo_a}</span>
-                    <span className="text-amber-500 px-4 flex-shrink-0 text-[10px] tracking-[0.3em]">{isBasketball ? 'PUNTOS DE EQUIPO' : 'ANOTACIONES TOTALES'}</span>
-                    <span className="truncate flex-1 text-right text-white">{match.equipo_b}</span>
+                <div className="flex items-center justify-between text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-white/50 mb-3 px-1">
+                    <span className="truncate flex-1 text-left text-white/80 max-w-[100px] sm:max-w-none">{match.equipo_a}</span>
+                    <span className="px-2 flex-shrink-0 text-[7px] sm:text-[9px] tracking-[0.25em]" style={{ color: sportColor }}>{isBasketball ? 'PUNTOS' : 'GOLES'}</span>
+                    <span className="truncate flex-1 text-right text-white/80 max-w-[100px] sm:max-w-none">{match.equipo_b}</span>
                 </div>
-                <div className="flex items-center gap-6">
-                    <span className="text-4xl font-black tabular-nums">{teamA.goals}</span>
-                    <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden flex shadow-inner">
-                        <div className="h-full bg-gradient-to-r from-red-600 to-red-500 transition-all duration-1000" style={{ width: `${(teamA.goals / totalGoals) * 100}%` }} />
-                        <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-1000" style={{ width: `${(teamB.goals / totalGoals) * 100}%` }} />
+                <div className="flex items-center gap-3 sm:gap-5">
+                    <span className="text-3xl sm:text-4xl font-black tabular-nums text-white">{teamA.goals}</span>
+                    <div className="flex-1 h-2 sm:h-2.5 bg-white/5 rounded-full overflow-hidden flex shadow-inner">
+                        <div className="h-full rounded-l-full transition-all duration-1000" style={{ width: `${(teamA.goals / totalGoals) * 100}%`, backgroundColor: sportColor }} />
+                        <div className="h-full rounded-r-full transition-all duration-1000" style={{ width: `${(teamB.goals / totalGoals) * 100}%`, backgroundColor: teamBColor }} />
                     </div>
-                    <span className="text-4xl font-black tabular-nums">{teamB.goals}</span>
+                    <span className="text-3xl sm:text-4xl font-black tabular-nums text-white">{teamB.goals}</span>
                 </div>
             </div>
 
-            {/* Baloncesto Stats Exclusivas */}
+            {/* ═══ BASKETBALL SECTION ═══ */}
             {isBasketball && (
-                <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 bg-white/5 p-6 rounded-3xl border border-white/5">
-                    {[
-                        { label: 'Tiros Libres (1pt)', a: teamA.pts1, b: teamB.pts1 },
-                        { label: 'Dobles (2pts)', a: teamA.pts2, b: teamB.pts2 },
-                        { label: 'Triples (3pts)', a: teamA.pts3, b: teamB.pts3 }
-                    ].map(stat => {
-                        const t = stat.a + stat.b || 1;
-                        return (
-                            <div key={stat.label} className="text-center">
-                                <span className="text-[9px] font-black uppercase tracking-widest text-white/40 block mb-3">{stat.label}</span>
-                                <div className="flex items-center justify-between gap-4 text-sm font-black tabular-nums">
-                                    <span className="text-red-400">{stat.a}</span>
-                                    <div className="flex-1 h-1.5 bg-black/50 rounded-full overflow-hidden flex">
-                                        <div className="h-full bg-red-500" style={{ width: `${(stat.a / t) * 100}%` }} />
-                                        <div className="h-full bg-blue-500" style={{ width: `${(stat.b / t) * 100}%` }} />
-                                    </div>
-                                    <span className="text-blue-400">{stat.b}</span>
-                                </div>
-                            </div>
-                        )
-                    })}
+                <div className="relative z-10 flex flex-col gap-6">
+                    {/* Shooting Breakdown – Clean horizontal rows */}
+                    <div className="bg-white/[0.02] rounded-2xl p-4 sm:p-5 border border-white/5">
+                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 mb-4 text-center">Desglose de Tiros</p>
+                        <StatRow label="Triples" valueA={teamA.pts3} valueB={teamB.pts3} />
+                        <StatRow label="Dobles" valueA={teamA.pts2} valueB={teamB.pts2} />
+                        <StatRow label="T. Libres" valueA={teamA.pts1} valueB={teamB.pts1} />
+                    </div>
+
+                    {/* Per-Team Leaders – Mirrored Dual Columns */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Team A Leaders */}
+                        <div className="flex flex-col gap-2">
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate" style={{ color: sportColor }}>{match.equipo_a} — Líderes</p>
+                            <LeaderCard label="Líder en Triples" player={leaderTriples_A} count={leaderTriples_A?.pts3 || 0} color={sportColor} />
+                            <LeaderCard label="Líder en Dobles" player={leaderDoubles_A} count={leaderDoubles_A?.pts2 || 0} color={sportColor} />
+                            <LeaderCard label="Líder en T. Libres" player={leaderFreeThrows_A} count={leaderFreeThrows_A?.pts1 || 0} color={sportColor} />
+                        </div>
+                        {/* Team B Leaders */}
+                        <div className="flex flex-col gap-2">
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate" style={{ color: teamBColor }}>{match.equipo_b} — Líderes</p>
+                            <LeaderCard label="Líder en Triples" player={leaderTriples_B} count={leaderTriples_B?.pts3 || 0} color={teamBColor} />
+                            <LeaderCard label="Líder en Dobles" player={leaderDoubles_B} count={leaderDoubles_B?.pts2 || 0} color={teamBColor} />
+                            <LeaderCard label="Líder en T. Libres" player={leaderFreeThrows_B} count={leaderFreeThrows_B?.pts1 || 0} color={teamBColor} />
+                        </div>
+                    </div>
                 </div>
             )}
 
-            {/* Soccer Stats Exclusivas */}
+            {/* ═══ FOOTBALL SECTION ═══ */}
             {isFootball && (
-                <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                    <div className="p-6 rounded-3xl bg-[#0F0D0B] border border-white/5 flex flex-col items-center justify-center">
-                        <span className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-4">Faltas Cometidas</span>
-                        <div className="flex items-center gap-6 w-full">
-                            <span className="text-xl font-black tabular-nums text-red-400 w-8 text-right">{teamA.fouls}</span>
-                            <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden flex">
-                                <div className="h-full bg-red-500/50" style={{ width: `${(teamA.fouls / totalFouls) * 100}%` }} />
-                                <div className="h-full bg-blue-500/50" style={{ width: `${(teamB.fouls / totalFouls) * 100}%` }} />
-                            </div>
-                            <span className="text-xl font-black tabular-nums text-blue-400 w-8 text-left">{teamB.fouls}</span>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-2xl bg-[#0F0D0B] border border-yellow-500/10 text-center">
-                            <span className="block text-[8px] font-black uppercase tracking-widest text-white/30 mb-2">Amarillas</span>
-                            <div className="flex justify-center gap-4 text-xl font-black tabular-nums text-yellow-500">
-                                <span>{teamA.yellowCards}</span><span className="text-white/10">-</span><span>{teamB.yellowCards}</span>
-                            </div>
-                        </div>
-                        <div className="p-4 rounded-2xl bg-[#0F0D0B] border border-red-500/10 text-center">
-                            <span className="block text-[8px] font-black uppercase tracking-widest text-white/30 mb-2">Rojas</span>
-                            <div className="flex justify-center gap-4 text-xl font-black tabular-nums text-red-500">
-                                <span>{teamA.redCards}</span><span className="text-white/10">-</span><span>{teamB.redCards}</span>
-                            </div>
-                        </div>
-                    </div>
+                <div className="relative z-10 bg-white/[0.02] rounded-2xl p-4 sm:p-5 border border-white/5">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 mb-4 text-center">Disciplina</p>
+                    <StatRow label="Faltas" valueA={teamA.fouls} valueB={teamB.fouls} />
+                    <StatRow label="Amarillas" valueA={teamA.yellowCards} valueB={teamB.yellowCards} colorA="#eab308" colorB="#eab308" />
+                    <StatRow label="Rojas" valueA={teamA.redCards} valueB={teamB.redCards} colorA="#ef4444" colorB="#ef4444" />
                 </div>
             )}
 
-            {/* MVP & Scorers Area */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10 w-full pt-8 border-t border-white/5">
+            {/* ═══ MVP & SCORERS ═══ */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10 w-full pt-5 border-t border-white/5">
                 
                 {/* MVP Player Card */}
                 {mvp && (
-                    <div className="p-[2px] rounded-[2.5rem] bg-gradient-to-br from-amber-400 via-amber-600 to-amber-900 shadow-[0_0_50px_rgba(245,158,11,0.15)] relative group overflow-hidden h-full">
+                    <div className="p-[2px] rounded-[2rem] bg-gradient-to-br from-amber-400 via-amber-600 to-amber-900 shadow-[0_0_40px_rgba(245,158,11,0.12)] relative group overflow-hidden">
                         <div className="absolute inset-0 opacity-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-                        <div className="absolute top-6 right-6 text-amber-900 drop-shadow-[0_0_10px_rgba(245,158,11,1)]">
-                            <Trophy size={48} />
+                        <div className="absolute top-5 right-5 text-amber-900/50">
+                            <Trophy size={40} />
                         </div>
-                        <div className="bg-gradient-to-b from-[#1c1203] to-[#0A0705] rounded-[2.4rem] p-8 flex flex-col justify-between relative overflow-hidden h-full min-h-[220px]">
-                            <div className="absolute -right-20 -bottom-20 opacity-5 text-amber-500 pointer-events-none">
-                                <Flame size={200} />
+                        <div className="bg-gradient-to-b from-[#1c1203] to-[#0A0705] rounded-[1.9rem] p-5 sm:p-6 flex flex-col justify-between relative overflow-hidden min-h-[180px]">
+                            <div className="absolute -right-16 -bottom-16 opacity-5 text-amber-500 pointer-events-none">
+                                <Flame size={160} />
                             </div>
                             
-                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-amber-500 mb-6 drop-shadow-md">Jugador Más Valioso</p>
+                            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-amber-500 mb-4 drop-shadow-md">Jugador Más Valioso</p>
                             
-                            <div className="flex items-center gap-6 relative z-10 mb-4">
-                                <div className="relative">
-                                    <div className="absolute -inset-2 bg-amber-500/30 rounded-full blur-xl" />
-                                    <Avatar name={mvp.full_name} className="w-20 h-20 border-4 border-amber-500 text-3xl font-outfit shadow-2xl" />
+                            <div className="flex items-center gap-4 relative z-10">
+                                <div className="relative shrink-0">
+                                    <div className="absolute -inset-1.5 bg-amber-500/25 rounded-full blur-lg" />
+                                    <Avatar name={mvp.full_name} className="w-14 h-14 sm:w-16 sm:h-16 border-3 border-amber-500 text-xl font-outfit shadow-2xl" />
                                 </div>
-                                <div className="flex-1">
-                                    <p className="text-2xl font-black font-outfit leading-tight mb-2 text-white drop-shadow-lg">{mvp.full_name}</p>
-                                    <Badge className="bg-amber-500/20 text-amber-500 border border-amber-500/30 font-mono text-xl tabular-nums rounded-xl px-4 py-1.5 shadow-inner">
-                                        <Star size={14} className="inline mr-2 -translate-y-0.5 fill-amber-500" />
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-base sm:text-lg font-black font-outfit leading-tight mb-1.5 text-white drop-shadow-lg truncate">{mvp.full_name}</p>
+                                    <Badge className="bg-amber-500/20 text-amber-500 border border-amber-500/30 font-mono text-sm tabular-nums rounded-lg px-2.5 py-1 shadow-inner">
+                                        <Star size={12} className="inline mr-1.5 -translate-y-0.5 fill-amber-500" />
                                         {mvpPoints} pts
                                     </Badge>
                                 </div>
@@ -226,56 +255,46 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                     </div>
                 )}
 
-                {/* Team Scorers / Contributors */}
-                <div className="flex flex-col gap-6 h-full">
-                    {/* Team A Scorers */}
-                    <div className="bg-white/5 border border-white/5 rounded-[2.5rem] p-6 h-1/2 flex flex-col relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 blur-3xl rounded-full" />
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-6 flex justify-between relative z-10">
-                            <span className="text-red-400 truncate max-w-[120px]">{match.equipo_a}</span>
-                            <span>{isBasketball ? 'ANOTADORES' : (isFootball ? 'GOLEADORES' : 'DESTACADOS')}</span>
+                {/* Team Scorers – Side by Side */}
+                <div className="grid grid-cols-2 gap-3">
+                    {/* Team A */}
+                    <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 sm:p-4 flex flex-col relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 blur-2xl rounded-full pointer-events-none opacity-10" style={{ backgroundColor: sportColor }} />
+                        <p className="text-[8px] font-black uppercase tracking-[0.15em] text-white/40 mb-3 relative z-10 truncate" style={{ color: sportColor }}>
+                            {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Destacados')}
                         </p>
-                        <div className="space-y-4 flex-1 relative z-10">
+                        <div className="space-y-2.5 flex-1 relative z-10">
                             {topScorersA.slice(0, 3).map((player, idx) => (
-                                <div key={idx} className="flex items-center justify-between border-b border-white/5 pb-3 last:border-0 last:pb-0">
-                                    <div className="flex items-center gap-4">
-                                        <Avatar name={player.profile.full_name} className="w-10 h-10 text-sm border-2 border-red-500/20" />
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-black truncate max-w-[150px] uppercase font-outfit text-white/90">{player.profile.full_name}</span>
-                                            {isBasketball && (
-                                                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">{player.pts3}T • {player.pts2}D • {player.pts1}L</span>
-                                            )}
-                                        </div>
+                                <div key={idx} className="flex items-center gap-2">
+                                    <Avatar name={player.profile.full_name} className="w-7 h-7 text-[9px] border border-white/10 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-[10px] font-black truncate block text-white/80">{player.profile.full_name}</span>
+                                        {isBasketball && <span className="text-[7px] font-bold text-white/20">{player.pts3}T·{player.pts2}D·{player.pts1}L</span>}
                                     </div>
-                                    <span className="text-xl font-black tabular-nums text-white bg-black/50 px-3 py-1 rounded-xl shadow-inner border border-white/5">{isFootball ? player.goals : player.points}</span>
+                                    <span className="text-sm font-black tabular-nums text-white shrink-0">{isFootball ? player.goals : player.points}</span>
                                 </div>
                             ))}
-                            {topScorersA.length === 0 && <span className="text-xs font-bold text-white/20 italic block mt-4">Nadie ha anotado aún</span>}
+                            {topScorersA.length === 0 && <span className="text-[10px] text-white/15 italic">Sin datos</span>}
                         </div>
                     </div>
-                    {/* Team B Scorers */}
-                    <div className="bg-white/5 border border-white/5 rounded-[2.5rem] p-6 h-1/2 flex flex-col relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full" />
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-6 flex justify-between relative z-10">
-                            <span className="text-blue-400 truncate max-w-[120px]">{match.equipo_b}</span>
-                            <span>{isBasketball ? 'ANOTADORES' : (isFootball ? 'GOLEADORES' : 'DESTACADOS')}</span>
+                    {/* Team B */}
+                    <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 sm:p-4 flex flex-col relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 blur-2xl rounded-full pointer-events-none opacity-10" style={{ backgroundColor: teamBColor }} />
+                        <p className="text-[8px] font-black uppercase tracking-[0.15em] text-white/40 mb-3 relative z-10 truncate" style={{ color: teamBColor }}>
+                            {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Destacados')}
                         </p>
-                        <div className="space-y-4 flex-1 relative z-10">
+                        <div className="space-y-2.5 flex-1 relative z-10">
                             {topScorersB.slice(0, 3).map((player, idx) => (
-                                <div key={idx} className="flex items-center justify-between border-b border-white/5 pb-3 last:border-0 last:pb-0">
-                                    <div className="flex items-center gap-4">
-                                        <Avatar name={player.profile.full_name} className="w-10 h-10 text-sm border-2 border-blue-500/20" />
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-black truncate max-w-[150px] uppercase font-outfit text-white/90">{player.profile.full_name}</span>
-                                            {isBasketball && (
-                                                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">{player.pts3}T • {player.pts2}D • {player.pts1}L</span>
-                                            )}
-                                        </div>
+                                <div key={idx} className="flex items-center gap-2">
+                                    <Avatar name={player.profile.full_name} className="w-7 h-7 text-[9px] border border-white/10 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-[10px] font-black truncate block text-white/80">{player.profile.full_name}</span>
+                                        {isBasketball && <span className="text-[7px] font-bold text-white/20">{player.pts3}T·{player.pts2}D·{player.pts1}L</span>}
                                     </div>
-                                    <span className="text-xl font-black tabular-nums text-white bg-black/50 px-3 py-1 rounded-xl shadow-inner border border-white/5">{isFootball ? player.goals : player.points}</span>
+                                    <span className="text-sm font-black tabular-nums text-white shrink-0">{isFootball ? player.goals : player.points}</span>
                                 </div>
                             ))}
-                            {topScorersB.length === 0 && <span className="text-xs font-bold text-white/20 italic block mt-4">Nadie ha anotado aún</span>}
+                            {topScorersB.length === 0 && <span className="text-[10px] text-white/15 italic">Sin datos</span>}
                         </div>
                     </div>
                 </div>

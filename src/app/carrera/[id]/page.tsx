@@ -954,26 +954,43 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
     return (
         <Link href={`/partido/${match.id}`} className="block group/match">
             <div className={cn(
-                "relative flex flex-col p-5 sm:p-6 rounded-[2rem] bg-[#0d0a0e] border border-white/5 transition-all duration-500 overflow-hidden hover:border-white/10 hover:shadow-2xl hover:-translate-y-1"
+                "relative flex flex-col p-4 sm:p-5 rounded-[1.5rem] border transition-all duration-500 overflow-hidden hover:shadow-2xl hover:-translate-y-0.5",
+                border,
+                "bg-gradient-to-br from-white/[0.04] via-[#0d0a0e] to-[#0d0a0e]"
             )}>
-                {/* Subtle Glows */}
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
+                {/* Noise Texture */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.04] pointer-events-none mix-blend-overlay" />
+                {/* Sport Gradient Wash */}
                 <div className={cn(
-                    "absolute -bottom-20 -left-20 w-64 h-64 rounded-full blur-[100px] pointer-events-none transition-opacity duration-700 opacity-10 group-hover/match:opacity-20",
-                    SPORT_COLORS[disc || ""] || "bg-white/5"
+                    "absolute inset-0 opacity-[0.07] pointer-events-none bg-gradient-to-br",
+                    SPORT_GRADIENT[disc || ""] || "from-white/10 to-transparent"
                 )} />
+                {/* Glow Blob */}
+                <div
+                    className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full blur-[80px] pointer-events-none transition-opacity duration-700 opacity-15 group-hover/match:opacity-30"
+                    style={{ backgroundColor: SPORT_COLORS[disc || ""] || '#ffffff10' }}
+                />
+                <div
+                    className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-[60px] pointer-events-none transition-opacity duration-700 opacity-5 group-hover/match:opacity-15"
+                    style={{ backgroundColor: SPORT_COLORS[disc || ""] || '#ffffff05' }}
+                />
+                {/* Bottom Accent Stripe */}
+                <div
+                    className="absolute bottom-0 left-0 right-0 h-[2px] opacity-30 group-hover/match:opacity-60 transition-opacity"
+                    style={{ backgroundColor: SPORT_COLORS[disc || ""] || '#ffffff10' }}
+                />
 
                 {/* Top Header Row (Asymmetrical) */}
-                <div className="flex items-center justify-between w-full mb-6 z-10">
+                <div className="flex items-center justify-between w-full mb-3 z-10">
                     {/* Sport Badge (Top Left) */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         <div className={cn(
-                            "w-8 h-8 rounded-xl flex items-center justify-center border shadow-inner transition-colors",
+                            "w-6 h-6 rounded-lg flex items-center justify-center border shadow-inner transition-colors",
                             isLive ? "bg-red-500/10 border-red-500/20" : "bg-white/5 border-white/10"
                         )}>
-                            {disc ? <SportIcon sport={disc} size={14} className={isLive ? "text-red-500 animate-pulse" : accent} /> : <Swords size={14} className="text-white/30" />}
+                            {disc ? <SportIcon sport={disc} size={12} className={isLive ? "text-red-500 animate-pulse" : accent} /> : <Swords size={12} className="text-white/30" />}
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">{disc || 'Evento'}</span>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">{disc || 'Evento'}</span>
                     </div>
 
                     {/* Status/Date Pill (Top Right) */}
@@ -990,16 +1007,16 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                     </div>
                 </div>
 
-                {/* Central Dramatic Layout */}
-                <div className="flex items-center justify-center gap-6 sm:gap-12 relative z-10 w-full px-2 sm:px-0 mb-2">
+                {/* Central Compact Layout */}
+                <div className="flex items-center justify-center gap-4 sm:gap-8 relative z-10 w-full px-1 sm:px-0 mb-1">
                     {/* Team A */}
-                    <div className="flex flex-col items-center gap-3 w-[100px] sm:w-[120px]">
+                    <div className="flex flex-col items-center gap-2 w-[80px] sm:w-[100px]">
                         <Avatar
                             name={nameA}
                             src={match.carrera_a?.escudo_url || match.atleta_a?.avatar_url || match.equipo_a_id?.escudo_url}
                             className={cn(
-                                "w-16 h-16 sm:w-20 sm:h-20 border-2 transition-all duration-500 bg-[#0a0805]",
-                                winnerA ? `scale-110 shadow-xl ${border.replace('border-', 'border-')}` : "border-white/5",
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                winnerA ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
                                 !winnerA && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
                             )}
                         />
@@ -1015,20 +1032,20 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                     <div className="flex flex-col items-center justify-center shrink-0">
                         {isFinal || isLive ? (
                             <div className="flex flex-col items-center">
-                                <div className="flex items-center justify-center gap-2 sm:gap-3 font-black text-4xl sm:text-5xl text-white tracking-tighter tabular-nums drop-shadow-2xl">
+                                <div className="flex items-center justify-center gap-1.5 sm:gap-2 font-black text-3xl sm:text-4xl text-white tracking-tighter tabular-nums drop-shadow-xl">
                                     <span className={winnerB ? "opacity-30" : ""}>{scoreA ?? 0}</span>
-                                    <span className="text-white/10 text-2xl -mt-1">:</span>
+                                    <span className="text-white/10 text-lg -mt-0.5">:</span>
                                     <span className={winnerA ? "opacity-30" : ""}>{scoreB ?? 0}</span>
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-3xl sm:text-4xl font-black text-white tabular-nums tracking-tighter drop-shadow-2xl mb-1 mt-2">
+                            <div className="text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tighter drop-shadow-xl mb-1 mt-1">
                                 {new Date(match.fecha).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
                             </div>
                         )}
                         {match.genero && (
                             <div className={cn(
-                                "text-[7px] sm:text-[8px] font-black tracking-[0.3em] uppercase transition-all mt-3",
+                                "text-[7px] sm:text-[8px] font-black tracking-[0.2em] uppercase transition-all mt-2",
                                 match.genero === 'femenino' ? "text-pink-500/80" : match.genero === 'mixto' ? "text-purple-500/80" : "text-blue-500/80"
                             )}>
                                 {match.genero}
@@ -1037,13 +1054,13 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                     </div>
 
                     {/* Team B */}
-                    <div className="flex flex-col items-center gap-3 w-[100px] sm:w-[120px]">
+                    <div className="flex flex-col items-center gap-2 w-[80px] sm:w-[100px]">
                         <Avatar
                             name={nameB}
                             src={match.carrera_b?.escudo_url || match.atleta_b?.avatar_url || match.equipo_b_id?.escudo_url}
                             className={cn(
-                                "w-16 h-16 sm:w-20 sm:h-20 border-2 transition-all duration-500 bg-[#0a0805]",
-                                winnerB ? `scale-110 shadow-xl ${border.replace('border-', 'border-')}` : "border-white/5",
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                winnerB ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
                                 !winnerB && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
                             )}
                         />
