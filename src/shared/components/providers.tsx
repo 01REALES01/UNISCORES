@@ -14,10 +14,10 @@ export function Providers({ children }: { children: ReactNode }) {
     return (
         <AuthProvider>
             <SWRConfig value={{
-                revalidateOnFocus: true,
-                focusThrottleInterval: 5000,
+                revalidateOnFocus: false,
                 revalidateOnReconnect: true,
                 errorRetryCount: 3,
+                keepPreviousData: true,
             }}>
                 <ToastProvider />
                 <WelcomeNotice />

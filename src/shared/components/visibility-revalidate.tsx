@@ -4,12 +4,12 @@ import { useEffect, useRef } from "react";
 import { mutate } from "swr";
 import { supabase } from "@/lib/supabase";
 
-const MIN_HIDDEN_MS = 1_000; // revalidate if hidden for 1+ seconds
+// Only revalidate if user was away for 15+ seconds — prevents reload on quick tab switches
+const MIN_HIDDEN_MS = 15_000;
 
 /**
- * Listens for the page becoming visible after being hidden (tab switch / mobile app switching).
- * Ensures the Supabase auth session is fresh BEFORE SWR fetchers run.
- * SWRConfig handles the actual data revalidation via revalidateOnFocus.
+ * Revalidates all SWR data when the user returns after being away for 15+ seconds.
+ * Awaits auth session refresh first so fetchers never run with an expired token.
  */
 export function VisibilityRevalidate() {
     const hiddenAtRef = useRef<number>(0);
@@ -26,12 +26,10 @@ export function VisibilityRevalidate() {
             hiddenAtRef.current = 0;
             if (elapsed < MIN_HIDDEN_MS) return;
 
-            // Await auth session refresh first — prevents fetchers from running
-            // with an expired token after long backgrounds (mobile).
+            // Refresh auth session first — ensures fetchers run with a valid token
             await supabase.auth.getSession().catch(() => {});
 
-            // Trigger a full revalidation as a safety net (SWRConfig's revalidateOnFocus
-            // may have already fired before auth completed).
+            // Revalidate all SWR data
             mutate(() => true, undefined, { revalidate: true });
         };
 
