@@ -31,6 +31,9 @@ export function VisibilityRevalidate() {
 
             // Revalidate all SWR data
             mutate(() => true, undefined, { revalidate: true });
+
+            // Notify non-SWR components (direct Supabase fetchers) to also refresh
+            window.dispatchEvent(new CustomEvent('app:revalidate'));
         };
 
         document.addEventListener("visibilitychange", handleVisibilityChange);

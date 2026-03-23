@@ -37,6 +37,7 @@ export function MedalLeaderboard() {
     const [activeGender, setActiveGender] = useState<string>('todos');
     const [carreraMap, setCarreraMap] = useState<Record<string, number>>({});
     const router = useRouter();
+    const fetchMedalleroRef = useRef<() => void>(() => {});
 
     const fetchMedallero = async () => {
         setLoading(true);
@@ -213,11 +214,21 @@ export function MedalLeaderboard() {
             })
             .subscribe();
 
+        // Keep ref current so the app:revalidate listener always calls the latest version
+        fetchMedalleroRef.current = fetchMedallero;
+
         return () => {
             if (rtDebounceRef.current) clearTimeout(rtDebounceRef.current);
             supabase.removeChannel(channel);
         };
     }, [activeSport, activeGender]);
+
+    // Listen for global revalidation signal (fired by VisibilityRevalidate after 15s away)
+    useEffect(() => {
+        const handler = () => fetchMedalleroRef.current();
+        window.addEventListener('app:revalidate', handler);
+        return () => window.removeEventListener('app:revalidate', handler);
+    }, []);
 
     // Helper para formatear nombres largos en Avatar
     const getInitials = (name: string) => {

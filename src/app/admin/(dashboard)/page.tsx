@@ -26,6 +26,7 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         fetchData();
+        window.addEventListener('app:revalidate', fetchData);
 
         const sub = supabase
             .channel('admin-dashboard')
@@ -36,6 +37,7 @@ export default function AdminDashboard() {
             .subscribe();
 
         return () => {
+            window.removeEventListener('app:revalidate', fetchData);
             if (debounceRef.current) clearTimeout(debounceRef.current);
             supabase.removeChannel(sub);
         };
