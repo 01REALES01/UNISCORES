@@ -77,14 +77,16 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
         const leaderTriples_A = allPlayersA.filter(p => p.pts3 > 0).sort((a, b) => b.pts3 - a.pts3)[0] || null;
         const leaderDoubles_A = allPlayersA.filter(p => p.pts2 > 0).sort((a, b) => b.pts2 - a.pts2)[0] || null;
         const leaderFreeThrows_A = allPlayersA.filter(p => p.pts1 > 0).sort((a, b) => b.pts1 - a.pts1)[0] || null;
+        const leaderPoints_A = allPlayersA.filter(p => p.points > 0).sort((a, b) => b.points - a.points)[0] || null;
         const leaderTriples_B = allPlayersB.filter(p => p.pts3 > 0).sort((a, b) => b.pts3 - a.pts3)[0] || null;
         const leaderDoubles_B = allPlayersB.filter(p => p.pts2 > 0).sort((a, b) => b.pts2 - a.pts2)[0] || null;
         const leaderFreeThrows_B = allPlayersB.filter(p => p.pts1 > 0).sort((a, b) => b.pts1 - a.pts1)[0] || null;
+        const leaderPoints_B = allPlayersB.filter(p => p.points > 0).sort((a, b) => b.points - a.points)[0] || null;
 
         return {
             teamA, teamB, mvp, mvpPoints, topScorersA, topScorersB,
-            leaderTriples_A, leaderDoubles_A, leaderFreeThrows_A,
-            leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B
+            leaderTriples_A, leaderDoubles_A, leaderFreeThrows_A, leaderPoints_A,
+            leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B, leaderPoints_B
         };
     }, [eventos, match.equipo_a]);
 
@@ -104,8 +106,8 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
     const teamBColor = '#64748b';
 
     const { teamA, teamB, mvp, mvpPoints, topScorersA, topScorersB,
-        leaderTriples_A, leaderDoubles_A, leaderFreeThrows_A,
-        leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B } = stats;
+        leaderTriples_A, leaderDoubles_A, leaderFreeThrows_A, leaderPoints_A,
+        leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B, leaderPoints_B } = stats;
     const totalGoals = teamA.goals + teamB.goals || 1;
     const totalFouls = teamA.fouls + teamB.fouls || 1;
 
@@ -196,6 +198,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                         {/* Team A Leaders */}
                         <div className="flex flex-col gap-2">
                             <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate" style={{ color: sportColor }}>{match.equipo_a} — Líderes</p>
+                            <LeaderCard label="Líder en Puntos" player={leaderPoints_A} count={leaderPoints_A?.points || 0} color={sportColor} />
                             <LeaderCard label="Líder en Triples" player={leaderTriples_A} count={leaderTriples_A?.pts3 || 0} color={sportColor} />
                             <LeaderCard label="Líder en Dobles" player={leaderDoubles_A} count={leaderDoubles_A?.pts2 || 0} color={sportColor} />
                             <LeaderCard label="Líder en T. Libres" player={leaderFreeThrows_A} count={leaderFreeThrows_A?.pts1 || 0} color={sportColor} />
@@ -203,6 +206,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                         {/* Team B Leaders */}
                         <div className="flex flex-col gap-2">
                             <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate" style={{ color: teamBColor }}>{match.equipo_b} — Líderes</p>
+                            <LeaderCard label="Líder en Puntos" player={leaderPoints_B} count={leaderPoints_B?.points || 0} color={teamBColor} />
                             <LeaderCard label="Líder en Triples" player={leaderTriples_B} count={leaderTriples_B?.pts3 || 0} color={teamBColor} />
                             <LeaderCard label="Líder en Dobles" player={leaderDoubles_B} count={leaderDoubles_B?.pts2 || 0} color={teamBColor} />
                             <LeaderCard label="Líder en T. Libres" player={leaderFreeThrows_B} count={leaderFreeThrows_B?.pts1 || 0} color={teamBColor} />
