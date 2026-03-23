@@ -9,22 +9,38 @@ import Link from "next/link";
 import { getCurrentScore } from "@/lib/sport-scoring";
 
 import type { PartidoWithRelations as Partido } from '@/modules/matches/types';
+import { useAuth } from '@/shared/hooks/useAuth';
 
 export default function AdminDashboard() {
     const [partidos, setPartidos] = useState<Partido[]>([]);
     const [loading, setLoading] = useState(true);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const fetchAttemptRef = useRef(0);
+    const { loading: authLoading } = useAuth();
 
     const fetchData = useCallback(async () => {
         const { data } = await safeQuery(
             supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)').order('fecha', { ascending: false }),
             'admin-dashboard'
         );
-        if (data) setPartidos(data as any);
-        setLoading(false);
+        if (data) {
+            setPartidos(data as any);
+            setLoading(false);
+            fetchAttemptRef.current = 0;
+        } else if (fetchAttemptRef.current < 3) {
+            // Retry up to 3x — handles auth race on cold start / network hiccup
+            fetchAttemptRef.current++;
+            retryRef.current = setTimeout(() => fetchData(), 1500);
+        } else {
+            setLoading(false);
+        }
     }, []);
 
+    // Gate on authLoading: prevents fetching before the Supabase session is ready
     useEffect(() => {
+        if (authLoading) return;
+
         fetchData();
         window.addEventListener('app:revalidate', fetchData);
 
@@ -39,9 +55,10 @@ export default function AdminDashboard() {
         return () => {
             window.removeEventListener('app:revalidate', fetchData);
             if (debounceRef.current) clearTimeout(debounceRef.current);
+            if (retryRef.current) clearTimeout(retryRef.current);
             supabase.removeChannel(sub);
         };
-    }, [fetchData]);
+    }, [fetchData, authLoading]);
 
     const enVivo = partidos.filter(p => p.estado === 'en_curso');
     const finalizados = partidos.filter(p => p.estado === 'finalizado');
