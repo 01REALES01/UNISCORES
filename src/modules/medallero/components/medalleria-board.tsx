@@ -445,93 +445,91 @@ export function MedalLeaderboard() {
                         const rank = (idx + 1).toString().padStart(2, '0');
                         return (
                             <div
-                                key={entry.id}
-                                onClick={() => carreraMap[entry.equipo_nombre] ? router.push(`/carrera/${carreraMap[entry.equipo_nombre]}`) : undefined}
-                                className="flex bg-[#1a1625] border border-white/5 hover:border-white/20 transition-all duration-300 group cursor-pointer shadow-lg"
-                                style={{ height: '120px' }}
+                                key={entry.id || entry.equipo_nombre}
+                                className="flex flex-col sm:flex-row bg-[#1a1625]/90 backdrop-blur-sm border border-white/5 hover:border-white/20 transition-all duration-300 group shadow-xl rounded-3xl overflow-hidden min-h-[120px]"
                             >
-                                {/* Avatar Column */}
-                                <div className="w-[100px] sm:w-[130px] shrink-0 border-r border-white/5 relative overflow-hidden flex items-center justify-center bg-black/40">
-                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent mix-blend-overlay" />
-                                    {entry.escudo_url ? (
-                                        <div className="w-16 h-16 sm:w-20 sm:h-20 z-10 drop-shadow-lg relative flex items-center justify-center">
-                                            <img src={entry.escudo_url} alt={entry.equipo_nombre} className="w-full h-full object-contain" />
-                                        </div>
-                                    ) : (
-                                        <span className="text-4xl sm:text-5xl font-black text-white/10 uppercase tracking-tighter mix-blend-plus-lighter z-10 filter grayscale contrast-200">
-                                            {getInitials(entry.equipo_nombre)}
-                                        </span>
-                                    )}
-                                    {/* Optional hovering glow */}
-                                    <div className="absolute inset-0 bg-red-600/0 group-hover:bg-red-600/10 transition-colors duration-500" />
-                                </div>
-
-                                {/* Center Content Column */}
-                                <div className="flex-1 px-4 sm:px-6 py-4 flex flex-col justify-between overflow-hidden">
-                                    <div>
-                                        {/* Rank Number with Yellow Underline */}
-                                        <div className="inline-block border-b-2 border-[#FFC000] pb-0.5 mb-1.5 flex gap-2 items-center">
-                                            <span className="text-[11px] sm:text-xs font-black text-white tracking-widest leading-none drop-shadow-md">{rank}</span>
-                                            <span className="text-[8px] font-black uppercase text-white/30 tracking-widest leading-none">Global</span>
-                                        </div>
-
-                                        {/* Name */}
-                                        <h2 className="text-lg sm:text-2xl font-bold text-white/90 leading-none tracking-tight truncate pb-1">
-                                            {carreraMap[entry.equipo_nombre] ? (
-                                                <Link href={`/carrera/${carreraMap[entry.equipo_nombre]}`} className="hover:text-orange-400 transition-colors" onClick={(e) => e.stopPropagation()}>
-                                                    {entry.equipo_nombre}
-                                                </Link>
-                                            ) : entry.equipo_nombre}
-                                        </h2>
-
-                                        <span className="text-[9px] sm:text-[10px] font-bold text-white/30 uppercase tracking-widest mt-0.5 block truncate">
-                                            PJ: {entry.played || 0} Partidos
-                                        </span>
+                                <div className="flex flex-1 w-full">
+                                    {/* Avatar Column */}
+                                    <div className="w-[80px] sm:w-[130px] shrink-0 border-r border-white/5 relative flex items-center justify-center bg-black/40 p-2">
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent mix-blend-overlay" />
+                                        {entry.escudo_url ? (
+                                            <div className="w-14 h-14 sm:w-20 sm:h-20 z-10 drop-shadow-lg relative flex items-center justify-center">
+                                                <img src={entry.escudo_url} alt={entry.equipo_nombre} className="w-full h-full object-contain filter group-hover:brightness-110 transition-all" />
+                                            </div>
+                                        ) : (
+                                            <span className="text-3xl sm:text-5xl font-black text-white/10 uppercase tracking-tighter mix-blend-plus-lighter z-10 filter grayscale contrast-200">
+                                                {getInitials(entry.equipo_nombre)}
+                                            </span>
+                                        )}
                                     </div>
 
-                                    {/* Stats matching the image */}
-                                    {/* Stats: Medals Row */}
-                                    <div className="flex gap-4 sm:gap-10 mt-auto items-end">
-                                        <div className="flex items-center gap-1.5 sm:gap-2">
-                                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-400/10 flex items-center justify-center text-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.2)]">
-                                                <Trophy size={12} />
+                                    {/* Center Content Column */}
+                                    <div className="flex-1 px-4 sm:px-6 py-4 flex flex-col justify-between min-w-0">
+                                        <div className="mb-3">
+                                            {/* Rank Number with Yellow Underline */}
+                                            <div className="inline-flex border-b-2 border-[#FFC000] pb-0.5 mb-2 gap-2 items-center">
+                                                <span className="text-[11px] sm:text-xs font-black text-white tracking-widest leading-none drop-shadow-md">{rank}</span>
+                                                <span className="text-[8px] font-black uppercase text-white/30 tracking-widest leading-none">Global</span>
                                             </div>
-                                            <span className="text-sm sm:text-xl font-black text-white tabular-nums">
-                                                {entry.oro.toString().padStart(2, '0')}
+
+                                            {/* Name */}
+                                            <h2 className="text-sm sm:text-xl font-black text-white/90 leading-tight tracking-tight line-clamp-2">
+                                                {carreraMap[entry.equipo_nombre] ? (
+                                                    <Link href={`/carrera/${carreraMap[entry.equipo_nombre]}`} className="hover:text-orange-400 transition-colors">
+                                                        {entry.equipo_nombre}
+                                                    </Link>
+                                                ) : entry.equipo_nombre}
+                                            </h2>
+
+                                            <span className="text-[9px] sm:text-[10px] font-bold text-white/30 uppercase tracking-widest mt-1 block truncate">
+                                                PJ: {entry.played || 0} Partidos
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 sm:gap-2 opacity-60">
-                                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-300/10 flex items-center justify-center text-slate-300">
-                                                <Medal size={12} />
+
+                                        {/* Stats Row */}
+                                        <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-8 mt-auto items-end">
+                                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-400/10 flex items-center justify-center text-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.2)]">
+                                                    <Trophy size={11} className="sm:w-3.5 sm:h-3.5" />
+                                                </div>
+                                                <span className="text-xs sm:text-xl font-black text-white tabular-nums">
+                                                    {entry.oro.toString().padStart(2, '0')}
+                                                </span>
                                             </div>
-                                            <span className="text-xs sm:text-base font-black text-white tabular-nums">
-                                                {entry.plata.toString().padStart(2, '0')}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 sm:gap-2 opacity-60">
-                                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-700/10 flex items-center justify-center text-amber-700">
-                                                <Award size={12} />
+                                            <div className="flex items-center gap-1.5 sm:gap-2 opacity-60">
+                                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-300/10 flex items-center justify-center text-slate-300">
+                                                    <Medal size={11} className="sm:w-3.5 sm:h-3.5" />
+                                                </div>
+                                                <span className="text-xs sm:text-base font-black text-white tabular-nums">
+                                                    {entry.plata.toString().padStart(2, '0')}
+                                                </span>
                                             </div>
-                                            <span className="text-xs sm:text-base font-black text-white tabular-nums">
-                                                {entry.bronce.toString().padStart(2, '0')}
-                                            </span>
+                                            <div className="flex items-center gap-1.5 sm:gap-2 opacity-60">
+                                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-700/10 flex items-center justify-center text-amber-700">
+                                                    <Award size={11} className="sm:w-3.5 sm:h-3.5" />
+                                                </div>
+                                                <span className="text-xs sm:text-base font-black text-white tabular-nums">
+                                                    {entry.bronce.toString().padStart(2, '0')}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Total Points Box (Right Column) - Now shows Total Medals or Points as tiebreaker */}
-                                <div className="w-[80px] sm:w-[130px] shrink-0 border-l border-white/5 flex flex-col items-center justify-center bg-black/60 group-hover:bg-[#111111] transition-colors relative">
-                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-red-600/5" />
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none mb-1 tabular-nums drop-shadow-lg relative z-10">
+                                {/* Total Points Box (Right Column) */}
+                                <div className="w-full sm:w-[130px] h-12 sm:h-auto shrink-0 border-t sm:border-t-0 sm:border-l border-white/5 flex flex-row sm:flex-col items-center justify-between sm:justify-center px-6 sm:px-0 bg-black/60 group-hover:bg-[#111111] transition-colors relative">
+                                    <div className="absolute inset-0 bg-gradient-to-r sm:bg-gradient-to-b from-transparent to-red-600/5 pointer-events-none" />
+                                    
+                                    <div className="flex flex-row sm:flex-col items-center gap-2 sm:gap-0">
+                                        <span className="text-xl sm:text-4xl font-black text-white tracking-tighter leading-none tabular-nums drop-shadow-lg relative z-10">
                                             {entry.oro + entry.plata + entry.bronce}
                                         </span>
-                                        <span className="text-[7px] sm:text-[9px] font-black text-white/30 uppercase tracking-[0.2em] pt-1 relative z-10">
+                                        <span className="text-[8px] sm:text-[9px] font-black text-white/30 uppercase tracking-[0.2em] sm:pt-1 relative z-10">
                                             Total Medals
                                         </span>
                                     </div>
 
-                                    <div className="mt-2 text-[9px] font-bold text-red-500/60 font-mono">
+                                    <div className="text-[10px] font-bold text-red-500/80 font-mono tracking-widest sm:mt-2">
                                         {entry.puntos} PTS
                                     </div>
                                 </div>
