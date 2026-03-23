@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const currentUser = session?.user ?? null;
             setUser(currentUser);
 
-            if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+            if (currentUser && event === 'SIGNED_IN') {
                 await fetchProfile(currentUser.id);
             } else if (!currentUser) {
                 setProfile(null);

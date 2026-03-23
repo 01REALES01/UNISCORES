@@ -42,20 +42,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return null; // Will redirect via useEffect
     }
 
-    // Authenticated but profile still loading (retry in progress)
-    // This replaces the old timeout-based guard and prevents the false
-    // "Acceso Restringido" flash during profile fetch
-    if (profileLoading || (!profile && !loading)) {
-        // Show a brief loader — profile fetch with retries is in progress
-        // Safety: if profileLoading is false and profile is null, the user
-        // genuinely has no profile (all retries exhausted) — fall through
-        if (profileLoading) {
-            return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805]">
-                    <UniqueLoading size="lg" />
-                </div>
-            );
-        }
+    // Authenticated but profile still loading and no cached profile yet
+    // Only block if we haven't loaded the profile AND it's still loading
+    if (profileLoading && !profile) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805]">
+                <UniqueLoading size="lg" />
+            </div>
+        );
     }
 
     // Authenticated but no staff role — show access denied

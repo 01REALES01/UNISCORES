@@ -28,10 +28,10 @@ export default function AdminDashboard() {
             setPartidos(data as any);
             setLoading(false);
             fetchAttemptRef.current = 0;
-        } else if (fetchAttemptRef.current < 3) {
-            // Retry up to 3x — handles auth race on cold start / network hiccup
+        } else if (fetchAttemptRef.current < 5) {
+            // Retry up to 5x — handles auth race on cold start / network hiccup / token refresh
             fetchAttemptRef.current++;
-            retryRef.current = setTimeout(() => fetchData(), 1500);
+            retryRef.current = setTimeout(() => fetchData(), 800);
         } else {
             setLoading(false);
         }
@@ -41,8 +41,21 @@ export default function AdminDashboard() {
     useEffect(() => {
         if (authLoading) return;
 
+        fetchAttemptRef.current = 0;
         fetchData();
-        window.addEventListener('app:revalidate', fetchData);
+
+        const freshFetch = () => {
+            fetchAttemptRef.current = 0;
+            if (retryRef.current) clearTimeout(retryRef.current);
+            fetchData();
+        };
+
+        const handleVisibilityChange = () => {
+            if (!document.hidden) freshFetch();
+        };
+
+        window.addEventListener('app:revalidate', freshFetch);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         const sub = supabase
             .channel('admin-dashboard')
@@ -53,7 +66,8 @@ export default function AdminDashboard() {
             .subscribe();
 
         return () => {
-            window.removeEventListener('app:revalidate', fetchData);
+            window.removeEventListener('app:revalidate', freshFetch);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (debounceRef.current) clearTimeout(debounceRef.current);
             if (retryRef.current) clearTimeout(retryRef.current);
             supabase.removeChannel(sub);
