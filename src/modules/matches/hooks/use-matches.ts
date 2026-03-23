@@ -86,7 +86,6 @@ export function useMatches() {
         'global:partidos',
         fetchMatches,
         {
-            revalidateOnFocus: false,
             revalidateOnReconnect: true,
             revalidateOnMount: true,
             dedupingInterval: 10000,

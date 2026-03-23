@@ -160,7 +160,7 @@ export function useMedallero(activeSport: string = 'todos', activeGender: string
             const result = computeMedallero(rawMatches, activeSport, activeGender);
             return result.length > 0 ? result : SAMPLE_DATA;
         },
-        { revalidateOnFocus: false, dedupingInterval: 15000 }
+        { dedupingInterval: 15000, keepPreviousData: true }
     );
 
     useEffect(() => {

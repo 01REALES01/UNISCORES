@@ -43,7 +43,6 @@ export function useNews(limit?: number) {
         'global:noticias',
         fetchNews,
         {
-            revalidateOnFocus: false,
             dedupingInterval: 60000,
             keepPreviousData: true,
         }
