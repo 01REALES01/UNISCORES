@@ -954,93 +954,81 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
     return (
         <Link href={`/partido/${match.id}`} className="block group/match">
             <div className={cn(
-                "relative overflow-hidden flex flex-col p-4 sm:p-5 rounded-[2rem] bg-white/[0.03] backdrop-blur-2xl border transition-all duration-500 gap-4 hover:shadow-2xl hover:-translate-y-1 shadow-xl",
-                border,
-                "hover:bg-white/[0.06] hover:border-white/20"
+                "relative flex flex-col p-5 sm:p-6 rounded-[2rem] bg-[#0d0a0e] border border-white/5 transition-all duration-500 overflow-hidden hover:border-white/10 hover:shadow-2xl hover:-translate-y-1"
             )}>
-                {/* Noise Texture */}
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.04] pointer-events-none mix-blend-overlay" />
-                
-                {/* Dynamic Sport Background */}
+                {/* Subtle Glows */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
                 <div className={cn(
-                    "absolute inset-0 opacity-5 sm:opacity-10 transition-opacity duration-700 pointer-events-none",
-                    SPORT_GRADIENT[disc || ""] || "bg-gradient-to-br from-white/10 to-transparent"
-                )} />
-                <div className={cn(
-                    "absolute -top-20 -right-20 w-48 h-48 rounded-full blur-[80px] pointer-events-none transition-opacity",
-                    SPORT_COLORS[disc || ""] || "bg-white/5",
-                    "opacity-20 group-hover/match:opacity-40"
+                    "absolute -bottom-20 -left-20 w-64 h-64 rounded-full blur-[100px] pointer-events-none transition-opacity duration-700 opacity-10 group-hover/match:opacity-20",
+                    SPORT_COLORS[disc || ""] || "bg-white/5"
                 )} />
 
-                {/* Header: Sport & Status */}
-                <div className="flex items-center justify-between relative z-10 border-b border-white/5 pb-3">
-                    <div className="flex items-center gap-2.5">
+                {/* Top Header Row (Asymmetrical) */}
+                <div className="flex items-center justify-between w-full mb-6 z-10">
+                    {/* Sport Badge (Top Left) */}
+                    <div className="flex items-center gap-3">
                         <div className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center border shadow-inner transition-colors",
-                            isLive ? "bg-red-500/20 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]" : "bg-white/5 border-white/10"
+                            "w-8 h-8 rounded-xl flex items-center justify-center border shadow-inner transition-colors",
+                            isLive ? "bg-red-500/10 border-red-500/20" : "bg-white/5 border-white/10"
                         )}>
-                            {disc ? <SportIcon sport={disc} size={16} className={isLive ? "text-red-500 animate-pulse" : accent} /> : <Swords size={14} className="text-white/30" />}
+                            {disc ? <SportIcon sport={disc} size={14} className={isLive ? "text-red-500 animate-pulse" : accent} /> : <Swords size={14} className="text-white/30" />}
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">{disc || 'Evento'}</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">{disc || 'Evento'}</span>
                     </div>
-                    
+
+                    {/* Status/Date Pill (Top Right) */}
                     <div>
                         {isLive ? (
-                            <Badge className="bg-red-500 text-white border-none text-[9px] font-black px-2 py-0.5 animate-pulse uppercase tracking-widest shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                            <Badge className="bg-red-500/20 text-red-500 border border-red-500/30 text-[9px] font-black px-3 py-1 animate-pulse uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(239,68,68,0.2)] rounded-full">
                                 DIRECTO
                             </Badge>
                         ) : (
-                            <span className="text-[9px] font-black text-white/30 uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-full border border-white/5 shadow-inner">
+                            <div className="bg-white/[0.03] border border-white/10 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-white/30 shadow-inner">
                                 {new Date(match.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short" })}
-                            </span>
+                            </div>
                         )}
                     </div>
                 </div>
 
-                {/* Content: Avatars & Score */}
-                <div className="flex items-center justify-center gap-2 sm:gap-6 relative z-10 pt-2">
+                {/* Central Dramatic Layout */}
+                <div className="flex items-center justify-center gap-6 sm:gap-12 relative z-10 w-full px-2 sm:px-0 mb-2">
                     {/* Team A */}
-                    <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-[90px] sm:w-[120px]">
+                    <div className="flex flex-col items-center gap-3 w-[100px] sm:w-[120px]">
                         <Avatar
                             name={nameA}
                             src={match.carrera_a?.escudo_url || match.atleta_a?.avatar_url || match.equipo_a_id?.escudo_url}
                             className={cn(
-                                "w-14 h-14 sm:w-16 sm:h-16 border-2 transition-all duration-500 bg-[#0a0805]",
-                                winnerA ? `scale-110 ${border.replace('border-', 'border-')}` : "border-white/10",
-                                !winnerA && isFinal && !isDraw ? "opacity-60 grayscale-[0.5]" : ""
+                                "w-16 h-16 sm:w-20 sm:h-20 border-2 transition-all duration-500 bg-[#0a0805]",
+                                winnerA ? `scale-110 shadow-xl ${border.replace('border-', 'border-')}` : "border-white/5",
+                                !winnerA && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
                             )}
                         />
                         <span className={cn(
-                            "text-[10px] sm:text-[11px] font-black uppercase tracking-tight leading-tight line-clamp-2 w-full px-1",
+                            "text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-center leading-tight line-clamp-2 w-full",
                             winnerA || isDraw || isLive ? "text-white" : "text-white/40"
                         )}>
                             {nameA}
                         </span>
                     </div>
 
-                    {/* Middle Score / VS */}
-                    <div className="flex flex-col items-center justify-center min-w-[70px] sm:min-w-[90px] shrink-0">
+                    {/* The Score Hub */}
+                    <div className="flex flex-col items-center justify-center shrink-0">
                         {isFinal || isLive ? (
                             <div className="flex flex-col items-center">
-                                <div className="flex items-center justify-center gap-1.5 sm:gap-2 font-black text-3xl sm:text-4xl text-white tracking-tighter tabular-nums drop-shadow-lg mb-1">
-                                    <span className={winnerB ? "opacity-50" : ""}>{scoreA ?? 0}</span>
-                                    <span className="text-white/20 text-xl sm:text-2xl -mt-1">:</span>
-                                    <span className={winnerA ? "opacity-50" : ""}>{scoreB ?? 0}</span>
+                                <div className="flex items-center justify-center gap-2 sm:gap-3 font-black text-4xl sm:text-5xl text-white tracking-tighter tabular-nums drop-shadow-2xl">
+                                    <span className={winnerB ? "opacity-30" : ""}>{scoreA ?? 0}</span>
+                                    <span className="text-white/10 text-2xl -mt-1">:</span>
+                                    <span className={winnerA ? "opacity-30" : ""}>{scoreB ?? 0}</span>
                                 </div>
-                                {isDraw && (
-                                    <div className="bg-white/5 text-slate-300 border border-white/10 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] shadow-sm mb-1">
-                                        Empate
-                                    </div>
-                                )}
                             </div>
                         ) : (
-                            <div className="text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tighter drop-shadow-lg mb-2">
+                            <div className="text-3xl sm:text-4xl font-black text-white tabular-nums tracking-tighter drop-shadow-2xl mb-1 mt-2">
                                 {new Date(match.fecha).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
                             </div>
                         )}
                         {match.genero && (
                             <div className={cn(
-                                "text-[8px] font-black tracking-[0.2em] uppercase transition-all",
+                                "text-[7px] sm:text-[8px] font-black tracking-[0.3em] uppercase transition-all mt-3",
                                 match.genero === 'femenino' ? "text-pink-500/80" : match.genero === 'mixto' ? "text-purple-500/80" : "text-blue-500/80"
                             )}>
                                 {match.genero}
@@ -1049,18 +1037,18 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                     </div>
 
                     {/* Team B */}
-                    <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-[90px] sm:w-[120px]">
+                    <div className="flex flex-col items-center gap-3 w-[100px] sm:w-[120px]">
                         <Avatar
                             name={nameB}
                             src={match.carrera_b?.escudo_url || match.atleta_b?.avatar_url || match.equipo_b_id?.escudo_url}
                             className={cn(
-                                "w-14 h-14 sm:w-16 sm:h-16 border-2 transition-all duration-500 bg-[#0a0805]",
-                                winnerB ? `scale-110 ${border.replace('border-', 'border-')}` : "border-white/10",
-                                !winnerB && isFinal && !isDraw ? "opacity-60 grayscale-[0.5]" : ""
+                                "w-16 h-16 sm:w-20 sm:h-20 border-2 transition-all duration-500 bg-[#0a0805]",
+                                winnerB ? `scale-110 shadow-xl ${border.replace('border-', 'border-')}` : "border-white/5",
+                                !winnerB && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
                             )}
                         />
                         <span className={cn(
-                            "text-[10px] sm:text-[11px] font-black uppercase tracking-tight leading-tight line-clamp-2 w-full px-1",
+                            "text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-center leading-tight line-clamp-2 w-full",
                             winnerB || isDraw || isLive ? "text-white" : "text-white/40"
                         )}>
                             {nameB}
