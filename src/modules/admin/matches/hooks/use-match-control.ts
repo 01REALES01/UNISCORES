@@ -60,12 +60,16 @@ export function useMatchControl(matchId: string) {
     const fetchMatchDetails = useCallback(async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
+            const timeout = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('TIMEOUT')), 10000)
+            );
+            const query = supabase
                 .from('partidos')
                 .select(`*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)`)
                 .eq('id', matchId)
                 .single();
 
+            const { data, error } = await Promise.race([query, timeout]);
             if (error) throw error;
             setMatch(data as Partido);
 
@@ -76,7 +80,7 @@ export function useMatchControl(matchId: string) {
             await Promise.all([fetchJugadores(), fetchEventos()]);
         } catch (err: any) {
             console.error(err);
-            setErrorCtx(err.message);
+            setErrorCtx(err.message === 'TIMEOUT' ? 'Tiempo de espera agotado. Vuelve a intentarlo.' : err.message);
         } finally {
             setLoading(false);
         }
@@ -120,53 +124,55 @@ export function useMatchControl(matchId: string) {
         fetchEventos();
     }, [match, matchId, minutoActual, profile, fetchEventos]);
 
-    // Effects
+    // Effects — split into two to avoid double-calling fetchMatchDetails when profile loads
     useEffect(() => {
         fetchMatchDetails();
+    }, [matchId, fetchMatchDetails]);
 
-        if (profile) {
-            const sessionId = Math.random().toString(36).substring(7);
-            const channel = supabase.channel(`match-presence-${matchId}`, {
-                config: { presence: { key: `${profile.id}-${sessionId}` } },
+    useEffect(() => {
+        if (!profile) return;
+
+        const sessionId = Math.random().toString(36).substring(7);
+        const channel = supabase.channel(`match-presence-${matchId}`, {
+            config: { presence: { key: `${profile.id}-${sessionId}` } },
+        });
+
+        channel
+            .on('presence', { event: 'sync' }, () => {
+                const state = channel.presenceState();
+                const editors = Object.values(state).flat();
+                setActiveEditors(editors.filter((e: any) => e.session_id !== sessionId));
+            })
+            .on('presence', { event: 'join' }, ({ newPresences }) => {
+                const otherSession = newPresences.find((p: any) => p.session_id !== sessionId);
+                if (otherSession) toast.info(`${otherSession.user_name || 'Alguien'} se ha unido a la edición`);
+            })
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'partidos',
+                filter: `id=eq.${matchId}`
+            }, (payload: any) => {
+                setMatch((prev: any) => prev ? ({ ...prev, ...payload.new }) : payload.new);
+                if (payload.new.marcador_detalle) {
+                    const newDetalle = payload.new.marcador_detalle;
+                    if (newDetalle.estado_cronometro === 'corriendo') setCronometroActivo(true);
+                    else if (newDetalle.estado_cronometro === 'pausado' || newDetalle.estado_cronometro === 'detenido') setCronometroActivo(false);
+                    if (newDetalle.minuto_actual !== undefined) setMinutoActual(newDetalle.minuto_actual);
+                }
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await channel.track({
+                        user_id: profile.id,
+                        session_id: sessionId,
+                        user_name: profile.full_name || profile.email,
+                        online_at: new Date().toISOString(),
+                    });
+                }
             });
 
-            channel
-                .on('presence', { event: 'sync' }, () => {
-                    const state = channel.presenceState();
-                    const editors = Object.values(state).flat();
-                    setActiveEditors(editors.filter((e: any) => e.session_id !== sessionId));
-                })
-                .on('presence', { event: 'join' }, ({ newPresences }) => {
-                    const otherSession = newPresences.find((p: any) => p.session_id !== sessionId);
-                    if (otherSession) toast.info(`${otherSession.user_name || 'Alguien'} se ha unido a la edición`);
-                })
-                .on('postgres_changes', { 
-                    event: 'UPDATE', 
-                    schema: 'public', 
-                    table: 'partidos',
-                    filter: `id=eq.${matchId}`
-                }, (payload: any) => {
-                    setMatch((prev: any) => prev ? ({ ...prev, ...payload.new }) : payload.new);
-                    if (payload.new.marcador_detalle) {
-                        const newDetalle = payload.new.marcador_detalle;
-                        if (newDetalle.estado_cronometro === 'corriendo') setCronometroActivo(true);
-                        else if (newDetalle.estado_cronometro === 'pausado' || newDetalle.estado_cronometro === 'detenido') setCronometroActivo(false);
-                        if (newDetalle.minuto_actual !== undefined) setMinutoActual(newDetalle.minuto_actual);
-                    }
-                })
-                .subscribe(async (status) => {
-                    if (status === 'SUBSCRIBED') {
-                        await channel.track({
-                            user_id: profile.id,
-                            session_id: sessionId,
-                            user_name: profile.full_name || profile.email,
-                            online_at: new Date().toISOString(),
-                        });
-                    }
-                });
-
-            return () => { supabase.removeChannel(channel); };
-        }
+        return () => { supabase.removeChannel(channel); };
     }, [matchId, profile]);
 
     useEffect(() => {
