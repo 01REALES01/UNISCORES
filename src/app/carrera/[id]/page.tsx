@@ -979,13 +979,23 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
     return (
         <Link href={`/partido/${match.id}`} className="block group/match">
             <div className={cn(
-                "relative overflow-hidden flex flex-col p-4 sm:p-5 rounded-[2rem] bg-[#0a0805]/90 backdrop-blur-xl border transition-all duration-500 gap-4 hover:shadow-2xl hover:-translate-y-1 shadow-lg",
+                "relative overflow-hidden flex flex-col p-4 sm:p-5 rounded-[2rem] bg-white/[0.03] backdrop-blur-2xl border transition-all duration-500 gap-4 hover:shadow-2xl hover:-translate-y-1 shadow-xl",
                 border,
-                "hover:bg-[#0f0c08]"
+                "hover:bg-white/[0.06] hover:border-white/20"
             )}>
-                {/* Background Sport Glow */}
-                <div className={cn("absolute inset-0 opacity-0 group-hover/match:opacity-10 transition-opacity duration-700 pointer-events-none", SPORT_GRADIENT[disc || ""])} />
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                {/* Noise Texture */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.04] pointer-events-none mix-blend-overlay" />
+                
+                {/* Dynamic Sport Background */}
+                <div className={cn(
+                    "absolute inset-0 opacity-5 sm:opacity-10 transition-opacity duration-700 pointer-events-none",
+                    SPORT_GRADIENT[disc || ""] || "bg-gradient-to-br from-white/10 to-transparent"
+                )} />
+                <div className={cn(
+                    "absolute -top-20 -right-20 w-48 h-48 rounded-full blur-[80px] pointer-events-none transition-opacity",
+                    SPORT_COLORS[disc || ""] || "bg-white/5",
+                    "opacity-20 group-hover/match:opacity-40"
+                )} />
 
                 {/* Header: Sport & Status */}
                 <div className="flex items-center justify-between relative z-10 border-b border-white/5 pb-3">
