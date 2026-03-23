@@ -381,24 +381,34 @@ export default function CarreraProfilePage() {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="relative mb-12"
+                    className="relative mb-8 sm:mb-12"
                 >
-                    <div className="absolute -inset-1 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 rounded-[3rem] blur opacity-20" />
-                    <div className="relative bg-[#0d0a07] border border-white/5 rounded-[3rem] p-8 md:p-12 overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
+                    {/* Animated Premium Background */}
+                    <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 rounded-[2.5rem] sm:rounded-[3rem] blur-xl opacity-20 sm:opacity-30 group-hover:opacity-40 transition-opacity duration-700" />
+                    
+                    <div className="relative bg-[#0a0805]/95 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl">
+                        {/* Noise & Glows */}
+                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-red-600/10 to-orange-500/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-rose-600/10 to-transparent blur-3xl rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
-                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-                            {/* Career Avatar / Escudo */}
-                            <div className="relative group/escudo">
-                                <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-gradient-to-br from-red-600/30 to-orange-500/20 border-4 border-white/5 flex items-center justify-center shadow-2xl overflow-hidden">
+                        <div className="relative z-10 p-6 sm:p-10 md:p-12 flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12 text-center lg:text-left">
+                            
+                            {/* Avatar / Escudo Majestic Presentation */}
+                            <div className="relative group/escudo shrink-0">
+                                {/* Back glow for avatar */}
+                                <div className="absolute -inset-2 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-[2.5rem] blur-xl opacity-50 group-hover/escudo:opacity-80 transition-opacity duration-500" />
+                                
+                                <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-[2rem] bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-2xl overflow-hidden p-3 transition-transform hover:scale-105 duration-500">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent mix-blend-overlay" />
                                     {carrera.escudo_url ? (
                                         <img
                                             src={carrera.escudo_url}
                                             alt={`Escudo de ${carrera.nombre}`}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(0,0,0,0.8)] filter contrast-125"
                                         />
                                     ) : (
-                                        <span className="text-5xl md:text-6xl font-black text-white/30 font-outfit">
+                                        <span className="text-5xl md:text-7xl font-black text-white/20 font-outfit truncate mix-blend-plus-lighter z-10">
                                             {getInitials(carrera.nombre)}
                                         </span>
                                     )}
@@ -422,158 +432,123 @@ export default function CarreraProfilePage() {
                                             onClick={() => escudoInputRef.current?.click()}
                                             disabled={uploadingEscudo}
                                             title="Cambiar escudo"
-                                            className="absolute inset-0 rounded-[2.5rem] bg-black/60 opacity-0 group-hover/escudo:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                                            className="absolute inset-0 rounded-[2rem] bg-black/70 opacity-0 group-hover/escudo:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-sm"
                                         >
                                             {uploadingEscudo ? (
                                                 <Loader2 size={28} className="text-white animate-spin" />
                                             ) : (
-                                                <div className="flex flex-col items-center gap-1">
-                                                    <Pencil size={22} className="text-white" />
-                                                    <span className="text-[9px] font-black text-white uppercase tracking-widest">Escudo</span>
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <Pencil size={24} className="text-white drop-shadow-lg" />
+                                                    <span className="text-[10px] font-black text-white uppercase tracking-widest drop-shadow-md">Cambiar</span>
                                                 </div>
                                             )}
                                         </button>
                                     </>
                                 )}
 
-                                <div className="absolute -bottom-3 -right-3 p-3 bg-red-600 text-white rounded-2xl shadow-2xl border-4 border-[#0d0a07]">
-                                    <GraduationCap size={20} />
+                                <div className="absolute -bottom-4 -right-2 p-3.5 bg-gradient-to-br from-red-600 to-orange-600 text-white rounded-2xl shadow-[0_10px_20px_rgba(239,68,68,0.4)] border border-red-400/30">
+                                    <GraduationCap size={22} className="drop-shadow-md" />
                                 </div>
                             </div>
 
-                            <div className="flex-1 text-center md:text-left">
-                                <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em] mb-2">
+                            {/* Info & Stats */}
+                            <div className="flex-1 w-full max-w-2xl lg:max-w-none flex flex-col items-center lg:items-start">
+                                <p className="text-[10px] font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400 uppercase tracking-[0.3em] mb-3">
                                     Programa Académico
                                 </p>
-                                <h1 className="text-3xl md:text-5xl font-black tracking-tighter font-outfit mb-4 leading-tight">
+                                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter font-outfit mb-6 leading-tight text-white drop-shadow-sm px-2 lg:px-0">
                                     {carrera.nombre}
                                 </h1>
 
-                                {/* Stats row */}
-                                <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                                    <FollowCareerButton careerId={carrera.id} initialFollowersCount={carrera.followers_count || 0} />
+                                {/* Stats Dashboard Grid */}
+                                <div className="w-full flex flex-col gap-3">
+                                    
+                                    {/* Top Row: Follow & Medals */}
+                                    <div className="flex flex-col sm:flex-row gap-3 w-full">
+                                        {/* Follow Button spans full width on mobile, shrink on desktop */}
+                                        <div className="w-full sm:w-auto shrink-0 shadow-lg">
+                                            <FollowCareerButton careerId={carrera.id} initialFollowersCount={carrera.followers_count || 0} />
+                                        </div>
 
-                                    {/* Medals */}
-                                    <div className="px-5 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-3">
-                                        <Trophy
-                                            size={18}
-                                            className="text-amber-500"
-                                        />
-                                        <div className="flex gap-4 items-center">
-                                            <span className="flex items-center gap-1">
-                                                <span className="text-lg font-black tabular-nums text-amber-400">
-                                                    {stats.oro}
-                                                </span>
-                                                <span className="text-[8px] font-black text-amber-400/60 uppercase">
-                                                    Oro
-                                                </span>
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <span className="text-lg font-black tabular-nums text-slate-300">
-                                                    {stats.plata}
-                                                </span>
-                                                <span className="text-[8px] font-black text-slate-400/60 uppercase">
-                                                    Plata
-                                                </span>
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <span className="text-lg font-black tabular-nums text-amber-700">
-                                                    {stats.bronce}
-                                                </span>
-                                                <span className="text-[8px] font-black text-amber-700/60 uppercase">
-                                                    Bronce
-                                                </span>
-                                            </span>
+                                        {/* Medals Dashboard */}
+                                        <div className="flex-1 flex bg-white/[0.03] border border-white/5 rounded-2xl p-1 shadow-inner relative overflow-hidden backdrop-blur-md">
+                                            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-slate-300/5 to-amber-700/5 pointer-events-none" />
+                                            
+                                            <div className="flex-1 flex flex-col items-center justify-center py-2 sm:py-3 relative border-r border-white/5">
+                                                <span className="text-2xl font-black text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)] tabular-nums">{stats.oro}</span>
+                                                <span className="text-[9px] font-black text-amber-500/70 uppercase tracking-widest mt-1">Oro</span>
+                                            </div>
+                                            <div className="flex-1 flex flex-col items-center justify-center py-2 sm:py-3 relative border-r border-white/5">
+                                                <span className="text-2xl font-black text-slate-200 drop-shadow-[0_0_10px_rgba(203,213,225,0.4)] tabular-nums">{stats.plata}</span>
+                                                <span className="text-[9px] font-black text-slate-400/70 uppercase tracking-widest mt-1">Plata</span>
+                                            </div>
+                                            <div className="flex-1 flex flex-col items-center justify-center py-2 sm:py-3 relative">
+                                                <span className="text-2xl font-black text-amber-700 drop-shadow-[0_0_10px_rgba(180,83,9,0.5)] tabular-nums">{stats.bronce}</span>
+                                                <span className="text-[9px] font-black text-amber-700/70 uppercase tracking-widest mt-1">Bronce</span>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* Record */}
-                                    <div className="px-5 py-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
-                                        <Swords
-                                            size={18}
-                                            className="text-red-500"
-                                        />
-                                        <div className="flex gap-3 text-sm">
-                                            <span>
-                                                <span className="font-black text-green-400">
-                                                    {stats.won}
-                                                </span>
-                                                <span className="text-[8px] font-bold text-white/30 ml-1 uppercase">
-                                                    V
-                                                </span>
-                                            </span>
-                                            <span>
-                                                <span className="font-black text-white/40">
-                                                    {stats.draw}
-                                                </span>
-                                                <span className="text-[8px] font-bold text-white/30 ml-1 uppercase">
-                                                    E
-                                                </span>
-                                            </span>
-                                            <span>
-                                                <span className="font-black text-red-400">
-                                                    {stats.lost}
-                                                </span>
-                                                <span className="text-[8px] font-bold text-white/30 ml-1 uppercase">
-                                                    D
-                                                </span>
-                                            </span>
+                                    {/* Bottom Row: Record, Played, Win Rate */}
+                                    <div className="grid grid-cols-3 sm:grid-cols-3 gap-3 w-full">
+                                        {/* Match Record */}
+                                        <div className="col-span-3 sm:col-span-1 flex flex-col items-center justify-center bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-4 shadow-inner relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-16 h-16 bg-red-500/5 blur-2xl rounded-full" />
+                                            <div className="flex items-center gap-4 sm:gap-3 w-full justify-center">
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-lg font-black text-emerald-400 tabular-nums">{stats.won}</span>
+                                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">W</span>
+                                                </div>
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-lg font-black text-white/40 tabular-nums">{stats.draw}</span>
+                                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">D</span>
+                                                </div>
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-lg font-black text-red-500 tabular-nums">{stats.lost}</span>
+                                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">L</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Matches Played */}
+                                        <div className="col-span-1 sm:col-span-1 flex flex-col items-center justify-center bg-white/[0.02] border border-white/5 rounded-2xl py-3 px-4 shadow-inner group/activity">
+                                            <span className="text-2xl font-black text-white group-hover/activity:text-white/80 transition-colors tabular-nums tracking-tighter">{stats.played}</span>
+                                            <span className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mt-1">Jugados</span>
+                                        </div>
+
+                                        {/* Win Rate */}
+                                        <div className="col-span-2 sm:col-span-1 flex flex-col items-center justify-center bg-cyan-500/5 border border-cyan-500/10 rounded-2xl py-3 px-4 shadow-[0_0_15px_rgba(6,182,212,0.05)]">
+                                            <div className="flex items-center gap-1.5">
+                                                <TrendingUp size={12} className="text-cyan-400" />
+                                                <span className="text-2xl font-black text-cyan-400 tabular-nums tracking-tighter">{stats.played > 0 ? Math.round((stats.won / stats.played) * 100) : 0}%</span>
+                                            </div>
+                                            <span className="text-[8px] font-black text-cyan-400/50 uppercase tracking-[0.2em] mt-1">Efectividad</span>
                                         </div>
                                     </div>
 
-                                    {/* Matches played */}
-                                    <div className="px-5 py-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2">
-                                        <Activity
-                                            size={16}
-                                            className="text-white/40"
-                                        />
-                                        <span className="text-lg font-black tabular-nums">
-                                            {stats.played}
-                                        </span>
-                                        <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">
-                                            PJ
-                                        </span>
-                                    </div>
-
-                                    {/* Win Rate */}
-                                    {stats.played > 0 && (
-                                        <div className="px-5 py-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
-                                            <TrendingUp size={16} className="text-cyan-400" />
-                                            <span className="text-lg font-black tabular-nums text-cyan-400">
-                                                {Math.round((stats.won / stats.played) * 100)}%
-                                            </span>
-                                            <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">
-                                                Efectividad
-                                            </span>
-                                        </div>
-                                    )}
                                 </div>
-
-                                {/* Win Rate Progress Bar */}
-                                {stats.played > 0 && (
-                                    <div className="mt-4 space-y-1.5">
-                                        <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-white/20">
-                                            <span>{stats.won}V - {stats.draw}E - {stats.lost}D</span>
-                                            <span>{stats.played} partidos</span>
-                                        </div>
-                                        <div className="flex h-1.5 rounded-full overflow-hidden bg-white/5 gap-[1px]">
-                                            <div
-                                                className="h-full bg-green-500 rounded-l-full transition-all duration-700"
-                                                style={{ width: `${(stats.won / stats.played) * 100}%` }}
-                                            />
-                                            <div
-                                                className="h-full bg-white/20 transition-all duration-700"
-                                                style={{ width: `${(stats.draw / stats.played) * 100}%` }}
-                                            />
-                                            <div
-                                                className="h-full bg-red-500/50 rounded-r-full transition-all duration-700"
-                                                style={{ width: `${(stats.lost / stats.played) * 100}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
+
+                        {/* Edge-to-edge Win Rate Progress Bar */}
+                        {stats.played > 0 && (
+                            <div className="absolute bottom-0 left-0 right-0 h-1.5 flex shadow-[0_-2px_10px_rgba(0,0,0,0.5)] bg-red-500/20">
+                                <div
+                                    className="h-full bg-emerald-500 relative z-10 transition-all duration-1000 ease-out"
+                                    style={{ width: `${(stats.won / stats.played) * 100}%` }}
+                                >
+                                    <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                                </div>
+                                <div
+                                    className="h-full bg-slate-400 relative z-10 transition-all duration-1000 ease-out"
+                                    style={{ width: `${(stats.draw / stats.played) * 100}%` }}
+                                />
+                                <div
+                                    className="h-full bg-red-600 relative z-10 transition-all duration-1000 ease-out"
+                                    style={{ width: `${(stats.lost / stats.played) * 100}%` }}
+                                />
+                            </div>
+                        )}
                     </div>
                 </motion.div>
 
