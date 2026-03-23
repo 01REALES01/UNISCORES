@@ -50,10 +50,10 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                 team.redCards += 1;
             }
 
-            if (ev.jugadores && ev.jugadores.perfiles) {
-                const pId = ev.jugadores.perfiles.id;
+            if (ev.jugadores) {
+                const pId = ev.jugadores.id;
                 if (!team.players[pId]) {
-                    team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, profile: ev.jugadores.perfiles };
+                    team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, profile: ev.jugadores };
                 }
                 team.players[pId].points += pointsGained;
                 if (['gol', 'anotacion'].includes(ev.tipo_evento)) team.players[pId].goals += 1;
@@ -63,7 +63,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
 
                 if (team.players[pId].points > mvpPoints) {
                     mvpPoints = team.players[pId].points;
-                    mvp = ev.jugadores.perfiles;
+                    mvp = ev.jugadores;
                 }
             }
         });
@@ -142,10 +142,10 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
         );
         return (
             <div className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition-colors">
-                <Avatar name={player.profile.full_name} className="w-8 h-8 text-[10px] border border-white/10 shrink-0" />
+                <Avatar name={player.profile.nombre} className="w-8 h-8 text-[10px] border border-white/10 shrink-0" />
                 <div className="flex-1 min-w-0">
                     <p className="text-[8px] font-black uppercase tracking-widest text-white/30">{label}</p>
-                    <p className="text-[10px] sm:text-xs font-black text-white/80 truncate">{player.profile.full_name}</p>
+                    <p className="text-[10px] sm:text-xs font-black text-white/80 truncate">{player.profile.nombre}</p>
                 </div>
                 <span className="text-sm font-black tabular-nums shrink-0 px-2 py-0.5 rounded-lg border border-white/5 bg-black/40" style={{ color }}>{count}</span>
             </div>
@@ -245,10 +245,10 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                             <div className="flex items-center gap-4 relative z-10">
                                 <div className="relative shrink-0">
                                     <div className="absolute -inset-1.5 bg-amber-500/25 rounded-full blur-lg" />
-                                    <Avatar name={mvp.full_name} className="w-14 h-14 sm:w-16 sm:h-16 border-3 border-amber-500 text-xl font-outfit shadow-2xl" />
+                                    <Avatar name={mvp.nombre} className="w-14 h-14 sm:w-16 sm:h-16 border-3 border-amber-500 text-xl font-outfit shadow-2xl" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-base sm:text-lg font-black font-outfit leading-tight mb-1.5 text-white drop-shadow-lg truncate">{mvp.full_name}</p>
+                                    <p className="text-base sm:text-lg font-black font-outfit leading-tight mb-1.5 text-white drop-shadow-lg truncate">{mvp.nombre}</p>
                                     <Badge className="bg-amber-500/20 text-amber-500 border border-amber-500/30 font-mono text-sm tabular-nums rounded-lg px-2.5 py-1 shadow-inner">
                                         <Star size={12} className="inline mr-1.5 -translate-y-0.5 fill-amber-500" />
                                         {mvpPoints} pts
@@ -270,9 +270,9 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                         <div className="space-y-2.5 flex-1 relative z-10">
                             {topScorersA.slice(0, 3).map((player, idx) => (
                                 <div key={idx} className="flex items-center gap-2">
-                                    <Avatar name={player.profile.full_name} className="w-7 h-7 text-[9px] border border-white/10 shrink-0" />
+                                    <Avatar name={player.profile.nombre} className="w-7 h-7 text-[9px] border border-white/10 shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <span className="text-[10px] font-black truncate block text-white/80">{player.profile.full_name}</span>
+                                        <span className="text-[10px] font-black truncate block text-white/80">{player.profile.nombre}</span>
                                         {isBasketball && <span className="text-[7px] font-bold text-white/20">{player.pts3}T·{player.pts2}D·{player.pts1}L</span>}
                                     </div>
                                     <span className="text-sm font-black tabular-nums text-white shrink-0">{isFootball ? player.goals : player.points}</span>
@@ -290,9 +290,9 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                         <div className="space-y-2.5 flex-1 relative z-10">
                             {topScorersB.slice(0, 3).map((player, idx) => (
                                 <div key={idx} className="flex items-center gap-2">
-                                    <Avatar name={player.profile.full_name} className="w-7 h-7 text-[9px] border border-white/10 shrink-0" />
+                                    <Avatar name={player.profile.nombre} className="w-7 h-7 text-[9px] border border-white/10 shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <span className="text-[10px] font-black truncate block text-white/80">{player.profile.full_name}</span>
+                                        <span className="text-[10px] font-black truncate block text-white/80">{player.profile.nombre}</span>
                                         {isBasketball && <span className="text-[7px] font-bold text-white/20">{player.pts3}T·{player.pts2}D·{player.pts1}L</span>}
                                     </div>
                                     <span className="text-sm font-black tabular-nums text-white shrink-0">{isFootball ? player.goals : player.points}</span>
