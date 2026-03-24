@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import { Users, UserPlus, UserMinus, Loader2 } from "lucide-react";
+import { Star, UserPlus, UserMinus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FollowButtonProps {
@@ -85,13 +85,13 @@ export function FollowButton({ targetId, initialFollowersCount }: FollowButtonPr
     // If it's my own profile
     if (user?.id === targetId) {
         return (
-            <div className="flex items-center gap-3 px-6 py-3 rounded-[1.5rem] bg-[#0A0705] border border-white/5 shadow-2xl">
-                <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400">
-                    <Users size={20} />
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/[0.02] border border-white/5 shadow-2xl">
+                <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400">
+                    <Star size={16} />
                 </div>
-                <div className="flex flex-col">
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-0.5">Seguidores</span>
-                    <span className="text-xl font-black text-white leading-none">{followersCount}</span>
+                <div className="leading-tight">
+                    <p className="text-[14px] font-black tabular-nums">{followersCount}</p>
+                    <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Seguidores</p>
                 </div>
             </div>
         );
@@ -99,13 +99,13 @@ export function FollowButton({ targetId, initialFollowersCount }: FollowButtonPr
 
     return (
         <div className="flex items-center gap-2">
-            <div className="flex items-center gap-3 px-6 py-3 rounded-[1.5rem] bg-[#0A0705] border border-white/5 shadow-2xl">
-                <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400">
-                    <Users size={20} />
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/[0.02] border border-white/5 shadow-2xl">
+                <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400">
+                    <Star size={16} />
                 </div>
-                <div className="flex flex-col min-w-[60px]">
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-0.5">Seguidores</span>
-                    <span className="text-xl font-black text-white leading-none tabular-nums clamp">{followersCount}</span>
+                <div className="leading-tight min-w-[60px]">
+                    <p className="text-[14px] font-black tabular-nums">{followersCount}</p>
+                    <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Seguidores</p>
                 </div>
             </div>
 

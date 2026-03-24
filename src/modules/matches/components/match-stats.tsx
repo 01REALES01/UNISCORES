@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import Link from 'next/link';
 import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
 import { cn } from '@/lib/utils';
 import { Avatar, Badge } from '@/components/ui-primitives';
@@ -140,8 +141,11 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                 </div>
             </div>
         );
-        return (
-            <div className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition-colors">
+        const cardContent = (
+            <div className={cn(
+                "flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.03] border border-white/5 transition-all duration-200",
+                player.profile.profile_id ? "hover:bg-white/[0.08] hover:border-white/10 hover:scale-[1.02] active:scale-[0.98] cursor-pointer" : ""
+            )}>
                 <Avatar name={player.profile.nombre} className="w-8 h-8 text-[10px] border border-white/10 shrink-0" />
                 <div className="flex-1 min-w-0">
                     <p className="text-[8px] font-black uppercase tracking-widest text-white/30">{label}</p>
@@ -150,6 +154,16 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                 <span className="text-sm font-black tabular-nums shrink-0 px-2 py-0.5 rounded-lg border border-white/5 bg-black/40" style={{ color }}>{count}</span>
             </div>
         );
+
+        if (player.profile.profile_id) {
+            return (
+                <Link href={`/perfil/${player.profile.profile_id}`}>
+                    {cardContent}
+                </Link>
+            );
+        }
+
+        return cardContent;
     };
 
     return (
@@ -230,32 +244,34 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                 
                 {/* MVP Player Card */}
                 {mvp && (
-                    <div className="p-[2px] rounded-[2rem] bg-gradient-to-br from-amber-400 via-amber-600 to-amber-900 shadow-[0_0_40px_rgba(245,158,11,0.12)] relative group overflow-hidden">
-                        <div className="absolute inset-0 opacity-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-                        <div className="absolute top-5 right-5 text-amber-900/50">
-                            <Trophy size={40} />
-                        </div>
-                        <div className="bg-gradient-to-b from-[#1c1203] to-[#0A0705] rounded-[1.9rem] p-5 sm:p-6 flex flex-col justify-between relative overflow-hidden min-h-[180px]">
-                            <div className="absolute -right-16 -bottom-16 opacity-5 text-amber-500 pointer-events-none">
-                                <Flame size={160} />
+                    <div className="relative group overflow-hidden p-[2px] rounded-[2rem] bg-gradient-to-br from-amber-400 via-amber-600 to-amber-900 shadow-[0_0_40px_rgba(245,158,11,0.12)] transition-transform duration-300 hover:scale-[1.02]">
+                        <Link href={mvp.profile_id ? `/perfil/${mvp.profile_id}` : '#'} className={cn("block h-full", !mvp.profile_id && "pointer-events-none")}>
+                            <div className="absolute inset-0 opacity-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+                            <div className="absolute top-5 right-5 text-amber-900/50">
+                                <Trophy size={40} />
                             </div>
-                            
-                            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-amber-500 mb-4 drop-shadow-md">Jugador Más Valioso</p>
-                            
-                            <div className="flex items-center gap-4 relative z-10">
-                                <div className="relative shrink-0">
-                                    <div className="absolute -inset-1.5 bg-amber-500/25 rounded-full blur-lg" />
-                                    <Avatar name={mvp.nombre} className="w-14 h-14 sm:w-16 sm:h-16 border-3 border-amber-500 text-xl font-outfit shadow-2xl" />
+                            <div className="bg-gradient-to-b from-[#1c1203] to-[#0A0705] rounded-[1.9rem] p-5 sm:p-6 flex flex-col justify-between relative overflow-hidden min-h-[180px] h-full">
+                                <div className="absolute -right-16 -bottom-16 opacity-5 text-amber-500 pointer-events-none">
+                                    <Flame size={160} />
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-base sm:text-lg font-black font-outfit leading-tight mb-1.5 text-white drop-shadow-lg truncate">{mvp.nombre}</p>
-                                    <Badge className="bg-amber-500/20 text-amber-500 border border-amber-500/30 font-mono text-sm tabular-nums rounded-lg px-2.5 py-1 shadow-inner">
-                                        <Star size={12} className="inline mr-1.5 -translate-y-0.5 fill-amber-500" />
-                                        {mvpPoints} pts
-                                    </Badge>
+                                
+                                <p className="text-[9px] font-black uppercase tracking-[0.4em] text-amber-500 mb-4 drop-shadow-md">Jugador Más Valioso</p>
+                                
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <div className="relative shrink-0">
+                                        <div className="absolute -inset-1.5 bg-amber-500/25 rounded-full blur-lg" />
+                                        <Avatar name={mvp.nombre} className="w-14 h-14 sm:w-16 sm:h-16 border-3 border-amber-500 text-xl font-outfit shadow-2xl" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-base sm:text-lg font-black font-outfit leading-tight mb-1.5 text-white drop-shadow-lg truncate">{mvp.nombre}</p>
+                                        <Badge className="bg-amber-500/20 text-amber-500 border border-amber-500/30 font-mono text-sm tabular-nums rounded-lg px-2.5 py-1 shadow-inner">
+                                            <Star size={12} className="inline mr-1.5 -translate-y-0.5 fill-amber-500" />
+                                            {mvpPoints} pts
+                                        </Badge>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     </div>
                 )}
 
@@ -268,16 +284,27 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                             {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Destacados')}
                         </p>
                         <div className="space-y-2.5 flex-1 relative z-10">
-                            {topScorersA.slice(0, 3).map((player, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                    <Avatar name={player.profile.nombre} className="w-7 h-7 text-[9px] border border-white/10 shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                        <span className="text-[10px] font-black truncate block text-white/80">{player.profile.nombre}</span>
-                                        {isBasketball && <span className="text-[7px] font-bold text-white/20">{player.pts3}T·{player.pts2}D·{player.pts1}L</span>}
+                            {topScorersA.slice(0, 3).map((player, idx) => {
+                                const row = (
+                                    <div key={idx} className={cn(
+                                        "flex items-center gap-2 transition-opacity p-1 rounded-lg",
+                                        player.profile.profile_id ? "hover:bg-white/5 cursor-pointer" : ""
+                                    )}>
+                                        <Avatar name={player.profile.nombre} className="w-7 h-7 text-[9px] border border-white/10 shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-[10px] font-black truncate block text-white/80">{player.profile.nombre}</span>
+                                            {isBasketball && <span className="text-[7px] font-bold text-white/20">{player.pts3}T·{player.pts2}D·{player.pts1}L</span>}
+                                        </div>
+                                        <span className="text-sm font-black tabular-nums text-white shrink-0">{isFootball ? player.goals : player.points}</span>
                                     </div>
-                                    <span className="text-sm font-black tabular-nums text-white shrink-0">{isFootball ? player.goals : player.points}</span>
-                                </div>
-                            ))}
+                                );
+                                
+                                return player.profile.profile_id ? (
+                                    <Link key={idx} href={`/perfil/${player.profile.profile_id}`}>
+                                        {row}
+                                    </Link>
+                                ) : row;
+                            })}
                             {topScorersA.length === 0 && <span className="text-[10px] text-white/15 italic">Sin datos</span>}
                         </div>
                     </div>
@@ -288,16 +315,27 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                             {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Destacados')}
                         </p>
                         <div className="space-y-2.5 flex-1 relative z-10">
-                            {topScorersB.slice(0, 3).map((player, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                    <Avatar name={player.profile.nombre} className="w-7 h-7 text-[9px] border border-white/10 shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                        <span className="text-[10px] font-black truncate block text-white/80">{player.profile.nombre}</span>
-                                        {isBasketball && <span className="text-[7px] font-bold text-white/20">{player.pts3}T·{player.pts2}D·{player.pts1}L</span>}
+                            {topScorersB.slice(0, 3).map((player, idx) => {
+                                const row = (
+                                    <div key={idx} className={cn(
+                                        "flex items-center gap-2 transition-opacity p-1 rounded-lg",
+                                        player.profile.profile_id ? "hover:bg-white/5 cursor-pointer" : ""
+                                    )}>
+                                        <Avatar name={player.profile.nombre} className="w-7 h-7 text-[9px] border border-white/10 shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-[10px] font-black truncate block text-white/80">{player.profile.nombre}</span>
+                                            {isBasketball && <span className="text-[7px] font-bold text-white/20">{player.pts3}T·{player.pts2}D·{player.pts1}L</span>}
+                                        </div>
+                                        <span className="text-sm font-black tabular-nums text-white shrink-0">{isFootball ? player.goals : player.points}</span>
                                     </div>
-                                    <span className="text-sm font-black tabular-nums text-white shrink-0">{isFootball ? player.goals : player.points}</span>
-                                </div>
-                            ))}
+                                );
+                                
+                                return player.profile.profile_id ? (
+                                    <Link key={idx} href={`/perfil/${player.profile.profile_id}`}>
+                                        {row}
+                                    </Link>
+                                ) : row;
+                            })}
                             {topScorersB.length === 0 && <span className="text-[10px] text-white/15 italic">Sin datos</span>}
                         </div>
                     </div>

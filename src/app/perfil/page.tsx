@@ -18,7 +18,9 @@ import {
     Swords,
     Settings,
     Users,
-    Mail
+    Mail,
+    Activity,
+    Trophy
 } from "lucide-react";
 import { FriendsList } from "@/modules/users/components/friends-list";
 import { FollowButton } from "@/modules/users/components/follow-button";
@@ -28,7 +30,7 @@ import UniqueLoading from "@/components/ui/morph-loading";
 import { isCreator, SPORT_EMOJI, SPORT_ACCENT } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 
-type ProfileTab = 'general' | 'amigos';
+type ProfileTab = 'general' | 'comunidad';
 
 export default function PerfilPage() {
     const router = useRouter();
@@ -36,12 +38,17 @@ export default function PerfilPage() {
     const [history, setHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [carreras, setCarreras] = useState<any[]>([]);
+    const [followedProfiles, setFollowedProfiles] = useState<any[]>([]);
+    const [followedCareers, setFollowedCareers] = useState<any[]>([]);
+    const [friendsCount, setFriendsCount] = useState(0);
     const [activeTab, setActiveTab] = useState<ProfileTab>('general');
 
     useEffect(() => {
         if (profile) {
             if (profile.carreras_ids && profile.carreras_ids.length > 0) fetchCarreras();
             if (isDeportista) fetchHistory();
+            fetchFollowing();
+            fetchFriendsCount();
         }
     }, [profile, isDeportista]);
 
@@ -146,6 +153,43 @@ export default function PerfilPage() {
             setLoadingHistory(false);
         }
     };
+    
+    const fetchFriendsCount = async () => {
+        if (!profile?.id) return;
+        const { count } = await supabase
+            .from('friend_requests')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'accepted')
+            .or(`sender_id.eq.${profile.id},receiver_id.eq.${profile.id}`);
+        setFriendsCount(count || 0);
+    };
+
+    const fetchFollowing = async () => {
+        if (!profile?.id) return;
+        try {
+            // Profiles followed
+            const { data: profiles } = await supabase
+                .from('user_followers')
+                .select('following_profile:profiles!following_profile_id(id, full_name, avatar_url, points)')
+                .eq('follower_id', profile.id);
+            
+            if (profiles) {
+                setFollowedProfiles(profiles.map((f: any) => f.following_profile));
+            }
+
+            // Careers followed
+            const { data: careers } = await supabase
+                .from('career_followers')
+                .select('career:carreras(id, nombre, escudo_url)')
+                .eq('follower_id', profile.id);
+
+            if (careers) {
+                setFollowedCareers(careers.map((f: any) => f.career));
+            }
+        } catch (err) {
+            console.error("Error fetching following:", err);
+        }
+    };
 
     if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-[#0a0816]"><UniqueLoading size="lg" /></div>;
     if (!user) return null;
@@ -244,15 +288,26 @@ export default function PerfilPage() {
                         </div>
 
                         {/* Status Row */}
-                        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mt-8">
+                        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1 p-1 bg-white/[0.03] border border-white/5 rounded-3xl backdrop-blur-xl shadow-2xl mt-8">
                             {/* Puntos Pill */}
-                            <div className="flex items-center gap-4 px-6 py-4 rounded-[1.5rem] bg-[#0A0705] border border-white/5 shadow-2xl">
-                                <div className="p-2.5 bg-red-600/10 rounded-xl text-red-500">
-                                    <Target size={24} />
+                            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/[0.02] border border-white/5 shadow-2xl">
+                                <div className="p-1.5 bg-red-600/10 rounded-lg text-red-500">
+                                    <Target size={16} />
                                 </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Puntos Globales</span>
-                                    <span className="text-3xl font-black text-white leading-none mt-1">{points}</span>
+                                <div className="leading-tight">
+                                    <p className="text-[14px] font-black tabular-nums">{points}</p>
+                                    <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Puntos Globales</p>
+                                </div>
+                            </div>
+
+                            {/* Amigos Pill */}
+                            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/[0.02] border border-white/5 shadow-2xl">
+                                <div className="p-1.5 bg-indigo-600/10 rounded-lg text-indigo-400">
+                                    <Users size={16} />
+                                </div>
+                                <div className="leading-tight">
+                                    <p className="text-[14px] font-black tabular-nums">{friendsCount}</p>
+                                    <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Amigos</p>
                                 </div>
                             </div>
 
@@ -263,7 +318,7 @@ export default function PerfilPage() {
                 </motion.div>
 
                 {/* Toggle AMIGOS tab */}
-                <div className="flex justify-center lg:justify-start mb-8 border-b border-white/10 pb-4">
+                 <div className="flex justify-center lg:justify-start mb-8 border-b border-white/10 pb-4">
                     <button
                         onClick={() => setActiveTab('general')}
                         className={cn("px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-full", activeTab === 'general' ? "bg-white/10 text-white" : "text-white/40 hover:text-white")}
@@ -271,10 +326,10 @@ export default function PerfilPage() {
                         General
                     </button>
                     <button
-                        onClick={() => setActiveTab('amigos')}
-                        className={cn("px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-full flex items-center gap-2", activeTab === 'amigos' ? "bg-white/10 text-white" : "text-white/40 hover:text-white")}
+                        onClick={() => setActiveTab('comunidad')}
+                        className={cn("px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-full flex items-center gap-2", activeTab === 'comunidad' ? "bg-white/10 text-white" : "text-white/40 hover:text-white")}
                     >
-                        <Users size={14} /> Amigos
+                        <Users size={14} /> Comunidad
                     </button>
                 </div>
 
@@ -442,14 +497,111 @@ export default function PerfilPage() {
                 </motion.div>
                 )}
 
-                {activeTab === 'amigos' && (
+                {activeTab === 'comunidad' && (
                     <motion.div
-                        initial={{ opacity: 0, x: 16 }}
-                        animate={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.4 }}
-                        className="mt-6"
+                        className="mt-6 space-y-12"
                     >
-                        <FriendsList userId={user.id} />
+                        {/* ━━━ HUB COMUNIDAD ━━━ */}
+                        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
+                            <div className="w-14 h-14 rounded-3xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.1)]">
+                                <Users className="text-red-500" size={24} />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-black font-outfit tracking-tighter text-white uppercase">Hub de mi Comunidad</h1>
+                                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Gestión de amigos y seguimientos • Privado</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-10 items-start">
+                            {/* Left: Friends */}
+                            <div className="bg-white/[0.02] border border-white/5 rounded-[3.5rem] p-8 lg:p-12 shadow-2xl relative overflow-hidden group">
+                                <FriendsList userId={user.id} />
+                            </div>
+
+                            {/* Right: Seguidos */}
+                            <div className="space-y-8">
+                                {/* Profiles Seguidos */}
+                                <div className="bg-white/[0.03] border border-white/5 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group hover:border-blue-500/20 transition-all">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                                                <Star className="text-blue-400" size={16} />
+                                            </div>
+                                            <h3 className="text-lg font-black font-outfit tracking-tighter text-white uppercase">Perfiles Seguidos</h3>
+                                        </div>
+                                        <span className="text-[10px] font-black text-white/20 uppercase tabular-nums">{followedProfiles.length}</span>
+                                    </div>
+                                    {followedProfiles.length > 0 ? (
+                                        <div className="grid grid-cols-1 gap-3">
+                                            {followedProfiles.slice(0, 6).map((f) => (
+                                                <Link 
+                                                    key={f.id} 
+                                                    href={`/perfil/${f.id}`}
+                                                    className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all group/item"
+                                                >
+                                                    <Avatar className="w-10 h-10 border-2 border-white/10 ring-2 ring-blue-500/10 group-hover/item:ring-blue-500/20 transition-all" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-black text-white truncate">{f.full_name}</p>
+                                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                                            <Activity size={10} className="text-blue-400" />
+                                                            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">{f.points} pts</p>
+                                                        </div>
+                                                    </div>
+                                                    <ArrowUpRight size={14} className="text-white/20 group-hover/item:text-white transition-colors" />
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-10 border border-dashed border-white/5 rounded-3xl">
+                                            <p className="text-[10px] font-black uppercase text-white/10 tracking-widest leading-loose">Todavía no sigues<br/>a ningún deportista</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Carreras Seguidas */}
+                                <div className="bg-white/[0.03] border border-white/5 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group hover:border-purple-500/20 transition-all">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                                                <Trophy className="text-purple-400" size={16} />
+                                            </div>
+                                            <h3 className="text-lg font-black font-outfit tracking-tighter text-white uppercase">Carreras Seguidas</h3>
+                                        </div>
+                                        <span className="text-[10px] font-black text-white/20 uppercase tabular-nums">{followedCareers.length}</span>
+                                    </div>
+                                    {followedCareers.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {followedCareers.slice(0, 4).map((c) => (
+                                                <Link 
+                                                    key={c.id} 
+                                                    href={`/carreras/${c.id}`}
+                                                    className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all group/item"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-black border border-white/10 flex items-center justify-center overflow-hidden">
+                                                            {c.escudo_url ? (
+                                                                <img src={c.escudo_url} alt={c.nombre} className="w-full h-full object-contain p-1" />
+                                                            ) : (
+                                                                <span className="text-[10px] font-black text-white/20">SC</span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm font-black text-white truncate max-w-[120px]">{c.nombre}</p>
+                                                    </div>
+                                                    <ArrowUpRight size={14} className="text-white/20 group-hover/item:text-white transition-colors" />
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-10 border border-dashed border-white/5 rounded-3xl">
+                                            <p className="text-[10px] font-black uppercase text-white/10 tracking-widest leading-loose">No sigues ninguna<br/>facultad aún</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </motion.div>
                 )}
 
