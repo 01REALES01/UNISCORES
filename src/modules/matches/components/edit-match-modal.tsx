@@ -4,16 +4,45 @@ import { useState, useEffect, useRef } from "react";
 import { Button, Input, Badge, Avatar } from "@/components/ui-primitives";
 import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle, Minus, Edit2, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { addPoints, removePoints, setPoints, getCurrentScore, ScoreDetail, recalculateTotals } from "@/lib/sport-scoring";
+import { addPoints, removePoints, setPoints, getCurrentScore, ScoreDetail, recalculateTotals, getCurrentPeriodNumber, getPeriodDuration } from "@/lib/sport-scoring";
 import { useAuth } from "@/hooks/useAuth";
 import { stampAudit, stampEventAudit, parseEventAudit } from "@/lib/audit-helpers";
+import { toast } from "sonner";
 
 type EditMatchModalProps = {
     match: any;
     isOpen: boolean;
     onClose: () => void;
-    profile?: any; // Added to support audit
+    profile?: any;
 };
+
+// --- Sub-components for Clean UI ---
+
+function NumericStepper({ label, value, onChange, color = "indigo", sublabel }: { label: string, value: number, onChange: (val: number) => void, color?: string, sublabel?: string }) {
+    return (
+        <div className="flex flex-col items-center gap-3">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{label}</span>
+            <div className="flex items-center gap-2 bg-black/40 border border-white/5 rounded-[1.5rem] p-1.5 shadow-2xl">
+                <button 
+                    onClick={() => onChange(Math.max(0, value - 1))}
+                    className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/5 active:scale-90 transition-all text-slate-500 hover:text-white"
+                >
+                    <Minus size={16} />
+                </button>
+                <div className="w-14 text-center select-none">
+                    <span className="text-2xl font-black text-white font-mono tabular-nums">{value}</span>
+                </div>
+                <button 
+                    onClick={() => onChange(value + 1)}
+                    className={`w-10 h-10 flex items-center justify-center rounded-xl bg-${color}-500/10 hover:bg-${color}-500/20 active:scale-90 transition-all text-${color}-400`}
+                >
+                    <Plus size={16} />
+                </button>
+            </div>
+            {sublabel && <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{sublabel}</span>}
+        </div>
+    );
+}
 
 type Jugador = {
     id: number;
@@ -69,11 +98,35 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
     // Edición Avanzada (Voleibol / Tenis)
     const [showAdvancedEdit, setShowAdvancedEdit] = useState(false);
     const [advancedSets, setAdvancedSets] = useState<any>({});
+    // Nuevo estado local para evitar depender únicamente de la prop 'match' que puede estar cacheada
+    const [localDetalle, setLocalDetalle] = useState<any>(match?.marcador_detalle || {});
     const [advancedSetActual, setAdvancedSetActual] = useState(1);
+    const [manualScoreA, setManualScoreA] = useState('0');
+    const [manualScoreB, setManualScoreB] = useState('0');
+    const [manualPeriod, setManualPeriod] = useState(1);
+    const [manualMinute, setManualMinute] = useState(0);
+
+    // Sincronizar estado local cuando cambia la prop (prop -> local)
+    useEffect(() => {
+        if (match?.marcador_detalle) {
+            setLocalDetalle(match.marcador_detalle);
+        }
+    }, [match?.marcador_detalle]);
 
     const openAdvancedEdit = () => {
-        setAdvancedSets(JSON.parse(JSON.stringify(match?.marcador_detalle?.sets || {})));
-        setAdvancedSetActual(match?.marcador_detalle?.set_actual || 1);
+        const d = localDetalle || {};
+        const sport = match.disciplinas?.name || '';
+        
+        setManualScoreA((d.total_a ?? d.goles_a ?? d.puntos_a ?? 0).toString());
+        setManualScoreB((d.total_b ?? d.goles_b ?? d.puntos_b ?? 0).toString());
+        setManualMinute(minutoActual);
+        
+        if (sport === 'Baloncesto') setManualPeriod(d.cuarto_actual || 1);
+        else if (sport === 'Fútbol') setManualPeriod(d.tiempo_actual || 1);
+        else setManualPeriod(d.set_actual || 1);
+        
+        setAdvancedSets(JSON.parse(JSON.stringify(d.sets || {})));
+        setAdvancedSetActual(d.set_actual || 1);
         setShowAdvancedEdit(true);
     };
 
@@ -91,27 +144,56 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
 
     const saveAdvancedEdit = async () => {
         if (!match) return;
-        const prevDetalle = match.marcador_detalle || {};
-        const deporte = match.disciplinas?.name || 'Voleibol';
+        setLoading(true);
+        const sport = match.disciplinas?.name || '';
 
-        const forcedDetalle = {
-            ...prevDetalle,
-            sets: advancedSets,
-            set_actual: advancedSetActual
+        // 1. Fetch LATEST state to avoid overwriting recent changes (like clock ticks)
+        const { data: freshMatch } = await supabase
+            .from('partidos')
+            .select('marcador_detalle')
+            .eq('id', match.id)
+            .single();
+
+        const latestDetalle = freshMatch?.marcador_detalle || localDetalle || {};
+
+        // 2. Prepare the new forced state
+        let forcedDetalle = {
+            ...latestDetalle,
+            minuto_actual: manualMinute,
+            ultimo_update: new Date().toISOString()
         };
 
-        const finalDetalle = recalculateTotals(deporte, forcedDetalle);
+        // 3. Delegate to sport logic for fields sensitization
+        forcedDetalle.set_actual = manualPeriod;
+        forcedDetalle.cuarto_actual = manualPeriod;
+        forcedDetalle.tiempo_actual = manualPeriod;
+
+        if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
+            forcedDetalle.sets = advancedSets;
+        } else if (sport === 'Baloncesto') {
+            forcedDetalle.cuartos = advancedSets; // Basketball uses 'cuartos' internally
+        }
+
+        // Apply scores (this adjusts current period internally + handles DB specific fields)
+        forcedDetalle = setPoints(sport, forcedDetalle, 'equipo_a', parseInt(manualScoreA) || 0);
+        forcedDetalle = setPoints(sport, forcedDetalle, 'equipo_b', parseInt(manualScoreB) || 0);
+        
+        // Final sanity re-calc
+        forcedDetalle = recalculateTotals(sport, forcedDetalle);
 
         const { error } = await supabase
             .from('partidos')
-            .update({ marcador_detalle: stampAudit(finalDetalle, profile) })
+            .update({ marcador_detalle: stampAudit(forcedDetalle, profile) })
             .eq('id', match.id);
 
+        setLoading(false);
         if (error) {
             console.error('Error saving advanced edit:', error);
-            alert('Error actualizando marcador avanzado');
+            toast.error('No se pudo guardar: ' + (error.message || 'Error Desconocido'));
         } else {
-            console.log('✅ Marcador avanzado guardado', finalDetalle);
+            setLocalDetalle(forcedDetalle);
+            setMinutoActual(manualMinute);
+            toast.success('Estado del partido actualizado con éxito');
             setShowAdvancedEdit(false);
         }
     };
@@ -142,18 +224,22 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
         }
     }, [match, isOpen]);
 
-    // Cronómetro automático (1 minuto real = 1 minuto de juego)
     useEffect(() => {
         if (cronometroActivo) {
             console.log('⏱️ Cronómetro iniciado (Tiempo Real)');
+            const sportName = match.disciplinas?.name || '';
+            const isCountdown = sportName === 'Baloncesto';
+            
+            // ⚠️ EXTREMELY IMPORTANT: We DISABLED auto-syncing the minute to the DB every 60s
+            // because it causes race conditions where it fetches the OLD state and overwrites
+            // a score update that just happened. The minute will be saved with every manual score
+            // change or when explicitly clicking pause/resume/stop.
             intervalRef.current = setInterval(() => {
                 setMinutoActual(prev => {
-                    const nuevo = prev + 1;
-                    console.log(`⏱️ Minuto: ${nuevo}`);
-                    actualizarMinutoEnDB(nuevo);
+                    const nuevo = isCountdown ? Math.max(0, prev - 1) : prev + 1;
                     return nuevo;
                 });
-            }, 60000); // 60,000 ms = 1 minuto real
+            }, 60000); 
         } else {
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);
@@ -170,18 +256,25 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
 
     const fetchJugadores = async () => {
         console.log('👥 Cargando jugadores...');
-        // USANDO NUEVA TABLA
         const { data, error } = await supabase
-            .from('olympics_jugadores')
-            .select('*')
+            .from('roster_partido')
+            .select('*, jugador:jugadores(*)')
             .eq('partido_id', match.id);
 
         if (error) {
             console.error('❌ Error cargando jugadores:', error);
         } else if (data) {
             console.log('✅ Jugadores cargados:', data.length);
-            setJugadoresA(data.filter(j => j.equipo === 'equipo_a'));
-            setJugadoresB(data.filter(j => j.equipo === 'equipo_b'));
+            const transformed = data.map((r: any) => ({
+                id: r.jugador?.id,
+                roster_id: r.id,
+                nombre: r.jugador?.nombre,
+                numero: r.jugador?.numero,
+                equipo: r.equipo_a_or_b,
+                profile_id: r.jugador?.profile_id
+            }));
+            setJugadoresA(transformed.filter(j => j.equipo === 'equipo_a'));
+            setJugadoresB(transformed.filter(j => j.equipo === 'equipo_b'));
         }
     };
 
@@ -189,9 +282,9 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
         console.log('📋 Cargando eventos...');
         const { data, error } = await supabase
             .from('olympics_eventos')
-            .select('*, jugadores:olympics_jugadores(*)')
+            .select('*, jugadores:jugadores!jugador_id_normalized(*)')
             .eq('partido_id', match.id)
-            .order('minuto', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (error) {
             console.error('❌ Error cargando eventos:', error);
@@ -203,14 +296,12 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
     // --- SCORING FUNCTIONS ---
 
     const handleUpdateScore = async (equipo: 'equipo_a' | 'equipo_b', puntos: number = 1) => {
-        const detalleActual = match.marcador_detalle || {};
         const deporte = match.disciplinas?.name || 'Genérico';
-
-        // Calcular nuevo estado usando la librería compartida
+        const detalleActual = localDetalle || {};
+        
+        // Optimistic local update
         const nuevoDetalle = addPoints(deporte, detalleActual, equipo, puntos);
-
-        // Optimistic UI update (opcional, pero mejor esperar a DB para consistencia crítica)
-        // Por ahora guardamos directo
+        setLocalDetalle(nuevoDetalle);
 
         const { error } = await supabase
             .from('partidos')
@@ -218,32 +309,40 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
             .eq('id', match.id);
 
         if (error) {
-            console.error('Error updating score:', error);
-            alert('Error actualizando marcador');
-        } else {
-            // Si es Fútbol, preguntamos si queremos crear evento
-            if (deporte === 'Fútbol') {
-                // Opcional: Podríamos auto-crear evento o dejar que el usuario lo haga
-                // Por simplicidad, dejamos que la funcionalidad de "Evento" maneje el log, 
-                // pero esta función maneja el marcador RAW.
-            }
+            console.error('CRITICAL: Score Update Failed:', error);
+            toast.error(`Error DB: ${error.message}`);
+            setLocalDetalle(detalleActual); // Rollback
         }
     };
 
     const handleUndoScore = async (equipo: 'equipo_a' | 'equipo_b', puntos: number = 1) => {
-        const detalleActual = match.marcador_detalle || {};
         const deporte = match.disciplinas?.name || 'Genérico';
+        const detalleActual = localDetalle || {};
+        
         const nuevoDetalle = removePoints(deporte, detalleActual, equipo, puntos);
+        setLocalDetalle(nuevoDetalle);
 
-        await supabase.from('partidos').update({ marcador_detalle: stampAudit(nuevoDetalle, profile) }).eq('id', match.id);
+        const { error } = await supabase
+            .from('partidos')
+            .update({ marcador_detalle: stampAudit(nuevoDetalle, profile) })
+            .eq('id', match.id);
+
+        if (error) {
+            console.error('CRITICAL: Score Undo Failed:', error);
+            toast.error(`Error DB: ${error.message}`);
+            setLocalDetalle(detalleActual); // Rollback
+        }
     };
 
     const handleSetScore = async (equipo: 'equipo_a' | 'equipo_b', valorNuevo: number) => {
-        const detalleActual = match.marcador_detalle || {};
         const deporte = match.disciplinas?.name || 'Genérico';
+        const detalleActual = localDetalle || {};
 
-        // Set absolute points
         const nuevoDetalle = setPoints(deporte, detalleActual, equipo, valorNuevo);
+        setLocalDetalle(nuevoDetalle);
+        
+        // Explicitly set the minute at the time of manual override
+        nuevoDetalle.minuto_actual = minutoActual;
 
         const { error } = await supabase
             .from('partidos')
@@ -252,9 +351,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
 
         if (error) {
             console.error('Error setting score:', error);
-            alert('Error actualizando marcador');
-        } else {
-            console.log(`✅ Marcador forzado a ${valorNuevo} para ${equipo}`);
+            toast.error(`No se pudo guardar: ${error.message}`);
         }
     };
 
@@ -279,21 +376,27 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
 
         if (isEditing) {
             return (
-                <div className="flex gap-2 justify-center mt-2 animate-in fade-in">
-                    <Input
+                <div className="flex gap-1.5 justify-center mt-3 animate-in fade-in zoom-in-95 duration-200">
+                    <input
                         type="number"
                         value={tempScore}
                         onChange={(e) => setTemp(e.target.value)}
-                        className="w-16 h-8 text-center px-1"
+                        className="w-14 h-9 text-center rounded-lg bg-white/5 border border-white/10 text-white font-black font-mono focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
                         autoFocus
                         onKeyDown={(e) => e.key === 'Enter' && handleSaveManualScore(equipo)}
                     />
-                    <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700" onClick={() => handleSaveManualScore(equipo)}>
-                        <Check size={14} />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-8 px-2 text-slate-400" onClick={() => setEditing(false)}>
-                        <X size={14} />
-                    </Button>
+                    <button 
+                        onClick={() => handleSaveManualScore(equipo)}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 active:scale-90 transition-all"
+                    >
+                        <Check size={16} />
+                    </button>
+                    <button 
+                        onClick={() => setEditing(false)}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 text-slate-500 hover:bg-white/10 hover:text-white transition-all"
+                    >
+                        <X size={16} />
+                    </button>
                 </div>
             );
         }
@@ -351,25 +454,27 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
     };
 
     const actualizarMinutoEnDB = async (minuto: number) => {
-        const detalle = match.marcador_detalle || {};
-        // IMPORTANT: Fetch the LATEST marcador_detalle from DB to avoid
-        // overwriting score changes made between timer ticks (stale closure bug)
+        // PREVENT OVERWRITE: Fetch freshest data possible
         const { data: freshMatch } = await supabase
             .from('partidos')
             .select('marcador_detalle')
             .eq('id', match.id)
             .single();
 
-        const freshDetalle = freshMatch?.marcador_detalle || detalle;
+        const latestDetalle = freshMatch?.marcador_detalle || localDetalle || {};
+        const nuevoDetalle = {
+            ...latestDetalle,
+            minuto_actual: minuto,
+            estado_cronometro: cronometroActivo ? 'corriendo' : 'pausado',
+            ultimo_update: new Date().toISOString()
+        };
+
+        setLocalDetalle(nuevoDetalle);
+
         const { error } = await supabase
             .from('partidos')
             .update({
-                marcador_detalle: {
-                    ...freshDetalle,
-                    minuto_actual: minuto,
-                    estado_cronometro: cronometroActivo ? 'corriendo' : 'pausado',
-                    ultimo_update: new Date().toISOString()
-                }
+                marcador_detalle: stampAudit(nuevoDetalle, profile) // Ensure audit is preserved
             })
             .eq('id', match.id);
 
@@ -380,25 +485,35 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
 
     const iniciarPartido = async () => {
         console.log('🟢 Iniciando partido...');
+        const sportName = match.disciplinas?.name || 'Fútbol';
+        const isCountdown = sportName === 'Baloncesto';
+        const initialMin = isCountdown ? 12 : 0;
+        
         setCronometroActivo(true);
-        setMinutoActual(0);
+        setMinutoActual(initialMin);
+
+        const nuevoDetalle = {
+            ...match.marcador_detalle,
+            tiempo_inicio: new Date().toISOString(),
+            minuto_actual: initialMin,
+            estado_cronometro: 'corriendo',
+            ultimo_update: new Date().toISOString(),
+            ...(isCountdown ? { cuarto_actual: 1 } : {})
+        };
+
+        setLocalDetalle(nuevoDetalle);
 
         const { error: updateError } = await supabase
             .from('partidos')
             .update({
                 estado: 'en_curso',
-                marcador_detalle: {
-                    ...match.marcador_detalle,
-                    tiempo_inicio: new Date().toISOString(),
-                    minuto_actual: 0,
-                    estado_cronometro: 'corriendo',
-                    ultimo_update: new Date().toISOString()
-                }
+                marcador_detalle: nuevoDetalle
             })
             .eq('id', match.id);
 
         if (updateError) {
             console.error('❌ Error iniciando partido:', updateError);
+            toast.error("Error al iniciar partido");
             return;
         }
 
@@ -407,8 +522,9 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
             .insert({
                 partido_id: match.id,
                 tipo_evento: 'inicio',
-                minuto: 0,
+                minuto: initialMin,
                 equipo: 'sistema',
+                periodo: 1,
                 descripcion: stampEventAudit('Inicio del partido', profile)
             });
 
@@ -444,16 +560,20 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
         console.log('🏁 Finalizando partido...');
         setCronometroActivo(false);
 
+        const nuevoDetalle = {
+            ...match.marcador_detalle,
+            minuto_actual: minutoActual,
+            estado_cronometro: 'detenido',
+            ultimo_update: new Date().toISOString()
+        };
+
+        setLocalDetalle(nuevoDetalle);
+
         const { error: updateError } = await supabase
             .from('partidos')
             .update({
                 estado: 'finalizado',
-                marcador_detalle: {
-                    ...match.marcador_detalle,
-                    minuto_actual: minutoActual,
-                    estado_cronometro: 'detenido',
-                    ultimo_update: new Date().toISOString()
-                }
+                marcador_detalle: nuevoDetalle
             })
             .eq('id', match.id);
 
@@ -469,6 +589,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                 tipo_evento: 'fin',
                 minuto: minutoActual,
                 equipo: 'sistema',
+                periodo: getCurrentPeriodNumber(match.disciplinas?.name, match.marcador_detalle),
                 descripcion: stampEventAudit('Fin del partido', profile)
             });
 
@@ -496,6 +617,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                 minuto: minutoActual,
                 equipo: nuevoEvento.equipo,
                 jugador_id: nuevoEvento.jugador_id,
+                periodo: getCurrentPeriodNumber(match.disciplinas?.name, match.marcador_detalle),
                 descripcion: stampEventAudit(null, profile)
             });
 
@@ -544,17 +666,31 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
 
         const numeroStr = prompt('Número de camiseta (opcional):');
 
-        const { error } = await supabase
-            .from('olympics_jugadores')
+        const { data: created, error: createError } = await supabase
+            .from('jugadores')
             .insert({
-                partido_id: match.id,
                 nombre,
                 numero: numeroStr ? parseInt(numeroStr) : null,
-                equipo
+                carrera_id: equipo === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
+            })
+            .select()
+            .single();
+
+        if (createError) {
+            alert('Error al crear jugador: ' + createError.message);
+            return;
+        }
+
+        const { error: rosterError } = await supabase
+            .from('roster_partido')
+            .insert({
+                partido_id: match.id,
+                jugador_id: created.id,
+                equipo_a_or_b: equipo
             });
 
-        if (error) {
-            alert('Error al agregar jugador: ' + error.message);
+        if (rosterError) {
+            alert('Error al vincular jugador: ' + rosterError.message);
         } else {
             fetchJugadores();
         }
@@ -562,8 +698,8 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
 
     if (!isOpen || !match) return null;
 
-    // Calcular score visual usando la librería
-    const currentScore = getCurrentScore(match.disciplinas?.name, match.marcador_detalle || {});
+    // Calcular score visual usando la librería y el estado local (MUY IMPORTANTE)
+    const currentScore = getCurrentScore(match.disciplinas?.name, localDetalle || {});
     const scoreA = currentScore.scoreA;
     const scoreB = currentScore.scoreB;
     const subScoreA = currentScore.subScoreA;
@@ -571,328 +707,404 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
     const extraInfo = currentScore.extra;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
-            <div className="w-full max-w-4xl rounded-2xl border border-border/50 bg-card shadow-2xl overflow-hidden my-8">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+            {/* Click outside to close (desktop only) */}
+            <div className="absolute inset-0 hidden sm:block" onClick={onClose} />
+            
+            <div className="w-full h-[92dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl bg-[#0c0a1a] rounded-t-[2.5rem] sm:rounded-[2.5rem] border-t sm:border border-white/10 shadow-[0_0_100px_-20px_rgba(99,102,241,0.2)] flex flex-col relative z-20 animate-in slide-in-from-bottom-5 duration-500 overflow-hidden">
+                {/* Mobile Drag Handle */}
+                <div className="sm:hidden w-12 h-1.5 bg-white/10 rounded-full mx-auto mt-4 shrink-0" />
+                {/* Decorative Background Elements */}
+                <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
+                <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+                
                 {/* Header */}
-                <div className="flex items-center justify-between p-5 border-b border-border/50 bg-muted/20">
-                    <div>
-                        <h3 className="font-bold text-lg">Gestión del Partido</h3>
-                        <p className="text-xs text-muted-foreground">{match.disciplinas?.name}</p>
+                <div className="flex items-center justify-between p-7 border-b border-white/5 bg-white/[0.02] relative z-10">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+                            <Clock className="w-5 h-5 text-indigo-400" />
+                        </div>
+                        <div>
+                            <h3 className="font-black text-xl uppercase tracking-tight text-white">Panel de Administración</h3>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{match.disciplinas?.name} Command Center</p>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-white/5 text-slate-500 hover:text-white transition-all">
                         <X size={20} />
                     </button>
                 </div>
 
-                {/* Body */}
-                <div className="p-6 space-y-6">
-                    {/* Marcador y Cronómetro */}
-                    <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 sm:space-y-10 relative z-10 custom-scrollbar">
+                    {/* Period Selector - Intuitive Navigation */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-2 px-2 no-scrollbar">
+                        {[1, 2, 3, 4, 5].map(p => {
+                            const sport = match.disciplinas?.name || '';
+                            const isActive = manualPeriod === p;
+                            const label = sport === 'Baloncesto' ? `${p}º cuarto` : sport === 'Fútbol' ? `${p}º tiempo` : `Set ${p}`;
+                            return (
+                                <button 
+                                    key={p} 
+                                    onClick={() => {
+                                        setManualPeriod(p);
+                                        if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
+                                            setAdvancedSetActual(p);
+                                        }
+                                    }}
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+                                        isActive 
+                                        ? 'bg-indigo-500 border-indigo-400 text-black shadow-lg shadow-indigo-500/20' 
+                                        : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:bg-white/10'
+                                    }`}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
+                        <button 
+                            onClick={openAdvancedEdit}
+                            className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500/20 transition-all flex items-center gap-2"
+                        >
+                            <Edit2 size={12} /> Corregir Todo
+                        </button>
+                    </div>
+
+                    {/* Marcador y Cronómetro - Responsive Sport-Aware Hero */}
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-6 sm:gap-8 bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 sm:p-8 items-center shadow-inner relative overflow-hidden">
+                        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                        
                         {/* Equipo A */}
-                        <div className="text-center space-y-2">
-                            <Avatar name={match.carrera_a?.nombre || match.equipo_a} size="lg" />
-                            <p className="font-bold text-lg">{match.carrera_a?.nombre || match.equipo_a}</p>
-                            <div className="flex flex-col items-center">
-                                <p className="text-5xl font-black">{scoreA}</p>
-                                {/* Subscore (Sets/Cuartos/Tiempos) */}
+                        <div className="flex flex-row sm:flex-col items-center justify-between sm:justify-center gap-4 text-center">
+                            <div className="flex items-center sm:flex-col gap-3 sm:gap-4 order-1 sm:order-none text-left sm:text-center shrink-0">
+                                <Avatar name={match.carrera_a?.nombre || match.equipo_a} size="lg" className="w-14 h-14 sm:w-20 sm:h-20 ring-2 sm:ring-4 ring-indigo-500/20 shadow-xl" />
+                                <div className="space-y-0 sm:space-y-1">
+                                    <p className="font-black text-sm sm:text-xl tracking-tight text-white line-clamp-1">{match.carrera_a?.nombre || match.equipo_a}</p>
+                                    <p className="text-[8px] sm:text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Local</p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col items-center order-2 sm:order-none">
+                                <p className="text-5xl sm:text-7xl font-black text-white tracking-tighter leading-none">{scoreA}</p>
                                 {subScoreA !== undefined && (
-                                    <Badge variant="secondary" className="mt-1 text-xs">
+                                    <span className="text-[10px] font-black text-indigo-400/60 uppercase tracking-widest mt-1">
                                         {currentScore.subLabel}: {subScoreA}
-                                    </Badge>
+                                    </span>
                                 )}
                             </div>
-                            {renderScoreControls('equipo_a', scoreA)}
+                            
+                            <div className="order-3 sm:order-none sm:w-full">
+                                {renderScoreControls('equipo_a', scoreA)}
+                            </div>
                         </div>
 
-                        {/* Cronómetro / Info Central - Solo si el deporte tiene tiempo */}
-                        {['Fútbol', 'Baloncesto', 'Futsal'].includes(match.disciplinas?.name) ? (
-                            <div className="text-center space-y-3 min-w-[200px]">
-                                {extraInfo && (
-                                    <Badge className="bg-indigo-500/10 text-indigo-400 mb-2">{extraInfo}</Badge>
-                                )}
+                        {/* Cronómetro / Info Central */}
+                        <div className="flex flex-col items-center justify-center py-4 bg-white/5 rounded-3xl border border-white/5 sm:min-w-[240px] relative order-first sm:order-none">
+                            {extraInfo && (
+                                <Badge className="absolute -top-3 bg-indigo-500 text-black font-black uppercase tracking-widest px-3 border-4 border-[#0c0a1a] scale-90 sm:scale-100">{extraInfo}</Badge>
+                            )}
 
-                                {isEditingTime ? (
-                                    <div className="flex flex-col items-center gap-2 animate-in fade-in">
-                                        <div className="flex items-center gap-2">
-                                            <Input
-                                                type="number"
-                                                value={tempTime}
-                                                onChange={(e) => setTempTime(e.target.value)}
-                                                className="w-20 text-center text-2xl font-black font-mono"
-                                                autoFocus
-                                                onKeyDown={(e) => e.key === 'Enter' && handleSaveManualTime()}
-                                            />
-                                            <span className="text-2xl font-black text-slate-500">'</span>
+                            {['Fútbol', 'Baloncesto', 'Futsal', 'Balonmano'].includes(match.disciplinas?.name) ? (
+                                <div className="flex flex-col items-center gap-2">
+                                    {isEditingTime ? (
+                                        <div className="flex flex-col items-center gap-2 animate-in fade-in py-2">
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    type="number"
+                                                    value={tempTime}
+                                                    onChange={(e) => setTempTime(e.target.value)}
+                                                    className="w-16 sm:w-20 h-10 sm:h-12 text-center text-xl sm:text-2xl font-black font-mono bg-black/40 border-white/10"
+                                                    autoFocus
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleSaveManualTime()}
+                                                />
+                                                <span className="text-xl font-black text-slate-500">'</span>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <Button size="sm" className="h-7 px-3 bg-green-600 text-[10px] font-bold" onClick={handleSaveManualTime}>OK</Button>
+                                                <Button size="sm" variant="ghost" className="h-7 px-3 text-[10px]" onClick={() => setIsEditingTime(false)}>ESC</Button>
+                                            </div>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={handleSaveManualTime}>
-                                                Guardar
-                                            </Button>
-                                            <Button size="sm" variant="ghost" onClick={() => setIsEditingTime(false)}>
-                                                Cancelar
-                                            </Button>
+                                    ) : (
+                                        <div
+                                            className="text-5xl sm:text-6xl font-black font-mono text-primary cursor-pointer hover:text-indigo-400 transition-all group relative px-8 py-2 rounded-2xl hover:bg-white/[0.03]"
+                                            onClick={() => {
+                                                setTempTime(minutoActual.toString());
+                                                setIsEditingTime(true);
+                                            }}
+                                        >
+                                            {minutoActual}'
+                                            <Edit2 size={12} className="absolute top-2 right-2 opacity-0 group-hover:opacity-60 transition-opacity text-slate-400" />
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div
-                                        className="text-6xl font-black font-mono text-primary cursor-pointer hover:text-indigo-400 transition-colors group relative inline-block mx-auto"
-                                        onClick={() => {
-                                            setTempTime(minutoActual.toString());
-                                            setIsEditingTime(true);
-                                        }}
-                                        title="Click para editar manualmente el minuto"
-                                    >
-                                        {minutoActual}'
-                                        <div className="absolute -top-2 -right-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Edit2 size={16} className="text-slate-500" />
-                                        </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {match.estado === 'programado' && (
-                                    <Button onClick={iniciarPartido} className="w-full">
-                                        <Play size={16} />
-                                        Iniciar Partido
-                                    </Button>
-                                )}
-
-                                {match.estado === 'en_curso' && (
-                                    <div className="flex gap-2">
-                                        {cronometroActivo ? (
-                                            <Button onClick={pausarCronometro} variant="secondary" className="flex-1">
-                                                <Pause size={16} />
-                                                Pausar
+                                    <div className="flex gap-2 w-full px-4">
+                                        {match.estado === 'programado' ? (
+                                            <Button onClick={iniciarPartido} className="w-full bg-indigo-500 text-black font-black uppercase tracking-widest text-xs h-11 rounded-xl">
+                                                <Play size={16} fill="currentColor" /> INICIAR
                                             </Button>
+                                        ) : match.estado === 'en_curso' ? (
+                                            <>
+                                                {cronometroActivo ? (
+                                                    <Button onClick={pausarCronometro} variant="secondary" className="flex-1 h-11 rounded-xl border-white/5">
+                                                        <Pause size={16} fill="currentColor" />
+                                                    </Button>
+                                                ) : (
+                                                    <Button onClick={reanudarCronometro} variant="secondary" className="flex-1 h-11 rounded-xl border-white/5">
+                                                        <Play size={16} fill="currentColor" />
+                                                    </Button>
+                                                )}
+                                                <Button onClick={finalizarPartido} variant="ghost" className="flex-1 h-11 rounded-xl text-red-500 hover:text-red-400 hover:bg-red-500/10 border border-white/5">
+                                                    <Square size={16} fill="currentColor" />
+                                                </Button>
+                                            </>
                                         ) : (
-                                            <Button onClick={reanudarCronometro} variant="secondary" className="flex-1">
-                                                <Play size={16} />
-                                                Reanudar
+                                            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest opacity-40">Finalizado</Badge>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center gap-4 py-2">
+                                    <div className="flex justify-center gap-3">
+                                        {match.estado === 'programado' && (
+                                            <Button onClick={iniciarPartido} className="bg-indigo-500 text-black font-black px-6 h-11 rounded-xl">
+                                                <Play size={16} fill="currentColor" className="mr-2" /> INICIAR
                                             </Button>
                                         )}
-                                        <Button onClick={finalizarPartido} variant="ghost" className="flex-1">
-                                            <Square size={16} />
-                                            Finalizar
-                                        </Button>
+                                        {match.estado === 'en_curso' && (
+                                            <Button onClick={finalizarPartido} variant="ghost" className="h-11 rounded-xl text-red-500 hover:text-white hover:bg-red-500 border border-red-500/20 px-6 font-black uppercase tracking-widest text-xs">
+                                                <Square size={16} fill="currentColor" className="mr-2" /> FINALIZAR
+                                            </Button>
+                                        )}
+                                        {match.estado === 'finalizado' && <Badge variant="outline" className="font-black uppercase tracking-widest opacity-40">PARTIDO FINALIZADO</Badge>}
                                     </div>
-                                )}
-
-                                {match.estado === 'finalizado' && (
-                                    <Badge variant="outline" className="text-sm">Partido Finalizado</Badge>
-                                )}
-                            </div>
-                        ) : (
-                            /* Vista simplificada para deportes sin reloj (Volley, Tenis) */
-                            <div className="text-center space-y-3 min-w-[200px] flex flex-col justify-center">
-                                {extraInfo && (
-                                    <Badge className="bg-indigo-500/10 text-indigo-400 mb-2 mx-auto">{extraInfo}</Badge>
-                                )}
-                                <div className="text-sm text-slate-500 mb-2">Marcador de Sets</div>
-
-                                <div className="flex justify-center gap-4 mb-4">
-                                    {match.estado === 'programado' && (
-                                        <Button onClick={iniciarPartido}>
-                                            <Play size={16} /> Iniciar
-                                        </Button>
-                                    )}
-                                    {match.estado === 'en_curso' && (
-                                        <Button onClick={finalizarPartido} variant="ghost" className="text-red-400 hover:text-red-500 hover:bg-red-500/10">
-                                            <Square size={16} /> Finalizar Partido
-                                        </Button>
-                                    )}
-                                    {match.estado === 'finalizado' && <Badge variant="outline">Finalizado</Badge>}
                                 </div>
-
-                                {(match.estado === 'en_curso' || match.estado === 'finalizado') && (
-                                    <Button size="sm" variant="outline" onClick={openAdvancedEdit} className="mt-4 border-indigo-500/30 text-indigo-400 w-full bg-indigo-500/5 hover:bg-indigo-500/20">
-                                        Modo Edición Avanzada
-                                    </Button>
-                                )}
-                            </div>
-                        )}
-
+                            )}
+                        </div>
+                        
                         {/* Equipo B */}
-                        <div className="text-center space-y-2">
-                            <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" />
-                            <p className="font-bold text-lg">{match.carrera_b?.nombre || match.equipo_b}</p>
-                            <div className="flex flex-col items-center">
-                                <p className="text-5xl font-black text-muted-foreground">{scoreB}</p>
+                        <div className="flex flex-row-reverse sm:flex-col items-center justify-between sm:justify-center gap-4 text-center">
+                            <div className="flex flex-row-reverse sm:flex-col items-center gap-3 sm:gap-4 order-1 sm:order-none text-right sm:text-center shrink-0">
+                                <Avatar name={match.carrera_b?.nombre || match.equipo_b} size="lg" className="w-14 h-14 sm:w-20 sm:h-20 ring-2 sm:ring-4 ring-purple-500/20 shadow-xl" />
+                                <div className="space-y-0 sm:space-y-1">
+                                    <p className="font-black text-sm sm:text-xl tracking-tight text-white line-clamp-1">{match.carrera_b?.nombre || match.equipo_b}</p>
+                                    <p className="text-[8px] sm:text-[10px] font-bold text-purple-400 uppercase tracking-widest text-center">Visitante</p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col items-center order-2 sm:order-none">
+                                <p className="text-5xl sm:text-7xl font-black text-white tracking-tighter leading-none">{scoreB}</p>
                                 {subScoreB !== undefined && (
-                                    <Badge variant="secondary" className="mt-1 text-xs">
+                                    <span className="text-[10px] font-black text-purple-400/60 uppercase tracking-widest mt-1">
                                         {currentScore.subLabel}: {subScoreB}
-                                    </Badge>
+                                    </span>
                                 )}
                             </div>
-                            {renderScoreControls('equipo_b', scoreB)}
+                            
+                            <div className="order-3 sm:order-none sm:w-full">
+                                {renderScoreControls('equipo_b', scoreB)}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Panel de Edición Avanzada para Sets */}
+                    {/* Panel de Edición Avanzada — Industrial Control Center */}
                     {showAdvancedEdit && (
-                        <div className="glass rounded-xl p-4 space-y-4 border border-indigo-500/30 animate-in fade-in slide-in-from-top-2">
-                            <div className="flex justify-between items-center mb-4">
-                                <h4 className="font-bold flex items-center gap-2">
-                                    <Edit2 size={16} className="text-indigo-400" />
-                                    Edición Avanzada (Sets y Puntos)
-                                </h4>
-                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setShowAdvancedEdit(false)}>
-                                    <X size={16} />
+                        <div className="rounded-[2rem] p-6 sm:p-8 space-y-8 border-2 border-indigo-500/30 bg-[#0a0816] shadow-2xl animate-in fade-in zoom-in-95 duration-300 relative overflow-hidden">
+                            <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+                            
+                            <div className="flex justify-between items-center relative z-10">
+                                <div>
+                                    <h4 className="font-black text-xl sm:text-2xl uppercase tracking-tighter flex items-center gap-3 text-white">
+                                        <div className="w-2 h-8 bg-indigo-500 rounded-full" />
+                                        Consola de Corrección
+                                    </h4>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Protocolo de ajuste manual de alta precisión</p>
+                                </div>
+                                <Button size="sm" variant="ghost" className="h-10 w-10 p-0 rounded-xl hover:bg-white/5" onClick={() => setShowAdvancedEdit(false)}>
+                                    <X size={20} className="text-slate-500" />
                                 </Button>
                             </div>
 
-                            <p className="text-xs text-muted-foreground">
-                                Edita directamente los puntos históricos de cualquier set. El sistema calculará automáticamente quién ganó cada uno y los totales.
-                            </p>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 relative z-10">
+                                {/* Left Side: Scores & Time */}
+                                <div className="space-y-8">
+                                    <div className="flex justify-around gap-4 p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
+                                        <NumericStepper 
+                                            label={match.carrera_a?.nombre || match.equipo_a} 
+                                            value={parseInt(manualScoreA)} 
+                                            onChange={v => setManualScoreA(v.toString())}
+                                            color="indigo"
+                                            sublabel="Goles/Puntos Totales"
+                                        />
+                                        <div className="w-px h-16 bg-white/5 self-center" />
+                                        <NumericStepper 
+                                            label={match.carrera_b?.nombre || match.equipo_b} 
+                                            value={parseInt(manualScoreB)} 
+                                            onChange={v => setManualScoreB(v.toString())}
+                                            color="purple"
+                                            sublabel="Goles/Puntos Totales"
+                                        />
+                                    </div>
 
-                            <div className="grid grid-cols-[100px_repeat(5,1fr)] gap-2 text-center text-[10px] md:text-xs font-bold text-slate-400 mb-2 items-center">
-                                <div className="text-left pl-2">Equipo</div>
-                                <div>S1</div><div>S2</div><div>S3</div><div>S4</div><div>S5</div>
-                            </div>
-
-                            <div className="grid grid-cols-[100px_repeat(5,1fr)] gap-2 items-center mb-2">
-                                <div className="text-xs font-bold truncate pr-1 text-left" title={match.carrera_a?.nombre || match.equipo_a}>
-                                    {match.carrera_a?.nombre || match.equipo_a}
+                                    <div className="flex justify-around gap-4 p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
+                                        <NumericStepper 
+                                            label="Minuto" 
+                                            value={manualMinute} 
+                                            onChange={setManualMinute}
+                                            color="emerald"
+                                            sublabel="Tiempo de Juego"
+                                        />
+                                        <div className="w-px h-16 bg-white/5 self-center" />
+                                        <NumericStepper 
+                                            label={match.disciplinas?.name === 'Baloncesto' ? 'Cuarto' : match.disciplinas?.name === 'Fútbol' ? 'Tiempo' : 'Set'} 
+                                            value={manualPeriod} 
+                                            onChange={setManualPeriod}
+                                            color="amber"
+                                            sublabel="Etapa Actual"
+                                        />
+                                    </div>
                                 </div>
-                                {[1, 2, 3, 4, 5].map(setNum => (
-                                    <Input key={`a-${setNum}`} type="number"
-                                        value={advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a'] ?? ''}
-                                        onChange={(e) => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a', e.target.value)}
-                                        className="h-9 p-1 text-center bg-slate-900 border-white/10 text-sm font-mono" />
-                                ))}
-                            </div>
 
-                            <div className="grid grid-cols-[100px_repeat(5,1fr)] gap-2 items-center">
-                                <div className="text-xs font-bold truncate pr-1 text-left" title={match.carrera_b?.nombre || match.equipo_b}>
-                                    {match.carrera_b?.nombre || match.equipo_b}
+                                {/* Right Side: Sub-scores / Sets */}
+                                <div className="space-y-6">
+                                    <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Desglose por Períodos</h5>
+                                            <Badge variant="outline" className="text-[8px] border-white/10 text-slate-500">OPCIONAL</Badge>
+                                        </div>
+                                        
+                                        {(match.disciplinas?.name === 'Voleibol' || match.disciplinas?.name === 'Tenis' || match.disciplinas?.name === 'Tenis de Mesa') ? (
+                                            <div className="space-y-6">
+                                                {[1, 2, 3, 4, 5].map(setNum => (
+                                                    <div key={setNum} className={`p-4 rounded-2xl border transition-colors ${manualPeriod === setNum ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-black/20 border-white/5'}`}>
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2">
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${manualPeriod === setNum ? 'bg-indigo-500 animate-pulse' : 'bg-slate-700'}`} />
+                                                            SET {setNum} {manualPeriod === setNum && <span className="text-indigo-400 font-bold ml-auto">(ACTUAL)</span>}
+                                                        </p>
+                                                        <div className="flex items-center justify-between gap-8">
+                                                            <div className="flex-1 flex flex-col gap-1">
+                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">Equipo A</span>
+                                                                <div className="flex items-center gap-3">
+                                                                    <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a'] || 0) - 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500">-</button>
+                                                                    <span className="text-xl font-black text-white font-mono w-6 text-center">{advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a'] || 0}</span>
+                                                                    <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a'] || 0) + 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-indigo-400">+</button>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex-1 flex flex-col gap-1 items-end">
+                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">Equipo B</span>
+                                                                <div className="flex items-center gap-3">
+                                                                    <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] || 0) - 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500">-</button>
+                                                                    <span className="text-xl font-black text-white font-mono w-6 text-center">{advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] || 0}</span>
+                                                                    <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] || 0) + 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-purple-400">+</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="py-12 text-center bg-black/20 rounded-2xl border border-dashed border-white/5">
+                                                <AlertCircle size={32} className="mx-auto text-slate-700 mb-4" />
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-[200px] mx-auto">
+                                                    IMPORTANTE: Los ajustes manuales sobreescriben el marcador automático.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <Button onClick={saveAdvancedEdit} className="w-full h-20 bg-indigo-500 hover:bg-indigo-600 text-black font-black text-sm uppercase tracking-[0.2em] rounded-3xl shadow-2xl shadow-indigo-500/20 transition-all active:scale-95 group relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                                        <Save size={24} className="mr-3 group-hover:rotate-12 transition-transform" />
+                                        CONFIRMAR CAMBIOS
+                                    </Button>
+                                    <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.3em]">Protocolo de Auditoría Activado</p>
                                 </div>
-                                {[1, 2, 3, 4, 5].map(setNum => (
-                                    <Input key={`b-${setNum}`} type="number"
-                                        value={advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] ?? ''}
-                                        onChange={(e) => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b', e.target.value)}
-                                        className="h-9 p-1 text-center bg-slate-900 border-white/10 text-sm font-mono" />
-                                ))}
                             </div>
-
-                            <div className="mt-4 flex gap-4 items-center border-t border-border/50 pt-4">
-                                <span className="text-sm font-bold text-slate-400">Set Actual en juego:</span>
-                                <select className="bg-slate-900 border border-white/10 rounded-md h-9 px-3 text-sm flex-1"
-                                    value={advancedSetActual} onChange={e => setAdvancedSetActual(parseInt(e.target.value))}>
-                                    {[1, 2, 3, 4, 5].map(s => <option key={s} value={s}>Set {s}</option>)}
-                                </select>
-                            </div>
-
-                            <Button onClick={saveAdvancedEdit} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 h-11 shadow-lg shadow-indigo-600/20">
-                                <Save size={18} className="mr-2" /> Guardar y Recalcular Totales
-                            </Button>
                         </div>
                     )}
 
-                    {/* Crear Evento */}
+                    {/* Crear Evento — Command Center Style */}
                     {(match.estado === 'en_curso' && !showAdvancedEdit) && (
-                        <div className="glass rounded-xl p-4 space-y-4">
+                        <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 sm:p-8 space-y-6">
                             <div className="flex items-center justify-between">
-                                <h4 className="font-bold flex items-center gap-2">
-                                    <AlertCircle size={16} />
-                                    Nuevo Evento
+                                <h4 className="font-black text-sm uppercase tracking-widest flex items-center gap-2 text-white">
+                                    <Plus className="w-4 h-4 text-indigo-400" />
+                                    Registrar Incidencia
                                 </h4>
                                 <Button
                                     size="sm"
-                                    onClick={() => {
-                                        console.log('🔄 Toggle menu:', !showEventMenu);
-                                        setShowEventMenu(!showEventMenu);
-                                    }}
+                                    onClick={() => setShowEventMenu(!showEventMenu)}
                                     variant={showEventMenu ? "secondary" : "default"}
+                                    className="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-wider"
                                 >
-                                    {showEventMenu ? 'Cancelar' : '+ Crear Evento'}
+                                    {showEventMenu ? 'Cerrar Panel' : '+ Evento Rápido'}
                                 </Button>
                             </div>
 
                             {showEventMenu && (
-                                <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                                <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-300">
                                     {/* Tipo de Evento */}
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                            Tipo de Evento
-                                        </label>
+                                    <div className="space-y-3">
+                                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Categoría de Evento</label>
                                         <div className="flex gap-2">
                                             {EVENTOS_TIPOS.map(tipo => (
                                                 <button
                                                     key={tipo.value}
-                                                    onClick={() => {
-                                                        console.log('📌 Tipo seleccionado:', tipo.value);
-                                                        setNuevoEvento({ ...nuevoEvento, tipo: tipo.value });
-                                                    }}
-                                                    className={`flex-1 py-3 px-3 rounded-xl text-sm font-semibold border-2 transition-all ${nuevoEvento.tipo === tipo.value
-                                                        ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
-                                                        : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
+                                                    onClick={() => setNuevoEvento({ ...nuevoEvento, tipo: tipo.value })}
+                                                    className={`flex-1 py-4 px-2 rounded-2xl text-[10px] font-black uppercase tracking-tight border-2 transition-all duration-300 ${nuevoEvento.tipo === tipo.value
+                                                        ? 'border-indigo-500 bg-indigo-500/10 text-white shadow-[0_0_20px_rgba(99,102,241,0.2)]'
+                                                        : 'border-white/5 bg-white/[0.02] text-slate-500 hover:border-white/20'
                                                         }`}
                                                 >
-                                                    {tipo.label}
+                                                    <span className="block text-lg mb-1">{tipo.label.split(' ')[0]}</span>
+                                                    {tipo.label.split(' ').slice(1).join(' ')}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
 
                                     {/* Seleccionar Equipo */}
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                            Equipo
-                                        </label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    console.log('🏟️ Equipo seleccionado: equipo_a');
-                                                    setNuevoEvento({ ...nuevoEvento, equipo: 'equipo_a', jugador_id: null });
-                                                }}
-                                                className={`py-3 rounded-xl font-semibold border-2 transition-all ${nuevoEvento.equipo === 'equipo_a'
-                                                    ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
-                                                    : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
-                                                    }`}
-                                            >
-                                                {match.carrera_a?.nombre || match.equipo_a}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    console.log('🏟️ Equipo seleccionado: equipo_b');
-                                                    setNuevoEvento({ ...nuevoEvento, equipo: 'equipo_b', jugador_id: null });
-                                                }}
-                                                className={`py-3 rounded-xl font-semibold border-2 transition-all ${nuevoEvento.equipo === 'equipo_b'
-                                                    ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
-                                                    : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
-                                                    }`}
-                                            >
-                                                {match.carrera_b?.nombre || match.equipo_b}
-                                            </button>
+                                    <div className="space-y-3">
+                                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Equipo Responsable</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {[
+                                                { id: 'equipo_a', name: match.carrera_a?.nombre || match.equipo_a, color: 'indigo' },
+                                                { id: 'equipo_b', name: match.carrera_b?.nombre || match.equipo_b, color: 'purple' }
+                                            ].map(team => (
+                                                <button
+                                                    key={team.id}
+                                                    onClick={() => setNuevoEvento({ ...nuevoEvento, equipo: team.id, jugador_id: null })}
+                                                    className={`py-4 px-2 rounded-2xl font-black text-[10px] uppercase tracking-tight border-2 transition-all duration-300 ${nuevoEvento.equipo === team.id
+                                                        ? `border-${team.color}-500 bg-${team.color}-500/10 text-white shadow-[0_0_20px_rgba(99,102,241,0.2)]`
+                                                        : 'border-white/5 bg-white/[0.02] text-slate-500 hover:border-white/20'
+                                                        }`}
+                                                >
+                                                    {team.name}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
 
                                     {/* Seleccionar Jugador */}
                                     {nuevoEvento.equipo && (
-                                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                                Elegir Jugador
-                                            </label>
-                                            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1">
+                                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                                            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Atleta / Jugador</label>
+                                            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
                                                 {(nuevoEvento.equipo === 'equipo_a' ? jugadoresA : jugadoresB).map(jugador => (
                                                     <button
                                                         key={jugador.id}
-                                                        onClick={() => {
-                                                            console.log('👤 Jugador seleccionado:', jugador.nombre);
-                                                            setNuevoEvento({ ...nuevoEvento, jugador_id: jugador.id });
-                                                        }}
-                                                        className={`p-3 rounded-xl text-sm font-medium border-2 transition-all ${nuevoEvento.jugador_id === jugador.id
-                                                            ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-500/25'
-                                                            : 'border-white/10 bg-slate-800/50 text-slate-400 hover:border-indigo-500/50 hover:bg-slate-800/80'
+                                                        onClick={() => setNuevoEvento({ ...nuevoEvento, jugador_id: jugador.id })}
+                                                        className={`px-4 py-3 rounded-xl text-xs font-bold border transition-all duration-200 ${nuevoEvento.jugador_id === jugador.id
+                                                            ? 'border-indigo-500 bg-indigo-500 text-black shadow-lg shadow-indigo-500/30'
+                                                            : 'border-white/10 bg-white/5 text-slate-300 hover:border-white/30'
                                                             }`}
                                                     >
-                                                        {jugador.numero && `#${jugador.numero} `}{jugador.nombre}
+                                                        {jugador.numero && <span className="opacity-50 mr-1">#{jugador.numero}</span>}
+                                                        {jugador.nombre}
                                                     </button>
                                                 ))}
                                                 <button
                                                     onClick={() => agregarJugador(nuevoEvento.equipo)}
-                                                    className="p-3 rounded-xl text-sm font-medium border-2 border-dashed border-border/50 text-muted-foreground hover:border-indigo-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all"
+                                                    className="px-4 py-3 rounded-xl text-xs font-bold border border-dashed border-white/20 text-slate-500 hover:border-indigo-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all"
                                                 >
-                                                    <Plus size={14} className="inline mr-1" />
-                                                    Agregar Jugador
+                                                    <Plus size={14} className="inline mr-1" /> Nuevo Atleta
                                                 </button>
                                             </div>
                                         </div>
@@ -900,64 +1112,82 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
 
                                     <Button
                                         onClick={agregarEvento}
-                                        className="w-full"
+                                        className="w-full h-14 bg-indigo-500 hover:bg-indigo-600 text-black font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl shadow-indigo-500/20 disabled:opacity-20 disabled:grayscale"
                                         disabled={!nuevoEvento.tipo || !nuevoEvento.equipo || !nuevoEvento.jugador_id}
                                     >
-                                        <Save size={16} />
-                                        Registrar Evento (Minuto {minutoActual})
+                                        Registrar Evento (Minuto {minutoActual}')
                                     </Button>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* Línea de Tiempo */}
-                    <div className="space-y-3">
-                        <h4 className="font-bold flex items-center gap-2">
-                            <Clock size={16} />
-                            Línea de Tiempo
+                    {/* Línea de Tiempo — Premium Vertical Flow */}
+                    <div className="space-y-6">
+                        <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
+                            <Clock size={14} className="text-indigo-400" />
+                            Bitácora del Encuentro
                         </h4>
-                        <div className="glass rounded-xl p-4 max-h-80 overflow-y-auto space-y-2">
+                        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-4 sm:p-6 max-h-96 overflow-y-auto space-y-3 custom-scrollbar">
                             {eventos.length === 0 ? (
-                                <p className="text-center text-muted-foreground text-sm py-8">No hay eventos registrados</p>
+                                <div className="py-12 text-center">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-700">Esperando el pitido inicial...</p>
+                                </div>
                             ) : (
                                 eventos.map(evento => (
-                                    <div key={evento.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                                        <Badge variant="outline" className="min-w-[50px] justify-center font-mono">
-                                            {evento.minuto}'
-                                        </Badge>
-                                        <span className="text-lg">
-                                            {evento.tipo_evento === 'gol' && '⚽'}
-                                            {evento.tipo_evento === 'tarjeta_amarilla' && '🟨'}
-                                            {evento.tipo_evento === 'tarjeta_roja' && '🟥'}
-                                            {evento.tipo_evento === 'inicio' && '🟢'}
-                                            {evento.tipo_evento === 'fin' && '🏁'}
-                                        </span>
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-sm">
-                                                {(() => {
-                                                    const audit = parseEventAudit(evento.descripcion);
-                                                    return audit.texto || evento.tipo_evento.replace('_', ' ').toUpperCase();
-                                                })()}
-                                            </p>
+                                    <div key={evento.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all group">
+                                        <div className="w-12 h-12 rounded-xl bg-black/40 border border-white/5 flex flex-col items-center justify-center shrink-0 shadow-lg group-hover:border-indigo-500/30 transition-colors">
+                                            <span className="text-xs font-black text-white">{evento.minuto}'</span>
+                                            <span className="text-[8px] font-bold text-slate-500 uppercase">Min</span>
+                                        </div>
+                                        
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xl">
+                                                    {evento.tipo_evento === 'gol' && '⚽'}
+                                                    {evento.tipo_evento === 'tarjeta_amarilla' && '🟨'}
+                                                    {evento.tipo_evento === 'tarjeta_roja' && '🟥'}
+                                                    {evento.tipo_evento === 'inicio' && '🟢'}
+                                                    {evento.tipo_evento === 'fin' && '🏁'}
+                                                </span>
+                                                <h5 className="font-black text-xs uppercase tracking-tight text-white truncate">
+                                                    {(() => {
+                                                        const audit = parseEventAudit(evento.descripcion);
+                                                        return audit.texto || evento.tipo_evento.replace('_', ' ').toUpperCase();
+                                                    })()}
+                                                </h5>
+                                            </div>
+                                            
                                             {evento.jugadores && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    {evento.jugadores.numero && `#${evento.jugadores.numero} `}
+                                                <p className="text-[11px] font-bold text-slate-400 flex items-center gap-2">
+                                                    <span className="w-1 h-1 rounded-full bg-slate-600" />
+                                                    {evento.jugadores.numero && <span className="text-indigo-400">#{evento.jugadores.numero}</span>}
                                                     {evento.jugadores.nombre}
                                                 </p>
                                             )}
+                                            
                                             {(() => {
                                                 const audit = parseEventAudit(evento.descripcion);
                                                 if (!audit.autor) return null;
                                                 return (
-                                                    <p className="text-[9px] text-primary/50 font-medium">
-                                                        ✍️ {audit.autor.nombre}
+                                                    <p className="text-[8px] text-slate-600 font-bold uppercase tracking-widest mt-2 flex items-center gap-1">
+                                                        <Edit2 size={8} /> {audit.autor.nombre}
                                                     </p>
                                                 );
                                             })()}
                                         </div>
-                                        <Badge variant={evento.equipo === 'equipo_a' ? 'default' : 'secondary'} className="text-xs">
-                                            {evento.equipo === 'equipo_a' ? (match.carrera_a?.nombre || match.equipo_a) : evento.equipo === 'equipo_b' ? (match.carrera_b?.nombre || match.equipo_b) : 'Sistema'}
+                                        
+                                        <Badge 
+                                            variant="outline" 
+                                            className={`text-[8px] font-black uppercase tracking-tighter px-2 border-none shrink-0 ${
+                                                evento.equipo === 'equipo_a' 
+                                                ? 'bg-indigo-500/10 text-indigo-400' 
+                                                : evento.equipo === 'equipo_b' 
+                                                ? 'bg-purple-500/10 text-purple-400' 
+                                                : 'bg-white/5 text-slate-500'
+                                            }`}
+                                        >
+                                            {evento.equipo === 'equipo_a' ? 'LOCAL' : evento.equipo === 'equipo_b' ? 'VISITA' : 'SISTEMA'}
                                         </Badge>
                                     </div>
                                 ))
@@ -966,9 +1196,19 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="p-5 border-t border-border/50 bg-muted/20 flex justify-end gap-3">
-                    <Button variant="ghost" onClick={onClose}>Cerrar</Button>
+                {/* Footer - Stability & Branding */}
+                <div className="p-6 border-t border-white/5 bg-white/[0.01] flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Protocolo Live Activo</span>
+                    </div>
+                    <Button 
+                        variant="ghost" 
+                        onClick={onClose}
+                        className="h-10 px-8 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-white/5 text-slate-400 hover:text-white transition-all"
+                    >
+                        Cerrar Panel
+                    </Button>
                 </div>
             </div>
         </div>

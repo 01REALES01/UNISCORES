@@ -6,8 +6,8 @@ import { useEffect } from "react";
 import type { Evento } from "@/modules/matches/types";
 
 const EVENT_COLUMNS = `
-  id, partido_id, tipo_evento, minuto, equipo, descripcion, created_at,
-  jugadores(id, nombre, numero, profile_id)
+  id, partido_id, tipo_evento, minuto, equipo, descripcion, created_at, periodo,
+  jugadores:jugadores!jugador_id_normalized(id, nombre, numero, profile_id)
 `.replace(/\s+/g, ' ').trim();
 
 const activeEventChannels = new Set<number>();
@@ -21,7 +21,7 @@ function subscribeToEvents(partidoId: number) {
         .channel(`match:${partidoId}:eventos`)
         .on(
             'postgres_changes',
-            { event: '*', schema: 'public', table: 'eventos', filter: `partido_id=eq.${partidoId}` },
+            { event: '*', schema: 'public', table: 'olympics_eventos', filter: `partido_id=eq.${partidoId}` },
             () => {
                 globalMutate(`match:${partidoId}:events`);
             }
@@ -35,10 +35,9 @@ export function useMatchEvents(partidoId: number | null | undefined) {
         async () => {
             if (!partidoId) return [];
             const { data, error } = await supabase
-                .from('eventos')
+                .from('olympics_eventos')
                 .select(EVENT_COLUMNS)
                 .eq('partido_id', partidoId)
-                .order('minuto', { ascending: true })
                 .order('created_at', { ascending: true });
 
             if (error) throw error;

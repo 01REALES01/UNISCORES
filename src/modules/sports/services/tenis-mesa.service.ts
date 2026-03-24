@@ -86,6 +86,12 @@ export class TenisMesaService extends BaseSportService {
 
     d.sets_a = setsA;
     d.sets_b = setsB;
+
+    // 🛡️ Harmonize with DB Migration (validate_marcador expects puntos_a/b for current set)
+    const currentSet = d.set_actual || 1;
+    d.puntos_a = d.sets?.[currentSet]?.puntos_a || 0;
+    d.puntos_b = d.sets?.[currentSet]?.puntos_b || 0;
+
     return d;
   }
 

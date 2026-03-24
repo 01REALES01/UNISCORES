@@ -40,7 +40,7 @@ export default function PublicMatchDetail() {
     const [fetchError, setFetchError] = useState<string | null>(null);
 
     // Cargar datos
-    const fetchData = async () => {
+    const fetchData = async (signal?: AbortSignal) => {
         setLoading(true);
         setFetchError(null);
         try {
@@ -87,7 +87,7 @@ export default function PublicMatchDetail() {
             const [eventosRes, predsRes] = await Promise.all([
                 safeQuery(
                     supabase.from('olympics_eventos')
-                        .select('*, jugadores:jugadores(*)')
+                        .select('*, jugadores:jugadores!jugador_id_normalized(*)')
                         .eq('partido_id', matchId)
                         .order('minuto', { ascending: false }),
                     'partido-eventos'
@@ -173,22 +173,34 @@ export default function PublicMatchDetail() {
     };
 
     useEffect(() => {
-        fetchData();
+        const controller = new AbortController();
+        fetchData(controller.signal);
+
+        // Global revalidate listener (triggered by VisibilityRevalidate)
+        const handleRevalidate = () => {
+            console.log('[MatchPage] Global revalidate triggered');
+            fetchData(controller.signal);
+        };
+
+        window.addEventListener('app:revalidate', handleRevalidate);
 
         // Suscripción Realtime
         const channel = supabase
             .channel(`match:${matchId}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos', filter: `id=eq.${matchId}` }, (payload) => {
-                // Merge para preservar datos del join (disciplinas) que realtime no envía
                 setMatch(prev => prev ? { ...prev, ...payload.new, disciplinas: prev.disciplinas } as Partido : prev);
             })
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'olympics_eventos', filter: `partido_id=eq.${matchId}` }, () => {
-                fetchData(); // Recargar eventos si hay nuevos
+                fetchData(controller.signal);
             })
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
-    }, [matchId]);
+        return () => {
+            controller.abort();
+            supabase.removeChannel(channel);
+            window.removeEventListener('app:revalidate', handleRevalidate);
+        };
+    }, [matchId, user]);
 
     const getSportEmoji = (name: string) => {
         const map: Record<string, string> = {

@@ -13,8 +13,10 @@ import { AdminScoreboard } from "@/modules/admin/matches/components/admin-scoreb
 import { AdminEventCreator } from "@/modules/admin/matches/components/admin-event-creator";
 import { AdminMatchTimeline } from "@/modules/admin/matches/components/admin-match-timeline";
 import { AdminModals } from "@/modules/admin/matches/components/admin-modals";
+import { AdminPlayerRoster } from "@/modules/admin/matches/components/admin-player-roster";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { EditMatchModal } from "@/modules/matches/components/edit-match-modal";
 import type { Evento } from "@/modules/matches/types";
 
 // Local UI Constants (could be moved to a constants file if reused)
@@ -89,6 +91,7 @@ export default function MatchControlPage() {
         toggleCronometro,
         handleNuevoEvento,
         handleManualScoreUpdate,
+        handleCambiarPeriodo,
         confirmarFinalizar,
         requestDeleteEvento,
         fetchJugadores,
@@ -98,7 +101,7 @@ export default function MatchControlPage() {
     const [isEndingMatch, setIsEndingMatch] = useState(false);
     const [isEditingScore, setIsEditingScore] = useState(false);
     const [confirmingDeletion, setConfirmingDeletion] = useState<Evento | null>(null);
-    const [showAdvancedEdit, setShowAdvancedEdit] = useState(false);
+    const [showFullEditor, setShowFullEditor] = useState(false);
 
     if (loading) return (
         <div className="min-h-screen bg-[#0a0816] flex flex-col items-center justify-center gap-4">
@@ -122,7 +125,7 @@ export default function MatchControlPage() {
     const { scoreA, scoreB } = getCurrentScore(disciplinaName, match.marcador_detalle || {});
 
     return (
-        <div className="min-h-screen bg-[#070504] pb-24 text-white">
+        <div className="min-h-screen bg-[#0a0816] pb-24 text-white">
             <AdminMatchHeader 
                 match={match} 
                 disciplinaName={disciplinaName} 
@@ -142,7 +145,7 @@ export default function MatchControlPage() {
                         />
                     </Card>
                 ) : (
-                    <AdminScoreboard 
+                    <AdminScoreboard
                         match={match}
                         scoreA={scoreA}
                         scoreB={scoreB}
@@ -150,6 +153,19 @@ export default function MatchControlPage() {
                         onToggleCronometro={toggleCronometro}
                         onFinalizar={() => setIsEndingMatch(true)}
                         cronometroActivo={cronometroActivo}
+                        onOpenFullEditor={() => setShowFullEditor(true)}
+                        onCambiarPeriodo={handleCambiarPeriodo}
+                    />
+                )}
+
+                {match.estado !== 'finalizado' && (
+                    <AdminPlayerRoster
+                        match={match}
+                        jugadoresA={jugadoresA}
+                        jugadoresB={jugadoresB}
+                        matchId={matchId}
+                        onPlayersUpdated={fetchJugadores}
+                        disciplinaName={disciplinaName}
                     />
                 )}
 
@@ -161,16 +177,47 @@ export default function MatchControlPage() {
                         jugadoresB={jugadoresB}
                         onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id)}
                         onAddPlayer={async (team, data) => {
-                            const { error } = await supabase.from('olympics_jugadores').insert({
-                                partido_id: matchId,
-                                nombre: data.nombre,
-                                numero: data.numero ? parseInt(data.numero) : null,
-                                equipo: team,
-                                profile_id: data.profile_id || null
-                            });
-                            if (!error) {
+                            try {
+                                // 1. Find or create in 'jugadores'
+                                let jId: number | null = null;
+                                const { data: existing } = await supabase
+                                    .from('jugadores')
+                                    .select('id')
+                                    .eq('profile_id', data.profile_id)
+                                    .maybeSingle();
+
+                                if (existing && data.profile_id) {
+                                    jId = existing.id;
+                                } else {
+                                    const { data: created, error: cErr } = await supabase
+                                        .from('jugadores')
+                                        .insert({
+                                            nombre: data.nombre,
+                                            numero: data.numero ? parseInt(data.numero) : null,
+                                            profile_id: data.profile_id || null,
+                                            carrera_id: team === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
+                                        })
+                                        .select()
+                                        .single();
+                                    if (cErr) throw cErr;
+                                    jId = created.id;
+                                }
+
+                                // 2. Link to roster
+                                const { error: rErr } = await supabase.from('roster_partido').insert({
+                                    partido_id: parseInt(matchId),
+                                    jugador_id: jId,
+                                    equipo_a_or_b: team
+                                });
+                                if (rErr) throw rErr;
+
                                 fetchJugadores();
                                 toast.success("Jugador añadido");
+                                return jId;
+                            } catch (error: any) {
+                                console.error("Error adding player:", error);
+                                toast.error(`Error: ${error.message}`);
+                                return null;
                             }
                         }}
                         disciplinaName={disciplinaName}
@@ -200,6 +247,13 @@ export default function MatchControlPage() {
                   if (confirmingDeletion) requestDeleteEvento(confirmingDeletion);
                   setConfirmingDeletion(null);
                 }}
+            />
+
+            <EditMatchModal 
+                match={match} 
+                isOpen={showFullEditor} 
+                onClose={() => setShowFullEditor(false)} 
+                profile={profile}
             />
         </div>
     );

@@ -6,6 +6,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { safeQuery } from "@/lib/supabase-query";
 import { User } from "@supabase/supabase-js";
 
 import type { UserRole, Profile } from '@/modules/users/types';
@@ -49,13 +50,16 @@ async function fetchProfileWithRetry(
 ): Promise<Profile | null> {
     for (let i = 0; i < attempts; i++) {
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*, disciplina:disciplinas(id, name, icon)')
-                .eq('id', userId)
-                .single();
+            const { data, error } = await safeQuery<Profile>(
+                supabase
+                    .from('profiles')
+                    .select('*, disciplina:disciplinas(id, name, icon)')
+                    .eq('id', userId)
+                    .single(),
+                'auth-profile-fetch'
+            );
 
-            if (data && !error) return data as Profile;
+            if (data && !error) return data;
 
             if (error?.code === 'PGRST116' && i < attempts - 1) {
                 await new Promise(r => setTimeout(r, PROFILE_RETRY_DELAY_MS));
@@ -137,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const currentUser = session?.user ?? null;
             setUser(currentUser);
 
-            if (currentUser && event === 'SIGNED_IN') {
+            if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
                 await fetchProfile(currentUser.id);
             } else if (!currentUser) {
                 setProfile(null);
@@ -146,10 +150,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (mountedRef.current) setLoading(false);
         });
 
+        // Visibility listener to refresh session when returning to tab
+        const handleVisibilityChange = async () => {
+            if (document.hidden || !mountedRef.current) return;
+            
+            console.log('[useAuth] App foregrounded — refreshing session...');
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user) {
+                    setUser(session.user);
+                    await fetchProfile(session.user.id);
+                }
+            } catch (err) {
+                console.error('[useAuth] Error refreshing on visibility change:', err);
+            } finally {
+                if (mountedRef.current) {
+                    setLoading(false);
+                    setProfileLoading(false);
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
         return () => {
             mountedRef.current = false;
             clearTimeout(safetyTimer);
             subscription.unsubscribe();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, [fetchProfile]);
 

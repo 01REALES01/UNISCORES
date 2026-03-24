@@ -87,19 +87,27 @@ export class BaloncestoService extends BaseSportService {
 
   recalculateTotals(detalle: ScoreDetail): ScoreDetail {
     const d = this.clone(detalle) as any;
-    if (!d.cuartos || Object.keys(d.cuartos).length === 0) return d;
-
+    
     let totalA = 0;
     let totalB = 0;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Object.values(d.cuartos).forEach((c: any) => {
-      totalA += c.puntos_a || 0;
-      totalB += c.puntos_b || 0;
-    });
+    // Sum ALL quarters (using numeric or string keys safely)
+    if (d.cuartos) {
+      Object.keys(d.cuartos).forEach(key => {
+        const q = d.cuartos[key];
+        totalA += (q.puntos_a || 0);
+        totalB += (q.puntos_b || 0);
+      });
+    }
 
-    d.total_a = totalA;
-    d.total_b = totalB;
+    // Force totals but ensure points_a/b exist for DB trigger
+    d.total_a = totalA || d.total_a || 0;
+    d.total_b = totalB || d.total_b || 0;
+
+    // 🛡️ Harmonize with DB Migration (validate_marcador expects puntos_a/b)
+    d.puntos_a = d.total_a;
+    d.puntos_b = d.total_b;
+    
     return d;
   }
 

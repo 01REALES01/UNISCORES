@@ -5,16 +5,14 @@ import { invalidateCache } from "@/lib/supabase-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuditLogger } from "@/hooks/useAuditLogger";
 import { stampAudit, stampEventAudit } from "@/lib/audit-helpers";
-import { 
-  getCurrentScore, 
-  recalculateTotals, 
-  cambiarTiempoFutbol, 
-  cambiarCuartoBasket, 
-  removePoints, 
-  addPoints, 
-  isCountdownSport, 
-  getPeriodDuration, 
-  getCurrentPeriodNumber 
+import {
+  recalculateTotals,
+  nextPeriod,
+  removePoints,
+  addPoints,
+  isCountdownSport,
+  getPeriodDuration,
+  getCurrentPeriodNumber
 } from "@/lib/sport-scoring";
 import type { PartidoWithRelations as Partido, Evento, Jugador } from "@/modules/matches/types";
 
@@ -43,17 +41,30 @@ export function useMatchControl(matchId: string) {
     const fetchEventos = useCallback(async () => {
         const { data } = await supabase
             .from('olympics_eventos')
-            .select('*, jugadores:olympics_jugadores(*)')
+            .select('*, jugadores:jugadores!jugador_id_normalized(*)')
             .eq('partido_id', matchId)
-            .order('id', { ascending: false });
+            .order('created_at', { ascending: false });
         if (data) setEventos(data);
     }, [matchId]);
 
     const fetchJugadores = useCallback(async () => {
-        const { data } = await supabase.from('olympics_jugadores').select('*').eq('partido_id', matchId);
+        const { data } = await supabase
+            .from('roster_partido')
+            .select('*, jugador:jugadores(*)')
+            .eq('partido_id', matchId);
+        
         if (data) {
-            setJugadoresA(data.filter((j: any) => j.equipo === 'equipo_a'));
-            setJugadoresB(data.filter((j: any) => j.equipo === 'equipo_b'));
+            // Transform roster data to look like simple players
+            const transformed = data.map((r: any) => ({
+                id: r.jugador?.id,
+                roster_id: r.id, // we might need this for deletion
+                nombre: r.jugador?.nombre,
+                numero: r.jugador?.numero,
+                equipo: r.equipo_a_or_b,
+                profile_id: r.jugador?.profile_id
+            }));
+            setJugadoresA(transformed.filter((j: any) => j.equipo === 'equipo_a'));
+            setJugadoresB(transformed.filter((j: any) => j.equipo === 'equipo_b'));
         }
     }, [matchId]);
 
@@ -110,13 +121,13 @@ export function useMatchControl(matchId: string) {
         setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: nuevoDetalle }) : null);
     }, [match, profile, matchId]);
 
-    const registrarEventoSistema = useCallback(async (tipo: string, desc: string) => {
+    const registrarEventoSistema = useCallback(async (tipo: string, desc: string, minOverride?: number, periodOverride?: number) => {
         if (!match) return;
-        const periodo = getCurrentPeriodNumber(match.disciplinas?.name || "", match.marcador_detalle || {});
+        const periodo = periodOverride ?? getCurrentPeriodNumber(match.disciplinas?.name || "", match.marcador_detalle || {});
         await supabase.from('olympics_eventos').insert({
             partido_id: matchId,
             tipo_evento: tipo,
-            minuto: minutoActual,
+            minuto: minOverride ?? minutoActual,
             equipo: 'sistema',
             descripcion: stampEventAudit(desc, profile),
             periodo: periodo
@@ -216,16 +227,22 @@ export function useMatchControl(matchId: string) {
                 const sportName = match.disciplinas?.name || "";
                 const isCountdown = isCountdownSport(sportName);
 
+                const startMinuto = isCountdown ? getPeriodDuration(sportName) : 0;
                 nuevoDetalle.tiempo_inicio = new Date().toISOString();
-                nuevoDetalle.minuto_actual = isCountdown ? getPeriodDuration(sportName) : 0;
-                
+                nuevoDetalle.minuto_actual = startMinuto;
+
+                if (sportName === 'Baloncesto' && !nuevoDetalle.cuarto_actual) {
+                    nuevoDetalle.cuarto_actual = 1;
+                }
+
                 const { error } = await supabase.from('partidos').update({
                     estado: 'en_curso',
                     marcador_detalle: auditDetalle(nuevoDetalle)
                 }).eq('id', matchId);
 
                 if (error) throw error;
-                registrarEventoSistema('inicio', 'Inicio del partido');
+                setMinutoActual(startMinuto);
+                registrarEventoSistema('inicio', 'Inicio del partido', startMinuto, 1);
                 
                 // Log Action
                 await logAction('UPDATE_MATCH', 'partido', matchId, {
@@ -263,39 +280,40 @@ export function useMatchControl(matchId: string) {
             tipo_evento: tipo,
             minuto: minutoActual,
             equipo: equipo || 'sistema',
-            jugador_id: jugador_id,
+            jugador_id_normalized: jugador_id,
             periodo: periodo,
             descripcion: stampEventAudit(null, profile)
         });
 
-        if (!error) {
-            const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
-            const currentDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
-
-            if (tipo.startsWith('gol') || tipo.startsWith('punto') || tipo.startsWith('set')) {
-                let puntos = 1;
-                if (tipo === 'punto_2') puntos = 2;
-                if (tipo === 'punto_3') puntos = 3;
-                const nuevoMarcador = addPoints(disciplinaName, currentDetalle, equipo as any, puntos);
-                await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
-
-                // Log Action (Score change by event)
-                await logAction('UPDATE_SCORE', 'partido', matchId, {
-                    tipo_evento: tipo,
-                    equipo: equipo,
-                    puntos: puntos,
-                    nuevo_marcador: nuevoMarcador
-                });
-            } else {
-                // Log Action (Other event)
-                await logAction('ADD_EVENT', 'evento', matchId, {
-                    tipo_evento: tipo,
-                    equipo: equipo,
-                    jugador_id: jugador_id
-                });
-            }
-            fetchEventos();
+        if (error) {
+            toast.error('No se pudo guardar el evento: ' + error.message);
+            return;
         }
+
+        const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
+        const currentDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
+
+        if (tipo.startsWith('gol') || tipo.startsWith('punto') || tipo.startsWith('set')) {
+            let puntos = 1;
+            if (tipo === 'punto_2') puntos = 2;
+            if (tipo === 'punto_3') puntos = 3;
+            const nuevoMarcador = addPoints(disciplinaName, currentDetalle, equipo as any, puntos);
+            await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
+
+            await logAction('UPDATE_SCORE', 'partido', matchId, {
+                tipo_evento: tipo,
+                equipo: equipo,
+                puntos: puntos,
+                nuevo_marcador: nuevoMarcador
+            });
+        } else {
+            await logAction('ADD_EVENT', 'evento', matchId, {
+                tipo_evento: tipo,
+                equipo: equipo,
+                jugador_id: jugador_id
+            });
+        }
+        fetchEventos();
     };
 
     const handleManualScoreUpdate = async (field: string, value: number) => {
@@ -322,34 +340,36 @@ export function useMatchControl(matchId: string) {
         try {
             const disciplinaName = match.disciplinas?.name || 'Deporte';
             setCronometroActivo(false);
+
             const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
-            let nuevoMarcador = { ...(freshMatch?.marcador_detalle || match.marcador_detalle || {}) };
+            const nuevoMarcador = nextPeriod(disciplinaName, freshMatch?.marcador_detalle || match.marcador_detalle || {});
+
+            let nuevoMinuto = 0;
             let mensaje = '';
-            let nuevoMinuto = minutoActual;
 
             if (disciplinaName === 'Fútbol') {
-                nuevoMarcador = cambiarTiempoFutbol(nuevoMarcador);
-                mensaje = 'Cambio al 2º tiempo';
-                if (nuevoMarcador.tiempo_actual === 2) nuevoMinuto = 45;
+                nuevoMinuto = 45;
+                mensaje = '2º Tiempo';
             } else if (disciplinaName === 'Baloncesto') {
-                const cuartoActual = nuevoMarcador.cuarto_actual || 1;
-                if (cuartoActual < 4) {
-                    nuevoMarcador = cambiarCuartoBasket(nuevoMarcador);
-                    mensaje = `Cambio al ${nuevoMarcador.cuarto_actual}º cuarto`;
-                    nuevoMinuto = getPeriodDuration('Baloncesto');
-                }
+                const c = nuevoMarcador.cuarto_actual || 1;
+                nuevoMinuto = getPeriodDuration('Baloncesto');
+                mensaje = c > 4 ? `Prórroga ${c - 4}` : `${c}º Cuarto`;
+            } else if (disciplinaName === 'Voleibol') {
+                nuevoMinuto = 0;
+                const s = nuevoMarcador.set_actual || 1;
+                mensaje = `Set ${s}`;
             }
 
             if (mensaje) {
-                nuevoMarcador.minuto_actual = nuevoMinuto;
-                nuevoMarcador.estado_cronometro = 'pausado';
-                await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
+                const detalleFinal = { ...nuevoMarcador, minuto_actual: nuevoMinuto, estado_cronometro: 'pausado' };
+                await supabase.from('partidos').update({ marcador_detalle: auditDetalle(detalleFinal) }).eq('id', matchId);
                 setMinutoActual(nuevoMinuto);
                 registrarEventoSistema('periodo', mensaje);
+                await logAction('CHANGE_PERIOD', 'partido', matchId, { mensaje });
                 toast.success(mensaje);
             }
         } catch (err: any) {
-            toast.error('Error al cambiar período');
+            toast.error('Error al cambiar período: ' + err.message);
         }
     };
 

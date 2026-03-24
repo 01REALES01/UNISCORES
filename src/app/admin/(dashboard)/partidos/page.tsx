@@ -92,7 +92,7 @@ export default function PartidosPage() {
         try {
             // 1. Clean related tables just in case DB cascade is missing
             await supabase.from('olympics_eventos').delete().eq('partido_id', matchToDelete.id);
-            await supabase.from('olympics_jugadores').delete().eq('partido_id', matchToDelete.id);
+            await supabase.from('roster_partido').delete().eq('partido_id', matchToDelete.id);
             await supabase.from('pronosticos').delete().eq('match_id', matchToDelete.id);
             await supabase.from('noticias').update({ partido_id: null }).eq('partido_id', matchToDelete.id);
             

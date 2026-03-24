@@ -49,6 +49,14 @@ export default function AdminNoticiasPage() {
 
     useEffect(() => {
         fetchNoticias();
+
+        const handleRevalidate = () => {
+            console.log('[AdminNoticias] Global revalidate triggered');
+            fetchNoticias();
+        };
+
+        window.addEventListener('app:revalidate', handleRevalidate);
+        return () => window.removeEventListener('app:revalidate', handleRevalidate);
     }, []);
 
     const togglePublished = async (id: string, current: boolean) => {

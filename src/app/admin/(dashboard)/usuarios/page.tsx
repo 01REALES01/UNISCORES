@@ -18,6 +18,7 @@ import {
     Check,
     PenTool,
     Trophy,
+    X,
     Edit
 } from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
@@ -195,7 +196,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
 
             <div className="relative z-10 space-y-6">
                 {/* Header */}
-                <div className="relative overflow-hidden rounded-3xl bg-[#17130D]/60 backdrop-blur-xl border border-white/5 p-8 sm:p-10">
+                <div className="relative overflow-hidden rounded-3xl bg-[#17130D]/60 backdrop-blur-xl border border-white/5 p-6 sm:p-10">
                     <div className="absolute right-[-5%] top-[-20%] w-[300px] h-[300px] bg-purple-500/10 rounded-full blur-[60px] pointer-events-none" />
                     
                     <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -218,8 +219,8 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                     </div>
                 </div>
 
-                {/* Stats Grid - High Craft Asymmetrical */}
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+                {/* Stats Grid - Responsive behavior */}
+                <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
                     {[
                         { label: 'Administradores', value: stats.admin, color: 'text-purple-400', gradient: 'from-purple-500 to-indigo-600', icon: Crown, filter: 'admin' },
                         { label: 'Data Entry', value: stats.data_entry, color: 'text-rose-400', gradient: 'from-rose-500 to-red-600', icon: UserCheck, filter: 'data_entry' },
@@ -233,7 +234,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                             <button
                                 key={stat.label}
                                 onClick={() => setRoleFilter(roleFilter === stat.filter ? 'all' : stat.filter)}
-                                className={`relative group p-5 rounded-2xl border text-left transition-all duration-300 overflow-hidden backdrop-blur-md ${isActive
+                                className={`relative group p-4 sm:p-5 rounded-2xl border text-left transition-all duration-300 overflow-hidden backdrop-blur-md ${isActive
                                     ? 'border-white/15 bg-white/10 shadow-lg ring-1 ring-white/10'
                                     : 'border-white/5 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/10'
                                     }`}
@@ -246,8 +247,8 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                         </div>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 mb-1">{stat.label}</p>
-                                        <p className={`text-3xl font-black tabular-nums tracking-tighter transition-colors font-outfit ${isActive ? 'text-white' : stat.color}`}>
+                                        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 mb-1">{stat.label}</p>
+                                        <p className={`text-2xl sm:text-3xl font-black tabular-nums tracking-tighter transition-colors font-outfit ${isActive ? 'text-white' : stat.color}`}>
                                             {stat.value}
                                         </p>
                                     </div>
@@ -277,13 +278,13 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                     <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
                         <Users size={40} className="text-white/15" />
                     </div>
-                    <div className="text-center">
+                    <div className="text-center px-4">
                         <p className="font-bold text-lg text-white">No hay usuarios</p>
                         <p className="text-slate-500 text-sm mt-1 max-w-xs">{searchQuery ? 'Sin resultados para tu búsqueda' : 'Los usuarios registrados aparecerán aquí'}</p>
                     </div>
                 </div>
             ) : (
-                <div className="grid gap-3 lg:grid-cols-2">
+                <div className="grid gap-4 lg:grid-cols-2 pb-20">
                     {filteredProfiles.map((userProfile) => {
                         const isCurrentUser = userProfile.id === currentProfile?.id;
                         const isUpdating = updatingId === userProfile.id;
@@ -320,7 +321,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                 </div>
 
                                 {/* Right Content - Role Selector (Multiple Badges) */}
-                                <div className="relative shrink-0 w-full sm:w-[200px] mt-2 sm:mt-0">
+                                <div className="relative shrink-0 w-full sm:w-[220px] mt-2 sm:mt-0">
                                     {isUpdating ? (
                                         <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 h-11">
                                             <Loader2 size={14} className="animate-spin text-slate-400" />
@@ -356,10 +357,18 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                             {/* Dropdown Menu */}
                                             {openDropdown === userProfile.id && (
                                                 <>
-                                                    <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-                                                    <div className="absolute right-0 top-full mt-2 z-50 w-64 bg-[#1A1612] border border-white/10 rounded-2xl shadow-2xl shadow-black p-2 animate-in fade-in slide-in-from-top-2">
-                                                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-3 pt-2 pb-2">Seleccionar Roles (Máx 2)</p>
-                                                        <div className="space-y-1 overflow-y-auto max-h-[350px] custom-scrollbar">
+                                                    <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm sm:bg-transparent sm:backdrop-blur-none" onClick={() => setOpenDropdown(null)} />
+                                                    <div className="fixed sm:absolute left-1/2 sm:left-auto right-auto sm:right-0 top-1/2 sm:top-full mt-0 sm:mt-2 z-50 w-[90vw] sm:w-64 -translate-x-1/2 sm:translate-x-0 -translate-y-1/2 sm:translate-y-0 bg-[#1A1612] border border-white/10 rounded-3xl shadow-2xl shadow-black p-3 sm:p-2 animate-in fade-in zoom-in-95 sm:slide-in-from-top-2 duration-200">
+                                                        <div className="flex items-center justify-between sm:block px-3 pt-2 pb-3 mb-2 border-b border-white/5 sm:border-0">
+                                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Gestión de Roles</p>
+                                                            <button 
+                                                                onClick={() => setOpenDropdown(null)}
+                                                                className="sm:hidden text-slate-500 hover:text-white"
+                                                            >
+                                                                <X size={18} />
+                                                            </button>
+                                                        </div>
+                                                        <div className="space-y-1 overflow-y-auto max-h-[60vh] sm:max-h-[350px] custom-scrollbar">
                                                             {(Object.keys(ROLE_CONFIG) as UserRole[]).map(role => {
                                                                 const config = ROLE_CONFIG[role];
                                                                 const Icon = config.icon;

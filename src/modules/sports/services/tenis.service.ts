@@ -88,6 +88,17 @@ export class TenisService extends BaseSportService {
 
     d.sets_a = setsA;
     d.sets_b = setsB;
+    
+    // 🛡️ Harmonize with DB Migration (validate_marcador expects games_a/b)
+    let gamesA = 0;
+    let gamesB = 0;
+    Object.values(d.sets || {}).forEach((set: any) => {
+      gamesA += set.juegos_a || 0;
+      gamesB += set.juegos_b || 0;
+    });
+    d.games_a = gamesA;
+    d.games_b = gamesB;
+
     return d;
   }
 
