@@ -70,31 +70,31 @@ export class TenisMesaService extends BaseSportService {
 
   recalculateTotals(detalle: ScoreDetail): ScoreDetail {
     const d = this.clone(detalle) as any;
-    if (!d.sets || Object.keys(d.sets).length === 0) return d;
-
+    
     let setsA = 0;
     let setsB = 0;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Object.values(d.sets).forEach((set: any) => {
-      const pA = set.puntos_a || 0;
-      const pB = set.puntos_b || 0;
+    if (d.sets) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Object.values(d.sets).forEach((set: any) => {
+            const pA = set.puntos_a || 0;
+            const pB = set.puntos_b || 0;
 
-      if (pA >= 11 && pA - pB >= 2) setsA++;
-      else if (pB >= 11 && pB - pA >= 2) setsB++;
-    });
+            if (pA >= 11 && pA - pB >= 2) setsA++;
+            else if (pB >= 11 && pB - pA >= 2) setsB++;
+        });
+    }
 
+    // 🛡️ Ensure fields for DB Migration
     d.sets_a = setsA;
     d.sets_b = setsB;
 
-    // 🛡️ Harmonize with DB Migration (validate_marcador expects puntos_a/b for current set)
     const currentSet = d.set_actual || 1;
     d.puntos_a = d.sets?.[currentSet]?.puntos_a || 0;
     d.puntos_b = d.sets?.[currentSet]?.puntos_b || 0;
 
     return d;
   }
-
   /** Avanza al siguiente set (máx 5); sin-op si ya terminó el partido */
   override nextPeriod(detalle: ScoreDetail): ScoreDetail {
     const d = this.clone(detalle) as any;

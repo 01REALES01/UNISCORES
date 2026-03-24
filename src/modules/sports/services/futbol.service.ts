@@ -73,17 +73,19 @@ export class FutbolService extends BaseSportService {
 
   recalculateTotals(detalle: ScoreDetail): ScoreDetail {
     const d = this.clone(detalle) as any;
-    if (!d.tiempos || Object.keys(d.tiempos).length === 0) return d;
-
+    
     let totalA = 0;
     let totalB = 0;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Object.values(d.tiempos).forEach((t: any) => {
-      totalA += t.goles_a || 0;
-      totalB += t.goles_b || 0;
-    });
+    if (d.tiempos) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Object.values(d.tiempos).forEach((t: any) => {
+        totalA += t.goles_a || 0;
+        totalB += t.goles_b || 0;
+      });
+    }
 
+    // 🛡️ Ensure fields for DB Migration
     d.goles_a = totalA;
     d.goles_b = totalB;
     return d;

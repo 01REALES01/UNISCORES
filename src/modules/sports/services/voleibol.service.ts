@@ -71,22 +71,24 @@ export class VoleibolService extends BaseSportService {
 
   recalculateTotals(detalle: ScoreDetail): ScoreDetail {
     const d = this.clone(detalle) as any;
-    if (!d.sets || Object.keys(d.sets).length === 0) return d;
-
+    
     let setsA = 0;
     let setsB = 0;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Object.entries(d.sets).forEach(([key, set]: [string, any]) => {
-      const setNum = parseInt(key);
-      const pA = set.puntos_a || 0;
-      const pB = set.puntos_b || 0;
-      const minPts = setNum === 5 ? 15 : 25;
+    if (d.sets) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Object.entries(d.sets).forEach(([key, set]: [string, any]) => {
+            const setNum = parseInt(key);
+            const pA = set.puntos_a || 0;
+            const pB = set.puntos_b || 0;
+            const minPts = setNum === 5 ? 15 : 25;
 
-      if (pA >= minPts && pA - pB >= 2) setsA++;
-      else if (pB >= minPts && pB - pA >= 2) setsB++;
-    });
+            if (pA >= minPts && pA - pB >= 2) setsA++;
+            else if (pB >= minPts && pB - pA >= 2) setsB++;
+        });
+    }
 
+    // 🛡️ Ensure fields for DB Migration
     d.sets_a = setsA;
     d.sets_b = setsB;
     return d;

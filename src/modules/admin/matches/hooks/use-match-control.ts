@@ -237,7 +237,7 @@ export function useMatchControl(matchId: string) {
 
                 const { error } = await supabase.from('partidos').update({
                     estado: 'en_curso',
-                    marcador_detalle: auditDetalle(nuevoDetalle)
+                    marcador_detalle: auditDetalle(recalculateTotals(sportName, nuevoDetalle))
                 }).eq('id', matchId);
 
                 if (error) throw error;
