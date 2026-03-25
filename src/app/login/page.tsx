@@ -140,10 +140,14 @@ function LoginPageContent() {
             }
 
             if (data.user) {
-                setSuccess('¡Cuenta creada exitosamente! Ya puedes iniciar sesión.');
-                setTimeout(() => {
-                    switchMode('login');
-                }, 3000);
+                if (data.session) {
+                    // Email confirmations disabled — user is immediately active
+                    setSuccess('¡Cuenta creada! Ya puedes iniciar sesión.');
+                    setTimeout(() => switchMode('login'), 2000);
+                } else {
+                    // Email confirmation required
+                    setSuccess('¡Cuenta creada! Revisa tu correo y haz clic en el enlace de confirmación para activarla.');
+                }
             }
 
         } catch (err: any) {
@@ -162,7 +166,8 @@ function LoginPageContent() {
                 scopes: "email profile",
                 redirectTo: `${window.location.origin}/auth/callback`,
                 queryParams: {
-                    domain_hint: "uninorte.edu.co",
+                    // domain_hint removido — la restricción @uninorte.edu.co
+                    // se aplica en /auth/callback después del login
                 }
             },
         });

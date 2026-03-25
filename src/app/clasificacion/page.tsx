@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatches } from "@/hooks/use-matches";
@@ -8,7 +8,9 @@ import { GroupStageTable } from "@/components/group-stage-table";
 import { BracketTree } from "@/components/bracket-tree";
 import { SPORT_EMOJI, SPORT_ACCENT, SPORT_GRADIENT, SPORT_BORDER } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { Trophy, Users, Swords } from "lucide-react";
+import { Trophy, Users, Swords, ShieldAlert } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { calculateStandings, compareStandings, type TeamStanding } from "@/modules/matches/utils/standings";
 
 const BRACKET_SPORTS = ['Fútbol', 'Baloncesto', 'Voleibol'] as const;
 const GENDERS = [
@@ -51,7 +53,50 @@ export default function ClasificacionPage() {
         return Array.from(g).sort();
     }, [groupMatches]);
 
+    const [fairPlayData, setFairPlayData] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        const fetchFairPlay = async () => {
+            const matchIds = filteredMatches.map(m => m.id);
+            if (matchIds.length === 0) return;
+
+            const { data } = await supabase
+                .from('olympics_eventos')
+                .select('tipo_evento, equipo')
+                .in('partido_id', matchIds)
+                .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja']);
+
+            if (data) {
+                const counts: Record<string, number> = {};
+                data.forEach(e => {
+                    const team = e.equipo;
+                    if (!team) return;
+                    if (!counts[team]) counts[team] = 0;
+                    if (e.tipo_evento === 'tarjeta_amarilla') counts[team] -= 1;
+                    if (e.tipo_evento === 'tarjeta_roja') counts[team] -= 3;
+                });
+                setFairPlayData(counts);
+            }
+        };
+        fetchFairPlay();
+    }, [filteredMatches]);
+
+    // Calculate best thirds if there are multiple groups
+    const bestThirds = useMemo(() => {
+        if (groups.length < 2) return [];
+        const thirds: TeamStanding[] = [];
+        groups.forEach(grupo => {
+            const gMatches = groupMatches.filter(m => m.grupo === grupo);
+            const s = calculateStandings(gMatches, selectedSport, fairPlayData);
+            if (s.length >= 3) {
+                thirds.push(s[2]); // 3rd place is index 2
+            }
+        });
+        return thirds.sort((a, b) => compareStandings(a, b, selectedSport));
+    }, [groups, groupMatches, selectedSport, fairPlayData]);
+
     const accent = SPORT_ACCENT[selectedSport] || 'text-amber-400';
+    const border = SPORT_BORDER[selectedSport] || 'border-white/10';
 
     return (
         <div className="min-h-screen bg-[#0a0816] text-white selection:bg-indigo-500/30 font-sans">
@@ -148,12 +193,78 @@ export default function ClasificacionPage() {
                                         return (
                                             <GroupStageTable
                                                 key={grupo}
-                                                matches={gMatches as any[]}
+                                                matches={gMatches}
                                                 sportName={selectedSport}
                                                 grupo={grupo}
                                             />
                                         );
                                     })}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* ── BEST THIRDS ── */}
+                        {bestThirds.length > 0 && (
+                            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <Trophy size={18} className="text-amber-400" />
+                                    <h2 className="text-lg font-black uppercase tracking-wider text-white/80">
+                                        Tabla de Mejores Terceros
+                                    </h2>
+                                    <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
+                                </div>
+
+                                <div className={cn("bg-[#0a0805] border rounded-2xl overflow-hidden shadow-xl", border)}>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-xs">
+                                            <thead>
+                                                <tr className="border-b border-white/5 text-white/40 uppercase tracking-wider">
+                                                    <th className="text-left py-2.5 px-4 font-bold">#</th>
+                                                    <th className="text-left py-2.5 px-4 font-bold">Equipo</th>
+                                                    <th className="text-center py-2.5 px-2 font-bold">Grd</th>
+                                                    <th className="text-center py-2.5 px-2 font-bold">PJ</th>
+                                                    <th className="text-center py-2.5 px-2 font-bold">PTS</th>
+                                                    <th className="text-center py-2.5 px-2 font-bold">DIF/RS</th>
+                                                    <th className="text-center py-2.5 px-2 font-bold">FP</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {bestThirds.map((team, idx) => (
+                                                    <tr key={team.team} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                        <td className="py-3 px-4">
+                                                            <span className={cn(
+                                                                "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black",
+                                                                idx < 2 ? "bg-emerald-500/20 text-emerald-400" : "bg-white/5 text-white/40"
+                                                            )}>
+                                                                {idx + 1}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-3 px-4 font-bold text-white">{team.team}</td>
+                                                        <td className="text-center py-3 px-2 text-white/40 font-black">{team.grupo}</td>
+                                                        <td className="text-center py-3 px-2 text-white/60 font-mono">{team.played}</td>
+                                                        <td className="text-center py-3 px-2 text-amber-400 font-black text-sm">{team.points}</td>
+                                                        <td className="text-center py-3 px-2 font-mono">
+                                                            {selectedSport === 'Voleibol' 
+                                                                ? (team.setsLost === 0 ? (team.setsWon).toFixed(2) : (team.setsWon / team.setsLost).toFixed(2))
+                                                                : (team.diff > 0 ? `+${team.diff}` : team.diff)
+                                                            }
+                                                        </td>
+                                                        <td className="text-center py-3 px-2">
+                                                            <span className="flex items-center justify-center gap-1 text-white/20">
+                                                                <ShieldAlert size={10} />
+                                                                {team.fairPlay}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="px-4 py-2 bg-white/[0.02] border-t border-white/5">
+                                        <p className="text-[9px] text-white/20 italic">
+                                            * Se muestran los equipos que terminaron en 3er lugar de cada grupo. Los mejores califican a la siguiente fase.
+                                        </p>
+                                    </div>
                                 </div>
                             </section>
                         )}

@@ -112,13 +112,15 @@ export function useMatchControl(matchId: string) {
             estado_cronometro: 'corriendo',
             ultimo_update: new Date().toISOString()
         };
+        const sportName = match.disciplinas?.name || 'Fútbol';
+        const finalDetalle = recalculateTotals(sportName, nuevoDetalle);
+        
         await supabase.from('partidos')
             .update({ 
-                marcador_detalle: nuevoDetalle,
-                last_edited_by: profile.id
+                marcador_detalle: auditDetalle(finalDetalle)
             })
             .eq('id', matchId);
-        setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: nuevoDetalle }) : null);
+        setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: finalDetalle }) : null);
     }, [match, profile, matchId]);
 
     const registrarEventoSistema = useCallback(async (tipo: string, desc: string, minOverride?: number, periodOverride?: number) => {
@@ -251,8 +253,7 @@ export function useMatchControl(matchId: string) {
                 });
             } else {
                 const { error } = await supabase.from('partidos').update({
-                    marcador_detalle: auditDetalle(nuevoDetalle),
-                    last_edited_by: profile?.id
+                    marcador_detalle: auditDetalle(nuevoDetalle)
                 }).eq('id', matchId);
                 if (error) throw error;
             }
@@ -323,8 +324,7 @@ export function useMatchControl(matchId: string) {
         nuevoMarcador[field] = value;
         const finalDetalle = recalculateTotals(match.disciplinas?.name || 'Fútbol', nuevoMarcador);
         await supabase.from('partidos').update({ 
-            marcador_detalle: auditDetalle(finalDetalle),
-            last_edited_by: profile.id
+            marcador_detalle: auditDetalle(finalDetalle)
         }).eq('id', matchId);
 
         // Log Action
@@ -384,10 +384,12 @@ export function useMatchControl(matchId: string) {
             ultimo_update: new Date().toISOString()
         };
 
+        const sportName = match.disciplinas?.name || 'Fútbol';
+        const finalDetalle = recalculateTotals(sportName, nuevoDetalle);
+
         const { error } = await supabase.from('partidos').update({
             estado: 'finalizado',
-            marcador_detalle: auditDetalle(nuevoDetalle),
-            last_edited_by: profile.id
+            marcador_detalle: auditDetalle(finalDetalle)
         }).eq('id', matchId);
 
         if (!error) {
@@ -397,10 +399,15 @@ export function useMatchControl(matchId: string) {
             // Log Action
             await logAction('UPDATE_MATCH', 'partido', matchId, {
                 nuevo_estado: 'finalizado',
-                marcador_final: nuevoDetalle
+                marcador_final: finalDetalle
             });
 
             toast.success("Partido finalizado");
+            return true;
+        } else {
+            console.error("Match finalization error:", error);
+            toast.error("Error al finalizar el partido: " + error.message);
+            return false;
         }
     };
 

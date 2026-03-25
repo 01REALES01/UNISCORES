@@ -33,7 +33,7 @@ const SAMPLE_DATA: MedalEntry[] = [
 export function MedalLeaderboard() {
     const [medallero, setMedallero] = useState<MedalEntry[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeSport, setActiveSport] = useState<string>('todos');
+    const [activeSport, setActiveSport] = useState<string>('Fútbol');
     const [activeGender, setActiveGender] = useState<string>('todos');
     const [carreraMap, setCarreraMap] = useState<Record<string, number>>({});
     const router = useRouter();
@@ -146,8 +146,6 @@ export function MedalLeaderboard() {
                     if (isFinal) {
                         if (careerStats[carreraA]) careerStats[carreraA].oro++;
                         if (careerStats[carreraB]) careerStats[carreraB].plata++;
-                    } else if (isTercero) {
-                        if (careerStats[carreraA]) careerStats[carreraA].bronce++;
                     }
                 }
             } else if (scoreB > scoreA) {
@@ -159,8 +157,6 @@ export function MedalLeaderboard() {
                     if (isFinal) {
                         if (careerStats[carreraB]) careerStats[carreraB].oro++;
                         if (careerStats[carreraA]) careerStats[carreraA].plata++;
-                    } else if (isTercero) {
-                        if (careerStats[carreraB]) careerStats[carreraB].bronce++;
                     }
                 }
             } else {
@@ -179,7 +175,6 @@ export function MedalLeaderboard() {
                     if (careerStats[matchedCareer]) {
                         if (res.puesto === 1) careerStats[matchedCareer].oro++;
                         else if (res.puesto === 2) careerStats[matchedCareer].plata++;
-                        else if (res.puesto === 3) careerStats[matchedCareer].bronce++;
                         // For race participants, PJ is also counted
                         careerStats[matchedCareer].played!++;
                     }
@@ -193,7 +188,6 @@ export function MedalLeaderboard() {
         result.sort((a, b) => {
             if (b.oro !== a.oro) return b.oro - a.oro;
             if (b.plata !== a.plata) return b.plata - a.plata;
-            if (b.bronce !== a.bronce) return b.bronce - a.bronce;
             return b.puntos - a.puntos;
         });
 
@@ -345,12 +339,11 @@ export function MedalLeaderboard() {
         <MedalSkeleton />
     );
 
-    const top3 = medallero.slice(0, 3);
+    const top2 = medallero.slice(0, 2);
     let podiumOrder: MedalEntry[] = [];
-    if (top3.length >= 1) {
-        if (top3.length === 1) podiumOrder = [top3[0]];
-        else if (top3.length === 2) podiumOrder = [top3[1], top3[0]];
-        else podiumOrder = [top3[1], top3[0], top3[2]];
+    if (top2.length >= 1) {
+        if (top2.length === 1) podiumOrder = [top2[0]];
+        else podiumOrder = [top2[1], top2[0]];
     }
 
     return (
@@ -407,18 +400,6 @@ export function MedalLeaderboard() {
                         {/* Discipline Tabs */}
                         <div className="relative group">
                             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mask-linear-r py-1">
-                                <button
-                                    onClick={() => setActiveSport('todos')}
-                                    className={cn(
-                                        "flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap border shrink-0",
-                                        activeSport === 'todos'
-                                            ? "bg-white/10 text-white border-white/20 shadow-xl"
-                                            : "bg-white/[0.02] border-white/5 text-white/30 hover:text-white hover:bg-white/5 hover:border-white/10"
-                                    )}
-                                >
-                                    <LayoutGrid size={16} />
-                                    Visión General
-                                </button>
                                 {Object.keys(SPORT_COLORS).map((name) => (
                                     <button
                                         key={name}
@@ -443,7 +424,7 @@ export function MedalLeaderboard() {
             <div className="px-4 sm:px-10 pt-10 pb-10 border-b border-white/5 relative z-20">
                 <div className="flex justify-center items-end gap-2 sm:gap-4 mb-4 sm:mb-10 min-h-[350px]">
                     {podiumOrder.map((entry) => {
-                        const realRank = top3.indexOf(entry) + 1;
+                        const realRank = top2.indexOf(entry) + 1;
                         return <TopPodium key={'podium-' + entry.id} entry={entry} rank={realRank} />;
                     })}
                 </div>
@@ -515,14 +496,6 @@ export function MedalLeaderboard() {
                                                     {entry.plata.toString().padStart(2, '0')}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 sm:gap-2 opacity-60">
-                                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-700/10 flex items-center justify-center text-amber-700">
-                                                    <Award size={11} className="sm:w-3.5 sm:h-3.5" />
-                                                </div>
-                                                <span className="text-xs sm:text-base font-black text-white tabular-nums">
-                                                    {entry.bronce.toString().padStart(2, '0')}
-                                                </span>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -533,7 +506,7 @@ export function MedalLeaderboard() {
                                     
                                     <div className="flex flex-row sm:flex-col items-center gap-2 sm:gap-0">
                                         <span className="text-xl sm:text-4xl font-black text-white tracking-tighter leading-none tabular-nums drop-shadow-lg relative z-10">
-                                            {entry.oro + entry.plata + entry.bronce}
+                                            {entry.oro + entry.plata}
                                         </span>
                                         <span className="text-[8px] sm:text-[9px] font-black text-white/30 uppercase tracking-[0.2em] sm:pt-1 relative z-10">
                                             Total Medals

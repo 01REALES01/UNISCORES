@@ -1,44 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { SPORT_ACCENT, SPORT_BORDER, SPORT_EMOJI } from "@/lib/constants";
 import Link from "next/link";
+import { useEffect, useState, useMemo } from "react";
+import { supabase } from "@/lib/supabase";
+import { ShieldAlert } from "lucide-react";
+import { calculateStandings, type TeamStanding } from "../utils/standings";
 
-type Match = {
-    id: number;
-    equipo_a: string;
-    equipo_b: string;
-    delegacion_a?: string;
-    delegacion_b?: string;
-    estado: string;
-    marcador_detalle: any;
-    fecha: string;
-    genero?: string;
-    fase?: string;
-    grupo?: string;
-    disciplinas: { name: string; icon?: string; emoji?: string };
-};
 
-interface GroupStageTableProps {
-    matches: Match[];
-    sportName: string;
-    grupo: string;
-}
-
-type TeamStanding = {
-    team: string;
-    played: number;
-    won: number;
-    lost: number;
-    drawn: number;
-    pointsFor: number;
-    pointsAgainst: number;
-    diff: number;
-    points: number;
-};
-
-function getScoreFromMatch(match: Match): { scoreA: number; scoreB: number } {
+function getScoreFromMatch(match: any): { scoreA: number; scoreB: number } {
     const md = match.marcador_detalle || {};
     const sport = match.disciplinas?.name || '';
 
@@ -48,62 +19,50 @@ function getScoreFromMatch(match: Match): { scoreA: number; scoreB: number } {
     if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
         return { scoreA: md.sets_a ?? 0, scoreB: md.sets_b ?? 0 };
     }
-    // Baloncesto y otros deportes usan total_a y total_b (con puntos_a/puntos_b como fallback histórico)
     return {
         scoreA: md.total_a ?? md.puntos_a ?? md.goles_a ?? 0,
         scoreB: md.total_b ?? md.puntos_b ?? md.goles_b ?? 0
     };
 }
 
+interface GroupStageTableProps {
+    matches: any[];
+    sportName: string;
+    grupo: string;
+}
+
 export function GroupStageTable({ matches, sportName, grupo }: GroupStageTableProps) {
-    const standings = useMemo(() => {
-        const teams: Record<string, TeamStanding> = {};
+    const [fairPlayData, setFairPlayData] = useState<Record<string, number>>({});
 
-        // Initialize teams from all matches in the group
-        matches.forEach((m) => {
-            const teamA = m.delegacion_a || m.equipo_a;
-            const teamB = m.delegacion_b || m.equipo_b;
+    useEffect(() => {
+        const fetchFairPlay = async () => {
+            const matchIds = matches.map(m => m.id);
+            if (matchIds.length === 0) return;
 
-            if (!teams[teamA]) {
-                teams[teamA] = { team: teamA, played: 0, won: 0, lost: 0, drawn: 0, pointsFor: 0, pointsAgainst: 0, diff: 0, points: 0 };
+            const { data, error } = await supabase
+                .from('olympics_eventos')
+                .select('tipo_evento, equipo')
+                .in('partido_id', matchIds)
+                .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja']);
+
+            if (!error && data) {
+                const counts: Record<string, number> = {};
+                data.forEach(e => {
+                    const team = e.equipo;
+                    if (!team) return;
+                    if (!counts[team]) counts[team] = 0;
+                    if (e.tipo_evento === 'tarjeta_amarilla') counts[team] -= 1;
+                    if (e.tipo_evento === 'tarjeta_roja') counts[team] -= 3;
+                });
+                setFairPlayData(counts);
             }
-            if (!teams[teamB]) {
-                teams[teamB] = { team: teamB, played: 0, won: 0, lost: 0, drawn: 0, pointsFor: 0, pointsAgainst: 0, diff: 0, points: 0 };
-            }
-
-            // Only count finished matches
-            if (m.estado === 'finalizado') {
-                const { scoreA, scoreB } = getScoreFromMatch(m);
-
-                teams[teamA].played++;
-                teams[teamB].played++;
-                teams[teamA].pointsFor += scoreA;
-                teams[teamA].pointsAgainst += scoreB;
-                teams[teamB].pointsFor += scoreB;
-                teams[teamB].pointsAgainst += scoreA;
-
-                if (scoreA > scoreB) {
-                    teams[teamA].won++;
-                    teams[teamB].lost++;
-                    teams[teamA].points += 3;
-                } else if (scoreB > scoreA) {
-                    teams[teamB].won++;
-                    teams[teamA].lost++;
-                    teams[teamB].points += 3;
-                } else {
-                    teams[teamA].drawn++;
-                    teams[teamB].drawn++;
-                    teams[teamA].points += 1;
-                    teams[teamB].points += 1;
-                }
-            }
-        });
-
-        // Calculate diff and sort
-        return Object.values(teams)
-            .map(t => ({ ...t, diff: t.pointsFor - t.pointsAgainst }))
-            .sort((a, b) => b.points - a.points || b.diff - a.diff || b.pointsFor - a.pointsFor);
+        };
+        fetchFairPlay();
     }, [matches]);
+
+    const standings = useMemo(() => {
+        return calculateStandings(matches, sportName, fairPlayData);
+    }, [matches, sportName, fairPlayData]);
 
     const accent = SPORT_ACCENT[sportName] || 'text-amber-400';
     const border = SPORT_BORDER[sportName] || 'border-white/10';
@@ -129,9 +88,11 @@ export function GroupStageTable({ matches, sportName, grupo }: GroupStageTablePr
                             <th className="text-center py-2.5 px-2 font-bold">PG</th>
                             <th className="text-center py-2.5 px-2 font-bold">PE</th>
                             <th className="text-center py-2.5 px-2 font-bold">PP</th>
-                            <th className="text-center py-2.5 px-2 font-bold">GF</th>
-                            <th className="text-center py-2.5 px-2 font-bold">GC</th>
-                            <th className="text-center py-2.5 px-2 font-bold">DIF</th>
+                            <th className="text-center py-2.5 px-2 font-bold">{sportName === 'Voleibol' ? 'SG' : 'GF'}</th>
+                            <th className="text-center py-2.5 px-2 font-bold">{sportName === 'Voleibol' ? 'SP' : 'GC'}</th>
+                            <th className="text-center py-2.5 px-2 font-bold">{sportName === 'Voleibol' ? 'RS' : 'DIF'}</th>
+                            {sportName === 'Voleibol' && <th className="text-center py-2.5 px-2 font-bold whitespace-nowrap">RP</th>}
+                            <th className="text-center py-2.5 px-2 font-bold">FP</th>
                             <th className="text-center py-2.5 px-4 font-bold">PTS</th>
                         </tr>
                     </thead>
@@ -166,11 +127,35 @@ export function GroupStageTable({ matches, sportName, grupo }: GroupStageTablePr
                                     <td className="text-center py-3 px-2 text-emerald-400 font-mono font-bold">{team.won}</td>
                                     <td className="text-center py-3 px-2 text-white/40 font-mono">{team.drawn}</td>
                                     <td className="text-center py-3 px-2 text-red-400 font-mono">{team.lost}</td>
-                                    <td className="text-center py-3 px-2 text-white/60 font-mono">{team.pointsFor}</td>
-                                    <td className="text-center py-3 px-2 text-white/60 font-mono">{team.pointsAgainst}</td>
+                                    <td className="text-center py-3 px-2 text-white/60 font-mono">
+                                        {sportName === 'Voleibol' ? team.setsWon : team.pointsFor}
+                                    </td>
+                                    <td className="text-center py-3 px-2 text-white/60 font-mono">
+                                        {sportName === 'Voleibol' ? team.setsLost : team.pointsAgainst}
+                                    </td>
                                     <td className="text-center py-3 px-2 font-mono font-bold">
-                                        <span className={team.diff > 0 ? 'text-emerald-400' : team.diff < 0 ? 'text-red-400' : 'text-white/40'}>
-                                            {team.diff > 0 ? `+${team.diff}` : team.diff}
+                                        {sportName === 'Voleibol' ? (
+                                            <span className="text-white/40">
+                                                {(team.setsLost === 0 ? team.setsWon : (team.setsWon / team.setsLost)).toFixed(2)}
+                                            </span>
+                                        ) : (
+                                            <span className={team.diff > 0 ? 'text-emerald-400' : team.diff < 0 ? 'text-red-400' : 'text-white/40'}>
+                                                {team.diff > 0 ? `+${team.diff}` : team.diff}
+                                            </span>
+                                        )}
+                                    </td>
+                                    {sportName === 'Voleibol' && (
+                                        <td className="text-center py-3 px-2 text-white/30 font-mono text-[10px]">
+                                            {(team.gamePointsAgainst === 0 ? team.gamePointsFor : (team.gamePointsFor / team.gamePointsAgainst)).toFixed(3)}
+                                        </td>
+                                    )}
+                                    <td className="text-center py-3 px-2 font-mono">
+                                        <span className={cn(
+                                            "flex items-center justify-center gap-1",
+                                            team.fairPlay < 0 ? "text-amber-500" : "text-white/20"
+                                        )}>
+                                            <ShieldAlert size={10} />
+                                            {team.fairPlay}
                                         </span>
                                     </td>
                                     <td className="text-center py-3 px-4">

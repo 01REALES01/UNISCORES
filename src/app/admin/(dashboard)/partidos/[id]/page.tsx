@@ -235,7 +235,10 @@ export default function MatchControlPage() {
             <AdminModals 
                 isEndingMatch={isEndingMatch}
                 onCloseEnding={() => setIsEndingMatch(false)}
-                onConfirmEnding={confirmarFinalizar}
+                onConfirmEnding={async () => {
+                   await confirmarFinalizar();
+                   setIsEndingMatch(false);
+                }}
                 isEditingScore={isEditingScore}
                 onCloseEditing={() => setIsEditingScore(false)}
                 match={match}

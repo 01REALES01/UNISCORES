@@ -28,7 +28,7 @@ export default function MedalleroPage() {
 
                 <div className="mt-12 text-center">
                     <p className="text-white/40 font-bold tracking-wide text-sm max-w-lg mx-auto">
-                        El ranking se calcula automáticamente: Oro (5pts), Plata (3pts), Bronce (1pt).
+                        El ranking se calcula automáticamente: Oro (5pts), Plata (3pts).
                         Los resultados se actualizan al finalizar cada evento.
                     </p>
                 </div>

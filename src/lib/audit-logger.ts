@@ -8,6 +8,7 @@ export type AuditAction =
     | 'ADD_PLAYER'
     | 'CREATE_NEWS' | 'UPDATE_NEWS' | 'DELETE_NEWS' | 'TOGGLE_PUBLISH'
     | 'UPDATE_ROLE'
+    | 'IMPORT_EXCEL' | 'SET_CLASIFICACION'
     | 'OTHER';
 
 export type AuditEntity = 'partido' | 'evento' | 'usuario' | 'noticia' | 'jugador' | 'config';
