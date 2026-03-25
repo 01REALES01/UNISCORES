@@ -6,13 +6,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { MainNavbar } from "@/components/main-navbar";
 import { supabase } from "@/lib/supabase";
 import { ChevronLeft, Save, Loader2, User, BookOpen, Trophy } from "lucide-react";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
 
 export default function EditProfilePage() {
     const router = useRouter();
-    const { user, profile, isStaff, loading: authLoading } = useAuth();
+    const { user, profile, isStaff, loading: authLoading, refreshProfile } = useAuth();
     
     const [carreras, setCarreras] = useState<any[]>([]);
     
@@ -66,11 +67,12 @@ export default function EditProfilePage() {
                 .eq('id', user.id);
 
             if (error) throw error;
+            await refreshProfile();
+            toast.success('Perfil guardado');
             router.push('/perfil');
-            router.refresh();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating profile:", error);
-            alert("Hubo un error al guardar tu perfil.");
+            toast.error('Error al guardar: ' + (error?.message || 'Intenta de nuevo'));
             setLoading(false);
         }
     };
