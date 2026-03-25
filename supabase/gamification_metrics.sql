@@ -181,12 +181,15 @@ BEGIN
                (CASE 
                     WHEN p.athlete_a_id = athlete_id THEN true 
                     WHEN p.athlete_b_id = athlete_id THEN false
-                    ELSE (SELECT j.equipo = 'equipo_a' FROM public.olympics_jugadores j WHERE j.partido_id = p.id AND j.profile_id = athlete_id LIMIT 1)
+                    ELSE (SELECT rp.equipo_a_or_b = 'equipo_a' 
+                          FROM public.roster_partido rp
+                          JOIN public.jugadores j ON rp.jugador_id = j.id
+                          WHERE rp.partido_id = p.id AND j.profile_id = athlete_id LIMIT 1)
                 END) as is_a_player
         FROM public.partidos p
         JOIN public.disciplinas d ON p.disciplina_id = d.id
         WHERE (p.athlete_a_id = athlete_id OR p.athlete_b_id = athlete_id OR 
-               EXISTS (SELECT 1 FROM public.olympics_jugadores j WHERE j.partido_id = p.id AND j.profile_id = athlete_id))
+               EXISTS (SELECT 1 FROM public.roster_partido rp JOIN public.jugadores j ON rp.jugador_id = j.id WHERE rp.partido_id = p.id AND j.profile_id = athlete_id))
         AND p.estado = 'finalizado'
     LOOP
         is_a := m.is_a_player;
@@ -207,7 +210,7 @@ BEGIN
         INTO score_own
         FROM public.olympics_eventos e
         WHERE e.partido_id = m.id 
-          AND e.jugador_id IN (SELECT id FROM public.olympics_jugadores j2 WHERE j2.profile_id = athlete_id);
+          AND e.jugador_id IN (SELECT id FROM public.jugadores j2 WHERE j2.profile_id = athlete_id);
 
         t_score := t_score + score_own;
 
