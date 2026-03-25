@@ -153,3 +153,15 @@ export function isCreator(email?: string): boolean {
     if (!email) return false;
     return CREATOR_EMAILS.includes(email.toLowerCase());
 }
+
+// Special profile badges
+export const AURA_EMAIL = 'mciccarelli@uninorte.edu.co';
+export const MVP_EMAIL = 'nzorozco@uninorte.edu.co';
+
+export function hasAuraBadge(email?: string): boolean {
+    return !!email && email.toLowerCase() === AURA_EMAIL;
+}
+
+export function hasMvpBadge(email?: string): boolean {
+    return !!email && email.toLowerCase() === MVP_EMAIL;
+}

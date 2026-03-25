@@ -27,7 +27,7 @@ import { FollowButton } from "@/modules/users/components/follow-button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
-import { isCreator, SPORT_EMOJI, SPORT_ACCENT } from "@/lib/constants";
+import { isCreator, hasAuraBadge, hasMvpBadge, SPORT_EMOJI, SPORT_ACCENT } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 
 type ProfileTab = 'general' | 'comunidad';
@@ -199,6 +199,8 @@ export default function PerfilPage() {
         : null;
 
     const isProjectCreator = user ? isCreator(user.email) : false;
+    const showAuraBadge = hasAuraBadge(user?.email);
+    const showMvpBadge = hasMvpBadge(user?.email);
     const sportName = profile?.disciplina?.name;
     const sportEmoji = sportName ? SPORT_EMOJI[sportName] : null;
 
@@ -270,19 +272,34 @@ export default function PerfilPage() {
                     <div className="flex-1 flex flex-col justify-center text-center lg:text-left">
                         
                         <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8 mb-5">
-                            <h1 className={cn(
-                                "text-5xl md:text-7xl font-black font-outfit leading-tight",
-                                isProjectCreator
-                                    ? "text-transparent bg-clip-text bg-gradient-to-b from-[#FFEAA7] via-[#FFD369] to-[#D4AF37] drop-shadow-md"
-                                    : "text-white"
-                            )}>
+                            <h1
+                                className={cn(
+                                    "text-5xl md:text-7xl font-black font-outfit leading-tight",
+                                    isProjectCreator
+                                        ? "text-transparent bg-clip-text bg-gradient-to-b from-[#FFEAA7] via-[#FFD369] to-[#D4AF37] drop-shadow-md"
+                                        : !profile?.name_color ? "text-white" : undefined
+                                )}
+                                style={!isProjectCreator && profile?.name_color ? { color: profile.name_color } : undefined}
+                            >
                                 {profile?.full_name?.split(' ').slice(0, 2).join('\n') || "Tu Perfil"}
                             </h1>
-                            {isProjectCreator && (
-                                <div className="flex justify-center lg:justify-start items-center lg:self-start lg:mt-3">
-                                    <Badge className="bg-gradient-to-r from-amber-600 to-amber-900 border border-amber-500/50 text-white text-[10px] font-black uppercase tracking-[0.2em] px-5 py-2 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-                                        <Crown size={12} className="mr-2" /> CREADOR DEL PROYECTO
-                                    </Badge>
+                            {(isProjectCreator || showAuraBadge || showMvpBadge) && (
+                                <div className="flex flex-wrap justify-center lg:justify-start items-center gap-2 lg:self-start lg:mt-3">
+                                    {isProjectCreator && (
+                                        <Badge className="bg-gradient-to-r from-amber-600 to-amber-900 border border-amber-500/50 text-white text-[10px] font-black uppercase tracking-[0.2em] px-5 py-2 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+                                            <Crown size={12} className="mr-2" /> CREADOR DEL PROYECTO
+                                        </Badge>
+                                    )}
+                                    {showAuraBadge && (
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-orange-500/30 bg-gradient-to-r from-red-500/10 to-yellow-500/10 shadow-[0_0_18px_rgba(239,68,68,0.25)]">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] bg-gradient-to-r from-red-400 to-yellow-400 bg-clip-text text-transparent">✦ AURA</span>
+                                        </div>
+                                    )}
+                                    {showMvpBadge && (
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-pink-400/30 bg-gradient-to-r from-pink-500/10 to-fuchsia-500/10 shadow-[0_0_18px_rgba(236,72,153,0.25)]">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] bg-gradient-to-r from-pink-300 via-fuchsia-300 to-pink-400 bg-clip-text text-transparent">★ MVP 2025</span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

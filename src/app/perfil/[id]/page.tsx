@@ -34,7 +34,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { motion } from "framer-motion";
-import { isCreator, SPORT_EMOJI, SPORT_ACCENT } from "@/lib/constants";
+import { isCreator, hasAuraBadge, hasMvpBadge, SPORT_EMOJI, SPORT_ACCENT } from "@/lib/constants";
 
 export default function PublicProfilePage() {
     const params = useParams();
@@ -350,6 +350,8 @@ export default function PublicProfilePage() {
 
     const isDeportista = profile.roles?.includes('deportista');
     const isProjectCreator = isCreator(profile.email);
+    const showAuraBadge = hasAuraBadge(profile.email);
+    const showMvpBadge = hasMvpBadge(profile.email);
     const sportName = profile.disciplina?.name;
     const sportEmoji = sportName ? SPORT_EMOJI[sportName] : null;
 
@@ -419,11 +421,26 @@ export default function PublicProfilePage() {
                                             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Original Creator</span>
                                         </div>
                                     )}
+                                    {showAuraBadge && (
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-orange-500/30 bg-gradient-to-r from-red-500/10 to-yellow-500/10 shadow-[0_0_18px_rgba(239,68,68,0.25)]">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] bg-gradient-to-r from-red-400 to-yellow-400 bg-clip-text text-transparent">✦ AURA</span>
+                                        </div>
+                                    )}
+                                    {showMvpBadge && (
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-pink-400/30 bg-gradient-to-r from-pink-500/10 to-fuchsia-500/10 shadow-[0_0_18px_rgba(236,72,153,0.25)]">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] bg-gradient-to-r from-pink-300 via-fuchsia-300 to-pink-400 bg-clip-text text-transparent">★ MVP 2025</span>
+                                        </div>
+                                    )}
                                 </div>
-                                <h1 className={cn(
-                                    "text-5xl lg:text-8xl font-black font-outfit tracking-tighter leading-none mb-2",
-                                    isProjectCreator ? "text-transparent bg-clip-text bg-gradient-to-b from-white via-amber-200 to-amber-500" : "text-white"
-                                )}>
+                                <h1
+                                    className={cn(
+                                        "text-5xl lg:text-8xl font-black font-outfit tracking-tighter leading-none mb-2",
+                                        isProjectCreator
+                                            ? "text-transparent bg-clip-text bg-gradient-to-b from-white via-amber-200 to-amber-500"
+                                            : !profile.name_color ? "text-white" : undefined
+                                    )}
+                                    style={!isProjectCreator && profile.name_color ? { color: profile.name_color } : undefined}
+                                >
                                     {profile.full_name}
                                 </h1>
                             </div>
