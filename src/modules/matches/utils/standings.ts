@@ -44,19 +44,19 @@ export function calculateStandings(matches: any[], sportName: string, fairPlayDa
         const teamB = m.delegacion_b || m.equipo_b;
 
         if (!teams[teamA]) {
-            teams[teamA] = { 
-                team: teamA, played: 0, won: 0, lost: 0, drawn: 0, 
-                pointsFor: 0, pointsAgainst: 0, diff: 0, points: 0, 
-                fairPlay: fairPlayData[teamA] || 0,
+            teams[teamA] = {
+                team: teamA, played: 0, won: 0, lost: 0, drawn: 0,
+                pointsFor: 0, pointsAgainst: 0, diff: 0, points: 0,
+                fairPlay: fairPlayData[teamA] ?? 2000,
                 setsWon: 0, setsLost: 0, gamePointsFor: 0, gamePointsAgainst: 0,
-                grupo: m.grupo 
+                grupo: m.grupo
             };
         }
         if (!teams[teamB]) {
-            teams[teamB] = { 
-                team: teamB, played: 0, won: 0, lost: 0, drawn: 0, 
-                pointsFor: 0, pointsAgainst: 0, diff: 0, points: 0, 
-                fairPlay: fairPlayData[teamB] || 0,
+            teams[teamB] = {
+                team: teamB, played: 0, won: 0, lost: 0, drawn: 0,
+                pointsFor: 0, pointsAgainst: 0, diff: 0, points: 0,
+                fairPlay: fairPlayData[teamB] ?? 2000,
                 setsWon: 0, setsLost: 0, gamePointsFor: 0, gamePointsAgainst: 0,
                 grupo: m.grupo
             };
@@ -90,7 +90,7 @@ export function calculateStandings(matches: any[], sportName: string, fairPlayDa
                 teams[teamA].setsLost += scoreB;
                 teams[teamB].setsWon += scoreB;
                 teams[teamB].setsLost += scoreA;
-                
+
                 if (md.sets) {
                     Object.values(md.sets).forEach((s: any) => {
                         teams[teamA].gamePointsFor += s.puntos_a || 0;
@@ -104,34 +104,48 @@ export function calculateStandings(matches: any[], sportName: string, fairPlayDa
             if (scoreA > scoreB) {
                 teams[teamA].won++;
                 teams[teamB].lost++;
-                
+
                 if (sportName === 'Voleibol') {
-                    if (scoreA === 3 && (scoreB === 0 || scoreB === 1)) teams[teamA].points += 3;
-                    else if (scoreA === 3 && scoreB === 2) {
-                        teams[teamA].points += 2;
-                        teams[teamB].points += 1;
+                    // Reglamento: W 2-0 = 4pts, W 2-1 = 3pts
+                    if (scoreA === 2 && scoreB === 0) {
+                        teams[teamA].points += 4;
+                        teams[teamB].points += 1;  // L 2-0 = 1pt
+                    } else if (scoreA === 2 && scoreB === 1) {
+                        teams[teamA].points += 3;  // W 2-1 = 3pts
+                        teams[teamB].points += 2;  // L 2-1 = 2pts
                     }
+                } else if (sportName === 'Baloncesto') {
+                    teams[teamA].points += 2;  // W = 2pts
+                    teams[teamB].points += 1;  // L = 1pt
                 } else {
-                    teams[teamA].points += 3;
+                    teams[teamA].points += 3;  // Fútbol y otros: W = 3pts
                 }
             } else if (scoreB > scoreA) {
                 teams[teamB].won++;
                 teams[teamA].lost++;
 
                 if (sportName === 'Voleibol') {
-                    if (scoreB === 3 && (scoreA === 0 || scoreA === 1)) teams[teamB].points += 3;
-                    else if (scoreB === 3 && scoreA === 2) {
-                        teams[teamB].points += 2;
+                    if (scoreB === 2 && scoreA === 0) {
+                        teams[teamB].points += 4;
                         teams[teamA].points += 1;
+                    } else if (scoreB === 2 && scoreA === 1) {
+                        teams[teamB].points += 3;
+                        teams[teamA].points += 2;
                     }
+                } else if (sportName === 'Baloncesto') {
+                    teams[teamB].points += 2;
+                    teams[teamA].points += 1;
                 } else {
                     teams[teamB].points += 3;
                 }
             } else {
-                teams[teamA].drawn++;
-                teams[teamB].drawn++;
-                teams[teamA].points += 1;
-                teams[teamB].points += 1;
+                // Draw only for Fútbol (Baloncesto has no draws)
+                if (sportName !== 'Baloncesto') {
+                    teams[teamA].drawn++;
+                    teams[teamB].drawn++;
+                    teams[teamA].points += 1;
+                    teams[teamB].points += 1;
+                }
             }
         }
     });

@@ -93,6 +93,7 @@ export default function MatchControlPage() {
         handleManualScoreUpdate,
         handleCambiarPeriodo,
         confirmarFinalizar,
+        finalizarPorWO,
         requestDeleteEvento,
         fetchJugadores,
         fetchMatchDetails
@@ -232,11 +233,15 @@ export default function MatchControlPage() {
                 </div>
             </div>
 
-            <AdminModals 
+            <AdminModals
                 isEndingMatch={isEndingMatch}
                 onCloseEnding={() => setIsEndingMatch(false)}
                 onConfirmEnding={async () => {
                    await confirmarFinalizar();
+                   setIsEndingMatch(false);
+                }}
+                onConfirmWO={async (ganador: 'equipo_a' | 'equipo_b') => {
+                   await finalizarPorWO(ganador);
                    setIsEndingMatch(false);
                 }}
                 isEditingScore={isEditingScore}

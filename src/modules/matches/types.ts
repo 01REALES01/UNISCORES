@@ -67,6 +67,8 @@ export type TipoEvento =
   | 'punto_3'
   | 'tarjeta_amarilla'
   | 'tarjeta_roja'
+  | 'expulsion_delegado'
+  | 'mal_comportamiento'
   | 'inicio'
   | 'fin'
   | 'set'

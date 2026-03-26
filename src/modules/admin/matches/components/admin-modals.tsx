@@ -1,12 +1,14 @@
-import { Trophy, X } from "lucide-react";
+import { Trophy, X, AlertCircle } from "lucide-react";
 import { Card, Button } from "@/components/ui-primitives";
 import { cn } from "@/lib/utils";
 import { getDisplayName } from "@/lib/sport-helpers";
+import { useState } from "react";
 
 interface AdminModalsProps {
   isEndingMatch: boolean;
   onCloseEnding: () => void;
   onConfirmEnding: () => void;
+  onConfirmWO?: (ganador: 'equipo_a' | 'equipo_b') => void;
   isEditingScore: boolean;
   onCloseEditing: () => void;
   match: any;
@@ -21,6 +23,7 @@ export const AdminModals = ({
   isEndingMatch,
   onCloseEnding,
   onConfirmEnding,
+  onConfirmWO,
   isEditingScore,
   onCloseEditing,
   match,
@@ -30,20 +33,76 @@ export const AdminModals = ({
   onCloseDeletion,
   onConfirmDeletion
 }: AdminModalsProps) => {
+  const [showWOModal, setShowWOModal] = useState(false);
   return (
     <>
-      {isEndingMatch && (
+      {isEndingMatch && !showWOModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
           <Card className="relative bg-[#0a0805] border-white/10 p-10 max-w-sm w-full text-center rounded-[3rem] animate-in zoom-in-95 shadow-[0_0_100px_rgba(244,63,94,0.15)] overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-rose-600 to-orange-600" />
-            <div className="w-20 h-20 rounded-3xl bg-rose-500/10 flex items-center justify-center mx-auto mb-6 border border-rose-500/20">
-                <Trophy size={48} className="text-amber-500 animate-bounce" />
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary to-secondary" />
+            <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-6 border border-primary/20">
+                <Trophy size={48} className="text-secondary animate-bounce" />
             </div>
-            <h3 className="text-2xl font-black mb-2 uppercase tracking-tighter text-white">¿Finalizar Partido?</h3>
-            <p className="text-sm text-white/40 mb-10 font-bold px-4">El resultado actual será permanente y se cerrarán todas las actualizaciones Live.</p>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-black uppercase tracking-tight text-white mb-2 italic">Finalizar Partido</h2>
+              <p className="text-sm font-black uppercase tracking-widest text-slate-500 italic">¿Cómo deseas finalizarlo?</p>
+            </div>
             <div className="grid grid-cols-2 gap-4">
-              <Button variant="ghost" className="h-14 rounded-2xl font-black uppercase tracking-widest text-white/40 hover:text-white" onClick={onCloseEnding}>Cancelar</Button>
-              <Button className="h-14 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black uppercase tracking-widest shadow-xl shadow-rose-600/20" onClick={onConfirmEnding}>Sí, Finalizar</Button>
+              <Button variant="ghost" className="h-14 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black uppercase tracking-widest text-xs" onClick={onCloseEnding}>Cancelar</Button>
+              <Button className="h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest shadow-xl shadow-emerald-600/20 text-xs" onClick={onConfirmEnding}>Normal</Button>
+              <Button className="h-14 col-span-2 rounded-2xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-200 font-black uppercase tracking-widest text-xs" onClick={() => setShowWOModal(true)}>W.O. (Walkover)</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {showWOModal && (
+        <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+          <Card className="relative bg-[#0a0805] border-amber-500/30 p-10 max-w-sm w-full rounded-[3rem] animate-in zoom-in-95 shadow-[0_0_100px_rgba(251,146,60,0.15)] overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-600 to-orange-600" />
+            <div className="w-20 h-20 rounded-3xl bg-amber-600/10 flex items-center justify-center mx-auto mb-6 border border-amber-500/20">
+                <AlertCircle size={48} className="text-amber-400" />
+            </div>
+            <div className="text-center mb-8">
+              <h2 className="text-xl font-black uppercase tracking-tight text-white mb-3 italic">Finalizar por W.O.</h2>
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6">¿Quién gana por Walkover?</p>
+              <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 mb-6 text-left">
+                <div className="flex items-center gap-2 text-amber-300 text-xs font-bold uppercase mb-2">
+                  Equipo A
+                </div>
+                <div className="text-sm font-black text-white truncate mb-4">{match.equipo_a}</div>
+                <div className="flex items-center gap-2 text-amber-300 text-xs font-bold uppercase mb-2">
+                  Equipo B
+                </div>
+                <div className="text-sm font-black text-white truncate">{match.equipo_b}</div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <Button
+                className="w-full h-12 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-black uppercase tracking-widest text-sm"
+                onClick={() => {
+                  if (onConfirmWO) onConfirmWO('equipo_a');
+                  setShowWOModal(false);
+                }}
+              >
+                {match.equipo_a} Gana
+              </Button>
+              <Button
+                className="w-full h-12 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-black uppercase tracking-widest text-sm"
+                onClick={() => {
+                  if (onConfirmWO) onConfirmWO('equipo_b');
+                  setShowWOModal(false);
+                }}
+              >
+                {match.equipo_b} Gana
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full h-12 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black uppercase tracking-widest text-sm"
+                onClick={() => setShowWOModal(false)}
+              >
+                Atrás
+              </Button>
             </div>
           </Card>
         </div>
@@ -68,7 +127,7 @@ export const AdminModals = ({
                     <div className="flex items-center gap-4 bg-black/40 p-1.5 rounded-xl border border-white/10 shadow-inner">
                       <button 
                         onClick={() => onManualScoreUpdate(field, Math.max(0, currentVal - 1))} 
-                        className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-rose-500/20 hover:text-rose-500 rounded-lg transition-all font-black text-xl"
+                        className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center text-white/25 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all active:scale-95"
                       >
                         -
                       </button>

@@ -395,7 +395,7 @@ export function useMatchControl(matchId: string) {
         if (!error) {
             invalidateCache('admin-partidos');
             registrarEventoSistema('fin', 'Partido finalizado oficialmente');
-            
+
             // Log Action
             await logAction('UPDATE_MATCH', 'partido', matchId, {
                 nuevo_estado: 'finalizado',
@@ -407,6 +407,51 @@ export function useMatchControl(matchId: string) {
         } else {
             console.error("Match finalization error:", error);
             toast.error("Error al finalizar el partido: " + error.message);
+            return false;
+        }
+    };
+
+    const finalizarPorWO = async (equipo_ganador: 'equipo_a' | 'equipo_b') => {
+        if (!match || !profile) return;
+
+        const sportName = match.disciplinas?.name || 'Fútbol';
+        const WO_SCORES: Record<string, any> = {
+            'Fútbol': { winner: { goles_a: 3, goles_b: 0 }, loser: { goles_a: 0, goles_b: 3 } },
+            'Baloncesto': { winner: { total_a: 20, total_b: 0 }, loser: { total_a: 0, total_b: 20 } },
+            'Voleibol': {
+                winner: { sets_a: 2, sets_b: 0, sets: { 1: { puntos_a: 25, puntos_b: 0 }, 2: { puntos_a: 25, puntos_b: 0 } } },
+                loser: { sets_a: 0, sets_b: 2, sets: { 1: { puntos_a: 0, puntos_b: 25 }, 2: { puntos_a: 0, puntos_b: 25 } } }
+            },
+            'Tenis': {
+                winner: { sets_a: 2, sets_b: 0, sets: { 1: { juegos_a: 6, juegos_b: 0 }, 2: { juegos_a: 6, juegos_b: 0 } } },
+                loser: { sets_a: 0, sets_b: 2, sets: { 1: { juegos_a: 0, juegos_b: 6 }, 2: { juegos_a: 0, juegos_b: 6 } } }
+            },
+        };
+
+        const woScores = WO_SCORES[sportName] || WO_SCORES['Fútbol'];
+        const marcador_detalle = equipo_ganador === 'equipo_a' ? woScores.winner : woScores.loser;
+
+        const { error } = await supabase.from('partidos').update({
+            estado: 'finalizado',
+            marcador_detalle: auditDetalle(marcador_detalle)
+        }).eq('id', matchId);
+
+        if (!error) {
+            invalidateCache('admin-partidos');
+            registrarEventoSistema('fin', `Partido finalizado por W.O. — ${equipo_ganador === 'equipo_a' ? match.equipo_a : match.equipo_b} gana`);
+
+            await logAction('UPDATE_MATCH', 'partido', matchId, {
+                nuevo_estado: 'finalizado',
+                motivo: 'W.O.',
+                ganador: equipo_ganador,
+                marcador_final: marcador_detalle
+            });
+
+            toast.success(`Partido finalizado por W.O. — ${equipo_ganador === 'equipo_a' ? match.equipo_a : match.equipo_b} gana`);
+            return true;
+        } else {
+            console.error("WO finalization error:", error);
+            toast.error("Error al finalizar por W.O.: " + error.message);
             return false;
         }
     };
@@ -450,6 +495,7 @@ export function useMatchControl(matchId: string) {
         handleManualScoreUpdate,
         handleCambiarPeriodo,
         confirmarFinalizar,
+        finalizarPorWO,
         requestDeleteEvento,
         fetchJugadores,
         fetchEventos,
