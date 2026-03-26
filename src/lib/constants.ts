@@ -142,6 +142,17 @@ export const SPORT_COLORS: Record<string, string> = {
     'Natación': '#10b981',
 };
 
+export const BRAND_VALUES = [
+    { name: 'Amistad', color: '#F97316', bg: 'bg-orange-500' },
+    { name: 'Alegría', color: '#6D28D9', bg: 'bg-primary' },
+    { name: 'Tolerancia', color: '#1E1B4B', bg: 'bg-[#1E1B4B]' },
+    { name: 'Cortesía', color: '#F5F5DC', bg: 'bg-[#F5F5DC]', text: 'text-primary' },
+    { name: 'Perseverancia', color: '#059669', bg: 'bg-secondary' },
+    { name: 'Respeto', color: '#3B82F6', bg: 'bg-blue-500' },
+    { name: 'Trabajo en Equipo', color: '#991B1B', bg: 'bg-red-800' },
+    { name: 'Solidaridad', color: '#EC4899', bg: 'bg-pink-500' },
+];
+
 export const CREATOR_EMAILS = [
     'ldsilva@uninorte.edu.co',
     'donaldp@uninorte.edu.co',
@@ -156,7 +167,7 @@ export function isCreator(email?: string): boolean {
 
 // Special profile badges
 export const AURA_EMAIL = 'mciccarelli@uninorte.edu.co';
-export const MVP_EMAIL = 'nzorozco@uninorce.edu.co';
+export const MVP_EMAIL = 'nzorozco@uninorte.edu.co';
 
 export function hasAuraBadge(email?: string): boolean {
     return !!email && email.toLowerCase() === AURA_EMAIL;
