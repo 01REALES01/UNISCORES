@@ -86,6 +86,7 @@ export type Evento = {
   descripcion?: string | null;
   periodo?: number | null;
   jugador_id?: number | null;
+  jugador_id_normalized?: number | null;
   jugadores?: {
     id?: number;
     nombre: string;

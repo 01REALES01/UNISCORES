@@ -43,7 +43,7 @@ export const AdminMatchHeader = ({ match, disciplinaName, bgGradient, activeEdit
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
                 </span>
-                <span className="text-[10px] font-black text-rose-400 tracking-[0.2em] uppercase">En Vivo</span>
+                <span className="text-[10px] font-black text-rose-400 tracking-[0.2em] uppercase">En Curso</span>
               </div>
             ) : (
               <div className="px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/40 text-[10px] font-black tracking-[0.2em] uppercase backdrop-blur-sm">

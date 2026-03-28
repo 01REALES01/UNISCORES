@@ -77,7 +77,7 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
                 <div className="inline-flex bg-white/[0.03] p-1 rounded-xl border border-white/5">
                     {([
                         { key: 'upcoming', label: 'Próximos', icon: Clock },
-                        { key: 'live', label: 'Vivo', icon: Zap },
+                        { key: 'live', label: 'En Curso', icon: Zap },
                         { key: 'finished', label: 'Finales', icon: Trophy },
                         { key: 'all', label: 'Todos', icon: Filter },
                     ] as const).map((f) => (

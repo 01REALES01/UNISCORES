@@ -10,6 +10,7 @@ interface AdminEventCreatorProps {
   actions: any[];
   jugadoresA: any[];
   jugadoresB: any[];
+  eventos: any[];
   onAddEvent: (data: any) => void;
   onAddPlayer: (team: string, data: any) => Promise<number | null>;
   disciplinaName: string;
@@ -20,6 +21,7 @@ export const AdminEventCreator = ({
   actions,
   jugadoresA,
   jugadoresB,
+  eventos,
   onAddEvent,
   onAddPlayer,
   disciplinaName
@@ -35,8 +37,19 @@ export const AdminEventCreator = ({
   const sportColor = SPORT_COLORS[disciplinaName] || '#6366f1';
   const isIndividualSport = ['Ajedrez', 'Tenis', 'Tenis de Mesa'].includes(disciplinaName);
   const isVolleyball = disciplinaName === 'Voleibol';
+  const isFutbol = disciplinaName === 'Fútbol';
   const needsPlayer = !isIndividualSport;
   const playerOptional = isVolleyball;
+
+  // Players expelled by red card — cannot receive more events
+  const expelledPlayerIds = new Set(
+    isFutbol
+      ? eventos
+          .filter(e => e.tipo_evento === 'tarjeta_roja')
+          .map(e => e.jugador_id_normalized)
+          .filter(Boolean)
+      : []
+  );
 
   const canConfirm = nuevoEvento.tipo && nuevoEvento.equipo && (
     nuevoEvento.jugador_id || isIndividualSport || (playerOptional && nuevoEvento.jugador_id === -1)
@@ -200,26 +213,41 @@ export const AdminEventCreator = ({
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
-                {(nuevoEvento.equipo === 'equipo_a' ? jugadoresA : jugadoresB).map(j => (
-                  <button key={j.id}
-                    onClick={() => setNuevoEvento({ ...nuevoEvento, jugador_id: j.id })}
-                    className="p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all group/j"
-                    style={nuevoEvento.jugador_id === j.id
-                      ? { background: sportColor, color: '#000', borderColor: sportColor }
-                      : { borderColor: `${sportColor}08`, background: `${sportColor}03` }
-                    }
-                  >
-                    <div className="w-6 h-6 rounded-lg flex items-center justify-center font-mono text-[9px] font-black border shrink-0 transition-colors"
-                      style={nuevoEvento.jugador_id === j.id
-                        ? { background: 'rgba(0,0,0,0.3)', color: '#fff', borderColor: 'transparent' }
-                        : { background: `${sportColor}10`, borderColor: `${sportColor}15`, color: `${sportColor}70` }
+                {(nuevoEvento.equipo === 'equipo_a' ? jugadoresA : jugadoresB).map(j => {
+                  const isExpelled = expelledPlayerIds.has(j.id);
+                  return (
+                    <button key={j.id}
+                      onClick={() => !isExpelled && setNuevoEvento({ ...nuevoEvento, jugador_id: j.id })}
+                      disabled={isExpelled}
+                      className={cn(
+                        "p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all group/j",
+                        isExpelled && "opacity-40 cursor-not-allowed"
+                      )}
+                      style={isExpelled
+                        ? { borderColor: 'rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)' }
+                        : nuevoEvento.jugador_id === j.id
+                          ? { background: sportColor, color: '#000', borderColor: sportColor }
+                          : { borderColor: `${sportColor}08`, background: `${sportColor}03` }
                       }
                     >
-                      {j.numero || '?'}
-                    </div>
-                    <span className="truncate text-[10px] font-black uppercase tracking-tight">{j.nombre}</span>
-                  </button>
-                ))}
+                      <div className="w-6 h-6 rounded-lg flex items-center justify-center font-mono text-[9px] font-black border shrink-0 transition-colors"
+                        style={isExpelled
+                          ? { background: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.3)', color: 'rgba(239,68,68,0.6)' }
+                          : nuevoEvento.jugador_id === j.id
+                            ? { background: 'rgba(0,0,0,0.3)', color: '#fff', borderColor: 'transparent' }
+                            : { background: `${sportColor}10`, borderColor: `${sportColor}15`, color: `${sportColor}70` }
+                        }
+                      >
+                        {isExpelled ? '🟥' : (j.numero || '?')}
+                      </div>
+                      <span className={cn(
+                        "truncate text-[10px] font-black uppercase tracking-tight",
+                        isExpelled && "line-through"
+                      )}>{j.nombre}</span>
+                      {isExpelled && <span className="text-[7px] font-black text-rose-500/60 uppercase tracking-wider ml-auto shrink-0">Expulsado</span>}
+                    </button>
+                  );
+                })}
                 {(nuevoEvento.equipo === 'equipo_a' ? jugadoresA : jugadoresB).length === 0 && nuevoEvento.equipo && !addingPlayerTeam && (
                   <div className="col-span-full py-6 text-center rounded-xl border border-dashed" style={{ borderColor: `${sportColor}10` }}>
                     <p className="text-[9px] font-black text-white/15 uppercase tracking-widest">Sin jugadores</p>

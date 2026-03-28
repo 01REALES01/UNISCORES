@@ -223,7 +223,7 @@ export function GroupStageTable({ matches, sportName, grupo }: GroupStageTablePr
                                             </span>
                                         ) : m.estado === 'en_curso' ? (
                                             <div className="flex flex-col items-center gap-1.5">
-                                                <Badge variant="live" className="px-2 py-0.5 text-[7px] animate-pulse">LIVE</Badge>
+                                                <Badge variant="live" className="px-2 py-0.5 text-[7px] animate-pulse">EN CURSO</Badge>
                                                 <span className="font-black text-sm text-primary tabular-nums tracking-tighter drop-shadow-[0_0_10px_rgba(109,40,217,0.4)]">
                                                     {scoreA} — {scoreB}
                                                 </span>

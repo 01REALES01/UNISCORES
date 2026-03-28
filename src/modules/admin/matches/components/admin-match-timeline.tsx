@@ -73,11 +73,7 @@ export const AdminMatchTimeline = ({
                 <div className="absolute top-0 left-0 bottom-0 w-0.5 transition-colors"
                   style={{ background: isSystem ? `${sportColor}10` : isTeamA ? `${sportColor}40` : `${sportColor}20` }} />
 
-                {/* Minute */}
-                <div className="w-9 h-9 rounded-xl border flex items-center justify-center font-mono text-[10px] font-black shrink-0 shadow-inner"
-                  style={{ background: `${sportColor}06`, borderColor: `${sportColor}12`, color: `${sportColor}80` }}>
-                  {e.minuto}'
-                </div>
+
 
                 {/* Content */}
                 <div className="flex-1 min-w-0 flex flex-col justify-center">

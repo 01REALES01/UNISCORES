@@ -64,8 +64,8 @@ describe("UI Primitives", () => {
         });
 
         it("renders live variant with animation", () => {
-            render(<Badge variant="live">LIVE</Badge>);
-            const badge = screen.getByText("LIVE");
+            render(<Badge variant="live">EN CURSO</Badge>);
+            const badge = screen.getByText("EN CURSO");
             expect(badge.className).toContain("live-indicator");
         });
     });

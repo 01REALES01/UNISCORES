@@ -188,50 +188,28 @@ export function useMatchControl(matchId: string) {
         return () => { supabase.removeChannel(channel); };
     }, [matchId, profile]);
 
-    useEffect(() => {
-        if (cronometroActivo) {
-            const isCountdown = isCountdownSport(match?.disciplinas?.name || "");
-            intervalRef.current = setInterval(() => {
-                setMinutoActual(prev => {
-                    const nuevo = isCountdown ? Math.max(0, prev - 1) : prev + 1;
-                    actualizarMinutoEnDB(nuevo);
-                    return nuevo;
-                });
-            }, 60000);
-        } else {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-        }
-        return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-    }, [cronometroActivo, match?.disciplinas?.name, actualizarMinutoEnDB]);
+    // Chronometer interval removed — matches no longer track time minute by minute
 
     // Handlers
     const toggleCronometro = async () => {
         if (!match) return;
         try {
-            const nuevoEstado = !cronometroActivo;
-            setCronometroActivo(nuevoEstado);
-
             const { data: freshMatch } = await supabase
                 .from('partidos')
                 .select('marcador_detalle, estado')
                 .eq('id', matchId)
                 .single();
             const freshDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
-
-            const nuevoDetalle = {
-                ...freshDetalle,
-                estado_cronometro: nuevoEstado ? 'corriendo' : 'pausado',
-                ultimo_update: new Date().toISOString()
-            };
-
             const currentEstado = freshMatch?.estado || match.estado;
-            if (nuevoEstado && currentEstado === 'programado') {
-                const sportName = match.disciplinas?.name || "";
-                const isCountdown = isCountdownSport(sportName);
 
-                const startMinuto = isCountdown ? getPeriodDuration(sportName) : 0;
-                nuevoDetalle.tiempo_inicio = new Date().toISOString();
-                nuevoDetalle.minuto_actual = startMinuto;
+            if (currentEstado === 'programado') {
+                // Simply start the match — no chronometer
+                const sportName = match.disciplinas?.name || "";
+                const nuevoDetalle = {
+                    ...freshDetalle,
+                    tiempo_inicio: new Date().toISOString(),
+                    estado_cronometro: 'pausado',
+                };
 
                 if (sportName === 'Baloncesto' && !nuevoDetalle.cuarto_actual) {
                     nuevoDetalle.cuarto_actual = 1;
@@ -243,23 +221,15 @@ export function useMatchControl(matchId: string) {
                 }).eq('id', matchId);
 
                 if (error) throw error;
-                setMinutoActual(startMinuto);
-                registrarEventoSistema('inicio', 'Inicio del partido', startMinuto, 1);
-                
-                // Log Action
+                registrarEventoSistema('inicio', 'Inicio del partido', 0, 1);
+
                 await logAction('UPDATE_MATCH', 'partido', matchId, {
                     nuevo_estado: 'en_curso',
                     info: 'El partido ha comenzado'
                 });
-            } else {
-                const { error } = await supabase.from('partidos').update({
-                    marcador_detalle: auditDetalle(nuevoDetalle)
-                }).eq('id', matchId);
-                if (error) throw error;
             }
         } catch (err: any) {
-            toast.error('Error con el cronómetro: ' + err.message);
-            setCronometroActivo(cronometroActivo);
+            toast.error('Error al iniciar: ' + err.message);
         }
     };
 
@@ -270,6 +240,17 @@ export function useMatchControl(matchId: string) {
         if (match.estado !== 'en_curso') {
             if (!(match.estado === 'programado' && tipo === 'cambio')) {
                 toast.error('Solo se pueden registrar eventos de juego en partidos EN CURSO.');
+                return;
+            }
+        }
+
+        // Block events for expelled players (red card) in Fútbol
+        if (disciplinaName === 'Fútbol' && jugador_id) {
+            const hasRedCard = eventos.some(
+                e => e.tipo_evento === 'tarjeta_roja' && e.jugador_id_normalized === jugador_id
+            );
+            if (hasRedCard) {
+                toast.error('Este jugador fue expulsado (tarjeta roja). No se le pueden asignar más eventos.');
                 return;
             }
         }

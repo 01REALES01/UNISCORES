@@ -319,7 +319,7 @@ function UnifiedCard({
                         </div>
 
                         <div className="flex flex-col items-end gap-1">
-                            {statusLabel === 'LIVE' ? (
+                            {statusLabel === 'EN CURSO' ? (
                                 <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportName} />
                             ) : (
                                 <div className={cn(
@@ -489,7 +489,7 @@ function LiveMatchCard({ partido }: { partido: any }) {
     return (
         <UnifiedCard
             partido={partido}
-            statusLabel="LIVE"
+            statusLabel="EN CURSO"
             scoreDisplay={{ a: scoreA, b: scoreB }}
         />
     );

@@ -133,7 +133,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
 
                     {/* Top-Left Absolute Timer */}
                     {currentMatch.estado === 'en_curso' && currentMatch.marcador_detalle?.timer && (
-                        <m.div 
+                        <m.div
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ delay: 0.4 }}
@@ -214,13 +214,13 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                             {(currentMatch.marcador_detalle?.participantes || []).length} Nadadores
                                                         </span>
                                                     </div>
-                                                    
+
                                                     {/* Category/Gender */}
                                                     <div className={cn(
                                                         "px-3 py-1.5 rounded-full border backdrop-blur-sm flex items-center gap-2",
                                                         gender === 'femenino' ? "bg-pink-500/10 border-pink-500/30 text-pink-400" :
-                                                        gender === 'mixto' ? "bg-purple-500/10 border-purple-500/30 text-purple-400" :
-                                                        "bg-blue-500/10 border-blue-500/30 text-blue-400"
+                                                            gender === 'mixto' ? "bg-purple-500/10 border-purple-500/30 text-purple-400" :
+                                                                "bg-blue-500/10 border-blue-500/30 text-blue-400"
                                                     )}>
                                                         <span className="text-xs md:text-sm font-bold uppercase tracking-wider">
                                                             {gender}

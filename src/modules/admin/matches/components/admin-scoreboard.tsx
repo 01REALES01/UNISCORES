@@ -1,7 +1,6 @@
 import { Avatar } from "@/components/ui-primitives";
-import { Edit2, Play, Pause, Square, SkipForward } from "lucide-react";
+import { Edit2, Play, Square } from "lucide-react";
 import { getDisplayName } from "@/lib/sport-helpers";
-import { PublicLiveTimer } from "@/components/public-live-timer";
 import { cn } from "@/lib/utils";
 import { SPORT_COLORS } from "@/lib/constants";
 
@@ -94,33 +93,37 @@ export const AdminScoreboard = ({
                 </div>
               </div>
 
-              <PublicLiveTimer detalle={match.marcador_detalle} deporte={disciplinaName} />
+              {isLive ? (
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: sportColor }} />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 shadow-[0_0_12px_currentColor]" style={{ background: sportColor }} />
+                  </span>
+                  <span className="font-black text-sm uppercase tracking-[0.2em] drop-shadow-[0_0_10px_currentColor]" style={{ color: sportColor }}>
+                    EN CURSO
+                  </span>
+                </div>
+              ) : match.estado === 'programado' ? (
+                <span className="text-sm font-black text-white/20 uppercase tracking-[0.2em]">Programado</span>
+              ) : null}
 
               <div className="flex flex-col gap-2 w-full">
                 {!isFinal && (
                   <div className="flex items-center gap-2 p-1.5 rounded-2xl border w-full" style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}>
-                    <button onClick={onToggleCronometro}
-                      className={cn(
-                        "flex-1 h-12 rounded-[0.875rem] flex items-center justify-center gap-2.5 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95",
-                        cronometroActivo ? "border" : "text-white shadow-lg"
-                      )}
-                      style={cronometroActivo
-                        ? { background: `${sportColor}15`, color: sportColor, borderColor: `${sportColor}30` }
-                        : { background: sportColor, boxShadow: `0 4px 15px ${sportColor}40` }
-                      }
-                    >
-                      {cronometroActivo ? <Pause size={16} /> : <Play size={16} />}
-                      {cronometroActivo ? 'Pausar' : match.estado === 'programado' ? 'Iniciar' : 'Reanudar'}
-                    </button>
-                    {canAdvancePeriod && (
-                      <button onClick={onCambiarPeriodo}
-                        className="h-12 px-3 rounded-[0.875rem] border flex items-center justify-center gap-1.5 font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 hover:text-white"
-                        style={{ borderColor: `${sportColor}20`, background: `${sportColor}08`, color: `${sportColor}cc` }}
-                        title={`Avanzar a ${nextPeriodLabel}`}
+                    {match.estado === 'programado' ? (
+                      <button onClick={onToggleCronometro}
+                        className="flex-1 h-12 rounded-[0.875rem] flex items-center justify-center gap-2.5 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 text-white shadow-lg"
+                        style={{ background: sportColor, boxShadow: `0 4px 15px ${sportColor}40` }}
                       >
-                        <SkipForward size={14} />
-                        {nextPeriodLabel}
+                        <Play size={16} />
+                        Iniciar
                       </button>
+                    ) : (
+                      <div className="flex-1 h-12 rounded-[0.875rem] flex items-center justify-center gap-2.5 font-black text-[10px] uppercase tracking-widest border"
+                        style={{ background: `${sportColor}10`, color: sportColor, borderColor: `${sportColor}25` }}
+                      >
+                        EN CURSO
+                      </div>
                     )}
                     <button onClick={onFinalizar}
                       className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center text-white/25 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all active:scale-95"

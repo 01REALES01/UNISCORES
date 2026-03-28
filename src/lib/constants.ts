@@ -59,6 +59,16 @@ export const SPORT_EMOJI: Record<string, string> = {
 };
 
 // Purple & Clean Design System - Brand Consistent Sport Styles
+export const SPORT_GRADIENT: Record<string, string> = {
+    'Fútbol': 'from-emerald-500/30 to-emerald-900/10',
+    'Baloncesto': 'from-orange-500/30 to-orange-900/10',
+    'Voleibol': 'from-indigo-500/30 to-indigo-900/10',
+    'Tenis': 'from-lime-500/30 to-lime-900/10',
+    'Tenis de Mesa': 'from-rose-500/30 to-rose-900/10',
+    'Ajedrez': 'from-violet-500/25 to-violet-900/10',
+    'Natación': 'from-cyan-500/30 to-cyan-900/10',
+};
+
 export const SPORT_SOFT_BG: Record<string, string> = {
     'Fútbol': 'bg-emerald-500/10',
     'Baloncesto': 'bg-primary/10',

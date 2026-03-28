@@ -176,6 +176,7 @@ export default function MatchControlPage() {
                         actions={actions}
                         jugadoresA={jugadoresA}
                         jugadoresB={jugadoresB}
+                        eventos={eventos}
                         onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id)}
                         onAddPlayer={async (team, data) => {
                             try {

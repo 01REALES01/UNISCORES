@@ -109,7 +109,7 @@ export function QuinielaHistoryTab({ predictions, matches }: QuinielaHistoryTabP
                                             {correct ? <><CheckCircle size={10} className="inline mr-1" /> Acertado</> : <><X size={10} className="inline mr-1" /> Fallado</>}
                                         </div>
                                     )}
-                                    {isLive && <div className="px-2.5 py-1 rounded-full text-[9px] font-black bg-rose-500/15 text-rose-400 border border-rose-500/20 animate-pulse">LIVE</div>}
+                                    {isLive && <div className="px-2.5 py-1 rounded-full text-[9px] font-black bg-rose-500/15 text-rose-400 border border-rose-500/20 animate-pulse">EN CURSO</div>}
                                 </div>
 
                                 <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase mb-4">

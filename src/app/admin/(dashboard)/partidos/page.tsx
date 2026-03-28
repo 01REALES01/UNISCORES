@@ -303,7 +303,7 @@ export default function PartidosPage() {
                                                 <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-rose-500 opacity-75" />
                                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
                                             </span>
-                                            <span className="text-[8px] font-black text-rose-500 uppercase">Live</span>
+                                            <span className="text-[8px] font-black text-rose-500 uppercase">En Curso</span>
                                         </div>
                                     )}
                                 </div>
@@ -479,7 +479,7 @@ export default function PartidosPage() {
                                                     transition={{ duration: 1.5, repeat: Infinity }}
                                                     className="px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
                                                 >
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> ON AIR
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> EN CURSO
                                                 </motion.div>
                                             ) : isFinished ? (
                                                 <span className="px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 text-[9px] font-black uppercase tracking-widest border border-white/5">
@@ -492,7 +492,7 @@ export default function PartidosPage() {
                                             )}
                                             {isLive && (
                                                 <span className="text-[10px] font-mono font-black text-rose-400/80 tracking-tighter italic">
-                                                    LIVE CONTROL
+                                                    CONTROL EN CURSO
                                                 </span>
                                             )}
                                         </div>
@@ -546,7 +546,7 @@ export default function PartidosPage() {
                                                 {isLive && (
                                                     <div className="mt-2 flex items-center gap-1.5">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                                                        <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest whitespace-nowrap">Gaming</span>
+                                                        <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest whitespace-nowrap">En Curso</span>
                                                     </div>
                                                 )}
                                             </div>
