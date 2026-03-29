@@ -109,25 +109,7 @@ export function NotificationBell() {
 
     return (
         <div className="flex items-center gap-2">
-            {/* Test Button */}
-            <button
-                onClick={async () => {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) return;
-                    await supabase.from('notifications').insert({
-                        user_id: user.id,
-                        type: 'match_start',
-                        title: '🔴 [TEST] Partido en curso',
-                        body: 'Ingeniería vs Sistemas ha comenzado',
-                        metadata: { match_id: 'test', sport: 'Fútbol', teams: 'Ingeniería vs Sistemas' }
-                    });
-                }}
-                className="px-3 py-1.5 hidden sm:flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-yellow-500/80 bg-yellow-500/10 hover:bg-yellow-500/20 hover:text-yellow-400 transition-colors rounded-full border border-yellow-500/20 cursor-pointer"
-                title="Probar Notificación"
-            >
-                <Zap size={14} />
-                <span>Test</span>
-            </button>
+
 
             <div className="relative" ref={dropdownRef}>
                 {/* Bell Button */}

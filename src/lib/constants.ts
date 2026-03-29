@@ -99,6 +99,17 @@ export const SPORT_GLOW: Record<string, string> = {
     'Natación': 'hover:shadow-lg hover:shadow-secondary-500/15',
 };
 
+export const SPORT_GRADIENT: Record<string, string> = {
+    'Fútbol': 'from-emerald-500/20 to-transparent',
+    'Baloncesto': 'from-primary/20 to-transparent',
+    'Voleibol': 'from-secondary/20 to-transparent',
+    'Tenis': 'from-primary/10 to-transparent',
+    'Tenis de Mesa': 'from-secondary/10 to-transparent',
+    'Ajedrez': 'from-primary/15 to-transparent',
+    'Natación': 'from-secondary/15 to-transparent',
+    'default': 'from-primary/10 to-transparent'
+};
+
 export const SPORT_LIVE_TEXT: Record<string, string> = {
     'Fútbol': 'text-emerald-500',
     'Baloncesto': 'text-primary',
