@@ -4,11 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuditLogger } from "@/hooks/useAuditLogger";
-import { Trophy, Settings, ChevronDown, ChevronUp, Save, Plus, Trash2 } from "lucide-react";
+import { Trophy, Settings, Save, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { DEPORTES_INDIVIDUALES } from "@/lib/constants";
+import { DEPORTES_INDIVIDUALES, DEPORTES_CON_CATEGORIA, DEPORTES_CON_BRACKET } from "@/lib/constants";
 import type { PuntosConfig, ClasificacionDisciplina } from "@/modules/puntos/types";
+
+type Categoria = 'principiante' | 'intermedio' | 'avanzado';
+const CATEGORIAS: Categoria[] = ['principiante', 'intermedio', 'avanzado'];
 
 interface Disciplina { id: number; name: string; icon?: string }
 interface Carrera { id: number; nombre: string; escudo_url?: string }
@@ -102,8 +105,10 @@ function ClasificacionTab() {
 
     const [selectedDisc, setSelectedDisc] = useState<number | null>(null);
     const [selectedGenero, setSelectedGenero] = useState<'masculino' | 'femenino' | 'mixto'>('masculino');
-    const [positions, setPositions] = useState<Record<number, number | null>>({}); // posicion → carrera_id
+    const [selectedCategoria, setSelectedCategoria] = useState<Categoria | null>(null);
+    const [positions, setPositions] = useState<Record<number, number | null>>({});
     const [saving, setSaving] = useState(false);
+    const [calculating, setCalculating] = useState(false);
 
     useEffect(() => {
         Promise.all([
@@ -117,16 +122,23 @@ function ClasificacionTab() {
         });
     }, []);
 
-    const fetchExisting = useCallback(async (discId: number, genero: string) => {
-        const { data } = await supabase
+    const fetchExisting = useCallback(async (discId: number, genero: string, categoria: Categoria | null) => {
+        let query = supabase
             .from('clasificacion_disciplina')
             .select('*, disciplinas(id, name), carreras(id, nombre, escudo_url)')
             .eq('disciplina_id', discId)
             .eq('genero', genero)
             .order('posicion');
+
+        if (categoria) {
+            query = query.eq('categoria', categoria);
+        } else {
+            query = query.is('categoria', null);
+        }
+
+        const { data } = await query;
         if (data) {
             setExisting(data);
-            // Populate positions from existing data
             const pos: Record<number, number | null> = {};
             data.forEach((e: ClasificacionDisciplina) => { pos[e.posicion] = e.carrera_id; });
             setPositions(pos);
@@ -137,11 +149,19 @@ function ClasificacionTab() {
     }, []);
 
     useEffect(() => {
-        if (selectedDisc) fetchExisting(selectedDisc, selectedGenero);
-    }, [selectedDisc, selectedGenero, fetchExisting]);
+        if (selectedDisc) fetchExisting(selectedDisc, selectedGenero, selectedCategoria);
+    }, [selectedDisc, selectedGenero, selectedCategoria, fetchExisting]);
+
+    // Reset categoria when discipline changes
+    useEffect(() => {
+        const name = disciplinas.find(d => d.id === selectedDisc)?.name ?? '';
+        setSelectedCategoria(DEPORTES_CON_CATEGORIA.includes(name) ? 'principiante' : null);
+    }, [selectedDisc, disciplinas]);
 
     const selectedDiscName = disciplinas.find(d => d.id === selectedDisc)?.name ?? '';
     const tipoDeporte = selectedDiscName ? getTipoDeporte(selectedDiscName) : 'equipo';
+    const hasCategoria = DEPORTES_CON_CATEGORIA.includes(selectedDiscName);
+    const hasBracket = DEPORTES_CON_BRACKET.includes(selectedDiscName);
     const configForType = configs.filter(c => c.tipo_deporte === tipoDeporte);
     const maxPositions = configForType.length || 8;
 
@@ -158,6 +178,7 @@ function ClasificacionTab() {
                     disciplina_id: selectedDisc,
                     carrera_id: carreraId!,
                     genero: selectedGenero,
+                    categoria: selectedCategoria,
                     posicion: Number(posicion),
                     puntos_obtenidos: getPuntos(Number(posicion)),
                     created_by: profile.id,
@@ -166,20 +187,51 @@ function ClasificacionTab() {
 
             const { error } = await supabase
                 .from('clasificacion_disciplina')
-                .upsert(entries, { onConflict: 'disciplina_id,carrera_id,genero' });
+                .upsert(entries, { onConflict: 'disciplina_id,carrera_id,genero,categoria' });
 
             if (error) { toast.error('Error: ' + error.message); return; }
 
             await logAction('SET_CLASIFICACION', 'config', String(selectedDisc), {
                 disciplina: selectedDiscName,
                 genero: selectedGenero,
+                categoria: selectedCategoria,
                 entries: entries.length,
             });
 
             toast.success('Clasificación guardada');
-            fetchExisting(selectedDisc, selectedGenero);
+            fetchExisting(selectedDisc, selectedGenero, selectedCategoria);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleCalcular = async () => {
+        if (!selectedDisc) return;
+        setCalculating(true);
+        try {
+            const res = await fetch('/api/admin/calcular-posiciones', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    disciplina_id: selectedDisc,
+                    genero: selectedGenero,
+                    categoria: selectedCategoria,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error ?? 'Error al calcular');
+                return;
+            }
+            toast.success(`${data.message}`);
+            if (data.skipped?.length) {
+                data.skipped.forEach((s: string) => toast.info(s, { duration: 6000 }));
+            }
+            fetchExisting(selectedDisc, selectedGenero, selectedCategoria);
+        } catch {
+            toast.error('Error de red al calcular posiciones');
+        } finally {
+            setCalculating(false);
         }
     };
 
@@ -187,7 +239,7 @@ function ClasificacionTab() {
         const { error } = await supabase.from('clasificacion_disciplina').delete().eq('id', entryId);
         if (error) { toast.error('Error: ' + error.message); return; }
         toast.success('Entrada eliminada');
-        if (selectedDisc) fetchExisting(selectedDisc, selectedGenero);
+        if (selectedDisc) fetchExisting(selectedDisc, selectedGenero, selectedCategoria);
     };
 
     return (
@@ -206,11 +258,22 @@ function ClasificacionTab() {
                 </select>
                 <select
                     value={selectedGenero}
-                    onChange={e => setSelectedGenero(e.target.value as any)}
+                    onChange={e => setSelectedGenero(e.target.value as typeof selectedGenero)}
                     className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
                 >
                     {GENEROS.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
+                {hasCategoria && (
+                    <select
+                        value={selectedCategoria ?? ''}
+                        onChange={e => setSelectedCategoria(e.target.value as Categoria || null)}
+                        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
+                    >
+                        {CATEGORIAS.map(cat => (
+                            <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                        ))}
+                    </select>
+                )}
                 {selectedDisc && (
                     <span className="px-3 py-2 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400 text-xs font-bold uppercase tracking-widest">
                         {tipoDeporte}
@@ -221,10 +284,21 @@ function ClasificacionTab() {
             {selectedDisc && (
                 <>
                     <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
-                        <div className="px-4 py-3 border-b border-white/5">
+                        <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
                             <span className="text-xs font-black uppercase tracking-widest text-white/40">
                                 Posiciones — {selectedDiscName} {selectedGenero}
+                                {selectedCategoria ? ` · ${selectedCategoria}` : ''}
                             </span>
+                            {hasBracket && (
+                                <button
+                                    onClick={handleCalcular}
+                                    disabled={calculating}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 text-violet-400 text-xs font-bold transition-colors disabled:opacity-50"
+                                >
+                                    <Zap size={11} />
+                                    {calculating ? 'Calculando...' : 'Calcular desde resultados'}
+                                </button>
+                            )}
                         </div>
                         <div className="divide-y divide-white/5">
                             {Array.from({ length: maxPositions }, (_, i) => i + 1).map(pos => (
@@ -275,6 +349,11 @@ function ClasificacionTab() {
                             <div key={e.id} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/5 bg-white/[0.02]">
                                 <span className="text-amber-400 font-black text-sm w-8">{e.posicion}°</span>
                                 <span className="text-white/80 text-sm flex-1">{(e.carreras as any)?.nombre ?? `Carrera ${e.carrera_id}`}</span>
+                                {e.categoria && (
+                                    <span className="text-violet-400/60 text-xs px-2 py-0.5 rounded-md bg-violet-500/10 border border-violet-500/10">
+                                        {e.categoria}
+                                    </span>
+                                )}
                                 <span className="text-amber-400/60 text-xs">{e.puntos_obtenidos} pts</span>
                                 <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded-lg hover:bg-rose-500/10 text-white/20 hover:text-rose-400 transition-colors">
                                     <Trash2 size={12} />

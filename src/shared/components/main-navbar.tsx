@@ -137,24 +137,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                     <div className="flex-1 flex items-center justify-end order-3 gap-2">
                         {user && (
                             <>
-                                <button
-                                    onClick={async () => {
-                                        const { error } = await supabase.from('notifications').insert({
-                                            user_id: user.id,
-                                            type: 'match_start',
-                                            title: '🔴 [TEST] Partido en curso',
-                                            body: 'Ingeniería vs Medicina ha comenzado',
-                                            metadata: { match_id: 'test', sport: 'Fútbol', teams: 'Ingeniería vs Medicina' }
-                                        });
-                                        if (error) console.error("Error sending test notif:", error);
-                                        else console.log("Test notification sent");
-                                    }}
-                                    className="px-3 py-1.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-yellow-500/80 bg-yellow-500/10 hover:bg-yellow-500/20 hover:text-yellow-400 transition-colors rounded-full border border-yellow-500/20 mr-2"
-                                    title="Enviar Notificación de Prueba"
-                                >
-                                    <Zap size={14} />
-                                    <span>Test</span>
-                                </button>
+
                                 <NotificationBell />
                             </>
                         )}

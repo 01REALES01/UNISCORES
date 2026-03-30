@@ -6,7 +6,6 @@ import { Bell, BellRing, UserPlus, Trophy, Zap, Users, Trash2, CheckCheck, Setti
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
-import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { Avatar } from "@/components/ui-primitives";
 import {
     getPreferences,
@@ -86,7 +85,6 @@ export default function NotificacionesPage() {
         refreshFriendRequests,
     } = useNotifications();
 
-    const { pushState, subscribing, subscribe: subscribePush, unsubscribe: unsubscribePush, isSupported: isPushSupported } = usePushSubscription();
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
     const [activeTab, setActiveTab] = useState<'notifications' | 'preferences'>('notifications');
     const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
@@ -392,73 +390,6 @@ export default function NotificacionesPage() {
                                     <p className="text-[10px] font-black uppercase tracking-widest text-white/30 text-center">Guardando...</p>
                                 )}
 
-                                {/* Push Notifications */}
-                                {isPushSupported && (
-                                    <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">
-                                        <div className="px-5 py-3 border-b border-white/5">
-                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Notificaciones Push</p>
-                                        </div>
-                                        <div className="p-5">
-                                            {pushState === 'granted' ? (
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                                                            <BellRing size={18} className="text-emerald-500" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm font-black text-white">Push activadas</p>
-                                                            <p className="text-[10px] font-bold text-white/30">Recibirás alertas aunque la app esté cerrada</p>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={async () => {
-                                                            const ok = await unsubscribePush();
-                                                            if (ok) toast("Notificaciones push desactivadas");
-                                                        }}
-                                                        className="px-3 py-1.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all text-[10px] font-black uppercase tracking-widest"
-                                                    >
-                                                        Desactivar
-                                                    </button>
-                                                </div>
-                                            ) : pushState === 'denied' ? (
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                                                        <BellOff size={18} className="text-red-500/50" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-black text-white/40">Push bloqueadas</p>
-                                                        <p className="text-[10px] font-bold text-white/20">
-                                                            Actívalas desde la configuración de tu navegador
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                                                            <Smartphone size={18} className="text-indigo-400" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm font-black text-white">Activar notificaciones push</p>
-                                                            <p className="text-[10px] font-bold text-white/30">Recibe alertas de partidos en curso, goles y más</p>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={async () => {
-                                                            const ok = await subscribePush();
-                                                            if (ok) toast.success("¡Notificaciones push activadas!");
-                                                            else if (Notification.permission === 'denied') toast.error("Permiso denegado por el navegador");
-                                                        }}
-                                                        disabled={subscribing}
-                                                        className="px-4 py-2 rounded-xl bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 transition-all text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
-                                                    >
-                                                        {subscribing ? 'Activando...' : 'Activar'}
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
 
                                 {/* Notification Types */}
                                 <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">

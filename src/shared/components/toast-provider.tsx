@@ -117,21 +117,31 @@ export function ToastProvider() {
                     const scoreB_Old = oldDetail.goles_b || oldDetail.sets_b || oldDetail.total_b || 0;
                     const scoreB_New = newDetail.goles_b || newDetail.sets_b || newDetail.total_b || 0;
 
+                    // Determinar terminología y emoji según el deporte (detectado por llaves)
+                    const getNotifMeta = (detail: any) => {
+                        if (detail.goles_a !== undefined) return { term: '¡Gol', emoji: '⚽' };
+                        if (detail.sets_a !== undefined) return { term: '¡Set', emoji: '🏆' };
+                        if (detail.total_a !== undefined) return { term: '¡Punto', emoji: '🏀' };
+                        return { term: '¡Punto', emoji: '✨' };
+                    };
+
+                    const { term, emoji } = getNotifMeta(newDetail);
+
                     if (scoreA_New > scoreA_Old) {
-                        const title = `¡Punto para ${newItem.equipo_a}!`;
+                        const title = `${term} para ${newItem.equipo_a}!`;
                         const body = `Marcador: ${scoreA_New} - ${scoreB_New}`;
                         toast(title, {
                             description: body,
-                            icon: <Zap className="w-5 h-5 text-[#FFC000]" />,
+                            icon: <span className="text-xl">{emoji}</span>,
                             style: { borderColor: 'rgba(234, 179, 8, 0.5)' }
                         });
                         sendNativeNotification(title, body);
                     } else if (scoreB_New > scoreB_Old) {
-                        const title = `¡Punto para ${newItem.equipo_b}!`;
+                        const title = `${term} para ${newItem.equipo_b}!`;
                         const body = `Marcador: ${scoreA_New} - ${scoreB_New}`;
                         toast(title, {
                             description: body,
-                            icon: <Zap className="w-5 h-5 text-[#FFC000]" />,
+                            icon: <span className="text-xl">{emoji}</span>,
                             style: { borderColor: 'rgba(234, 179, 8, 0.5)' }
                         });
                         sendNativeNotification(title, body);

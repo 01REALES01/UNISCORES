@@ -5,6 +5,12 @@ export const DEPORTES_INDIVIDUALES = [
     'Natación'
 ];
 
+// Sports that split into categories: principiante / intermedio / avanzado
+export const DEPORTES_CON_CATEGORIA = ['Tenis', 'Tenis de Mesa', 'Natación'];
+
+// Sports with a bracket (can auto-derive 1st–4th from match results)
+export const DEPORTES_CON_BRACKET = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa'];
+
 // ── Swimming-specific constants ──────────────────────────────────────────────
 export const NATACION_ESTILOS = ['Libre', 'Pecho', 'Espalda', 'Mariposa', 'Combinado'];
 export const NATACION_DISTANCIAS = ['25m', '50m', '100m', '200m'];
@@ -107,6 +113,17 @@ export const SPORT_GLOW: Record<string, string> = {
     'Tenis de Mesa': 'hover:shadow-lg hover:shadow-secondary-500/5',
     'Ajedrez': 'hover:shadow-lg hover:shadow-primary-500/15',
     'Natación': 'hover:shadow-lg hover:shadow-secondary-500/15',
+};
+
+export const SPORT_GRADIENT: Record<string, string> = {
+    'Fútbol': 'from-emerald-500/20 to-transparent',
+    'Baloncesto': 'from-primary/20 to-transparent',
+    'Voleibol': 'from-secondary/20 to-transparent',
+    'Tenis': 'from-primary/10 to-transparent',
+    'Tenis de Mesa': 'from-secondary/10 to-transparent',
+    'Ajedrez': 'from-primary/15 to-transparent',
+    'Natación': 'from-secondary/15 to-transparent',
+    'default': 'from-primary/10 to-transparent'
 };
 
 export const SPORT_LIVE_TEXT: Record<string, string> = {
