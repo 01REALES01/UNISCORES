@@ -15,6 +15,7 @@ export interface ClasificacionDisciplina {
     disciplina_id: number;
     carrera_id: number;
     genero: 'masculino' | 'femenino' | 'mixto';
+    categoria: 'principiante' | 'intermedio' | 'avanzado' | null;
     posicion: number;
     puntos_obtenidos: number;
     notas: string | null;
@@ -36,6 +37,7 @@ export interface ClasificacionGeneralRow {
         disciplina_id: number;
         disciplina_nombre: string;
         genero: string;
+        categoria: string | null;
         posicion: number;
         puntos: number;
     }> | null;

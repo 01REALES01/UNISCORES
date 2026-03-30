@@ -5,6 +5,12 @@ export const DEPORTES_INDIVIDUALES = [
     'Natación'
 ];
 
+// Sports that split into categories: principiante / intermedio / avanzado
+export const DEPORTES_CON_CATEGORIA = ['Tenis', 'Tenis de Mesa', 'Natación'];
+
+// Sports with a bracket (can auto-derive 1st–4th from match results)
+export const DEPORTES_CON_BRACKET = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa'];
+
 // ── Swimming-specific constants ──────────────────────────────────────────────
 export const NATACION_ESTILOS = ['Libre', 'Pecho', 'Espalda', 'Mariposa', 'Combinado'];
 export const NATACION_DISTANCIAS = ['25m', '50m', '100m', '200m'];
