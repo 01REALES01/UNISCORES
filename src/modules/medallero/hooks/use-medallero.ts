@@ -5,8 +5,6 @@ import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { useEffect, useRef } from "react";
 import { mutate as globalMutate } from "swr";
-import { CARRERAS_UNINORTE } from "@/lib/constants";
-import { getCarreraName } from "@/lib/sport-helpers";
 import type { MedalEntry } from "@/modules/medallero/types";
 
 const SAMPLE_DATA: MedalEntry[] = [
@@ -22,12 +20,11 @@ const SAMPLE_DATA: MedalEntry[] = [
 
 // ─── Business logic (pure) ─────────────────────────────────────────────────────
 
-function normalize(str: string) {
-    return str.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
+type CarreraLookup = { id: number; nombre: string; escudo_url?: string | null };
 
 function computeMedallero(
     rawMatches: unknown[],
+    carreras: CarreraLookup[],
     activeSport: string,
     activeGender: string,
 ): MedalEntry[] {
@@ -40,26 +37,29 @@ function computeMedallero(
         }))
         .filter(m => m.estado_norm === 'finalizado');
 
-    const careerStats: Record<string, MedalEntry> = {};
-    CARRERAS_UNINORTE.forEach((name, idx) => {
-        careerStats[name] = { id: idx, equipo_nombre: name, oro: 0, plata: 0, bronce: 0, puntos: 0, won: 0, draw: 0, lost: 0, played: 0 };
+    // Key careerStats by numeric ID — works for solo careers and fusions
+    const careerStats: Record<number, MedalEntry> = {};
+    carreras.forEach((c, idx) => {
+        careerStats[c.id] = {
+            id: idx,
+            equipo_nombre: c.nombre,
+            oro: 0, plata: 0, bronce: 0, puntos: 0,
+            won: 0, draw: 0, lost: 0, played: 0,
+        };
     });
-
-    const getMatchedCareer = (name: string): string => {
-        const normName = normalize(name);
-        if (careerStats[name]) return name;
-        return (
-            Object.keys(careerStats).find(k => normalize(k) === normName) ||
-            Object.keys(careerStats).find(k => normalize(k).includes(normName) || normName.includes(normalize(k))) ||
-            name
-        );
-    };
 
     const filtered = matches.filter(m => {
         if (activeSport !== 'todos' && m.disciplinas?.name !== activeSport) return false;
         if (activeGender !== 'todos' && (m.genero || 'masculino') !== activeGender) return false;
         return true;
     });
+
+    // Helper: apply a result to every career in an ID array
+    const credit = (ids: number[], fn: (entry: MedalEntry) => void) => {
+        (ids || []).forEach(id => {
+            if (careerStats[id]) fn(careerStats[id]);
+        });
+    };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     filtered.forEach((m: any) => {
@@ -68,47 +68,46 @@ function computeMedallero(
         const isFinal = faseNorm.includes('final');
         const isTercero = faseNorm.includes('tercer') || faseNorm.includes('3er') || faseNorm.includes('3º');
 
-        const carreraA = getMatchedCareer(getCarreraName(m, 'a'));
-        const carreraB = getMatchedCareer(getCarreraName(m, 'b'));
+        const idsA: number[] = m.carrera_a_ids ?? [];
+        const idsB: number[] = m.carrera_b_ids ?? [];
+
+        // Race-type matches: medals from participantes array, no score-based logic
+        if (det.tipo === 'carrera') {
+            const participantes: any[] = det.participantes ?? det.resultados ?? [];
+            participantes.forEach((res: any) => {
+                const resIds: number[] = res.carrera_ids ?? (res.carrera_id ? [res.carrera_id] : []);
+                credit(resIds, entry => {
+                    entry.played!++;
+                    if (res.puesto === 1) entry.oro++;
+                    else if (res.puesto === 2) entry.plata++;
+                    else if (res.puesto === 3) entry.bronce++;
+                });
+            });
+            return;
+        }
+
+        // Regular team matches
+        if (idsA.length === 0 && idsB.length === 0) return; // unassigned fixture shell
 
         const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? det.puntos_a ?? det.juegos_a ?? 0;
         const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? det.puntos_b ?? det.juegos_b ?? 0;
 
-        if (careerStats[carreraA]) careerStats[carreraA].played!++;
-        if (careerStats[carreraB]) careerStats[carreraB].played!++;
+        credit(idsA, e => e.played!++);
+        credit(idsB, e => e.played!++);
 
         if (scoreA > scoreB) {
-            if (careerStats[carreraA]) { careerStats[carreraA].won!++; careerStats[carreraA].puntos += 3; }
-            if (careerStats[carreraB]) careerStats[carreraB].lost!++;
-            if (det.tipo !== 'carrera') {
-                if (isFinal) { if (careerStats[carreraA]) careerStats[carreraA].oro++; if (careerStats[carreraB]) careerStats[carreraB].plata++; }
-                else if (isTercero) { if (careerStats[carreraA]) careerStats[carreraA].bronce++; }
-            }
+            credit(idsA, e => { e.won!++; e.puntos += 3; });
+            credit(idsB, e => e.lost!++);
+            if (isFinal)    { credit(idsA, e => e.oro++);    credit(idsB, e => e.plata++); }
+            else if (isTercero) { credit(idsA, e => e.bronce++); }
         } else if (scoreB > scoreA) {
-            if (careerStats[carreraB]) { careerStats[carreraB].won!++; careerStats[carreraB].puntos += 3; }
-            if (careerStats[carreraA]) careerStats[carreraA].lost!++;
-            if (det.tipo !== 'carrera') {
-                if (isFinal) { if (careerStats[carreraB]) careerStats[carreraB].oro++; if (careerStats[carreraA]) careerStats[carreraA].plata++; }
-                else if (isTercero) { if (careerStats[carreraB]) careerStats[carreraB].bronce++; }
-            }
+            credit(idsB, e => { e.won!++; e.puntos += 3; });
+            credit(idsA, e => e.lost!++);
+            if (isFinal)    { credit(idsB, e => e.oro++);    credit(idsA, e => e.plata++); }
+            else if (isTercero) { credit(idsB, e => e.bronce++); }
         } else {
-            if (careerStats[carreraA]) { careerStats[carreraA].draw!++; careerStats[carreraA].puntos += 1; }
-            if (careerStats[carreraB]) { careerStats[carreraB].draw!++; careerStats[carreraB].puntos += 1; }
-        }
-
-        // Race-specific medals
-        if (det.tipo === 'carrera' && det.resultados) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (det.resultados as any[]).forEach(res => {
-                const name = res.equipo_nombre || res.equipo || res.delegacion;
-                if (!name) return;
-                const c = getMatchedCareer(name);
-                if (!careerStats[c]) return;
-                if (res.puesto === 1) careerStats[c].oro++;
-                else if (res.puesto === 2) careerStats[c].plata++;
-                else if (res.puesto === 3) careerStats[c].bronce++;
-                careerStats[c].played!++;
-            });
+            credit(idsA, e => { e.draw!++; e.puntos += 1; });
+            credit(idsB, e => { e.draw!++; e.puntos += 1; });
         }
     });
 
@@ -149,15 +148,19 @@ export function useMedallero(activeSport: string = 'todos', activeGender: string
     const { data, error, isLoading } = useSWR(
         swrKey,
         async () => {
-            const { data: rawMatches, error } = await safeQuery(
-                supabase.from('partidos').select(
-                    '*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)'
+            const [matchesResult, carrerasResult] = await Promise.all([
+                safeQuery(
+                    supabase.from('partidos').select(
+                        'id, estado, genero, fase, marcador_detalle, carrera_a_ids, carrera_b_ids, disciplinas(name)'
+                    ),
+                    'medallero-fetch'
                 ),
-                'medallero-fetch'
-            );
+                supabase.from('carreras').select('id, nombre, escudo_url'),
+            ]);
 
-            if (error || !rawMatches) return SAMPLE_DATA;
-            const result = computeMedallero(rawMatches, activeSport, activeGender);
+            if (matchesResult.error || !matchesResult.data) return SAMPLE_DATA;
+            const carreras: CarreraLookup[] = carrerasResult.data ?? [];
+            const result = computeMedallero(matchesResult.data, carreras, activeSport, activeGender);
             return result.length > 0 ? result : SAMPLE_DATA;
         },
         { dedupingInterval: 15000, keepPreviousData: true }

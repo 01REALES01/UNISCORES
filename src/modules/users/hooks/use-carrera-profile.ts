@@ -10,6 +10,7 @@ import { computeCareerStats, CareerStats } from "@/lib/sport-helpers";
 const MATCH_COLUMNS = `
   id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle,
   fase, grupo, bracket_order, delegacion_a, delegacion_b,
+  carrera_a_ids, carrera_b_ids,
   disciplinas(name, icon),
   carrera_a:carreras!carrera_a_id(nombre, escudo_url),
   carrera_b:carreras!carrera_b_id(nombre, escudo_url),
@@ -51,17 +52,19 @@ async function fetchCarreraProfile(carreraId: number) {
         throw new Error('Carrera not found');
     }
 
-    // 2. Fetch all matches where this carrera participates (either side)
+    // 2. Fetch all matches where this carrera participates (either side).
+    // Uses GIN-indexed array containment so fusions are included automatically:
+    // a match where the career appears in carrera_a_ids or carrera_b_ids is returned.
     const [matchesA, matchesB] = await Promise.all([
         supabase
             .from('partidos')
             .select(MATCH_COLUMNS)
-            .eq('carrera_a_id', carreraId)
+            .contains('carrera_a_ids', [carreraId])
             .order('fecha', { ascending: false }),
         supabase
             .from('partidos')
             .select(MATCH_COLUMNS)
-            .eq('carrera_b_id', carreraId)
+            .contains('carrera_b_ids', [carreraId])
             .order('fecha', { ascending: false }),
     ]);
 
@@ -88,8 +91,8 @@ async function fetchCarreraProfile(carreraId: number) {
         .select('id, full_name, avatar_url, roles, athlete_disciplina_id, points, disciplina:disciplinas(name)')
         .contains('carreras_ids', [carreraId]);
 
-    // 5. Compute stats
-    const stats = computeCareerStats(matches, carrera.nombre);
+    // 5. Compute stats by ID (handles fusions via carrera_a_ids / carrera_b_ids)
+    const stats = computeCareerStats(matches, carreraId);
 
     return {
         carrera,

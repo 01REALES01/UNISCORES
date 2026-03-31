@@ -174,22 +174,13 @@ export type CareerStats = {
 
 /**
  * Compute medal/wins/losses stats for a single career from a set of finished matches.
- * Logic extracted from medalleria-board.tsx for reuse in career profile pages.
- * 
- * @param matches - Array of finished matches with disciplinas, carrera_a/b joins and marcador_detalle
- * @param carreraName - The career name to compute stats for
+ * Uses carrera_a_ids / carrera_b_ids arrays so fusions are handled correctly:
+ * a career that participates as part of a fusion still gets credited for every match.
+ *
+ * @param matches    - Array of finished matches with carrera_a_ids / carrera_b_ids fields
+ * @param carreraId  - The numeric ID of the career to compute stats for
  */
-export function computeCareerStats(matches: any[], carreraName: string): CareerStats {
-    const normalize = (str: string) =>
-        str.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-    const normTarget = normalize(carreraName);
-
-    const isTargetCarrera = (name: string): boolean => {
-        const n = normalize(name);
-        return n === normTarget || n.includes(normTarget) || normTarget.includes(n);
-    };
-
+export function computeCareerStats(matches: any[], carreraId: number): CareerStats {
     const stats: CareerStats = {
         oro: 0, plata: 0, bronce: 0, puntos: 0,
         won: 0, lost: 0, draw: 0, played: 0,
@@ -205,7 +196,6 @@ export function computeCareerStats(matches: any[], carreraName: string): CareerS
         }
     };
 
-    // Only process finished matches
     const finished = matches.filter(m =>
         (m.estado || '').toLowerCase().trim() === 'finalizado'
     );
@@ -217,23 +207,22 @@ export function computeCareerStats(matches: any[], carreraName: string): CareerS
         const isFinal = fase.includes('final');
         const isTercero = fase.includes('tercer') || fase.includes('3er') || fase.includes('3º');
 
-        const rawA = getCarreraName(m, 'a');
-        const rawB = getCarreraName(m, 'b');
-
-        const isA = isTargetCarrera(rawA);
-        const isB = isTargetCarrera(rawB);
+        // Use ID arrays as source of truth (handles solo careers and fusions equally)
+        const idsA: number[] = m.carrera_a_ids ?? [];
+        const idsB: number[] = m.carrera_b_ids ?? [];
+        const isA = idsA.includes(carreraId);
+        const isB = idsB.includes(carreraId);
 
         if (!isA && !isB) {
-            // Check race results for this career
-            if (det.tipo === 'carrera' && det.resultados) {
-                (det.resultados as any[]).forEach(res => {
-                    const possibleName = res.equipo_nombre || res.equipo || res.delegacion;
-                    if (!possibleName || !isTargetCarrera(possibleName)) return;
-
+            // Check race participantes for this career (Natación format)
+            const participantes: any[] = det.participantes ?? det.resultados ?? [];
+            if (det.tipo === 'carrera' && participantes.length > 0) {
+                participantes.forEach((res: any) => {
+                    const resIds: number[] = res.carrera_ids ?? (res.carrera_id ? [res.carrera_id] : []);
+                    if (!resIds.includes(carreraId)) return;
                     ensureDiscipline(disc);
                     stats.played++;
                     stats.byDiscipline[disc].played++;
-
                     if (res.puesto === 1) { stats.oro++; stats.byDiscipline[disc].oro++; }
                     else if (res.puesto === 2) { stats.plata++; stats.byDiscipline[disc].plata++; }
                     else if (res.puesto === 3) { stats.bronce++; stats.byDiscipline[disc].bronce++; }
@@ -249,6 +238,9 @@ export function computeCareerStats(matches: any[], carreraName: string): CareerS
         const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? det.puntos_a ?? det.juegos_a ?? 0;
         const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? det.puntos_b ?? det.juegos_b ?? 0;
 
+        // Skip score-based logic for race-type matches (medals come from participantes)
+        if (det.tipo === 'carrera') return;
+
         if (scoreA > scoreB) {
             if (isA) {
                 stats.won++; stats.puntos += 3;
@@ -257,14 +249,11 @@ export function computeCareerStats(matches: any[], carreraName: string): CareerS
                 stats.lost++;
                 stats.byDiscipline[disc].lost++;
             }
-            // Medals (non-race)
-            if (det.tipo !== 'carrera') {
-                if (isFinal) {
-                    if (isA) { stats.oro++; stats.byDiscipline[disc].oro++; }
-                    else { stats.plata++; stats.byDiscipline[disc].plata++; }
-                } else if (isTercero && isA) {
-                    stats.bronce++; stats.byDiscipline[disc].bronce++;
-                }
+            if (isFinal) {
+                if (isA) { stats.oro++; stats.byDiscipline[disc].oro++; }
+                else     { stats.plata++; stats.byDiscipline[disc].plata++; }
+            } else if (isTercero && isA) {
+                stats.bronce++; stats.byDiscipline[disc].bronce++;
             }
         } else if (scoreB > scoreA) {
             if (isB) {
@@ -274,29 +263,15 @@ export function computeCareerStats(matches: any[], carreraName: string): CareerS
                 stats.lost++;
                 stats.byDiscipline[disc].lost++;
             }
-            if (det.tipo !== 'carrera') {
-                if (isFinal) {
-                    if (isB) { stats.oro++; stats.byDiscipline[disc].oro++; }
-                    else { stats.plata++; stats.byDiscipline[disc].plata++; }
-                } else if (isTercero && isB) {
-                    stats.bronce++; stats.byDiscipline[disc].bronce++;
-                }
+            if (isFinal) {
+                if (isB) { stats.oro++; stats.byDiscipline[disc].oro++; }
+                else     { stats.plata++; stats.byDiscipline[disc].plata++; }
+            } else if (isTercero && isB) {
+                stats.bronce++; stats.byDiscipline[disc].bronce++;
             }
         } else {
             stats.draw++; stats.puntos += 1;
             stats.byDiscipline[disc].draw++; stats.byDiscipline[disc].puntos += 1;
-        }
-
-        // Race results within this match
-        if (det.tipo === 'carrera' && det.resultados) {
-            (det.resultados as any[]).forEach(res => {
-                const possibleName = res.equipo_nombre || res.equipo || res.delegacion;
-                if (!possibleName || !isTargetCarrera(possibleName)) return;
-
-                if (res.puesto === 1) { stats.oro++; stats.byDiscipline[disc].oro++; }
-                else if (res.puesto === 2) { stats.plata++; stats.byDiscipline[disc].plata++; }
-                else if (res.puesto === 3) { stats.bronce++; stats.byDiscipline[disc].bronce++; }
-            });
         }
     });
 

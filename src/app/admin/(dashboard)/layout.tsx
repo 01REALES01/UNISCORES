@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Trophy, LayoutDashboard, Calendar, Users, LogOut, Menu, X, Zap, Shield, BarChart3, Newspaper, Loader2, Upload } from "lucide-react";
+import { Trophy, LayoutDashboard, Calendar, Users, LogOut, Menu, X, Zap, Shield, BarChart3, Newspaper, Loader2, Upload, ListOrdered, Shuffle } from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -101,6 +101,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             { name: "Noticias", href: "/admin/noticias", icon: Newspaper },
             { name: "Estadísticas", href: "/admin/estadisticas", icon: BarChart3 },
             { name: "Puntos", href: "/admin/puntos", icon: Trophy },
+            { name: "Fixture", href: "/admin/fixture", icon: ListOrdered },
+            { name: "Sorteo", href: "/admin/sorteo", icon: Shuffle },
             { name: "Importar", href: "/admin/importar", icon: Upload },
             ...(isAdmin ? [{ name: "Usuarios", href: "/admin/usuarios", icon: Users }] : []),
         ];
