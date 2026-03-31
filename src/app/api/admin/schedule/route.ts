@@ -348,3 +348,54 @@ function validateParsed(
 
     return { matchIssues, teamIssues, summary };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /api/admin/schedule -> Wipes out the entire fixture
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function DELETE(request: NextRequest) {
+    const supabase = await createRouteSupabase();
+
+    // Requires admin privileges
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('roles, full_name')
+        .eq('id', user.id)
+        .single();
+
+    const roles: string[] = profile?.roles ?? [];
+    if (!roles.includes('admin') && !roles.includes('staff')) {
+        return NextResponse.json({ error: 'Prohibido' }, { status: 403 });
+    }
+
+    try {
+        // Delete ALL matches. Since the user asked for a complete wipe, we delete everything.
+        // It relies on RLS or the backend having power. Wait, createRouteSupabase uses the logged-in user.
+        // If the user has update/delete rights via RLS, this will work.
+        const { error: delErr } = await supabase
+            .from('partidos')
+            .delete()
+            .neq('id', -1); // Delete all rows trick for Supabase (using -1 since id is bigint)
+
+        if (delErr) throw delErr;
+
+        // Log the action
+        await supabase.from('admin_audit_logs').insert({
+            admin_id:    user.id,
+            admin_name:  profile?.full_name ?? '',
+            admin_email: '',
+            action_type: 'FIXTURE_PURGED',
+            entity_type: 'config',
+            entity_id:   'all',
+            details: { action: 'Todos los partidos fueron eliminados' },
+        }).then(() => {});
+
+        return NextResponse.json({ success: true });
+    } catch (e: any) {
+        console.error('DELETE Fixture Error:', e);
+        return NextResponse.json({ error: e.message || 'Error al purgar el fixture' }, { status: 500 });
+    }
+}

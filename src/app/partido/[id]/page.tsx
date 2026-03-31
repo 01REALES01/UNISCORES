@@ -47,7 +47,7 @@ export default function PublicMatchDetail() {
             const PARTIDO_SELECT = [
                 'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle',
                 'fase, grupo, bracket_order, delegacion_a, delegacion_b',
-                'carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
+                'delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
                 'disciplinas:disciplina_id(name)',
                 'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
                 'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
@@ -69,7 +69,7 @@ export default function PublicMatchDetail() {
                 const fallbackRes = await safeQuery(
                     supabase
                         .from('partidos')
-                        .select('id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, fase, grupo, bracket_order, delegacion_a, delegacion_b, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id')
+                        .select('id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id')
                         .eq('id', matchId)
                         .single(),
                     'partido-detail-fallback'
@@ -404,11 +404,13 @@ export default function PublicMatchDetail() {
                                         <Avatar name={getDisplayName(match, 'a')} src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0816]" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        {match.carrera_a_id ? (
-                                            <Link href={`/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}`} className="hover:text-red-400 transition-colors underline-offset-4 hover:underline">
-                                                {getDisplayName(match, 'a')}
-                                            </Link>
-                                        ) : getDisplayName(match, 'a')}
+                                        <Link 
+                                            href={(match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` : match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : '#'} 
+                                            className={cn("transition-colors underline-offset-4", ((match as any).delegacion_a_id || match.carrera_a_id) ? "hover:text-red-400 hover:underline cursor-pointer" : "cursor-default")}
+                                            onClick={(e) => { if (!(match as any).delegacion_a_id && !match.carrera_a_id) e.preventDefault(); }}
+                                        >
+                                            {getDisplayName(match, 'a')}
+                                        </Link>
                                     </h2>
                                     {getCarreraSubtitle(match, 'a') && (
                                         <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'a')}</span>
@@ -506,11 +508,13 @@ export default function PublicMatchDetail() {
                                         <Avatar name={getDisplayName(match, 'b')} src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0816]" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        {match.carrera_b_id ? (
-                                            <Link href={`/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}`} className="hover:text-red-400 transition-colors underline-offset-4 hover:underline">
-                                                {getDisplayName(match, 'b')}
-                                            </Link>
-                                        ) : getDisplayName(match, 'b')}
+                                        <Link 
+                                            href={(match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` : match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` : '#'} 
+                                            className={cn("transition-colors underline-offset-4", ((match as any).delegacion_b_id || match.carrera_b_id) ? "hover:text-red-400 hover:underline cursor-pointer" : "cursor-default")}
+                                            onClick={(e) => { if (!(match as any).delegacion_b_id && !match.carrera_b_id) e.preventDefault(); }}
+                                        >
+                                            {getDisplayName(match, 'b')}
+                                        </Link>
                                     </h2>
                                     {getCarreraSubtitle(match, 'b') && (
                                         <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'b')}</span>

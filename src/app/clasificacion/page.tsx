@@ -35,9 +35,21 @@ export default function ClasificacionPage() {
         });
     }, [matches, selectedSport, selectedGender]);
 
-    // Group matches by fase
+    // Group matches by fase, and apply hotfix to ignore eliminatory matches masquerading as 'grupos'
     const groupMatches = useMemo(() => {
-        return filteredMatches.filter(m => m.fase === 'grupos');
+        return filteredMatches.filter(m => {
+            if (m.fase !== 'grupos') return false;
+            
+            const a = String(m.equipo_a).toUpperCase();
+            const b = String(m.equipo_b).toUpperCase();
+            
+            if (/^\d+$/.test(a) || /^\d+$/.test(b)) return false;
+            
+            const elimKeywords = ['GANADOR', 'PERDEDOR', 'LLAVE', 'FINAL', '1RO', '2DO', '3RO', '4TO'];
+            if (elimKeywords.some(kw => a.includes(kw) || b.includes(kw))) return false;
+            
+            return true;
+        });
     }, [filteredMatches]);
 
     const bracketMatches = useMemo(() => {

@@ -23,6 +23,14 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
         if (viewFilter === 'live' && m.estado !== 'en_curso') return false;
         if (viewFilter === 'finished' && m.estado !== 'finalizado') return false;
         if (sportFilter !== 'todos' && m.disciplinas?.name !== sportFilter) return false;
+        
+        // Evitar que aparezcan partidos "placeholder" (llaves sin definir) en la quiniela
+        const a = String(m.equipo_a || '').toUpperCase();
+        const b = String(m.equipo_b || '').toUpperCase();
+        const noDefinidos = ['GANADOR', 'PERDEDOR', 'LLAVE', 'FINAL', '1RO', '2DO', '3RO', '4TO'];
+        if (/^\d+$/.test(a) || /^\d+$/.test(b)) return false;
+        if (noDefinidos.some(kw => a.includes(kw) || b.includes(kw))) return false;
+
         return true;
     });
 

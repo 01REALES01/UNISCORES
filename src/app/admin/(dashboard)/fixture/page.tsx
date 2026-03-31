@@ -103,6 +103,11 @@ export default function FixturePage() {
     const [pendingFile, setPendingFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Modal state for purging
+    const [showPurgeModal, setShowPurgeModal] = useState(false);
+    const [purgeKeyword, setPurgeKeyword] = useState('');
+    const [purging, setPurging] = useState(false);
+
     // ── Step 1: dry-run ──────────────────────────────────────────────────────
     const runDryRun = useCallback(async (file: File) => {
         setLoading(true);
@@ -171,6 +176,24 @@ export default function FixturePage() {
 
     const hasBlockers = (preview?.match_issues.length ?? 0) > 0;
 
+    const handlePurge = async () => {
+        if (purgeKeyword !== 'BORRAR') return;
+        setPurging(true);
+        try {
+            const res = await fetch('/api/admin/schedule', { method: 'DELETE' });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Error al purgar el fixture');
+            toast.success('Fixture purgado enteramente de la base de datos');
+            setShowPurgeModal(false);
+            setPurgeKeyword('');
+            reset(); // resets state to initial
+        } catch (e: any) {
+            toast.error(e.message);
+        } finally {
+            setPurging(false);
+        }
+    };
+
     // ── UPLOAD ───────────────────────────────────────────────────────────────
     if (step === 'upload') return (
         <div className="min-h-screen bg-[#0a0805] p-6 flex flex-col items-center justify-center">
@@ -234,7 +257,62 @@ export default function FixturePage() {
                         ))}
                     </ul>
                 </div>
+
+                {/* Danger box */}
+                <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 space-y-3 mt-4">
+                    <p className="text-xs font-bold text-red-500/80 uppercase tracking-widest flex items-center gap-2">
+                        <AlertTriangle size={14} />
+                        Zona de Peligro
+                    </p>
+                    <p className="text-xs text-white/50">
+                        Si el calendario contiene errores estructurales en rondas eliminatorias o subiste un excel sucio, puedes borrar absolutamente todos los partidos para empezar de cero.
+                    </p>
+                    <button
+                        onClick={() => setShowPurgeModal(true)}
+                        className="px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-sm font-bold transition-colors w-full"
+                    >
+                        Purgar Fixture Completo
+                    </button>
+                </div>
             </div>
+
+            {/* Purge Modal */}
+            {showPurgeModal && (
+                <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-[#120f1c] border border-red-500/30 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
+                        <h2 className="text-red-500 font-black text-xl flex items-center gap-2">
+                            <AlertTriangle size={24} />
+                            Confirmar Destrucción Total
+                        </h2>
+                        <p className="text-white/70 text-sm">
+                            Estás a punto de borrar <strong>absolutamente todos los partidos</strong> de forma permanente de la base de datos. Esto no se puede deshacer. Escribe <span className="text-red-400 font-mono font-bold select-all">BORRAR</span> para confirmar su ejecución.
+                        </p>
+                        <input
+                            type="text"
+                            placeholder="BORRAR"
+                            value={purgeKeyword}
+                            onChange={e => setPurgeKeyword(e.target.value)}
+                            className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 font-mono text-center uppercase transition-colors"
+                        />
+                        <div className="flex gap-2 pt-2">
+                            <button
+                                onClick={() => { setShowPurgeModal(false); setPurgeKeyword(''); }}
+                                className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-lg font-bold text-sm text-white/70 transition-colors"
+                                disabled={purging}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handlePurge}
+                                disabled={purgeKeyword !== 'BORRAR' || purging}
+                                className="flex-1 py-3 bg-red-500 text-white rounded-lg font-black text-sm hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                {purging ? 'Destruyendo...' : 'Sí, Purgar TODO'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 
