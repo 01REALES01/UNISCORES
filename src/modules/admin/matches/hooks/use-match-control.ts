@@ -191,7 +191,7 @@ export function useMatchControl(matchId: string) {
     // Chronometer interval removed — matches no longer track time minute by minute
 
     // Handlers
-    const toggleCronometro = async () => {
+    const toggleCronometro = async (modo: 'en_vivo' | 'asincronico' = 'en_vivo') => {
         if (!match) return;
         try {
             const { data: freshMatch } = await supabase
@@ -203,12 +203,12 @@ export function useMatchControl(matchId: string) {
             const currentEstado = freshMatch?.estado || match.estado;
 
             if (currentEstado === 'programado') {
-                // Simply start the match — no chronometer
                 const sportName = match.disciplinas?.name || "";
                 const nuevoDetalle = {
                     ...freshDetalle,
                     tiempo_inicio: new Date().toISOString(),
                     estado_cronometro: 'pausado',
+                    modo_registro: modo,
                 };
 
                 if (sportName === 'Baloncesto' && !nuevoDetalle.cuarto_actual) {
@@ -221,11 +221,12 @@ export function useMatchControl(matchId: string) {
                 }).eq('id', matchId);
 
                 if (error) throw error;
-                registrarEventoSistema('inicio', 'Inicio del partido', 0, 1);
+                registrarEventoSistema('inicio', `Inicio del partido (${modo})`, 0, 1);
 
                 await logAction('UPDATE_MATCH', 'partido', matchId, {
                     nuevo_estado: 'en_curso',
-                    info: 'El partido ha comenzado'
+                    modo_registro: modo,
+                    info: `Partido iniciado en modo ${modo}`
                 });
             }
         } catch (err: any) {

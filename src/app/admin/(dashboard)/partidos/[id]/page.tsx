@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Edit3 } from "lucide-react";
+import { getDisplayName } from "@/lib/sport-helpers";
 import { Button, Card } from "@/components/ui-primitives";
 import { useAuth } from "@/hooks/useAuth";
 import { getCurrentScore } from "@/lib/sport-scoring";
@@ -100,9 +101,9 @@ export default function MatchControlPage() {
     } = useMatchControl(matchId);
 
     const [isEndingMatch, setIsEndingMatch] = useState(false);
-    const [isEditingScore, setIsEditingScore] = useState(false);
     const [confirmingDeletion, setConfirmingDeletion] = useState<Evento | null>(null);
-    const [showFullEditor, setShowFullEditor] = useState(false);
+    const [showAsyncReview, setShowAsyncReview] = useState(false);
+    const [asyncScore, setAsyncScore] = useState({ scoreA: 0, scoreB: 0, yellowA: 0, yellowB: 0, redA: 0, redB: 0 });
 
     if (loading) return (
         <div className="min-h-screen bg-[#0a0816] flex flex-col items-center justify-center gap-4">
@@ -124,6 +125,43 @@ export default function MatchControlPage() {
     const bgGradient = DISCIPLINES_COLORS[disciplinaName] || 'from-slate-700 to-slate-900';
     const actions = GET_SPORT_ACTIONS(disciplinaName);
     const { scoreA, scoreB } = getCurrentScore(disciplinaName, match.marcador_detalle || {});
+    const isAsync = match.marcador_detalle?.modo_registro === 'asincronico';
+
+    const handleFinalizarClick = () => {
+        if (isAsync) {
+            setAsyncScore({
+                scoreA: match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0,
+                scoreB: match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0,
+                yellowA: 0, yellowB: 0, redA: 0, redB: 0
+            });
+            setShowAsyncReview(true);
+        } else {
+            setIsEndingMatch(true);
+        }
+    };
+
+    const handleAsyncConfirm = async () => {
+        try {
+            const sportName = match.disciplinas?.name || '';
+            const scoreField = sportName === 'Fútbol' ? 'goles' : 'total';
+            const detalle = { ...(match.marcador_detalle || {}) };
+            detalle[`${scoreField}_a`] = asyncScore.scoreA;
+            detalle[`${scoreField}_b`] = asyncScore.scoreB;
+            detalle.tarjetas_amarillas_a = asyncScore.yellowA;
+            detalle.tarjetas_amarillas_b = asyncScore.yellowB;
+            detalle.tarjetas_rojas_a = asyncScore.redA;
+            detalle.tarjetas_rojas_b = asyncScore.redB;
+
+            await supabase.from('partidos').update({
+                marcador_detalle: detalle
+            }).eq('id', matchId);
+
+            await confirmarFinalizar();
+            setShowAsyncReview(false);
+        } catch (err: any) {
+            toast.error('Error al finalizar: ' + err.message);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#0a0816] pb-24 text-white">
@@ -150,11 +188,8 @@ export default function MatchControlPage() {
                         match={match}
                         scoreA={scoreA}
                         scoreB={scoreB}
-                        onEditScore={() => setIsEditingScore(true)}
-                        onToggleCronometro={toggleCronometro}
-                        onFinalizar={() => setIsEndingMatch(true)}
-                        cronometroActivo={cronometroActivo}
-                        onOpenFullEditor={() => setShowFullEditor(true)}
+                        onIniciarPartido={(modo) => toggleCronometro(modo)}
+                        onFinalizar={handleFinalizarClick}
                         onCambiarPeriodo={handleCambiarPeriodo}
                     />
                 )}
@@ -170,6 +205,8 @@ export default function MatchControlPage() {
                     />
                 )}
 
+                {/* Event creator + timeline only in en_vivo mode */}
+                {!isAsync && (
                 <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-8">
                     <AdminEventCreator 
                         match={match}
@@ -180,7 +217,6 @@ export default function MatchControlPage() {
                         onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id)}
                         onAddPlayer={async (team, data) => {
                             try {
-                                // 1. Find or create in 'jugadores'
                                 let jId: number | null = null;
                                 const { data: existing } = await supabase
                                     .from('jugadores')
@@ -205,7 +241,6 @@ export default function MatchControlPage() {
                                     jId = created.id;
                                 }
 
-                                // 2. Link to roster
                                 const { error: rErr } = await supabase.from('roster_partido').insert({
                                     partido_id: parseInt(matchId),
                                     jugador_id: jId,
@@ -232,6 +267,7 @@ export default function MatchControlPage() {
                         disciplinaName={disciplinaName}
                     />
                 </div>
+                )}
             </div>
 
             <AdminModals
@@ -245,8 +281,8 @@ export default function MatchControlPage() {
                    await finalizarPorWO(ganador);
                    setIsEndingMatch(false);
                 }}
-                isEditingScore={isEditingScore}
-                onCloseEditing={() => setIsEditingScore(false)}
+                isEditingScore={false}
+                onCloseEditing={() => {}}
                 match={match}
                 disciplinaName={disciplinaName}
                 onManualScoreUpdate={handleManualScoreUpdate}
@@ -258,12 +294,94 @@ export default function MatchControlPage() {
                 }}
             />
 
-            <EditMatchModal 
-                match={match} 
-                isOpen={showFullEditor} 
-                onClose={() => setShowFullEditor(false)} 
-                profile={profile}
-            />
+            {/* Async Finalization Review Modal */}
+            {showAsyncReview && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="relative bg-[#0a0816] border border-white/10 rounded-[3rem] p-8 max-w-lg w-full shadow-2xl overflow-hidden animate-in zoom-in-95">
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 to-orange-500" />
+                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
+
+                        <div className="relative z-10">
+                            <h2 className="text-xl font-black uppercase tracking-tight text-white text-center mb-1">Revisión Final</h2>
+                            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest text-center mb-8">Confirma el resultado del partido asincrónico</p>
+
+                            {/* Score Input */}
+                            <div className="mb-6">
+                                <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-3 text-center">Marcador Final</p>
+                                <div className="flex items-center justify-center gap-4">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider truncate max-w-[100px]">{getDisplayName(match, 'a')}</span>
+                                        <div className="flex items-center gap-2 bg-white/5 rounded-xl border border-white/10 p-1">
+                                            <button onClick={() => setAsyncScore(s => ({...s, scoreA: Math.max(0, s.scoreA - 1)}))} className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white font-bold transition-all">−</button>
+                                            <span className="text-3xl font-black tabular-nums text-white min-w-[40px] text-center">{asyncScore.scoreA}</span>
+                                            <button onClick={() => setAsyncScore(s => ({...s, scoreA: s.scoreA + 1}))} className="w-10 h-10 rounded-lg bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center justify-center text-white/40 font-bold transition-all">+</button>
+                                        </div>
+                                    </div>
+                                    <span className="text-2xl font-black text-white/10 mt-6">-</span>
+                                    <div className="flex flex-col items-center gap-2">
+                                        <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider truncate max-w-[100px]">{getDisplayName(match, 'b')}</span>
+                                        <div className="flex items-center gap-2 bg-white/5 rounded-xl border border-white/10 p-1">
+                                            <button onClick={() => setAsyncScore(s => ({...s, scoreB: Math.max(0, s.scoreB - 1)}))} className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white font-bold transition-all">−</button>
+                                            <span className="text-3xl font-black tabular-nums text-white min-w-[40px] text-center">{asyncScore.scoreB}</span>
+                                            <button onClick={() => setAsyncScore(s => ({...s, scoreB: s.scoreB + 1}))} className="w-10 h-10 rounded-lg bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center justify-center text-white/40 font-bold transition-all">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Cards Input */}
+                            <div className="mb-8 space-y-4">
+                                <p className="text-[9px] font-black text-white/20 uppercase tracking-widest text-center">Tarjetas</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-white/[0.03] rounded-xl border border-white/5 p-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-sm">🟨</span>
+                                            <span className="text-[8px] font-bold text-yellow-400/60 uppercase tracking-widest">Amarillas</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                                <button onClick={() => setAsyncScore(s => ({...s, yellowA: Math.max(0, s.yellowA - 1)}))} className="w-7 h-7 rounded-md bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/30 text-xs font-bold">−</button>
+                                                <span className="text-lg font-black text-white min-w-[20px] text-center">{asyncScore.yellowA}</span>
+                                                <button onClick={() => setAsyncScore(s => ({...s, yellowA: s.yellowA + 1}))} className="w-7 h-7 rounded-md bg-white/5 hover:bg-yellow-500/20 flex items-center justify-center text-white/30 hover:text-yellow-400 text-xs font-bold">+</button>
+                                            </div>
+                                            <span className="text-white/10 font-black">|</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <button onClick={() => setAsyncScore(s => ({...s, yellowB: Math.max(0, s.yellowB - 1)}))} className="w-7 h-7 rounded-md bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/30 text-xs font-bold">−</button>
+                                                <span className="text-lg font-black text-white min-w-[20px] text-center">{asyncScore.yellowB}</span>
+                                                <button onClick={() => setAsyncScore(s => ({...s, yellowB: s.yellowB + 1}))} className="w-7 h-7 rounded-md bg-white/5 hover:bg-yellow-500/20 flex items-center justify-center text-white/30 hover:text-yellow-400 text-xs font-bold">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/[0.03] rounded-xl border border-white/5 p-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-sm">🟥</span>
+                                            <span className="text-[8px] font-bold text-red-400/60 uppercase tracking-widest">Rojas</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                                <button onClick={() => setAsyncScore(s => ({...s, redA: Math.max(0, s.redA - 1)}))} className="w-7 h-7 rounded-md bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/30 text-xs font-bold">−</button>
+                                                <span className="text-lg font-black text-white min-w-[20px] text-center">{asyncScore.redA}</span>
+                                                <button onClick={() => setAsyncScore(s => ({...s, redA: s.redA + 1}))} className="w-7 h-7 rounded-md bg-white/5 hover:bg-red-500/20 flex items-center justify-center text-white/30 hover:text-red-400 text-xs font-bold">+</button>
+                                            </div>
+                                            <span className="text-white/10 font-black">|</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <button onClick={() => setAsyncScore(s => ({...s, redB: Math.max(0, s.redB - 1)}))} className="w-7 h-7 rounded-md bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/30 text-xs font-bold">−</button>
+                                                <span className="text-lg font-black text-white min-w-[20px] text-center">{asyncScore.redB}</span>
+                                                <button onClick={() => setAsyncScore(s => ({...s, redB: s.redB + 1}))} className="w-7 h-7 rounded-md bg-white/5 hover:bg-red-500/20 flex items-center justify-center text-white/30 hover:text-red-400 text-xs font-bold">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <Button variant="ghost" className="h-14 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black uppercase tracking-widest text-xs" onClick={() => setShowAsyncReview(false)}>Cancelar</Button>
+                                <Button className="h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest shadow-xl shadow-emerald-600/20 text-xs" onClick={handleAsyncConfirm}>Confirmar</Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

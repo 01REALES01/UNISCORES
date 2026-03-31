@@ -529,6 +529,23 @@ export default function PublicMatchDetail() {
                     </div>
                 </div>
 
+                {/* Async Match Warning */}
+                {isLive && match.marcador_detalle?.modo_registro === 'asincronico' && (
+                    <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 backdrop-blur-xl p-4 mb-8 animate-in fade-in slide-in-from-top-3 duration-500">
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 shrink-0 mt-0.5">
+                                <Clock size={16} className="text-amber-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-amber-300 mb-1">Partido sin seguimiento en vivo</p>
+                                <p className="text-xs text-amber-200/50 leading-relaxed">
+                                    Este partido está en curso, pero no se está siguiendo en vivo. El resultado mostrado puede no ser fiel al resultado actual.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Community Predictions + Voting Section */}
                 <div className="rounded-3xl bg-[#17130D]/60 backdrop-blur-xl border border-white/10 p-6 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
                     <div className="flex items-center gap-3 mb-5">
@@ -684,11 +701,13 @@ export default function PublicMatchDetail() {
                     ) : null}
                 </div>
 
+                {match.marcador_detalle?.modo_registro !== 'asincronico' && (
                 <MatchTimeline
                     match={match}
                     eventos={eventos}
                     sportName={sportName}
                 />
+                )}
 
                 {/* Match Statistics */}
                 <div className="mt-8">
