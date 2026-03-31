@@ -114,7 +114,7 @@ export default function BitacoraPage() {
             <motion.div 
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="relative overflow-hidden rounded-[2.5rem] bg-[#0c0a09]/60 backdrop-blur-2xl border border-white/5 p-10 group"
+                className="relative overflow-hidden rounded-[2.5rem] bg-background/60 backdrop-blur-2xl border border-white/5 p-10 group"
             >
                 <div className="absolute top-[-30%] right-[-5%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none animate-pulse" />
                 

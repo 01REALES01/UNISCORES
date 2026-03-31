@@ -196,7 +196,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
 
             <div className="relative z-10 space-y-6">
                 {/* Header */}
-                <div className="relative overflow-hidden rounded-3xl bg-[#17130D]/60 backdrop-blur-xl border border-white/5 p-6 sm:p-10">
+                <div className="relative overflow-hidden rounded-3xl bg-white/8/60 backdrop-blur-xl border border-white/5 p-6 sm:p-10">
                     <div className="absolute right-[-5%] top-[-20%] w-[300px] h-[300px] bg-purple-500/10 rounded-full blur-[60px] pointer-events-none" />
                     
                     <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -209,7 +209,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                     Solo Administradores
                                 </span>
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-black tracking-tighter bg-gradient-to-r from-white via-white to-white/40 bg-clip-text text-transparent leading-tight font-outfit">
+                            <h1 className="text-3xl sm:text-4xl font-black tracking-tighter bg-gradient-to-r from-white via-white to-white/40 bg-clip-text text-transparent leading-tight font-sans">
                                 Gestión de Usuarios
                             </h1>
                             <p className="text-slate-500 mt-1.5 text-sm font-medium">
@@ -248,7 +248,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                     </div>
                                     <div>
                                         <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 mb-1">{stat.label}</p>
-                                        <p className={`text-2xl sm:text-3xl font-black tabular-nums tracking-tighter transition-colors font-outfit ${isActive ? 'text-white' : stat.color}`}>
+                                        <p className={`text-2xl sm:text-3xl font-black tabular-nums tracking-tighter transition-colors font-sans ${isActive ? 'text-white' : stat.color}`}>
                                             {stat.value}
                                         </p>
                                     </div>
@@ -259,7 +259,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                 </div>
 
             {/* Filters & Search */}
-            <div className="relative overflow-hidden rounded-2xl bg-[#17130D]/40 backdrop-blur-md border border-white/5 p-4">
+            <div className="relative overflow-hidden rounded-2xl bg-white/8/40 backdrop-blur-md border border-white/5 p-4">
                 <SuggestiveSearch
                     value={searchQuery}
                     onChange={setSearchQuery}
@@ -294,7 +294,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                 key={userProfile.id}
                                 className={`group relative flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-2xl border transition-all duration-300 backdrop-blur-md ${isCurrentUser
                                     ? 'border-purple-500/30 bg-purple-500/[0.03] shadow-lg shadow-purple-500/5'
-                                    : 'border-white/5 bg-[#17130D]/40 hover:bg-[#17130D]/60 hover:border-white/15'
+                                    : 'border-white/5 bg-white/8/40 hover:bg-white/8/60 hover:border-white/15'
                                     } ${openDropdown === userProfile.id ? 'z-40' : 'z-10'}`}
                             >
                                 {/* Left Content */}
@@ -358,7 +358,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                             {openDropdown === userProfile.id && (
                                                 <>
                                                     <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm sm:bg-transparent sm:backdrop-blur-none" onClick={() => setOpenDropdown(null)} />
-                                                    <div className="fixed sm:absolute left-1/2 sm:left-auto right-auto sm:right-0 top-1/2 sm:top-full mt-0 sm:mt-2 z-50 w-[90vw] sm:w-64 -translate-x-1/2 sm:translate-x-0 -translate-y-1/2 sm:translate-y-0 bg-[#1A1612] border border-white/10 rounded-3xl shadow-2xl shadow-black p-3 sm:p-2 animate-in fade-in zoom-in-95 sm:slide-in-from-top-2 duration-200">
+                                                    <div className="fixed sm:absolute left-1/2 sm:left-auto right-auto sm:right-0 top-1/2 sm:top-full mt-0 sm:mt-2 z-50 w-[90vw] sm:w-64 -translate-x-1/2 sm:translate-x-0 -translate-y-1/2 sm:translate-y-0 bg-white/8 border border-white/10 rounded-3xl shadow-2xl shadow-black p-3 sm:p-2 animate-in fade-in zoom-in-95 sm:slide-in-from-top-2 duration-200">
                                                         <div className="flex items-center justify-between sm:block px-3 pt-2 pb-3 mb-2 border-b border-white/5 sm:border-0">
                                                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Gestión de Roles</p>
                                                             <button 

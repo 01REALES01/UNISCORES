@@ -31,7 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // Show loading while checking auth
     if (loading) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805]">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-background">
                 <UniqueLoading size="lg" />
             </div>
         );
@@ -46,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // Only block if we haven't loaded the profile AND it's still loading
     if (profileLoading && !profile) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805]">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-background">
                 <UniqueLoading size="lg" />
             </div>
         );
@@ -108,7 +108,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ];
 
     return (
-        <div className="min-h-screen flex flex-col md:flex-row bg-[#0a0805] text-slate-200 selection:bg-red-500/30">
+        <div className="min-h-screen flex flex-col md:flex-row bg-background text-slate-200 selection:bg-red-500/30">
             {/* Ambient Background - Global */}
             <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-red-600/10 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '8s' }} />

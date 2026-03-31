@@ -66,7 +66,7 @@ const TvLiveMatch = ({ match }: { match: any }) => {
                         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-12">
                             {/* Team A */}
                             <div className="flex flex-col items-center gap-6">
-                                <Avatar name={match.carrera_a?.nombre || match.equipo_a} src={match.carrera_a?.escudo_url} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
+                                <Avatar name={match.carrera_a?.nombre || match.equipo_a} src={match.carrera_a?.escudo_url} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-background" />
                                 <h1 className="text-4xl lg:text-5xl font-black text-white text-center leading-tight uppercase tracking-tight max-w-sm">
                                     {match.carrera_a?.nombre || match.equipo_a}
                                 </h1>
@@ -109,7 +109,7 @@ const TvLiveMatch = ({ match }: { match: any }) => {
 
                             {/* Team B */}
                             <div className="flex flex-col items-center gap-6">
-                                <Avatar name={match.carrera_b?.nombre || match.equipo_b} src={match.carrera_b?.escudo_url} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-[#17130D]" />
+                                <Avatar name={match.carrera_b?.nombre || match.equipo_b} src={match.carrera_b?.escudo_url} className="w-48 h-48 text-6xl shadow-2xl border-4 border-white/10 bg-background" />
                                 <h1 className="text-4xl lg:text-5xl font-black text-white text-center leading-tight uppercase tracking-tight max-w-sm">
                                     {match.carrera_b?.nombre || match.equipo_b}
                                 </h1>
@@ -339,10 +339,10 @@ export default function TvPage() {
     return (
         <>
             {/* MOBILE BLOCKER */}
-            <div className="md:hidden min-h-screen bg-[#0a0816] flex flex-col items-center justify-center p-8 text-center text-white relative overflow-hidden">
+            <div className="md:hidden min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center text-white relative overflow-hidden">
                 <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-64 h-64 bg-red-500/10 blur-[100px] rounded-full" />
                 <MonitorPlay className="w-24 h-24 text-red-500 mb-8 opacity-80" />
-                <h1 className="text-3xl font-black uppercase tracking-wider mb-4 font-outfit">Vista Exclusiva<br/>para TV</h1>
+                <h1 className="text-3xl font-black uppercase tracking-wider mb-4 font-sans">Vista Exclusiva<br/>para TV</h1>
                 <p className="text-white/40 mb-12 font-bold max-w-xs mx-auto">Esta vista de tablero está diseñada únicamente para pantallas gigantes (Digital Signage).</p>
                 <Link href="/" className="bg-[#111] hover:bg-white hover:text-black transition-all text-white border border-white/10 px-8 py-4 rounded-3xl font-black uppercase tracking-widest text-sm flex items-center gap-3 shadow-2xl relative z-10">
                     <ChevronLeft size={18} /> Volver al Inicio
@@ -350,7 +350,7 @@ export default function TvPage() {
             </div>
 
             {/* TV VIEW - HIDDEN ON MOBILE */}
-            <div className="hidden md:flex min-h-screen bg-[#0a0805] text-white overflow-hidden relative selection:bg-none cursor-none flex-col">
+            <div className="hidden md:flex min-h-screen bg-background text-white overflow-hidden relative selection:bg-none cursor-none flex-col">
                 
                 {/* Floating QR Code in bottom-right (above everything else) */}
                 <div className="fixed bottom-32 right-12 z-50 bg-black/60 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-6 shadow-2xl flex flex-col items-center justify-center animate-in fade-in duration-1000">

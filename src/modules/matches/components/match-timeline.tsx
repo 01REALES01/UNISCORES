@@ -23,7 +23,7 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
   };
 
   return (
-    <div className="rounded-[2.5rem] bg-[#0a0805]/80 backdrop-blur-2xl border border-white/5 p-6 sm:p-10 animate-in fade-in duration-700 delay-200 shadow-2xl shadow-black/40">
+    <div className="rounded-[2.5rem] bg-background/80 backdrop-blur-2xl border border-white/5 p-6 sm:p-10 animate-in fade-in duration-700 delay-200 shadow-2xl shadow-black/40">
       <div className="flex items-center gap-3 mb-8 px-2">
         <div className={cn("p-2.5 rounded-2xl bg-white/5 border border-white/10", SPORT_ACCENT[sportName])}>
           <AlignLeft size={22} className="drop-shadow-[0_0_8px_currentColor]" />
@@ -66,7 +66,7 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
                 const auditData = parseEventAudit(e.descripcion);
                 return (
                   <div key={e.id || idx} className="relative flex justify-center py-6 w-full">
-                    <div className="bg-[#0a0805]/80 backdrop-blur-md px-6 font-black text-[11px] text-white/30 uppercase tracking-[0.3em] text-center border border-white/5 rounded-full py-1.5 shadow-xl">
+                    <div className="bg-background/80 backdrop-blur-md px-6 font-black text-[11px] text-white/30 uppercase tracking-[0.3em] text-center border border-white/5 rounded-full py-1.5 shadow-xl">
                       {auditData.texto || 'Evento de Sistema'}
                     </div>
                   </div>

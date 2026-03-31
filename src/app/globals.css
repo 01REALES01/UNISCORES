@@ -1,71 +1,69 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Neulis Cursive";
+  src: url("/neulis-cursive-regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Helvetica Neue", Helvetica, Arial, var(--font-inter), system-ui, sans-serif;
+  --font-sans: "Montserrat", var(--font-montserrat), system-ui, sans-serif;
+  --font-display: "Neulis Cursive", "Montserrat", system-ui, sans-serif;
 
-  /* Overriding default red to Uninorte Red #DB1406 */
-  --color-red-400: #f51e10;
-  --color-red-500: #DB1406;
-  --color-red-600: #b51005;
-  --color-red-900: #6e0802;
+  /* Olimpiadas Purple Palette */
+  --color-violet-400: #A78BFA;
+  --color-violet-500: #8B5CF6;
+  --color-violet-600: #7C3AED;
+  --color-violet-700: #6D28D9;
+  --color-violet-800: #5B21B6;
+  --color-violet-900: #4C1D95;
 
-  /* Uninorte Gold FFC000 */
-  --color-yellow-400: #FFce33;
-  --color-yellow-500: #FFC000;
-  --color-yellow-600: #cc9900;
+  /* Accent Green */
+  --color-emerald-500: #10B981;
 }
 
 :root {
-  /* Premium Sports Palette - Light Mode */
-  --background: #f0f4f8;
-  --foreground: #0a1628;
-  --card: #ffffff;
-  --card-foreground: #0a1628;
-  --primary: #6366f1;
+  /* Olimpiadas 2026 - Light Mode (fallback) */
+  --background: #311651;
+  --foreground: #f1f5f9;
+  --card: rgba(255, 255, 255, 0.08);
+  --card-foreground: #f1f5f9;
+  --primary: #7C3AED;
   --primary-foreground: #ffffff;
-  --secondary: #8b5cf6;
-  --accent: #e0e7ff;
-  --accent-foreground: #4338ca;
-  --muted: #e2e8f0;
-  --muted-foreground: #64748b;
-  --border: #cbd5e1;
+  --secondary: #10B981;
+  --accent: rgba(124, 58, 237, 0.2);
+  --accent-foreground: #A78BFA;
+  --muted: rgba(255, 255, 255, 0.06);
+  --muted-foreground: #94a3b8;
+  --border: rgba(255, 255, 255, 0.1);
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --input: #e2e8f0;
-
-  /* Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.3);
+  --input: rgba(255, 255, 255, 0.08);
 }
 
 .dark {
-  /* Premium Sports Palette - Dark Mode (OneFootball Inspired) */
-  --background: #17130D;
-  /* Uninorte Dark Black/Brown */
+  /* Olimpiadas 2026 - Dark Purple Theme */
+  --background: #311651;
   --foreground: #f1f5f9;
-  --card: #0a0805;
-  /* Even darker for contrast */
+  --card: rgba(255, 255, 255, 0.08);
   --card-foreground: #f1f5f9;
-  --primary: #FFC000;
-  /* Uninorte Gold */
-  --primary-foreground: #17130D;
-  --secondary: #DB1406;
-  --accent: #2a2216;
-  --accent-foreground: #FFC000;
-  --muted: rgba(255, 192, 0, 0.1);
+  --primary: #7C3AED;
+  --primary-foreground: #ffffff;
+  --secondary: #10B981;
+  --accent: rgba(124, 58, 237, 0.2);
+  --accent-foreground: #A78BFA;
+  --muted: rgba(255, 255, 255, 0.06);
   --muted-foreground: #94a3b8;
-  --border: rgba(255, 192, 0, 0.2);
-  --success: #34d399;
-  --warning: #FFC000;
-  --danger: #DB1406;
-  --input: rgba(10, 8, 5, 0.6);
-
-  /* Glassmorphism Dark */
-  --glass-bg: rgba(23, 19, 13, 0.6);
-  --glass-border: rgba(255, 192, 0, 0.15);
+  --border: rgba(255, 255, 255, 0.1);
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --input: rgba(255, 255, 255, 0.08);
 }
 
 * {
@@ -85,7 +83,6 @@ body {
   min-height: 100vh;
 }
 
-/* Dark mode: Ensure strict dark background tone */
 .dark body {
   background: var(--background);
   background-attachment: fixed;
@@ -102,12 +99,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--muted-foreground);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 /* Hide scrollbar but keep functionality */
@@ -125,6 +122,7 @@ body {
   -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
 }
 
+/* Shimmer for skeletons */
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
@@ -134,81 +132,12 @@ body {
   animation: shimmer 1.5s infinite;
 }
 
-/* Glass Card Effect */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-}
-
-.texture-grain {
-  position: relative;
-}
-
-.texture-grain::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0.05;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  mix-blend-mode: overlay;
-}
-
-/* Glow Effects */
-.glow-primary {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
-}
-
-.glow-success {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
-}
-
-/* Animated gradient border */
-@keyframes gradient-shift {
-
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.gradient-border {
-  position: relative;
-}
-
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary), var(--primary));
-  background-size: 200% 200%;
-  animation: gradient-shift 3s ease infinite;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
 /* Live Pulse */
 @keyframes live-pulse {
-
-  0%,
-  100% {
+  0%, 100% {
     opacity: 1;
     transform: scale(1);
   }
-
   50% {
     opacity: 0.5;
     transform: scale(1.1);
@@ -227,7 +156,7 @@ input,
   transition: all 0.2s ease;
 }
 
-/* Scrollbar hide utility (Tailwind-style class name) */
+/* Scrollbar hide utility */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
@@ -258,169 +187,31 @@ input,
   font-family: var(--font-sans);
 }
 
-/* ============================================
-   SPLASH SCREEN ANIMATIONS
-   ============================================ */
-
-/* Impact flash - brief white burst */
-.splash-flash {
-  animation: splashFlash 0.4s ease-out forwards;
-}
-
-@keyframes splashFlash {
-  0% {
-    opacity: 0;
-  }
-
-  15% {
-    opacity: 0.35;
-  }
-
-  100% {
-    opacity: 0;
-  }
-}
-
-/* Screen shake on impact */
-.splash-shake {
-  animation: splashShake 0.5s ease-out;
-}
-
-@keyframes splashShake {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-
-  15% {
-    transform: translate(-4px, 2px) rotate(-0.5deg);
-  }
-
-  30% {
-    transform: translate(3px, -2px) rotate(0.5deg);
-  }
-
-  45% {
-    transform: translate(-2px, 1px) rotate(-0.3deg);
-  }
-
-  60% {
-    transform: translate(1px, -1px) rotate(0.2deg);
-  }
-
-  100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-}
-
-/* Expanding ring on impact point */
-.splash-ring {
-  animation: splashRing 0.8s ease-out forwards;
-}
-
-@keyframes splashRing {
-  0% {
-    opacity: 0.8;
-    transform: scale(0.5);
-  }
-
-  100% {
-    opacity: 0;
-    transform: scale(3);
-  }
-}
-
+/* Morph loader animations */
 @keyframes morph-0 {
-
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-    border-radius: 0%;
-  }
-
-  25% {
-    transform: translate(20px, -20px) scale(1.2);
-    border-radius: 50%;
-  }
-
-  50% {
-    transform: translate(40px, 0) scale(0.8);
-    border-radius: 25%;
-  }
-
-  75% {
-    transform: translate(20px, 20px) scale(1.1);
-    border-radius: 75%;
-  }
+  0%, 100% { transform: translate(0, 0) scale(1); border-radius: 0%; }
+  25% { transform: translate(20px, -20px) scale(1.2); border-radius: 50%; }
+  50% { transform: translate(40px, 0) scale(0.8); border-radius: 25%; }
+  75% { transform: translate(20px, 20px) scale(1.1); border-radius: 75%; }
 }
 
 @keyframes morph-1 {
-
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1) rotate(0deg);
-    border-radius: 0%;
-  }
-
-  25% {
-    transform: translate(-20px, -20px) scale(1.3) rotate(90deg);
-    border-radius: 50%;
-  }
-
-  50% {
-    transform: translate(-40px, 0) scale(0.7) rotate(180deg);
-    border-radius: 25%;
-  }
-
-  75% {
-    transform: translate(-20px, 20px) scale(1.2) rotate(270deg);
-    border-radius: 75%;
-  }
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); border-radius: 0%; }
+  25% { transform: translate(-20px, -20px) scale(1.3) rotate(90deg); border-radius: 50%; }
+  50% { transform: translate(-40px, 0) scale(0.7) rotate(180deg); border-radius: 25%; }
+  75% { transform: translate(-20px, 20px) scale(1.2) rotate(270deg); border-radius: 75%; }
 }
 
 @keyframes morph-2 {
-
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-    border-radius: 0%;
-  }
-
-  25% {
-    transform: translate(-20px, 20px) scale(0.9);
-    border-radius: 100%;
-  }
-
-  50% {
-    transform: translate(0, 40px) scale(1.4);
-    border-radius: 0%;
-  }
-
-  75% {
-    transform: translate(20px, 20px) scale(0.8);
-    border-radius: 50%;
-  }
+  0%, 100% { transform: translate(0, 0) scale(1); border-radius: 0%; }
+  25% { transform: translate(-20px, 20px) scale(0.9); border-radius: 100%; }
+  50% { transform: translate(0, 40px) scale(1.4); border-radius: 0%; }
+  75% { transform: translate(20px, 20px) scale(0.8); border-radius: 50%; }
 }
 
 @keyframes morph-3 {
-
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1) rotate(0deg);
-    border-radius: 0%;
-  }
-
-  25% {
-    transform: translate(20px, 20px) scale(1.1) rotate(-90deg);
-    border-radius: 25%;
-  }
-
-  50% {
-    transform: translate(0, -40px) scale(1.3) rotate(-180deg);
-    border-radius: 100%;
-  }
-
-  75% {
-    transform: translate(-20px, -20px) scale(0.9) rotate(-270deg);
-    border-radius: 75%;
-  }
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); border-radius: 0%; }
+  25% { transform: translate(20px, 20px) scale(1.1) rotate(-90deg); border-radius: 25%; }
+  50% { transform: translate(0, -40px) scale(1.3) rotate(-180deg); border-radius: 100%; }
+  75% { transform: translate(-20px, -20px) scale(0.9) rotate(-270deg); border-radius: 75%; }
 }

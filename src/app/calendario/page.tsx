@@ -105,7 +105,7 @@ export default function CalendarioPage() {
     }, [selectedDateMatches, matchOfTheDay]);
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-indigo-500/30 font-sans pb-20">
+        <div className="min-h-screen bg-background text-white selection:bg-indigo-500/30 font-sans pb-20">
             {/* Ambient Background Gradient */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" />
@@ -189,7 +189,7 @@ export default function CalendarioPage() {
                             </div>
 
                             {/* Main Grid */}
-                            <div className="grid grid-cols-7 bg-[#0a0805]/50 rounded-2xl sm:rounded-3xl border border-white/10 overflow-hidden divide-x divide-y divide-white/5">
+                            <div className="grid grid-cols-7 bg-background/50 rounded-2xl sm:rounded-3xl border border-white/10 overflow-hidden divide-x divide-y divide-white/5">
                                 {Array.from({ length: firstDayOfMonth }).map((_, i) => (
                                     <div key={`empty-start-${i}`} className="aspect-square pointer-events-none" />
                                 ))}
@@ -245,7 +245,7 @@ export default function CalendarioPage() {
                                                 <div className="absolute bottom-0.5 sm:bottom-2 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 sm:gap-1 w-[90%] flex-wrap cursor-pointer" title={`${eventsToday.length} eventos en total`}>
                                                     {uniqueSportsEvents.slice(0, 3).map((s, idx) => (
                                                         <div key={idx} className={cn(
-                                                            "w-2.5 h-2.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-[#0a0805] border",
+                                                            "w-2.5 h-2.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-background border",
                                                             s.estado === 'en_curso' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' :
                                                                 s.estado === 'finalizado' ? 'border-white/10 text-white/30' : 'border-indigo-500/30 text-indigo-400'
                                                         )}>
@@ -262,7 +262,7 @@ export default function CalendarioPage() {
 
                                             {/* Extra details on selected */}
                                             {isSelected && hasEvents && (
-                                                <div className="absolute bottom-1 sm:bottom-2 bg-[#0a0805] px-1 py-0 sm:py-0.5 rounded-md border border-indigo-500/30 text-[7px] sm:text-[9px] font-mono font-black text-indigo-400 z-10">
+                                                <div className="absolute bottom-1 sm:bottom-2 bg-background px-1 py-0 sm:py-0.5 rounded-md border border-indigo-500/30 text-[7px] sm:text-[9px] font-mono font-black text-indigo-400 z-10">
                                                     {eventsToday.length} EVTS
                                                 </div>
                                             )}
@@ -373,7 +373,7 @@ export default function CalendarioPage() {
                                                     src={matchOfTheDay.atleta_a?.avatar_url || matchOfTheDay.carrera_a?.escudo_url}
                                                     size="lg" 
                                                     className={cn(
-                                                        "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
+                                                        "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-background shrink-0",
                                                         matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0) > (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0)
                                                             ? (
                                                                 matchOfTheDay.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)] scale-110" :
@@ -450,7 +450,7 @@ export default function CalendarioPage() {
                                                     src={matchOfTheDay.atleta_b?.avatar_url || matchOfTheDay.carrera_b?.escudo_url}
                                                     size="lg" 
                                                     className={cn(
-                                                        "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
+                                                        "w-16 h-16 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-background shrink-0",
                                                         matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0) > (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0)
                                                             ? (
                                                                 matchOfTheDay.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)] scale-110" :
@@ -510,7 +510,7 @@ export default function CalendarioPage() {
                                 <h3 className="text-xl font-black text-white">
                                     {isSameDay(selectedDate, new Date()) ? 'Encuentros de Hoy' : `Partidos (${selectedDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })})`}
                                 </h3>
-                                <Badge variant="outline" className="text-[10px] font-black bg-[#0a0805] border-white/10">{upcomingFixtures.length}</Badge>
+                                <Badge variant="outline" className="text-[10px] font-black bg-background border-white/10">{upcomingFixtures.length}</Badge>
                             </div>
 
                             <div className="grid grid-cols-1 gap-4 flex-1 overflow-y-auto pr-2 custom-scrollbar content-start">
@@ -542,7 +542,7 @@ export default function CalendarioPage() {
                                     return (
                                         <Link key={match.id} href={`/partido/${match.id}`} className="block">
                                             <div className={cn(
-                                                "bg-[#0a0805] rounded-2xl border p-4 transition-all hover:bg-white/5 group relative overflow-hidden shadow-lg",
+                                                "bg-background rounded-2xl border p-4 transition-all hover:bg-white/5 group relative overflow-hidden shadow-lg",
                                                 sportBorder
                                             )}>
                                                 {/* Optional fade overlay based on sport */}
@@ -609,7 +609,7 @@ export default function CalendarioPage() {
                                                                     name={getDisplayName(match, 'a')} 
                                                                     src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url}
                                                                     className={cn(
-                                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-[#17130D] transition-all duration-500 border-2 shrink-0",
+                                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-background transition-all duration-500 border-2 shrink-0",
                                                                         match.estado === 'finalizado' && (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0) > (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0)
                                                                             ? (
                                                                                 match.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]" :
@@ -675,7 +675,7 @@ export default function CalendarioPage() {
                                                                     name={getDisplayName(match, 'b')} 
                                                                     src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url}
                                                                     className={cn(
-                                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-[#17130D] transition-all duration-500 border-2 shrink-0",
+                                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-background transition-all duration-500 border-2 shrink-0",
                                                                         match.estado === 'finalizado' && (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0) > (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0)
                                                                             ? (
                                                                                 match.disciplinas?.name === 'Fútbol' ? "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]" :

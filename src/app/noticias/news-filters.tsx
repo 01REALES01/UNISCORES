@@ -42,7 +42,7 @@ export function NewsFilters({ noticias }: NewsFiltersProps) {
     return (
         <>
             {/* Sticky Filters Bar */}
-            <div className="sticky top-16 z-40 bg-[#0a0816]/90 backdrop-blur-xl py-4 mb-8 border-b border-white/5 -mx-4 px-4 sm:mx-0 sm:px-0 sm:bg-transparent sm:backdrop-blur-none sm:border-none">
+            <div className="sticky top-16 z-40 bg-background/90 backdrop-blur-xl py-4 mb-8 border-b border-white/5 -mx-4 px-4 sm:mx-0 sm:px-0 sm:bg-transparent sm:backdrop-blur-none sm:border-none">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     {/* Category Filter */}
                     <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0 flex-1">

@@ -19,8 +19,8 @@ export const QuinielaHeader = ({ user, profile, points }: QuinielaHeaderProps) =
           </div>
         </div>
         <div>
-          <p className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] leading-none mb-1.5 font-outfit">HOLA,</p>
-          <p className="text-2xl font-black text-white tracking-tight leading-none font-outfit">
+          <p className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] leading-none mb-1.5 font-sans">HOLA,</p>
+          <p className="text-2xl font-black text-white tracking-tight leading-none font-sans">
             {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || "Usuario"}
           </p>
         </div>
@@ -32,7 +32,7 @@ export const QuinielaHeader = ({ user, profile, points }: QuinielaHeaderProps) =
           <Diamond size={18} className="text-black fill-current" />
         </div>
         <div className="relative z-10">
-          <span className="text-xl font-black text-white tabular-nums leading-none block font-outfit">{points}</span>
+          <span className="text-xl font-black text-white tabular-nums leading-none block font-sans">{points}</span>
           <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest leading-none block mt-0.5">Puntos</span>
         </div>
       </div>

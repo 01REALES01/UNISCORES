@@ -485,7 +485,7 @@ export default function EstadisticasPage() {
 
     if (authLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#0a0816]">
+            <div className="min-h-screen flex items-center justify-center bg-background">
                 <UniqueLoading size="lg" />
             </div>
         );
@@ -494,7 +494,7 @@ export default function EstadisticasPage() {
     const hasData = matches.length > 0 || eventos.length > 0;
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-indigo-500/30 overflow-hidden">
+        <div className="min-h-screen bg-background text-white selection:bg-indigo-500/30 overflow-hidden">
             {/* Ambient background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-500/8 rounded-full blur-[120px]" />
@@ -517,7 +517,7 @@ export default function EstadisticasPage() {
                             ANALYTICS
                         </Badge>
                     </div>
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-black font-outfit leading-[0.95] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/90 to-white/40 mb-2">
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-black font-sans leading-[0.95] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/90 to-white/40 mb-2">
                         Estadísticas
                     </h1>
                     <p className="text-white/30 text-sm font-medium max-w-md">

@@ -83,7 +83,7 @@ export function HeadToHead({ rivalries }: HeadToHeadProps) {
             {/* Score line */}
             <div className="flex items-center justify-between mb-2">
               <span className={cn(
-                "text-lg font-black tabular-nums font-outfit",
+                "text-lg font-black tabular-nums font-sans",
                 aLeads ? "text-emerald-400" : tied ? "text-white/60" : "text-white/30"
               )}>
                 {rivalry.wins_a}
@@ -92,7 +92,7 @@ export function HeadToHead({ rivalries }: HeadToHeadProps) {
                 <span className="text-[9px] font-bold text-white/20">{rivalry.draws} empates</span>
               )}
               <span className={cn(
-                "text-lg font-black tabular-nums font-outfit",
+                "text-lg font-black tabular-nums font-sans",
                 bLeads ? "text-emerald-400" : tied ? "text-white/60" : "text-white/30"
               )}>
                 {rivalry.wins_b}

@@ -99,11 +99,11 @@ export function WelcomeNotice() {
                                 </div>
                                 
                                 <div className="space-y-4">
-                                    <h3 className="text-3xl font-black text-white uppercase tracking-tighter font-outfit leading-[0.9] text-balance">
+                                    <h3 className="text-3xl font-black text-white uppercase tracking-tighter font-sans leading-[0.9] text-balance">
                                         Personaliza <br/>
                                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-amber-400">Tu Historia Atleta</span>
                                     </h3>
-                                    <p className="text-base font-bold text-white/60 leading-relaxed font-outfit italic">
+                                    <p className="text-base font-bold text-white/60 leading-relaxed font-sans italic">
                                         ¡Edita tu perfil ahora! Sube tu mejor foto, define tu disciplina y destaca en el medallero olímpico.
                                     </p>
                                 </div>

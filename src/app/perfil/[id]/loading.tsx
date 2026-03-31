@@ -3,7 +3,7 @@ import { Card } from "@/components/ui-primitives";
 
 export default function PublicProfileLoading() {
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white overflow-hidden">
+        <div className="min-h-screen bg-background text-white overflow-hidden">
             {/* Ambient background */}
             <div className="fixed inset-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[150px]" />
@@ -36,7 +36,7 @@ export default function PublicProfileLoading() {
 
                 {/* Content Grid Skeleton */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <Card variant="glass" className="md:col-span-1 p-8 space-y-6 bg-white/5 border-white/5">
+                    <Card className="md:col-span-1 p-8 space-y-6">
                         <Skeleton className="h-4 w-40 mb-8" />
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">

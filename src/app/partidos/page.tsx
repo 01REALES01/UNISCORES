@@ -122,7 +122,7 @@ export default function PartidosPage() {
     }, [loading, groupedMatches.length]);
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white font-sans pb-24">
+        <div className="min-h-screen bg-background text-white font-sans pb-24">
             {/* Ambient Background - MORE PURPLE/COBALT */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse" />
@@ -158,7 +158,7 @@ export default function PartidosPage() {
                 </header>
 
                 {/* ── Sticky Sport Filter Bar ── */}
-                <div className="sticky top-16 sm:top-[4.5rem] z-40 -mx-4 px-4 py-3 bg-[#0a0816]/90 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
+                <div className="sticky top-16 sm:top-[4.5rem] z-40 -mx-4 px-4 py-3 bg-background/90 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
                     <div className="flex items-center gap-2 overflow-x-auto pt-2 pb-3 px-1 scrollbar-hide -my-2">
                         {/* "Todos" chip */}
                         <button
@@ -295,7 +295,7 @@ function UnifiedCard({
     return (
         <Link href={`/partido/${partido.id}`} className="group block h-full">
             <div className={cn(
-                "relative h-full overflow-hidden rounded-[2rem] border bg-[#0a0805]/90 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
+                "relative h-full overflow-hidden rounded-[2rem] border bg-background/90 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
                 SPORT_BORDER[sportName] || 'border-white/10',
                 SPORT_GLOW[sportName] || 'hover:shadow-white/5'
             )}>
@@ -319,7 +319,7 @@ function UnifiedCard({
                         </div>
 
                         <div className="flex flex-col items-end gap-1">
-                            {statusLabel === 'EN CURSO' ? (
+                            {statusLabel === 'LIVE' ? (
                                 <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportName} />
                             ) : (
                                 <div className={cn(
@@ -380,7 +380,7 @@ function UnifiedCard({
                                 src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url}
                                 size="lg" 
                                 className={cn(
-                                "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                "w-14 h-14 border-2 transition-all duration-500 bg-background",
                                 winnerA ? (
                                     sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
                                     sportName === 'Baloncesto' ? "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-110" :
@@ -444,7 +444,7 @@ function UnifiedCard({
                                 src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url}
                                 size="lg" 
                                 className={cn(
-                                "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                "w-14 h-14 border-2 transition-all duration-500 bg-background",
                                 winnerB ? (
                                     sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
                                     sportName === 'Baloncesto' ? "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-110" :
@@ -489,7 +489,7 @@ function LiveMatchCard({ partido }: { partido: any }) {
     return (
         <UnifiedCard
             partido={partido}
-            statusLabel="EN CURSO"
+            statusLabel="LIVE"
             scoreDisplay={{ a: scoreA, b: scoreB }}
         />
     );

@@ -111,7 +111,7 @@ export default function ClasificacionPage() {
     const border = SPORT_BORDER[selectedSport] || 'border-white/10';
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-indigo-500/30 font-sans">
+        <div className="min-h-screen bg-background text-white selection:bg-indigo-500/30 font-sans">
             {/* Ambient Background Gradient */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" />
@@ -226,7 +226,7 @@ export default function ClasificacionPage() {
                                     <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
                                 </div>
 
-                                <div className={cn("bg-[#0a0805] border rounded-2xl overflow-hidden shadow-xl", border)}>
+                                <div className={cn("bg-background border rounded-2xl overflow-hidden shadow-xl", border)}>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-xs">
                                             <thead>
@@ -293,7 +293,7 @@ export default function ClasificacionPage() {
                                 </div>
 
                                 <div className={cn(
-                                    "bg-[#0a0805] border rounded-2xl p-6 overflow-hidden",
+                                    "bg-background border rounded-2xl p-6 overflow-hidden",
                                     SPORT_BORDER[selectedSport] || "border-white/10"
                                 )}>
                                     <BracketTree

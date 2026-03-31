@@ -1,11 +1,11 @@
 {
-    "name": "Olimpiadas UNINORTE 2026",
+    "name": "Olimpiadas Deportivas UNINORTE 2026",
     "short_name": "Olimpiadas",
-    "description": "Resultados en tiempo real de las Olimpiadas Universitarias UNINORTE 2026",
+    "description": "Resultados en tiempo real de las Olimpiadas Deportivas Interprogramas UNINORTE 2026",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#0a0805",
-    "theme_color": "#0a0805",
+    "background_color": "#2D1248",
+    "theme_color": "#2D1248",
     "orientation": "portrait",
     "icons": [
         {

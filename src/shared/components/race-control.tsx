@@ -268,7 +268,7 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, prof
 
     // ── Render ───────────────────────────────────────────────────────────────
     return (
-        <Card className="p-0 bg-[#17130D] border-white/10 overflow-hidden">
+        <Card className="p-0 bg-background border-white/10 overflow-hidden">
             {/* Header */}
             <div className="p-6 bg-gradient-to-r from-cyan-500/10 to-blue-600/10 border-b border-white/5">
                 <div className="flex items-center justify-between mb-3">

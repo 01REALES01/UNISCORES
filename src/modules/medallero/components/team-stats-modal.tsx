@@ -154,14 +154,14 @@ export function TeamStatsModal({ isOpen, onClose, team, rank }: TeamStatsModalPr
 
     return (
         <div className={cn(
-            "fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#17130D]/80 backdrop-blur-md transition-opacity duration-300 overflow-y-auto",
+            "fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md transition-opacity duration-300 overflow-y-auto",
             isOpen ? "opacity-100" : "opacity-0"
         )}>
             {/* Click to close backdrop overlay */}
             <div className="absolute inset-0 z-0" onClick={onClose} />
 
             <div className={cn(
-                "relative z-10 w-full max-w-sm sm:max-w-md bg-[#17130D] border border-white/10 rounded-[2.5rem] shadow-2xl flex flex-col transition-all duration-300 my-8",
+                "relative z-10 w-full max-w-sm sm:max-w-md bg-background border border-white/10 rounded-[2.5rem] shadow-2xl flex flex-col transition-all duration-300 my-8",
                 isOpen ? "translate-y-0 scale-100" : "translate-y-10 scale-95"
             )}>
                 {/* Header & Avatar Overlay Area */}
@@ -183,7 +183,7 @@ export function TeamStatsModal({ isOpen, onClose, team, rank }: TeamStatsModalPr
                                 {rank}
                             </div>
                             {/* Circular Avatar */}
-                            <div className="w-20 h-20 rounded-full bg-[#0a0805] shadow-xl relative overflow-hidden flex items-center justify-center border border-white/10 ring-4 ring-[#17130D]">
+                            <div className="w-20 h-20 rounded-full bg-background shadow-xl relative overflow-hidden flex items-center justify-center border border-white/10 ring-4 ring-[#17130D]">
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent mix-blend-overlay" />
                                 {team.escudo_url ? (
                                     <img src={team.escudo_url} alt={team.equipo_nombre} className="w-full h-full object-cover z-10" />
@@ -292,7 +292,7 @@ export function TeamStatsModal({ isOpen, onClose, team, rank }: TeamStatsModalPr
                                             content={({ active, payload }: { active?: boolean, payload?: readonly any[] }) => {
                                                 if (active && payload && payload.length) {
                                                     return (
-                                                        <div className="bg-[#0a0805] border border-[#FFC000]/30 p-2 rounded-xl shadow-[0_0_15px_rgba(255,192,0,0.3)] backdrop-blur-md">
+                                                        <div className="bg-background border border-[#FFC000]/30 p-2 rounded-xl shadow-[0_0_15px_rgba(255,192,0,0.3)] backdrop-blur-md">
                                                             <p className="text-[#FFC000] font-black text-sm">{`${payload[0].value} Pts`}</p>
                                                         </div>
                                                     );

@@ -141,7 +141,7 @@ export function PulseHeader({ activeSport, onSportChange, availableSports, data 
                 <div className="flex items-baseline gap-1">
                   <AnimatedCounter
                     value={card.mainValue}
-                    className="text-3xl sm:text-4xl font-black tabular-nums text-white font-outfit"
+                    className="text-3xl sm:text-4xl font-black tabular-nums text-white font-sans"
                   />
                   {card.suffix && (
                     <span className="text-sm sm:text-base font-bold text-white/20 tabular-nums">{card.suffix}</span>

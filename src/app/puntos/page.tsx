@@ -69,11 +69,6 @@ function CarreraRow({ row, rank }: { row: ClasificacionGeneralRow; rank: number 
                             <span className="text-white/30 text-xs w-4">{d.posicion}°</span>
                             <span className="text-white/60 text-sm flex-1">{d.disciplina_nombre}</span>
                             <span className="text-xs text-white/20 capitalize">{d.genero}</span>
-                            {d.categoria && (
-                                <span className="text-violet-400/60 text-xs px-2 py-0.5 rounded-md bg-violet-500/10 border border-violet-500/10 capitalize">
-                                    {d.categoria}
-                                </span>
-                            )}
                             <span className="text-amber-400/70 text-xs font-bold">{d.puntos} pts</span>
                         </div>
                     ))}
@@ -111,7 +106,7 @@ export default function PuntosPage() {
         .sort((a, b) => b.total_puntos - a.total_puntos);
 
     return (
-        <div className="min-h-screen bg-[#0a0805] text-white font-sans">
+        <div className="min-h-screen bg-background text-white font-sans">
             {/* Ambient */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[700px] h-[700px] bg-amber-500/8 rounded-full blur-[120px]" />

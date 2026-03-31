@@ -30,7 +30,7 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Top Careers Rank */}
             {topCareers.length > 0 && (
-                <div className="rounded-[2rem] bg-[#0A0705] border border-white/5 p-8 relative overflow-hidden group hover:border-red-500/20 transition-colors">
+                <div className="rounded-[2rem] bg-background border border-white/5 p-8 relative overflow-hidden group hover:border-red-500/20 transition-colors">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 opacity-50 group-hover:opacity-100 transition-opacity" />
                     
                     <div className="relative z-10 flex items-center justify-between mb-8">
@@ -39,7 +39,7 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
                                 <Heart size={20} className="fill-current" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black font-outfit uppercase tracking-wider text-white">Top Programas</h3>
+                                <h3 className="text-xl font-black font-sans uppercase tracking-wider text-white">Top Programas</h3>
                                 <p className="text-[10px] font-black tracking-widest text-white/30 uppercase">Carreras más apoyadas</p>
                             </div>
                         </div>
@@ -52,7 +52,7 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
                                     "flex items-center gap-4 p-4 rounded-2xl border transition-all hover:bg-white/[0.04]",
                                     i === 0 ? "bg-red-500/5 border-red-500/30" : "bg-white/[0.02] border-white/5"
                                 )}>
-                                    <div className="font-black text-white/20 text-lg w-5 text-center font-outfit">
+                                    <div className="font-black text-white/20 text-lg w-5 text-center font-sans">
                                         {i + 1}
                                     </div>
                                     <div className="w-12 h-12 rounded-xl bg-black/50 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
@@ -81,7 +81,7 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
 
             {/* Top Users Regulares / Atletas Rank */}
             {topUsers.length > 0 && (
-                <div className="rounded-[2rem] bg-[#0A0705] border border-white/5 p-8 relative overflow-hidden group hover:border-indigo-500/20 transition-colors">
+                <div className="rounded-[2rem] bg-background border border-white/5 p-8 relative overflow-hidden group hover:border-indigo-500/20 transition-colors">
                     <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-600/5 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2 opacity-50 group-hover:opacity-100 transition-opacity" />
                     
                     <div className="relative z-10 flex items-center justify-between mb-8">
@@ -90,7 +90,7 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
                                 <Users size={20} />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black font-outfit uppercase tracking-wider text-white">Top Perfiles</h3>
+                                <h3 className="text-xl font-black font-sans uppercase tracking-wider text-white">Top Perfiles</h3>
                                 <p className="text-[10px] font-black tracking-widest text-white/30 uppercase">Usuarios más seguidos</p>
                             </div>
                         </div>
@@ -103,7 +103,7 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
                                     "flex items-center gap-4 p-4 rounded-2xl border transition-all hover:bg-white/[0.04]",
                                     i === 0 ? "bg-indigo-500/5 border-indigo-500/30" : "bg-white/[0.02] border-white/5"
                                 )}>
-                                    <div className="font-black text-white/20 text-lg w-5 text-center font-outfit">
+                                    <div className="font-black text-white/20 text-lg w-5 text-center font-sans">
                                         {i + 1}
                                     </div>
                                     <Avatar

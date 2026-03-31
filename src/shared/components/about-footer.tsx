@@ -60,7 +60,7 @@ export function AboutFooter() {
       <div className="flex justify-center mt-12 mb-4 w-full animate-in fade-in duration-1000">
         <button
           onClick={() => setIsOpen(true)}
-          className="group relative flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.03] border border-white/5 hover:border-white/10 hover:bg-white/[0.06] transition-all duration-300 overflow-hidden"
+          className="group relative flex items-center gap-2 px-5 py-2.5 rounded-full bg-black/20 border border-white/5 hover:border-white/10 hover:bg-black/40 transition-all duration-300 overflow-hidden"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <Heart size={14} className="text-rose-500/80 group-hover:text-rose-400 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(244,63,94,0.5)] transition-all duration-300" />
@@ -78,7 +78,7 @@ export function AboutFooter() {
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="relative w-full sm:max-w-md bg-[#0a0816] border border-white/10 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-indigo-500/5 animate-in slide-in-from-bottom-8 duration-400 max-h-[85vh] sm:max-h-[90vh] flex flex-col">
+          <div className="relative w-full sm:max-w-md bg-background border border-white/10 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-indigo-500/5 animate-in slide-in-from-bottom-8 duration-400 max-h-[85vh] sm:max-h-[90vh] flex flex-col">
             {/* Ambient glow */}
             <div className="absolute -top-32 -right-32 w-72 h-72 bg-indigo-500/15 rounded-full blur-[80px] pointer-events-none" />
             <div className="absolute -bottom-32 -left-32 w-72 h-72 bg-purple-500/15 rounded-full blur-[80px] pointer-events-none" />
@@ -91,7 +91,7 @@ export function AboutFooter() {
             {/* Close button */}
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 border border-white/10 text-white/40 hover:text-white hover:bg-black/60 transition-all"
             >
               <X size={16} />
             </button>
@@ -100,7 +100,7 @@ export function AboutFooter() {
             <div className="relative overflow-y-auto flex-1 p-5 sm:p-8">
               {/* Header */}
               <div className="mb-6 sm:mb-8">
-                <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/5 border border-white/10 mb-4 relative overflow-hidden">
+                <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-black/40 border border-white/10 mb-4 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-600/20" />
                   <Sparkles className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)] relative z-10" size={22} />
                 </div>

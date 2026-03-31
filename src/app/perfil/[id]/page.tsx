@@ -331,15 +331,15 @@ export default function PublicProfilePage() {
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#0a0816]"><UniqueLoading size="lg" /></div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
 
     if (!profile) {
         return (
-            <div className="min-h-screen bg-[#0a0816] text-white flex flex-col items-center justify-center p-4">
+            <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-4">
                 <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
                     <Star className="text-red-500" size={32} />
                 </div>
-                <h1 className="text-2xl font-black mb-2 font-outfit uppercase tracking-wider">Perfil no encontrado</h1>
+                <h1 className="text-2xl font-black mb-2 font-sans uppercase tracking-wider">Perfil no encontrado</h1>
                 <p className="text-white/40 mb-8 max-w-sm text-center font-bold">El usuario que buscas no existe o su perfil es privado.</p>
                 <button onClick={() => router.back()} className="rounded-2xl px-8 py-3 bg-[#111] border border-white/10 text-white font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all text-sm flex items-center gap-2">
                     <ChevronLeft size={18} /> Volver
@@ -367,13 +367,13 @@ export default function PublicProfilePage() {
     const firstName = profile.full_name?.split(' ')[0] || "Usuario";
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-amber-500/30 overflow-x-hidden">
+        <div className="min-h-screen bg-background text-white selection:bg-amber-500/30 overflow-x-hidden">
             <MainNavbar user={user} profile={currentUserProfile} isStaff={isStaff} />
 
             <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-6 pb-24 relative z-10 space-y-12">
                 {/* Back button */}
                 <div>
-                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-outfit">
+                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-sans">
                         <div className="p-2 rounded-full bg-white/5 border border-white/5 group-hover:bg-white group-hover:text-black transition-all flex items-center justify-center">
                             <ChevronLeft size={14} />
                         </div>
@@ -399,7 +399,7 @@ export default function PublicProfilePage() {
                             <Avatar
                                 name={profile.full_name}
                                 className={cn(
-                                    "relative w-44 h-44 lg:w-56 lg:h-56 rounded-[2.5rem] border-2 border-white/10 shadow-2xl bg-black text-5xl lg:text-6xl font-outfit",
+                                    "relative w-44 h-44 lg:w-56 lg:h-56 rounded-[2.5rem] border-2 border-white/10 shadow-2xl bg-black text-5xl lg:text-6xl font-sans",
                                     isProjectCreator && "border-amber-500/30"
                                 )}
                             />
@@ -434,7 +434,7 @@ export default function PublicProfilePage() {
                                 </div>
                                 <h1
                                     className={cn(
-                                        "text-5xl lg:text-8xl font-black font-outfit tracking-tighter leading-none mb-2",
+                                        "text-5xl lg:text-8xl font-black font-sans tracking-tighter leading-none mb-2",
                                         isProjectCreator
                                             ? "text-transparent bg-clip-text bg-gradient-to-b from-white via-amber-200 to-amber-500"
                                             : !profile.name_color ? "text-white" : undefined
@@ -496,7 +496,7 @@ export default function PublicProfilePage() {
                                 <div className="relative z-10 flex flex-col h-full">
                                     <div className="flex items-center justify-between mb-8">
                                         <div className="flex flex-col">
-                                            <h3 className="text-white/40 font-black uppercase text-[10px] tracking-[0.3em] font-outfit mb-1">
+                                            <h3 className="text-white/40 font-black uppercase text-[10px] tracking-[0.3em] font-sans mb-1">
                                                 Athlete Pro Card
                                             </h3>
                                             <div className="flex items-center gap-2">
@@ -599,12 +599,12 @@ export default function PublicProfilePage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0A0705] border border-indigo-500/10 p-8 shadow-2xl min-h-[360px] flex flex-col justify-between group">
+                            <div className="relative overflow-hidden rounded-[2.5rem] bg-background border border-indigo-500/10 p-8 shadow-2xl min-h-[360px] flex flex-col justify-between group">
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03]">
                                     <Target size={200} />
                                 </div>
                                 <div className="relative z-10 flex flex-col h-full justify-between">
-                                    <h3 className="text-indigo-400 font-black uppercase text-[10px] tracking-[0.3em] font-outfit mb-8 max-w-[140px] leading-relaxed">
+                                    <h3 className="text-indigo-400 font-black uppercase text-[10px] tracking-[0.3em] font-sans mb-8 max-w-[140px] leading-relaxed">
                                         ESTADÍSTICAS QUINIELA
                                     </h3>
                                     <div className="space-y-6">
@@ -612,7 +612,7 @@ export default function PublicProfilePage() {
                                             <span className="text-[10px] font-black uppercase text-white/30 tracking-[0.2em]">Puntos Totales</span>
                                             <Badge className="bg-indigo-500/10 border-indigo-500/30 text-indigo-400">RANKED</Badge>
                                         </div>
-                                        <div className="rounded-[1.5rem] bg-[#0F0D16] border border-indigo-900/50 p-6 text-center shadow-inner">
+                                        <div className="rounded-[1.5rem] bg-background border border-indigo-900/50 p-6 text-center shadow-inner">
                                             <p className="text-[9px] font-black uppercase text-indigo-400 tracking-[0.2em] mb-2">Acumulado</p>
                                             <p className="text-4xl font-black text-white">{points}</p>
                                         </div>
@@ -661,11 +661,11 @@ export default function PublicProfilePage() {
                         )}
 
                         {/* ENCUENTROS RECIENTES */}
-                        <div className="rounded-[2.5rem] bg-[#0A0705] border border-white/5 p-8 lg:p-10 shadow-xl space-y-8">
+                        <div className="rounded-[2.5rem] bg-background border border-white/5 p-8 lg:p-10 shadow-xl space-y-8">
                             <div className="flex items-center justify-between border-b border-white/5 pb-6">
                                 <div className="flex items-center gap-3">
                                     <Swords size={20} className="text-white/40" />
-                                    <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-white/60 font-outfit">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-white/60 font-sans">
                                         HISTORIAL DE COMPETENCIA
                                     </h3>
                                 </div>
@@ -720,7 +720,7 @@ export default function PublicProfilePage() {
                                         <Users className="text-red-500" size={24} />
                                     </div>
                                     <div>
-                                        <h2 className="text-3xl font-black font-outfit tracking-tighter text-white">HUB COMUNIDAD</h2>
+                                        <h2 className="text-3xl font-black font-sans tracking-tighter text-white">HUB COMUNIDAD</h2>
                                         <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Gestión de amigos y seguimientos • Privado</p>
                                     </div>
                                 </div>
@@ -740,7 +740,7 @@ export default function PublicProfilePage() {
                                                     <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                                                         <Star className="text-blue-400" size={16} />
                                                     </div>
-                                                    <h3 className="text-lg font-black font-outfit tracking-tighter text-white">PROFILES SEGUIDOS</h3>
+                                                    <h3 className="text-lg font-black font-sans tracking-tighter text-white">PROFILES SEGUIDOS</h3>
                                                 </div>
                                                 <span className="text-[10px] font-black text-white/20 uppercase tabular-nums">{followedProfiles.length}</span>
                                             </div>
@@ -776,7 +776,7 @@ export default function PublicProfilePage() {
                                                     <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
                                                         <Trophy className="text-purple-400" size={16} />
                                                     </div>
-                                                    <h3 className="text-lg font-black font-outfit tracking-tighter text-white">CARRERAS SEGUIDAS</h3>
+                                                    <h3 className="text-lg font-black font-sans tracking-tighter text-white">CARRERAS SEGUIDAS</h3>
                                                 </div>
                                                 <span className="text-[10px] font-black text-white/20 uppercase tabular-nums">{followedCareers.length}</span>
                                             </div>

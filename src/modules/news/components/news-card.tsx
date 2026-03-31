@@ -46,7 +46,7 @@ export function NewsHeroCard({ noticia }: { noticia: Noticia }) {
 
     return (
         <Link href={`/noticias/${noticia.id}`} className="group block">
-            <div className="relative h-[450px] sm:h-[520px] rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl bg-[#0a0816]">
+            <div className="relative h-[450px] sm:h-[520px] rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl bg-background">
                 {noticia.imagen_url ? (
                     <Image
                         src={noticia.imagen_url}
@@ -94,7 +94,7 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
     return (
         <Link href={`/noticias/${noticia.id}`} className="group block">
             <div className="flex gap-4 sm:gap-6 bg-transparent rounded-2xl p-2 sm:p-3 hover:bg-white/[0.04] transition-all duration-300 border border-transparent hover:border-white/5">
-                <div className="w-[110px] h-[90px] sm:w-[160px] sm:h-[120px] rounded-2xl overflow-hidden shrink-0 relative bg-[#1a1625] border border-white/5 shadow-lg">
+                <div className="w-[110px] h-[90px] sm:w-[160px] sm:h-[120px] rounded-2xl overflow-hidden shrink-0 relative bg-white/8 border border-white/5 shadow-lg">
                     {noticia.imagen_url ? (
                         <Image
                             src={noticia.imagen_url}

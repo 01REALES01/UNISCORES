@@ -84,7 +84,7 @@ export function FollowCareerButton({ careerId, initialFollowersCount }: FollowCa
 
     return (
         <div className="flex items-center gap-2">
-            <div className="flex items-center gap-3 px-6 py-3 rounded-[1.5rem] bg-[#0A0705] border border-white/5 shadow-2xl">
+            <div className="flex items-center gap-3 px-6 py-3 rounded-[1.5rem] bg-background border border-white/5 shadow-2xl">
                 <div className="p-2 bg-red-500/10 rounded-xl text-red-500">
                     <Heart size={20} className={cn(isFollowing ? "fill-current" : "")} />
                 </div>

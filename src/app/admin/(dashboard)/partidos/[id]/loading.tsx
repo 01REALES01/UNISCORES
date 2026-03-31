@@ -3,7 +3,7 @@ import { Card } from "@/components/ui-primitives";
 
 export default function MatchControlLoading() {
     return (
-        <div className="min-h-screen bg-[#070504] pb-24 text-white">
+        <div className="min-h-screen bg-background pb-24 text-white">
             <div className="relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-black opacity-40" />
                 
@@ -61,7 +61,7 @@ export default function MatchControlLoading() {
 
                 <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-[1.5fr_1fr] gap-8">
                     {/* LEFT CONTROLLER SKELETON */}
-                    <Card variant="glass" className="p-0 border-white/10 bg-zinc-900/50 overflow-hidden">
+                    <Card className="p-0 border-white/10 bg-zinc-900/50 overflow-hidden">
                         <div className="p-6 border-b border-white/5 bg-white/5 flex justify-between">
                             <Skeleton className="h-6 w-40" />
                             <Skeleton className="h-5 w-20" />
@@ -84,7 +84,7 @@ export default function MatchControlLoading() {
                     </Card>
 
                     {/* RIGHT TIMELINE SKELETON */}
-                    <Card variant="glass" className="h-[600px] flex flex-col p-0 border-white/5 overflow-hidden">
+                    <Card className="h-[600px] flex flex-col p-0 border-white/5 overflow-hidden">
                         <div className="p-4 bg-white/5 border-b border-white/5 flex justify-between">
                             <Skeleton className="h-3 w-24" />
                             <Skeleton className="h-5 w-10" />
