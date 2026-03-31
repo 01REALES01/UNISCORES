@@ -213,7 +213,7 @@ export function SmokeyBackground({
  */
 export function LoginForm() {
     return (
-        <div className="w-full max-w-sm p-8 space-y-6 bg-[#0a0805]/80 backdrop-blur-xl rounded-3xl border border-[#FFC000]/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+        <div className="w-full max-w-sm p-8 space-y-6 bg-background/80 backdrop-blur-xl rounded-3xl border border-[#FFC000]/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
             <div className="text-center">
                 <h2 className="text-3xl font-black text-white">Olimpiadas</h2>
                 <p className="mt-2 text-sm font-bold text-[#FFC000]">Inicia sesión para jugar</p>

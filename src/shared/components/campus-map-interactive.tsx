@@ -188,7 +188,7 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                             const liveMatch = activeMatches.find(m => m.estado === 'en_curso');
                             const nextMatch = activeMatches.find(m => m.estado === 'programado');
 
-                            const statusColor = liveMatch ? 'bg-[#DB1406]' : (nextMatch ? 'bg-[#FFC000]' : 'bg-[#0a0805]/80');
+                            const statusColor = liveMatch ? 'bg-[#DB1406]' : (nextMatch ? 'bg-[#FFC000]' : 'bg-background/80');
                             const hasActivity = activeMatches.length > 0;
 
                             return (
@@ -228,11 +228,11 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-64 md:w-72 bg-[#0a0805]/95 backdrop-blur-xl border border-[#FFC000]/10 rounded-2xl shadow-2xl overflow-hidden z-50 cursor-default"
+                                                className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-64 md:w-72 bg-background/95 backdrop-blur-xl border border-[#FFC000]/10 rounded-2xl shadow-2xl overflow-hidden z-50 cursor-default"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 {/* Header */}
-                                                <div className="p-3 border-b border-white/5 bg-[#17130D]/50 flex justify-between items-center">
+                                                <div className="p-3 border-b border-white/5 bg-background/50 flex justify-between items-center">
                                                     <h4 className="font-bold text-sm text-white flex items-center gap-2">
                                                         <MapPin size={14} className="text-[#FFC000]" /> {venueName}
                                                     </h4>

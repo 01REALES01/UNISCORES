@@ -10,12 +10,12 @@ import { Trophy, MapPin, ChevronRight, Calendar, Zap, LayoutGrid, MoveRight, Sea
 
 const HeroSlider = dynamic(() => import('@/components/hero-slider').then(mod => mod.HeroSlider), {
   ssr: false,
-  loading: () => <div className="w-full h-[400px] md:h-[450px] rounded-3xl bg-white/5 animate-pulse mb-8" />
+  loading: () => <div className="w-full h-[400px] md:h-[450px] rounded-3xl bg-black/20 animate-pulse mb-8" />
 });
 
 const SuggestiveSearch = dynamic(() => import('@/components/ui/suggestive-search'), {
   ssr: false,
-  loading: () => <div className="h-12 w-full rounded-2xl bg-white/5 animate-pulse" />
+  loading: () => <div className="h-12 w-full rounded-2xl bg-black/20 animate-pulse" />
 });
 const NewsListCard = dynamic(() => import('@/components/news-card').then(mod => mod.NewsListCard), {
   ssr: false,
@@ -209,7 +209,7 @@ export default function Home() {
 
       await mutateFavoritos();
       setIsSelectingCareers(false);
-      toast.success("Tus preferencias fueron actualizadas", { className: "bg-[#17130D] text-amber-500 border border-amber-500/30" });
+      toast.success("Tus preferencias fueron actualizadas", { className: "bg-background text-amber-500 border border-amber-500/30" });
     } catch (error: any) {
       console.error('[Favoritos] Error saving careers:', error);
       toast.error(error.message || "Error al guardar carreras");
@@ -227,7 +227,7 @@ export default function Home() {
       </div>
       {carrerasLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-12 bg-white/5 animate-pulse rounded-xl" />)}
+          {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-12 bg-black/20 animate-pulse rounded-xl" />)}
         </div>
       ) : (
         <>
@@ -245,7 +245,7 @@ export default function Home() {
                     "flex flex-col items-start gap-1 text-xs font-bold border p-3.5 rounded-xl transition-all w-full text-left relative overflow-hidden",
                     isSelected
                       ? "bg-amber-500/10 text-amber-500 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
-                      : "bg-[#221c13] text-slate-300 border-white/5 hover:border-amber-500/30 hover:bg-amber-500/5 hover:text-amber-400"
+                      : "bg-black/40 text-slate-300 border-white/5 hover:border-amber-500/30 hover:bg-amber-500/5 hover:text-amber-400"
                   )}
                 >
                   <span className="truncate w-full z-10">{carrera.nombre}</span>
@@ -319,7 +319,7 @@ export default function Home() {
   const recentFinished = [...finishedMatches].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
   return (
-    <div className="min-h-screen bg-[#0a0816] text-white font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-background text-white font-sans selection:bg-indigo-500/30">
       {/* Splash Screen - Solo se muestra 1 vez */}
       <SplashScreen />
       {/* Ambient Background Gradient */}
@@ -343,7 +343,7 @@ export default function Home() {
               value={searchQuery}
               onChange={setSearchQuery}
               suggestions={["Buscar equipo...", "Explorar fútbol...", "Deportes Uninorte...", "Resultados de tenis...", "Natación..."]}
-              className="h-12 rounded-2xl bg-[#1a1625] border border-white/10 focus-within:border-indigo-500/50 focus-within:bg-[#1f1b2e] focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all shadow-sm w-full"
+              className="h-12 rounded-2xl bg-black/20 border border-white/10 focus-within:border-indigo-500/50 focus-within:bg-black/30 focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all shadow-sm w-full"
             />
           </div>
 
@@ -356,7 +356,7 @@ export default function Home() {
 
         {/* Resto del contenido */}
         {hideMatches ? (
-          <div className="relative rounded-[2rem] overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group my-8 bg-[#17130D] animate-in slide-in-from-bottom-8 fade-in duration-700">
+          <div className="relative rounded-[2rem] overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group my-8 bg-black/20 animate-in slide-in-from-bottom-8 fade-in duration-700">
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
             <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 to-transparent" />
 
@@ -407,38 +407,14 @@ export default function Home() {
               const hasProgrammed = sliderMatches.some(m => m.estado === 'programado');
 
               return (
-                <div className="space-y-4">
-                  {/* Sin encabezado en favoritos */}
-                  {activeFilter !== 'favoritos' && (
-                    <div className="flex items-center gap-3 px-2">
-                      {hasLive ? (
-                        <>
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-                          </span>
-                          <h2 className="text-sm font-black text-white uppercase tracking-widest">En Curso ahora</h2>
-                        </>
-                      ) : hasProgrammed ? (
-                        <>
-                          <Calendar size={14} className="text-orange-400" />
-                          <h2 className="text-sm font-black text-slate-300 uppercase tracking-widest">Próximos Partidos</h2>
-                        </>
-                      ) : (
-                        <>
-                          <Zap size={14} className="text-amber-500" />
-                          <h2 className="text-sm font-black text-amber-500/80 uppercase tracking-widest">Próximamente</h2>
-                        </>
-                      )}
-                    </div>
-                  )}
+                <div>
                   <HeroSlider matches={activeFilter === 'favoritos' ? filteredPartidos : partidos} activeFilter={activeFilter} />
                 </div>
               );
             })()}
 
             {/* QUINIELA CTA BANNER */}
-            <div className="relative rounded-[2rem] overflow-hidden border border-red-600/30 shadow-[0_0_40px_rgba(220,38,38,0.15)] group cursor-pointer mb-8 bg-[#0d0b18]">
+            <div className="relative rounded-[2rem] overflow-hidden border border-red-600/30 shadow-[0_0_40px_rgba(220,38,38,0.15)] group cursor-pointer mb-8 bg-black/20">
               <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
               <div className="absolute inset-0 bg-gradient-to-r from-red-600/10 to-transparent" />
 
@@ -465,7 +441,7 @@ export default function Home() {
             {activeFilter === 'favoritos' && !hideMatches && (
               <div
                 className={cn(
-                  "relative rounded-[2rem] overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group mb-8 bg-[#17130D] transition-all",
+                  "relative rounded-[2rem] overflow-hidden border border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)] group mb-8 bg-black/20 transition-all",
                   isSelectingCareers ? "cursor-default" : "cursor-pointer hover:border-amber-500/50"
                 )}
                 onClick={() => {
@@ -537,7 +513,7 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-10 bg-[#17130D]/50 border border-white/5 rounded-2xl">
+            <div className="text-center py-10 bg-black/20 border border-white/5 rounded-2xl">
               <p className="text-sm text-white/30 font-bold uppercase tracking-widest">
                 {activeFilter === 'favoritos' ? 'No hay noticias recientes para tus carreras' : 'No hay noticias publicadas aún'}
               </p>
@@ -549,10 +525,10 @@ export default function Home() {
         {!hideMatches && loading && (
           <div className="space-y-8">
             <div className="grid gap-4 sm:grid-cols-2">
-              {[1, 2].map(i => <div key={i} className="h-48 rounded-3xl bg-white/5 animate-pulse" />)}
+              {[1, 2].map(i => <div key={i} className="h-48 rounded-3xl bg-black/20 animate-pulse" />)}
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              {[1, 2, 3].map(i => <div key={i} className="h-24 rounded-2xl bg-white/5 animate-pulse" />)}
+              {[1, 2, 3].map(i => <div key={i} className="h-24 rounded-2xl bg-black/20 animate-pulse" />)}
             </div>
           </div>
         )}
@@ -564,7 +540,7 @@ export default function Home() {
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setErrorModal({ show: false, message: "" })}
             />
-            <div className="relative bg-[#17130D] border border-red-500/50 shadow-[0_0_40px_rgba(239,68,68,0.2)] rounded-3xl p-6 md:p-8 max-w-sm w-full text-center animate-in zoom-in-95 duration-300">
+            <div className="relative bg-background border border-red-500/50 shadow-[0_0_40px_rgba(239,68,68,0.2)] rounded-3xl p-6 md:p-8 max-w-sm w-full text-center animate-in zoom-in-95 duration-300">
               <button
                 onClick={() => setErrorModal({ show: false, message: "" })}
                 className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"

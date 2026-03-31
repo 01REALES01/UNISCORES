@@ -211,13 +211,13 @@ export default function PublicMatchDetail() {
     };
 
     if (loading) return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0816] text-white">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white">
             <UniqueLoading size="lg" />
         </div>
     );
 
     if (!match) return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0816] text-white p-8 text-center gap-4">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white p-8 text-center gap-4">
             <Trophy size={48} className="text-slate-700 mb-2" />
             <h1 className="text-2xl font-bold">Partido no encontrado</h1>
             {fetchError && (
@@ -281,7 +281,7 @@ export default function PublicMatchDetail() {
 
                 {/* Match Card */}
                 <div className={cn(
-                    "relative overflow-hidden rounded-[2.5rem] bg-[#17130D]/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 mb-8 transition-all duration-700",
+                    "relative overflow-hidden rounded-[2.5rem] bg-background/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 mb-8 transition-all duration-700",
                     SPORT_BORDER[sportName] || 'border-white/10',
                     SPORT_GLOW[sportName] || ''
                 )}>
@@ -303,7 +303,7 @@ export default function PublicMatchDetail() {
 
                             <div className="flex flex-wrap justify-center items-center gap-2">
                                 {!isFinished && !isLive && (
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#17130D]/80 border border-white/10 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase shadow-lg">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background/80 border border-white/10 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase shadow-lg">
                                         <Calendar size={14} className={cn(SPORT_ACCENT[sportName] || 'text-amber-400')} />
                                         {new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
                                     </div>
@@ -316,7 +316,7 @@ export default function PublicMatchDetail() {
                                 )}
 
                                 <div className={cn(
-                                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#17130D]/80 border border-white/10 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg transition-all",
+                                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background/80 border border-white/10 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg transition-all",
                                     SPORT_ACCENT[sportName] || 'text-white/70'
                                 )}>
                                     <SportIcon sport={sportName} size={14} />
@@ -401,7 +401,7 @@ export default function PublicMatchDetail() {
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
                                             `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
                                         )} />
-                                        <Avatar name={getDisplayName(match, 'a')} src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0816]" />
+                                        <Avatar name={getDisplayName(match, 'a')} src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-background" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
                                         {match.carrera_a_id ? (
@@ -503,7 +503,7 @@ export default function PublicMatchDetail() {
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
                                             `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
                                         )} />
-                                        <Avatar name={getDisplayName(match, 'b')} src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0816]" />
+                                        <Avatar name={getDisplayName(match, 'b')} src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-background" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
                                         {match.carrera_b_id ? (
@@ -530,7 +530,7 @@ export default function PublicMatchDetail() {
                 </div>
 
                 {/* Community Predictions + Voting Section */}
-                <div className="rounded-3xl bg-[#17130D]/60 backdrop-blur-xl border border-white/10 p-6 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
+                <div className="rounded-3xl bg-background/60 backdrop-blur-xl border border-white/10 p-6 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
                     <div className="flex items-center gap-3 mb-5">
                         <div className={cn("p-2 rounded-xl bg-white/5 border border-white/10", SPORT_ACCENT[sportName])}>
                             <BarChart3 size={20} className="drop-shadow-[0_0_8px_currentColor]" />

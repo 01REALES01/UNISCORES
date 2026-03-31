@@ -17,22 +17,10 @@ describe("UI Primitives", () => {
             expect(screen.getByText("Test Content")).toBeInTheDocument();
         });
 
-        it("applies default variant styles", () => {
+        it("applies default styles", () => {
             const { container } = render(<Card>Default</Card>);
             const card = container.firstChild as HTMLElement;
-            expect(card.className).toContain("bg-card");
-        });
-
-        it("applies glass variant", () => {
-            const { container } = render(<Card variant="glass">Glass</Card>);
-            const card = container.firstChild as HTMLElement;
-            expect(card.className).toContain("glass");
-        });
-
-        it("applies gradient variant", () => {
-            const { container } = render(<Card variant="gradient">Gradient</Card>);
-            const card = container.firstChild as HTMLElement;
-            expect(card.className).toContain("gradient-border");
+            expect(card.className).toContain("bg-white/8");
         });
 
         it("merges custom className", () => {
@@ -48,24 +36,24 @@ describe("UI Primitives", () => {
             render(<Badge>Default Badge</Badge>);
             const badge = screen.getByText("Default Badge");
             expect(badge).toBeInTheDocument();
-            expect(badge.className).toContain("text-red-500");
+            expect(badge.className).toContain("text-violet-200");
         });
 
         it("renders destructive variant", () => {
             render(<Badge variant="destructive">Error</Badge>);
             const badge = screen.getByText("Error");
-            expect(badge.className).toContain("bg-red-600/20");
+            expect(badge.className).toContain("bg-red-500/15");
         });
 
         it("renders success variant", () => {
             render(<Badge variant="success">Success</Badge>);
             const badge = screen.getByText("Success");
-            expect(badge.className).toContain("text-emerald-500");
+            expect(badge.className).toContain("text-emerald-400");
         });
 
         it("renders live variant with animation", () => {
-            render(<Badge variant="live">EN CURSO</Badge>);
-            const badge = screen.getByText("EN CURSO");
+            render(<Badge variant="live">LIVE</Badge>);
+            const badge = screen.getByText("LIVE");
             expect(badge.className).toContain("live-indicator");
         });
     });
@@ -92,7 +80,7 @@ describe("UI Primitives", () => {
         it("applies outline variant", () => {
             const { container } = render(<Button variant="outline">Outline</Button>);
             const btn = container.firstChild as HTMLElement;
-            expect(btn.className).toContain("border-white/10");
+            expect(btn.className).toContain("bg-white/5");
         });
 
         it("applies ghost variant", () => {

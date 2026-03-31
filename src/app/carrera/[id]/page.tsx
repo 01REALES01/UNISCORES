@@ -315,7 +315,7 @@ export default function CarreraProfilePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#0a0816]">
+            <div className="min-h-screen flex items-center justify-center bg-background">
                 <UniqueLoading size="lg" />
             </div>
         );
@@ -323,11 +323,11 @@ export default function CarreraProfilePage() {
 
     if (!carrera || error) {
         return (
-            <div className="min-h-screen bg-[#0a0816] text-white flex flex-col items-center justify-center p-4">
+            <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-4">
                 <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
                     <GraduationCap className="text-red-500" size={32} />
                 </div>
-                <h1 className="text-2xl font-black mb-2 font-outfit uppercase tracking-wider">
+                <h1 className="text-2xl font-black mb-2 font-sans uppercase tracking-wider">
                     Carrera no encontrada
                 </h1>
                 <p className="text-white/40 mb-8 max-w-sm text-center font-bold">
@@ -354,7 +354,7 @@ export default function CarreraProfilePage() {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-red-500/30 texture-grain overflow-x-hidden">
+        <div className="min-h-screen bg-background text-white selection:bg-red-500/30 texture-grain overflow-x-hidden">
             {/* Ambient background */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[150px]" />
@@ -386,7 +386,7 @@ export default function CarreraProfilePage() {
                     {/* Animated Premium Background */}
                     <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 rounded-[2.5rem] sm:rounded-[3rem] blur-xl opacity-20 sm:opacity-30 group-hover:opacity-40 transition-opacity duration-700" />
                     
-                    <div className="relative bg-[#0a0805]/95 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl">
+                    <div className="relative bg-background/95 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl">
                         {/* Noise & Glows */}
                         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
                         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-red-600/10 to-orange-500/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
@@ -408,7 +408,7 @@ export default function CarreraProfilePage() {
                                             className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(0,0,0,0.8)] filter contrast-125"
                                         />
                                     ) : (
-                                        <span className="text-5xl md:text-7xl font-black text-white/20 font-outfit truncate mix-blend-plus-lighter z-10">
+                                        <span className="text-5xl md:text-7xl font-black text-white/20 font-sans truncate mix-blend-plus-lighter z-10">
                                             {getInitials(carrera.nombre)}
                                         </span>
                                     )}
@@ -456,7 +456,7 @@ export default function CarreraProfilePage() {
                                 <p className="text-[10px] font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400 uppercase tracking-[0.3em] mb-3">
                                     Programa Académico
                                 </p>
-                                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter font-outfit mb-6 leading-tight text-white drop-shadow-sm px-2 lg:px-0">
+                                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter font-sans mb-6 leading-tight text-white drop-shadow-sm px-2 lg:px-0">
                                     {carrera.nombre}
                                 </h1>
 
@@ -742,7 +742,7 @@ export default function CarreraProfilePage() {
                                                             />
                                                         </div>
                                                         <div>
-                                                            <h3 className="text-sm font-black uppercase tracking-wider font-outfit">
+                                                            <h3 className="text-sm font-black uppercase tracking-wider font-sans">
                                                                 {d.name}
                                                             </h3>
                                                             <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
@@ -903,7 +903,7 @@ function TabButton({
             )}
         >
             {icon}
-            <span className="hidden sm:inline font-outfit">{label}</span>
+            <span className="hidden sm:inline font-sans">{label}</span>
         </button>
     );
 }
@@ -1015,7 +1015,7 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                             name={nameA}
                             src={match.carrera_a?.escudo_url || match.atleta_a?.avatar_url || match.equipo_a_id?.escudo_url}
                             className={cn(
-                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-background",
                                 winnerA ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
                                 !winnerA && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
                             )}
@@ -1059,7 +1059,7 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                             name={nameB}
                             src={match.carrera_b?.escudo_url || match.atleta_b?.avatar_url || match.equipo_b_id?.escudo_url}
                             className={cn(
-                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-background",
                                 winnerB ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
                                 !winnerB && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
                             )}

@@ -4,10 +4,11 @@ import { m } from "framer-motion";
 import { Zap, Calendar, Trophy, ChevronRight, TrendingUp } from "lucide-react";
 import { Badge, Button } from "@/components/ui-primitives";
 import Link from "next/link";
+import Image from "next/image";
 
 export function WelcomeHero() {
     return (
-        <section className="relative w-full py-12 md:py-20 px-6 overflow-hidden bg-[#0d0b1a]/40 backdrop-blur-2xl rounded-[2.5rem] mb-12 border border-white/10 shadow-2xl">
+        <section className="relative w-full py-12 md:py-20 px-6 overflow-hidden bg-black/30 backdrop-blur-2xl rounded-[2.5rem] mb-12 border border-white/10 shadow-2xl">
             {/* Background elements */}
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay rotate-180" />
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/10 rounded-full blur-[120px] -mr-48 -mt-48 animate-pulse" />
@@ -15,6 +16,18 @@ export function WelcomeHero() {
 
             {/* Grid Pattern */}
             <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+            {/* Antorcha background */}
+            <div className="absolute inset-0 flex items-end justify-end pointer-events-none overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src="/Antorcha.png"
+                    alt=""
+                    className="w-[600px] md:w-[900px] h-auto opacity-15 translate-y-[30%] -mr-24 md:-mr-32"
+                    style={{ filter: "brightness(0) invert(1)" }}
+                    aria-hidden="true"
+                />
+            </div>
 
             <div className="relative z-10 max-w-4xl mx-auto text-center">
                 <m.div
@@ -46,7 +59,7 @@ export function WelcomeHero() {
                         <Link href="/partidos">
                             <Button
                                 variant="outline"
-                                className="w-full sm:w-auto rounded-full h-14 px-10 text-base border-white/10 hover:bg-white/10 hover:scale-105 active:scale-95 transition-all text-slate-300"
+                                className="w-full sm:w-auto rounded-full h-14 px-10 text-base border-white/10 hover:bg-black/20 hover:scale-105 active:scale-95 transition-all text-slate-300"
                             >
                                 <TrendingUp size={18} className="mr-2 text-red-500" />
                                 Ir a Partidos

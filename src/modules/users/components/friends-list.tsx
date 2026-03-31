@@ -228,7 +228,7 @@ function UserSearchSection({ userId }: { userId: string }) {
                 <div className="p-2 rounded-xl bg-white/5">
                     <Search size={16} className="text-white/60" />
                 </div>
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] font-outfit">
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] font-sans">
                     Buscar personas
                 </h3>
             </div>
@@ -327,7 +327,7 @@ export function FriendsList({ userId }: FriendsListProps) {
                         <div className="p-2 rounded-xl bg-red-500/10">
                             <Bell size={16} className="text-red-500" />
                         </div>
-                        <h3 className="text-sm font-black uppercase tracking-[0.2em] font-outfit">
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] font-sans">
                             Solicitudes pendientes
                         </h3>
                         <span className="ml-auto px-2.5 py-1 rounded-full bg-red-500 text-white text-[9px] font-black">
@@ -356,7 +356,7 @@ export function FriendsList({ userId }: FriendsListProps) {
                     <div className="p-2 rounded-xl bg-white/5">
                         <Users size={16} className="text-white/60" />
                     </div>
-                    <h3 className="text-sm font-black uppercase tracking-[0.2em] font-outfit">
+                    <h3 className="text-sm font-black uppercase tracking-[0.2em] font-sans">
                         Mis amigos
                     </h3>
                     <span className="ml-auto text-[10px] font-black text-white/30 uppercase tracking-widest">

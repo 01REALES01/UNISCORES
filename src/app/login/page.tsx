@@ -16,7 +16,7 @@ type AuthMode = 'login' | 'register';
 export default function LoginPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#17130D]">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-background">
                 <UniqueLoading size="lg" />
             </div>
         }>
@@ -180,7 +180,7 @@ function LoginPageContent() {
     // Show loading if checking existing auth
     if (authLoading) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#17130D]">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-background">
                 <UniqueLoading size="lg" />
             </div>
         );
@@ -189,7 +189,7 @@ function LoginPageContent() {
     return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
             {/* Background */}
-            <div className="absolute inset-0 -z-10 overflow-hidden bg-[#17130D]">
+            <div className="absolute inset-0 -z-10 overflow-hidden bg-background">
                 <SmokeyBackground className="absolute inset-0 opacity-80" color1="#DB1406" color2="#FFC000" backdropBlurAmount="xl" />
                 <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
                     backgroundImage: 'linear-gradient(rgba(255,192,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,192,0,0.1) 1px, transparent 1px)',
@@ -216,7 +216,7 @@ function LoginPageContent() {
                 </div>
 
                 {/* Mode Toggle */}
-                <div className="flex bg-[#0a0805]/80 p-1.5 rounded-2xl border border-white/10 mb-6 backdrop-blur-sm shadow-sm">
+                <div className="flex bg-background/80 p-1.5 rounded-2xl border border-white/10 mb-6 backdrop-blur-sm shadow-sm">
                     <button
                         onClick={() => switchMode('login')}
                         className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'login'
@@ -240,7 +240,7 @@ function LoginPageContent() {
                 </div>
 
                 {/* Card */}
-                <div className="bg-[#0a0805]/95 backdrop-blur-3xl rounded-3xl p-8 border border-[#FFC000]/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+                <div className="bg-background/95 backdrop-blur-3xl rounded-3xl p-8 border border-[#FFC000]/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
                     <form onSubmit={mode === 'login' ? handleLogin : handleRegister} className="space-y-6">
 
                         {/* Error */}

@@ -62,7 +62,7 @@ export function DominanceMatrix({ rankings }: DominanceMatrixProps) {
                 {idx === 0 ? (
                   <Crown size={18} className="text-[#FFD700] mx-auto" />
                 ) : (
-                  <span className="text-sm sm:text-base font-black text-white/20 tabular-nums font-outfit">
+                  <span className="text-sm sm:text-base font-black text-white/20 tabular-nums font-sans">
                     {idx + 1}
                   </span>
                 )}
@@ -124,7 +124,7 @@ export function DominanceMatrix({ rankings }: DominanceMatrixProps) {
 
               {/* Win rate pct */}
               <div className="shrink-0 text-right">
-                <span className="text-base sm:text-lg font-black tabular-nums text-white/80 font-outfit">
+                <span className="text-base sm:text-lg font-black tabular-nums text-white/80 font-sans">
                   {Math.round(career.win_rate)}%
                 </span>
               </div>

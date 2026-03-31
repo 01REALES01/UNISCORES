@@ -56,7 +56,7 @@ export function RecordBook({ records }: RecordBookProps) {
 
             {/* Big number */}
             <div className="flex items-center gap-2.5 mb-2">
-              <span className={cn("text-3xl sm:text-4xl font-black tabular-nums font-outfit", accent)}>
+              <span className={cn("text-3xl sm:text-4xl font-black tabular-nums font-sans", accent)}>
                 {record.value}
               </span>
               <SportIcon sport={record.sportName} size={18} className={cn("opacity-40", accent)} />

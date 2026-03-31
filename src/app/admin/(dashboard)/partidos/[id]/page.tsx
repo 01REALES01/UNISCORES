@@ -105,14 +105,14 @@ export default function MatchControlPage() {
     const [showFullEditor, setShowFullEditor] = useState(false);
 
     if (loading) return (
-        <div className="min-h-screen bg-[#0a0816] flex flex-col items-center justify-center gap-4">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
             <Loader2 className="w-12 h-12 text-red-500 animate-spin" />
             <p className="text-white/40 font-black uppercase tracking-widest text-xs animate-pulse">Sincronizando...</p>
         </div>
     );
     
     if (errorCtx || !match) return (
-        <div className="min-h-screen bg-[#0a0816] flex flex-col items-center justify-center p-6 text-center">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
             <AlertCircle size={40} className="text-red-500 mb-6" />
             <h1 className="text-2xl font-black text-white mb-2 uppercase">Error de Conexión</h1>
             <p className="text-slate-500 mb-8">{errorCtx || "No se pudo encontrar el partido."}</p>
@@ -126,7 +126,7 @@ export default function MatchControlPage() {
     const { scoreA, scoreB } = getCurrentScore(disciplinaName, match.marcador_detalle || {});
 
     return (
-        <div className="min-h-screen bg-[#0a0816] pb-24 text-white">
+        <div className="min-h-screen bg-background pb-24 text-white">
             <AdminMatchHeader 
                 match={match} 
                 disciplinaName={disciplinaName} 
@@ -136,7 +136,7 @@ export default function MatchControlPage() {
 
             <div className="relative z-10 max-w-7xl mx-auto px-6">
                 {match.marcador_detalle?.tipo === 'carrera' ? (
-                    <Card variant="glass" className="p-8 mb-12">
+                    <Card className="p-8 mb-12">
                         <RaceControl 
                           matchId={matchId} 
                           detalle={match.marcador_detalle} 
@@ -176,7 +176,6 @@ export default function MatchControlPage() {
                         actions={actions}
                         jugadoresA={jugadoresA}
                         jugadoresB={jugadoresB}
-                        eventos={eventos}
                         onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id)}
                         onAddPlayer={async (team, data) => {
                             try {

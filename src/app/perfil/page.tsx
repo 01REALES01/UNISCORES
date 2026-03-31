@@ -191,7 +191,7 @@ export default function PerfilPage() {
         }
     };
 
-    if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-[#0a0816]"><UniqueLoading size="lg" /></div>;
+    if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
     if (!user) return null;
 
     const memberSince = profile?.created_at
@@ -212,14 +212,14 @@ export default function PerfilPage() {
     const firstName = profile?.full_name?.split(' ')[0] || "Usuario";
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-amber-500/30 overflow-x-hidden">
+        <div className="min-h-screen bg-background text-white selection:bg-amber-500/30 overflow-x-hidden">
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-8 pb-24 relative z-10">
                 
                 {/* Top Nav Actions */}
                 <div className="flex items-center justify-between mb-10">
-                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-outfit">
+                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-sans">
                         <div className="p-2 rounded-full bg-white/5 border border-white/5 group-hover:bg-white group-hover:text-black transition-all flex items-center justify-center">
                             <ChevronLeft size={14} />
                         </div>
@@ -258,7 +258,7 @@ export default function PerfilPage() {
                             name={profile?.full_name || user.email}
                             src={null}
                             className={cn(
-                                "relative w-48 h-48 md:w-60 md:h-60 rounded-[3rem] shadow-2xl z-10 bg-[#0a0816] text-5xl md:text-6xl border border-white/10",
+                                "relative w-48 h-48 md:w-60 md:h-60 rounded-[3rem] shadow-2xl z-10 bg-background text-5xl md:text-6xl border border-white/10",
                             )}
                         />
                         {isProjectCreator && (
@@ -274,7 +274,7 @@ export default function PerfilPage() {
                         <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8 mb-5">
                             <h1
                                 className={cn(
-                                    "text-5xl md:text-7xl font-black font-outfit leading-tight",
+                                    "text-5xl md:text-7xl font-black font-sans leading-tight",
                                     isProjectCreator
                                         ? "text-transparent bg-clip-text bg-gradient-to-b from-[#FFEAA7] via-[#FFD369] to-[#D4AF37] drop-shadow-md"
                                         : !profile?.name_color ? "text-white" : undefined
@@ -360,13 +360,13 @@ export default function PerfilPage() {
                     {/* LEFT COLUMN: Athlete Stats or Quiniela Stats */}
                     <div className="lg:col-span-4 space-y-6">
                         {isDeportista ? (
-                            <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0A0705] border border-amber-500/10 p-8 shadow-[0_0_30px_rgba(245,158,11,0.02)] min-h-[360px] flex flex-col justify-between group">
+                            <div className="relative overflow-hidden rounded-[2.5rem] bg-background border border-amber-500/10 p-8 shadow-[0_0_30px_rgba(245,158,11,0.02)] min-h-[360px] flex flex-col justify-between group">
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity duration-1000">
                                     <Star size={200} />
                                 </div>
 
                                 <div className="relative z-10">
-                                    <h3 className="text-amber-500 font-black uppercase text-sm tracking-[0.3em] font-outfit mb-8 max-w-[140px] leading-relaxed">
+                                    <h3 className="text-amber-500 font-black uppercase text-sm tracking-[0.3em] font-sans mb-8 max-w-[140px] leading-relaxed">
                                         ESTADÍSTICAS DE ATLETA
                                     </h3>
                                     
@@ -378,11 +378,11 @@ export default function PerfilPage() {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div className="rounded-[1.5rem] bg-[#050403] p-5 text-center border border-white/5">
+                                        <div className="rounded-[1.5rem] bg-background p-5 text-center border border-white/5">
                                             <span className="text-[9px] font-black uppercase text-white/30 tracking-[0.2em] block mb-2">Wins</span>
                                             <span className="text-3xl font-black text-white">{wins}</span>
                                         </div>
-                                        <div className="rounded-[1.5rem] bg-[#050403] p-5 text-center border border-white/5">
+                                        <div className="rounded-[1.5rem] bg-background p-5 text-center border border-white/5">
                                             <span className="text-[9px] font-black uppercase text-white/30 tracking-[0.2em] block mb-2">Loss</span>
                                             <span className="text-3xl font-black text-white/50">{losses}</span>
                                         </div>
@@ -395,13 +395,13 @@ export default function PerfilPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0A0705] border border-indigo-500/10 p-8 shadow-[0_0_30px_rgba(99,102,241,0.02)] min-h-[360px] flex flex-col justify-between group">
+                            <div className="relative overflow-hidden rounded-[2.5rem] bg-background border border-indigo-500/10 p-8 shadow-[0_0_30px_rgba(99,102,241,0.02)] min-h-[360px] flex flex-col justify-between group">
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity duration-1000">
                                     <Target size={200} />
                                 </div>
 
                                 <div className="relative z-10">
-                                    <h3 className="text-indigo-400 font-black uppercase text-sm tracking-[0.3em] font-outfit mb-8 max-w-[140px] leading-relaxed">
+                                    <h3 className="text-indigo-400 font-black uppercase text-sm tracking-[0.3em] font-sans mb-8 max-w-[140px] leading-relaxed">
                                         ESTADÍSTICAS QUINIELA
                                     </h3>
                                     
@@ -412,7 +412,7 @@ export default function PerfilPage() {
                                         </div>
                                     </div>
 
-                                    <div className="rounded-[1.5rem] bg-[#0F0D16] border border-indigo-900/50 p-6 text-center shadow-inner mt-10">
+                                    <div className="rounded-[1.5rem] bg-background border border-indigo-900/50 p-6 text-center shadow-inner mt-10">
                                         <span className="text-[9px] font-black uppercase text-indigo-400 tracking-[0.2em] block mb-2">Quiniela Score</span>
                                         <span className="text-4xl font-black text-white">{points}</span>
                                     </div>
@@ -456,15 +456,15 @@ export default function PerfilPage() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="rounded-[2.5rem] bg-[#0A0705] border border-white/5 p-8 flex items-center justify-center min-h-[160px]">
+                            <div className="rounded-[2.5rem] bg-background border border-white/5 p-8 flex items-center justify-center min-h-[160px]">
                                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">CARRERA NO ASIGNADA</span>
                             </div>
                         )}
 
                         {/* ENCUENTROS RECIENTES */}
-                        <div className="rounded-[2.5rem] bg-[#0A0807] border border-white/5 p-8 flex-1">
+                        <div className="rounded-[2.5rem] bg-background border border-white/5 p-8 flex-1">
                             <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/90 font-outfit">
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/90 font-sans">
                                     ENCUENTROS RECIENTES
                                 </h3>
                                 <Link href="/quiniela" className="text-[10px] font-black uppercase tracking-[0.1em] text-red-600 hover:text-red-500 transition-colors flex items-center gap-1">
@@ -527,7 +527,7 @@ export default function PerfilPage() {
                                 <Users className="text-red-500" size={24} />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-black font-outfit tracking-tighter text-white uppercase">Hub de mi Comunidad</h1>
+                                <h1 className="text-3xl font-black font-sans tracking-tighter text-white uppercase">Hub de mi Comunidad</h1>
                                 <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Gestión de amigos y seguimientos • Privado</p>
                             </div>
                         </div>
@@ -547,7 +547,7 @@ export default function PerfilPage() {
                                             <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                                                 <Star className="text-blue-400" size={16} />
                                             </div>
-                                            <h3 className="text-lg font-black font-outfit tracking-tighter text-white uppercase">Perfiles Seguidos</h3>
+                                            <h3 className="text-lg font-black font-sans tracking-tighter text-white uppercase">Perfiles Seguidos</h3>
                                         </div>
                                         <span className="text-[10px] font-black text-white/20 uppercase tabular-nums">{followedProfiles.length}</span>
                                     </div>
@@ -585,7 +585,7 @@ export default function PerfilPage() {
                                             <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
                                                 <Trophy className="text-purple-400" size={16} />
                                             </div>
-                                            <h3 className="text-lg font-black font-outfit tracking-tighter text-white uppercase">Carreras Seguidas</h3>
+                                            <h3 className="text-lg font-black font-sans tracking-tighter text-white uppercase">Carreras Seguidas</h3>
                                         </div>
                                         <span className="text-[10px] font-black text-white/20 uppercase tabular-nums">{followedCareers.length}</span>
                                     </div>

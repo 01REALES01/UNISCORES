@@ -11,7 +11,7 @@ export default function MedalleroPage() {
     const { user, profile, isStaff } = useAuth();
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-indigo-500/30 font-sans">
+        <div className="min-h-screen bg-background text-white selection:bg-indigo-500/30 font-sans">
             {/* Ambient Background Gradient */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" />

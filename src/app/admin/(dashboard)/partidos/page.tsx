@@ -195,7 +195,7 @@ export default function PartidosPage() {
             <motion.div 
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="relative overflow-hidden rounded-[2.5rem] bg-[#0c0a09]/60 backdrop-blur-2xl border border-white/5 p-10 group"
+                className="relative overflow-hidden rounded-[2.5rem] bg-background/60 backdrop-blur-2xl border border-white/5 p-10 group"
             >
                 {/* Background Pattern - Moving Noise & Orbs */}
                 <motion.div 
@@ -634,7 +634,7 @@ export default function PartidosPage() {
             {matchToDelete && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !deletingId && setMatchToDelete(null)} />
-                    <div className="relative bg-[#17130D] border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="relative bg-white/8 border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                         {/* Header bg */}
                         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-rose-500/20 to-transparent" />
                         

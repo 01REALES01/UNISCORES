@@ -86,13 +86,13 @@ export function SportBreakdown({ sports }: SportBreakdownProps) {
               {/* Stats row */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
-                  <span className="text-xl font-black tabular-nums text-white font-outfit">
+                  <span className="text-xl font-black tabular-nums text-white font-sans">
                     {sport.totalPoints}
                   </span>
                   <p className="text-[9px] text-white/30 font-bold uppercase tracking-wider">{sport.metricLabel}</p>
                 </div>
                 <div>
-                  <span className={cn("text-xl font-black tabular-nums font-outfit", accentClass)}>
+                  <span className={cn("text-xl font-black tabular-nums font-sans", accentClass)}>
                     {sport.avgPerMatch.toFixed(1)}
                   </span>
                   <p className="text-[9px] text-white/30 font-bold uppercase tracking-wider">{sport.avgLabel}</p>

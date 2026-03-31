@@ -161,13 +161,13 @@ export default function LideresPage() {
     const currentLabel = activeSport === 'todos' ? 'Puntos' : scoringLabel(activeSport);
 
     if (loading) return (
-        <div className="min-h-screen bg-[#0a0816] flex items-center justify-center">
+        <div className="min-h-screen bg-background flex items-center justify-center">
             <UniqueLoading size="lg" />
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-amber-500/30 overflow-x-hidden">
+        <div className="min-h-screen bg-background text-white selection:bg-amber-500/30 overflow-x-hidden">
             {/* Ambient */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
                 <div className="absolute -top-40 right-0 w-[700px] h-[700px] bg-amber-600/5 rounded-full blur-[160px]" />
@@ -287,7 +287,7 @@ export default function LideresPage() {
                                         )}
 
                                         <div className={cn(
-                                            "w-full bg-[#0d0b1a] rounded-[2rem] border transition-all duration-500 flex flex-col items-center pt-8 sm:pt-10 overflow-hidden relative group cursor-pointer hover:scale-[1.02]",
+                                            "w-full bg-background rounded-[2rem] border transition-all duration-500 flex flex-col items-center pt-8 sm:pt-10 overflow-hidden relative group cursor-pointer hover:scale-[1.02]",
                                             slot.h, slot.color, `shadow-2xl ${slot.glow}`
                                         )}>
                                             {/* Sport emoji */}
@@ -313,7 +313,7 @@ export default function LideresPage() {
                                             {/* Info */}
                                             <div className="text-center px-2 mb-4">
                                                 <p className={cn(
-                                                    "text-[10px] sm:text-[11px] font-black truncate max-w-[120px] uppercase tracking-wider font-outfit",
+                                                    "text-[10px] sm:text-[11px] font-black truncate max-w-[120px] uppercase tracking-wider font-sans",
                                                     isWinner ? "text-white" : "text-slate-400"
                                                 )}>
                                                     {s.nombre.split(' ')[0]}
@@ -366,7 +366,7 @@ export default function LideresPage() {
                             return (
                                 <div
                                     key={`${s.jugador_id}-${s.disciplina}`}
-                                    className="flex items-center gap-4 p-4 rounded-2xl bg-[#0d0b1a]/80 border border-white/5 hover:border-white/15 hover:bg-white/[0.03] transition-all group"
+                                    className="flex items-center gap-4 p-4 rounded-2xl bg-background/80 border border-white/5 hover:border-white/15 hover:bg-white/[0.03] transition-all group"
                                 >
                                     {/* Rank */}
                                     <div className="w-8 text-center">

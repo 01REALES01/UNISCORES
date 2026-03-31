@@ -26,7 +26,7 @@ export const QuinielaRankingItem = ({ profile, rank, isMe, mode = 'leaders' }: Q
       <div className="flex items-center gap-5 relative z-10">
         <div className="w-8 flex justify-center">
           <span className={cn(
-            "text-lg font-black font-outfit italic",
+            "text-lg font-black font-sans italic",
             rank <= 3 ? "text-amber-500/50" : "text-white/10"
           )}>
             #{rank}
@@ -46,7 +46,7 @@ export const QuinielaRankingItem = ({ profile, rank, isMe, mode = 'leaders' }: Q
         </div>
 
         <div className="space-y-0.5">
-          <p className="font-black text-sm text-white flex items-center gap-2 font-outfit group-hover:text-red-500 transition-colors">
+          <p className="font-black text-sm text-white flex items-center gap-2 font-sans group-hover:text-red-500 transition-colors">
             {profile.display_name || "Usuario"}
             {isMe && <Badge className="bg-amber-400 text-black border-0 text-[8px] font-black h-4 px-1.5 rounded-md">TÚ</Badge>}
           </p>
@@ -60,7 +60,7 @@ export const QuinielaRankingItem = ({ profile, rank, isMe, mode = 'leaders' }: Q
         {mode === 'leaders' && (
           <>
             <div className="flex items-baseline justify-end gap-1">
-              <span className="text-2xl font-black text-white tabular-nums font-outfit">
+              <span className="text-2xl font-black text-white tabular-nums font-sans">
                 {profile.points || 0}
               </span>
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pts</span>
@@ -77,7 +77,7 @@ export const QuinielaRankingItem = ({ profile, rank, isMe, mode = 'leaders' }: Q
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-gradient-to-r from-rose-500/20 to-orange-500/20 border border-orange-500/30">
               <Zap size={12} className="text-orange-400 fill-orange-400 animate-pulse" />
-              <span className="text-sm font-black text-white font-outfit">{profile.current_streak || 0}</span>
+              <span className="text-sm font-black text-white font-sans">{profile.current_streak || 0}</span>
             </div>
             <span className="text-[8px] font-black uppercase text-white/30 tracking-widest">
               Mejor: {profile.max_streak || 0}
@@ -88,7 +88,7 @@ export const QuinielaRankingItem = ({ profile, rank, isMe, mode = 'leaders' }: Q
         {mode === 'consistency' && (
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-baseline gap-1">
-              <span className="text-xl font-black text-emerald-400 tabular-nums font-outfit">
+              <span className="text-xl font-black text-emerald-400 tabular-nums font-sans">
                 {profile.total_predictions > 0 ? Math.round((profile.correct_predictions / profile.total_predictions) * 100) : 0}
               </span>
               <span className="text-[10px] font-black text-emerald-400/50">%</span>

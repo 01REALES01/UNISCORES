@@ -130,7 +130,7 @@ export default function AdminNoticiasPage() {
                     {noticias.map(n => (
                         <div
                             key={n.id}
-                            className="flex items-center gap-4 bg-[#17130D]/60 border border-white/5 rounded-2xl p-4 hover:border-white/10 transition-all group"
+                            className="flex items-center gap-4 bg-white/8/60 border border-white/5 rounded-2xl p-4 hover:border-white/10 transition-all group"
                         >
                             {/* Thumbnail */}
                             <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-white/5">

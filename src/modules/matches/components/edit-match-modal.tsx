@@ -711,7 +711,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
             {/* Click outside to close (desktop only) */}
             <div className="absolute inset-0 hidden sm:block" onClick={onClose} />
             
-            <div className="w-full h-[92dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl bg-[#0c0a1a] rounded-t-[2.5rem] sm:rounded-[2.5rem] border-t sm:border border-white/10 shadow-[0_0_100px_-20px_rgba(99,102,241,0.2)] flex flex-col relative z-20 animate-in slide-in-from-bottom-5 duration-500 overflow-hidden">
+            <div className="w-full h-[92dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl bg-background rounded-t-[2.5rem] sm:rounded-[2.5rem] border-t sm:border border-white/10 shadow-[0_0_100px_-20px_rgba(99,102,241,0.2)] flex flex-col relative z-20 animate-in slide-in-from-bottom-5 duration-500 overflow-hidden">
                 {/* Mobile Drag Handle */}
                 <div className="sm:hidden w-12 h-1.5 bg-white/10 rounded-full mx-auto mt-4 shrink-0" />
                 {/* Decorative Background Elements */}
@@ -906,7 +906,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
 
                     {/* Panel de Edición Avanzada — Industrial Control Center */}
                     {showAdvancedEdit && (
-                        <div className="rounded-[2rem] p-6 sm:p-8 space-y-8 border-2 border-indigo-500/30 bg-[#0a0816] shadow-2xl animate-in fade-in zoom-in-95 duration-300 relative overflow-hidden">
+                        <div className="rounded-[2rem] p-6 sm:p-8 space-y-8 border-2 border-indigo-500/30 bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-300 relative overflow-hidden">
                             <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
                             
                             <div className="flex justify-between items-center relative z-10">

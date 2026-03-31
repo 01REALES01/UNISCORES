@@ -95,9 +95,9 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
 
     if (!hasEvents) {
         return (
-            <div className="rounded-[2rem] bg-[#0A0705] border border-white/5 p-8 text-center mt-8">
+            <div className="rounded-[2rem] bg-background border border-white/5 p-8 text-center mt-8">
                 <Activity size={32} className="text-white/10 mx-auto mb-4" />
-                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30 font-outfit mb-2">Estadísticas del Encuentro</h3>
+                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30 font-sans mb-2">Estadísticas del Encuentro</h3>
                 <p className="text-[10px] text-white/20 font-bold max-w-sm mx-auto">No hay eventos ni estadísticas registradas para este partido aún.</p>
             </div>
         );
@@ -174,7 +174,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
 
             {/* Header */}
             <div className="flex items-center justify-center relative z-10 w-full border-b border-white/5 pb-5">
-                <h3 className="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-white/80 font-outfit flex items-center gap-3">
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-white/80 font-sans flex items-center gap-3">
                     <Activity size={18} className="animate-pulse" style={{ color: sportColor }} /> Rendimiento Global
                 </h3>
             </div>
@@ -260,10 +260,10 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                                 <div className="flex items-center gap-4 relative z-10">
                                     <div className="relative shrink-0">
                                         <div className="absolute -inset-1.5 bg-amber-500/25 rounded-full blur-lg" />
-                                        <Avatar name={mvp.nombre} className="w-14 h-14 sm:w-16 sm:h-16 border-3 border-amber-500 text-xl font-outfit shadow-2xl" />
+                                        <Avatar name={mvp.nombre} className="w-14 h-14 sm:w-16 sm:h-16 border-3 border-amber-500 text-xl font-sans shadow-2xl" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-base sm:text-lg font-black font-outfit leading-tight mb-1.5 text-white drop-shadow-lg truncate">{mvp.nombre}</p>
+                                        <p className="text-base sm:text-lg font-black font-sans leading-tight mb-1.5 text-white drop-shadow-lg truncate">{mvp.nombre}</p>
                                         <Badge className="bg-amber-500/20 text-amber-500 border border-amber-500/30 font-mono text-sm tabular-nums rounded-lg px-2.5 py-1 shadow-inner">
                                             <Star size={12} className="inline mr-1.5 -translate-y-0.5 fill-amber-500" />
                                             {mvpPoints} pts

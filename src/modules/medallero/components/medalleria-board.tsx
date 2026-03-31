@@ -286,7 +286,7 @@ export function MedalLeaderboard() {
 
                 {/* Vertical Pilar */}
                 <div className={cn(
-                    "w-full bg-[#0d0b1a] rounded-[2rem] border transition-all duration-500 group-hover:bg-[#110f22] flex flex-col items-center pt-6 sm:pt-10 overflow-hidden relative",
+                    "w-full bg-background rounded-[2rem] border transition-all duration-500 group-hover:bg-[#110f22] flex flex-col items-center pt-6 sm:pt-10 overflow-hidden relative",
                     config.height, config.glow,
                     "group-hover:scale-[1.02]"
                 )}>
@@ -347,7 +347,7 @@ export function MedalLeaderboard() {
     }
 
     return (
-        <section className="relative overflow-hidden rounded-[1rem] sm:rounded-[2.5rem] bg-[#0a0816] shadow-2xl pb-6">
+        <section className="relative overflow-hidden rounded-[1rem] sm:rounded-[2.5rem] bg-background shadow-2xl pb-6">
             {/* Ambient Background Glows */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-[400px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none" />
 
@@ -438,7 +438,7 @@ export function MedalLeaderboard() {
                         return (
                             <div
                                 key={entry.id || entry.equipo_nombre}
-                                className="flex flex-col sm:flex-row bg-[#1a1625]/90 backdrop-blur-sm border border-white/5 hover:border-white/20 transition-all duration-300 group shadow-xl rounded-3xl overflow-hidden min-h-[120px]"
+                                className="flex flex-col sm:flex-row bg-white/8/90 backdrop-blur-sm border border-white/5 hover:border-white/20 transition-all duration-300 group shadow-xl rounded-3xl overflow-hidden min-h-[120px]"
                             >
                                 <div className="flex flex-1 w-full">
                                     {/* Avatar Column */}
@@ -501,7 +501,7 @@ export function MedalLeaderboard() {
                                 </div>
 
                                 {/* Total Points Box (Right Column) */}
-                                <div className="w-full sm:w-[130px] h-12 sm:h-auto shrink-0 border-t sm:border-t-0 sm:border-l border-white/5 flex flex-row sm:flex-col items-center justify-between sm:justify-center px-6 sm:px-0 bg-black/60 group-hover:bg-[#111111] transition-colors relative">
+                                <div className="w-full sm:w-[130px] h-12 sm:h-auto shrink-0 border-t sm:border-t-0 sm:border-l border-white/5 flex flex-row sm:flex-col items-center justify-between sm:justify-center px-6 sm:px-0 bg-black/60 group-hover:bg-white/8 transition-colors relative">
                                     <div className="absolute inset-0 bg-gradient-to-r sm:bg-gradient-to-b from-transparent to-red-600/5 pointer-events-none" />
                                     
                                     <div className="flex flex-row sm:flex-col items-center gap-2 sm:gap-0">

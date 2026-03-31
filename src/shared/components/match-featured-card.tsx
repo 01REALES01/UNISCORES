@@ -132,7 +132,7 @@ export function MatchFeaturedCard({ match }: MatchFeaturedCardProps) {
                                 src={match.atleta_a?.avatar_url}
                                 size="lg" 
                                 className={cn(
-                                    "w-14 h-14 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
+                                    "w-14 h-14 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-background shrink-0",
                                     getWinnerStyle(sport, wonA)
                                 )} 
                             />
@@ -194,7 +194,7 @@ export function MatchFeaturedCard({ match }: MatchFeaturedCardProps) {
                                 src={match.atleta_b?.avatar_url}
                                 size="lg" 
                                 className={cn(
-                                    "w-14 h-14 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-[#0a0805] shrink-0",
+                                    "w-14 h-14 sm:w-20 sm:h-20 shadow-xl transition-all duration-500 border-2 bg-background shrink-0",
                                     getWinnerStyle(sport, wonB)
                                 )} 
                             />

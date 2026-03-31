@@ -88,7 +88,7 @@ export function QuinielaRankingTab({ ranking, user, profile, userPoints }: Quini
 
                 {user && ranking.length > 0 && (
                     <div className="absolute bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="bg-[#1A1612]/95 backdrop-blur-xl border-2 border-amber-500/50 rounded-2xl p-4 shadow-xl flex items-center justify-between">
+                        <div className="bg-white/8/95 backdrop-blur-xl border-2 border-amber-500/50 rounded-2xl p-4 shadow-xl flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-black font-black">
                                     #{ranking.findIndex(r => r.id === user.id) + 1}

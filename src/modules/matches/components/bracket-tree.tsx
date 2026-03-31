@@ -67,7 +67,7 @@ function BracketMatchCard({ match, sportName }: { match: Match | null; sportName
     return (
         <Link href={`/partido/${match.id}`} className="block group">
             <div className={cn(
-                "w-full bg-[#17130D] border rounded-xl overflow-hidden transition-all hover:scale-[1.02] hover:shadow-xl",
+                "w-full bg-background border rounded-xl overflow-hidden transition-all hover:scale-[1.02] hover:shadow-xl",
                 isLive ? "border-red-500/40 shadow-[0_0_15px_rgba(219,20,6,0.15)]" : "border-white/10 hover:border-white/20"
             )}>
                 {/* Live badge */}

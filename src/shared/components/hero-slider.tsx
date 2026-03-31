@@ -64,7 +64,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
 
     // Si no hay partidos, mostrar banner genérico
     if (featuredMatches.length === 0) return (
-        <div className="relative w-full h-[350px] md:h-[400px] rounded-[2rem] overflow-hidden mb-8 group bg-[#110e0a] border border-white/10 shadow-2xl">
+        <div className="relative w-full h-[400px] md:h-[450px] rounded-[2rem] overflow-hidden mb-8 group bg-background border border-white/10 shadow-2xl">
             <div className="absolute inset-0 opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
             <div className="absolute inset-0 bg-gradient-to-r from-red-900/40 via-orange-900/20 to-black/60" />
 
@@ -112,7 +112,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
     const scoreInfo = getCurrentScore(currentMatch.disciplinas?.name, currentMatch.marcador_detalle || {});
 
     return (
-        <div className="relative w-full h-[340px] md:h-[380px] rounded-[2rem] overflow-hidden mb-8 group border border-white/10 shadow-2xl">
+        <div className="relative w-full h-[400px] md:h-[450px] rounded-[2rem] overflow-hidden mb-8 group border border-white/10 shadow-2xl">
             <AnimatePresence mode="wait">
                 <m.div
                     key={currentMatch.id}
@@ -120,7 +120,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.7 }}
-                    className="absolute inset-0 bg-[#17130D]"
+                    className="absolute inset-0 bg-background"
                 >
                     {/* Background Abstracto / Deportes */}
                     <div className="absolute inset-0 opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay z-10" />
@@ -133,7 +133,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
 
                     {/* Top-Left Absolute Timer */}
                     {currentMatch.estado === 'en_curso' && currentMatch.marcador_detalle?.timer && (
-                        <m.div
+                        <m.div 
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ delay: 0.4 }}
@@ -214,13 +214,13 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                             {(currentMatch.marcador_detalle?.participantes || []).length} Nadadores
                                                         </span>
                                                     </div>
-
+                                                    
                                                     {/* Category/Gender */}
                                                     <div className={cn(
                                                         "px-3 py-1.5 rounded-full border backdrop-blur-sm flex items-center gap-2",
                                                         gender === 'femenino' ? "bg-pink-500/10 border-pink-500/30 text-pink-400" :
-                                                            gender === 'mixto' ? "bg-purple-500/10 border-purple-500/30 text-purple-400" :
-                                                                "bg-blue-500/10 border-blue-500/30 text-blue-400"
+                                                        gender === 'mixto' ? "bg-purple-500/10 border-purple-500/30 text-purple-400" :
+                                                        "bg-blue-500/10 border-blue-500/30 text-blue-400"
                                                     )}>
                                                         <span className="text-xs md:text-sm font-bold uppercase tracking-wider">
                                                             {gender}
@@ -262,7 +262,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             transition={{ delay: 0.3 }}
                                             className="flex flex-col items-center gap-2 md:gap-3 flex-1 text-center"
                                         >
-                                            <Avatar name={getDisplayName(currentMatch, 'a')} src={currentMatch.atleta_a?.avatar_url || currentMatch.carrera_a?.escudo_url} className="w-12 h-12 md:w-24 md:h-24 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl shrink-0 text-xl md:text-4xl bg-[#0a0805]" />
+                                            <Avatar name={getDisplayName(currentMatch, 'a')} src={currentMatch.atleta_a?.avatar_url || currentMatch.carrera_a?.escudo_url} className="w-12 h-12 md:w-24 md:h-24 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl shrink-0 text-xl md:text-4xl bg-background" />
                                             <h3 className="text-sm md:text-2xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'a')}
                                             </h3>
@@ -333,7 +333,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             transition={{ delay: 0.3 }}
                                             className="flex flex-col items-center gap-2 md:gap-3 flex-1 text-center"
                                         >
-                                            <Avatar name={getDisplayName(currentMatch, 'b')} src={currentMatch.atleta_b?.avatar_url || currentMatch.carrera_b?.escudo_url} className="w-14 h-14 md:w-24 md:h-24 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl shrink-0 text-xl md:text-4xl bg-[#0a0805]" />
+                                            <Avatar name={getDisplayName(currentMatch, 'b')} src={currentMatch.atleta_b?.avatar_url || currentMatch.carrera_b?.escudo_url} className="w-14 h-14 md:w-24 md:h-24 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl shrink-0 text-xl md:text-4xl bg-background" />
                                             <h3 className="text-sm md:text-2xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'b')}
                                             </h3>
