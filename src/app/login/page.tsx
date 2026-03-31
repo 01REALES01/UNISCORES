@@ -1,17 +1,13 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { Button, Input } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
-import { Lock, Trophy, Mail, ArrowRight, UserPlus, LogIn, Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Lock, AlertCircle, Loader2, ShieldCheck } from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { SmokeyBackground } from "@/components/ui/login-form";
-import { AnimatedFormField, ModernButton, SocialButton } from "@/components/ui/sign-in-flo";
-
-type AuthMode = 'login' | 'register';
 
 export default function LoginPage() {
     return (
@@ -26,15 +22,8 @@ export default function LoginPage() {
 }
 
 function LoginPageContent() {
-    const [mode, setMode] = useState<AuthMode>('login');
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [fullName, setFullName] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
-    const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, loading: authLoading } = useAuth();
@@ -59,122 +48,21 @@ function LoginPageContent() {
         }
     }, [authLoading, user, router]);
 
-    const resetForm = () => {
-        setError(null);
-        setSuccess(null);
-        setPassword("");
-        setConfirmPassword("");
-    };
-
-    const switchMode = (newMode: AuthMode) => {
-        resetForm();
-        setMode(newMode);
-    };
-
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
-
-        try {
-            const { error: authError } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
-
-            if (authError) {
-                if (authError.message.includes('Invalid login credentials')) {
-                    throw new Error('Email o contraseña incorrectos');
-                }
-                if (authError.message.includes('Email not confirmed') || authError.message.includes('email_not_confirmed')) {
-                    throw new Error('Tu email no está confirmado. Revisa tu bandeja de entrada o contacta a un administrador.');
-                }
-                throw new Error(authError.message);
-            }
-
-            // useAuth will detect the session change and update user state
-            // The useEffect above will then redirect to "/"
-
-        } catch (err: any) {
-            if (err?.name === 'AbortError' || err?.message?.includes('abort')) {
-                return;
-            }
-            setError(err.message || "Error al iniciar sesión");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
-        setSuccess(null);
-
-        try {
-            if (password.length < 6) {
-                throw new Error('La contraseña debe tener al menos 6 caracteres');
-            }
-            if (password !== confirmPassword) {
-                throw new Error('Las contraseñas no coinciden');
-            }
-            if (!fullName.trim()) {
-                throw new Error('Ingresa tu nombre completo');
-            }
-
-            const { data, error: authError } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        full_name: fullName,
-                    }
-                }
-            });
-
-            if (authError) {
-                if (authError.message.includes('already registered') || authError.message.includes('already been registered')) {
-                    throw new Error('Este email ya está registrado. Intenta iniciar sesión.');
-                }
-                throw authError;
-            }
-
-            if (data.user) {
-                if (data.session) {
-                    // Email confirmations disabled — user is immediately active
-                    setSuccess('¡Cuenta creada! Ya puedes iniciar sesión.');
-                    setTimeout(() => switchMode('login'), 2000);
-                } else {
-                    // Email confirmation required
-                    setSuccess('¡Cuenta creada! Revisa tu correo y haz clic en el enlace de confirmación para activarla.');
-                }
-            }
-
-        } catch (err: any) {
-            setError(err.message || "Error al registrar usuario");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
     const handleMicrosoftLogin = async () => {
         setLoading(true);
+        setError(null);
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "azure",
             options: {
                 scopes: "email profile",
                 redirectTo: `${window.location.origin}/auth/callback`,
-                queryParams: {
-                    // domain_hint removido — la restricción @uninorte.edu.co
-                    // se aplica en /auth/callback después del login
-                }
             },
         });
         if (error) {
             setError("Error de conexión con Microsoft: " + error.message);
+            setLoading(false);
         }
-        setLoading(false);
+        // Redirect happens automatically
     };
 
     // Show loading if checking existing auth
@@ -210,38 +98,23 @@ function LoginPageContent() {
                     <h2 className="text-2xl font-black tracking-tighter text-white/40 mb-2" style={{ fontFamily: 'Arial Black, Impact, sans-serif' }}>
                         2026
                     </h2>
-                    <p className="text-[#FFC000]/70 text-[10px] font-bold uppercase tracking-widest mt-2">
-                        Inicia sesión para continuar
+                    <div className="h-px w-12 bg-gradient-to-r from-transparent via-[#FFC000]/50 to-transparent my-4" />
+                    <p className="text-[#FFC000]/70 text-[10px] font-bold uppercase tracking-widest">
+                        Plataforma de Competencias Universitarias
                     </p>
                 </div>
 
-                {/* Mode Toggle */}
-                <div className="flex bg-background/80 p-1.5 rounded-2xl border border-white/10 mb-6 backdrop-blur-sm shadow-sm">
-                    <button
-                        onClick={() => switchMode('login')}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'login'
-                            ? 'bg-[#FFC000] text-black shadow-md'
-                            : 'text-white/40 hover:text-[#FFC000]'
-                            }`}
-                    >
-                        <LogIn size={16} />
-                        Iniciar Sesión
-                    </button>
-                    <button
-                        onClick={() => switchMode('register')}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'register'
-                            ? 'bg-[#FFC000] text-black shadow-md'
-                            : 'text-white/40 hover:text-[#FFC000]'
-                            }`}
-                    >
-                        <UserPlus size={16} />
-                        Registrarse
-                    </button>
-                </div>
-
                 {/* Card */}
-                <div className="bg-background/95 backdrop-blur-3xl rounded-3xl p-8 border border-[#FFC000]/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
-                    <form onSubmit={mode === 'login' ? handleLogin : handleRegister} className="space-y-6">
+                <div className="bg-background/95 backdrop-blur-3xl rounded-3xl p-8 border border-[#FFC000]/20 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#DB1406] via-[#FFC000] to-[#DB1406] opacity-50" />
+                    
+                    <div className="space-y-6">
+                        <div className="text-center space-y-2">
+                            <h3 className="text-lg font-bold text-white">Acceso Institucional</h3>
+                            <p className="text-white/50 text-xs">
+                                Utiliza tu cuenta de la Universidad del Norte para acceder a la plataforma.
+                            </p>
+                        </div>
 
                         {/* Error */}
                         {error && (
@@ -251,146 +124,71 @@ function LoginPageContent() {
                             </div>
                         )}
 
-                        {/* Success */}
-                        {success && (
-                            <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-                                <CheckCircle size={18} className="shrink-0 mt-0.5" />
-                                <span>{success}</span>
-                            </div>
-                        )}
-
-                        {/* Name (register only) */}
-                        {mode === 'register' && (
-                            <AnimatedFormField
-                                type="text"
-                                placeholder="Nombre Completo"
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                icon={<UserPlus size={18} />}
-                                required
-                                disabled={loading}
-                            />
-                        )}
-
-                        {/* Email */}
-                        <AnimatedFormField
-                            type="email"
-                            placeholder="Correo Electrónico"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            icon={<Mail size={18} />}
-                            required
-                            disabled={loading}
-                        />
-
-                        {/* Password */}
-                        <div className="space-y-2">
-                            <AnimatedFormField
-                                type={showPassword ? "text" : "password"}
-                                placeholder="Contraseña"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                icon={<Lock size={18} />}
-                                showToggle
-                                onToggle={() => setShowPassword(!showPassword)}
-                                showPassword={showPassword}
-                                required
-                                disabled={loading}
-                            />
-                            {mode === 'register' && password.length > 0 && (
-                                <div className="flex items-center gap-2 px-1">
-                                    <div className={`h-1 flex-1 rounded-full transition-all ${password.length >= 6 ? 'bg-green-500' : 'bg-red-500/50'}`} />
-                                    <div className={`h-1 flex-1 rounded-full transition-all ${password.length >= 8 ? 'bg-green-500' : 'bg-slate-700'}`} />
-                                    <div className={`h-1 flex-1 rounded-full transition-all ${password.length >= 10 ? 'bg-green-500' : 'bg-slate-700'}`} />
-                                    <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest ml-1">
-                                        {password.length < 6 ? 'Corta' : password.length < 8 ? 'Ok' : password.length < 10 ? 'Buena' : 'Fuerte'}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Confirm Password (register only) */}
-                        {mode === 'register' && (
-                            <div className="space-y-2">
-                                <AnimatedFormField
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="Confirmar Contraseña"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    icon={<Lock size={18} />}
-                                    required
-                                    disabled={loading}
-                                />
-                                {confirmPassword && confirmPassword !== password && (
-                                    <p className="text-[#DB1406] text-xs font-bold px-1 flex items-center gap-1">
-                                        <AlertCircle size={12} /> Las contraseñas no coinciden
-                                    </p>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Submit Button */}
+                        {/* Microsoft Login Button */}
                         <div className="pt-2">
-                            <ModernButton type="submit" disabled={loading || (mode === 'register' && password !== confirmPassword)}>
+                            <button
+                                onClick={handleMicrosoftLogin}
+                                disabled={loading}
+                                className="w-full relative group p-4 rounded-xl border border-white/20 bg-white/5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] hover:bg-white/10 hover:border-[#FFC000]/50 transition-all duration-300 ease-in-out overflow-hidden flex items-center justify-center gap-4 disabled:opacity-50"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-[#DB1406]/5 via-[#FFC000]/10 to-[#DB1406]/5 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
+                                
                                 {loading ? (
-                                    <>
-                                        <Loader2 size={18} className="animate-spin mr-2" />
-                                        {mode === 'login' ? 'Verificando...' : 'Creando...'}
-                                    </>
+                                    <Loader2 size={24} className="animate-spin text-[#FFC000]" />
                                 ) : (
-                                    <>
-                                        {mode === 'login' ? (
-                                            <>
-                                                Iniciar Sesión
-                                                <ArrowRight size={18} className="ml-2" />
-                                            </>
-                                        ) : (
-                                            <>
-                                                <UserPlus size={18} className="mr-2" />
-                                                Crear Cuenta
-                                            </>
-                                        )}
-                                    </>
+                                    <svg className="w-6 h-6 shrink-0" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill="#f25022" d="M0 0h10v10H0z" />
+                                        <path fill="#7fba00" d="M11 0h10v10H11z" />
+                                        <path fill="#00a4ef" d="M0 11h10v10H0z" />
+                                        <path fill="#ffb900" d="M11 11h10v10H11z" />
+                                    </svg>
                                 )}
-                            </ModernButton>
+                                
+                                <span className="relative text-white font-black uppercase tracking-widest text-sm">
+                                    {loading ? 'Conectando...' : 'Entrar con Microsoft'}
+                                </span>
+                            </button>
                         </div>
-                    </form>
 
+                        <div className="flex items-center gap-3 py-2">
+                            <div className="h-px flex-1 bg-white/5" />
+                            <ShieldCheck size={16} className="text-[#FFC000]/40" />
+                            <div className="h-px flex-1 bg-white/5" />
+                        </div>
 
-                    {/* Microsoft Login Button */}
-                    <div className="mt-3">
-                        <SocialButton
-                            name="Microsoft"
-                            onClick={handleMicrosoftLogin}
-                            disabled={loading}
-                            icon={
-                                <svg className="w-5 h-5" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill="#f25022" d="M0 0h10v10H0z" />
-                                    <path fill="#7fba00" d="M11 0h10v10H11z" />
-                                    <path fill="#00a4ef" d="M0 11h10v10H0z" />
-                                    <path fill="#ffb900" d="M11 11h10v10H11z" />
-                                </svg>
-                            }
-                        />
+                        <div className="bg-[#FFC000]/5 rounded-xl p-4 border border-[#FFC000]/10">
+                            <ul className="space-y-2">
+                                <li className="flex items-center gap-2 text-[10px] text-white/40 font-bold uppercase tracking-widest">
+                                    <div className="w-1 h-1 rounded-full bg-[#FFC000]" />
+                                    Exclusivo para @uninorte.edu.co
+                                </li>
+                                <li className="flex items-center gap-2 text-[10px] text-white/40 font-bold uppercase tracking-widest">
+                                    <div className="w-1 h-1 rounded-full bg-[#FFC000]" />
+                                    Sin contraseñas adicionales
+                                </li>
+                            </ul>
+                        </div>
                     </div>
 
                     {/* Back to Home */}
                     <div className="mt-8 pt-6 border-t border-white/10 text-center">
-                        <Link href="/" className="text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-[#DB1406] transition-colors inline-flex items-center gap-1.5 hover:gap-2.5">
+                        <Link href="/" className="text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-[#FFC000] transition-colors inline-flex items-center gap-1.5 hover:gap-2.5">
                             ← Volver a la página principal
                         </Link>
                     </div>
                 </div>
 
                 {/* Security Badge */}
-                <div className="mt-6 text-center space-y-2">
-                    <p className="text-[10px] text-white/40 font-bold flex items-center justify-center gap-1.5 uppercase tracking-widest">
-                        <Lock size={12} />
-                        Conexión segura con Supabase Auth
+                <div className="mt-8 text-center space-y-3">
+                    <p className="text-[10px] text-white/40 font-bold flex items-center justify-center gap-2 uppercase tracking-widest">
+                        <Lock size={12} className="text-[#FFC000]/60" />
+                        Autenticación Segura Institucional
                     </p>
-                    <p className="text-[10px] text-white/30">
-                        Universidad del Norte — Barranquilla, Colombia
-                    </p>
+                    <div className="flex items-center justify-center gap-4 opacity-30 grayscale contrast-125">
+                         <img src="/uninorte_logo.png" alt="Uninorte" className="h-6 w-auto" />
+                         <div className="w-px h-4 bg-white/20" />
+                         <span className="text-[10px] font-black text-white">MICROSOFT AZURE</span>
+                    </div>
                 </div>
             </div>
         </div>

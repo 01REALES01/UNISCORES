@@ -120,7 +120,6 @@ async function fetchTeamProfile(delegacionId: number) {
                     // Usually participants list have `equipo` matching `delegacion.nombre`
                     // This is complex, so we'll leave it 0 for now unless we need race specific logic.
                 } else {
-                    const md = m.marcador_detalle || {};
                     const isGameA = m.delegacion_a_id === delegacionId;
                     
                     const scoreA = md.goles_a ?? md.sets_a ?? md.total_a ?? 0;

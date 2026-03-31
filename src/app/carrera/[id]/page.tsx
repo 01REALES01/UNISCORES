@@ -354,7 +354,7 @@ export default function CarreraProfilePage() {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen bg-background text-white selection:bg-red-500/30 texture-grain overflow-x-hidden">
+        <div className="min-h-screen bg-background text-white selection:bg-red-500/30 overflow-x-hidden">
             {/* Ambient background */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[150px]" />

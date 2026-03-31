@@ -59,6 +59,22 @@ export const CARRERAS_UNINORTE = [
     'Egresados'
 ];
 
+// ── Team name → carrera names mapping (from Excel fixture file) ──────────────
+// Some teams are combined (multiple programs playing together).
+// Each member carrera receives full Olympic points independently.
+export const EQUIPO_NOMBRE_TO_CARRERAS: Record<string, string[]> = {
+    'DCPRI':                               ['Derecho', 'Ciencia Política y Gobierno', 'Relaciones Internacionales'],
+    'INGENIERÍA MECÁNICA':                 ['Ingeniería Mecánica'],
+    'MEDICINA':                            ['Medicina'],
+    'INGENIERÍA INDUSTRIAL':               ['Ingeniería Industrial'],
+    'INGENIERÍA CIVIL':                    ['Ingeniería Civil'],
+    'INGENIERÍA DE SISTEMAS':              ['Ingeniería de Sistemas'],
+    'INGENIERÍA ELÉCTRICA/CIENCIA DATOS':  ['Ingeniería Eléctrica', 'Ciencia de Datos'],
+    'COM. SOCIAL/PSICOLOGÍA':              ['Comunicación Social y Periodismo', 'Psicología'],
+    'ESCUELA DE NEGOCIOS':                 ['Negocios Internacionales'],
+    'ARQUITECTURA':                        ['Arquitectura'],
+};
+
 export const SPORT_EMOJI: Record<string, string> = {
     'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
     'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',

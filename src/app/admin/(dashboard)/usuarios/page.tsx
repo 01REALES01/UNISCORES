@@ -189,7 +189,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
     }, [profiles, roleFilter, searchQuery]);
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 relative texture-grain min-h-screen">
+        <div className="space-y-6 animate-in fade-in duration-500 relative min-h-screen">
             {/* Ambient Background */}
             <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
             <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-red-600/5 rounded-full blur-[80px] pointer-events-none" />

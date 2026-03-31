@@ -82,7 +82,7 @@ function MatchRow({ match, carreraName }: { match: any; carreraName?: string }) 
             <div className={cn(
                 "relative flex flex-col p-4 sm:p-5 rounded-[1.5rem] border transition-all duration-500 overflow-hidden hover:shadow-2xl hover:-translate-y-0.5",
                 border,
-                "bg-gradient-to-br from-white/[0.04] via-[#0d0a0e] to-[#0d0a0e]"
+                "bg-gradient-to-br from-white/[0.04] via-background/80 to-background/80"
             )}>
                 {/* Noise Texture */}
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.04] pointer-events-none mix-blend-overlay" />
@@ -141,7 +141,7 @@ function MatchRow({ match, carreraName }: { match: any; carreraName?: string }) 
                             name={nameA}
                             src={match.carrera_a?.escudo_url || match.atleta_a?.avatar_url}
                             className={cn(
-                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-background",
                                 winnerA ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
                                 !winnerA && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
                             )}
@@ -185,7 +185,7 @@ function MatchRow({ match, carreraName }: { match: any; carreraName?: string }) 
                             name={nameB}
                             src={match.carrera_b?.escudo_url || match.atleta_b?.avatar_url}
                             className={cn(
-                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-background",
                                 winnerB ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
                                 !winnerB && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
                             )}
@@ -319,7 +319,7 @@ export default function TeamProfilePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#0a0816]">
+            <div className="min-h-screen flex items-center justify-center bg-background">
                 <UniqueLoading size="lg" />
             </div>
         );
@@ -327,7 +327,7 @@ export default function TeamProfilePage() {
 
     if (!delegacion || error) {
         return (
-            <div className="min-h-screen bg-[#0a0816] text-white flex flex-col items-center justify-center p-4">
+            <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-4">
                 <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
                     <ShieldHalf className="text-red-500" size={32} />
                 </div>
@@ -355,7 +355,7 @@ export default function TeamProfilePage() {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-red-500/30 texture-grain overflow-x-hidden">
+        <div className="min-h-screen bg-background text-white selection:bg-red-500/30 overflow-x-hidden">
             {/* Ambient background */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ opacity: 0.15 }}>
                 <div className={`absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-br ${sportGradient} rounded-full blur-[150px]`} />
@@ -386,14 +386,14 @@ export default function TeamProfilePage() {
                 >
                     <div className={`absolute -inset-1 sm:-inset-2 bg-gradient-to-r ${sportGradient} rounded-[2.5rem] sm:rounded-[3rem] blur-xl opacity-20 sm:opacity-30 group-hover:opacity-40 transition-opacity duration-700`} />
                     
-                    <div className="relative bg-[#0a0805]/95 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl p-6 sm:p-10 flex flex-col items-center text-center">
+                    <div className="relative bg-background/95 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl p-6 sm:p-10 flex flex-col items-center text-center">
                         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
                         
                         {/* Allied Career Badges */}
                         <div className="flex -space-x-4 mb-6 mt-4 hover:-space-x-2 transition-all duration-300">
                             {carreras.map((c: any, i: number) => (
                                 <Link href={`/carrera/${c.id}`} key={c.id} className="relative z-10 hover:z-20 group/badge block">
-                                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-black/80 backdrop-blur-md border border-white/20 flex items-center justify-center p-2 shadow-xl ring-4 ring-[#0a0805] transform group-hover/badge:scale-110 group-hover/badge:-translate-y-2 transition-all duration-300">
+                                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-black/80 backdrop-blur-md border border-white/20 flex items-center justify-center p-2 shadow-xl ring-4 ring-background transform group-hover/badge:scale-110 group-hover/badge:-translate-y-2 transition-all duration-300">
                                         {c.escudo_url ? (
                                             <img src={c.escudo_url} alt={c.nombre} className="w-full h-full object-contain filter contrast-125" />
                                         ) : (

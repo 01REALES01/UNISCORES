@@ -196,7 +196,7 @@ export default function FixturePage() {
 
     // ── UPLOAD ───────────────────────────────────────────────────────────────
     if (step === 'upload') return (
-        <div className="min-h-screen bg-[#0a0805] p-6 flex flex-col items-center justify-center">
+        <div className="min-h-screen bg-background p-6 flex flex-col items-center justify-center">
             <div className="w-full max-w-lg space-y-6">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
@@ -318,7 +318,7 @@ export default function FixturePage() {
 
     // ── PREVIEW ──────────────────────────────────────────────────────────────
     if (step === 'preview' && preview) return (
-        <div className="min-h-screen bg-[#0a0805] p-6">
+        <div className="min-h-screen bg-background p-6">
             <div className="max-w-3xl mx-auto space-y-6">
 
                 {/* Header */}
@@ -417,7 +417,7 @@ export default function FixturePage() {
 
     // ── DONE ─────────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-[#0a0805] p-6 flex items-center justify-center">
+        <div className="min-h-screen bg-background p-6 flex items-center justify-center">
             <div className="max-w-sm w-full text-center space-y-6">
                 <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
                     <CheckCircle size={28} className="text-emerald-400" />
