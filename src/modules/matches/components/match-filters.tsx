@@ -31,38 +31,33 @@ export function MatchFilters({ activeFilter, setActiveFilter, matches }: MatchFi
       <button
         onClick={() => setActiveFilter('todos')}
         className={cn(
-          "group relative min-w-[90px] h-20 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all duration-300 overflow-hidden shrink-0",
+          "group relative min-w-[90px] h-20 rounded-xl sm:rounded-2xl flex flex-col items-center justify-end pb-3 border transition-all duration-300 overflow-hidden shrink-0",
           activeFilter === 'todos'
-            ? "bg-red-600 text-white border-red-600 shadow-lg scale-105"
-            : "bg-black/30 border-white/10 text-slate-400 hover:bg-black/40 hover:text-white"
+            ? "border-rose-500/50 shadow-[0_0_15px_rgba(225,29,72,0.3)] scale-105"
+            : "border-white/5 opacity-70 hover:opacity-100 hover:border-white/20"
         )}
       >
-        <LayoutGrid size={20} className={cn("transition-all z-10 drop-shadow-md", activeFilter === 'todos' ? 'text-white' : 'text-slate-500 group-hover:text-white')} />
-        <span className="text-[10px] font-black uppercase tracking-widest z-10 leading-none text-center px-1">Todos</span>
-        {activeFilter === 'todos' && (
-          <LayoutGrid size={60} className="absolute -bottom-4 -right-4 text-white/10" />
-        )}
+        <div className="absolute inset-0 z-0 bg-transparent">
+          <img src="/elementos/13.png" alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all" />
+        </div>
+        <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest z-10 leading-none text-center px-1 text-white drop-shadow-md">2026</span>
       </button>
 
       <button
         onClick={() => setActiveFilter('favoritos')}
         className={cn(
-          "group relative min-w-[90px] h-20 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all duration-300 overflow-hidden shrink-0",
+          "group relative min-w-[90px] h-20 rounded-xl sm:rounded-2xl flex flex-col items-center justify-end pb-3 border transition-all duration-300 overflow-hidden shrink-0",
           activeFilter === 'favoritos'
-            ? "bg-black/20 border-amber-500/50 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.25)] scale-105"
-            : "bg-black/30 border-white/10 text-slate-400 hover:bg-black/40 hover:text-amber-400"
+            ? "border-violet-500/50 shadow-[0_0_20px_rgba(124,58,237,0.25)] scale-105"
+            : "border-white/5 opacity-70 hover:opacity-100 hover:border-white/20"
         )}
       >
-        <Star size={20} className={cn("transition-all z-10", activeFilter === 'favoritos' ? 'text-amber-500 drop-shadow-[0_0_8px_currentColor]' : 'text-slate-500 group-hover:text-amber-400')} />
-        <span className="text-[10px] font-black uppercase tracking-widest z-10 leading-none text-center px-1">Favoritos</span>
-        {activeFilter === 'favoritos' && (
-          <>
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-transparent opacity-50" />
-            <div className="absolute -bottom-2 -right-2 pointer-events-none select-none">
-              <Star size={60} className="text-amber-500/20 opacity-20" />
-            </div>
-          </>
-        )}
+        <div className="absolute inset-0 z-0 bg-transparent">
+          <img src="/elementos/04.png" alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all" />
+        </div>
+        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest z-10 leading-none text-center px-1 text-white drop-shadow-md">Favoritos</span>
       </button>
 
       {allSports.map(sport => {

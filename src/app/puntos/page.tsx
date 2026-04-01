@@ -85,6 +85,7 @@ export default function PuntosPage() {
     const [generoFilter, setGeneroFilter] = useState<'todos' | 'masculino' | 'femenino'>('todos');
 
     useEffect(() => {
+        if (!isStaff) return;
         supabase
             .from('view_clasificacion_general')
             .select('*')
@@ -92,7 +93,7 @@ export default function PuntosPage() {
                 setRows(data ?? []);
                 setLoading(false);
             });
-    }, []);
+    }, [isStaff]);
 
     // Filter by genero inside detalle
     const filteredRows = rows
@@ -104,6 +105,18 @@ export default function PuntosPage() {
         })
         .filter(row => generoFilter === 'todos' || row.total_puntos > 0)
         .sort((a, b) => b.total_puntos - a.total_puntos);
+
+    if (!isStaff) {
+        return (
+            <div className="min-h-screen bg-background text-white font-sans flex items-center justify-center">
+                <div className="text-center space-y-2">
+                    <Trophy size={40} className="text-white/10 mx-auto" />
+                    <p className="text-white/30 text-sm font-bold">Acceso restringido</p>
+                    <p className="text-white/20 text-xs">Esta sección es solo para administradores.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-background text-white font-sans">

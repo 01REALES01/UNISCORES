@@ -12,7 +12,7 @@ export const QuinielaHeader = ({ user, profile, points }: QuinielaHeaderProps) =
     <div className="flex items-center justify-between py-8 px-2">
       <div className="flex items-center gap-4">
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+          <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
           <Avatar name={profile?.full_name || user?.email} src={profile?.avatar_url} size="lg" className="relative border-2 border-zinc-950 ring-1 ring-white/10 shadow-2xl scale-110" />
           <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-[3px] border-zinc-950 flex items-center justify-center shadow-lg">
             <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />

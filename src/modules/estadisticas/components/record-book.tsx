@@ -41,31 +41,31 @@ export function RecordBook({ records }: RecordBookProps) {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: idx * 0.08 }}
-            className="relative rounded-2xl border border-white/5 bg-white/[0.02] p-4 sm:p-5 overflow-hidden group hover:border-white/10 transition-colors"
+            className="relative rounded-[2rem] border border-white/10 bg-black/20 backdrop-blur-md p-5 sm:p-6 overflow-hidden group hover:border-white/20 transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.02)]"
           >
             {/* Radial glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full blur-[40px] opacity-[0.06] pointer-events-none bg-white" />
 
             {/* Icon */}
-            <div className="flex items-center gap-2 mb-3">
-              <Icon size={14} className={accent} />
-              <span className="text-[9px] font-black uppercase tracking-[0.15em] text-white/25 leading-none">
+            <div className="flex items-center gap-2.5 mb-4">
+              <Icon size={16} className={cn("drop-shadow-sm", accent)} />
+              <span className="text-[10px] font-display font-black tracking-widest text-white/40 leading-none">
                 {record.label}
               </span>
             </div>
 
             {/* Big number */}
-            <div className="flex items-center gap-2.5 mb-2">
-              <span className={cn("text-3xl sm:text-4xl font-black tabular-nums font-sans", accent)}>
+            <div className="flex items-center gap-3 mb-3">
+              <span className={cn("text-3xl sm:text-5xl font-black tabular-nums font-mono tracking-tighter drop-shadow-md", accent)}>
                 {record.value}
               </span>
-              <SportIcon sport={record.sportName} size={18} className={cn("opacity-40", accent)} />
+              <SportIcon sport={record.sportName} size={22} className={cn("opacity-30", accent)} />
             </div>
 
             {/* Player info */}
-            <p className="text-xs font-bold text-white/70 truncate">{record.playerName}</p>
+            <p className="text-sm font-bold text-white/80 truncate font-display">{record.playerName}</p>
             {record.context && (
-              <p className="text-[10px] text-white/25 font-medium mt-0.5">{record.context}</p>
+              <p className="text-[11px] text-white/40 font-display tracking-wide mt-1">{record.context}</p>
             )}
           </motion.div>
         );

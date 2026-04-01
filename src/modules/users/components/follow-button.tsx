@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import { Star, UserPlus, UserMinus, Loader2 } from "lucide-react";
+import { Star, UserPlus, UserMinus, Loader2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FollowButtonProps {
@@ -45,7 +45,6 @@ export function FollowButton({ targetId, initialFollowersCount }: FollowButtonPr
 
     const handleFollowToggle = async () => {
         if (!user) {
-            alert("Debes iniciar sesión para seguir a un usuario.");
             return;
         }
 
@@ -76,7 +75,7 @@ export function FollowButton({ targetId, initialFollowersCount }: FollowButtonPr
             console.error("Error toggling follow:", error);
             // Revert optimistic update
             setIsFollowing(previouslyFollowing);
-            setFollowersCount(initialFollowersCount);
+            setFollowersCount(followersCount);
         } finally {
             setIsLoading(false);
         }
@@ -85,27 +84,27 @@ export function FollowButton({ targetId, initialFollowersCount }: FollowButtonPr
     // If it's my own profile
     if (user?.id === targetId) {
         return (
-            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/[0.02] border border-white/5 shadow-2xl">
-                <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400">
-                    <Star size={16} />
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-black/40 border border-white/10 shadow-2xl backdrop-blur-xl">
+                <div className="p-2 bg-violet-500/10 rounded-xl text-violet-400 shadow-inner">
+                    <Users size={16} />
                 </div>
                 <div className="leading-tight">
-                    <p className="text-[14px] font-black tabular-nums">{followersCount}</p>
-                    <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Seguidores</p>
+                    <p className="text-[16px] font-black font-mono tabular-nums text-white">{followersCount}</p>
+                    <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.15em]">Seguidores</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex items-center gap-2">
-            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/[0.02] border border-white/5 shadow-2xl">
-                <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400">
-                    <Star size={16} />
+        <div className="flex items-center gap-2 group/follow">
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-black/40 border border-white/10 shadow-2xl backdrop-blur-xl group-hover/follow:border-violet-500/30 transition-all duration-500">
+                <div className="p-2 bg-violet-500/10 rounded-xl text-violet-400 shadow-inner group-hover/follow:scale-110 transition-transform">
+                    <Users size={16} />
                 </div>
-                <div className="leading-tight min-w-[60px]">
-                    <p className="text-[14px] font-black tabular-nums">{followersCount}</p>
-                    <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Seguidores</p>
+                <div className="leading-tight min-w-[50px]">
+                    <p className="text-[16px] font-black font-mono tabular-nums text-white group-hover/follow:text-violet-400 transition-colors">{followersCount}</p>
+                    <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.15em]">Fans</p>
                 </div>
             </div>
 
@@ -113,23 +112,23 @@ export function FollowButton({ targetId, initialFollowersCount }: FollowButtonPr
                 onClick={handleFollowToggle}
                 disabled={isLoading}
                 className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-[1.5rem] border shadow-2xl transition-all h-[68px] min-w-[80px]",
+                    "flex flex-col items-center justify-center px-6 rounded-2xl border shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all h-[60px] min-w-[100px] font-display font-black uppercase tracking-[0.1em]",
                     isFollowing 
-                        ? "bg-white/5 border-white/10 hover:bg-white/10 text-white/60 hover:text-white" 
-                        : "bg-indigo-600 hover:bg-indigo-500 border-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+                        ? "bg-black/60 border-white/10 hover:bg-black/80 hover:border-violet-500/40 text-white/40 hover:text-violet-400" 
+                        : "bg-violet-600 hover:bg-violet-500 border-violet-500 text-white shadow-[0_4px_25px_rgba(139,92,246,0.3)] hover:scale-105 active:scale-95"
                 )}
             >
                 {isLoading ? (
-                    <Loader2 size={18} className="animate-spin text-white/40" />
+                    <Loader2 size={18} className="animate-spin text-white/20" />
                 ) : isFollowing ? (
                     <>
-                        <UserMinus size={18} className="mb-1" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.1em]">Siguiendo</span>
+                        <UserMinus size={16} className="mb-0.5" />
+                        <span className="text-[9px]">SIGUIENDO</span>
                     </>
                 ) : (
                     <>
-                        <UserPlus size={18} className="mb-1" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.1em]">Seguir</span>
+                        <UserPlus size={16} className="mb-0.5" />
+                        <span className="text-[9px]">SEGUIR</span>
                     </>
                 )}
             </button>

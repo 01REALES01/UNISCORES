@@ -92,10 +92,75 @@ CREATE INDEX IF NOT EXISTS idx_partidos_delegacion_b
     ON public.partidos (delegacion_b_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 5. RLS
+-- 5. Backfill delegaciones from existing partidos
+--    Runs idempotently: ON CONFLICT DO NOTHING preserves manual edits.
+--    Covers only rows NOT yet created (e.g., fixtures imported before this migration).
+-- ─────────────────────────────────────────────────────────────────────────────
+
+INSERT INTO public.delegaciones (nombre, disciplina_id, genero, carrera_ids)
+SELECT
+    nombre,
+    disciplina_id,
+    genero,
+    COALESCE(
+        ARRAY_AGG(DISTINCT carrera_id) FILTER (WHERE carrera_id IS NOT NULL),
+        '{}'::BIGINT[]
+    ) AS carrera_ids
+FROM (
+    SELECT
+        equipo_a                AS nombre,
+        disciplina_id,
+        genero,
+        carrera_a_id            AS carrera_id
+    FROM public.partidos
+    WHERE equipo_a IS NOT NULL
+      AND TRIM(equipo_a) <> ''
+      AND equipo_a NOT ILIKE '%por definir%'
+      AND disciplina_id IS NOT NULL
+      AND genero IS NOT NULL
+
+    UNION ALL
+
+    SELECT
+        equipo_b                AS nombre,
+        disciplina_id,
+        genero,
+        carrera_b_id            AS carrera_id
+    FROM public.partidos
+    WHERE equipo_b IS NOT NULL
+      AND TRIM(equipo_b) <> ''
+      AND equipo_b NOT ILIKE '%por definir%'
+      AND disciplina_id IS NOT NULL
+      AND genero IS NOT NULL
+) t
+GROUP BY nombre, disciplina_id, genero
+ON CONFLICT (disciplina_id, genero, nombre) DO NOTHING;
+
+-- Back-link partidos → delegaciones
+UPDATE public.partidos p
+SET delegacion_a_id = d.id
+FROM public.delegaciones d
+WHERE d.nombre = p.equipo_a
+  AND d.disciplina_id = p.disciplina_id
+  AND d.genero = p.genero
+  AND p.delegacion_a_id IS NULL;
+
+UPDATE public.partidos p
+SET delegacion_b_id = d.id
+FROM public.delegaciones d
+WHERE d.nombre = p.equipo_b
+  AND d.disciplina_id = p.disciplina_id
+  AND d.genero = p.genero
+  AND p.delegacion_b_id IS NULL;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 6. RLS
 -- ─────────────────────────────────────────────────────────────────────────────
 
 ALTER TABLE public.delegaciones ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "delegaciones_public_read" ON public.delegaciones;
+DROP POLICY IF EXISTS "delegaciones_admin_write" ON public.delegaciones;
 
 CREATE POLICY "delegaciones_public_read"
     ON public.delegaciones FOR SELECT
@@ -107,7 +172,7 @@ CREATE POLICY "delegaciones_admin_write"
     WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 6. Realtime
+-- 7. Realtime
 -- ─────────────────────────────────────────────────────────────────────────────
 
 DO $$

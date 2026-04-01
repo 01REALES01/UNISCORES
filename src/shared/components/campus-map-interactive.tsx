@@ -124,11 +124,10 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                     <Maximize size={18} />
                 </Button>
 
-                {/* Calibration Toggle */}
                 <Button
                     size="icon"
                     variant="outline"
-                    className={`rounded-full w-10 h-10 transition-colors ${calibrationMode ? 'bg-[#FFC000] text-black border-[#FFC000]' : 'bg-black/50 border-white/10 text-zinc-500'}`}
+                    className={`rounded-full w-10 h-10 transition-colors ${calibrationMode ? 'bg-violet-600 text-white border-violet-500' : 'bg-black/50 border-white/10 text-white/50'}`}
                     onClick={() => setCalibrationMode(!calibrationMode)}
                     title="Modo Calibración (Click para obtener coordenadas)"
                 >
@@ -188,7 +187,7 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                             const liveMatch = activeMatches.find(m => m.estado === 'en_curso');
                             const nextMatch = activeMatches.find(m => m.estado === 'programado');
 
-                            const statusColor = liveMatch ? 'bg-[#DB1406]' : (nextMatch ? 'bg-[#FFC000]' : 'bg-background/80');
+                            const statusColor = liveMatch ? 'bg-emerald-500' : (nextMatch ? 'bg-violet-500' : 'bg-background/80');
                             const hasActivity = activeMatches.length > 0;
 
                             return (
@@ -203,7 +202,7 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                                 >
                                     {/* Pulse Effect for Live Matches */}
                                     {liveMatch && (
-                                        <div className="absolute inset-0 rounded-full bg-[#DB1406] animate-ping opacity-75 duration-1000" />
+                                        <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75 duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.6)]" />
                                     )}
 
                                     {/* PIN ICON */}
@@ -215,9 +214,9 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                                         </div>
 
                                         {/* Label (Always visible on selected, or hover) */}
-                                        <div className={`mt-2 px-2 py-1 bg-black/80 backdrop-blur-md rounded-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider whitespace-nowrap transition-all duration-300 ${selectedVenue === venueName || hasActivity ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 group-hover/pin:opacity-100 group-hover/pin:translate-y-0'}`}>
+                                        <div className={`mt-2 px-2 py-1 bg-black/80 backdrop-blur-md rounded-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider whitespace-nowrap transition-all duration-300 shadow-xl ${selectedVenue === venueName || hasActivity ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 group-hover/pin:opacity-100 group-hover/pin:translate-y-0'}`}>
                                             {coords.label}
-                                            {calibrationMode && <span className="text-[#FFC000] ml-1 text-[8px]">({Math.round(coords.x)}, {Math.round(coords.y)})</span>}
+                                            {calibrationMode && <span className="text-emerald-400 ml-1 text-[8px]">({Math.round(coords.x)}, {Math.round(coords.y)})</span>}
                                         </div>
                                     </div>
 
@@ -228,15 +227,16 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-64 md:w-72 bg-background/95 backdrop-blur-xl border border-[#FFC000]/10 rounded-2xl shadow-2xl overflow-hidden z-50 cursor-default"
+                                                className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-64 md:w-72 bg-background/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 cursor-default"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 {/* Header */}
                                                 <div className="p-3 border-b border-white/5 bg-background/50 flex justify-between items-center">
-                                                    <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                                                        <MapPin size={14} className="text-[#FFC000]" /> {venueName}
-                                                    </h4>
-                                                    <button onClick={() => handleSetSelectedVenue(null)} className="text-zinc-500 hover:text-white">
+                                                    <div className="flex items-center gap-2">
+                                                        <MapPin size={14} className="text-emerald-400" />
+                                                        <h4 className="font-bold text-sm text-[#F5F5DC]">{venueName}</h4>
+                                                    </div>
+                                                    <button onClick={() => handleSetSelectedVenue(null)} className="text-white/40 hover:text-white">
                                                         <span className="sr-only">Cerrar</span>
                                                         &times;
                                                     </button>
@@ -249,7 +249,7 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                                                             {activeMatches.map((m) => (
                                                                 <Link key={m.id} href={`/partido/${m.id}`} className="block p-3 hover:bg-white/5 transition-colors">
                                                                     <div className="flex justify-between items-start mb-2">
-                                                                        <Badge variant="secondary" className={`text-[10px] h-5 ${m.estado === 'en_curso' ? 'bg-[#DB1406]/20 text-[#DB1406] animate-pulse border-[#DB1406]/20' : 'bg-[#FFC000]/10 text-[#FFC000] border-[#FFC000]/20'}`}>
+                                                                        <Badge variant="secondary" className={`font-display tracking-widest text-[9px] h-5 ${m.estado === 'en_curso' ? 'bg-emerald-500/20 text-emerald-400 animate-pulse border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.3)]' : 'bg-violet-500/20 text-violet-300 border-violet-500/30'}`}>
                                                                             {m.estado === 'en_curso' ? 'EN JUEGO' : 'PROGRAMADO'}
                                                                         </Badge>
                                                                         <span className="text-[10px] text-white/50 font-mono flex items-center gap-1">
@@ -267,10 +267,10 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
                                                                     ) : (
                                                                         <div className="flex justify-between items-center">
                                                                             <div className="flex flex-col items-center flex-1 min-w-0">
-                                                                                <p className="text-xs font-bold text-white truncate w-full text-center" title={getDisplayName(m, 'a')}>{getDisplayName(m, 'a')}</p>
+                                                                                <p className="text-xs font-bold text-white/90 truncate w-full text-center" title={getDisplayName(m, 'a')}>{getDisplayName(m, 'a')}</p>
                                                                                 {getCarreraSubtitle(m, 'a') && <p className="text-[9px] text-white/50 truncate w-full text-center uppercase font-bold">{getCarreraSubtitle(m, 'a')}</p>}
                                                                             </div>
-                                                                            <div className="px-2 font-black text-lg text-[#FFC000] font-mono tabular-nums shrink-0">
+                                                                            <div className="px-2 font-black text-lg text-emerald-400 font-mono tabular-nums shrink-0">
                                                                                 {m.estado === 'en_curso'
                                                                                     ? m.disciplinas?.name === 'Ajedrez' 
                                                                                         ? <span className="text-xs">VS</span> 

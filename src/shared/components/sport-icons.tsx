@@ -38,7 +38,41 @@ const PNG_SPORTS: Record<string, { src: string; scale?: number }> = {
     'Tenis de Mesa': { src: '/TenisDMIcono.png', scale: 2 },
 };
 
-export function SportIcon({ sport, size = 24, className = '' }: { sport: string } & IconProps) {
+import { 
+    MdSportsSoccer, 
+    MdSportsBasketball, 
+    MdSportsVolleyball, 
+    MdSportsTennis, 
+    MdPool 
+} from 'react-icons/md';
+import { 
+    FaTableTennis, 
+    FaChessKnight 
+} from 'react-icons/fa';
+
+const REACT_ICONS_MAP: Record<string, React.ElementType> = {
+    'Fútbol': MdSportsSoccer,
+    'Baloncesto': MdSportsBasketball,
+    'Voleibol': MdSportsVolleyball,
+    'Natación': MdPool,
+    'Tenis': MdSportsTennis,
+    'Tenis de Mesa': FaTableTennis,
+    'Ajedrez': FaChessKnight,
+};
+
+export function SportIcon({ sport, size = 24, className = '', variant = 'image' }: { sport: string, variant?: 'image' | 'react' } & IconProps) {
+    if (variant === 'react') {
+        const IconComponent = REACT_ICONS_MAP[sport];
+        if (IconComponent) return <IconComponent size={size} className={className} />;
+        
+        return (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+                <circle cx="12" cy="12" r="3" fill="currentColor" fillOpacity="0.3" />
+            </svg>
+        );
+    }
+
     const pngConfig = PNG_SPORTS[sport];
     if (pngConfig) {
         return <PngIcon src={pngConfig.src} alt={sport} size={size} scale={pngConfig.scale} className={className} />;

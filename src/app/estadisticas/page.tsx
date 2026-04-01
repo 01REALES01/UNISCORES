@@ -39,13 +39,15 @@ function SectionHeader({ title, delay = 0 }: { title: string; delay?: number }) 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4, delay }}
-            className="flex items-center gap-3 mb-4"
+            className="flex items-center gap-4 mb-6"
         >
-            <div className="h-px flex-1 bg-gradient-to-r from-white/5 to-transparent" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 shrink-0">
+            <div className="h-8 flex-1 border-t border-white/5 relative">
+              <div className="absolute top-[-1px] left-0 w-24 h-[1px] bg-gradient-to-r from-violet-500/50 to-transparent" />
+            </div>
+            <span className="text-sm font-display font-black tracking-widest text-white/70 shrink-0 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/10 shadow-inner">
                 {title}
             </span>
-            <div className="h-px flex-1 bg-gradient-to-l from-white/5 to-transparent" />
+            <div className="h-8 flex-1 border-t border-white/5" />
         </motion.div>
     );
 }
@@ -167,40 +169,40 @@ export default function EstadisticasPage() {
 
         if (isAll) {
             const activeSportsCount = new Set(allMatches.map(m => m.disciplinas?.name).filter(Boolean)).size;
-            metric1 = { value: goals, label: "GOLES", sublabel: "En fútbol y futsal" };
-            metric2 = { value: yellowCards + redCards, label: "TARJETAS", sublabel: `${yellowCards} amarillas · ${redCards} rojas` };
-            metric3 = { value: activeSportsCount, label: "DISCIPLINAS", sublabel: "Deportes activos" };
+            metric1 = { value: goals, label: "Goles", sublabel: "En fútbol y futsal" };
+            metric2 = { value: yellowCards + redCards, label: "Tarjetas", sublabel: `${yellowCards} amarillas · ${redCards} rojas` };
+            metric3 = { value: activeSportsCount, label: "Disciplinas", sublabel: "Deportes activos" };
         } else if (isFutbol) {
             const avg = finalizedMatches > 0 ? (goals / finalizedMatches) : 0;
-            metric1 = { value: goals, label: "GOLES", sublabel: "Goles anotados" };
-            metric2 = { value: Math.round(avg * 10) / 10, label: "PROMEDIO", sublabel: "Goles por partido" };
-            metric3 = { value: yellowCards + redCards, label: "TARJETAS", sublabel: `${yellowCards} amarillas · ${redCards} rojas` };
+            metric1 = { value: goals, label: "Goles", sublabel: "Goles anotados" };
+            metric2 = { value: Math.round(avg * 10) / 10, label: "Promedio", sublabel: "Goles por partido" };
+            metric3 = { value: yellowCards + redCards, label: "Tarjetas", sublabel: `${yellowCards} amarillas · ${redCards} rojas` };
         } else if (isBasket) {
             const avg = finalizedMatches > 0 ? (points / finalizedMatches) : 0;
-            metric1 = { value: points, label: "PUNTOS", sublabel: "Puntos anotados" };
-            metric2 = { value: Math.round(avg), label: "PROMEDIO", sublabel: "Puntos por partido" };
-            metric3 = { value: yellowCards + redCards, label: "FALTAS", sublabel: `${yellowCards + redCards} registradas` };
+            metric1 = { value: points, label: "Puntos", sublabel: "Puntos anotados" };
+            metric2 = { value: Math.round(avg), label: "Promedio", sublabel: "Puntos por partido" };
+            metric3 = { value: yellowCards + redCards, label: "Faltas", sublabel: `${yellowCards + redCards} registradas` };
         } else if (isVolley || isMesa) {
             const avg = finalizedMatches > 0 ? (points / finalizedMatches) : 0;
-            metric1 = { value: points, label: "PUNTOS", sublabel: "Puntos en sets" };
-            metric2 = { value: Math.round(avg), label: "PROMEDIO", sublabel: "Puntos por partido" };
-            metric3 = { value: finalizedMatches, label: "COMPLETADOS", sublabel: "Partidos jugados" };
+            metric1 = { value: points, label: "Puntos", sublabel: "Puntos en sets" };
+            metric2 = { value: Math.round(avg), label: "Promedio", sublabel: "Puntos por partido" };
+            metric3 = { value: finalizedMatches, label: "Completados", sublabel: "Partidos jugados" };
         } else if (isTenis) {
-            metric1 = { value: points, label: "JUEGOS", sublabel: "Juegos disputados" };
-            metric2 = { value: finalizedMatches, label: "COMPLETADOS", sublabel: "Partidos jugados" };
-            metric3 = { value: goals + points, label: "TOTAL", sublabel: "Anotaciones totales" };
+            metric1 = { value: points, label: "Juegos", sublabel: "Juegos disputados" };
+            metric2 = { value: finalizedMatches, label: "Completados", sublabel: "Partidos jugados" };
+            metric3 = { value: goals + points, label: "Total", sublabel: "Anotaciones totales" };
         } else if (isAjedrez) {
-            metric1 = { value: finalizedMatches, label: "PARTIDAS", sublabel: "Partidas disputadas" };
-            metric2 = { value: goals + points, label: "MOVIMIENTOS", sublabel: "Eventos registrados" };
-            metric3 = { value: totalMatches - finalizedMatches, label: "PENDIENTES", sublabel: "Por jugar" };
+            metric1 = { value: finalizedMatches, label: "Partidas", sublabel: "Partidas disputadas" };
+            metric2 = { value: goals + points, label: "Movimientos", sublabel: "Eventos registrados" };
+            metric3 = { value: totalMatches - finalizedMatches, label: "Pendientes", sublabel: "Por jugar" };
         } else if (isNatacion) {
-            metric1 = { value: finalizedMatches, label: "CARRERAS", sublabel: "Carreras completadas" };
-            metric2 = { value: totalMatches - finalizedMatches, label: "PENDIENTES", sublabel: "Por disputar" };
-            metric3 = { value: totalMatches, label: "PROGRAMADAS", sublabel: "Total del torneo" };
+            metric1 = { value: finalizedMatches, label: "Carreras", sublabel: "Carreras completadas" };
+            metric2 = { value: totalMatches - finalizedMatches, label: "Pendientes", sublabel: "Por disputar" };
+            metric3 = { value: totalMatches, label: "Programadas", sublabel: "Total del torneo" };
         } else {
-            metric1 = { value: goals + points, label: "ANOTACIONES", sublabel: "Eventos de puntuación" };
-            metric2 = { value: yellowCards + redCards, label: "TARJETAS", sublabel: `${yellowCards} amarillas · ${redCards} rojas` };
-            metric3 = { value: finalizedMatches, label: "COMPLETADOS", sublabel: "Partidos jugados" };
+            metric1 = { value: goals + points, label: "Anotaciones", sublabel: "Eventos de puntuación" };
+            metric2 = { value: yellowCards + redCards, label: "Tarjetas", sublabel: `${yellowCards} amarillas · ${redCards} rojas` };
+            metric3 = { value: finalizedMatches, label: "Completados", sublabel: "Partidos jugados" };
         }
 
         return { sport: activeSport, totalMatches, finalizedMatches, metric1, metric2, metric3 };
@@ -496,9 +498,17 @@ export default function EstadisticasPage() {
     return (
         <div className="min-h-screen bg-background text-white selection:bg-indigo-500/30 overflow-hidden">
             {/* Ambient background */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-500/8 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-500/8 rounded-full blur-[100px]" />
+            <div className="fixed inset-0 z-0 pointer-events-none opacity-40 mix-blend-screen overflow-hidden">
+                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-violet-600/20 rounded-full blur-[120px] animate-pulse" />
+            </div>
+
+            <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-end overflow-hidden opacity-15">
+                <img 
+                    src="/elementos/11.png" 
+                    alt="" 
+                    className="w-[700px] md:w-[1000px] h-auto translate-x-[10%] -translate-y-[5%] grayscale contrast-125 brightness-150" 
+                    aria-hidden="true"
+                />
             </div>
 
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
@@ -513,14 +523,14 @@ export default function EstadisticasPage() {
                 >
                     <div className="flex items-center gap-2.5 mb-3">
                         <BarChart3 size={16} className="text-indigo-400" />
-                        <Badge variant="outline" className="border-indigo-500/30 text-indigo-400 bg-indigo-500/5 px-3 py-1 font-black tracking-[0.2em] text-[9px]">
-                            ANALYTICS
+                        <Badge variant="outline" className="border-indigo-500/30 text-indigo-400 bg-indigo-500/5 px-3 py-1 font-bold tracking-wide text-[10px]">
+                            Analytics
                         </Badge>
                     </div>
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-black font-sans leading-[0.95] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/90 to-white/40 mb-2">
+                    <h1 className="text-5xl md:text-7xl font-black tracking-tighter font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm leading-none mb-4">
                         Estadísticas
                     </h1>
-                    <p className="text-white/30 text-sm font-medium max-w-md">
+                    <p className="text-white/40 text-sm font-display tracking-wide max-w-md pt-2">
                         Panorama completo del torneo. Datos en tiempo real de todas las disciplinas.
                     </p>
                 </motion.div>
@@ -528,14 +538,14 @@ export default function EstadisticasPage() {
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-24">
                         <UniqueLoading size="md" />
-                        <p className="text-[10px] font-black tracking-widest text-white/30 mt-6 uppercase">
+                        <p className="text-[11px] font-bold tracking-wide text-white/30 mt-6 font-display">
                             Procesando datos del torneo...
                         </p>
                     </div>
                 ) : !hasData ? (
                     <div className="text-center py-24 border border-white/5 rounded-2xl bg-white/[0.02]">
                         <Target size={36} className="mx-auto text-white/15 mb-4" />
-                        <p className="text-xs font-black text-white/25 uppercase tracking-[0.3em]">
+                        <p className="text-[11px] font-bold text-white/20 tracking-wider font-display">
                             Aún no hay partidos finalizados
                         </p>
                     </div>

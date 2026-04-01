@@ -33,7 +33,7 @@ const SAMPLE_DATA: MedalEntry[] = [
 export function MedalLeaderboard() {
     const [medallero, setMedallero] = useState<MedalEntry[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeSport, setActiveSport] = useState<string>('Fútbol');
+    const [activeSport, setActiveSport] = useState<string>('todos');
     const [activeGender, setActiveGender] = useState<string>('todos');
     const [carreraMap, setCarreraMap] = useState<Record<string, number>>({});
     const router = useRouter();
@@ -48,15 +48,19 @@ export function MedalLeaderboard() {
                     .select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)'),
                 'medallero-fetch'
             ),
-            supabase.from('carreras').select('id, nombre'),
+            supabase.from('carreras').select('id, nombre, escudo_url'),
         ]);
 
         const { data: rawMatches, error } = matchesResult;
 
-        // Build name→id map for career links
+        // Build name→id map and name→escudo map from DB
+        const carreraEscudoMap: Record<string, string> = {};
         if (carrerasResult.data) {
             const map: Record<string, number> = {};
-            carrerasResult.data.forEach((c: any) => { map[c.nombre] = c.id; });
+            carrerasResult.data.forEach((c: any) => {
+                map[c.nombre] = c.id;
+                if (c.escudo_url) carreraEscudoMap[c.nombre] = c.escudo_url;
+            });
             setCarreraMap(map);
         }
 
@@ -73,7 +77,7 @@ export function MedalLeaderboard() {
             estado_norm: (m.estado || '').toLowerCase().trim()
         })).filter(m => m.estado_norm === 'finalizado');
 
-        // Initialize Career map
+        // Initialize Career map — seed escudo_url from the carreras table
         const careerStats: Record<string, MedalEntry> = {};
         CARRERAS_UNINORTE.forEach((name, idx) => {
             careerStats[name] = {
@@ -86,7 +90,8 @@ export function MedalLeaderboard() {
                 won: 0,
                 draw: 0,
                 lost: 0,
-                played: 0
+                played: 0,
+                escudo_url: carreraEscudoMap[name],
             };
         });
 
@@ -183,7 +188,12 @@ export function MedalLeaderboard() {
         });
 
         // Convert to Array and Sort
-        const result = Object.values(careerStats).filter(c => c.played! > 0 || c.oro > 0 || c.plata > 0 || c.bronce > 0);
+        // When showing all sports, include every carrera (even those with 0 activity)
+        const result = Object.values(careerStats).filter(c =>
+            activeSport === 'todos'
+                ? true
+                : (c.played! > 0 || c.oro > 0 || c.plata > 0 || c.bronce > 0)
+        );
 
         result.sort((a, b) => {
             if (b.oro !== a.oro) return b.oro - a.oro;
@@ -242,28 +252,28 @@ export function MedalLeaderboard() {
         // Colores y Estilos según Ranking - Brighter version
         const podiumConfigs: Record<number, any> = {
             1: {
-                glow: "shadow-[0_0_50px_rgba(251,146,60,0.3)] border-orange-500/60 ring-2 ring-orange-500/20",
+                glow: "shadow-[0_0_50px_rgba(16,185,129,0.3)] border-emerald-500/60 ring-2 ring-emerald-500/20",
                 height: "h-[320px] sm:h-[350px]",
-                icon: <Trophy size={20} className="text-orange-400" />,
-                iconBg: "bg-orange-500/20",
+                icon: <Crown size={24} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />,
+                iconBg: "bg-emerald-500/20 border-emerald-400/30",
                 number: "01",
-                numberColor: "text-orange-500 drop-shadow-[0_0_15px_rgba(251,146,60,0.6)]"
+                numberColor: "text-[#F5F5DC] drop-shadow-[0_0_15px_rgba(245,245,220,0.4)]"
             },
             2: {
-                glow: "shadow-[0_0_30px_rgba(148,163,184,0.15)] border-slate-400/30",
+                glow: "shadow-[0_0_30px_rgba(139,92,246,0.15)] border-violet-500/30",
                 height: "h-[280px] sm:h-[300px]",
-                icon: <Medal size={18} className="text-slate-300" />,
-                iconBg: "bg-slate-300/10",
+                icon: <Medal size={20} className="text-violet-300 drop-shadow-[0_0_6px_rgba(139,92,246,0.6)]" />,
+                iconBg: "bg-violet-500/10 border-violet-500/20",
                 number: "02",
-                numberColor: "text-slate-400/80"
+                numberColor: "text-violet-300/80"
             },
             3: {
-                glow: "shadow-[0_0_30px_rgba(180,83,9,0.15)] border-amber-800/30",
+                glow: "shadow-[0_0_30px_rgba(167,139,250,0.1)] border-violet-400/20",
                 height: "h-[270px] sm:h-[290px]",
-                icon: <Award size={18} className="text-amber-700" />,
-                iconBg: "bg-amber-700/10",
+                icon: <Award size={20} className="text-violet-400/70" />,
+                iconBg: "bg-violet-400/5 border-violet-400/10",
                 number: "03",
-                numberColor: "text-amber-700/80"
+                numberColor: "text-violet-400/60"
             }
         };
 
@@ -279,7 +289,7 @@ export function MedalLeaderboard() {
             >
                 {/* LÍDER Badge */}
                 {isFirst && (
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-orange-600 text-white text-[9px] font-black px-4 py-1 rounded-md uppercase tracking-widest shadow-lg animate-bounce z-40">
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[9px] font-black px-4 py-1 rounded-md uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-bounce z-40 font-display">
                         Líder
                     </div>
                 )}
@@ -309,9 +319,9 @@ export function MedalLeaderboard() {
 
                     {/* Info */}
                     <div className="text-center px-2 space-y-1 mb-6">
-                        <h4 className="text-[10px] sm:text-[12px] font-black text-white uppercase tracking-tighter leading-tight line-clamp-2 px-1">
+                        <h4 className="font-display text-[11px] sm:text-[13px] font-black text-white uppercase tracking-tighter leading-tight line-clamp-2 px-1">
                             {carreraMap[entry.equipo_nombre] ? (
-                                <Link href={`/carrera/${carreraMap[entry.equipo_nombre]}`} className="hover:text-orange-400 transition-colors">
+                                <Link href={`/carrera/${carreraMap[entry.equipo_nombre]}`} className="hover:text-emerald-400 transition-colors">
                                     {entry.equipo_nombre}
                                 </Link>
                             ) : entry.equipo_nombre}
@@ -322,9 +332,10 @@ export function MedalLeaderboard() {
                     </div>
 
                     {/* Bottom Number Box */}
-                    <div className="mt-auto w-full bg-black/40 h-16 sm:h-20 flex items-center justify-center relative border-t border-white/5">
+                    <div className="mt-auto w-full bg-black/40 h-16 sm:h-20 flex items-center justify-center relative border-t border-white/5 overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
                         <span className={cn(
-                            "text-4xl sm:text-5xl font-black tracking-tighter",
+                            "font-display text-5xl sm:text-6xl font-black tracking-tighter opacity-80 z-10",
                             config.numberColor
                         )}>
                             {config.number}
@@ -347,28 +358,42 @@ export function MedalLeaderboard() {
     }
 
     return (
-        <section className="relative overflow-hidden rounded-[1rem] sm:rounded-[2.5rem] bg-background shadow-2xl pb-6">
-            {/* Ambient Background Glows */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-[400px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none" />
+        <section className="relative overflow-hidden rounded-[1rem] sm:rounded-[2.5rem] bg-background shadow-2xl pb-6 border border-white/5 mt-10">
+            {/* Ambient Background Glows & Elements */}
+            <div className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-screen">
+                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-violet-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '8s' }} />
+                <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+            </div>
 
-            {/* Header & Filters Section matching reference image */}
-            <div className="relative z-10 p-6 sm:p-10 border-b border-white/5 space-y-10">
-                {/* Reference style title */}
-                <div className="space-y-2">
+            {/* Giant Torch Background Inside the Card */}
+            <div className="absolute inset-0 z-0 flex items-center justify-end pointer-events-none overflow-hidden">
+                <img 
+                    src="/elementos/18.png" 
+                    alt="" 
+                    className="w-[400px] md:w-[600px] lg:w-[700px] h-auto opacity-10 absolute right-0 bottom-0 translate-x-[20%] translate-y-[10%]" 
+                    style={{ filter: "brightness(0) invert(1)" }}
+                    aria-hidden="true"
+                />
+            </div>
+
+            {/* Content Container */}
+            <div className="relative z-10 p-6 sm:p-10 border-b border-white/5 space-y-10 bg-gradient-to-b from-white/[0.02] to-transparent">
+                {/* Title */}
+                <div className="space-y-2 relative z-10">
                     <div className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                        <span className="text-[9px] sm:text-[10px] font-black text-orange-500 uppercase tracking-[0.3em]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        <span className="font-display text-[9px] sm:text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">
                             Actualizado en tiempo real
                         </span>
                     </div>
-                    <h2 className="text-4xl sm:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
-                        Podio Olímpico
+                    <h2 className="font-display text-4xl sm:text-6xl font-black text-white tracking-tighter uppercase leading-none">
+                        Fama <span className="text-[#F5F5DC]">Olímpica</span>
                     </h2>
                     {/* Filters Row - Redesigned for Premium Appeal */}
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-6 relative z-10">
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                             {/* Gender Selection */}
-                            <div className="flex p-1.5 bg-black/40 border border-white/5 rounded-2xl w-full sm:w-auto self-start">
+                            <div className="flex gap-2 w-full sm:w-auto self-start">
                                 {[
                                     { id: 'todos', label: 'Todos', icon: <Users size={16} /> },
                                     { id: 'masculino', label: 'Masc', icon: '♂' },
@@ -379,10 +404,10 @@ export function MedalLeaderboard() {
                                         key={g.id}
                                         onClick={() => setActiveGender(g.id)}
                                         className={cn(
-                                            "flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                                            "flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 font-display",
                                             activeGender === g.id
-                                                ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
-                                                : "text-white/30 hover:text-white hover:bg-white/5"
+                                                ? "bg-white text-violet-950 shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-105"
+                                                : "bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 hover:border-white/20"
                                         )}
                                     >
                                         <span className="text-base">{g.icon}</span>
@@ -400,14 +425,27 @@ export function MedalLeaderboard() {
                         {/* Discipline Tabs */}
                         <div className="relative group">
                             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mask-linear-r py-1">
+                                {/* "Todos" button */}
+                                <button
+                                    onClick={() => setActiveSport('todos')}
+                                    className={cn(
+                                        "font-display flex items-center gap-3 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap border shrink-0",
+                                        activeSport === 'todos'
+                                            ? "bg-violet-600 text-[#F5F5DC] border-transparent shadow-[0_0_20px_rgba(124,58,237,0.3)]"
+                                            : "bg-white/[0.02] border-white/5 text-white/30 hover:text-white hover:bg-white/5 hover:border-white/10"
+                                    )}
+                                >
+                                    <LayoutGrid size={18} />
+                                    <span>Todos</span>
+                                </button>
                                 {Object.keys(SPORT_COLORS).map((name) => (
                                     <button
                                         key={name}
                                         onClick={() => setActiveSport(name)}
                                         className={cn(
-                                            "flex items-center gap-3 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap border shrink-0",
+                                            "font-display flex items-center gap-3 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap border shrink-0",
                                             activeSport === name
-                                                ? "bg-orange-500 text-white border-transparent shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+                                                ? "bg-violet-600 text-[#F5F5DC] border-transparent shadow-[0_0_20px_rgba(124,58,237,0.3)]"
                                                 : "bg-white/[0.02] border-white/5 text-white/30 hover:text-white hover:bg-white/5 hover:border-white/10"
                                         )}
                                     >
@@ -438,7 +476,7 @@ export function MedalLeaderboard() {
                         return (
                             <div
                                 key={entry.id || entry.equipo_nombre}
-                                className="flex flex-col sm:flex-row bg-white/8/90 backdrop-blur-sm border border-white/5 hover:border-white/20 transition-all duration-300 group shadow-xl rounded-3xl overflow-hidden min-h-[120px]"
+                                className="flex flex-col sm:flex-row bg-white/5 backdrop-blur-sm border border-white/5 hover:border-violet-500/30 transition-all duration-300 hover:translate-x-1 group shadow-xl rounded-3xl overflow-hidden min-h-[120px]"
                             >
                                 <div className="flex flex-1 w-full">
                                     {/* Avatar Column */}
@@ -446,10 +484,10 @@ export function MedalLeaderboard() {
                                         <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent mix-blend-overlay" />
                                         {entry.escudo_url ? (
                                             <div className="w-14 h-14 sm:w-20 sm:h-20 z-10 drop-shadow-lg relative flex items-center justify-center">
-                                                <img src={entry.escudo_url} alt={entry.equipo_nombre} className="w-full h-full object-contain filter group-hover:brightness-110 transition-all" />
+                                                <img src={entry.escudo_url} alt={entry.equipo_nombre} className="w-full h-full object-contain filter group-hover:brightness-110 group-hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all" />
                                             </div>
                                         ) : (
-                                            <span className="text-3xl sm:text-5xl font-black text-white/10 uppercase tracking-tighter mix-blend-plus-lighter z-10 filter grayscale contrast-200">
+                                            <span className="font-display text-3xl sm:text-5xl font-black text-white/10 uppercase tracking-tighter mix-blend-plus-lighter z-10 filter grayscale contrast-200">
                                                 {getInitials(entry.equipo_nombre)}
                                             </span>
                                         )}
@@ -458,16 +496,16 @@ export function MedalLeaderboard() {
                                     {/* Center Content Column */}
                                     <div className="flex-1 px-4 sm:px-6 py-4 flex flex-col justify-between min-w-0">
                                         <div className="mb-3">
-                                            {/* Rank Number with Yellow Underline */}
-                                            <div className="inline-flex border-b-2 border-[#FFC000] pb-0.5 mb-2 gap-2 items-center">
-                                                <span className="text-[11px] sm:text-xs font-black text-white tracking-widest leading-none drop-shadow-md">{rank}</span>
-                                                <span className="text-[8px] font-black uppercase text-white/30 tracking-widest leading-none">Global</span>
+                                            {/* Rank Number with Accent Underline */}
+                                            <div className="inline-flex border-b-2 border-emerald-500/50 pb-0.5 mb-2 gap-2 items-center">
+                                                <span className="font-display text-[11px] sm:text-xs font-black text-emerald-400 tracking-widest leading-none drop-shadow-md pr-1">{rank}</span>
+                                                <span className="font-display text-[8px] font-black uppercase text-white/30 tracking-widest leading-none">Global</span>
                                             </div>
 
                                             {/* Name */}
-                                            <h2 className="text-sm sm:text-xl font-black text-white/90 leading-tight tracking-tight line-clamp-2">
+                                            <h2 className="font-display text-sm sm:text-xl font-black text-white/90 leading-tight tracking-tight line-clamp-2">
                                                 {carreraMap[entry.equipo_nombre] ? (
-                                                    <Link href={`/carrera/${carreraMap[entry.equipo_nombre]}`} className="hover:text-orange-400 transition-colors">
+                                                    <Link href={`/carrera/${carreraMap[entry.equipo_nombre]}`} className="hover:text-emerald-400 transition-colors">
                                                         {entry.equipo_nombre}
                                                     </Link>
                                                 ) : entry.equipo_nombre}
@@ -481,18 +519,18 @@ export function MedalLeaderboard() {
                                         {/* Stats Row */}
                                         <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-8 mt-auto items-end">
                                             <div className="flex items-center gap-1.5 sm:gap-2">
-                                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-400/10 flex items-center justify-center text-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.2)]">
+                                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
                                                     <Trophy size={11} className="sm:w-3.5 sm:h-3.5" />
                                                 </div>
-                                                <span className="text-xs sm:text-xl font-black text-white tabular-nums">
+                                                <span className="font-display text-xs sm:text-xl font-black text-white tabular-nums drop-shadow-md">
                                                     {entry.oro.toString().padStart(2, '0')}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 sm:gap-2 opacity-60">
-                                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-300/10 flex items-center justify-center text-slate-300">
+                                            <div className="flex items-center gap-1.5 sm:gap-2 opacity-60 hover:opacity-100 transition-opacity">
+                                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-violet-400/10 flex items-center justify-center text-violet-300">
                                                     <Medal size={11} className="sm:w-3.5 sm:h-3.5" />
                                                 </div>
-                                                <span className="text-xs sm:text-base font-black text-white tabular-nums">
+                                                <span className="font-display text-xs sm:text-base font-black text-white tabular-nums">
                                                     {entry.plata.toString().padStart(2, '0')}
                                                 </span>
                                             </div>
@@ -501,19 +539,19 @@ export function MedalLeaderboard() {
                                 </div>
 
                                 {/* Total Points Box (Right Column) */}
-                                <div className="w-full sm:w-[130px] h-12 sm:h-auto shrink-0 border-t sm:border-t-0 sm:border-l border-white/5 flex flex-row sm:flex-col items-center justify-between sm:justify-center px-6 sm:px-0 bg-black/60 group-hover:bg-white/8 transition-colors relative">
-                                    <div className="absolute inset-0 bg-gradient-to-r sm:bg-gradient-to-b from-transparent to-red-600/5 pointer-events-none" />
+                                <div className="w-full sm:w-[130px] h-12 sm:h-auto shrink-0 border-t sm:border-t-0 sm:border-l border-white/5 flex flex-row sm:flex-col items-center justify-between sm:justify-center px-6 sm:px-0 bg-white/5 group-hover:bg-violet-600/10 transition-colors relative">
+                                    <div className="absolute inset-0 bg-gradient-to-r sm:bg-gradient-to-b from-transparent to-violet-500/5 pointer-events-none" />
                                     
                                     <div className="flex flex-row sm:flex-col items-center gap-2 sm:gap-0">
-                                        <span className="text-xl sm:text-4xl font-black text-white tracking-tighter leading-none tabular-nums drop-shadow-lg relative z-10">
+                                        <span className="font-display text-xl sm:text-4xl font-black text-white tracking-tighter leading-none tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] relative z-10">
                                             {entry.oro + entry.plata}
                                         </span>
-                                        <span className="text-[8px] sm:text-[9px] font-black text-white/30 uppercase tracking-[0.2em] sm:pt-1 relative z-10">
-                                            Total Medals
+                                        <span className="font-display text-[8px] sm:text-[9px] font-black text-white/30 uppercase tracking-[0.2em] sm:pt-1 relative z-10">
+                                            Medallas
                                         </span>
                                     </div>
 
-                                    <div className="text-[10px] font-bold text-red-500/80 font-mono tracking-widest sm:mt-2">
+                                    <div className="font-display text-[11px] font-black text-emerald-400 font-mono tracking-widest sm:mt-2 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.15)]">
                                         {entry.puntos} PTS
                                     </div>
                                 </div>

@@ -95,10 +95,10 @@ export function QuinielaHistoryTab({ predictions, matches }: QuinielaHistoryTabP
 
                     const scoreInfo = getCurrentScore(m.disciplinas?.name, m.marcador_detalle || {});
                     const cardBg = isFinished && correct === true
-                        ? "bg-emerald-900/40 border-emerald-500/30 shadow-lg shadow-emerald-500/10"
+                        ? "bg-emerald-500/5 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.12)] ring-1 ring-emerald-500/10 backdrop-blur-3xl"
                         : isFinished && correct === false
-                            ? "bg-rose-900/40 border-rose-500/25 shadow-lg shadow-rose-500/10"
-                            : isLive ? "bg-rose-500/5 border-rose-500/20" : "bg-white/[0.03] border-white/5";
+                            ? "bg-rose-500/5 border-rose-500/20 shadow-[0_0_30px_rgba(244,63,94,0.08)] ring-1 ring-rose-500/10 backdrop-blur-3xl"
+                            : isLive ? "bg-black/40 border-rose-500/30 shadow-[0_0_20px_rgba(244,63,94,0.1)] backdrop-blur-3xl" : "bg-white/[0.04] border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.02)] backdrop-blur-3xl";
 
                     return (
                         <Link href={`/partido/${m.id}`} key={pred.id}>
@@ -109,10 +109,10 @@ export function QuinielaHistoryTab({ predictions, matches }: QuinielaHistoryTabP
                                             {correct ? <><CheckCircle size={10} className="inline mr-1" /> Acertado</> : <><X size={10} className="inline mr-1" /> Fallado</>}
                                         </div>
                                     )}
-                                    {isLive && <div className="px-2.5 py-1 rounded-full text-[9px] font-black bg-rose-500/15 text-rose-400 border border-rose-500/20 animate-pulse">EN CURSO</div>}
+                                    {isLive && <div className="px-2.5 py-1 rounded-full text-[9px] font-black bg-rose-500/15 text-rose-400 border border-rose-500/20 animate-pulse uppercase">En Curso</div>}
                                 </div>
 
-                                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase mb-4">
+                                <div className="flex items-center gap-2 text-xs font-display font-bold text-slate-500 tracking-wide mb-4">
                                     <SportIcon sport={m.disciplinas?.name} size={14} />
                                     <span>{m.disciplinas?.name} • {new Date(m.fecha).toLocaleDateString()}</span>
                                 </div>
@@ -148,8 +148,8 @@ export function QuinielaHistoryTab({ predictions, matches }: QuinielaHistoryTabP
                                     )}
                                 </div>
 
-                                <div className="mt-4 p-2.5 rounded-xl bg-black/20 border border-white/5 text-center">
-                                    <p className="text-[8px] font-bold uppercase text-slate-500">Predicción</p>
+                                <div className="mt-4 p-3 rounded-2xl bg-black/40 border border-white/5 text-center shadow-inner">
+                                    <p className="text-[9px] font-black uppercase text-white/40 mb-1 tracking-widest">Tu Predicción</p>
                                     <p className="text-xs font-black">
                                         {pred.winner_pick 
                                             ? (pred.winner_pick === 'A' ? m.carrera_a?.nombre || m.equipo_a : pred.winner_pick === 'B' ? m.carrera_b?.nombre || m.equipo_b : 'Empate')

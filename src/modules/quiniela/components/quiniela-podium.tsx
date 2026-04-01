@@ -67,7 +67,7 @@ export const QuinielaPodium = ({ top3 }: QuinielaPodiumProps) => {
 
             <div className="text-center relative">
               <p className={cn(
-                "text-[11px] font-black truncate max-w-[80px] uppercase tracking-wider mb-1 font-sans group-hover/p-item:text-red-500 transition-colors",
+                "text-[11px] font-black truncate max-w-[80px] uppercase tracking-wider mb-1 font-display group-hover/p-item:text-amber-400 transition-colors",
                 isWinner ? "text-white" : "text-slate-400"
               )}>
                 {slot.profile.display_name?.split(' ')[0] || "Invitado"}

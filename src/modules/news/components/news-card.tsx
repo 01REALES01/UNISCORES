@@ -70,7 +70,7 @@ export function NewsHeroCard({ noticia }: { noticia: Noticia }) {
                             </span>
                         )}
                     </div>
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-4 line-clamp-3 group-hover:text-[#FFC000] transition-colors duration-300 drop-shadow-lg">
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-4 line-clamp-3 group-hover:text-emerald-400 transition-colors duration-300 drop-shadow-lg">
                         {noticia.titulo}
                     </h2>
                     <p className="text-sm sm:text-base text-white/60 line-clamp-2 mb-6 max-w-3xl font-medium leading-relaxed">
@@ -111,7 +111,7 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
                 <div className="flex-1 min-w-0 flex flex-col justify-center sm:py-1">
                     <div>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
-                            <span className={cn("text-[9px] sm:text-[10px] font-black uppercase tracking-widest", cat.color)}>
+                            <span className={cn("text-[9px] sm:text-[10px] font-black tracking-wide", cat.color)}>
                                 {cat.label}
                             </span>
                             {noticia.carrera && (
@@ -123,7 +123,7 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
                                 </>
                             )}
                         </div>
-                        <h3 className="text-base sm:text-xl font-black text-white/90 leading-tight tracking-tight line-clamp-2 sm:line-clamp-3 group-hover:text-white transition-colors">
+                        <h3 className="text-base sm:text-xl font-black text-white/90 leading-tight tracking-tight line-clamp-2 sm:line-clamp-3 group-hover:text-emerald-400 transition-colors">
                             {noticia.titulo}
                         </h3>
                     </div>
@@ -154,7 +154,7 @@ export function NewsRelatedCard({ noticia }: { noticia: Noticia }) {
                     <span className={cn("text-[9px] font-black uppercase tracking-widest", cat.color)}>{cat.label}</span>
                     <span className="text-[9px] text-white/30">{getRelativeTime(noticia.created_at)}</span>
                 </div>
-                <h4 className="text-sm font-bold text-white/80 line-clamp-2 group-hover:text-[#FFC000] transition-colors">
+                <h4 className="text-sm font-bold text-white/80 line-clamp-2 group-hover:text-emerald-400 transition-colors">
                     {noticia.titulo}
                 </h4>
             </div>

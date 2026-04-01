@@ -49,8 +49,8 @@ export function QuinielaRankingTab({ ranking, user, profile, userPoints }: Quini
                             key={tab}
                             onClick={() => setRankingSubTab(tab as any)}
                             className={cn(
-                                "pb-4 border-b-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all",
-                                rankingSubTab === tab ? "border-amber-500 text-white" : "border-transparent text-slate-500"
+                                "pb-4 border-b-2 text-sm font-display font-black tracking-wide transition-all",
+                                rankingSubTab === tab ? "border-amber-500 text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "border-transparent text-slate-500 hover:text-white/70"
                             )}
                         >
                             {tab === 'leaders' ? 'Líderes' : tab === 'streaks' ? 'Rachas' : 'Consistencia'}
@@ -88,19 +88,19 @@ export function QuinielaRankingTab({ ranking, user, profile, userPoints }: Quini
 
                 {user && ranking.length > 0 && (
                     <div className="absolute bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="bg-white/8/95 backdrop-blur-xl border-2 border-amber-500/50 rounded-2xl p-4 shadow-xl flex items-center justify-between">
+                        <div className="bg-black/60 backdrop-blur-3xl border border-amber-500/30 rounded-[2rem] p-4 shadow-[0_0_40px_rgba(245,158,11,0.15)] flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-black font-black">
+                                <div className="w-12 h-12 rounded-[1.25rem] bg-amber-500 flex items-center justify-center text-black font-black text-lg shadow-inner">
                                     #{ranking.findIndex(r => r.id === user.id) + 1}
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">TÚ ESTÁS AQUÍ</p>
-                                    <p className="text-sm font-black text-white uppercase">{profile?.full_name || "Tu Perfil"}</p>
+                                    <p className="text-xs font-display font-bold text-amber-500 tracking-wide">Tú estás aquí</p>
+                                    <p className="text-base font-black text-white font-display tracking-tight">{profile?.full_name || "Tu Perfil"}</p>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className="text-xl font-black text-white leading-none">{userPoints}</p>
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">PUNTOS</p>
+                            <div className="text-right bg-white/[0.03] px-4 py-2 rounded-2xl border border-white/5">
+                                <p className="text-2xl font-black text-white leading-none font-mono tracking-tighter">{userPoints}</p>
+                                <p className="text-[10px] font-bold text-slate-500 tracking-wider mt-1">Puntos</p>
                             </div>
                         </div>
                     </div>

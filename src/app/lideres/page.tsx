@@ -185,11 +185,11 @@ export default function LideresPage() {
                 >
                     <div className="flex items-center gap-2 mb-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                        <span className="text-[9px] font-black text-red-500 uppercase tracking-[0.3em]">
+                        <span className="text-[10px] font-bold text-red-500 tracking-wide">
                             Actualizado en tiempo real
                         </span>
                     </div>
-                    <h1 className="text-5xl sm:text-7xl font-black italic tracking-tighter uppercase leading-none text-transparent bg-clip-text bg-gradient-to-b from-white via-white/90 to-white/40">
+                    <h1 className="text-5xl sm:text-7xl font-black italic tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-b from-white via-white/90 to-white/40 font-display">
                         Líderes
                     </h1>
                     <p className="text-white/30 text-sm font-bold mt-3 max-w-lg">
@@ -354,8 +354,8 @@ export default function LideresPage() {
                         transition={{ delay: 0.4 }}
                         className="space-y-2"
                     >
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/25 mb-4 px-1">
-                            Ranking Completo
+                        <h3 className="text-[11px] font-bold tracking-wider text-white/25 mb-4 px-1">
+                            Ranking completo
                         </h3>
 
                         {rest.map((s, idx) => {

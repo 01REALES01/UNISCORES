@@ -14,9 +14,8 @@ export const metadata: Metadata = {
   description: "Resultados en tiempo real de las Olimpiadas Deportivas Interprogramas UNINORTE 2026",
   manifest: "/manifest.json",
   icons: {
-    icon: "/logo_bar.png",
-    shortcut: "/logo_bar.png",
-    apple: "/logo_bar.png",
+    icon: "/icon.svg",
+    apple: "/icon.svg",
   },
   appleWebApp: {
     capable: true,

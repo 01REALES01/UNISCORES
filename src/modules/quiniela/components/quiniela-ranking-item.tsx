@@ -46,7 +46,7 @@ export const QuinielaRankingItem = ({ profile, rank, isMe, mode = 'leaders' }: Q
         </div>
 
         <div className="space-y-0.5">
-          <p className="font-black text-sm text-white flex items-center gap-2 font-sans group-hover:text-red-500 transition-colors">
+          <p className="font-display font-black text-sm text-white flex items-center gap-2 group-hover:text-amber-400 transition-colors tracking-wide">
             {profile.display_name || "Usuario"}
             {isMe && <Badge className="bg-amber-400 text-black border-0 text-[8px] font-black h-4 px-1.5 rounded-md">TÚ</Badge>}
           </p>

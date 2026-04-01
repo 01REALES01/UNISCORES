@@ -70,15 +70,15 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
                 <div className="inline-flex bg-white/[0.03] p-1 rounded-xl border border-white/5 flex-1">
                     <button
                         onClick={() => setBettingMode('winner')}
-                        className={cn("flex-1 px-3 py-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1.5", bettingMode === 'winner' ? "bg-red-600 text-white shadow-md" : "text-white/50 hover:text-white")}
+                        className={cn("flex-1 px-3 py-2 rounded-lg text-xs font-display font-black tracking-wide transition-all flex items-center justify-center gap-1.5", bettingMode === 'winner' ? "bg-white/10 text-white shadow-inner ring-1 ring-white/20" : "text-white/50 hover:text-white")}
                     >
-                        <HandMetal size={12} /> Ganador
+                        <HandMetal size={14} className={bettingMode === 'winner' ? "text-violet-400" : ""} /> Ganador
                     </button>
                     <button
                         onClick={() => setBettingMode('score')}
-                        className={cn("flex-1 px-3 py-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1.5", bettingMode === 'score' ? "bg-rose-600 text-white shadow-md" : "text-white/50 hover:text-white")}
+                        className={cn("flex-1 px-3 py-2 rounded-lg text-xs font-display font-black tracking-wide transition-all flex items-center justify-center gap-1.5", bettingMode === 'score' ? "bg-white/10 text-white shadow-inner ring-1 ring-white/20" : "text-white/50 hover:text-white")}
                     >
-                        <Gauge size={12} /> Marcador
+                        <Gauge size={14} className={bettingMode === 'score' ? "text-violet-400" : ""} /> Marcador
                     </button>
                 </div>
 
@@ -93,11 +93,11 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
                             key={f.key}
                             onClick={() => setViewFilter(f.key)}
                             className={cn(
-                                "px-2.5 py-2 rounded-lg text-[10px] font-black transition-all flex items-center gap-1",
-                                viewFilter === f.key ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"
+                                "px-2.5 py-2 rounded-lg text-xs font-display font-black tracking-wide transition-all flex items-center justify-center gap-1.5",
+                                viewFilter === f.key ? "bg-white/10 text-white shadow-inner ring-1 ring-white/20" : "text-white/40 hover:text-white/70"
                             )}
                         >
-                            <f.icon size={10} />
+                            <f.icon size={12} className={viewFilter === f.key ? "text-emerald-400" : ""} />
                             <span className="hidden sm:inline">{f.label}</span>
                         </button>
                     ))}
@@ -107,8 +107,8 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
             {/* Match List */}
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
-                    <div className="w-12 h-12 rounded-full border-4 border-red-500/30 border-t-red-500 animate-spin" />
-                    <p className="text-xs text-slate-500 animate-pulse">Cargando partidos...</p>
+                    <div className="w-12 h-12 rounded-full border-4 border-white/10 border-t-violet-400 animate-spin" />
+                    <p className="text-sm text-white/40 font-display font-black tracking-wide animate-pulse">Cargando partidos...</p>
                 </div>
             ) : filteredMatches.length === 0 ? (
                 <div className="text-center py-20 text-white/40 bg-white/[0.02] rounded-3xl border border-white/5 border-dashed">

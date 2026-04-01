@@ -50,6 +50,11 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
     const [carreras, setCarreras] = useState<{id: number, nombre: string}[]>([]);
     const [loadingCarreras, setLoadingCarreras] = useState(false);
     const [fetchError, setFetchError] = useState<string | null>(null);
+    // Enrolled teams for current disciplina+genero (from carrera_disciplina table)
+    const [enrolledTeams, setEnrolledTeams] = useState<{equipo_nombre: string; carrera_ids: number[]}[]>([]);
+    // IDs of all carreras in the selected combined team (for carrera_a_ids / carrera_b_ids)
+    const [carreraAIds, setCarreraAIds] = useState<number[]>([]);
+    const [carreraBIds, setCarreraBIds] = useState<number[]>([]);
 
     useEffect(() => {
         if (isOpen) fetchCarreras();
@@ -79,10 +84,33 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
         }
     };
 
-    if (!isOpen) return null;
-
     const isIndividual = DISCIPLINES.find(d => d.name === disciplina)?.individual || false;
     const isRaceSport = ['Natación', 'Atletismo', 'Ciclismo', 'Triatlón'].includes(disciplina);
+    const isTeamSport = !isIndividual && !isRaceSport;
+
+    // Fetch enrolled teams from carrera_disciplina when disciplina/genero changes (team sports only)
+    useEffect(() => {
+        if (!isOpen || !isTeamSport) { setEnrolledTeams([]); return; }
+        (async () => {
+            const { data: disc } = await supabase.from('disciplinas').select('id').eq('name', disciplina).single();
+            if (!disc) { setEnrolledTeams([]); return; }
+            const { data } = await supabase
+                .from('carrera_disciplina')
+                .select('equipo_nombre, carrera_id')
+                .eq('disciplina_id', disc.id)
+                .eq('genero', genero);
+            if (!data || data.length === 0) { setEnrolledTeams([]); return; }
+            const map: Record<string, number[]> = {};
+            data.forEach((r: any) => {
+                if (!map[r.equipo_nombre]) map[r.equipo_nombre] = [];
+                map[r.equipo_nombre].push(r.carrera_id);
+            });
+            setEnrolledTeams(Object.entries(map).map(([equipo_nombre, carrera_ids]) => ({ equipo_nombre, carrera_ids })));
+        })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [disciplina, genero, isOpen]);
+
+    if (!isOpen) return null;
 
     const handleCreate = async () => {
         setLoading(true);
@@ -178,10 +206,19 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
             let carreraBId = null;
 
             if (!isRaceSport && !isIndividual) {
-                // For team sports, equipoA/B are stored as delegacion_a/b but linked by name to carreras
-                const { data: cData } = await supabase.from('carreras').select('id, nombre').in('nombre', [equipoA, equipoB]);
-                carreraAId = cData?.find(c => c.nombre === equipoA)?.id || null;
-                carreraBId = cData?.find(c => c.nombre === equipoB)?.id || null;
+                // For team sports: use IDs from enrolled teams if available (supports combined teams)
+                if (carreraAIds.length > 0) {
+                    carreraAId = carreraAIds[0];
+                } else {
+                    const { data: cData } = await supabase.from('carreras').select('id').eq('nombre', equipoA).single();
+                    carreraAId = cData?.id || null;
+                }
+                if (carreraBIds.length > 0) {
+                    carreraBId = carreraBIds[0];
+                } else {
+                    const { data: cData } = await supabase.from('carreras').select('id').eq('nombre', equipoB).single();
+                    carreraBId = cData?.id || null;
+                }
             } else if (isIndividual) {
                 // For individual sports, delegacionA/B are the career names
                 const { data: cData } = await supabase.from('carreras').select('id, nombre').in('nombre', [delegacionA, delegacionB]);
@@ -198,6 +235,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                 delegacion_b: isIndividual ? delegacionB : equipoB,
                 carrera_a_id: carreraAId,
                 carrera_b_id: carreraBId,
+                ...(carreraAIds.length > 1 ? { carrera_a_ids: carreraAIds } : {}),
+                ...(carreraBIds.length > 1 ? { carrera_b_ids: carreraBIds } : {}),
                 fecha: fecha ? new Date(fecha).toISOString() : new Date().toISOString(),
                 estado: estado,
                 genero: genero,
@@ -223,6 +262,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
             // Clean & Close
             setEquipoA("");
             setEquipoB("");
+            setCarreraAIds([]);
+            setCarreraBIds([]);
             setDisciplina("Fútbol");
             setEstado("programado");
             setGenero("masculino");
@@ -238,6 +279,12 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
             setLoading(false);
         }
     };
+
+    // For team sports: prefer enrolled teams from carrera_disciplina; fall back to all carreras
+    const teamOptions: { equipo_nombre: string; carrera_ids: number[] }[] =
+        enrolledTeams.length > 0
+            ? enrolledTeams
+            : carreras.map(c => ({ equipo_nombre: c.nombre, carrera_ids: [c.id] }));
 
     const selectedDiscColor = DISCIPLINES.find(d => d.name === disciplina)?.color || 'from-primary to-secondary';
 
@@ -475,12 +522,16 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                                 <select
                                                     className="w-full h-12 bg-black/60 border border-white/10 rounded-xl pl-11 pr-4 text-sm font-black text-white focus:border-blue-500/50 outline-none transition-all appearance-none"
                                                     value={equipoA}
-                                                    onChange={(e) => setEquipoA(e.target.value)}
+                                                    onChange={(e) => {
+                                                        const t = teamOptions.find(t => t.equipo_nombre === e.target.value);
+                                                        setEquipoA(e.target.value);
+                                                        setCarreraAIds(t?.carrera_ids ?? []);
+                                                    }}
                                                 >
                                                     <option value="" disabled>
-                                                        {loadingCarreras ? "Cargando catálogo..." : fetchError ? `Error: ${fetchError}` : "Elegir Carrera..."}
+                                                        {loadingCarreras ? "Cargando catálogo..." : fetchError ? `Error: ${fetchError}` : "Elegir Equipo..."}
                                                     </option>
-                                                    {carreras.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                                                    {teamOptions.map(t => <option key={t.equipo_nombre} value={t.equipo_nombre}>{t.equipo_nombre}</option>)}
                                                 </select>
                                             </div>
                                         )}
@@ -536,12 +587,16 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                                 <select
                                                     className="w-full h-12 bg-black/60 border border-white/10 rounded-xl pl-4 pr-11 text-sm font-black text-white focus:border-pink-500/50 outline-none transition-all appearance-none text-right"
                                                     value={equipoB}
-                                                    onChange={(e) => setEquipoB(e.target.value)}
+                                                    onChange={(e) => {
+                                                        const t = teamOptions.find(t => t.equipo_nombre === e.target.value);
+                                                        setEquipoB(e.target.value);
+                                                        setCarreraBIds(t?.carrera_ids ?? []);
+                                                    }}
                                                 >
                                                     <option value="" disabled>
-                                                        {loadingCarreras ? "Cargando catálogo..." : fetchError ? `Error: ${fetchError}` : "Elegir Carrera..."}
+                                                        {loadingCarreras ? "Cargando catálogo..." : fetchError ? `Error: ${fetchError}` : "Elegir Equipo..."}
                                                     </option>
-                                                    {carreras.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                                                    {teamOptions.map(t => <option key={t.equipo_nombre} value={t.equipo_nombre}>{t.equipo_nombre}</option>)}
                                                 </select>
                                             </div>
                                         )}

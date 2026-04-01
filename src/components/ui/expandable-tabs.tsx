@@ -84,7 +84,7 @@ export function ExpandableTabs({
                         onClick={() => handleClick(index)}
                         className={cn(
                             "relative flex items-center rounded-full px-3 py-2 transition-all duration-300",
-                            isSelected ? activeColor : "text-slate-400 hover:text-white"
+                            isSelected ? activeColor : "text-[#F5F5DC]/60 hover:text-[#F5F5DC]"
                         )}
                         aria-label={tab.title}
                     >
