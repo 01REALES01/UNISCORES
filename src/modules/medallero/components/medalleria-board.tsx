@@ -370,7 +370,7 @@ export function MedalLeaderboard() {
                 <img 
                     src="/elementos/18.png" 
                     alt="" 
-                    className="w-[400px] md:w-[600px] lg:w-[700px] h-auto opacity-10 absolute right-0 bottom-0 translate-x-[20%] translate-y-[10%]" 
+                    className="w-[400px] md:w-[600px] lg:w-[700px] h-auto opacity-10 absolute right-0 top-0 translate-x-[20%] -translate-y-[10%]" 
                     style={{ filter: "brightness(0) invert(1)" }}
                     aria-hidden="true"
                 />
