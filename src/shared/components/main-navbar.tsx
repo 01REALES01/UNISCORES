@@ -175,7 +175,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                                 <div className="relative z-10 flex items-center gap-4">
                                                     <Avatar name={profile?.full_name || user.email} src={profile?.avatar_url} className="w-12 h-12 border-2 border-white/10 rounded-full" />
                                                     <div className="flex flex-col flex-1 min-w-0">
-                                                        <p className="text-sm font-black font-sans text-white truncate drop-shadow-sm">{profile?.full_name || user.email?.split('@')[0]}</p>
+                                                        <p className="text-sm font-black font-display text-white truncate drop-shadow-sm">{profile?.full_name || user.email?.split('@')[0]}</p>
                                                         <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mt-0.5 truncate">{user.email}</p>
                                                     </div>
                                                 </div>
@@ -184,7 +184,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                             {/* Options */}
                                             <div className="p-3 space-y-1">
                                                 {isStaff && (
-                                                    <button onClick={() => { setProfileMenuOpen(false); router.push('/admin'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-400/10 transition-all group/item">
+                                                    <button onClick={() => { setProfileMenuOpen(false); router.push('/admin'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-black font-display tracking-tight text-amber-400 hover:bg-amber-400/10 transition-all group/item">
                                                         <div className="w-9 h-9 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-amber-400/20 transition-all">
                                                             <Shield size={16} />
                                                         </div>
@@ -192,21 +192,21 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                                     </button>
                                                 )}
 
-                                                <button onClick={() => { setProfileMenuOpen(false); router.push('/perfil'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all group/item">
+                                                <button onClick={() => { setProfileMenuOpen(false); router.push('/perfil'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-black font-display tracking-tight text-slate-300 hover:bg-white/5 hover:text-white transition-all group/item">
                                                     <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-white/10 transition-all">
                                                         <UserIcon size={16} />
                                                     </div>
                                                     Mi Perfil
                                                 </button>
 
-                                                <button onClick={() => { setProfileMenuOpen(false); router.push('/estadisticas'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-rose-400 hover:bg-rose-500/10 transition-all group/item">
+                                                <button onClick={() => { setProfileMenuOpen(false); router.push('/estadisticas'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-black font-display tracking-tight text-rose-400 hover:bg-rose-500/10 transition-all group/item">
                                                     <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-rose-500/20 transition-all">
                                                         <Heart size={16} className="fill-current" />
                                                     </div>
                                                     Ranking de Popularidad
                                                 </button>
 
-                                                <button onClick={() => { setProfileMenuOpen(false); router.push('/quiniela'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-indigo-400 hover:bg-indigo-500/10 transition-all group/item">
+                                                <button onClick={() => { setProfileMenuOpen(false); router.push('/quiniela'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-black font-display tracking-tight text-indigo-400 hover:bg-indigo-500/10 transition-all group/item">
                                                     <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-indigo-500/20 transition-all">
                                                         <BarChart3 size={16} />
                                                     </div>
@@ -215,7 +215,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                                 
                                                 <div className="my-2 mx-3 h-px bg-white/5" />
                                                 
-                                                <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-stone-400 hover:bg-stone-500/10 transition-all group/item">
+                                                <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-black font-display tracking-tight text-stone-400 hover:bg-stone-500/10 transition-all group/item">
                                                     <div className="w-9 h-9 rounded-xl bg-stone-500/10 border border-stone-500/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-stone-500/20 transition-all">
                                                         <LogOut size={16} />
                                                     </div>

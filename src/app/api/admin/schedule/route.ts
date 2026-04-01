@@ -16,9 +16,9 @@ const FUSION_MAP: Record<string, string[]> = {
     'EAUD':   ['Diseño Gráfico', 'Arquitectura', 'Diseño Industrial'],
 
     // Slash fusions — all case-insensitive keys are checked via normalize() below
-    'ING. ELÉCTRICA/CIENCIA DATOS':               ['Ingeniería Eléctrica', 'Ciencia de Datos'],
-    'INGENIERÍA ELÉCTRICA/CIENCIA DATOS':          ['Ingeniería Eléctrica', 'Ciencia de Datos'],
-    'ING.A ELÉCTRICA/CIENCIA DATOS':               ['Ingeniería Eléctrica', 'Ciencia de Datos'],
+    'ING. ELÉCTRICA/CIENCIA DATOS':               ['Ingeniería Eléctrica', 'Ingeniería Electrónica', 'Ciencia de Datos'],
+    'INGENIERÍA ELÉCTRICA/CIENCIA DATOS':          ['Ingeniería Eléctrica', 'Ingeniería Electrónica', 'Ciencia de Datos'],
+    'ING.A ELÉCTRICA/CIENCIA DATOS':               ['Ingeniería Eléctrica', 'Ingeniería Electrónica', 'Ciencia de Datos'],
     'COM. SOCIAL/PSICOLOGÍA':                      ['Comunicación Social y Periodismo', 'Psicología'],
     'LENGUAS MODERNAS/PSICOLOGÍA':                 ['Lenguas Modernas y Cultura', 'Psicología'],
     'LENG. MOD./PSICOLOGÍA':                       ['Lenguas Modernas y Cultura', 'Psicología'],
@@ -42,7 +42,8 @@ const FUSION_MAP: Record<string, string[]> = {
     'ADMON. DE EMPRESAS': ['Administración de Empresas'],
     'ING. SISTEMAS':      ['Ingeniería de Sistemas'],
     'ING. INDUSTRIAL':    ['Ingeniería Industrial'],
-    'ING. ELÉCTRICA':     ['Ingeniería Eléctrica'],
+    'ING. ELÉCTRICA':     ['Ingeniería Eléctrica', 'Ingeniería Electrónica'],
+    'INGENIERÍA ELÉCTRICA': ['Ingeniería Eléctrica', 'Ingeniería Electrónica'],
     'NEGOCIOS INTERNACIONALES': ['Negocios Internacionales'],
     'CONTADURÍA PÚBLICA': ['Contaduría Pública'],
 };
