@@ -221,8 +221,8 @@ export default function PublicMatchDetail() {
             <Trophy size={48} className="text-slate-700 mb-2" />
             <h1 className="text-2xl font-bold">Partido no encontrado</h1>
             {fetchError && (
-                <div className="max-w-md bg-red-500/10 border border-red-500/30 rounded-2xl px-5 py-3 text-sm text-red-300 font-mono text-left">
-                    <p className="font-bold text-red-400 mb-1 uppercase tracking-wider text-[10px]">Error de consulta</p>
+                <div className="max-w-md bg-violet-500/10 border border-violet-500/30 rounded-2xl px-5 py-3 text-sm text-violet-300 font-mono text-left">
+                    <p className="font-bold text-violet-400 mb-1 uppercase tracking-wider text-[10px]">Error de consulta</p>
                     <p className="break-words">{fetchError}</p>
                 </div>
             )}
@@ -233,7 +233,7 @@ export default function PublicMatchDetail() {
                 >
                     🔄 Reintentar
                 </button>
-                <Link href="/" className="px-5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-bold transition-all">
+                <Link href="/" className="px-5 py-2 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 text-sm font-bold transition-all">
                     ← Volver al inicio
                 </Link>
             </div>
@@ -374,7 +374,7 @@ export default function PublicMatchDetail() {
                                                     </div>
                                                 </div>
 
-                                                <div className="text-right font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-red-300 drop-shadow-md">
+                                                <div className="text-right font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-white drop-shadow-md">
                                                     {p.tiempo || '--:--'}
                                                 </div>
                                             </div>
@@ -406,7 +406,7 @@ export default function PublicMatchDetail() {
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
                                         <Link 
                                             href={(match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` : match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : '#'} 
-                                            className={cn("transition-colors underline-offset-4", ((match as any).delegacion_a_id || match.carrera_a_id) ? "hover:text-red-400 hover:underline cursor-pointer" : "cursor-default")}
+                                            className={cn("transition-colors underline-offset-4", ((match as any).delegacion_a_id || match.carrera_a_id) ? "hover:text-emerald-400 hover:underline cursor-pointer" : "cursor-default")}
                                             onClick={(e) => { if (!(match as any).delegacion_a_id && !match.carrera_a_id) e.preventDefault(); }}
                                         >
                                             {getDisplayName(match, 'a')}
@@ -428,10 +428,10 @@ export default function PublicMatchDetail() {
                                             ) : isLive ? (
                                                 <div className="flex items-center gap-3">
                                                     <span className="relative flex h-4 w-4">
-                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                                        <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500"></span>
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
                                                     </span>
-                                                    <span className="text-xl sm:text-3xl font-black text-rose-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]">
+                                                    <span className="text-xl sm:text-3xl font-black text-emerald-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(16,185,129,0.4)]">
                                                         EN CURSO
                                                     </span>
                                                 </div>
@@ -510,7 +510,7 @@ export default function PublicMatchDetail() {
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
                                         <Link 
                                             href={(match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` : match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` : '#'} 
-                                            className={cn("transition-colors underline-offset-4", ((match as any).delegacion_b_id || match.carrera_b_id) ? "hover:text-red-400 hover:underline cursor-pointer" : "cursor-default")}
+                                            className={cn("transition-colors underline-offset-4", ((match as any).delegacion_b_id || match.carrera_b_id) ? "hover:text-emerald-400 hover:underline cursor-pointer" : "cursor-default")}
                                             onClick={(e) => { if (!(match as any).delegacion_b_id && !match.carrera_b_id) e.preventDefault(); }}
                                         >
                                             {getDisplayName(match, 'b')}
@@ -654,7 +654,7 @@ export default function PublicMatchDetail() {
                         </div>
                     ) : match?.estado === 'programado' && !user ? (
                         <div className="mt-5 pt-4 border-t border-white/5 text-center">
-                            <Link href="/login" className="text-[10px] font-bold text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors">
+                            <Link href="/login" className="text-[10px] font-bold text-violet-400 uppercase tracking-widest hover:text-violet-300 transition-colors">
                                 Inicia sesión para predecir →
                             </Link>
                         </div>
@@ -668,7 +668,7 @@ export default function PublicMatchDetail() {
                                     const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
                                     const result = sA > sB ? 'A' : sB > sA ? 'B' : 'DRAW';
                                     return userPrediction.winner_pick === result;
-                                })() ? "bg-emerald-500/10 border border-emerald-500/15" : "bg-rose-500/10 border border-rose-500/15")
+                                })() ? "bg-emerald-500/10 border border-emerald-500/15" : "bg-violet-500/10 border border-violet-500/15")
                                 : "bg-white/5"
                         )}>
                             <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu acierto</p>
@@ -678,7 +678,7 @@ export default function PublicMatchDetail() {
                                     const sA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
                                     const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
                                     const result = sA > sB ? 'A' : sB > sA ? 'B' : 'DRAW';
-                                    return userPrediction.winner_pick === result ? "text-emerald-400" : "text-rose-400";
+                                    return userPrediction.winner_pick === result ? "text-emerald-400" : "text-violet-400";
                                 })() : "text-white"
                             )}>
                                 {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'a')}</> :

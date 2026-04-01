@@ -37,7 +37,7 @@ export function Badge({
         destructive: "bg-red-500/15 text-red-400",
         success: "bg-emerald-500/15 text-emerald-400",
         secondary: "bg-white/10 text-white",
-        live: "bg-red-500/15 text-red-400 live-indicator",
+        live: "bg-emerald-500/15 text-emerald-400 live-indicator",
     };
 
     return (
@@ -136,7 +136,7 @@ export function Avatar({
         "bg-emerald-500",
         "bg-amber-500",
         "bg-cyan-500",
-        "bg-rose-500",
+        "bg-indigo-500",
     ];
     const colorIndex = safeName.charCodeAt(0) % colors.length;
 
@@ -200,10 +200,10 @@ export function LiveIndicator({ className }: { className?: string }) {
     return (
         <div className={cn("flex items-center gap-1.5", className)}>
             <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-red-400">En Curso</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">En Curso</span>
         </div>
     );
 }

@@ -103,7 +103,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
         );
     }
 
-    const sportColor = SPORT_COLORS[sportName || ''] || '#ef4444';
+    const sportColor = SPORT_COLORS[sportName || ''] || '#7c3aed';
     const teamBColor = '#64748b';
 
     const { teamA, teamB, mvp, mvpPoints, topScorersA, topScorersB,
@@ -235,7 +235,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 mb-4 text-center">Disciplina</p>
                     <StatRow label="Faltas" valueA={teamA.fouls} valueB={teamB.fouls} />
                     <StatRow label="Amarillas" valueA={teamA.yellowCards} valueB={teamB.yellowCards} colorA="#eab308" colorB="#eab308" />
-                    <StatRow label="Rojas" valueA={teamA.redCards} valueB={teamB.redCards} colorA="#ef4444" colorB="#ef4444" />
+                    <StatRow label="Rojas" valueA={teamA.redCards} valueB={teamB.redCards} colorA="#f43f5e" colorB="#f43f5e" />
                 </div>
             )}
 
