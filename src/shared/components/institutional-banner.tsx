@@ -16,7 +16,8 @@ export function InstitutionalBanner({ variant, className }: InstitutionalBannerP
     if (variant) {
       setSelectedVariant(variant);
     } else {
-      setSelectedVariant(Math.floor(Math.random() * 8) + 1);
+      // El banner 1 fue eliminado, por lo que sorteamos entre 2 y 8
+      setSelectedVariant(Math.floor(Math.random() * 7) + 2);
     }
   }, [variant]);
 
