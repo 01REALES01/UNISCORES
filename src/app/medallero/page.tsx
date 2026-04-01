@@ -7,6 +7,8 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui-primitives";
 
+import { InstitutionalBanner } from "@/shared/components/institutional-banner";
+
 export default function MedalleroPage() {
     const { user, profile, isStaff } = useAuth();
 
@@ -27,13 +29,18 @@ export default function MedalleroPage() {
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <main className="max-w-4xl mx-auto px-4 pt-12 pb-12 relative z-10">
-                <div className="flex flex-col items-center text-center gap-1 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="flex flex-col items-center text-center gap-1 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <p className="font-display text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-emerald-400 tracking-[0.3em]">
                         Ranking de facultades
                     </p>
                     <h1 className="text-5xl md:text-7xl font-black tracking-tighter font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm">
                         Medallería
                     </h1>
+                </div>
+
+                {/* Institutional Banner */}
+                <div className="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
+                    <InstitutionalBanner variant={3} className="rounded-3xl overflow-hidden shadow-2xl" />
                 </div>
 
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
