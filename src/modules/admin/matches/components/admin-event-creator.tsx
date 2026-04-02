@@ -39,7 +39,8 @@ export const AdminEventCreator = ({
   const isVolleyball = disciplinaName === 'Voleibol';
   const isFutbol = disciplinaName === 'Fútbol';
   const needsPlayer = !isIndividualSport;
-  const playerOptional = isVolleyball;
+  const isAsyncMatch = match.marcador_detalle?.modo_registro === 'asincronico';
+  const playerOptional = isVolleyball || isAsyncMatch || isFutbol;
 
   // Players expelled by red card — cannot receive more events
   const expelledPlayerIds = new Set(
@@ -74,6 +75,8 @@ export const AdminEventCreator = ({
     }
   };
 
+  const isMatchOver = match.estado === 'finalizado' || match.estado === 'cancelado';
+
   const step = !nuevoEvento.tipo ? 1 : !nuevoEvento.equipo ? 2 : 3;
 
   const StepBadge = ({ n, active }: { n: number, active: boolean }) => (
@@ -83,6 +86,17 @@ export const AdminEventCreator = ({
         : { background: `${sportColor}10`, borderColor: `${sportColor}20`, color: `${sportColor}60` }
       }>{n}</span>
   );
+
+  if (isMatchOver) {
+    return (
+      <div className="rounded-[2rem] border overflow-hidden relative flex items-center justify-center py-8 px-6"
+        style={{ borderColor: `${sportColor}10`, background: `linear-gradient(to bottom, ${sportColor}06, transparent)` }}>
+        <p className="text-sm text-white/40 text-center">
+          Partido finalizado — no se pueden registrar más eventos.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-[2rem] border overflow-hidden backdrop-blur-sm relative"

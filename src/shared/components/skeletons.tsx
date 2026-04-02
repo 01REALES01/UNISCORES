@@ -11,7 +11,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
 
 export function MatchCardSkeleton() {
     return (
-        <div className="bg-[#17130D] border border-white/5 rounded-3xl p-6 h-[180px] flex flex-col justify-between relative overflow-hidden">
+        <div className="bg-background border border-white/5 rounded-3xl p-6 h-[180px] flex flex-col justify-between relative overflow-hidden">
             <div className="flex justify-between items-start">
                 <Skeleton className="h-6 w-24 rounded-full" />
                 <Skeleton className="h-4 w-16" />
@@ -47,7 +47,7 @@ export function MatchCardSkeleton() {
 
 export function MedalSkeleton() {
     return (
-        <div className="w-full h-96 bg-[#17130D]/40 border border-white/5 rounded-[3rem] p-8 relative overflow-hidden">
+        <div className="w-full h-96 bg-background/40 border border-white/5 rounded-[3rem] p-8 relative overflow-hidden">
             <div className="flex items-center gap-4 mb-12">
                 <Skeleton className="h-12 w-12 rounded-2xl" />
                 <div className="space-y-2">
@@ -67,7 +67,7 @@ export function MedalSkeleton() {
 
 export function NewsHeroSkeleton() {
     return (
-        <div className="relative h-[400px] sm:h-[480px] rounded-3xl overflow-hidden border border-white/5 bg-[#17130D]">
+        <div className="relative h-[400px] sm:h-[480px] rounded-3xl overflow-hidden border border-white/5 bg-background">
             <Skeleton className="absolute inset-0 w-full h-full" />
             <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 bg-gradient-to-t from-black/90 to-transparent">
                 <Skeleton className="h-5 w-20 rounded-full mb-3" />
@@ -86,7 +86,7 @@ export function NewsHeroSkeleton() {
 
 export function NewsListSkeleton() {
     return (
-        <div className="flex gap-4 bg-[#17130D]/60 border border-white/5 rounded-2xl p-3 sm:p-4">
+        <div className="flex gap-4 bg-background/60 border border-white/5 rounded-2xl p-3 sm:p-4">
             <Skeleton className="w-[100px] h-[80px] sm:w-[140px] sm:h-[100px] rounded-xl shrink-0" />
             <div className="flex-1 flex flex-col justify-between py-0.5">
                 <div>

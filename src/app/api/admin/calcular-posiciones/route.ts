@@ -14,12 +14,19 @@ function hasBracket(disciplinaNombre: string): boolean {
     return TEAM_SPORTS.includes(disciplinaNombre) || INDIVIDUAL_BRACKET_SPORTS.includes(disciplinaNombre);
 }
 
-/** Extract winner (carrera_a_id or carrera_b_id) from a finished match */
-function getWinner(match: {
+/**
+ * Extract winner/loser ID arrays from a finished match.
+ * Uses carrera_a_ids/carrera_b_ids (arrays) so combined teams
+ * (e.g. "COM. SOCIAL/PSICOLOGÍA" → 2 carreras) generate one entry each.
+ * Falls back to singular carrera_a_id/carrera_b_id if arrays are not populated.
+ */
+function getWinnerIds(match: {
     carrera_a_id: number | null;
     carrera_b_id: number | null;
+    carrera_a_ids: number[] | null;
+    carrera_b_ids: number[] | null;
     marcador_detalle: Record<string, unknown> | null;
-}): { winner: number | null; loser: number | null } {
+}): { winnerIds: number[]; loserIds: number[] } {
     const det = match.marcador_detalle ?? {};
     const scoreA =
         (det.goles_a as number) ??
@@ -36,9 +43,15 @@ function getWinner(match: {
         (det.juegos_b as number) ??
         0;
 
-    if (scoreA > scoreB) return { winner: match.carrera_a_id, loser: match.carrera_b_id };
-    if (scoreB > scoreA) return { winner: match.carrera_b_id, loser: match.carrera_a_id };
-    return { winner: null, loser: null }; // draw — shouldn't happen in finals
+    // Prefer array fields; fall back to singular wrapped in array
+    const sideA = match.carrera_a_ids?.length ? match.carrera_a_ids
+        : match.carrera_a_id ? [match.carrera_a_id] : [];
+    const sideB = match.carrera_b_ids?.length ? match.carrera_b_ids
+        : match.carrera_b_id ? [match.carrera_b_id] : [];
+
+    if (scoreA > scoreB) return { winnerIds: sideA, loserIds: sideB };
+    if (scoreB > scoreA) return { winnerIds: sideB, loserIds: sideA };
+    return { winnerIds: [], loserIds: [] }; // draw — shouldn't happen in finals
 }
 
 export async function POST(req: NextRequest) {
@@ -110,7 +123,7 @@ export async function POST(req: NextRequest) {
     // ── Fetch relevant matches ────────────────────────────────────────────────
     const { data: matches, error: matchError } = await supabase
         .from('partidos')
-        .select('id, fase, estado, carrera_a_id, carrera_b_id, marcador_detalle, equipo_a, equipo_b')
+        .select('id, fase, estado, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, marcador_detalle, equipo_a, equipo_b')
         .eq('disciplina_id', disciplinaId)
         .eq('genero', genero)
         .eq('estado', 'finalizado')
@@ -157,67 +170,45 @@ export async function POST(req: NextRequest) {
     const finalMatch = matches.find(m => m.fase === 'final');
     const tercerMatch = matches.find(m => m.fase === 'tercer_puesto');
 
-    if (finalMatch) {
-        const { winner, loser } = getWinner(finalMatch);
-
-        if (winner) {
+    const pushEntries = (ids: number[], posicion: number, nota: string) => {
+        for (const carreraId of ids) {
             entries.push({
                 disciplina_id: disciplinaId,
-                carrera_id: winner,
+                carrera_id: carreraId,
                 genero,
                 categoria: categoriaValue,
-                posicion: 1,
-                puntos_obtenidos: puntosMap[1] ?? 0,
-                notas: `Auto-calculado desde partido final (id: ${finalMatch.id})`,
+                posicion,
+                puntos_obtenidos: puntosMap[posicion] ?? 0,
+                notas: nota,
                 created_by: user.id,
             });
+        }
+    };
+
+    if (finalMatch) {
+        const { winnerIds, loserIds } = getWinnerIds(finalMatch);
+
+        if (winnerIds.length > 0) {
+            pushEntries(winnerIds, 1, `Auto-calculado desde partido final (id: ${finalMatch.id})`);
         } else {
             skipped.push('1er lugar: empate en el partido final, no se pudo determinar');
         }
 
-        if (loser) {
-            entries.push({
-                disciplina_id: disciplinaId,
-                carrera_id: loser,
-                genero,
-                categoria: categoriaValue,
-                posicion: 2,
-                puntos_obtenidos: puntosMap[2] ?? 0,
-                notas: `Auto-calculado desde partido final (id: ${finalMatch.id})`,
-                created_by: user.id,
-            });
+        if (loserIds.length > 0) {
+            pushEntries(loserIds, 2, `Auto-calculado desde partido final (id: ${finalMatch.id})`);
         }
     } else {
         skipped.push('1er y 2do lugar: no se encontró partido de "final" finalizado');
     }
 
     if (tercerMatch) {
-        const { winner, loser } = getWinner(tercerMatch);
+        const { winnerIds, loserIds } = getWinnerIds(tercerMatch);
 
-        if (winner) {
-            entries.push({
-                disciplina_id: disciplinaId,
-                carrera_id: winner,
-                genero,
-                categoria: categoriaValue,
-                posicion: 3,
-                puntos_obtenidos: puntosMap[3] ?? 0,
-                notas: `Auto-calculado desde partido tercer puesto (id: ${tercerMatch.id})`,
-                created_by: user.id,
-            });
+        if (winnerIds.length > 0) {
+            pushEntries(winnerIds, 3, `Auto-calculado desde partido tercer puesto (id: ${tercerMatch.id})`);
         }
-
-        if (loser) {
-            entries.push({
-                disciplina_id: disciplinaId,
-                carrera_id: loser,
-                genero,
-                categoria: categoriaValue,
-                posicion: 4,
-                puntos_obtenidos: puntosMap[4] ?? 0,
-                notas: `Auto-calculado desde partido tercer puesto (id: ${tercerMatch.id})`,
-                created_by: user.id,
-            });
+        if (loserIds.length > 0) {
+            pushEntries(loserIds, 4, `Auto-calculado desde partido tercer puesto (id: ${tercerMatch.id})`);
         }
     } else {
         skipped.push('3er y 4to lugar: no se encontró partido de "tercer_puesto" finalizado');

@@ -76,7 +76,7 @@ export function CalendarMatchList({ loading, selectedDate, matches, isSameDay }:
                     return (
                         <Link key={match.id} href={`/partido/${match.id}`} className="block">
                             <div className={cn(
-                                "bg-[#0a0805] rounded-2xl border p-4 transition-all hover:bg-white/5 group relative overflow-hidden shadow-lg",
+                                "bg-background rounded-2xl border p-4 transition-all hover:bg-white/5 group relative overflow-hidden shadow-lg",
                                 sportBorder
                             )}>
                                 <div className={`absolute inset-0 bg-gradient-to-r ${SPORT_GRADIENT[sportName] || 'from-indigo-500/5'} to-transparent opacity-20 group-hover:opacity-40 transition-opacity pointer-events-none`} />
@@ -141,7 +141,7 @@ export function CalendarMatchList({ loading, selectedDate, matches, isSameDay }:
                                                     name={getDisplayName(match, 'a')} 
                                                     src={match.atleta_a?.avatar_url}
                                                     className={cn(
-                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-[#17130D] transition-all duration-500 border-2",
+                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-background transition-all duration-500 border-2",
                                                         getWinnerStyleSm(sportName, wonA)
                                                     )} 
                                                 />
@@ -195,7 +195,7 @@ export function CalendarMatchList({ loading, selectedDate, matches, isSameDay }:
                                                     name={getDisplayName(match, 'b')} 
                                                     src={match.atleta_b?.avatar_url}
                                                     className={cn(
-                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-[#17130D] transition-all duration-500 border-2",
+                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black bg-background transition-all duration-500 border-2",
                                                         getWinnerStyleSm(sportName, wonB)
                                                     )}
                                                 />

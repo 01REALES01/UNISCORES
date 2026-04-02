@@ -29,7 +29,7 @@ export function CalendarGrid({
     isSameDay
 }: CalendarGridProps) {
     return (
-        <div className="xl:col-span-2 bg-[#110e20]/60 backdrop-blur-2xl rounded-[3rem] border border-white/5 p-6 sm:p-10 shadow-3xl relative overflow-hidden flex flex-col min-h-[550px]">
+        <div className="xl:col-span-2 bg-background/60 backdrop-blur-2xl rounded-[3rem] border border-white/5 p-6 sm:p-10 shadow-3xl relative overflow-hidden flex flex-col min-h-[550px]">
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-10">
                 <h2 className="text-3xl sm:text-4xl font-black text-white capitalize tracking-tight">
@@ -63,7 +63,7 @@ export function CalendarGrid({
                 </div>
 
                 {/* Main Grid */}
-                <div className="grid grid-cols-7 bg-[#05040a] rounded-[2rem] border border-white/10 overflow-hidden divide-x divide-y divide-white/5 shadow-2xl">
+                <div className="grid grid-cols-7 bg-background rounded-[2rem] border border-white/10 overflow-hidden divide-x divide-y divide-white/5 shadow-2xl">
                     {Array.from({ length: firstDayOfMonth }).map((_, i) => (
                         <div key={`empty-${i}`} className="aspect-square bg-transparent" />
                     ))}
@@ -119,7 +119,7 @@ export function CalendarGrid({
                                     <div className="absolute bottom-1 sm:bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 sm:gap-1.5 w-[95%] flex-wrap cursor-pointer">
                                         {uniqueSportsEvents.slice(0, isToday ? 2 : 3).map((s, idx) => (
                                             <div key={idx} className={cn(
-                                                "w-2 h-2 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-[#05040a] border transition-all",
+                                                "w-2 h-2 sm:w-4 sm:h-4 rounded-full flex items-center justify-center bg-background border transition-all",
                                                 s.estado === 'en_curso' ? 'border-rose-500/50 text-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] scale-110' :
                                                     s.estado === 'finalizado' ? 'border-white/10 text-white/30' : 'border-indigo-500/30 text-indigo-400'
                                             )}>

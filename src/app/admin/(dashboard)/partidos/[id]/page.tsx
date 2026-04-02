@@ -93,6 +93,7 @@ export default function MatchControlPage() {
         handleNuevoEvento,
         handleManualScoreUpdate,
         handleCambiarPeriodo,
+        handleCambiarSetDirecto,
         confirmarFinalizar,
         finalizarPorWO,
         requestDeleteEvento,
@@ -106,14 +107,14 @@ export default function MatchControlPage() {
     const [asyncScore, setAsyncScore] = useState({ scoreA: 0, scoreB: 0, yellowA: 0, yellowB: 0, redA: 0, redB: 0 });
 
     if (loading) return (
-        <div className="min-h-screen bg-[#0a0816] flex flex-col items-center justify-center gap-4">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
             <Loader2 className="w-12 h-12 text-red-500 animate-spin" />
             <p className="text-white/40 font-black uppercase tracking-widest text-xs animate-pulse">Sincronizando...</p>
         </div>
     );
     
     if (errorCtx || !match) return (
-        <div className="min-h-screen bg-[#0a0816] flex flex-col items-center justify-center p-6 text-center">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
             <AlertCircle size={40} className="text-red-500 mb-6" />
             <h1 className="text-2xl font-black text-white mb-2 uppercase">Error de Conexión</h1>
             <p className="text-slate-500 mb-8">{errorCtx || "No se pudo encontrar el partido."}</p>
@@ -129,10 +130,25 @@ export default function MatchControlPage() {
 
     const handleFinalizarClick = () => {
         if (isAsync) {
+            // Pre-populate from live events + marcador_detalle
+            const liveGoalsA = eventos.filter(e => (e as any).equipo === 'equipo_a' && ['gol', 'anotacion', 'punto', 'punto_1', 'punto_2', 'punto_3'].includes((e as any).tipo_evento)).length;
+            const liveGoalsB = eventos.filter(e => (e as any).equipo === 'equipo_b' && ['gol', 'anotacion', 'punto', 'punto_1', 'punto_2', 'punto_3'].includes((e as any).tipo_evento)).length;
+            const liveYellowA = eventos.filter(e => (e as any).equipo === 'equipo_a' && (e as any).tipo_evento === 'tarjeta_amarilla').length;
+            const liveYellowB = eventos.filter(e => (e as any).equipo === 'equipo_b' && (e as any).tipo_evento === 'tarjeta_amarilla').length;
+            const liveRedA = eventos.filter(e => (e as any).equipo === 'equipo_a' && (e as any).tipo_evento === 'tarjeta_roja').length;
+            const liveRedB = eventos.filter(e => (e as any).equipo === 'equipo_b' && (e as any).tipo_evento === 'tarjeta_roja').length;
+
+            // Use the higher of marcador_detalle score vs event count
+            const mdScoreA = match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0;
+            const mdScoreB = match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0;
+
             setAsyncScore({
-                scoreA: match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0,
-                scoreB: match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0,
-                yellowA: 0, yellowB: 0, redA: 0, redB: 0
+                scoreA: Math.max(mdScoreA, liveGoalsA),
+                scoreB: Math.max(mdScoreB, liveGoalsB),
+                yellowA: liveYellowA,
+                yellowB: liveYellowB,
+                redA: liveRedA,
+                redB: liveRedB
             });
             setShowAsyncReview(true);
         } else {
@@ -164,7 +180,7 @@ export default function MatchControlPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0816] pb-24 text-white">
+        <div className="min-h-screen bg-background pb-24 text-white">
             <AdminMatchHeader 
                 match={match} 
                 disciplinaName={disciplinaName} 
@@ -174,7 +190,7 @@ export default function MatchControlPage() {
 
             <div className="relative z-10 max-w-7xl mx-auto px-6">
                 {match.marcador_detalle?.tipo === 'carrera' ? (
-                    <Card variant="glass" className="p-8 mb-12">
+                    <Card className="p-8 mb-12">
                         <RaceControl 
                           matchId={matchId} 
                           detalle={match.marcador_detalle} 
@@ -191,6 +207,7 @@ export default function MatchControlPage() {
                         onIniciarPartido={(modo) => toggleCronometro(modo)}
                         onFinalizar={handleFinalizarClick}
                         onCambiarPeriodo={handleCambiarPeriodo}
+                        onCambiarSet={(setNum, pA, pB) => handleCambiarSetDirecto(setNum, pA, pB)}
                     />
                 )}
 
@@ -205,8 +222,8 @@ export default function MatchControlPage() {
                     />
                 )}
 
-                {/* Event creator + timeline only in en_vivo mode */}
-                {!isAsync && (
+                {/* Event creator + timeline */}
+                {/* Event creator + timeline */}
                 <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-8">
                     <AdminEventCreator 
                         match={match}
@@ -267,7 +284,6 @@ export default function MatchControlPage() {
                         disciplinaName={disciplinaName}
                     />
                 </div>
-                )}
             </div>
 
             <AdminModals

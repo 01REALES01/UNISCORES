@@ -94,6 +94,9 @@ function PuntosConfigTab({ isAdmin }: { isAdmin: boolean }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab 2: Classification entry
 // ─────────────────────────────────────────────────────────────────────────────
+// Team entry: equipo_nombre (as seen in carrera_disciplina) → one or more carrera_ids
+type EnrolledTeam = { equipo_nombre: string; carrera_ids: number[] };
+
 function ClasificacionTab() {
     const { profile } = useAuth();
     const { logAction } = useAuditLogger();
@@ -102,11 +105,14 @@ function ClasificacionTab() {
     const [carreras, setCarreras] = useState<Carrera[]>([]);
     const [configs, setConfigs] = useState<PuntosConfig[]>([]);
     const [existing, setExisting] = useState<ClasificacionDisciplina[]>([]);
+    // Enrolled teams for the selected disciplina+genero (from carrera_disciplina table)
+    const [enrolledTeams, setEnrolledTeams] = useState<EnrolledTeam[]>([]);
 
     const [selectedDisc, setSelectedDisc] = useState<number | null>(null);
     const [selectedGenero, setSelectedGenero] = useState<'masculino' | 'femenino' | 'mixto'>('masculino');
     const [selectedCategoria, setSelectedCategoria] = useState<Categoria | null>(null);
-    const [positions, setPositions] = useState<Record<number, number | null>>({});
+    // positions: posicion → equipo_nombre (e.g. "DCPRI", "MEDICINA")
+    const [positions, setPositions] = useState<Record<number, string | null>>({});
     const [saving, setSaving] = useState(false);
     const [calculating, setCalculating] = useState(false);
 
@@ -122,25 +128,42 @@ function ClasificacionTab() {
         });
     }, []);
 
-    const fetchExisting = useCallback(async (discId: number, genero: string, categoria: Categoria | null) => {
+    /** Load enrolled teams + existing positions together so reverse-mapping works */
+    const fetchData = useCallback(async (discId: number, genero: string, categoria: Categoria | null) => {
+        // 1. Load enrolled teams for this disciplina+genero
+        const { data: cdData } = await supabase
+            .from('carrera_disciplina')
+            .select('equipo_nombre, carrera_id')
+            .eq('disciplina_id', discId)
+            .eq('genero', genero);
+
+        const teamMap: Record<string, number[]> = {};
+        (cdData ?? []).forEach((r: any) => {
+            if (!teamMap[r.equipo_nombre]) teamMap[r.equipo_nombre] = [];
+            teamMap[r.equipo_nombre].push(r.carrera_id);
+        });
+        const teams: EnrolledTeam[] = Object.entries(teamMap).map(([equipo_nombre, carrera_ids]) => ({ equipo_nombre, carrera_ids }));
+        setEnrolledTeams(teams);
+
+        // 2. Load existing clasificacion entries
         let query = supabase
             .from('clasificacion_disciplina')
             .select('*, disciplinas(id, name), carreras(id, nombre, escudo_url)')
             .eq('disciplina_id', discId)
             .eq('genero', genero)
             .order('posicion');
-
-        if (categoria) {
-            query = query.eq('categoria', categoria);
-        } else {
-            query = query.is('categoria', null);
-        }
+        query = categoria ? query.eq('categoria', categoria) : query.is('categoria', null);
 
         const { data } = await query;
         if (data) {
             setExisting(data);
-            const pos: Record<number, number | null> = {};
-            data.forEach((e: ClasificacionDisciplina) => { pos[e.posicion] = e.carrera_id; });
+            // Deduplicate by position: for each carrera_id, reverse-map to equipo_nombre
+            const pos: Record<number, string | null> = {};
+            data.forEach((e: ClasificacionDisciplina) => {
+                if (pos[e.posicion]) return; // already set (first carrera of same combined team)
+                const team = teams.find(t => t.carrera_ids.includes(e.carrera_id));
+                pos[e.posicion] = team?.equipo_nombre ?? (e.carreras as any)?.nombre ?? null;
+            });
             setPositions(pos);
         } else {
             setExisting([]);
@@ -149,8 +172,8 @@ function ClasificacionTab() {
     }, []);
 
     useEffect(() => {
-        if (selectedDisc) fetchExisting(selectedDisc, selectedGenero, selectedCategoria);
-    }, [selectedDisc, selectedGenero, selectedCategoria, fetchExisting]);
+        if (selectedDisc) fetchData(selectedDisc, selectedGenero, selectedCategoria);
+    }, [selectedDisc, selectedGenero, selectedCategoria, fetchData]);
 
     // Reset categoria when discipline changes
     useEffect(() => {
@@ -168,22 +191,59 @@ function ClasificacionTab() {
     const getPuntos = (pos: number) =>
         configForType.find(c => c.posicion === pos)?.puntos ?? 0;
 
+    // Dropdown options: use enrolled teams when available, fallback to all carreras
+    const dropdownOptions: { value: string; label: string }[] =
+        enrolledTeams.length > 0
+            ? enrolledTeams.map(t => ({
+                value: t.equipo_nombre,
+                label: t.equipo_nombre + (t.carrera_ids.length > 1 ? ` · ${t.carrera_ids.length} carreras` : ''),
+            }))
+            : carreras.map(c => ({ value: c.nombre, label: c.nombre }));
+
     const handleSave = async () => {
         if (!selectedDisc || !profile) return;
         setSaving(true);
         try {
-            const entries = Object.entries(positions)
-                .filter(([, carreraId]) => carreraId != null)
-                .map(([posicion, carreraId]) => ({
-                    disciplina_id: selectedDisc,
-                    carrera_id: carreraId!,
-                    genero: selectedGenero,
-                    categoria: selectedCategoria,
-                    posicion: Number(posicion),
-                    puntos_obtenidos: getPuntos(Number(posicion)),
-                    created_by: profile.id,
-                    updated_at: new Date().toISOString(),
-                }));
+            const entries: any[] = [];
+
+            for (const [posicionStr, equipoNombre] of Object.entries(positions)) {
+                if (!equipoNombre) continue;
+                const posicion = Number(posicionStr);
+                const team = enrolledTeams.find(t => t.equipo_nombre === equipoNombre);
+
+                if (team && team.carrera_ids.length > 0) {
+                    // Expand combined team → one entry per carrera (all get full points)
+                    for (const carreraId of team.carrera_ids) {
+                        entries.push({
+                            disciplina_id: selectedDisc,
+                            carrera_id: carreraId,
+                            genero: selectedGenero,
+                            categoria: selectedCategoria,
+                            posicion,
+                            puntos_obtenidos: getPuntos(posicion),
+                            created_by: profile.id,
+                            updated_at: new Date().toISOString(),
+                        });
+                    }
+                } else {
+                    // Fallback: find carrera by nombre from the full list
+                    const found = carreras.find(c => c.nombre === equipoNombre);
+                    if (found) {
+                        entries.push({
+                            disciplina_id: selectedDisc,
+                            carrera_id: found.id,
+                            genero: selectedGenero,
+                            categoria: selectedCategoria,
+                            posicion,
+                            puntos_obtenidos: getPuntos(posicion),
+                            created_by: profile.id,
+                            updated_at: new Date().toISOString(),
+                        });
+                    }
+                }
+            }
+
+            if (entries.length === 0) { toast.info('Nada que guardar'); return; }
 
             const { error } = await supabase
                 .from('clasificacion_disciplina')
@@ -198,8 +258,8 @@ function ClasificacionTab() {
                 entries: entries.length,
             });
 
-            toast.success('Clasificación guardada');
-            fetchExisting(selectedDisc, selectedGenero, selectedCategoria);
+            toast.success(`Clasificación guardada (${entries.length} entradas)`);
+            fetchData(selectedDisc, selectedGenero, selectedCategoria);
         } finally {
             setSaving(false);
         }
@@ -227,7 +287,7 @@ function ClasificacionTab() {
             if (data.skipped?.length) {
                 data.skipped.forEach((s: string) => toast.info(s, { duration: 6000 }));
             }
-            fetchExisting(selectedDisc, selectedGenero, selectedCategoria);
+            fetchData(selectedDisc, selectedGenero, selectedCategoria);
         } catch {
             toast.error('Error de red al calcular posiciones');
         } finally {
@@ -239,7 +299,7 @@ function ClasificacionTab() {
         const { error } = await supabase.from('clasificacion_disciplina').delete().eq('id', entryId);
         if (error) { toast.error('Error: ' + error.message); return; }
         toast.success('Entrada eliminada');
-        if (selectedDisc) fetchExisting(selectedDisc, selectedGenero, selectedCategoria);
+        if (selectedDisc) fetchData(selectedDisc, selectedGenero, selectedCategoria);
     };
 
     return (
@@ -284,11 +344,22 @@ function ClasificacionTab() {
             {selectedDisc && (
                 <>
                     <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
-                        <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-                            <span className="text-xs font-black uppercase tracking-widest text-white/40">
-                                Posiciones — {selectedDiscName} {selectedGenero}
-                                {selectedCategoria ? ` · ${selectedCategoria}` : ''}
-                            </span>
+                        <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-black uppercase tracking-widest text-white/40">
+                                    Posiciones — {selectedDiscName} {selectedGenero}
+                                    {selectedCategoria ? ` · ${selectedCategoria}` : ''}
+                                </span>
+                                {enrolledTeams.length > 0 ? (
+                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+                                        {enrolledTeams.length} equipos inscritos
+                                    </span>
+                                ) : (
+                                    <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-white/30 text-[10px] font-bold">
+                                        sin datos de inscripción
+                                    </span>
+                                )}
+                            </div>
                             {hasBracket && (
                                 <button
                                     onClick={handleCalcular}
@@ -313,12 +384,12 @@ function ClasificacionTab() {
                                     </div>
                                     <select
                                         value={positions[pos] ?? ''}
-                                        onChange={e => setPositions(prev => ({ ...prev, [pos]: Number(e.target.value) || null }))}
+                                        onChange={e => setPositions(prev => ({ ...prev, [pos]: e.target.value || null }))}
                                         className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
                                     >
                                         <option value="">Sin asignar</option>
-                                        {carreras.map(c => (
-                                            <option key={c.id} value={c.id}>{c.nombre}</option>
+                                        {dropdownOptions.map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
                                         ))}
                                     </select>
                                     <span className="text-amber-400/70 text-xs font-bold w-12 text-right">
@@ -340,26 +411,38 @@ function ClasificacionTab() {
                 </>
             )}
 
-            {/* Existing entries */}
+            {/* Existing entries — grouped by equipo when combined teams are present */}
             {existing.length > 0 && (
                 <div>
                     <p className="text-xs text-white/30 uppercase tracking-widest mb-3">Entradas guardadas</p>
                     <div className="space-y-2">
-                        {existing.map(e => (
-                            <div key={e.id} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/5 bg-white/[0.02]">
-                                <span className="text-amber-400 font-black text-sm w-8">{e.posicion}°</span>
-                                <span className="text-white/80 text-sm flex-1">{(e.carreras as any)?.nombre ?? `Carrera ${e.carrera_id}`}</span>
-                                {e.categoria && (
-                                    <span className="text-violet-400/60 text-xs px-2 py-0.5 rounded-md bg-violet-500/10 border border-violet-500/10">
-                                        {e.categoria}
-                                    </span>
-                                )}
-                                <span className="text-amber-400/60 text-xs">{e.puntos_obtenidos} pts</span>
-                                <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded-lg hover:bg-rose-500/10 text-white/20 hover:text-rose-400 transition-colors">
-                                    <Trash2 size={12} />
-                                </button>
-                            </div>
-                        ))}
+                        {existing.map(e => {
+                            const team = enrolledTeams.find(t => t.carrera_ids.includes(e.carrera_id));
+                            const isCombined = team && team.carrera_ids.length > 1;
+                            const displayName = (e.carreras as any)?.nombre ?? `Carrera ${e.carrera_id}`;
+                            return (
+                                <div key={e.id} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/5 bg-white/[0.02]">
+                                    <span className="text-amber-400 font-black text-sm w-8">{e.posicion}°</span>
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-white/80 text-sm">{displayName}</span>
+                                        {isCombined && (
+                                            <span className="ml-2 text-[10px] text-violet-400/60 font-bold">
+                                                {team.equipo_nombre}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {e.categoria && (
+                                        <span className="text-violet-400/60 text-xs px-2 py-0.5 rounded-md bg-violet-500/10 border border-violet-500/10">
+                                            {e.categoria}
+                                        </span>
+                                    )}
+                                    <span className="text-amber-400/60 text-xs">{e.puntos_obtenidos} pts</span>
+                                    <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded-lg hover:bg-rose-500/10 text-white/20 hover:text-rose-400 transition-colors">
+                                        <Trash2 size={12} />
+                                    </button>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -380,7 +463,7 @@ export default function PuntosAdminPage() {
     ] as const;
 
     return (
-        <div className="min-h-screen bg-[#0a0805] p-6">
+        <div className="min-h-screen bg-background p-6">
             <div className="max-w-3xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center gap-3">

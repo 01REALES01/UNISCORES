@@ -30,17 +30,17 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Top Careers Rank */}
             {topCareers.length > 0 && (
-                <div className="rounded-[2rem] bg-[#0A0705] border border-white/5 p-8 relative overflow-hidden group hover:border-red-500/20 transition-colors">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <div className="rounded-[2.5rem] bg-black/40 backdrop-blur-3xl border border-white/10 p-8 relative overflow-hidden group hover:border-white/20 hover:shadow-[0_0_40px_rgba(255,255,255,0.03)] transition-all duration-500 flex flex-col h-full">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/10 blur-[80px] rounded-full -translate-y-1/2 translate-x-1/2 opacity-50 group-hover:opacity-100 transition-opacity duration-700" />
                     
                     <div className="relative z-10 flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-red-500/10 rounded-xl text-red-500 border border-red-500/20">
-                                <Heart size={20} className="fill-current" />
+                        <div className="flex items-center gap-4">
+                            <div className="p-3.5 bg-violet-500/15 rounded-[1.25rem] text-violet-400 border border-violet-500/30 shadow-[inset_0_0_20px_rgba(139,92,246,0.1)]">
+                                <Heart size={22} className="fill-violet-400/20" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black font-outfit uppercase tracking-wider text-white">Top Programas</h3>
-                                <p className="text-[10px] font-black tracking-widest text-white/30 uppercase">Carreras más apoyadas</p>
+                                <h3 className="text-2xl font-black font-sans tracking-tight text-white leading-none mb-1.5">Top Programas</h3>
+                                <p className="text-[10px] font-display font-black tracking-[0.2em] text-white/40 uppercase">Carreras más apoyadas</p>
                             </div>
                         </div>
                     </div>
@@ -49,29 +49,32 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
                         {topCareers.map((carrera, i) => (
                             <Link key={carrera.id} href={`/carrera/${carrera.id}`}>
                                 <div className={cn(
-                                    "flex items-center gap-4 p-4 rounded-2xl border transition-all hover:bg-white/[0.04]",
-                                    i === 0 ? "bg-red-500/5 border-red-500/30" : "bg-white/[0.02] border-white/5"
+                                    "flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300",
+                                    i === 0 ? "bg-amber-500/5 border-amber-500/30 hover:bg-amber-500/10 hover:shadow-[0_0_30px_rgba(245,158,11,0.1)]" : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/10"
                                 )}>
-                                    <div className="font-black text-white/20 text-lg w-5 text-center font-outfit">
+                                    <div className={cn(
+                                        "font-black text-xl w-6 text-center font-display drop-shadow-md",
+                                        i === 0 ? "text-amber-400" : i === 1 ? "text-slate-300" : i === 2 ? "text-orange-400" : "text-white/20"
+                                    )}>
                                         {i + 1}
                                     </div>
-                                    <div className="w-12 h-12 rounded-xl bg-black/50 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                                    <div className="w-12 h-12 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
                                         {carrera.escudo_url ? (
                                             <img src={carrera.escudo_url} alt={carrera.nombre} className="w-full h-full object-contain" />
                                         ) : (
-                                            <span className="text-xs font-black text-white/20">{carrera.nombre.substring(0, 2).toUpperCase()}</span>
+                                            <span className="text-xs font-black font-display text-white/20">{carrera.nombre.substring(0, 2).toUpperCase()}</span>
                                         )}
                                     </div>
                                     <div className="flex flex-col flex-1 min-w-0">
-                                        <h4 className="text-sm font-bold truncate text-white group-hover:text-red-400 transition-colors">
+                                        <h4 className="text-sm font-bold truncate text-white group-hover:text-violet-300 transition-colors">
                                             {carrera.nombre}
                                         </h4>
-                                        <div className="flex items-center gap-1.5 mt-1 text-[10px] font-black uppercase tracking-widest text-red-400">
+                                        <div className="flex items-center gap-1.5 mt-1 text-[10px] font-display font-black tracking-widest text-violet-400">
                                             {carrera.followers_count} Seguidores
                                         </div>
                                     </div>
-                                    {i === 0 && <Crown size={18} className="text-amber-500" />}
-                                    <ArrowUpRight size={16} className="text-white/20 shrink-0" />
+                                    {i === 0 && <Crown size={18} className="text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]" />}
+                                    {i !== 0 && <ArrowUpRight size={16} className="text-white/20 shrink-0 group-hover:text-white/60 transition-colors" />}
                                 </div>
                             </Link>
                         ))}
@@ -81,17 +84,17 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
 
             {/* Top Users Regulares / Atletas Rank */}
             {topUsers.length > 0 && (
-                <div className="rounded-[2rem] bg-[#0A0705] border border-white/5 p-8 relative overflow-hidden group hover:border-indigo-500/20 transition-colors">
-                    <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-600/5 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <div className="rounded-[2.5rem] bg-black/40 backdrop-blur-3xl border border-white/10 p-8 relative overflow-hidden group hover:border-white/20 hover:shadow-[0_0_40px_rgba(255,255,255,0.03)] transition-all duration-500 flex flex-col h-full">
+                    <div className="absolute top-0 left-0 w-64 h-64 bg-emerald-600/10 blur-[80px] rounded-full -translate-y-1/2 -translate-x-1/2 opacity-50 group-hover:opacity-100 transition-opacity duration-700" />
                     
                     <div className="relative z-10 flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20">
-                                <Users size={20} />
+                        <div className="flex items-center gap-4">
+                            <div className="p-3.5 bg-emerald-500/15 rounded-[1.25rem] text-emerald-400 border border-emerald-500/30 shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]">
+                                <Users size={22} className="fill-emerald-400/20" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black font-outfit uppercase tracking-wider text-white">Top Perfiles</h3>
-                                <p className="text-[10px] font-black tracking-widest text-white/30 uppercase">Usuarios más seguidos</p>
+                                <h3 className="text-2xl font-black font-sans tracking-tight text-white leading-none mb-1.5">Top Perfiles</h3>
+                                <p className="text-[10px] font-display font-black tracking-[0.2em] text-white/40 uppercase">Usuarios más seguidos</p>
                             </div>
                         </div>
                     </div>
@@ -100,27 +103,30 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
                         {topUsers.map((user, i) => (
                             <Link key={user.id} href={`/perfil/${user.id}`}>
                                 <div className={cn(
-                                    "flex items-center gap-4 p-4 rounded-2xl border transition-all hover:bg-white/[0.04]",
-                                    i === 0 ? "bg-indigo-500/5 border-indigo-500/30" : "bg-white/[0.02] border-white/5"
+                                    "flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300",
+                                    i === 0 ? "bg-amber-500/5 border-amber-500/30 hover:bg-amber-500/10 hover:shadow-[0_0_30px_rgba(245,158,11,0.1)]" : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/10"
                                 )}>
-                                    <div className="font-black text-white/20 text-lg w-5 text-center font-outfit">
+                                    <div className={cn(
+                                        "font-black text-xl w-6 text-center font-display drop-shadow-md",
+                                        i === 0 ? "text-amber-400" : i === 1 ? "text-slate-300" : i === 2 ? "text-orange-400" : "text-white/20"
+                                    )}>
                                         {i + 1}
                                     </div>
                                     <Avatar
                                         name={user.full_name}
                                         src={user.avatar_url}
-                                        className="w-12 h-12 rounded-full border border-white/10 shrink-0"
+                                        className="w-12 h-12 rounded-[1rem] border border-white/10 shrink-0 shadow-inner"
                                     />
                                     <div className="flex flex-col flex-1 min-w-0">
-                                        <h4 className="text-sm font-bold truncate text-white group-hover:text-indigo-400 transition-colors">
+                                        <h4 className="text-sm font-bold truncate text-white group-hover:text-emerald-300 transition-colors">
                                             {user.full_name}
                                         </h4>
-                                        <div className="flex items-center gap-1.5 mt-1 text-[10px] font-black uppercase tracking-widest text-indigo-400">
+                                        <div className="flex items-center gap-1.5 mt-1 text-[10px] font-display font-black tracking-widest text-emerald-400">
                                             {user.followers_count} Seguidores
                                         </div>
                                     </div>
-                                    {i === 0 && <Star size={18} className="text-amber-500 fill-amber-500" />}
-                                    <ArrowUpRight size={16} className="text-white/20 shrink-0" />
+                                    {i === 0 && <Star size={18} className="text-amber-500 fill-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]" />}
+                                    {i !== 0 && <ArrowUpRight size={16} className="text-white/20 shrink-0 group-hover:text-white/60 transition-colors" />}
                                 </div>
                             </Link>
                         ))}

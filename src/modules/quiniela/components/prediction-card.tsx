@@ -74,23 +74,23 @@ export const PredictionCard = ({
 
   const getCardStyle = () => {
     if (isFinished && predictionCorrect === true) {
-      return "bg-emerald-500/5 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.12)] ring-1 ring-emerald-500/10";
+      return "bg-emerald-500/5 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.12)] ring-1 ring-emerald-500/10 backdrop-blur-3xl";
     }
     if (isFinished && predictionCorrect === false) {
-      return "bg-rose-500/5 border-rose-500/20 shadow-[0_0_30px_rgba(244,63,94,0.08)] ring-1 ring-rose-500/10";
+      return "bg-rose-500/5 border-rose-500/20 shadow-[0_0_30px_rgba(244,63,94,0.08)] ring-1 ring-rose-500/10 backdrop-blur-3xl";
     }
     if (isLive) {
-      return "bg-rose-500/5 border-rose-500/25 shadow-[0_0_20px_rgba(244,63,94,0.1)]";
+      return "bg-black/40 border-rose-500/30 shadow-[0_0_20px_rgba(244,63,94,0.1)] backdrop-blur-3xl";
     }
     if (isPredicted) {
-      return "bg-red-900/10 border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.05)]";
+      return "bg-white/[0.04] border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.02)] backdrop-blur-3xl";
     }
-    return "bg-white/[0.03] border-white/5 hover:bg-white/[0.06] hover:border-white/10";
+    return "bg-black/20 backdrop-blur-xl border-white/5 hover:bg-white/[0.04] hover:border-white/10";
   };
 
   return (
     <div className={cn(
-      "relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden group",
+      "relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden group shadow-2xl",
       getCardStyle()
     )}>
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -140,11 +140,11 @@ export const PredictionCard = ({
           </div>
         ) : (
           <>
-            <div className="flex flex-col items-center flex-1 max-w-[100px]">
-              <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center text-xl font-black mb-3 shadow-2xl group-hover:scale-105 transition-transform duration-500">
-                {(match.carrera_a?.nombre || match.equipo_a).substring(0, 2).toUpperCase()}
+            <div className="flex flex-col items-center flex-1 max-w-[120px] relative z-10">
+              <div className="w-20 h-20 rounded-full bg-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center text-3xl font-display font-black mb-4 shadow-[0_0_30px_rgba(255,255,255,0.05)] text-white/90 group-hover:scale-110 group-hover:bg-white/10 group-hover:text-white group-hover:border-white/40 transition-all duration-500">
+                {match.disciplinas?.name === 'Ajedrez' ? '♟' : (match.carrera_a?.nombre || match.equipo_a).substring(0, 1).toUpperCase()}
               </div>
-              <p className="text-[11px] font-black text-white text-center leading-tight uppercase tracking-tight">
+              <p className="text-xs font-display font-black text-white/80 text-center leading-tight tracking-wide line-clamp-2 px-1">
                 {match.carrera_a?.nombre || match.equipo_a}
               </p>
             </div>
@@ -166,17 +166,20 @@ export const PredictionCard = ({
                   <p className="text-[8px] font-black text-center text-slate-500 uppercase tracking-[0.2em]">{match.disciplinas?.name === 'Ajedrez' ? 'Estado' : 'Marcador'}</p>
                 </div>
               ) : (
-                <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center shadow-inner mb-4">
-                  <span className="text-xs font-black text-white/20 italic">VS</span>
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-violet-500/20 blur-xl rounded-full" />
+                  <div className="w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-2xl transform rotate-45 group-hover:border-violet-500/50 transition-colors">
+                    <span className="text-xs font-display font-black text-white/50 italic -rotate-45">VS</span>
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="flex flex-col items-center flex-1 max-w-[100px]">
-              <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center text-xl font-black mb-3 shadow-2xl group-hover:scale-105 transition-transform duration-500">
-                {(match.carrera_b?.nombre || match.equipo_b).substring(0, 2).toUpperCase()}
+            <div className="flex flex-col items-center flex-1 max-w-[120px] relative z-10">
+              <div className="w-20 h-20 rounded-full bg-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center text-3xl font-display font-black mb-4 shadow-[0_0_30px_rgba(255,255,255,0.05)] text-white/90 group-hover:scale-110 group-hover:bg-white/10 group-hover:text-white group-hover:border-white/40 transition-all duration-500">
+                {match.disciplinas?.name === 'Ajedrez' ? '♞' : (match.carrera_b?.nombre || match.equipo_b).substring(0, 1).toUpperCase()}
               </div>
-              <p className="text-[11px] font-black text-white text-center leading-tight uppercase tracking-tight">
+              <p className="text-xs font-display font-black text-white/80 text-center leading-tight tracking-wide line-clamp-2 px-1">
                 {match.carrera_b?.nombre || match.equipo_b}
               </p>
             </div>
@@ -184,25 +187,27 @@ export const PredictionCard = ({
         )}
       </div>
 
-      <div className="bg-zinc-900/60 backdrop-blur-md rounded-[2rem] border border-white/5 p-4 shadow-inner relative overflow-hidden">
+      <div className="bg-white/[0.02] backdrop-blur-2xl rounded-[2rem] border border-white/10 p-5 mt-4 shadow-[inset_0_4px_24px_rgba(0,0,0,0.5)] relative overflow-hidden">
         {isFinished || isLive ? (
           <div className="text-center">
-            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Tu Predicción</p>
+            <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] mb-2 font-display">Tu Predicción</p>
             <div className="flex items-center justify-center gap-3">
               {prediction?.prediction_type === 'score' ? (
                 <p className={cn(
-                  "text-2xl font-black tabular-nums font-mono tracking-tight",
-                  isFinished ? (predictionCorrect ? "text-emerald-400" : "text-rose-400") : "text-white"
+                  "text-3xl font-black tabular-nums font-mono tracking-tighter",
+                  isFinished ? (predictionCorrect ? "text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.5)]") : "text-white"
                 )}>
                   {prediction.goles_a} <span className="opacity-20">-</span> {prediction.goles_b}
                 </p>
               ) : (
                 <div className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full border",
-                  isFinished ? (predictionCorrect ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400") : "bg-white/5 border-white/10 text-white"
+                  "flex items-center gap-2 px-5 py-2.5 rounded-2xl border",
+                  isFinished 
+                    ? (predictionCorrect ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]" : "bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.2)]") 
+                    : "bg-white/5 border-white/10 text-white shadow-inner"
                 )}>
-                  <Trophy size={14} className="fill-current" />
-                  <span className="text-xs font-black uppercase tracking-widest">
+                  <Trophy size={16} className="fill-current" />
+                  <span className="text-sm font-display font-black tracking-wide">
                     {prediction?.winner_pick === 'A' ? match.carrera_a?.nombre || match.equipo_a :
                       prediction?.winner_pick === 'B' ? match.carrera_b?.nombre || match.equipo_b : 'Empate'}
                   </span>
@@ -212,18 +217,18 @@ export const PredictionCard = ({
           </div>
         ) : !isLocked ? (
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">¿Cuál será el resultado?</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-display font-black text-white/40 tracking-wide">¿Cuál será el resultado?</p>
               <div className="flex gap-1">
                 <button
                   onClick={() => onPredict(match.id, { ...prediction, mode: 'score' })}
-                  className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-all", mode === 'score' ? "bg-red-500 text-white" : "bg-white/5 text-slate-500")}
+                  className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-all", mode === 'score' ? "bg-violet-500 text-white shadow-lg" : "bg-white/5 text-slate-500")}
                 >
                   <Target size={12} />
                 </button>
                 <button
                   onClick={() => onPredict(match.id, { ...prediction, mode: 'winner' })}
-                  className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-all", mode === 'winner' ? "bg-red-500 text-white" : "bg-white/5 text-slate-500")}
+                  className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-all", mode === 'winner' ? "bg-violet-500 text-white shadow-lg" : "bg-white/5 text-slate-500")}
                 >
                   <Award size={12} />
                 </button>
@@ -234,7 +239,7 @@ export const PredictionCard = ({
               <div className="flex items-center justify-center gap-4 py-2">
                 <input
                   type="number"
-                  className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl text-center font-mono text-3xl font-black focus:border-red-500 focus:bg-red-500/5 focus:ring-1 focus:ring-red-500/20 outline-none transition-all placeholder:text-white/5 shadow-inner"
+                  className="w-16 h-16 bg-black/40 border border-white/10 rounded-2xl text-center font-mono text-3xl font-black focus:border-violet-500 focus:bg-violet-500/10 focus:ring-1 focus:ring-violet-500/20 outline-none transition-all placeholder:text-white/5 shadow-inner text-white"
                   value={scoreA}
                   onChange={(e) => setScoreA(e.target.value)}
                   placeholder="0"
@@ -242,7 +247,7 @@ export const PredictionCard = ({
                 <div className="w-4 h-1 bg-white/10 rounded-full" />
                 <input
                   type="number"
-                  className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl text-center font-mono text-3xl font-black focus:border-red-500 focus:bg-red-500/5 focus:ring-1 focus:ring-red-500/20 outline-none transition-all placeholder:text-white/5 shadow-inner"
+                  className="w-16 h-16 bg-black/40 border border-white/10 rounded-2xl text-center font-mono text-3xl font-black focus:border-violet-500 focus:bg-violet-500/10 focus:ring-1 focus:ring-violet-500/20 outline-none transition-all placeholder:text-white/5 shadow-inner text-white"
                   value={scoreB}
                   onChange={(e) => setScoreB(e.target.value)}
                   placeholder="0"
@@ -259,14 +264,14 @@ export const PredictionCard = ({
                     key={opt.key}
                     onClick={() => setWinnerPick(opt.key)}
                     className={cn(
-                      "relative group/btn py-4 px-2 rounded-2xl text-[9px] font-black tracking-widest transition-all border-2 uppercase",
+                      "relative group/btn py-4 px-2 rounded-2xl text-[10px] sm:text-xs font-display font-black tracking-wide transition-all border-2",
                       winnerPick === opt.key
-                        ? "bg-red-500/10 border-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.2)]"
-                        : "bg-white/5 border-transparent text-slate-500 hover:bg-white/10 hover:text-white"
+                        ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+                        : "bg-black/20 border-white/5 text-white/40 hover:bg-white/10 hover:text-white hover:border-white/20"
                     )}
                   >
-                    <div className="truncate">{opt.name.substring(0, 10)}</div>
-                    {winnerPick === opt.key && <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-zinc-900" />}
+                    <div className="truncate px-1">{opt.name.substring(0, 15)}</div>
+                    {winnerPick === opt.key && <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-zinc-900 shadow-sm flex items-center justify-center" ><span className="text-black font-black text-[8px]">✓</span></div>}
                   </button>
                 ))}
               </div>
@@ -274,15 +279,19 @@ export const PredictionCard = ({
 
             <Button
               className={cn(
-                "w-full rounded-2xl h-12 text-[11px] font-black uppercase tracking-[0.2em] transition-all",
+                "w-full rounded-2xl h-14 text-sm font-display font-black tracking-wide transition-all mt-4 border",
                 isPredicted
-                  ? "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 shadow-xl shadow-red-600/20"
-                  : "bg-white text-black hover:bg-slate-200"
+                  ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)] border-transparent"
+                  : "bg-white/15 hover:bg-white text-white hover:text-black border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.05)]"
               )}
               onClick={handleSave}
               disabled={mode === 'score' ? (scoreA === "" || scoreB === "") : (!winnerPick)}
             >
-              {isPredicted ? <><History size={14} className="mr-2" /> Actualizar Predicción</> : <><Zap size={14} className="mr-2" /> Guardar Acierto</>}
+              {isPredicted ? (
+                <><History size={16} className="mr-2" /> Actualizar Predicción</>
+              ) : (
+                <><Zap size={16} className="mr-2" /> Guardar Acierto</>
+              )}
             </Button>
           </div>
         ) : (

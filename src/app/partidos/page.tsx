@@ -122,12 +122,22 @@ export default function PartidosPage() {
     }, [loading, groupedMatches.length]);
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white font-sans pb-24">
-            {/* Ambient Background - MORE PURPLE/COBALT */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.05)_0%,transparent_70%)]" />
+        <div className="min-h-screen bg-background text-white font-sans pb-24">
+            {/* Ambient Background - HYBRID INSTITUTIONAL */}
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-violet-500/10 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] bg-white/5 rounded-full blur-[100px]" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_70%)]" />
+                
+                {/* Background Element Watermark */}
+                <div className="absolute inset-0 flex items-start justify-end">
+                    <img 
+                        src="/elementos/12.png" 
+                        alt="" 
+                        className="w-[600px] md:w-[900px] h-auto opacity-10 translate-x-[30%] -translate-y-[10%]" 
+                        aria-hidden="true"
+                    />
+                </div>
             </div>
 
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
@@ -135,14 +145,14 @@ export default function PartidosPage() {
             <main className="relative z-10 max-w-6xl mx-auto px-4 pt-10">
                 <header className="mb-12 flex flex-col items-center text-center gap-4">
                     <div className="animate-in fade-in zoom-in duration-1000">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                             <div className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]">
+                        <div className="flex items-center justify-center gap-2 mb-2 text-violet-400/80">
+                             <div className="p-1.5 rounded-xl bg-violet-500/10 border border-violet-500/20">
                                 <Activity size={20} />
                             </div>
-                            <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em]">Temporada Regular</h4>
+                            <h4 className="text-sm font-bold tracking-wide font-display">Temporada regular</h4>
                         </div>
-                        <h1 className="text-5xl sm:text-6xl font-black tracking-tighter uppercase leading-none">
-                            PARTIDOS <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 drop-shadow-[0_5px_15px_rgba(99,102,241,0.3)]">2026</span>
+                        <h1 className="text-5xl sm:text-7xl font-black tracking-tighter leading-none font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm">
+                            Partidos <span className="text-emerald-400">2026</span>
                         </h1>
                     </div>
                     <div className="relative w-full max-w-md animate-in slide-in-from-bottom duration-700">
@@ -152,13 +162,13 @@ export default function PartidosPage() {
                             placeholder="Busca tu equipo o deporte..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-14 bg-white/5 backdrop-blur-md border border-white/10 rounded-[1.5rem] pl-12 pr-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500/30 transition-all placeholder:text-white/20 shadow-2xl"
+                            className="w-full h-14 bg-white/5 backdrop-blur-md border border-white/10 rounded-[1.5rem] pl-12 pr-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-white/10 focus:border-white/20 transition-all placeholder:text-white/20 shadow-lg"
                         />
                     </div>
                 </header>
 
                 {/* ── Sticky Sport Filter Bar ── */}
-                <div className="sticky top-16 sm:top-[4.5rem] z-40 -mx-4 px-4 py-3 bg-[#0a0816]/90 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
+                <div className="sticky top-16 sm:top-[4.5rem] z-40 -mx-4 px-4 py-3 bg-background/90 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
                     <div className="flex items-center gap-2 overflow-x-auto pt-2 pb-3 px-1 scrollbar-hide -my-2">
                         {/* "Todos" chip */}
                         <button
@@ -295,7 +305,7 @@ function UnifiedCard({
     return (
         <Link href={`/partido/${partido.id}`} className="group block h-full">
             <div className={cn(
-                "relative h-full overflow-hidden rounded-[2rem] border bg-[#0a0805]/90 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
+                "relative h-full overflow-hidden rounded-[2rem] border bg-background/90 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
                 SPORT_BORDER[sportName] || 'border-white/10',
                 SPORT_GLOW[sportName] || 'hover:shadow-white/5'
             )}>
@@ -319,7 +329,7 @@ function UnifiedCard({
                         </div>
 
                         <div className="flex flex-col items-end gap-1">
-                            {statusLabel === 'EN CURSO' ? (
+                            {statusLabel === 'LIVE' ? (
                                 <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportName} />
                             ) : (
                                 <div className={cn(
@@ -380,7 +390,7 @@ function UnifiedCard({
                                 src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url}
                                 size="lg" 
                                 className={cn(
-                                "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                "w-14 h-14 border-2 transition-all duration-500 bg-background",
                                 winnerA ? (
                                     sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
                                     sportName === 'Baloncesto' ? "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-110" :
@@ -444,7 +454,7 @@ function UnifiedCard({
                                 src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url}
                                 size="lg" 
                                 className={cn(
-                                "w-14 h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                "w-14 h-14 border-2 transition-all duration-500 bg-background",
                                 winnerB ? (
                                     sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
                                     sportName === 'Baloncesto' ? "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-110" :
@@ -489,7 +499,7 @@ function LiveMatchCard({ partido }: { partido: any }) {
     return (
         <UnifiedCard
             partido={partido}
-            statusLabel="EN CURSO"
+            statusLabel="LIVE"
             scoreDisplay={{ a: scoreA, b: scoreB }}
         />
     );

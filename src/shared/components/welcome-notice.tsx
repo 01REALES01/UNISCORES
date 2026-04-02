@@ -78,17 +78,18 @@ export function WelcomeNotice() {
                             }
                         }}
                     >
-                        <div className="relative group overflow-hidden rounded-[3rem] border border-white/20 bg-zinc-900/90 backdrop-blur-3xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
-                            {/* Top Accent Line */}
-                            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-red-600 via-amber-500 to-red-600" />
+                        <div className="relative group overflow-hidden rounded-[4rem] border border-white/10 bg-black/60 backdrop-blur-3xl p-10 shadow-[0_40px_100px_rgba(0,0,0,0.9),0_0_40px_rgba(139,92,246,0.1)] ring-1 ring-white/5 transition-all hover:scale-[1.02]">
+                            {/* Top Accent Line - Premium Violet Glow */}
+                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-violet-600 via-indigo-500 to-emerald-500 shadow-[0_0_15px_rgba(124,58,237,0.5)]" />
                             
                             {/* Orbital Glow */}
-                            <div className="absolute -top-24 -right-24 w-60 h-60 bg-red-600/10 rounded-full blur-[80px] animate-pulse" />
+                            <div className="absolute -top-32 -right-32 w-80 h-80 bg-violet-600/15 rounded-full blur-[100px] pointer-events-none" />
+                            <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
                             
                             <div className="relative z-10">
-                                <div className="flex justify-between items-start mb-8">
-                                    <div className="p-5 rounded-[2rem] bg-gradient-to-br from-red-600 to-orange-500 text-white shadow-xl shadow-red-600/40 transform -rotate-3 group-hover:rotate-0 transition-transform duration-500">
-                                        <Edit3 size={32} strokeWidth={2.5} />
+                                <div className="flex justify-between items-start mb-10">
+                                    <div className="p-6 rounded-[2.5rem] bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-2xl shadow-violet-600/40 transform -rotate-6 group-hover:rotate-0 transition-all duration-700">
+                                        <Edit3 size={36} strokeWidth={2.5} />
                                     </div>
                                     <button 
                                         onClick={(e) => { e.stopPropagation(); handleClose(); }}
@@ -98,45 +99,45 @@ export function WelcomeNotice() {
                                     </button>
                                 </div>
                                 
-                                <div className="space-y-4">
-                                    <h3 className="text-3xl font-black text-white uppercase tracking-tighter font-outfit leading-[0.9] text-balance">
+                                <div className="space-y-5">
+                                    <h3 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-display leading-[0.85] text-balance mb-2">
                                         Personaliza <br/>
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-amber-400">Tu Historia Atleta</span>
+                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-emerald-400 drop-shadow-sm">Tu Historia</span>
                                     </h3>
-                                    <p className="text-base font-bold text-white/60 leading-relaxed font-outfit italic">
-                                        ¡Edita tu perfil ahora! Sube tu mejor foto, define tu disciplina y destaca en el medallero olímpico.
+                                    <p className="text-base sm:text-lg font-bold text-white/50 leading-relaxed font-sans mt-4">
+                                        ¡Actualiza tu perfil ahora! Sube tu foto y define tu disciplina para destacar en el medallero oficial.
                                     </p>
                                 </div>
 
-                                <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex -space-x-2">
+                                <div className="mt-10 pt-8 border-t border-white/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex -space-x-3">
                                             {[1, 2, 3].map(i => (
-                                                <div key={i} className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center overflow-hidden">
-                                                    <div className="w-full h-full bg-gradient-to-br from-white/20 to-transparent" />
+                                                <div key={i} className="w-10 h-10 rounded-full border-2 border-black bg-zinc-800 flex items-center justify-center overflow-hidden shadow-lg">
+                                                    <div className="w-full h-full bg-gradient-to-br from-white/30 to-transparent" />
                                                 </div>
                                             ))}
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-black text-white leading-none">
+                                            <span className="text-sm font-black font-display text-white leading-none">
                                                 {userCount !== null ? `+${userCount}` : "..." }
                                             </span>
-                                            <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Atletas</span>
+                                            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mt-1 font-display">Atletas Reales</span>
                                         </div>
                                     </div>
-                                    <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.4em] text-right">
-                                        Uninorte <br/> 2026
+                                    <span className="text-[10px] font-black text-violet-400/50 uppercase tracking-[0.5em] text-right font-display items-end flex flex-col justify-end leading-none">
+                                        Uninorte <br/><span className="text-white/20 mt-1">2026</span>
                                     </span>
                                 </div>
                             </div>
 
-                            {/* Synchronized Progress Bar */}
-                            <div className="absolute bottom-0 left-0 right-0 h-2 bg-white/5 overflow-hidden">
+                            {/* Synchronized Progress Bar - Premium Emerald */}
+                            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/5 overflow-hidden">
                                 <motion.div 
                                     initial={{ width: "100%" }}
                                     animate={{ width: "0%" }}
                                     transition={{ duration: DURATION / 1000, ease: "linear" }}
-                                    className="h-full bg-gradient-to-r from-red-600 to-amber-500"
+                                    className="h-full bg-gradient-to-r from-emerald-500 to-violet-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]"
                                 />
                             </div>
                         </div>

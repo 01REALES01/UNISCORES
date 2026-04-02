@@ -47,7 +47,7 @@ export default function PublicMatchDetail() {
             const PARTIDO_SELECT = [
                 'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle',
                 'fase, grupo, bracket_order, delegacion_a, delegacion_b',
-                'carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
+                'delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
                 'disciplinas:disciplina_id(name)',
                 'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
                 'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
@@ -69,7 +69,7 @@ export default function PublicMatchDetail() {
                 const fallbackRes = await safeQuery(
                     supabase
                         .from('partidos')
-                        .select('id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, fase, grupo, bracket_order, delegacion_a, delegacion_b, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id')
+                        .select('id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id')
                         .eq('id', matchId)
                         .single(),
                     'partido-detail-fallback'
@@ -211,18 +211,18 @@ export default function PublicMatchDetail() {
     };
 
     if (loading) return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0816] text-white">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white">
             <UniqueLoading size="lg" />
         </div>
     );
 
     if (!match) return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0816] text-white p-8 text-center gap-4">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white p-8 text-center gap-4">
             <Trophy size={48} className="text-slate-700 mb-2" />
             <h1 className="text-2xl font-bold">Partido no encontrado</h1>
             {fetchError && (
-                <div className="max-w-md bg-red-500/10 border border-red-500/30 rounded-2xl px-5 py-3 text-sm text-red-300 font-mono text-left">
-                    <p className="font-bold text-red-400 mb-1 uppercase tracking-wider text-[10px]">Error de consulta</p>
+                <div className="max-w-md bg-violet-500/10 border border-violet-500/30 rounded-2xl px-5 py-3 text-sm text-violet-300 font-mono text-left">
+                    <p className="font-bold text-violet-400 mb-1 uppercase tracking-wider text-[10px]">Error de consulta</p>
                     <p className="break-words">{fetchError}</p>
                 </div>
             )}
@@ -233,7 +233,7 @@ export default function PublicMatchDetail() {
                 >
                     🔄 Reintentar
                 </button>
-                <Link href="/" className="px-5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-bold transition-all">
+                <Link href="/" className="px-5 py-2 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 text-sm font-bold transition-all">
                     ← Volver al inicio
                 </Link>
             </div>
@@ -281,7 +281,7 @@ export default function PublicMatchDetail() {
 
                 {/* Match Card */}
                 <div className={cn(
-                    "relative overflow-hidden rounded-[2.5rem] bg-[#17130D]/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 mb-8 transition-all duration-700",
+                    "relative overflow-hidden rounded-[2.5rem] bg-background/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 mb-8 transition-all duration-700",
                     SPORT_BORDER[sportName] || 'border-white/10',
                     SPORT_GLOW[sportName] || ''
                 )}>
@@ -303,7 +303,7 @@ export default function PublicMatchDetail() {
 
                             <div className="flex flex-wrap justify-center items-center gap-2">
                                 {!isFinished && !isLive && (
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#17130D]/80 border border-white/10 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase shadow-lg">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background/80 border border-white/10 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase shadow-lg">
                                         <Calendar size={14} className={cn(SPORT_ACCENT[sportName] || 'text-amber-400')} />
                                         {new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
                                     </div>
@@ -316,7 +316,7 @@ export default function PublicMatchDetail() {
                                 )}
 
                                 <div className={cn(
-                                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#17130D]/80 border border-white/10 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg transition-all",
+                                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background/80 border border-white/10 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg transition-all",
                                     SPORT_ACCENT[sportName] || 'text-white/70'
                                 )}>
                                     <SportIcon sport={sportName} size={14} />
@@ -374,7 +374,7 @@ export default function PublicMatchDetail() {
                                                     </div>
                                                 </div>
 
-                                                <div className="text-right font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-red-300 drop-shadow-md">
+                                                <div className="text-right font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-white drop-shadow-md">
                                                     {p.tiempo || '--:--'}
                                                 </div>
                                             </div>
@@ -401,14 +401,16 @@ export default function PublicMatchDetail() {
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
                                             `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
                                         )} />
-                                        <Avatar name={getDisplayName(match, 'a')} src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0816]" />
+                                        <Avatar name={getDisplayName(match, 'a')} src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-background" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        {match.carrera_a_id ? (
-                                            <Link href={`/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}`} className="hover:text-red-400 transition-colors underline-offset-4 hover:underline">
-                                                {getDisplayName(match, 'a')}
-                                            </Link>
-                                        ) : getDisplayName(match, 'a')}
+                                        <Link 
+                                            href={(match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` : match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : '#'} 
+                                            className={cn("transition-colors underline-offset-4", ((match as any).delegacion_a_id || match.carrera_a_id) ? "hover:text-emerald-400 hover:underline cursor-pointer" : "cursor-default")}
+                                            onClick={(e) => { if (!(match as any).delegacion_a_id && !match.carrera_a_id) e.preventDefault(); }}
+                                        >
+                                            {getDisplayName(match, 'a')}
+                                        </Link>
                                     </h2>
                                     {getCarreraSubtitle(match, 'a') && (
                                         <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'a')}</span>
@@ -426,10 +428,10 @@ export default function PublicMatchDetail() {
                                             ) : isLive ? (
                                                 <div className="flex items-center gap-3">
                                                     <span className="relative flex h-4 w-4">
-                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                                        <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500"></span>
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
                                                     </span>
-                                                    <span className="text-xl sm:text-3xl font-black text-rose-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]">
+                                                    <span className="text-xl sm:text-3xl font-black text-emerald-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(16,185,129,0.4)]">
                                                         EN CURSO
                                                     </span>
                                                 </div>
@@ -503,14 +505,16 @@ export default function PublicMatchDetail() {
                                             "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
                                             `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
                                         )} />
-                                        <Avatar name={getDisplayName(match, 'b')} src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-[#0a0816]" />
+                                        <Avatar name={getDisplayName(match, 'b')} src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-background" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        {match.carrera_b_id ? (
-                                            <Link href={`/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}`} className="hover:text-red-400 transition-colors underline-offset-4 hover:underline">
-                                                {getDisplayName(match, 'b')}
-                                            </Link>
-                                        ) : getDisplayName(match, 'b')}
+                                        <Link 
+                                            href={(match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` : match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` : '#'} 
+                                            className={cn("transition-colors underline-offset-4", ((match as any).delegacion_b_id || match.carrera_b_id) ? "hover:text-emerald-400 hover:underline cursor-pointer" : "cursor-default")}
+                                            onClick={(e) => { if (!(match as any).delegacion_b_id && !match.carrera_b_id) e.preventDefault(); }}
+                                        >
+                                            {getDisplayName(match, 'b')}
+                                        </Link>
                                     </h2>
                                     {getCarreraSubtitle(match, 'b') && (
                                         <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'b')}</span>
@@ -547,7 +551,7 @@ export default function PublicMatchDetail() {
                 )}
 
                 {/* Community Predictions + Voting Section */}
-                <div className="rounded-3xl bg-[#17130D]/60 backdrop-blur-xl border border-white/10 p-6 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
+                <div className="rounded-3xl bg-background/60 backdrop-blur-xl border border-white/10 p-6 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
                     <div className="flex items-center gap-3 mb-5">
                         <div className={cn("p-2 rounded-xl bg-white/5 border border-white/10", SPORT_ACCENT[sportName])}>
                             <BarChart3 size={20} className="drop-shadow-[0_0_8px_currentColor]" />
@@ -667,7 +671,7 @@ export default function PublicMatchDetail() {
                         </div>
                     ) : match?.estado === 'programado' && !user ? (
                         <div className="mt-5 pt-4 border-t border-white/5 text-center">
-                            <Link href="/login" className="text-[10px] font-bold text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors">
+                            <Link href="/login" className="text-[10px] font-bold text-violet-400 uppercase tracking-widest hover:text-violet-300 transition-colors">
                                 Inicia sesión para predecir →
                             </Link>
                         </div>
@@ -681,7 +685,7 @@ export default function PublicMatchDetail() {
                                     const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
                                     const result = sA > sB ? 'A' : sB > sA ? 'B' : 'DRAW';
                                     return userPrediction.winner_pick === result;
-                                })() ? "bg-emerald-500/10 border border-emerald-500/15" : "bg-rose-500/10 border border-rose-500/15")
+                                })() ? "bg-emerald-500/10 border border-emerald-500/15" : "bg-violet-500/10 border border-violet-500/15")
                                 : "bg-white/5"
                         )}>
                             <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu acierto</p>
@@ -691,7 +695,7 @@ export default function PublicMatchDetail() {
                                     const sA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
                                     const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
                                     const result = sA > sB ? 'A' : sB > sA ? 'B' : 'DRAW';
-                                    return userPrediction.winner_pick === result ? "text-emerald-400" : "text-rose-400";
+                                    return userPrediction.winner_pick === result ? "text-emerald-400" : "text-violet-400";
                                 })() : "text-white"
                             )}>
                                 {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'a')}</> :
@@ -701,7 +705,7 @@ export default function PublicMatchDetail() {
                     ) : null}
                 </div>
 
-                {match.marcador_detalle?.modo_registro !== 'asincronico' && (
+                {match.marcador_detalle?.modo_registro !== 'asincronico' && sportName !== 'Voleibol' && (
                 <MatchTimeline
                     match={match}
                     eventos={eventos}

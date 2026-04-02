@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { UserPlus, UserCheck, UserX, Clock, Loader2 } from 'lucide-react';
+import { UserPlus, UserCheck, UserX, Clock, Loader2, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useFriendRelation } from '@/modules/users/hooks/use-friends';
@@ -40,11 +40,13 @@ export function FriendButton({ currentUserId, targetId, className }: FriendButto
         }
     };
 
+    const baseStyles = "h-12 px-8 rounded-2xl flex items-center gap-3 font-display font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300 disabled:opacity-50 active:scale-95 whitespace-nowrap";
+
     if (isLoading) {
         return (
-            <div className={cn("px-6 py-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2 text-white/30", className)}>
+            <div className={cn("h-12 px-8 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3 text-white/20 select-none", className)}>
                 <Loader2 size={16} className="animate-spin" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Cargando</span>
+                <span className="font-display font-black text-[10px] uppercase tracking-[0.22em]">Cargando</span>
             </div>
         );
     }
@@ -57,12 +59,13 @@ export function FriendButton({ currentUserId, targetId, className }: FriendButto
                 onClick={() => handle(sendRequest, '¡Solicitud enviada!')}
                 disabled={acting}
                 className={cn(
-                    "px-6 py-3 rounded-2xl bg-red-500 text-white flex items-center gap-2 font-black text-[10px] uppercase tracking-widest hover:bg-red-400 transition-all disabled:opacity-50 shadow-[0_8px_30px_rgba(239,68,68,0.3)]",
+                    baseStyles,
+                    "bg-violet-600 text-white shadow-[0_4px_20px_rgba(139,92,246,0.3)] hover:bg-violet-500 hover:shadow-[0_8px_30px_rgba(139,92,246,0.4)] hover:-translate-y-0.5",
                     className
                 )}
             >
-                {acting ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
-                Agregar amigo
+                {acting ? <Loader2 size={16} className="animate-spin text-white" /> : <UserPlus size={16} />}
+                AGREGAR AMIGO
             </button>
         );
     }
@@ -73,12 +76,13 @@ export function FriendButton({ currentUserId, targetId, className }: FriendButto
                 onClick={() => handle(cancelOrRemove, 'Solicitud cancelada')}
                 disabled={acting}
                 className={cn(
-                    "px-6 py-3 rounded-2xl bg-white/5 border border-white/20 text-white/60 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest hover:border-red-500/50 hover:text-red-400 transition-all disabled:opacity-50",
+                    baseStyles,
+                    "bg-black/60 border border-white/10 text-white hover:bg-black/80 hover:border-violet-500/40 hover:text-violet-400",
                     className
                 )}
             >
-                {acting ? <Loader2 size={16} className="animate-spin" /> : <Clock size={16} />}
-                Solicitud enviada
+                {acting ? <Loader2 size={16} className="animate-spin" /> : <Clock size={16} className="text-violet-400" />}
+                SOLICITUD ENVIADA
             </button>
         );
     }
@@ -89,12 +93,13 @@ export function FriendButton({ currentUserId, targetId, className }: FriendButto
                 onClick={() => handle(acceptRequest, '¡Ahora son amigos!')}
                 disabled={acting}
                 className={cn(
-                    "px-6 py-3 rounded-2xl bg-green-500 text-black flex items-center gap-2 font-black text-[10px] uppercase tracking-widest hover:bg-green-400 transition-all disabled:opacity-50 shadow-[0_8px_30px_rgba(34,197,94,0.3)]",
+                    baseStyles,
+                    "bg-emerald-500 text-black shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:bg-emerald-400 hover:shadow-[0_8px_30px_rgba(16,185,129,0.4)] hover:-translate-y-0.5",
                     className
                 )}
             >
-                {acting ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />}
-                Aceptar solicitud
+                {acting ? <Loader2 size={16} className="animate-spin text-black" /> : <UserCheck size={16} />}
+                ACEPTAR SOLICITUD
             </button>
         );
     }
@@ -102,20 +107,20 @@ export function FriendButton({ currentUserId, targetId, className }: FriendButto
     if (status === 'accepted') {
         if (confirmRemove) {
             return (
-                <div className={cn("flex items-center gap-2", className)}>
-                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">¿Eliminar amigo?</span>
+                <div className={cn("flex items-center p-1 bg-black/60 border border-white/5 rounded-2xl backdrop-blur-xl shadow-2xl", className)}>
+                    <div className="px-4 text-[9px] font-display font-black text-white/30 uppercase tracking-[0.1em]">¿ELIMINAR AMIGO?</div>
                     <button
                         onClick={() => handle(cancelOrRemove, 'Eliminado de amigos')}
                         disabled={acting}
-                        className="px-4 py-2.5 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/30 transition-all"
+                        className="h-10 px-4 rounded-xl bg-rose-600/20 text-rose-400 text-[10px] font-display font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center gap-2"
                     >
-                        {acting ? <Loader2 size={14} className="animate-spin" /> : 'Confirmar'}
+                        {acting ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} SI
                     </button>
                     <button
                         onClick={() => setConfirmRemove(false)}
-                        className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/40 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+                        className="h-10 px-4 rounded-xl text-white/20 hover:text-white transition-all flex items-center justify-center"
                     >
-                        Cancelar
+                        <X size={14} />
                     </button>
                 </div>
             );
@@ -125,14 +130,15 @@ export function FriendButton({ currentUserId, targetId, className }: FriendButto
             <button
                 onClick={() => setConfirmRemove(true)}
                 className={cn(
-                    "px-6 py-3 rounded-2xl bg-white/5 border border-white/20 text-white flex items-center gap-2 font-black text-[10px] uppercase tracking-widest hover:border-red-500/40 hover:text-red-400 transition-all group",
+                    baseStyles,
+                    "bg-black/60 border border-white/10 text-white/60 hover:bg-black/80 hover:border-emerald-500/40 hover:text-emerald-400 group",
                     className
                 )}
             >
-                <UserCheck size={16} className="text-green-400 group-hover:hidden" />
-                <UserX size={16} className="hidden group-hover:block text-red-400" />
-                <span className="group-hover:hidden">Amigos</span>
-                <span className="hidden group-hover:inline">Eliminar</span>
+                <UserCheck size={16} className="text-emerald-400 group-hover:hidden" />
+                <UserX size={16} className="hidden group-hover:block text-rose-500" />
+                <span className="group-hover:hidden">SOCIOS</span>
+                <span className="hidden group-hover:inline text-rose-500">FINALIZAR</span>
             </button>
         );
     }

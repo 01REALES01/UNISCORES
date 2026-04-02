@@ -1,9 +1,10 @@
 import { Avatar } from "@/components/ui-primitives";
-import { Play, Square, Radio, Clock } from "lucide-react";
+import { Play, Square, Radio, Clock, AlertCircle, CheckCircle, ArrowRight } from "lucide-react";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { SPORT_COLORS } from "@/lib/constants";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface AdminScoreboardProps {
   match: any;
@@ -12,6 +13,7 @@ interface AdminScoreboardProps {
   onIniciarPartido: (modo: 'en_vivo' | 'asincronico') => void;
   onFinalizar: () => void;
   onCambiarPeriodo?: () => void;
+  onCambiarSet?: (setNum: number, puntosA: number, puntosB: number) => void;
 }
 
 export const AdminScoreboard = ({
@@ -21,14 +23,35 @@ export const AdminScoreboard = ({
   onIniciarPartido,
   onFinalizar,
   onCambiarPeriodo,
+  onCambiarSet,
 }: AdminScoreboardProps) => {
   const [showModeModal, setShowModeModal] = useState(false);
+  const [pendingSet, setPendingSet] = useState<number | null>(null);
+  const [editPuntosA, setEditPuntosA] = useState(0);
+  const [editPuntosB, setEditPuntosB] = useState(0);
   const isLive = match.estado === 'en_curso';
   const isFinal = match.estado === 'finalizado';
   const disciplinaName = match.disciplinas?.name || 'Fútbol';
   const sportColor = SPORT_COLORS[disciplinaName] || '#6366f1';
   const detalle = match.marcador_detalle || {};
   const modoRegistro = detalle.modo_registro;
+  const currentSet = detalle.set_actual || 1;
+
+  const handleSetClick = (s: number) => {
+    if (s === currentSet) return;
+    if (s < currentSet) {
+      toast.error('No se puede volver a un set anterior.');
+      return;
+    }
+    if (s > currentSet + 1) {
+      toast.error(`Debes completar el Set ${currentSet} antes de avanzar al Set ${s}.`);
+      return;
+    }
+    // Valid next set — pre-fill scores and ask for confirmation
+    setEditPuntosA(detalle.sets?.[currentSet]?.puntos_a ?? 0);
+    setEditPuntosB(detalle.sets?.[currentSet]?.puntos_b ?? 0);
+    setPendingSet(s);
+  };
 
   return (
     <>
@@ -109,13 +132,49 @@ export const AdminScoreboard = ({
                         EN CURSO
                       </div>
                     )}
-                    <button onClick={onFinalizar}
-                      className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center text-white/25 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all active:scale-95"
-                      style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}
-                      title="Finalizar"
-                    >
-                      <Square size={16} />
-                    </button>
+                    {isLive && disciplinaName === 'Voleibol' && currentSet <= 2 ? (
+                      <button
+                        onClick={() => handleSetClick(currentSet + 1)}
+                        className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center transition-all active:scale-95"
+                        style={{ borderColor: `${sportColor}25`, background: `${sportColor}10`, color: sportColor }}
+                        title={`Avanzar al Set ${currentSet + 1}`}
+                      >
+                        <ArrowRight size={16} />
+                      </button>
+                    ) : (
+                      <button onClick={onFinalizar}
+                        className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center text-white/25 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all active:scale-95"
+                        style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}
+                        title="Finalizar"
+                      >
+                        <Square size={16} />
+                      </button>
+                    )}
+                  </div>
+                )}
+                {isLive && disciplinaName === 'Voleibol' && (
+                  <div className="flex items-center gap-2 px-1">
+                    {[1, 2, 3].map(s => {
+                      const isActive = currentSet === s;
+                      const isPast = s < currentSet;
+                      const isFutureFar = s > currentSet + 1;
+                      const isDisabled = isPast || isFutureFar;
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => handleSetClick(s)}
+                          className="flex-1 h-9 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95"
+                          style={isActive
+                            ? { background: sportColor, color: '#000', boxShadow: `0 2px 10px ${sportColor}40` }
+                            : isDisabled
+                              ? { background: `${sportColor}05`, color: `${sportColor}30`, border: `1px solid ${sportColor}10`, cursor: 'not-allowed' }
+                              : { background: `${sportColor}10`, color: `${sportColor}80`, border: `1px solid ${sportColor}20` }
+                          }
+                        >
+                          Set {s}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -141,6 +200,77 @@ export const AdminScoreboard = ({
         </div>
       </div>
     </div>
+
+    {/* Volleyball Set Confirmation Modal */}
+    {pendingSet !== null && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="relative bg-[#0a0816] border rounded-[3rem] p-10 max-w-sm w-full shadow-2xl overflow-hidden animate-in zoom-in-95"
+          style={{ borderColor: `${sportColor}20` }}>
+          <div className="absolute top-0 left-0 right-0 h-1.5" style={{ background: `linear-gradient(to right, ${sportColor}, ${sportColor}80)` }} />
+
+          <div className="relative z-10">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 border"
+              style={{ background: `${sportColor}15`, borderColor: `${sportColor}30` }}>
+              <CheckCircle size={32} style={{ color: sportColor }} />
+            </div>
+            <h2 className="text-xl font-black uppercase tracking-tight text-white text-center mb-1">Cerrar Set {currentSet}</h2>
+            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest text-center mb-8">
+              Confirma el resultado antes de avanzar al Set {pendingSet}
+            </p>
+
+            {/* Set score — editable */}
+            <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 mb-6">
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 text-center mb-4">
+                Set {currentSet} — Marcador Final
+              </p>
+              <div className="flex items-center justify-center gap-4">
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-wider truncate max-w-[90px] text-center">{getDisplayName(match, 'a')}</p>
+                  <div className="flex items-center gap-1.5 bg-white/5 rounded-xl border border-white/10 p-1">
+                    <button onClick={() => setEditPuntosA(v => Math.max(0, v - 1))} className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white font-bold transition-all">−</button>
+                    <span className="text-3xl font-black tabular-nums text-white min-w-[36px] text-center">{editPuntosA}</span>
+                    <button onClick={() => setEditPuntosA(v => v + 1)} className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white font-bold transition-all" style={{ ['--hover-bg' as any]: `${sportColor}20` }}>+</button>
+                  </div>
+                </div>
+                <span className="text-white/20 font-black text-xl mt-5">:</span>
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-wider truncate max-w-[90px] text-center">{getDisplayName(match, 'b')}</p>
+                  <div className="flex items-center gap-1.5 bg-white/5 rounded-xl border border-white/10 p-1">
+                    <button onClick={() => setEditPuntosB(v => Math.max(0, v - 1))} className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white font-bold transition-all">−</button>
+                    <span className="text-3xl font-black tabular-nums text-white min-w-[36px] text-center">{editPuntosB}</span>
+                    <button onClick={() => setEditPuntosB(v => v + 1)} className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white font-bold transition-all">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3 mb-6 flex gap-3">
+              <AlertCircle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-[10px] text-amber-200/80 leading-relaxed">
+                Una vez avances al Set {pendingSet} no podrás volver al Set {currentSet}.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPendingSet(null)}
+                className="flex-1 h-11 rounded-2xl border text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white/60 transition-all"
+                style={{ borderColor: `${sportColor}15` }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { onCambiarSet?.(pendingSet!, editPuntosA, editPuntosB); setPendingSet(null); }}
+                className="flex-1 h-11 rounded-2xl font-black text-[9px] uppercase tracking-widest text-black transition-all active:scale-95"
+                style={{ background: sportColor, boxShadow: `0 4px 15px ${sportColor}40` }}
+              >
+                Avanzar al Set {pendingSet}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Mode Selection Modal */}
     {showModeModal && (

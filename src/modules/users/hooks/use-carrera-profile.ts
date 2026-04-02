@@ -10,6 +10,7 @@ import { computeCareerStats, CareerStats } from "@/lib/sport-helpers";
 const MATCH_COLUMNS = `
   id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle,
   fase, grupo, bracket_order, delegacion_a, delegacion_b,
+  carrera_a_ids, carrera_b_ids,
   disciplinas(name, icon),
   carrera_a:carreras!carrera_a_id(nombre, escudo_url),
   carrera_b:carreras!carrera_b_id(nombre, escudo_url),
@@ -26,12 +27,23 @@ const NEWS_COLUMNS = `
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
+export type DeporteInscrito = {
+    disciplina_id: number;
+    delegacion_id: number;
+    genero: string;
+    equipo_nombre: string;
+    disciplina_name: string;
+    /** true when 2+ carreras share this delegación (combined team) */
+    isCombined: boolean;
+};
+
 export type CarreraProfile = {
     carrera: { id: number; nombre: string; escudo_url?: string | null; followers_count?: number } | null;
     matches: any[];
     news: any[];
     athletes: any[];
     stats: CareerStats;
+    deportesInscritos: DeporteInscrito[];
     loading: boolean;
     error: any;
     mutate: () => void;
@@ -51,17 +63,19 @@ async function fetchCarreraProfile(carreraId: number) {
         throw new Error('Carrera not found');
     }
 
-    // 2. Fetch all matches where this carrera participates (either side)
+    // 2. Fetch all matches where this carrera participates (either side).
+    // Uses GIN-indexed array containment so fusions are included automatically:
+    // a match where the career appears in carrera_a_ids or carrera_b_ids is returned.
     const [matchesA, matchesB] = await Promise.all([
         supabase
             .from('partidos')
             .select(MATCH_COLUMNS)
-            .eq('carrera_a_id', carreraId)
+            .contains('carrera_a_ids', [carreraId])
             .order('fecha', { ascending: false }),
         supabase
             .from('partidos')
             .select(MATCH_COLUMNS)
-            .eq('carrera_b_id', carreraId)
+            .contains('carrera_b_ids', [carreraId])
             .order('fecha', { ascending: false }),
     ]);
 
@@ -88,8 +102,39 @@ async function fetchCarreraProfile(carreraId: number) {
         .select('id, full_name, avatar_url, roles, athlete_disciplina_id, points, disciplina:disciplinas(name)')
         .contains('carreras_ids', [carreraId]);
 
-    // 5. Compute stats
-    const stats = computeCareerStats(matches, carrera.nombre);
+    // 5. Compute stats by ID (handles fusions via carrera_a_ids / carrera_b_ids)
+    const stats = computeCareerStats(matches, carreraId);
+
+    // 6. Fetch enrolled sports from delegaciones (carrera appears in carrera_ids[])
+    const { data: delegData } = await supabase
+        .from('delegaciones')
+        .select('id, disciplina_id, genero, nombre, carrera_ids, disciplinas(name)')
+        .contains('carrera_ids', [carreraId])
+        .not('disciplina_id', 'is', null)
+        .not('genero', 'is', null);
+
+    // Deduplicate by (disciplina_id, genero) — a carrera can appear in multiple
+    // delegaciones for the same sport (e.g. DCPRI and a direct entry); keep the
+    // one whose equipo_nombre differs most from the carrera name (i.e. prefer the
+    // combined-team name over a solo entry).
+    const deduped = new Map<string, DeporteInscrito>();
+    for (const d of (delegData || []) as any[]) {
+        const dname = Array.isArray(d.disciplinas) ? d.disciplinas[0]?.name : d.disciplinas?.name ?? '';
+        const key = `${d.disciplina_id}_${d.genero}`;
+        const entry: DeporteInscrito = {
+            delegacion_id: d.id,
+            disciplina_id: d.disciplina_id,
+            genero: d.genero,
+            equipo_nombre: d.nombre,
+            disciplina_name: dname,
+            isCombined: (d.carrera_ids?.length ?? 0) > 1,
+        };
+        // Prefer combined-team names (longer / different from the carrera name)
+        if (!deduped.has(key) || d.nombre !== carrera.nombre) {
+            deduped.set(key, entry);
+        }
+    }
+    const deportesInscritos: DeporteInscrito[] = Array.from(deduped.values());
 
     return {
         carrera,
@@ -97,6 +142,7 @@ async function fetchCarreraProfile(carreraId: number) {
         news: newsData || [],
         athletes: (athletesData || []).filter((a: any) => a.roles?.includes('deportista')),
         stats,
+        deportesInscritos,
     };
 }
 
@@ -153,6 +199,7 @@ export function useCarreraProfile(carreraId: number | null): CarreraProfile {
             won: 0, lost: 0, draw: 0, played: 0,
             byDiscipline: {},
         },
+        deportesInscritos: data?.deportesInscritos || [],
         loading: isLoading,
         error,
         mutate,

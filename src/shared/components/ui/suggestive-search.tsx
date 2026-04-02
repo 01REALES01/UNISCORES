@@ -512,7 +512,7 @@ export const SuggestiveSearch: React.FC<SuggestiveSearchProps> = ({
         const elForFont = input ?? wrapperRef.current;
         if (!elForFont) {
             ctx.font =
-                "14px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial";
+                "14px 'Montserrat', system-ui, sans-serif";
         } else {
             const cs = getComputedStyle(elForFont);
             const font = `${cs.fontStyle} ${cs.fontVariant} ${cs.fontWeight} ${cs.fontSize} / ${cs.lineHeight} ${cs.fontFamily}`;

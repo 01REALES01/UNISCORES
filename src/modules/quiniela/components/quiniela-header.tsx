@@ -12,15 +12,15 @@ export const QuinielaHeader = ({ user, profile, points }: QuinielaHeaderProps) =
     <div className="flex items-center justify-between py-8 px-2">
       <div className="flex items-center gap-4">
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+          <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
           <Avatar name={profile?.full_name || user?.email} src={profile?.avatar_url} size="lg" className="relative border-2 border-zinc-950 ring-1 ring-white/10 shadow-2xl scale-110" />
           <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-[3px] border-zinc-950 flex items-center justify-center shadow-lg">
             <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
           </div>
         </div>
         <div>
-          <p className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] leading-none mb-1.5 font-outfit">HOLA,</p>
-          <p className="text-2xl font-black text-white tracking-tight leading-none font-outfit">
+          <p className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] leading-none mb-1.5 font-sans">HOLA,</p>
+          <p className="text-2xl font-black text-white tracking-tight leading-none font-sans">
             {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || "Usuario"}
           </p>
         </div>
@@ -32,7 +32,7 @@ export const QuinielaHeader = ({ user, profile, points }: QuinielaHeaderProps) =
           <Diamond size={18} className="text-black fill-current" />
         </div>
         <div className="relative z-10">
-          <span className="text-xl font-black text-white tabular-nums leading-none block font-outfit">{points}</span>
+          <span className="text-xl font-black text-white tabular-nums leading-none block font-sans">{points}</span>
           <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest leading-none block mt-0.5">Puntos</span>
         </div>
       </div>

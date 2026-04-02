@@ -83,10 +83,10 @@ export function FollowCareerButton({ careerId, initialFollowersCount }: FollowCa
     };
 
     return (
-        <div className="flex items-center gap-2">
-            <div className="flex items-center gap-3 px-6 py-3 rounded-[1.5rem] bg-[#0A0705] border border-white/5 shadow-2xl">
-                <div className="p-2 bg-red-500/10 rounded-xl text-red-500">
-                    <Heart size={20} className={cn(isFollowing ? "fill-current" : "")} />
+        <div className="flex items-center justify-center gap-2 h-full">
+            <div className="flex items-center gap-3 px-6 h-full rounded-2xl bg-white/[0.03] border border-white/5 shadow-inner">
+                <div className="p-2 bg-violet-500/10 rounded-xl text-violet-400">
+                    <Heart size={18} className={cn(isFollowing ? "fill-current" : "")} />
                 </div>
                 <div className="flex flex-col min-w-[60px] text-left">
                     <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-0.5">Seguidores</span>
@@ -98,24 +98,29 @@ export function FollowCareerButton({ careerId, initialFollowersCount }: FollowCa
                 onClick={handleFollowToggle}
                 disabled={isLoading}
                 className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-[1.5rem] border shadow-2xl transition-all h-[68px] min-w-[90px]",
+                    "relative flex flex-col items-center justify-center rounded-2xl border transition-all h-[56px] min-w-[90px] overflow-hidden group",
                     isFollowing 
-                        ? "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20" 
-                        : "bg-red-600 hover:bg-red-500 border-red-500 text-white shadow-[0_0_20px_rgba(220,38,38,0.2)]"
+                        ? "bg-white border-white text-violet-950 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:bg-slate-100" 
+                        : "bg-gradient-to-b from-violet-500 to-indigo-600 border-violet-400 text-white shadow-[0_10px_30px_-5px_rgba(124,58,237,0.6)] hover:shadow-[0_10px_40px_-5px_rgba(124,58,237,0.8)] hover:scale-[1.02]"
                 )}
             >
+                {/* Metallic shine effect for inactive state */}
+                {!isFollowing && (
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                )}
+
                 {isLoading ? (
-                    <Loader2 size={18} className="animate-spin text-white/40" />
+                    <Loader2 size={18} className="animate-spin opacity-50 relative z-10" />
                 ) : isFollowing ? (
-                    <>
-                        <Heart size={18} className="mb-1 fill-current" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.1em]">Apoyando</span>
-                    </>
+                    <div className="flex items-center gap-2 px-4">
+                        <Heart size={14} className="fill-current" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">Apoyando</span>
+                    </div>
                 ) : (
-                    <>
-                        <Heart size={18} className="mb-1" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.1em]">Apoyar</span>
-                    </>
+                    <div className="flex items-center gap-2 px-4">
+                        <Heart size={14} />
+                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">Apoyar</span>
+                    </div>
                 )}
             </button>
         </div>

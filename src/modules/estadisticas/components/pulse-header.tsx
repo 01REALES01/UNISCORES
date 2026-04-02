@@ -40,7 +40,7 @@ export function PulseHeader({ activeSport, onSportChange, availableSports, data 
 
   const cards = [
     {
-      label: "PARTIDOS",
+      label: "Partidos",
       accentLine: activeSport === 'Todos' ? "from-indigo-500 to-purple-500" : undefined,
       ring: true,
       ringValue: completionPct,
@@ -76,10 +76,10 @@ export function PulseHeader({ activeSport, onSportChange, availableSports, data 
         <button
           onClick={() => onSportChange('Todos')}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-display font-black tracking-wide transition-all border",
             activeSport === 'Todos'
-              ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-300"
-              : "bg-white/[0.02] border-white/5 text-white/35 hover:border-white/10 hover:text-white/60"
+              ? "bg-violet-500/15 border-violet-500/40 text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.15)]"
+              : "bg-black/20 backdrop-blur-md border-white/5 text-white/40 hover:border-white/20 hover:text-white/80"
           )}
         >
           <LayoutGrid size={12} />
@@ -93,12 +93,12 @@ export function PulseHeader({ activeSport, onSportChange, availableSports, data 
               key={sport}
               onClick={() => onSportChange(sport)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-display font-black tracking-wide transition-all border",
                 isActive
-                  ? "border-white/20 text-white"
-                  : "bg-white/[0.02] border-white/5 text-white/35 hover:border-white/10 hover:text-white/60"
+                  ? "border-white/20 text-white shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                  : "bg-black/20 backdrop-blur-md border-white/5 text-white/40 hover:border-white/20 hover:text-white/80"
               )}
-              style={isActive ? { backgroundColor: `${color}15`, borderColor: `${color}40`, color } : undefined}
+              style={isActive ? { backgroundColor: `${color}15`, borderColor: `${color}40`, color, boxShadow: `0 0 15px ${color}20` } : undefined}
             >
               <SportIcon sport={sport} size={12} />
               {sport}
@@ -119,7 +119,7 @@ export function PulseHeader({ activeSport, onSportChange, availableSports, data 
           <motion.div
             key={idx}
             variants={item}
-            className="relative rounded-2xl bg-white/[0.02] border border-white/5 p-4 sm:p-5 overflow-hidden group hover:border-white/10 transition-colors"
+            className="relative rounded-[2rem] bg-black/40 backdrop-blur-3xl border border-white/10 p-5 sm:p-6 overflow-hidden group hover:border-white/20 hover:shadow-[0_0_40px_rgba(255,255,255,0.03)] transition-all duration-500"
           >
             {/* Accent top line */}
             <div
@@ -128,9 +128,9 @@ export function PulseHeader({ activeSport, onSportChange, availableSports, data 
             />
 
             {/* Label */}
-            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2.5 mb-5">
               {card.icon}
-              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
+              <span className="text-[11px] font-bold tracking-wide font-display text-white/40">
                 {card.label}
               </span>
             </div>
@@ -141,13 +141,13 @@ export function PulseHeader({ activeSport, onSportChange, availableSports, data 
                 <div className="flex items-baseline gap-1">
                   <AnimatedCounter
                     value={card.mainValue}
-                    className="text-3xl sm:text-4xl font-black tabular-nums text-white font-outfit"
+                    className="text-4xl sm:text-5xl font-black tabular-nums text-white font-mono tracking-tighter"
                   />
                   {card.suffix && (
-                    <span className="text-sm sm:text-base font-bold text-white/20 tabular-nums">{card.suffix}</span>
+                    <span className="text-sm sm:text-base font-bold text-white/20 font-mono tracking-tighter">{card.suffix}</span>
                   )}
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-white/30 font-medium mt-1">{card.sublabel}</p>
+                <p className="text-xs sm:text-sm text-white/40 font-display tracking-wide mt-1.5">{card.sublabel}</p>
               </div>
 
               {card.ring && (

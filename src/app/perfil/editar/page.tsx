@@ -82,7 +82,7 @@ export default function EditProfilePage() {
     };
 
     if (authLoading || fetching) return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0a0816]">
+        <div className="min-h-screen flex items-center justify-center bg-background">
             <UniqueLoading size="lg" />
         </div>
     );
@@ -91,14 +91,14 @@ export default function EditProfilePage() {
     const previewColor = nameColor ?? '#ffffff';
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-amber-500/30 overflow-x-hidden">
+        <div className="min-h-screen bg-background text-white selection:bg-amber-500/30 overflow-x-hidden">
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <main className="max-w-[1000px] mx-auto px-4 sm:px-8 pt-8 pb-24 relative z-10">
 
                 {/* Back button */}
                 <div className="mb-10">
-                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-outfit">
+                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-sans">
                         <div className="p-2 rounded-full bg-white/5 border border-white/5 group-hover:bg-white group-hover:text-black transition-all flex items-center justify-center">
                             <ChevronLeft size={14} />
                         </div>
@@ -107,7 +107,7 @@ export default function EditProfilePage() {
                 </div>
 
                 <div className="mb-12 text-center lg:text-left">
-                    <h1 className="text-4xl md:text-5xl font-black font-outfit tracking-tight text-white mb-4">
+                    <h1 className="text-4xl md:text-5xl font-black font-sans tracking-tight text-white mb-4">
                         Configura tu <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-amber-500">Perfil</span>
                     </h1>
                     <p className="text-white/40 text-sm font-bold max-w-lg mx-auto lg:mx-0">
@@ -123,7 +123,7 @@ export default function EditProfilePage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4 }}
                     >
-                        <div className="rounded-[2.5rem] bg-[#0A0705] border border-white/5 p-8 shadow-2xl">
+                        <div className="rounded-[2.5rem] bg-background border border-white/5 p-8 shadow-2xl">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-6 flex items-center gap-2">
                                 <Palette size={14} /> COLOR DE NOMBRE
                             </h3>
@@ -132,7 +132,7 @@ export default function EditProfilePage() {
                             <div className="mb-6 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
                                 <span className="text-white/20 text-xs font-bold uppercase tracking-widest">Vista previa</span>
                                 <span
-                                    className="text-2xl font-black font-outfit leading-tight"
+                                    className="text-2xl font-black font-sans leading-tight"
                                     style={{ color: previewColor }}
                                 >
                                     {profile.full_name?.split(' ').slice(0, 2).join(' ') || 'Tu Nombre'}
@@ -190,7 +190,7 @@ export default function EditProfilePage() {
                         transition={{ duration: 0.5, delay: 0.1 }}
                         className="space-y-6 w-full"
                     >
-                        <div className="rounded-[2.5rem] bg-[#0A0705] border border-white/5 p-8 shadow-2xl flex flex-col">
+                        <div className="rounded-[2.5rem] bg-background border border-white/5 p-8 shadow-2xl flex flex-col">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-8 flex items-center gap-2">
                                 <Trophy size={14} /> SELECCIÓN DE CARRERAS
                             </h3>
@@ -211,7 +211,7 @@ export default function EditProfilePage() {
                                                 "relative flex items-center gap-4 p-4 rounded-3xl border transition-all text-left overflow-hidden min-h-[80px]",
                                                 isSelected
                                                     ? "bg-red-500/10 border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.05)]"
-                                                    : "bg-[#040302] border-white/5 hover:border-white/10"
+                                                    : "bg-background border-white/5 hover:border-white/10"
                                             )}
                                         >
                                             <div className={cn(

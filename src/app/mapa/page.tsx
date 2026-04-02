@@ -64,28 +64,39 @@ export default function CampusMapPage() {
     const loading = matchesLoading;
 
     return (
-        <div className="min-h-screen bg-black text-white relative overflow-hidden">
+        <div className="min-h-screen bg-background text-white relative overflow-hidden">
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             {/* Background Effects */}
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-overlay" />
-            <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-[#FFC000]/10 via-black to-black pointer-events-none" />
+            <div className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-screen">
+                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-violet-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '8s' }} />
+                <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+            </div>
 
-            <div className="w-full px-4 py-8 relative z-10 max-w-[1600px] mx-auto">
+            <div className="w-full px-4 pt-12 pb-4 relative z-10 max-w-[1600px] mx-auto">
+                <div className="flex flex-col items-center text-center gap-1 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <p className="font-display text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-emerald-400 tracking-[0.3em]">
+                        Sedes & ubicaciones
+                    </p>
+                    <h1 className="text-5xl md:text-[5rem] font-black tracking-tighter font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm leading-none">
+                        Mapa del campus
+                    </h1>
+                </div>
+
                 {/* Leyenda */}
                 <div className="flex items-center gap-3 bg-white/5 p-2 rounded-xl backdrop-blur-md border border-white/5 w-fit">
                     <div className="flex items-center gap-1.5 px-2">
-                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                         <span className="text-xs font-bold text-zinc-300">En Curso</span>
                     </div>
                     <div className="w-px h-4 bg-white/10" />
                     <div className="flex items-center gap-1.5 px-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-500" />
+                        <span className="w-2 h-2 rounded-full bg-violet-400" />
                         <span className="text-xs font-bold text-zinc-300">Programado</span>
                     </div>
                     <div className="w-px h-4 bg-white/10" />
                     <div className="flex items-center gap-1.5 px-2">
-                        <span className="w-2 h-2 rounded-full bg-zinc-600" />
+                        <span className="w-2 h-2 rounded-full bg-white/20" />
                         <span className="text-xs font-bold text-zinc-500">Inactivo</span>
                     </div>
                 </div>
@@ -96,10 +107,10 @@ export default function CampusMapPage() {
             {/* Main Map Component */}
             <div className="w-full h-[75vh] min-h-[500px] mx-auto my-6 border border-white/5 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative bg-white ring-2 ring-black/5">
                 {loading ? (
-                    <div className="w-full h-full flex items-center justify-center bg-white">
+                    <div className="w-full h-full flex items-center justify-center bg-background">
                         <div className="flex flex-col items-center gap-4">
-                            <Activity className="animate-spin text-[#FFC000]" size={32} />
-                            <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Cargando Satélite...</span>
+                            <Activity className="animate-spin text-emerald-400" size={32} />
+                            <span className="text-xs font-mono text-white/50 uppercase tracking-widest">Cargando Satélite...</span>
                         </div>
                     </div>
                 ) : (
@@ -119,13 +130,13 @@ export default function CampusMapPage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         className="flex items-center gap-2 mb-2"
                     >
-                        <Sparkles className="text-[#FFC000]" size={16} />
-                        <span className="text-xs font-black text-[#FFC000] uppercase tracking-[0.3em]">Explora Uninorte</span>
+                        <Sparkles className="text-emerald-400" size={16} />
+                        <span className="font-display text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 tracking-[0.3em]">Explora uninorte</span>
                     </m.div>
-                    <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter mb-4">
-                        Conoce nuestras <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFC000] to-orange-500">instalaciones</span>
+                    <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-4 font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60">
+                        Instalaciones
                     </h2>
-                    <p className="text-zinc-500 text-sm max-w-lg mb-8">
+                    <p className="text-white/50 text-sm max-w-lg mb-8 font-medium">
                         Interactúa con el mapa o elige una opción para conocer los escenarios donde se vive la pasión olímpica.
                     </p>
 
@@ -135,10 +146,10 @@ export default function CampusMapPage() {
                                 key={fac.id}
                                 variant={selectedVenue === fac.mapVenue ? "default" : "outline"}
                                 className={cn(
-                                    "rounded-full px-6 py-2 h-auto text-xs font-black uppercase tracking-wider transition-all duration-300 border-white/10",
+                                    "rounded-full px-6 py-2 h-auto text-xs font-black uppercase tracking-wider transition-all duration-300 border-white/5",
                                     selectedVenue === fac.mapVenue 
-                                        ? "bg-[#FFC000] text-black shadow-[0_0_20px_rgba(255,192,0,0.3)] scale-105" 
-                                        : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white"
+                                        ? "bg-violet-600 text-white shadow-[0_0_20px_rgba(124,58,237,0.3)] scale-105 border-transparent" 
+                                        : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
                                 )}
                                 onClick={() => setSelectedVenue(fac.mapVenue === selectedVenue ? null : fac.mapVenue)}
                             >
@@ -160,7 +171,7 @@ export default function CampusMapPage() {
                         >
                             <div className="grid grid-cols-1 lg:grid-cols-2">
                                 <div className="relative h-[300px] lg:h-[500px] overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10 lg:hidden" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10 lg:hidden" />
                                     <m.img 
                                         initial={{ scale: 1.1 }}
                                         animate={{ scale: 1 }}
@@ -170,38 +181,38 @@ export default function CampusMapPage() {
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                     />
                                     <div className="absolute top-6 left-6 z-20">
-                                        <Badge className="bg-black/60 backdrop-blur-md border-[#FFC000]/30 text-[#FFC000] font-black tracking-widest px-4 py-1.5 rounded-full text-[10px] uppercase">
+                                        <Badge className="bg-white/10 backdrop-blur-md border-emerald-500/30 text-emerald-400 font-bold tracking-widest px-4 py-1.5 rounded-full text-[10px] uppercase font-display">
                                             Sede Oficial
                                         </Badge>
                                     </div>
                                 </div>
-                                <div className="p-8 lg:p-12 flex flex-col justify-center relative overflow-hidden">
-                                    <div className="absolute -top-20 -right-20 w-80 h-80 bg-[#FFC000]/5 rounded-full blur-[100px] pointer-events-none" />
+                                <div className="p-8 lg:p-12 flex flex-col justify-center relative overflow-hidden bg-background/50">
+                                    <div className="absolute -top-20 -right-20 w-80 h-80 bg-violet-600/10 rounded-full blur-[100px] pointer-events-none" />
                                     
                                     <m.div
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: 0.2 }}
                                     >
-                                        <h3 className="text-3xl lg:text-5xl font-black text-white mb-6 tracking-tighter leading-none">
+                                        <h3 className="font-display text-3xl lg:text-5xl font-black text-white mb-6 tracking-tighter leading-none">
                                             {activeFacility.name}
                                         </h3>
-                                        <p className="text-zinc-400 text-lg leading-relaxed mb-8 max-w-md">
+                                        <p className="text-white/60 text-lg leading-relaxed mb-8 max-w-md font-medium">
                                             {activeFacility.description}
                                         </p>
                                         
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
                                             {activeFacility.details.map((detail, i) => (
-                                                <div key={detail} className="p-3 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center text-center">
-                                                    <Sparkles size={14} className="text-[#FFC000] mb-2" />
-                                                    <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">{detail}</span>
+                                                <div key={detail} className="p-3 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center text-center backdrop-blur-sm">
+                                                    <Sparkles size={14} className="text-emerald-400 mb-2" />
+                                                    <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">{detail}</span>
                                                 </div>
                                             ))}
                                         </div>
 
                                         <Button 
                                             variant="outline" 
-                                            className="rounded-full border-[#FFC000]/30 text-[#FFC000] hover:bg-[#FFC000] hover:text-black font-black uppercase tracking-[0.2em] text-xs h-12 px-8"
+                                            className="rounded-full border-white/20 text-[#F5F5DC] hover:bg-white/10 active:bg-white/5 transition-all font-black uppercase tracking-[0.2em] text-xs h-12 px-8"
                                             onClick={() => {
                                                 const element = document.getElementById('mapa-contenedor');
                                                 element?.scrollIntoView({ behavior: 'smooth' });
@@ -264,23 +275,23 @@ export default function CampusMapPage() {
                                 transition={{ delay: idx * 0.1 }}
                                 className="group relative"
                             >
-                                <div className="absolute -inset-1 bg-gradient-to-r from-[#FFC000]/20 to-orange-600/20 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
+                                <div className="absolute -inset-1 bg-gradient-to-r from-violet-600/10 to-emerald-600/10 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
                                 
-                                <div className="relative flex flex-col h-full bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden transition-all duration-500 hover:border-[#FFC000]/30 hover:translate-y-[-4px]">
+                                <div className="relative flex flex-col h-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden transition-all duration-500 hover:border-violet-500/30 hover:translate-y-[-4px]">
                                     {/* Card Header */}
                                     <div className="p-6 border-b border-white/5 bg-gradient-to-br from-white/5 to-transparent">
                                         <div className="flex justify-between items-start mb-1">
-                                            <h3 className="text-xl font-black text-white tracking-tighter group-hover:text-[#FFC000] transition-colors uppercase">
+                                            <h3 className="text-xl font-black text-white tracking-tighter group-hover:text-emerald-400 transition-colors uppercase">
                                                 {venue}
                                             </h3>
                                             {currentOrNext?.estado === 'en_curso' && (
-                                                <Badge className="bg-red-500/10 text-red-500 border-red-500/20 flex items-center gap-1.5 font-black px-3 py-1 animate-pulse">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                                    LIVE
+                                                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)] flex items-center gap-1.5 font-black px-3 py-1 font-display tracking-wide">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                                    EN CURSO
                                                 </Badge>
                                             )}
                                         </div>
-                                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em]">Escenario Olímpico</p>
+                                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">Escenario Olímpico</p>
                                     </div>
 
                                     {/* Main Content Area */}
@@ -289,36 +300,36 @@ export default function CampusMapPage() {
                                             <>
                                                 {/* Current/Featured Event */}
                                                 <div>
-                                                    <span className="text-[10px] font-black text-[#FFC000] uppercase tracking-widest mb-3 block">
+                                                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-3 block opacity-80">
                                                         {currentOrNext.estado === 'en_curso' ? 'En este momento' : 'Próximo Evento'}
                                                     </span>
                                                     <Link 
                                                         href={`/partido/${currentOrNext.id}`}
-                                                        className="block p-5 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group/match"
+                                                        className="block p-5 rounded-3xl bg-black/20 border border-white/5 hover:bg-white/5 transition-all group/match"
                                                     >
                                                         <div className="flex items-center justify-between mb-4">
                                                             <div className="flex items-center gap-2">
-                                                                <div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center border border-white/10 text-[#FFC000]">
+                                                                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10 text-emerald-400">
                                                                     <SportIcon sport={currentOrNext.disciplinas?.name || ''} size={16} />
                                                                 </div>
-                                                                <span className="text-xs font-bold text-zinc-300">{currentOrNext.disciplinas?.name}</span>
+                                                                <span className="text-xs font-bold text-white/80">{currentOrNext.disciplinas?.name}</span>
                                                             </div>
-                                                            <div className="font-mono text-[11px] text-[#FFC000] font-black bg-[#FFC000]/10 px-2 py-0.5 rounded-md">
+                                                            <div className="font-mono text-[11px] text-emerald-400 font-black bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                                                                 {new Date(currentOrNext.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                             </div>
                                                         </div>
                                                         {currentOrNext.marcador_detalle?.tipo === 'carrera' ? (
                                                             <div className="text-xl font-black text-white text-center py-2 relative z-10 w-full">
-                                                                <span className="whitespace-nowrap overflow-hidden text-ellipsis max-w-full block">
+                                                                <span className="whitespace-nowrap overflow-hidden text-ellipsis max-w-full block text-[#F5F5DC]">
                                                                     {currentOrNext.marcador_detalle?.distancia} {currentOrNext.marcador_detalle?.estilo}
                                                                 </span>
-                                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1 block">Prueba de Velocidad</span>
+                                                                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1 block">Prueba de Velocidad</span>
                                                             </div>
                                                         ) : (
                                                             <>
-                                                                <div className="text-lg font-black text-white tracking-tight leading-tight group-hover/match:text-[#FFC000] transition-colors line-clamp-2">
+                                                                <div className="text-lg font-black text-white tracking-tight leading-tight group-hover/match:text-emerald-400 transition-colors line-clamp-2">
                                                                     {getDisplayName(currentOrNext, 'a')} 
-                                                                    <span className="text-zinc-500 mx-2 text-sm italic">
+                                                                    <span className="text-white/30 mx-2 text-sm italic font-medium">
                                                                         {currentOrNext.disciplinas?.name === 'Ajedrez' ? ' ' : 'vs'}
                                                                     </span> 
                                                                     {getDisplayName(currentOrNext, 'b')}
@@ -369,7 +380,7 @@ export default function CampusMapPage() {
                                                                 </Link>
                                                             ))}
                                                             {others.length > 2 && (
-                                                                <p className="text-[10px] text-center font-bold text-[#FFC000]/40 py-2 border-t border-white/5 uppercase tracking-widest">
+                                                                <p className="text-[10px] text-center font-bold text-emerald-400/50 py-2 border-t border-white/5 uppercase tracking-widest">
                                                                     +{others.length - 2} eventos adicionales
                                                                 </p>
                                                             )}
@@ -379,22 +390,22 @@ export default function CampusMapPage() {
                                             </>
                                         ) : (
                                             <div className="flex-1 flex flex-col items-center justify-center py-10 opacity-30">
-                                                <div className="w-12 h-12 rounded-full border border-dashed border-white/20 mb-4 flex items-center justify-center">
-                                                    <Calendar size={20} className="text-zinc-500" />
+                                                <div className="w-12 h-12 rounded-full border border-dashed border-white/20 mb-4 flex items-center justify-center bg-white/5">
+                                                    <Calendar size={20} className="text-white/60" />
                                                 </div>
-                                                <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Sin partidos hoy</p>
+                                                <p className="text-xs font-bold uppercase tracking-widest text-white/50">Sin partidos hoy</p>
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Action Footer */}
                                     {venueMatches.length > 0 && (
-                                        <div className="p-4 bg-black/20 border-t border-white/5">
+                                        <div className="p-4 bg-white/5 border-t border-white/5">
                                             <Link href="/quiniela">
                                                 <Button 
                                                     variant="ghost" 
                                                     size="sm"
-                                                    className="w-full h-10 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-[#FFC000] hover:bg-[#FFC000]/5"
+                                                    className="w-full h-10 rounded-xl text-[10px] font-black uppercase tracking-widest text-white/50 hover:text-emerald-400 hover:bg-emerald-500/10 font-display transition-all"
                                                 >
                                                     Hacer predicción en este escenario
                                                 </Button>

@@ -5,32 +5,31 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { MainNavbar } from "@/components/main-navbar";
 import { supabase } from "@/lib/supabase";
-import { Avatar, Badge, Button } from "@/components/ui-primitives";
+import { Avatar, Badge } from "@/components/ui-primitives";
 import {
     Star,
     Target,
     LogOut,
     ChevronLeft,
     Loader2,
-    Calendar,
     ArrowUpRight,
     Crown,
     Swords,
     Settings,
     Users,
-    Mail,
     Activity,
-    Trophy
+    Trophy,
+    Clock
 } from "lucide-react";
 import { FriendsList } from "@/modules/users/components/friends-list";
 import { FollowButton } from "@/modules/users/components/follow-button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
-import { isCreator, hasAuraBadge, hasMvpBadge, SPORT_EMOJI, SPORT_ACCENT } from "@/lib/constants";
+import { isCreator, hasAuraBadge, hasMvpBadge } from "@/lib/constants";
 import { useRouter } from "next/navigation";
-
-type ProfileTab = 'general' | 'comunidad';
+import { SportIcon } from "@/shared/components/sport-icons";
+import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 
 export default function PerfilPage() {
     const router = useRouter();
@@ -41,12 +40,24 @@ export default function PerfilPage() {
     const [followedProfiles, setFollowedProfiles] = useState<any[]>([]);
     const [followedCareers, setFollowedCareers] = useState<any[]>([]);
     const [friendsCount, setFriendsCount] = useState(0);
-    const [activeTab, setActiveTab] = useState<ProfileTab>('general');
+    const [detailedStats, setDetailedStats] = useState<any>({
+        goals: 0,
+        pts3: 0,
+        pts2: 0,
+        pts1: 0,
+        yellowCards: 0,
+        redCards: 0,
+        fouls: 0,
+        totalEvents: 0
+    });
 
     useEffect(() => {
         if (profile) {
             if (profile.carreras_ids && profile.carreras_ids.length > 0) fetchCarreras();
-            if (isDeportista) fetchHistory();
+            if (isDeportista) {
+                fetchHistory();
+                fetchDetailedStats(profile.id);
+            }
             fetchFollowing();
             fetchFriendsCount();
         }
@@ -61,11 +72,44 @@ export default function PerfilPage() {
         if (data) setCarreras(data);
     };
 
+    const fetchDetailedStats = async (id: string) => {
+        try {
+            const { data: events } = await supabase
+                .from('eventos')
+                .select('tipo_evento, jugadores!inner(profile_id)')
+                .eq('jugadores.profile_id', id);
+
+            const stats = {
+                goals: 0,
+                pts3: 0,
+                pts2: 0,
+                pts1: 0,
+                yellowCards: 0,
+                redCards: 0,
+                fouls: 0,
+                totalEvents: events?.length || 0
+            };
+
+            events?.forEach(ev => {
+                const type = ev.tipo_evento.toLowerCase();
+                if (type === 'gol' || type === 'anotacion') stats.goals++;
+                if (type === 'punto_3' || type.includes('triple')) stats.pts3++;
+                if (type === 'punto_2' || type.includes('doble')) stats.pts2++;
+                if (type === 'punto_1' || type.includes('libre')) stats.pts1++;
+                if (type.includes('amarilla')) stats.yellowCards++;
+                if (type.includes('roja')) stats.redCards++;
+                if (type === 'falta') stats.fouls++;
+            });
+            setDetailedStats(stats);
+        } catch (err) {
+            console.error("Error fetching detailed stats:", err);
+        }
+    };
+
     const fetchHistory = async () => {
         if (!profile?.id) return;
         setLoadingHistory(true);
         try {
-            // First, try to get team matches via normalized roster_partido
             const { data: teamMatches } = await supabase
                 .from('roster_partido')
                 .select(`
@@ -80,7 +124,6 @@ export default function PerfilPage() {
                 .order('partido_id', { ascending: false })
                 .limit(5);
 
-            // Second, get individual matches directly from partidos
             const { data: indMatches } = await supabase
                 .from('partidos')
                 .select(`
@@ -92,61 +135,31 @@ export default function PerfilPage() {
                 .limit(5);
 
             let allMatches: any[] = [];
-
-            if (teamMatches && teamMatches.length > 0) {
-                const mappedTeam = teamMatches
-                    .filter((d: any) => d.partidos?.estado === 'finalizado' || d.partidos?.estado === 'en_curso')
-                    .map((d: any) => ({
-                        match_id: d.partidos.id,
-                        fecha: d.partidos.fecha,
-                        disciplina: d.partidos.disciplinas?.name,
-                        equipo_a: d.partidos.equipo_a,
-                        equipo_b: d.partidos.equipo_b,
-                        estado: d.partidos.estado,
-                        marcador_final: d.partidos.marcador_detalle
-                    }));
-                allMatches = [...allMatches, ...mappedTeam];
+            if (teamMatches) {
+                allMatches = [...allMatches, ...teamMatches.map((d: any) => ({
+                    match_id: d.partidos.id,
+                    fecha: d.partidos.fecha,
+                    disciplina: d.partidos.disciplinas?.name,
+                    equipo_a: d.partidos.equipo_a,
+                    equipo_b: d.partidos.equipo_b,
+                    estado: d.partidos.estado,
+                    marcador_final: d.partidos.marcador_detalle
+                }))];
+            }
+            if (indMatches) {
+                allMatches = [...allMatches, ...indMatches.map((d: any) => ({
+                    match_id: d.id,
+                    fecha: d.fecha,
+                    disciplina: d.disciplinas?.name,
+                    equipo_a: d.equipo_a,
+                    equipo_b: d.equipo_b,
+                    estado: d.estado,
+                    marcador_final: d.marcador_detalle
+                }))];
             }
 
-            if (indMatches && indMatches.length > 0) {
-                const mappedInd = indMatches
-                    .filter((d: any) => d.estado === 'finalizado' || d.estado === 'en_curso')
-                    .map((d: any) => ({
-                        match_id: d.id,
-                        fecha: d.fecha,
-                        disciplina: d.disciplinas?.name,
-                        equipo_a: d.equipo_a,
-                        equipo_b: d.equipo_b,
-                        estado: d.estado,
-                        marcador_final: d.marcador_detalle
-                    }));
-                allMatches = [...allMatches, ...mappedInd];
-            }
-
-            // Sort descending locally to ensure correct inter-leaving of team & individual
             allMatches.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-
-            // Deduplicate across the two calls just in case
-            const uniqueMatches: any[] = [];
-            const seenIds = new Set();
-            for (const m of allMatches) {
-                if (!seenIds.has(m.match_id)) {
-                    seenIds.add(m.match_id);
-                    uniqueMatches.push(m);
-                }
-            }
-
-            // If we still found strictly 0 matches, fallback to the RPC just in case
-            if (uniqueMatches.length === 0) {
-                const { data } = await supabase.rpc('get_athlete_event_history', {
-                    athlete_profile_id: profile.id
-                });
-                if (data) {
-                    uniqueMatches.push(...data);
-                }
-            }
-            
-            setHistory(uniqueMatches.slice(0, 5));
+            setHistory(allMatches.slice(0, 5));
         } catch (err) {
             console.error("Error fetching history:", err);
         } finally {
@@ -167,31 +180,29 @@ export default function PerfilPage() {
     const fetchFollowing = async () => {
         if (!profile?.id) return;
         try {
-            // Profiles followed
             const { data: profiles } = await supabase
                 .from('user_followers')
                 .select('following_profile:profiles!following_profile_id(id, full_name, avatar_url, points)')
                 .eq('follower_id', profile.id);
             
-            if (profiles) {
-                setFollowedProfiles(profiles.map((f: any) => f.following_profile));
-            }
+            if (profiles) setFollowedProfiles(profiles.map((f: any) => f.following_profile));
 
-            // Careers followed
             const { data: careers } = await supabase
                 .from('career_followers')
                 .select('career:carreras(id, nombre, escudo_url)')
                 .eq('follower_id', profile.id);
 
-            if (careers) {
-                setFollowedCareers(careers.map((f: any) => f.career));
-            }
+            if (careers) setFollowedCareers(careers.map((f: any) => f.career));
         } catch (err) {
             console.error("Error fetching following:", err);
         }
     };
 
-    if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-[#0a0816]"><UniqueLoading size="lg" /></div>;
+    const getSportIcon = (disciplina?: string) => {
+        return <SportIcon sport={disciplina || ''} size={18} />;
+    };
+
+    if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
     if (!user) return null;
 
     const memberSince = profile?.created_at
@@ -201,94 +212,93 @@ export default function PerfilPage() {
     const isProjectCreator = user ? isCreator(user.email) : false;
     const showAuraBadge = hasAuraBadge(user?.email);
     const showMvpBadge = hasMvpBadge(user?.email);
-    const sportName = profile?.disciplina?.name;
-    const sportEmoji = sportName ? SPORT_EMOJI[sportName] : null;
+    const sportName = profile?.disciplina?.name || "";
 
     const wins = profile?.wins || 0;
     const losses = profile?.losses || 0;
-    const totalScore = profile?.total_score_all_time || 0;
     const points = profile?.points || 0;
 
-    const firstName = profile?.full_name?.split(' ')[0] || "Usuario";
-
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-amber-500/30 overflow-x-hidden">
+        <div className="min-h-screen bg-background text-white selection:bg-amber-500/30 overflow-x-hidden relative">
+            {/* ━━━ AMBIENT HYBRID BACKGROUND ━━━ */}
+            <div className="fixed inset-0 z-0 pointer-events-none opacity-30 mix-blend-screen overflow-hidden">
+                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-violet-600/10 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[120px]" />
+            </div>
+
+            <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.07]">
+                <img 
+                    src="/elementos/07.png" 
+                    alt="" 
+                    className="w-[800px] md:w-[1200px] h-auto grayscale contrast-150 brightness-200" 
+                    aria-hidden="true"
+                />
+            </div>
+
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
-            <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-8 pb-24 relative z-10">
+            <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-8 pb-32 relative z-10 space-y-16">
                 
                 {/* Top Nav Actions */}
-                <div className="flex items-center justify-between mb-10">
-                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-outfit">
+                <div className="flex items-center justify-between">
+                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-sans">
                         <div className="p-2 rounded-full bg-white/5 border border-white/5 group-hover:bg-white group-hover:text-black transition-all flex items-center justify-center">
                             <ChevronLeft size={14} />
                         </div>
                         Regresar
                     </button>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <Link
                             href="/perfil/editar"
-                            className="bg-white/5 border border-white/10 hover:bg-white/10 text-white/80 px-4 py-2.5 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all"
+                            className="bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 text-violet-400 px-6 py-3 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(139,92,246,0.1)]"
                         >
-                            <Settings size={14} /> Editar
+                            <Settings size={14} /> Editar Perfil
                         </Link>
                         <button
                             onClick={() => signOut()}
-                            className="bg-white/5 border border-white/10 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 text-white/40 px-4 py-2.5 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all"
+                            className="bg-white/5 border border-white/10 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/20 text-white/30 px-6 py-3 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all"
                         >
                             <LogOut size={14} /> Cerrar Sesión
                         </button>
                     </div>
                 </div>
 
-                {/* ━━━ HERO SECTION ━━━ */}
+                {/* ━━━ PREMIUM IDENTITY BLOCK ━━━ */}
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex flex-col lg:flex-row gap-8 lg:gap-14 mb-14"
+                    className="relative"
                 >
-                    {/* Avatar */}
-                    <div className="relative self-center lg:self-start flex-shrink-0 group">
-                        {isProjectCreator && (
-                            <div className="absolute -inset-5 rounded-[3.5rem] bg-gradient-to-tr from-amber-600/40 via-yellow-500/20 to-orange-500/10 blur-2xl z-0 pointer-events-none" />
-                        )}
-                        <Avatar
-                            name={profile?.full_name || user.email}
-                            src={null}
-                            className={cn(
-                                "relative w-48 h-48 md:w-60 md:h-60 rounded-[3rem] shadow-2xl z-10 bg-[#0a0816] text-5xl md:text-6xl border border-white/10",
+                    <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-r from-red-600/5 via-blue-600/5 to-transparent blur-[120px] pointer-events-none" />
+                    
+                    <div className="flex flex-col lg:flex-row items-center lg:items-end gap-8 lg:gap-12 relative z-10">
+                        <div className="relative group shrink-0">
+                            {isProjectCreator && (
+                                <div className="absolute -inset-6 bg-gradient-to-tr from-amber-600/30 via-yellow-400/10 to-transparent blur-3xl animate-pulse" />
                             )}
-                        />
-                        {isProjectCreator && (
-                            <div className="absolute -bottom-3 -right-3 p-3 bg-black rounded-xl border border-white/10 shadow-2xl z-20">
-                                <Crown size={24} className="text-white outline-white drop-shadow-md" />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Identity Content */}
-                    <div className="flex-1 flex flex-col justify-center text-center lg:text-left">
-                        
-                        <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8 mb-5">
-                            <h1
+                            <Avatar
+                                name={profile?.full_name}
                                 className={cn(
-                                    "text-5xl md:text-7xl font-black font-outfit leading-tight",
-                                    isProjectCreator
-                                        ? "text-transparent bg-clip-text bg-gradient-to-b from-[#FFEAA7] via-[#FFD369] to-[#D4AF37] drop-shadow-md"
-                                        : !profile?.name_color ? "text-white" : undefined
+                                    "relative w-44 h-44 lg:w-64 lg:h-64 rounded-[3rem] border border-white/10 shadow-2xl bg-black text-5xl lg:text-7xl font-sans ring-1 ring-white/5",
+                                    isProjectCreator && "border-amber-500/40 ring-amber-500/20 shadow-amber-500/10"
                                 )}
-                                style={!isProjectCreator && profile?.name_color ? { color: profile.name_color } : undefined}
-                            >
-                                {profile?.full_name?.split(' ').slice(0, 2).join('\n') || "Tu Perfil"}
-                            </h1>
-                            {(isProjectCreator || showAuraBadge || showMvpBadge) && (
-                                <div className="flex flex-wrap justify-center lg:justify-start items-center gap-2 lg:self-start lg:mt-3">
+                            />
+                            {isProjectCreator && (
+                                <div className="absolute -bottom-2 -right-2 p-3 bg-amber-500 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.5)] z-20 border-4 border-black group-hover:scale-110 transition-transform">
+                                    <Crown size={24} className="text-black" />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left gap-6">
+                            <div className="space-y-2">
+                                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-4">
                                     {isProjectCreator && (
-                                        <Badge className="bg-gradient-to-r from-amber-600 to-amber-900 border border-amber-500/50 text-white text-[10px] font-black uppercase tracking-[0.2em] px-5 py-2 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-                                            <Crown size={12} className="mr-2" /> CREADOR DEL PROYECTO
-                                        </Badge>
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                                            <Crown size={12} />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Original Creator</span>
+                                        </div>
                                     )}
                                     {showAuraBadge && (
                                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-orange-500/30 bg-gradient-to-r from-red-500/10 to-yellow-500/10 shadow-[0_0_18px_rgba(239,68,68,0.25)]">
@@ -301,326 +311,351 @@ export default function PerfilPage() {
                                         </div>
                                     )}
                                 </div>
-                            )}
-                        </div>
-
-                        {/* Status Row */}
-                        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1 p-1 bg-white/[0.03] border border-white/5 rounded-3xl backdrop-blur-xl shadow-2xl mt-8">
-                            {/* Puntos Pill */}
-                            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/[0.02] border border-white/5 shadow-2xl">
-                                <div className="p-1.5 bg-red-600/10 rounded-lg text-red-500">
-                                    <Target size={16} />
-                                </div>
-                                <div className="leading-tight">
-                                    <p className="text-[14px] font-black tabular-nums">{points}</p>
-                                    <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Puntos Globales</p>
-                                </div>
-                            </div>
-
-                            {/* Amigos Pill */}
-                            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/[0.02] border border-white/5 shadow-2xl">
-                                <div className="p-1.5 bg-indigo-600/10 rounded-lg text-indigo-400">
-                                    <Users size={16} />
-                                </div>
-                                <div className="leading-tight">
-                                    <p className="text-[14px] font-black tabular-nums">{friendsCount}</p>
-                                    <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Amigos</p>
+                                <h1
+                                    className={cn(
+                                        "text-5xl lg:text-8xl font-black font-sans tracking-tight leading-none mb-2 drop-shadow-2xl",
+                                        isProjectCreator
+                                            ? "text-transparent bg-clip-text bg-gradient-to-b from-white via-amber-200 to-amber-500"
+                                            : !profile?.name_color ? "text-white" : undefined
+                                    )}
+                                    style={!isProjectCreator && profile?.name_color ? { color: profile.name_color } : undefined}
+                                >
+                                    {profile?.full_name || "Tu Perfil"}
+                                </h1>
+                                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5 mt-2 lg:mt-4">
+                                  <Clock size={12} className="text-white/20" />
+                                  <span className="text-[10px] font-display font-black tracking-widest text-white/30 uppercase">Miembro desde: {memberSince}</span>
                                 </div>
                             </div>
 
-                            {/* Follow Button (Readonly since it is their own profile) */}
-                            <FollowButton targetId={user.id} initialFollowersCount={profile?.followers_count || 0} />
+                            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1 p-1.5 bg-black/40 border border-white/10 rounded-[2rem] backdrop-blur-xl shadow-2xl">
+                                <div className="flex items-center gap-3 px-6 py-4 rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors">
+                                    <div className="p-2 bg-violet-500/15 rounded-xl text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.1)] group-hover/stat:scale-110 transition-transform">
+                                        <Target size={18} />
+                                    </div>
+                                    <div className="leading-tight">
+                                        <p className="text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md">{points}</p>
+                                        <p className="text-[9px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Puntos Globales</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 px-6 py-4 rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors">
+                                    <div className="p-2 bg-emerald-500/15 rounded-xl text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] group-hover/stat:scale-110 transition-transform">
+                                        <Users size={18} />
+                                    </div>
+                                    <div className="leading-tight">
+                                        <p className="text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md">{friendsCount}</p>
+                                        <p className="text-[9px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Amigos</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </motion.div>
 
-                {/* Toggle AMIGOS tab */}
-                 <div className="flex justify-center lg:justify-start mb-8 border-b border-white/10 pb-4">
-                    <button
-                        onClick={() => setActiveTab('general')}
-                        className={cn("px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-full", activeTab === 'general' ? "bg-white/10 text-white" : "text-white/40 hover:text-white")}
-                    >
-                        General
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('comunidad')}
-                        className={cn("px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-full flex items-center gap-2", activeTab === 'comunidad' ? "bg-white/10 text-white" : "text-white/40 hover:text-white")}
-                    >
-                        <Users size={14} /> Comunidad
-                    </button>
-                </div>
-
-                {activeTab === 'general' && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="grid grid-cols-1 lg:grid-cols-12 gap-6"
-                >
-                    {/* LEFT COLUMN: Athlete Stats or Quiniela Stats */}
-                    <div className="lg:col-span-4 space-y-6">
+                {/* ━━━ CONTENT GRID ━━━ */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {/* LEFT COLUMN: Stats Hub */}
+                    <div className="lg:col-span-4 lg:sticky lg:top-24">
                         {isDeportista ? (
-                            <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0A0705] border border-amber-500/10 p-8 shadow-[0_0_30px_rgba(245,158,11,0.02)] min-h-[360px] flex flex-col justify-between group">
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity duration-1000">
-                                    <Star size={200} />
-                                </div>
-
-                                <div className="relative z-10">
-                                    <h3 className="text-amber-500 font-black uppercase text-sm tracking-[0.3em] font-outfit mb-8 max-w-[140px] leading-relaxed">
-                                        ESTADÍSTICAS DE ATLETA
-                                    </h3>
-                                    
-                                    <div className="flex items-center justify-between mb-8">
-                                        <span className="text-[10px] font-black uppercase text-white/30 tracking-[0.2em]">Disciplina</span>
-                                        <div className="px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[9px] font-black uppercase tracking-[0.1em]">
-                                            {sportName?.toUpperCase() || "MULTIDISCIPLINA"}
+                            <div className={cn(
+                                "relative overflow-hidden rounded-[3rem] p-8 lg:p-10 shadow-[0_0_50px_rgba(0,0,0,0.5)] min-h-[500px] flex flex-col group border-2 transition-all duration-700",
+                                sportName === 'Baloncesto' ? "bg-gradient-to-br from-[#1a0f05]/80 to-[#0A0705]/95 border-orange-500/30 backdrop-blur-2xl" :
+                                sportName === 'Fútbol' ? "bg-gradient-to-br from-[#051a0f]/80 to-[#0A0705]/95 border-emerald-500/30 backdrop-blur-2xl" :
+                                "bg-gradient-to-br from-[#111]/80 to-[#000]/95 border-white/10 backdrop-blur-2xl"
+                            )}>
+                                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                                <div className="relative z-10 flex flex-col h-full">
+                                    <div className="flex items-center justify-between mb-10">
+                                        <div className="flex flex-col gap-1">
+                                            <p className={cn(
+                                                "font-display text-[10px] font-bold tracking-[0.3em]",
+                                                sportName === 'Fútbol' ? "text-emerald-400" : sportName === 'Baloncesto' ? "text-orange-400" : "text-violet-400"
+                                            )}>
+                                                Athlete pro identity
+                                            </p>
+                                            <div className="flex items-center gap-3">
+                                                <h3 className="text-3xl lg:text-4xl font-black text-white font-display tracking-tighter leading-none">Estadísticas</h3>
+                                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
+                                                  <SportIcon sport={sportName} size={22} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="relative w-20 h-20 flex items-center justify-center">
+                                            <svg className="w-full h-full -rotate-90">
+                                                <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-white/5" />
+                                                <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="6" fill="transparent" 
+                                                    strokeDasharray={213.6} strokeDashoffset={213.6 * (1 - (wins / (wins + losses || 1)))} 
+                                                    strokeLinecap="round" className={cn("transition-all duration-1000", (wins / (wins + losses || 1)) > 0.5 ? "text-emerald-400" : "text-amber-400")} 
+                                                />
+                                            </svg>
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                <span className="text-[18px] font-black font-mono tabular-nums leading-none text-white">{Math.round((wins / (wins + losses || 1)) * 100)}%</span>
+                                                <span className="text-[7px] font-display font-black text-white/30 uppercase tracking-widest mt-1">Win Rate</span>
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div className="rounded-[1.5rem] bg-[#050403] p-5 text-center border border-white/5">
-                                            <span className="text-[9px] font-black uppercase text-white/30 tracking-[0.2em] block mb-2">Wins</span>
-                                            <span className="text-3xl font-black text-white">{wins}</span>
+                                    <div className="grid grid-cols-2 gap-4 mb-10">
+                                        <div className="bg-white/5 border border-white/5 rounded-[1.5rem] p-5">
+                                            <p className="text-[10px] font-display font-black uppercase tracking-widest text-emerald-400/60 mb-2">Victorias</p>
+                                            <p className="text-4xl font-black font-mono text-white">{wins}</p>
                                         </div>
-                                        <div className="rounded-[1.5rem] bg-[#050403] p-5 text-center border border-white/5">
-                                            <span className="text-[9px] font-black uppercase text-white/30 tracking-[0.2em] block mb-2">Loss</span>
-                                            <span className="text-3xl font-black text-white/50">{losses}</span>
+                                        <div className="bg-white/5 border border-white/5 rounded-[1.5rem] p-5">
+                                            <p className="text-[10px] font-display font-black uppercase tracking-widest text-rose-400/60 mb-2">Derrotas</p>
+                                            <p className="text-4xl font-black font-mono text-white">{losses}</p>
                                         </div>
                                     </div>
-
-                                    <div className="rounded-[1.5rem] bg-[#3B220B] border border-amber-900/50 p-6 text-center shadow-inner">
-                                        <span className="text-[9px] font-black uppercase text-amber-500 tracking-[0.2em] block mb-2">Total Score</span>
-                                        <span className="text-4xl font-black text-white">{totalScore}</span>
+                                    <div className="bg-black/40 border border-white/5 rounded-[2rem] p-6 flex-1 shadow-inner relative overflow-hidden">
+                                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                                        <p className="text-[10px] font-display font-black uppercase tracking-[0.4em] text-white/30 mb-6 flex items-center gap-2"><Activity size={12} /> Analytics</p>
+                                        <div className="flex items-center justify-around py-5">
+                                            <div className="flex flex-col items-center">
+                                                <p className="text-3xl font-black font-mono text-emerald-400 leading-none mb-2">{detailedStats.goals}</p>
+                                                <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Goles</p>
+                                            </div>
+                                            <div className="w-[1px] h-10 bg-white/10" />
+                                            <div className="flex flex-col items-center">
+                                                <div className="flex gap-2 mb-2">
+                                                    <div className="w-3 h-4 bg-amber-500 rounded-sm" />
+                                                    <p className="text-lg font-black font-mono text-white leading-none">{detailedStats.yellowCards}</p>
+                                                </div>
+                                                <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Amarillas</p>
+                                            </div>
+                                            <div className="w-[1px] h-10 bg-white/10" />
+                                            <div className="flex flex-col items-center">
+                                                <div className="flex gap-2 mb-2">
+                                                    <div className="w-3 h-4 bg-rose-600 rounded-sm" />
+                                                    <p className="text-lg font-black font-mono text-white leading-none">{detailedStats.redCards}</p>
+                                                </div>
+                                                <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Rojas</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         ) : (
-                            <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0A0705] border border-indigo-500/10 p-8 shadow-[0_0_30px_rgba(99,102,241,0.02)] min-h-[360px] flex flex-col justify-between group">
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity duration-1000">
-                                    <Target size={200} />
+                            <div className="relative overflow-hidden rounded-[3rem] bg-black/40 backdrop-blur-3xl border border-violet-500/20 p-10 shadow-2xl min-h-[400px] flex flex-col justify-between group">
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.05] group-hover:scale-110 transition-transform duration-1000">
+                                    <Target size={260} />
                                 </div>
-
-                                <div className="relative z-10">
-                                    <h3 className="text-indigo-400 font-black uppercase text-sm tracking-[0.3em] font-outfit mb-8 max-w-[140px] leading-relaxed">
-                                        ESTADÍSTICAS QUINIELA
-                                    </h3>
-                                    
-                                    <div className="flex items-center justify-between mb-8">
-                                        <span className="text-[10px] font-black uppercase text-white/30 tracking-[0.2em]">Puntos Totales</span>
-                                        <div className="px-3 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 text-[9px] font-black uppercase tracking-[0.1em]">
-                                            RANKED
-                                        </div>
+                                <div className="relative z-10 flex flex-col h-full justify-between">
+                                    <div className="flex flex-col gap-1 mb-12 border-l-2 border-violet-500/50 pl-4">
+                                        <p className="font-display text-[10px] font-bold tracking-[0.3em] text-violet-400/70">
+                                            Predict & win
+                                        </p>
+                                        <h3 className="text-3xl lg:text-4xl font-black text-white font-display tracking-tighter leading-none">Quiniela</h3>
                                     </div>
-
-                                    <div className="rounded-[1.5rem] bg-[#0F0D16] border border-indigo-900/50 p-6 text-center shadow-inner mt-10">
-                                        <span className="text-[9px] font-black uppercase text-indigo-400 tracking-[0.2em] block mb-2">Quiniela Score</span>
-                                        <span className="text-4xl font-black text-white">{points}</span>
+                                    <div className="space-y-8">
+                                        <div className="flex items-center justify-between px-2">
+                                            <span className="text-[10px] font-display font-bold text-white/40 tracking-[0.2em]">Puntos totales</span>
+                                            <div className="bg-violet-500/10 border border-violet-500/30 text-violet-400 font-display font-black tracking-widest text-[9px] px-2 py-1 rounded-md">OFFICIAL RANKED</div>
+                                        </div>
+                                        <div className="rounded-[2rem] bg-black/40 border border-white/5 p-10 text-center shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
+                                            <p className="text-[10px] font-display font-bold text-violet-400/60 tracking-[0.2em] mb-3">Puntuación acumulada</p>
+                                            <p className="text-6xl font-black font-mono text-white tracking-tighter">{points}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    {/* RIGHT COLUMN: Acerca De + Historial */}
-                    <div className="lg:col-span-8 space-y-6 flex flex-col">
-                        
-                        {/* THE NEW CAREER CARD PROTAGONIST */}
+                    {/* RIGHT COLUMN: Careers + History */}
+                    <div className="lg:col-span-8 space-y-8">
                         {carreras.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-4">
+                            <div className="grid grid-cols-1 gap-6">
                                 {carreras.map((c) => (
-                                    <Link key={c.id} href={`/carrera/${c.id}`} className="group relative rounded-[2.5rem] bg-gradient-to-br from-[#0A0705] to-[#040302] border border-white/5 p-8 overflow-hidden hover:border-red-500/20 transition-all shadow-2xl flex flex-col sm:flex-row items-center sm:items-stretch gap-6 min-h-[160px] text-center sm:text-left">
-                                        <div className="absolute inset-0 bg-red-600/0 group-hover:bg-red-600/5 transition-colors duration-700" />
-                                        
-                                        <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-3xl bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-inner p-2 relative z-10 mx-auto sm:mx-0">
+                                    <Link key={c.id} href={`/carrera/${c.id}`} className="group relative rounded-[3rem] bg-black/40 border border-white/10 p-8 lg:p-10 overflow-hidden hover:border-violet-500/30 transition-all duration-500 shadow-2xl flex flex-col sm:flex-row items-center sm:items-stretch gap-10 backdrop-blur-xl">
+                                        <div className="absolute -right-20 -top-20 w-96 h-96 opacity-[0.05] blur-[100px] rounded-full bg-violet-600 pointer-events-none" />
+                                        <div className="w-28 h-28 lg:w-40 lg:h-40 rounded-[2.5rem] bg-black/60 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] p-6 relative z-10 group-hover:scale-105 transition-transform duration-700">
                                             {c.escudo_url ? (
-                                                <img src={c.escudo_url} alt={c.nombre} className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]" />
+                                                <img src={c.escudo_url} alt={c.nombre} className="w-full h-full object-contain filter drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]" />
                                             ) : (
-                                                <span className="text-2xl font-black text-white/20 uppercase">
-                                                    {c.nombre.substring(0, 2)}
-                                                </span>
+                                                <span className="text-5xl font-black font-display text-white/10 uppercase tracking-tighter">{c.nombre.substring(0, 2)}</span>
                                             )}
                                         </div>
-
-                                        <div className="flex flex-col relative z-10 flex-1 justify-center">
-                                            <span className="text-[10px] sm:text-[12px] font-black uppercase tracking-[0.3em] text-red-500 mb-2">
+                                        <div className="flex flex-col relative z-10 flex-1 justify-center text-center sm:text-left">
+                                            <span className="text-[12px] font-display font-bold tracking-[0.3em] text-violet-400/70 mb-4 block">
                                                 {isDeportista ? "Representando a" : "Estudiante de"}
                                             </span>
-                                            <h3 className="text-2xl sm:text-4xl font-black text-white group-hover:text-red-400 transition-colors leading-none tracking-tight">
-                                                {c.nombre}
-                                            </h3>
-                                            <div className="flex items-center justify-center sm:justify-start gap-2 mt-4 text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/80 transition-colors">
-                                                Ir al medallero de facultad <ArrowUpRight size={14} />
+                                            <h3 className="text-4xl lg:text-5xl font-black text-white group-hover:text-violet-400 transition-colors font-sans tracking-tight leading-none mb-6">{c.nombre}</h3>
+                                            <div className="flex items-center justify-center sm:justify-start gap-3 text-[10px] font-display font-black tracking-[0.2em] text-white/30 group-hover:text-white transition-all">
+                                                <span className="border-b border-white/10 pb-1">Acceder al medallero de facultad</span>
+                                                <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                             </div>
                                         </div>
                                     </Link>
                                 ))}
                             </div>
                         ) : (
-                            <div className="rounded-[2.5rem] bg-[#0A0705] border border-white/5 p-8 flex items-center justify-center min-h-[160px]">
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">CARRERA NO ASIGNADA</span>
+                            <div className="rounded-[3rem] bg-black/20 border-2 border-dashed border-white/5 p-16 text-center backdrop-blur-md">
+                                <span className="text-[11px] font-display font-bold tracking-[0.4em] text-white/10">Identidad Académica no vinculada</span>
                             </div>
                         )}
 
-                        {/* ENCUENTROS RECIENTES */}
-                        <div className="rounded-[2.5rem] bg-[#0A0807] border border-white/5 p-8 flex-1">
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/90 font-outfit">
-                                    ENCUENTROS RECIENTES
-                                </h3>
-                                <Link href="/quiniela" className="text-[10px] font-black uppercase tracking-[0.1em] text-red-600 hover:text-red-500 transition-colors flex items-center gap-1">
-                                    VER TODOS <ArrowUpRight size={14} />
-                                </Link>
-                            </div>
+                        {/* ━━━ INSTITUTIONAL BRAND BREAK ━━━ */}
+                        <div className="-mt-12 -mb-2 relative z-0">
+                            <InstitutionalBanner />
+                        </div>
 
-                            <div className="flex flex-col gap-3 min-h-[120px] justify-center">
+                        <div className="rounded-[3rem] bg-black/20 border border-white/10 p-8 lg:p-12 shadow-2xl backdrop-blur-md space-y-10 relative overflow-hidden group/history">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] pointer-events-none" />
+                            <div className="flex items-center justify-between border-b border-white/10 pb-8 relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2.5 bg-white/5 rounded-2xl border border-white/10 shadow-inner"><Swords size={20} className="text-white/40" /></div>
+                                    <h3 className="text-[11px] font-display font-bold tracking-[0.3em] text-white/50">Historial de competencia</h3>
+                                </div>
+                                <Link href="/quiniela" className="text-[10px] font-display font-bold tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors px-4 py-2 bg-white/5 rounded-full border border-white/10">Ver todos</Link>
+                            </div>
+                            <div className="flex flex-col gap-4">
                                 {loadingHistory ? (
-                                    <div className="flex justify-center p-4">
-                                        <Loader2 className="animate-spin text-white/20" />
-                                    </div>
+                                    <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white/20" /></div>
                                 ) : history.length > 0 ? (
-                                    history.slice(0, 3).map((h, i) => {
+                                    history.map((h, i) => {
                                         const scoreA = h.marcador_final?.goles_a ?? h.marcador_final?.sets_a ?? h.marcador_final?.total_a ?? 0;
                                         const scoreB = h.marcador_final?.goles_b ?? h.marcador_final?.sets_b ?? h.marcador_final?.total_b ?? 0;
-                                        const emoji = h.disciplina ? SPORT_EMOJI[h.disciplina] : null;
-
+                                        const icon = getSportIcon(h.disciplina);
                                         return (
-                                            <div key={i} className="flex items-center justify-between border-t border-white/5 py-3 first:border-0 group cursor-pointer hover:bg-white/[0.02] -mx-4 px-4 transition-colors rounded-xl">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[10px]">
-                                                        {emoji || h.disciplina?.substring(0, 2).toUpperCase()}
+                                            <div key={i} className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-white/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
+                                                <div className="flex items-center gap-6 relative z-10">
+                                                    <div className="w-12 h-12 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all shadow-inner">
+                                                        <div className="-rotate-45">{icon}</div>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.1em]">{h.disciplina}</p>
-                                                        <p className="text-[11px] font-bold text-white group-hover:text-amber-500 transition-colors">{h.equipo_a} vs {h.equipo_b}</p>
+                                                        <div className="flex items-center gap-3 mb-1.5">
+                                                            <span className="text-[11px] font-display font-bold text-white/40 tracking-wide">{h.disciplina}</span>
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
+                                                            <span className="text-[10px] font-mono font-bold text-white/20 uppercase tabular-nums">{new Date(h.fecha).toLocaleDateString()}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                          <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_a}</p>
+                                                          <span className="text-[10px] font-display font-black text-white/15">VS</span>
+                                                          <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_b}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="text-[11px] font-black tabular-nums">{scoreA} - {scoreB}</p>
+                                                <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white">
+                                                    {scoreA} <span className="text-white/20 mx-1">-</span> {scoreB}
                                                 </div>
                                             </div>
                                         );
                                     })
                                 ) : (
-                                    <div className="text-center py-6">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
-                                            SIN PARTICIPACIONES REGISTRADAS
-                                        </p>
+                                    <div className="text-center py-12 border border-dashed border-white/5 rounded-[2rem]">
+                                        <p className="text-[11px] font-bold tracking-wide text-white/10">Sin participaciones registradas</p>
                                     </div>
                                 )}
                             </div>
                         </div>
-
                     </div>
-                </motion.div>
-                )}
+                </div>
 
-                {activeTab === 'comunidad' && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.4 }}
-                        className="mt-6 space-y-12"
-                    >
-                        {/* ━━━ HUB COMUNIDAD ━━━ */}
-                        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-                            <div className="w-14 h-14 rounded-3xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.1)]">
-                                <Users className="text-red-500" size={24} />
+                {/* ━━━ HUB COMUNIDAD (VISTA PROPIA) ━━━ */}
+                <div className="space-y-12 pt-16 animate-in fade-in slide-in-from-bottom-10 duration-1000 border-t border-white/5">
+                    <div className="flex flex-col items-center text-center gap-6 pb-10 relative">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-16 h-16 rounded-[2rem] bg-violet-600/10 flex items-center justify-center border border-violet-500/20 shadow-2xl backdrop-blur-xl group hover:scale-110 transition-transform">
+                                <Users className="text-violet-400 group-hover:text-violet-300 transition-colors" size={28} />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-black font-outfit tracking-tighter text-white uppercase">Hub de mi Comunidad</h1>
-                                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Gestión de amigos y seguimientos • Privado</p>
+                                <p className="font-display text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-emerald-400 tracking-[0.3em] mb-1">Hub Comunidad</p>
+                                <h2 className="text-4xl md:text-6xl font-black font-display tracking-tighter text-white italic leading-none">Perfil estudiantil</h2>
                             </div>
                         </div>
+                        <div className="px-6 py-3 rounded-2xl bg-black/40 border border-violet-500/20 backdrop-blur-xl flex items-center gap-3">
+                            <Activity size={14} className="text-violet-400 animate-pulse" />
+                            <span className="text-[10px] font-display font-bold text-violet-400 tracking-wider leading-none">Perfil verificado 2026</span>
+                        </div>
+                    </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-10 items-start">
-                            {/* Left: Friends */}
-                            <div className="bg-white/[0.02] border border-white/5 rounded-[3.5rem] p-8 lg:p-12 shadow-2xl relative overflow-hidden group">
-                                <FriendsList userId={user.id} />
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Left: Friends */}
+                        <div className="lg:col-span-12 xl:col-span-7 bg-black/40 border border-white/10 rounded-[3rem] p-8 lg:p-12 shadow-2xl backdrop-blur-3xl relative overflow-hidden">
+                            <div className="absolute -top-24 -left-24 w-64 h-64 bg-violet-600/5 blur-[100px] pointer-events-none" />
+                            {profile?.id && <FriendsList userId={profile.id} />}
+                        </div>
+
+                        {/* Right: Seguidos */}
+                        <div className="lg:col-span-12 xl:col-span-5 space-y-8">
+                            <div className="bg-black/40 border border-white/10 backdrop-blur-3xl rounded-[3rem] p-8 lg:p-10 shadow-2xl relative overflow-hidden group hover:border-violet-500/30 transition-all duration-500">
+                                <div className="flex items-center justify-between mb-10">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner group-hover:border-violet-500/30 transition-colors">
+                                            <Star className="text-violet-400" size={18} />
+                                        </div>
+                                        <h3 className="text-[11px] font-display font-bold tracking-[0.3em] text-white/50">Perfiles seguidos</h3>
+                                    </div>
+                                    <div className="px-4 py-1.5 rounded-full bg-black/60 border border-white/5 text-[12px] font-black font-mono tabular-nums text-violet-400">
+                                      {followedProfiles.length}
+                                    </div>
+                                </div>
+                                {followedProfiles.length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {followedProfiles.slice(0, 6).map((f) => (
+                                            <Link 
+                                                key={f.id} href={`/perfil/${f.id}`}
+                                                className="flex items-center gap-5 p-5 rounded-[2rem] bg-black/60 border border-white/5 hover:border-violet-500/20 hover:bg-white/[0.05] transition-all group/item shadow-2xl"
+                                            >
+                                                <Avatar name={f.full_name} className="w-12 h-12 border border-white/10 group-hover/item:scale-110 transition-transform" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[14px] font-black text-white truncate font-display tracking-tight leading-tight">{f.full_name}</p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <Trophy size={10} className="text-violet-500/60" />
+                                                        <p className="text-[10px] font-mono font-bold text-white/30 uppercase tracking-widest">{f.points} PTS</p>
+                                                    </div>
+                                                </div>
+                                                <ArrowUpRight size={14} className="text-white/20 group-hover/item:text-white transition-colors" />
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 border border-dashed border-white/5 rounded-[2rem]">
+                                        <p className="text-[11px] font-bold text-white/10 tracking-widest leading-relaxed">No sigues perfiles aún</p>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Right: Seguidos */}
-                            <div className="space-y-8">
-                                {/* Profiles Seguidos */}
-                                <div className="bg-white/[0.03] border border-white/5 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group hover:border-blue-500/20 transition-all">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                                                <Star className="text-blue-400" size={16} />
-                                            </div>
-                                            <h3 className="text-lg font-black font-outfit tracking-tighter text-white uppercase">Perfiles Seguidos</h3>
+                            <div className="bg-black/40 border border-white/10 backdrop-blur-3xl rounded-[3rem] p-8 lg:p-10 shadow-2xl relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-500">
+                                <div className="flex items-center justify-between mb-10">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner group-hover:border-emerald-500/30 transition-colors">
+                                            <Trophy className="text-emerald-400" size={18} />
                                         </div>
-                                        <span className="text-[10px] font-black text-white/20 uppercase tabular-nums">{followedProfiles.length}</span>
+                                        <h3 className="text-[11px] font-display font-black tracking-[0.5em] text-white/60 uppercase">CARRERAS SEGUIDAS</h3>
                                     </div>
-                                    {followedProfiles.length > 0 ? (
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {followedProfiles.slice(0, 6).map((f) => (
-                                                <Link 
-                                                    key={f.id} 
-                                                    href={`/perfil/${f.id}`}
-                                                    className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all group/item"
-                                                >
-                                                    <Avatar className="w-10 h-10 border-2 border-white/10 ring-2 ring-blue-500/10 group-hover/item:ring-blue-500/20 transition-all" />
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-black text-white truncate">{f.full_name}</p>
-                                                        <div className="flex items-center gap-1.5 mt-0.5">
-                                                            <Activity size={10} className="text-blue-400" />
-                                                            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">{f.points} pts</p>
-                                                        </div>
-                                                    </div>
-                                                    <ArrowUpRight size={14} className="text-white/20 group-hover/item:text-white transition-colors" />
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-10 border border-dashed border-white/5 rounded-3xl">
-                                            <p className="text-[10px] font-black uppercase text-white/10 tracking-widest leading-loose">Todavía no sigues<br/>a ningún deportista</p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Carreras Seguidas */}
-                                <div className="bg-white/[0.03] border border-white/5 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group hover:border-purple-500/20 transition-all">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
-                                                <Trophy className="text-purple-400" size={16} />
-                                            </div>
-                                            <h3 className="text-lg font-black font-outfit tracking-tighter text-white uppercase">Carreras Seguidas</h3>
-                                        </div>
-                                        <span className="text-[10px] font-black text-white/20 uppercase tabular-nums">{followedCareers.length}</span>
+                                    <div className="px-4 py-1.5 rounded-full bg-black/60 border border-white/5 text-[12px] font-black font-mono tabular-nums text-emerald-400">
+                                      {followedCareers.length}
                                     </div>
-                                    {followedCareers.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {followedCareers.slice(0, 4).map((c) => (
-                                                <Link 
-                                                    key={c.id} 
-                                                    href={`/carreras/${c.id}`}
-                                                    className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all group/item"
-                                                >
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-black border border-white/10 flex items-center justify-center overflow-hidden">
-                                                            {c.escudo_url ? (
-                                                                <img src={c.escudo_url} alt={c.nombre} className="w-full h-full object-contain p-1" />
-                                                            ) : (
-                                                                <span className="text-[10px] font-black text-white/20">SC</span>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-sm font-black text-white truncate max-w-[120px]">{c.nombre}</p>
-                                                    </div>
-                                                    <ArrowUpRight size={14} className="text-white/20 group-hover/item:text-white transition-colors" />
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-10 border border-dashed border-white/5 rounded-3xl">
-                                            <p className="text-[10px] font-black uppercase text-white/10 tracking-widest leading-loose">No sigues ninguna<br/>facultad aún</p>
-                                        </div>
-                                    )}
                                 </div>
+                                {followedCareers.length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {followedCareers.slice(0, 4).map((c) => (
+                                            <Link 
+                                                key={c.id} href={`/carrera/${c.id}`}
+                                                className="flex items-center gap-5 p-5 rounded-[2rem] bg-black/60 border border-white/5 hover:border-emerald-500/20 hover:bg-white/[0.05] transition-all group/item shadow-2xl"
+                                            >
+                                                <div className="w-12 h-12 rounded-xl bg-black border border-white/10 flex items-center justify-center overflow-hidden shrink-0 group-hover/item:scale-110 transition-transform">
+                                                    {c.escudo_url ? (
+                                                        <img src={c.escudo_url} alt={c.nombre} className="w-full h-full object-contain" />
+                                                    ) : (
+                                                        <span className="text-[10px] font-black text-white/20">SC</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[14px] font-black text-white truncate font-display tracking-tight leading-tight">{c.nombre}</p>
+                                                    <p className="text-[10px] items-center gap-1 font-display font-black text-white/30 uppercase tracking-[0.1em] mt-1 flex">Ver Facultad <ArrowUpRight size={10}/></p>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 border border-dashed border-white/5 rounded-[2rem]">
+                                        <p className="text-[10px] font-black uppercase text-white/10 tracking-[0.4em] leading-relaxed">No sigues carreras aún</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    </motion.div>
-                )}
+                    </div>
+                </div>
 
             </main>
         </div>

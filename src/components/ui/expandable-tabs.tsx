@@ -59,7 +59,7 @@ export function ExpandableTabs({
     return (
         <div
             className={cn(
-                "flex items-center gap-1 rounded-full border border-white/5 bg-[#0a0805]/90 backdrop-blur-xl p-1.5 shadow-2xl",
+                "flex items-center gap-1 rounded-full border border-white/5 bg-background/90 backdrop-blur-xl p-1.5 shadow-2xl",
                 className
             )}
         >
@@ -84,7 +84,7 @@ export function ExpandableTabs({
                         onClick={() => handleClick(index)}
                         className={cn(
                             "relative flex items-center rounded-full px-3 py-2 transition-all duration-300",
-                            isSelected ? activeColor : "text-slate-400 hover:text-white"
+                            isSelected ? activeColor : "text-[#F5F5DC]/60 hover:text-[#F5F5DC]"
                         )}
                         aria-label={tab.title}
                     >
@@ -96,9 +96,9 @@ export function ExpandableTabs({
                                     animate={{ width: "auto", opacity: 1, marginLeft: 8 }}
                                     exit={{ width: 0, opacity: 0, marginLeft: 0 }}
                                     transition={{ duration: 0.2, ease: "easeInOut" }}
-                                    className="overflow-hidden whitespace-nowrap text-[13px] font-bold tracking-wide"
+                                    className="overflow-hidden whitespace-nowrap text-[13px] font-display tracking-wide"
                                 >
-                                    {tab.title}
+                                    <span className="font-black">{tab.title.slice(0, 2)}</span>{tab.title.slice(2)}
                                 </m.span>
                             )}
                         </AnimatePresence>

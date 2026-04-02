@@ -22,8 +22,12 @@ ALTER TABLE public.clasificacion_disciplina
 --    NULLS NOT DISTINCT ensures two NULLs still conflict
 --    (same discipline + carrera + gender + no category = one row)
 -- ─────────────────────────────────────────────────────────────────────────────
+-- Drop both the old auto-named constraint and any previous run of this migration
 ALTER TABLE public.clasificacion_disciplina
     DROP CONSTRAINT IF EXISTS clasificacion_disciplina_disciplina_id_carrera_id_genero_key;
+
+ALTER TABLE public.clasificacion_disciplina
+    DROP CONSTRAINT IF EXISTS clasificacion_disciplina_unique;
 
 ALTER TABLE public.clasificacion_disciplina
     ADD CONSTRAINT clasificacion_disciplina_unique

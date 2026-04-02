@@ -12,7 +12,7 @@ export default function MatchError({
     console.error("[partido/error.tsx] Caught error:", error);
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0805] text-white p-8 text-center">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white p-8 text-center">
             <h1 className="text-3xl font-bold mb-4">⚠️ Error cargando el partido</h1>
             <p className="text-slate-400 mb-6 max-w-md">{error.message}</p>
             <div className="flex gap-4">

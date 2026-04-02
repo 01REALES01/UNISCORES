@@ -38,7 +38,7 @@ export const AdminModals = ({
     <>
       {isEndingMatch && !showWOModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-          <Card className="relative bg-[#0a0805] border-white/10 p-10 max-w-sm w-full text-center rounded-[3rem] animate-in zoom-in-95 shadow-[0_0_100px_rgba(244,63,94,0.15)] overflow-hidden">
+          <Card className="relative bg-background border-white/10 p-10 max-w-sm w-full text-center rounded-[3rem] animate-in zoom-in-95 shadow-[0_0_100px_rgba(244,63,94,0.15)] overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary to-secondary" />
             <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-6 border border-primary/20">
                 <Trophy size={48} className="text-secondary animate-bounce" />
@@ -58,7 +58,7 @@ export const AdminModals = ({
 
       {showWOModal && (
         <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-          <Card className="relative bg-[#0a0805] border-amber-500/30 p-10 max-w-sm w-full rounded-[3rem] animate-in zoom-in-95 shadow-[0_0_100px_rgba(251,146,60,0.15)] overflow-hidden">
+          <Card className="relative bg-background border-amber-500/30 p-10 max-w-sm w-full rounded-[3rem] animate-in zoom-in-95 shadow-[0_0_100px_rgba(251,146,60,0.15)] overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-600 to-orange-600" />
             <div className="w-20 h-20 rounded-3xl bg-amber-600/10 flex items-center justify-center mx-auto mb-6 border border-amber-500/20">
                 <AlertCircle size={48} className="text-amber-400" />
@@ -110,7 +110,7 @@ export const AdminModals = ({
 
       {isEditingScore && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-          <Card className="bg-[#0a0805] border-white/10 p-10 max-w-sm w-full rounded-[3rem] shadow-2xl relative overflow-hidden">
+          <Card className="bg-background border-white/10 p-10 max-w-sm w-full rounded-[3rem] shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-primary" />
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-center mb-10 text-primary">Ajuste Manual de Score</h3>
             
@@ -153,7 +153,7 @@ export const AdminModals = ({
 
       {confirmingDeletion && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-          <Card className="bg-[#0a0805] border-rose-500/20 p-10 max-w-sm w-full text-center rounded-[3rem] shadow-2xl relative overflow-hidden">
+          <Card className="bg-background border-rose-500/20 p-10 max-w-sm w-full text-center rounded-[3rem] shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-rose-600" />
             <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center mx-auto mb-6 border border-rose-500/20">
                 <X size={32} className="text-rose-500" />

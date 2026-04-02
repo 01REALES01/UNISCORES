@@ -1,2 +1,1 @@
-// Shim — canonical version moved to @/shared/components/welcome-hero
-export * from '@/shared/components/welcome-hero';
+export { WelcomeHero } from "@/shared/components/welcome-hero";

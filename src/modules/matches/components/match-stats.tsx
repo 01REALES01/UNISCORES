@@ -15,6 +15,7 @@ interface MatchStatsProps {
 export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
     const isBasketball = sportName?.toLowerCase().includes('baloncesto') || sportName?.toLowerCase().includes('basket');
     const isFootball = sportName?.toLowerCase().includes('futbol') || sportName?.toLowerCase().includes('fútbol') || sportName?.toLowerCase().includes('micro') || sportName?.toLowerCase().includes('sala');
+    const isVolleyball = sportName === 'Voleibol';
 
     const stats = useMemo(() => {
         const teamA = { 
@@ -91,25 +92,108 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
         };
     }, [eventos, match.equipo_a]);
 
-    const hasEvents = eventos.length > 0;
+    const realEvents = eventos.filter(e => (e as any).equipo !== 'sistema');
+    const hasEvents = realEvents.length > 0;
+    const isAsync = match.marcador_detalle?.modo_registro === 'asincronico';
 
-    if (!hasEvents) {
+    // Volleyball set-by-set data from marcador_detalle
+    const volleySets: { set: number; puntos_a: number; puntos_b: number }[] = isVolleyball
+        ? Object.entries(match.marcador_detalle?.sets || {})
+            .map(([k, v]: [string, any]) => ({ set: Number(k), puntos_a: v.puntos_a || 0, puntos_b: v.puntos_b || 0 }))
+            .filter(s => s.puntos_a > 0 || s.puntos_b > 0)
+            .sort((a, b) => a.set - b.set)
+        : [];
+    const volleySetsA = match.marcador_detalle?.sets_a || 0;
+    const volleySetsB = match.marcador_detalle?.sets_b || 0;
+
+    // For async matches, derive totals from marcador_detalle (review modal is source of truth)
+    // but keep per-player breakdowns from events if they exist
+    const asyncStats = useMemo(() => {
+        if (!isAsync) return null;
+        const md = match.marcador_detalle || {};
+        const goalsA = md.goles_a ?? md.total_a ?? 0;
+        const goalsB = md.goles_b ?? md.total_b ?? 0;
+        const isFinalized = match.estado === 'finalizado';
+
+        if (isFinalized) {
+            // After finalization, use marcador_detalle totals but keep player data from events
+            const baseStats = hasEvents ? stats : null;
+            return {
+                teamA: {
+                    goals: goalsA, fouls: baseStats?.teamA.fouls || 0,
+                    yellowCards: md.tarjetas_amarillas_a ?? baseStats?.teamA.yellowCards ?? 0,
+                    redCards: md.tarjetas_rojas_a ?? baseStats?.teamA.redCards ?? 0,
+                    pts1: baseStats?.teamA.pts1 || 0, pts2: baseStats?.teamA.pts2 || 0, pts3: baseStats?.teamA.pts3 || 0,
+                    players: baseStats?.teamA.players || {}
+                },
+                teamB: {
+                    goals: goalsB, fouls: baseStats?.teamB.fouls || 0,
+                    yellowCards: md.tarjetas_amarillas_b ?? baseStats?.teamB.yellowCards ?? 0,
+                    redCards: md.tarjetas_rojas_b ?? baseStats?.teamB.redCards ?? 0,
+                    pts1: baseStats?.teamB.pts1 || 0, pts2: baseStats?.teamB.pts2 || 0, pts3: baseStats?.teamB.pts3 || 0,
+                    players: baseStats?.teamB.players || {}
+                },
+                mvp: baseStats?.mvp || null,
+                mvpPoints: baseStats?.mvpPoints || 0,
+                topScorersA: baseStats?.topScorersA || [],
+                topScorersB: baseStats?.topScorersB || [],
+                leaderTriples_A: baseStats?.leaderTriples_A || null,
+                leaderDoubles_A: baseStats?.leaderDoubles_A || null,
+                leaderFreeThrows_A: baseStats?.leaderFreeThrows_A || null,
+                leaderPoints_A: baseStats?.leaderPoints_A || null,
+                leaderTriples_B: baseStats?.leaderTriples_B || null,
+                leaderDoubles_B: baseStats?.leaderDoubles_B || null,
+                leaderFreeThrows_B: baseStats?.leaderFreeThrows_B || null,
+                leaderPoints_B: baseStats?.leaderPoints_B || null,
+            };
+        }
+
+        // During the match (not finalized), use events if available
+        if (hasEvents) return null;
+
+        // No events at all — use marcador_detalle
+        return {
+            teamA: {
+                goals: goalsA, fouls: 0,
+                yellowCards: md.tarjetas_amarillas_a || 0,
+                redCards: md.tarjetas_rojas_a || 0,
+                pts1: 0, pts2: 0, pts3: 0, players: {}
+            },
+            teamB: {
+                goals: goalsB, fouls: 0,
+                yellowCards: md.tarjetas_amarillas_b || 0,
+                redCards: md.tarjetas_rojas_b || 0,
+                pts1: 0, pts2: 0, pts3: 0, players: {}
+            },
+            mvp: null, mvpPoints: 0,
+            topScorersA: [] as any[], topScorersB: [] as any[],
+            leaderTriples_A: null, leaderDoubles_A: null, leaderFreeThrows_A: null, leaderPoints_A: null,
+            leaderTriples_B: null, leaderDoubles_B: null, leaderFreeThrows_B: null, leaderPoints_B: null,
+        };
+    }, [hasEvents, isAsync, match.marcador_detalle, match.estado, stats]);
+
+    if (!hasEvents && !isAsync) {
         return (
-            <div className="rounded-[2rem] bg-[#0A0705] border border-white/5 p-8 text-center mt-8">
+            <div className="rounded-[2rem] bg-background border border-white/5 p-8 text-center mt-8">
                 <Activity size={32} className="text-white/10 mx-auto mb-4" />
-                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30 font-outfit mb-2">Estadísticas del Encuentro</h3>
+                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30 font-sans mb-2">Estadísticas del Encuentro</h3>
                 <p className="text-[10px] text-white/20 font-bold max-w-sm mx-auto">No hay eventos ni estadísticas registradas para este partido aún.</p>
             </div>
         );
     }
 
-    const sportColor = SPORT_COLORS[sportName || ''] || '#ef4444';
+    const sportColor = SPORT_COLORS[sportName || ''] || '#7c3aed';
     const teamBColor = '#64748b';
 
+    const effectiveStats = asyncStats || stats;
     const { teamA, teamB, mvp, mvpPoints, topScorersA, topScorersB,
         leaderTriples_A, leaderDoubles_A, leaderFreeThrows_A, leaderPoints_A,
-        leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B, leaderPoints_B } = stats;
-    const totalGoals = teamA.goals + teamB.goals || 1;
+        leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B, leaderPoints_B } = effectiveStats;
+
+    // For volleyball the main score bar shows sets won
+    const displayA = isVolleyball ? volleySetsA : teamA.goals;
+    const displayB = isVolleyball ? volleySetsB : teamB.goals;
+    const totalGoals = displayA + displayB || 1;
     const totalFouls = teamA.fouls + teamB.fouls || 1;
 
     // Comparative stat row helper
@@ -174,7 +258,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
 
             {/* Header */}
             <div className="flex items-center justify-center relative z-10 w-full border-b border-white/5 pb-5">
-                <h3 className="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-white/80 font-outfit flex items-center gap-3">
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-white/80 font-sans flex items-center gap-3">
                     <Activity size={18} className="animate-pulse" style={{ color: sportColor }} /> Rendimiento Global
                 </h3>
             </div>
@@ -183,16 +267,16 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
             <div className="relative z-10 w-full">
                 <div className="flex items-center justify-between text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-white/50 mb-3 px-1">
                     <span className="truncate flex-1 text-left text-white/80 max-w-[100px] sm:max-w-none">{match.equipo_a}</span>
-                    <span className="px-2 flex-shrink-0 text-[7px] sm:text-[9px] tracking-[0.25em]" style={{ color: sportColor }}>{isBasketball ? 'PUNTOS' : 'GOLES'}</span>
+                    <span className="px-2 flex-shrink-0 text-[7px] sm:text-[9px] tracking-[0.25em]" style={{ color: sportColor }}>{isBasketball ? 'PUNTOS' : isVolleyball ? 'SETS' : 'GOLES'}</span>
                     <span className="truncate flex-1 text-right text-white/80 max-w-[100px] sm:max-w-none">{match.equipo_b}</span>
                 </div>
                 <div className="flex items-center gap-3 sm:gap-5">
-                    <span className="text-3xl sm:text-4xl font-black tabular-nums text-white">{teamA.goals}</span>
+                    <span className="text-3xl sm:text-4xl font-black tabular-nums text-white">{displayA}</span>
                     <div className="flex-1 h-2 sm:h-2.5 bg-white/5 rounded-full overflow-hidden flex shadow-inner">
-                        <div className="h-full rounded-l-full transition-all duration-1000" style={{ width: `${(teamA.goals / totalGoals) * 100}%`, backgroundColor: sportColor }} />
-                        <div className="h-full rounded-r-full transition-all duration-1000" style={{ width: `${(teamB.goals / totalGoals) * 100}%`, backgroundColor: teamBColor }} />
+                        <div className="h-full rounded-l-full transition-all duration-1000" style={{ width: `${(displayA / totalGoals) * 100}%`, backgroundColor: sportColor }} />
+                        <div className="h-full rounded-r-full transition-all duration-1000" style={{ width: `${(displayB / totalGoals) * 100}%`, backgroundColor: teamBColor }} />
                     </div>
-                    <span className="text-3xl sm:text-4xl font-black tabular-nums text-white">{teamB.goals}</span>
+                    <span className="text-3xl sm:text-4xl font-black tabular-nums text-white">{displayB}</span>
                 </div>
             </div>
 
@@ -229,13 +313,22 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                 </div>
             )}
 
+            {/* ═══ VOLLEYBALL SECTION ═══ */}
+            {isVolleyball && volleySets.length > 0 && (
+                <div className="relative z-10 bg-white/[0.02] rounded-2xl p-4 sm:p-5 border border-white/5">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 mb-4 text-center">Puntos por Set</p>
+                    {volleySets.map(({ set, puntos_a, puntos_b }) => (
+                        <StatRow key={set} label={`Set ${set}`} valueA={puntos_a} valueB={puntos_b} />
+                    ))}
+                </div>
+            )}
+
             {/* ═══ FOOTBALL SECTION ═══ */}
             {isFootball && (
                 <div className="relative z-10 bg-white/[0.02] rounded-2xl p-4 sm:p-5 border border-white/5">
                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 mb-4 text-center">Disciplina</p>
-                    <StatRow label="Faltas" valueA={teamA.fouls} valueB={teamB.fouls} />
                     <StatRow label="Amarillas" valueA={teamA.yellowCards} valueB={teamB.yellowCards} colorA="#eab308" colorB="#eab308" />
-                    <StatRow label="Rojas" valueA={teamA.redCards} valueB={teamB.redCards} colorA="#ef4444" colorB="#ef4444" />
+                    <StatRow label="Rojas" valueA={teamA.redCards} valueB={teamB.redCards} colorA="#f43f5e" colorB="#f43f5e" />
                 </div>
             )}
 
@@ -260,10 +353,10 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                                 <div className="flex items-center gap-4 relative z-10">
                                     <div className="relative shrink-0">
                                         <div className="absolute -inset-1.5 bg-amber-500/25 rounded-full blur-lg" />
-                                        <Avatar name={mvp.nombre} className="w-14 h-14 sm:w-16 sm:h-16 border-3 border-amber-500 text-xl font-outfit shadow-2xl" />
+                                        <Avatar name={mvp.nombre} className="w-14 h-14 sm:w-16 sm:h-16 border-3 border-amber-500 text-xl font-sans shadow-2xl" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-base sm:text-lg font-black font-outfit leading-tight mb-1.5 text-white drop-shadow-lg truncate">{mvp.nombre}</p>
+                                        <p className="text-base sm:text-lg font-black font-sans leading-tight mb-1.5 text-white drop-shadow-lg truncate">{mvp.nombre}</p>
                                         <Badge className="bg-amber-500/20 text-amber-500 border border-amber-500/30 font-mono text-sm tabular-nums rounded-lg px-2.5 py-1 shadow-inner">
                                             <Star size={12} className="inline mr-1.5 -translate-y-0.5 fill-amber-500" />
                                             {mvpPoints} pts
@@ -281,7 +374,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                     <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 sm:p-4 flex flex-col relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-20 h-20 blur-2xl rounded-full pointer-events-none opacity-10" style={{ backgroundColor: sportColor }} />
                         <p className="text-[8px] font-black uppercase tracking-[0.15em] text-white/40 mb-3 relative z-10 truncate" style={{ color: sportColor }}>
-                            {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Destacados')}
+                            {isBasketball ? 'Anotadores' : isFootball ? 'Goleadores' : isVolleyball ? 'Puntos' : 'Destacados'}
                         </p>
                         <div className="space-y-2.5 flex-1 relative z-10">
                             {topScorersA.slice(0, 3).map((player, idx) => {
@@ -312,7 +405,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                     <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 sm:p-4 flex flex-col relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-20 h-20 blur-2xl rounded-full pointer-events-none opacity-10" style={{ backgroundColor: teamBColor }} />
                         <p className="text-[8px] font-black uppercase tracking-[0.15em] text-white/40 mb-3 relative z-10 truncate" style={{ color: teamBColor }}>
-                            {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Destacados')}
+                            {isBasketball ? 'Anotadores' : isFootball ? 'Goleadores' : isVolleyball ? 'Puntos' : 'Destacados'}
                         </p>
                         <div className="space-y-2.5 flex-1 relative z-10">
                             {topScorersB.slice(0, 3).map((player, idx) => {

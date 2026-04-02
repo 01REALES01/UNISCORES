@@ -13,7 +13,7 @@ interface MatchTimelineProps {
 
 export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps) {
   const SPORT_ACCENT: Record<string, string> = {
-    'Fútbol': 'text-red-500',
+    'Fútbol': 'text-emerald-500',
     'Baloncesto': 'text-orange-500',
     'Voleibol': 'text-yellow-500',
     'Tenis': 'text-lime-500',
@@ -23,7 +23,7 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
   };
 
   return (
-    <div className="rounded-[2.5rem] bg-[#0a0805]/80 backdrop-blur-2xl border border-white/5 p-6 sm:p-10 animate-in fade-in duration-700 delay-200 shadow-2xl shadow-black/40">
+    <div className="rounded-[2.5rem] bg-background/80 backdrop-blur-2xl border border-white/5 p-6 sm:p-10 animate-in fade-in duration-700 delay-200 shadow-2xl shadow-black/40">
       <div className="flex items-center gap-3 mb-8 px-2">
         <div className={cn("p-2.5 rounded-2xl bg-white/5 border border-white/10", SPORT_ACCENT[sportName])}>
           <AlignLeft size={22} className="drop-shadow-[0_0_8px_currentColor]" />
@@ -66,7 +66,7 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
                 const auditData = parseEventAudit(e.descripcion);
                 return (
                   <div key={e.id || idx} className="relative flex justify-center py-6 w-full">
-                    <div className="bg-[#0a0805]/80 backdrop-blur-md px-6 font-black text-[11px] text-white/30 uppercase tracking-[0.3em] text-center border border-white/5 rounded-full py-1.5 shadow-xl">
+                    <div className="bg-background/80 backdrop-blur-md px-6 font-black text-[11px] text-white/30 uppercase tracking-[0.3em] text-center border border-white/5 rounded-full py-1.5 shadow-xl">
                       {auditData.texto || 'Evento de Sistema'}
                     </div>
                   </div>
@@ -90,17 +90,17 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
                     <div className="text-right py-1">
                       <p className="text-[13px] sm:text-[15px] font-black leading-tight text-white/95 truncate max-w-[90px] sm:max-w-none">
                         {e.jugadores?.profile_id ? (
-                          <Link href={`/perfil/${e.jugadores.profile_id}`} className="hover:text-red-400 transition-colors">
-                            {e.jugadores.nombre}
-                          </Link>
-                        ) : (e.jugadores?.nombre || getDisplayName(match, 'a'))}
-                      </p>
-                      <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-[0.15em]">{eventLabel}</p>
-                    </div>
-                    <div className="w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] rounded-xl border bg-red-500/10 border-red-500/20 text-red-400 flex items-center justify-center flex-shrink-0 shadow-lg relative group-hover/item:scale-110 transition-transform">
-                      <div className="absolute inset-0 bg-red-500/10 blur-md rounded-xl opacity-0 group-hover/item:opacity-100 transition-opacity" />
-                      <span className="relative z-10">{eventIcon}</span>
-                    </div>
+                      <Link href={`/perfil/${e.jugadores.profile_id}`} className="hover:text-emerald-400 transition-colors">
+                        {e.jugadores.nombre}
+                      </Link>
+                    ) : (e.jugadores?.nombre || getDisplayName(match, 'a'))}
+                  </p>
+                  <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-[0.15em]">{eventLabel}</p>
+                </div>
+                <div className="w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] rounded-xl border bg-emerald-500/10 border-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-lg relative group-hover/item:scale-110 transition-transform">
+                  <div className="absolute inset-0 bg-emerald-500/10 blur-md rounded-xl opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                  <span className="relative z-10">{eventIcon}</span>
+                </div>
                   </div>
 
                   {/* RIGHT SIDE (Team B) */}

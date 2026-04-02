@@ -6,22 +6,12 @@ import { cn } from "@/lib/utils";
 export function Card({
     children,
     className,
-    variant = "default",
     ...props
-}: React.HTMLAttributes<HTMLDivElement> & {
-    variant?: "default" | "glass" | "gradient";
-}) {
-    const variants = {
-        default: "bg-card border-border/50",
-        glass: "glass",
-        gradient: "gradient-border bg-card",
-    };
-
+}: React.HTMLAttributes<HTMLDivElement>) {
     return (
         <div
             className={cn(
-                "text-card-foreground rounded-[2rem] border shadow-lg shadow-black/5 p-5 transition-all duration-300",
-                variants[variant],
+                "text-card-foreground rounded-2xl bg-white/8 p-5 transition-all duration-300",
                 className
             )}
             {...props}
@@ -42,17 +32,17 @@ export function Badge({
     className?: string;
 }) {
     const variants = {
-        default: "bg-red-500/10 text-red-500 border-red-500/20",
-        outline: "border-white/10 bg-white/5 text-slate-400",
-        destructive: "bg-red-600/20 text-red-500 border-red-600/30",
-        success: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30",
-        secondary: "bg-white/10 text-white border-white/20",
-        live: "bg-red-500/20 text-red-500 border-red-500/30 live-indicator shadow-[0_0_10px_rgba(239,68,68,0.2)]",
+        default: "bg-violet-500/15 text-violet-200",
+        outline: "bg-white/5 text-slate-300",
+        destructive: "bg-red-500/15 text-red-400",
+        success: "bg-emerald-500/15 text-emerald-400",
+        secondary: "bg-white/10 text-white",
+        live: "bg-emerald-500/15 text-emerald-400 live-indicator",
     };
 
     return (
         <span className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider border transition-colors",
+            "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wider transition-colors",
             variants[variant],
             className
         )}>
@@ -68,16 +58,15 @@ export function Button({
     size = "default",
     ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    variant?: "default" | "outline" | "ghost" | "link" | "secondary" | "glass";
+    variant?: "default" | "outline" | "ghost" | "link" | "secondary";
     size?: "default" | "sm" | "lg" | "icon";
 }) {
     const variants = {
-        default: "bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20 border-none",
-        outline: "border border-white/10 bg-white/5 hover:bg-white/10 text-white",
+        default: "bg-violet-600 text-white hover:bg-violet-700",
+        outline: "bg-white/5 hover:bg-white/10 text-white",
         ghost: "hover:bg-white/5 text-slate-400 hover:text-white",
-        link: "text-red-500 underline-offset-4 hover:underline",
-        secondary: "bg-white/10 text-white hover:bg-white/20 border border-white/10",
-        glass: "bg-white/5 backdrop-blur-md hover:bg-white/10 text-white border border-white/10",
+        link: "text-violet-400 underline-offset-4 hover:underline",
+        secondary: "bg-white/10 text-white hover:bg-white/15",
     };
 
     const sizes = {
@@ -90,8 +79,8 @@ export function Button({
     return (
         <button
             className={cn(
-                "inline-flex items-center justify-center gap-2 rounded-2xl font-black uppercase tracking-widest transition-all duration-300",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "inline-flex items-center justify-center gap-2 rounded-2xl font-bold tracking-wide transition-all duration-200",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 "disabled:pointer-events-none disabled:opacity-50",
                 "active:scale-[0.98]",
                 variants[variant],
@@ -108,9 +97,9 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
     return (
         <input
             className={cn(
-                "flex h-11 w-full rounded-xl border-2 border-border/60 bg-muted/30 px-4 py-2.5 text-sm font-medium",
-                "placeholder:text-muted-foreground/60",
-                "focus:border-primary/50 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20",
+                "flex h-11 w-full rounded-xl bg-white/8 px-4 py-2.5 text-sm font-medium text-white",
+                "placeholder:text-white/40",
+                "focus:bg-white/12 focus:outline-none focus:ring-2 focus:ring-violet-400/30",
                 "transition-all duration-200",
                 "disabled:cursor-not-allowed disabled:opacity-50",
                 className
@@ -143,28 +132,28 @@ export function Avatar({
 
     // Generate consistent color based on name
     const colors = [
-        "from-blue-500 to-indigo-600",
-        "from-purple-500 to-pink-600",
-        "from-orange-500 to-red-600",
-        "from-green-500 to-teal-600",
-        "from-cyan-500 to-blue-600",
+        "bg-violet-500",
+        "bg-emerald-500",
+        "bg-amber-500",
+        "bg-cyan-500",
+        "bg-indigo-500",
     ];
     const colorIndex = safeName.charCodeAt(0) % colors.length;
 
     return (
         <div className={cn(
-            "rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-white shadow-lg overflow-hidden flex-shrink-0",
+            "rounded-full flex items-center justify-center font-bold text-white overflow-hidden flex-shrink-0",
             !src && colors[colorIndex],
             sizes[size],
             className
         )}>
             {src ? (
-                <Image 
-                    src={src} 
-                    alt={safeName} 
+                <Image
+                    src={src}
+                    alt={safeName}
                     width={size === "lg" ? 64 : size === "sm" ? 32 : 48}
                     height={size === "lg" ? 64 : size === "sm" ? 32 : 48}
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-cover"
                 />
             ) : (
                 initials
@@ -199,9 +188,9 @@ export function ScoreDisplay({
             sizes[size],
             className
         )}>
-            <span className="text-foreground">{scoreA}</span>
-            <span className="text-muted-foreground/40">{separator}</span>
-            <span className="text-foreground/70">{scoreB}</span>
+            <span className="text-white">{scoreA}</span>
+            <span className="text-white/30">{separator}</span>
+            <span className="text-white/70">{scoreB}</span>
         </div>
     );
 }
@@ -211,10 +200,10 @@ export function LiveIndicator({ className }: { className?: string }) {
     return (
         <div className={cn("flex items-center gap-1.5", className)}>
             <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-red-500">En Curso</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">En Curso</span>
         </div>
     );
 }

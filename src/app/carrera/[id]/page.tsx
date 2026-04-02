@@ -12,6 +12,7 @@ import { FollowCareerButton } from "@/modules/careers/components/follow-career-b
 import { SportIcon } from "@/components/sport-icons";
 import { Avatar, Badge, Button } from "@/components/ui-primitives";
 import UniqueLoading from "@/components/ui/morph-loading";
+import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -73,7 +74,7 @@ function SportGroupedAthletes({ athletes }: { athletes: any[] }) {
         <div className="space-y-3">
             {grouped.map(([sport, list]) => {
                 const isOpen = openSports[sport] ?? false;
-                const accent = SPORT_ACCENT[sport] || "text-red-400";
+        const accent = SPORT_ACCENT[sport] || "text-emerald-400";
 
                 return (
                     <div key={sport} className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
@@ -84,7 +85,7 @@ function SportGroupedAthletes({ athletes }: { athletes: any[] }) {
                         >
                             <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
-                                    <SportIcon sport={sport} size={16} className={cn("opacity-80", accent)} />
+                                    <SportIcon sport={sport} size={16} className={cn("opacity-80 scale-110 drop-shadow-sm", accent)} />
                                 </div>
                                 <div className="text-left">
                                     <p className="text-sm font-black tracking-tight text-white">{sport}</p>
@@ -112,14 +113,14 @@ function SportGroupedAthletes({ athletes }: { athletes: any[] }) {
                                             href={`/perfil/${a.id}`}
                                             className="group"
                                         >
-                                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-white/[0.05] transition-all duration-300 flex items-center gap-3">
+                                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-violet-600/5 transition-all duration-300 flex items-center gap-3">
                                                 <Avatar
                                                     name={a.full_name}
                                                     src={a.avatar_url}
                                                     className="w-11 h-11 rounded-xl border border-white/5"
                                                 />
                                                 <div className="flex-1 min-w-0">
-                                                    <h4 className="text-sm font-bold tracking-tight truncate group-hover:text-red-400 transition-colors">
+                                                    <h4 className="text-sm font-bold tracking-tight truncate group-hover:text-emerald-400 transition-colors">
                                                         {a.full_name}
                                                     </h4>
                                                     {a.points > 0 && (
@@ -136,7 +137,7 @@ function SportGroupedAthletes({ athletes }: { athletes: any[] }) {
                                                 </div>
                                                 <ArrowUpRight
                                                     size={14}
-                                                    className="text-white/10 group-hover:text-red-500 transition-colors shrink-0"
+                                                    className="text-white/10 group-hover:text-emerald-500 transition-colors shrink-0"
                                                 />
                                             </div>
                                         </Link>
@@ -159,7 +160,7 @@ export default function CarreraProfilePage() {
     const carreraId = params.id ? Number(params.id) : null;
 
     const { user, profile, isStaff } = useAuth();
-    const { carrera, matches, news, athletes, stats, loading, error, mutate } =
+    const { carrera, matches, news, athletes, stats, deportesInscritos, loading, error, mutate } =
         useCarreraProfile(carreraId);
 
     const escudoInputRef = useRef<HTMLInputElement>(null);
@@ -311,11 +312,26 @@ export default function CarreraProfilePage() {
         );
     }, [stats.byDiscipline]);
 
+    // Enrolled sports that have no match results yet
+    const enrolledOnlyEntries = useMemo(() => {
+        const withStats = new Set(disciplineEntries.map(d => d.name));
+        return deportesInscritos.filter(e => !withStats.has(e.disciplina_name));
+    }, [disciplineEntries, deportesInscritos]);
+
+    // Map: disciplina_name → equipo info (for stats cards)
+    const deportesEquipoMap = useMemo(() => {
+        const map: Record<string, { delegacion_id: number; equipo_nombre: string; isCombined: boolean }> = {};
+        for (const e of deportesInscritos) {
+            map[e.disciplina_name] = { delegacion_id: e.delegacion_id, equipo_nombre: e.equipo_nombre, isCombined: e.isCombined };
+        }
+        return map;
+    }, [deportesInscritos]);
+
     // ─── Loading / Error ─────────────────────────────────────────────────────
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#0a0816]">
+            <div className="min-h-screen flex items-center justify-center bg-background">
                 <UniqueLoading size="lg" />
             </div>
         );
@@ -323,11 +339,11 @@ export default function CarreraProfilePage() {
 
     if (!carrera || error) {
         return (
-            <div className="min-h-screen bg-[#0a0816] text-white flex flex-col items-center justify-center p-4">
-                <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
-                    <GraduationCap className="text-red-500" size={32} />
+            <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-4">
+                <div className="w-20 h-20 rounded-full bg-violet-600/10 flex items-center justify-center mb-6 border border-violet-500/20">
+                    <GraduationCap className="text-violet-400" size={32} />
                 </div>
-                <h1 className="text-2xl font-black mb-2 font-outfit uppercase tracking-wider">
+                <h1 className="text-2xl font-black mb-2 font-sans uppercase tracking-wider">
                     Carrera no encontrada
                 </h1>
                 <p className="text-white/40 mb-8 max-w-sm text-center font-bold">
@@ -354,11 +370,15 @@ export default function CarreraProfilePage() {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen bg-[#0a0816] text-white selection:bg-red-500/30 texture-grain overflow-x-hidden">
+        <div className="min-h-screen bg-background text-white selection:bg-violet-500/30 overflow-x-hidden relative">
             {/* Ambient background */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[150px]" />
-                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-orange-600/5 rounded-full blur-[150px]" />
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute inset-0 bg-background mix-blend-multiply opacity-50" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[120vh] max-w-max opacity-[0.05] mix-blend-screen pointer-events-none">
+                    <img src="/elementos/10.png" alt="3D Element" className="h-full w-auto object-contain filter invert opacity-80 rotate-90 scale-125" />
+                </div>
+                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[150px]" />
+                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[150px]" />
             </div>
 
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
@@ -370,7 +390,7 @@ export default function CarreraProfilePage() {
                         onClick={() => router.back()}
                         className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.2em]"
                     >
-                        <div className="p-2 rounded-xl bg-white/5 border border-white/5 group-hover:bg-red-500 group-hover:text-black transition-all">
+                        <div className="p-2 rounded-xl bg-white/5 border border-white/5 group-hover:bg-violet-600 group-hover:text-white transition-all shadow-[0_0_15px_rgba(124,58,237,0)] group-hover:shadow-[0_0_15px_rgba(124,58,237,0.4)]">
                             <ChevronLeft size={14} />
                         </div>
                         Regresar
@@ -384,20 +404,20 @@ export default function CarreraProfilePage() {
                     className="relative mb-8 sm:mb-12"
                 >
                     {/* Animated Premium Background */}
-                    <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 rounded-[2.5rem] sm:rounded-[3rem] blur-xl opacity-20 sm:opacity-30 group-hover:opacity-40 transition-opacity duration-700" />
+                    <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-violet-600/30 via-emerald-500/20 to-violet-900/40 rounded-[2.5rem] sm:rounded-[3rem] blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-700" />
                     
-                    <div className="relative bg-[#0a0805]/95 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl">
+                    <div className="relative bg-background/95 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl">
                         {/* Noise & Glows */}
                         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-red-600/10 to-orange-500/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-rose-600/10 to-transparent blur-3xl rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-600/20 to-emerald-500/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-violet-900/20 to-transparent blur-3xl rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
                         <div className="relative z-10 p-6 sm:p-10 md:p-12 flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12 text-center lg:text-left">
                             
                             {/* Avatar / Escudo Majestic Presentation */}
                             <div className="relative group/escudo shrink-0">
                                 {/* Back glow for avatar */}
-                                <div className="absolute -inset-2 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-[2.5rem] blur-xl opacity-50 group-hover/escudo:opacity-80 transition-opacity duration-500" />
+                                <div className="absolute -inset-2 bg-gradient-to-br from-violet-500/30 to-emerald-500/20 rounded-[2.5rem] blur-xl opacity-50 group-hover/escudo:opacity-80 transition-opacity duration-500" />
                                 
                                 <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-[2rem] bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-2xl overflow-hidden p-3 transition-transform hover:scale-105 duration-500">
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent mix-blend-overlay" />
@@ -408,7 +428,7 @@ export default function CarreraProfilePage() {
                                             className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(0,0,0,0.8)] filter contrast-125"
                                         />
                                     ) : (
-                                        <span className="text-5xl md:text-7xl font-black text-white/20 font-outfit truncate mix-blend-plus-lighter z-10">
+                                        <span className="text-5xl md:text-7xl font-black text-white/20 font-sans truncate mix-blend-plus-lighter z-10">
                                             {getInitials(carrera.nombre)}
                                         </span>
                                     )}
@@ -446,54 +466,31 @@ export default function CarreraProfilePage() {
                                     </>
                                 )}
 
-                                <div className="absolute -bottom-4 -right-2 p-3.5 bg-gradient-to-br from-red-600 to-orange-600 text-white rounded-2xl shadow-[0_10px_20px_rgba(239,68,68,0.4)] border border-red-400/30">
+                                <div className="absolute -bottom-4 -right-2 p-3.5 bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-2xl shadow-[0_10px_20px_rgba(124,58,237,0.4)] border border-violet-400/30">
                                     <GraduationCap size={22} className="drop-shadow-md" />
                                 </div>
                             </div>
 
                             {/* Info & Stats */}
                             <div className="flex-1 w-full max-w-2xl lg:max-w-none flex flex-col items-center lg:items-start">
-                                <p className="text-[10px] font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400 uppercase tracking-[0.3em] mb-3">
+                                <p className="font-display text-[10px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-200 uppercase tracking-[0.3em] mb-3">
                                     Programa Académico
                                 </p>
-                                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter font-outfit mb-6 leading-tight text-white drop-shadow-sm px-2 lg:px-0">
+                                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter font-display uppercase leading-tight text-white drop-shadow-sm px-2 lg:px-0 mb-6">
                                     {carrera.nombre}
                                 </h1>
 
                                 {/* Stats Dashboard Grid */}
-                                <div className="w-full flex flex-col gap-3">
-                                    
-                                    {/* Top Row: Follow & Medals */}
-                                    <div className="flex flex-col sm:flex-row gap-3 w-full">
-                                        {/* Follow Button spans full width on mobile, shrink on desktop */}
-                                        <div className="w-full sm:w-auto shrink-0 shadow-lg">
-                                            <FollowCareerButton careerId={carrera.id} initialFollowersCount={carrera.followers_count || 0} />
-                                        </div>
-
-                                        {/* Medals Dashboard */}
-                                        <div className="flex-1 flex bg-white/[0.03] border border-white/5 rounded-2xl p-1 shadow-inner relative overflow-hidden backdrop-blur-md">
-                                            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-slate-300/5 to-amber-700/5 pointer-events-none" />
-                                            
-                                            <div className="flex-1 flex flex-col items-center justify-center py-2 sm:py-3 relative border-r border-white/5">
-                                                <span className="text-2xl font-black text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)] tabular-nums">{stats.oro}</span>
-                                                <span className="text-[9px] font-black text-amber-500/70 uppercase tracking-widest mt-1">Oro</span>
-                                            </div>
-                                            <div className="flex-1 flex flex-col items-center justify-center py-2 sm:py-3 relative border-r border-white/5">
-                                                <span className="text-2xl font-black text-slate-200 drop-shadow-[0_0_10px_rgba(203,213,225,0.4)] tabular-nums">{stats.plata}</span>
-                                                <span className="text-[9px] font-black text-slate-400/70 uppercase tracking-widest mt-1">Plata</span>
-                                            </div>
-                                            <div className="flex-1 flex flex-col items-center justify-center py-2 sm:py-3 relative">
-                                                <span className="text-2xl font-black text-amber-700 drop-shadow-[0_0_10px_rgba(180,83,9,0.5)] tabular-nums">{stats.bronce}</span>
-                                                <span className="text-[9px] font-black text-amber-700/70 uppercase tracking-widest mt-1">Bronce</span>
-                                            </div>
-                                        </div>
+                                <div className="w-full flex flex-col xl:flex-row gap-3">
+                                    {/* Follow Button spans full width on mobile/tablet, shrink on very large screens */}
+                                    <div className="w-full xl:w-auto shrink-0">
+                                        <FollowCareerButton careerId={carrera.id} initialFollowersCount={carrera.followers_count || 0} />
                                     </div>
 
-                                    {/* Bottom Row: Record, Played, Win Rate */}
-                                    <div className="grid grid-cols-3 sm:grid-cols-3 gap-3 w-full">
+                                    {/* Record, Played, Win Rate */}
+                                    <div className="grid grid-cols-3 gap-2 sm:gap-3 flex-1 w-full">
                                         {/* Match Record */}
                                         <div className="col-span-3 sm:col-span-1 flex flex-col items-center justify-center bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-4 shadow-inner relative overflow-hidden">
-                                            <div className="absolute top-0 right-0 w-16 h-16 bg-red-500/5 blur-2xl rounded-full" />
                                             <div className="flex items-center gap-4 sm:gap-3 w-full justify-center">
                                                 <div className="flex flex-col items-center">
                                                     <span className="text-lg font-black text-emerald-400 tabular-nums">{stats.won}</span>
@@ -504,7 +501,7 @@ export default function CarreraProfilePage() {
                                                     <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">D</span>
                                                 </div>
                                                 <div className="flex flex-col items-center">
-                                                    <span className="text-lg font-black text-red-500 tabular-nums">{stats.lost}</span>
+                                                    <span className="text-lg font-black text-rose-400 tabular-nums">{stats.lost}</span>
                                                     <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">L</span>
                                                 </div>
                                             </div>
@@ -513,26 +510,25 @@ export default function CarreraProfilePage() {
                                         {/* Matches Played */}
                                         <div className="col-span-1 sm:col-span-1 flex flex-col items-center justify-center bg-white/[0.02] border border-white/5 rounded-2xl py-3 px-4 shadow-inner group/activity">
                                             <span className="text-2xl font-black text-white group-hover/activity:text-white/80 transition-colors tabular-nums tracking-tighter">{stats.played}</span>
-                                            <span className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mt-1">Jugados</span>
+                                            <span className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mt-1">JugADOS</span>
                                         </div>
 
                                         {/* Win Rate */}
-                                        <div className="col-span-2 sm:col-span-1 flex flex-col items-center justify-center bg-cyan-500/5 border border-cyan-500/10 rounded-2xl py-3 px-4 shadow-[0_0_15px_rgba(6,182,212,0.05)]">
+                                        <div className="col-span-2 sm:col-span-1 flex flex-col items-center justify-center bg-violet-500/5 border border-violet-500/10 rounded-2xl py-3 px-4 shadow-[0_0_15px_rgba(124,58,237,0.05)]">
                                             <div className="flex items-center gap-1.5">
-                                                <TrendingUp size={12} className="text-cyan-400" />
-                                                <span className="text-2xl font-black text-cyan-400 tabular-nums tracking-tighter">{stats.played > 0 ? Math.round((stats.won / stats.played) * 100) : 0}%</span>
+                                                <TrendingUp size={12} className="text-violet-400" />
+                                                <span className="text-2xl font-black text-violet-400 tabular-nums tracking-tighter">{stats.played > 0 ? Math.round((stats.won / stats.played) * 100) : 0}%</span>
                                             </div>
-                                            <span className="text-[8px] font-black text-cyan-400/50 uppercase tracking-[0.2em] mt-1">Efectividad</span>
+                                            <span className="text-[8px] font-black text-violet-400/50 uppercase tracking-[0.2em] mt-1">EFECTIVIDAD</span>
                                         </div>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
 
                         {/* Edge-to-edge Win Rate Progress Bar */}
                         {stats.played > 0 && (
-                            <div className="absolute bottom-0 left-0 right-0 h-1.5 flex shadow-[0_-2px_10px_rgba(0,0,0,0.5)] bg-red-500/20">
+                            <div className="absolute bottom-0 left-0 right-0 h-1.5 flex shadow-[0_-2px_10px_rgba(0,0,0,0.5)] bg-slate-800/50">
                                 <div
                                     className="h-full bg-emerald-500 relative z-10 transition-all duration-1000 ease-out"
                                     style={{ width: `${(stats.won / stats.played) * 100}%` }}
@@ -544,13 +540,18 @@ export default function CarreraProfilePage() {
                                     style={{ width: `${(stats.draw / stats.played) * 100}%` }}
                                 />
                                 <div
-                                    className="h-full bg-red-600 relative z-10 transition-all duration-1000 ease-out"
+                                    className="h-full bg-rose-500 relative z-10 transition-all duration-1000 ease-out"
                                     style={{ width: `${(stats.lost / stats.played) * 100}%` }}
                                 />
                             </div>
                         )}
                     </div>
                 </motion.div>
+
+                {/* ━━━ INSTITUTIONAL BRAND BREAK ━━━ */}
+                <div className="mt-8 mb-4 relative z-0">
+                    <InstitutionalBanner />
+                </div>
 
                 {/* ═══ TABS ═══ */}
                 <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/5 rounded-3xl mb-10 overflow-x-auto no-scrollbar">
@@ -597,10 +598,10 @@ export default function CarreraProfilePage() {
                                     <button
                                         onClick={() => setSportFilter("todos")}
                                         className={cn(
-                                            "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all",
+                                            "flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all",
                                             sportFilter === "todos"
-                                                ? "bg-red-500 text-white border-red-500"
-                                                : "bg-white/5 text-white/40 border-white/5 hover:bg-white/10"
+                                                ? "bg-white text-violet-950 border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                                                : "bg-transparent text-white/60 border-white/20 hover:bg-white/5"
                                         )}
                                     >
                                         Todos
@@ -610,15 +611,19 @@ export default function CarreraProfilePage() {
                                             key={sport}
                                             onClick={() => setSportFilter(sport)}
                                             className={cn(
-                                                "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all",
+                                                "flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all",
                                                 sportFilter === sport
-                                                    ? "bg-white/10 border-white/20 text-white"
-                                                    : "bg-white/5 text-white/40 border-white/5 hover:bg-white/10"
+                                                    ? "bg-white text-violet-950 border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                                                    : "bg-transparent text-white/60 border-white/20 hover:bg-white/5"
                                             )}
                                         >
-                                            <span className="text-sm">
-                                                {SPORT_EMOJI[sport] || "🏅"}
-                                            </span>
+                                            <div className="flex items-center justify-center shrink-0">
+                                                <SportIcon 
+                                                    sport={sport} 
+                                                    size={18} 
+                                                    className={sportFilter === sport ? "opacity-100 scale-110 drop-shadow-md" : "opacity-60 grayscale-[0.5]"} 
+                                                />
+                                            </div>
                                             {sport}
                                         </button>
                                     ))}
@@ -644,20 +649,20 @@ export default function CarreraProfilePage() {
                                             <div className="flex items-center gap-4 mb-5">
                                                 <div className={cn(
                                                     "h-px flex-1 bg-gradient-to-r from-transparent",
-                                                    group.isToday ? "via-red-500/50 to-red-500/80" : "via-white/5 to-white/10"
+                                                    group.isToday ? "via-emerald-500/50 to-emerald-500/80" : "via-white/5 to-white/10"
                                                 )} />
                                                 <h2 className={cn(
                                                     "text-[10px] font-black px-5 py-2 rounded-full border backdrop-blur-md uppercase tracking-[0.25em] transition-all",
                                                     group.isToday
-                                                        ? "text-white border-red-500/50 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.15)] scale-105"
+                                                        ? "text-white border-emerald-500/50 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] scale-105"
                                                         : "text-white/50 border-white/10 bg-white/5"
                                                 )}>
-                                                    {group.isToday && <span className="mr-2 text-red-400">●</span>}
+                                                    {group.isToday && <span className="mr-2 text-emerald-400">●</span>}
                                                     {group.label}
                                                 </h2>
                                                 <div className={cn(
                                                     "h-px flex-1 bg-gradient-to-l from-transparent",
-                                                    group.isToday ? "via-red-500/50 to-red-500/80" : "via-white/5 to-white/10"
+                                                    group.isToday ? "via-emerald-500/50 to-emerald-500/80" : "via-white/5 to-white/10"
                                                 )} />
                                             </div>
 
@@ -686,7 +691,7 @@ export default function CarreraProfilePage() {
                             transition={{ duration: 0.4 }}
                             className="space-y-6"
                         >
-                            {disciplineEntries.length === 0 ? (
+                            {disciplineEntries.length === 0 && enrolledOnlyEntries.length === 0 ? (
                                 <EmptyState
                                     icon={
                                         <Medal
@@ -742,10 +747,19 @@ export default function CarreraProfilePage() {
                                                             />
                                                         </div>
                                                         <div>
-                                                            <h3 className="text-sm font-black uppercase tracking-wider font-outfit">
+                                                            <h3 className="text-sm font-black uppercase tracking-wider font-sans">
                                                                 {d.name}
                                                             </h3>
-                                                            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
+                                                            {deportesEquipoMap[d.name]?.isCombined && (
+                                                                <Link
+                                                                    href={`/equipo/${deportesEquipoMap[d.name].delegacion_id}`}
+                                                                    onClick={e => e.stopPropagation()}
+                                                                    className="text-[10px] font-bold text-violet-400/70 hover:text-violet-300 uppercase tracking-widest truncate max-w-[140px] hover:underline block"
+                                                                >
+                                                                    {deportesEquipoMap[d.name].equipo_nombre} · combinado
+                                                                </Link>
+                                                            )}
+                                                            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">
                                                                 {d.played}{" "}
                                                                 Partidos
                                                             </p>
@@ -771,7 +785,7 @@ export default function CarreraProfilePage() {
                                                                 <span className="text-white/20">
                                                                     {" / "}
                                                                 </span>
-                                                                <span className="text-red-400">
+                                                                <span className="text-rose-400">
                                                                     {d.lost}
                                                                 </span>
                                                             </p>
@@ -806,6 +820,49 @@ export default function CarreraProfilePage() {
                                                             </div>
                                                         </div>
                                                     </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {/* Sports enrolled but no results yet */}
+                                    {enrolledOnlyEntries.map((e) => {
+                                        const accent = SPORT_ACCENT[e.disciplina_name] || "text-white/40";
+                                        const border = SPORT_BORDER[e.disciplina_name] || "border-white/5";
+                                        return (
+                                            <div
+                                                key={`${e.disciplina_name}_${e.genero}`}
+                                                className={cn(
+                                                    "relative overflow-hidden rounded-[2rem] border bg-white/[0.02] p-6",
+                                                    border
+                                                )}
+                                            >
+                                                <div className="absolute top-4 right-4 opacity-5">
+                                                    <SportIcon sport={e.disciplina_name} size={64} />
+                                                </div>
+                                                <div className="relative z-10 flex items-center gap-3">
+                                                    <div className="p-2.5 rounded-xl bg-black/30 border border-white/5">
+                                                        <SportIcon sport={e.disciplina_name} size={22} />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <h3 className="text-sm font-black uppercase tracking-wider font-sans">
+                                                            {e.disciplina_name}
+                                                        </h3>
+                                                        <p className={cn("text-[10px] font-bold uppercase tracking-widest", accent)}>
+                                                            {e.genero}
+                                                        </p>
+                                                        {e.isCombined && (
+                                                            <Link
+                                                                href={`/equipo/${e.delegacion_id}`}
+                                                                className="text-[10px] font-bold text-violet-400/70 hover:text-violet-300 uppercase tracking-widest truncate hover:underline block"
+                                                            >
+                                                                {e.equipo_nombre} · combinado
+                                                            </Link>
+                                                        )}
+                                                    </div>
+                                                    <span className="ml-auto shrink-0 text-[10px] font-bold text-white/20 uppercase tracking-widest border border-white/10 rounded-full px-2 py-0.5">
+                                                        Por jugar
+                                                    </span>
                                                 </div>
                                             </div>
                                         );
@@ -896,14 +953,14 @@ function TabButton({
             role="tab"
             aria-selected={active}
             className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-4 px-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all focus-visible:ring-2 focus-visible:ring-red-500 outline-none",
+                "flex-1 flex items-center justify-center gap-2 py-4 px-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all focus-visible:ring-2 focus-visible:ring-violet-500 outline-none",
                 active
                     ? "bg-white text-black shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
                     : "text-white/40 hover:text-white hover:bg-white/5"
             )}
         >
             {icon}
-            <span className="hidden sm:inline font-outfit">{label}</span>
+            <span className="hidden sm:inline font-sans">{label}</span>
         </button>
     );
 }
@@ -985,10 +1042,10 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                     {/* Sport Badge (Top Left) */}
                     <div className="flex items-center gap-2">
                         <div className={cn(
-                            "w-6 h-6 rounded-lg flex items-center justify-center border shadow-inner transition-colors",
-                            isLive ? "bg-red-500/10 border-red-500/20" : "bg-white/5 border-white/10"
+                            "w-8 h-8 rounded-lg flex items-center justify-center border shadow-inner transition-colors",
+                            isLive ? "bg-emerald-500/10 border-emerald-500/20" : "bg-white/5 border-white/10"
                         )}>
-                            {disc ? <SportIcon sport={disc} size={12} className={isLive ? "text-red-500 animate-pulse" : accent} /> : <Swords size={12} className="text-white/30" />}
+                            {disc ? <SportIcon sport={disc} size={18} className={isLive ? "animate-pulse drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "opacity-80 drop-shadow-sm"} /> : <Swords size={14} className="text-white/30" />}
                         </div>
                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">{disc || 'Evento'}</span>
                     </div>
@@ -996,7 +1053,7 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                     {/* Status/Date Pill (Top Right) */}
                     <div>
                         {isLive ? (
-                            <Badge className="bg-red-500/20 text-red-500 border border-red-500/30 text-[9px] font-black px-3 py-1 animate-pulse uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(239,68,68,0.2)] rounded-full">
+                            <Badge className="bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 text-[9px] font-black px-3 py-1 animate-pulse uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(16,185,129,0.2)] rounded-full">
                                 DIRECTO
                             </Badge>
                         ) : (
@@ -1015,7 +1072,7 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                             name={nameA}
                             src={match.carrera_a?.escudo_url || match.atleta_a?.avatar_url || match.equipo_a_id?.escudo_url}
                             className={cn(
-                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-background",
                                 winnerA ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
                                 !winnerA && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
                             )}
@@ -1059,7 +1116,7 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                             name={nameB}
                             src={match.carrera_b?.escudo_url || match.atleta_b?.avatar_url || match.equipo_b_id?.escudo_url}
                             className={cn(
-                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-[#0a0805]",
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-background",
                                 winnerB ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
                                 !winnerB && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
                             )}
