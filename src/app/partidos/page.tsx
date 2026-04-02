@@ -189,13 +189,13 @@ export default function PartidosPage() {
                                 key={sport}
                                 onClick={() => setSelectedSport(sport)}
                                 className={cn(
-                                    "flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider whitespace-nowrap border transition-all duration-300 shrink-0",
+                                    "flex items-center gap-2.5 px-4 py-2.5 rounded-full text-[11px] font-black font-display uppercase tracking-widest whitespace-nowrap border transition-all duration-300 shrink-0 outline-none",
                                     selectedSport === sport
-                                        ? `${SPORT_BORDER[sport]?.split(' ')[0] || 'border-white/30'} ${SPORT_ACCENT[sport] || 'text-white'} bg-white/10 shadow-lg scale-105`
-                                        : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/60"
+                                        ? "bg-white text-black border-white shadow-[0_0_25px_rgba(255,255,255,0.3)] scale-105"
+                                        : "bg-white/5 border-white/10 text-white/30 hover:bg-white/10 hover:text-white/50"
                                 )}
                             >
-                                <SportIcon sport={sport} size={14} />
+                                <SportIcon sport={sport} size={15} variant="react" className={cn("transition-all", selectedSport === sport ? "text-black" : "text-white/40")} />
                                 <span>{sport}</span>
                             </button>
                         ))}
@@ -319,12 +319,12 @@ function UnifiedCard({
                     {/* Header */}
                     <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-2.5">
-                            <div className={cn("w-8 h-8 rounded-full bg-black/60 flex items-center justify-center border border-white/10 shadow-[0_0_10px_currentColor]", SPORT_ACCENT[sportName])}>
-                                <SportIcon sport={sportName} size={16} />
+                            <div className="w-8 h-8 rounded-xl bg-black/40 flex items-center justify-center border border-white/10 backdrop-blur-md shadow-sm group-hover:border-white/20 transition-colors">
+                                <SportIcon sport={sportName} size={15} variant="react" className="text-white/80 transition-opacity group-hover:opacity-100 placeholder:grayscale" />
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-tight">{sportName}</span>
-                                <span className="text-[11px] font-medium text-white/60 leading-tight truncate max-w-[120px] mt-0.5">{partido.lugar || 'Sede'}</span>
+                                <span className="text-[10px] md:text-[11px] font-black font-display text-white/50 uppercase tracking-[0.2em] leading-tight truncate drop-shadow-sm">{sportName}</span>
+                                <span className="text-[10px] md:text-[11px] font-bold text-white/30 leading-tight truncate uppercase tracking-wider mt-0.5">{partido.lugar || 'Sede'}</span>
                             </div>
                         </div>
 

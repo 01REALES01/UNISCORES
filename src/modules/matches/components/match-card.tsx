@@ -45,14 +45,14 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
 
         <div className="relative p-5 flex flex-col h-full">
           <div className="flex justify-between items-start mb-4">
-            <div className="flex items-center gap-2">
-              <div className={cn("w-8 h-8 rounded-full bg-black/40 flex items-center justify-center border border-white/10 shadow-[0_0_15px_currentColor]", SPORT_ACCENT[sportName])}>
-                <SportIcon sport={sportName} size={18} className="drop-shadow-md" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-black/40 flex items-center justify-center border border-white/10 backdrop-blur-md shadow-sm group-hover:border-white/20 transition-colors">
+                <SportIcon sport={sportName} size={15} variant="react" className="text-white/80 transition-opacity group-hover:opacity-100 placeholder:grayscale" />
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest leading-tight truncate">{sportName}</span>
+                <span className="text-[10px] md:text-[11px] font-black font-display text-white/50 uppercase tracking-[0.2em] leading-tight truncate drop-shadow-sm">{sportName}</span>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[11px] md:text-[13px] font-medium text-slate-400 leading-tight truncate">{partido.lugar || 'Coliseo Central'}</span>
+                  <span className="text-[10px] md:text-[11px] font-bold text-white/30 leading-tight truncate uppercase tracking-wider">{partido.lugar || 'Coliseo Central'}</span>
                 </div>
               </div>
             </div>
@@ -184,17 +184,19 @@ export function UpcomingMatchCard({ partido }: { partido: Partido }) {
         </div>
 
         <div className="relative z-10 flex items-center justify-between mb-2 pb-2 border-b border-white/5">
-          <div className="flex items-center gap-2">
-            <SportIcon sport={sportName} size={14} className={cn("shrink-0", SPORT_ACCENT[sportName])} />
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+              <SportIcon sport={sportName} size={15} variant="react" className="shrink-0 text-white/40" />
+            </div>
             <div className="flex flex-col">
-              <span className="text-[11px] font-black text-white leading-tight">
+              <span className="text-[11px] font-black font-display text-white/90 leading-tight tracking-tight">
                 {getRelativeDate(partido.fecha, true)}
               </span>
               <span className={cn(
-                "text-[9px] font-light tracking-[0.15em] uppercase leading-tight mt-0.5",
-                genero === 'femenino' ? "text-pink-400 drop-shadow-[0_0_5px_rgba(244,114,182,0.6)]" :
-                  genero === 'mixto' ? "text-purple-400 drop-shadow-[0_0_5px_rgba(192,132,252,0.6)]" :
-                    "text-blue-400 drop-shadow-[0_0_5px_rgba(96,165,250,0.6)]"
+                "text-[9px] font-black tracking-[0.15em] uppercase leading-tight mt-0.5",
+                genero === 'femenino' ? "text-pink-400/80" :
+                  genero === 'mixto' ? "text-purple-400/80" :
+                    "text-blue-400/80"
               )}>
                 {genero === 'mixto' ? 'Mixto' : genero === 'femenino' ? 'Femenino' : 'Masculino'}
               </span>
@@ -265,23 +267,25 @@ export function ResultCard({ partido }: { partido: Partido }) {
         </div>
 
         <div className="relative z-10 flex items-center justify-between mb-2 pb-2 border-b border-white/5">
-          <div className="flex items-center gap-2">
-            <SportIcon sport={sportName} size={14} className={cn("shrink-0", SPORT_ACCENT[sportName])} />
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+              <SportIcon sport={sportName} size={15} variant="react" className="shrink-0 text-white/30" />
+            </div>
             <div className="flex flex-col">
-              <span className="text-[11px] font-black text-white leading-tight">
+              <span className="text-[11px] font-black font-display text-white/90 leading-tight tracking-tight">
                 {getRelativeDate(partido.fecha, false)}
               </span>
               <span className={cn(
-                "text-[9px] font-light tracking-[0.15em] uppercase leading-tight mt-0.5",
-                genero === 'femenino' ? "text-pink-400 drop-shadow-[0_0_5px_rgba(244,114,182,0.6)]" :
-                  genero === 'mixto' ? "text-purple-400 drop-shadow-[0_0_5px_rgba(192,132,252,0.6)]" :
-                    "text-blue-400 drop-shadow-[0_0_5px_rgba(96,165,250,0.6)]"
+                "text-[9px] font-black tracking-[0.15em] uppercase leading-tight mt-0.5",
+                genero === 'femenino' ? "text-pink-400/80" :
+                  genero === 'mixto' ? "text-purple-400/80" :
+                    "text-blue-400/80"
               )}>
                 {genero === 'mixto' ? 'Mixto' : genero === 'femenino' ? 'Femenino' : 'Masculino'}
               </span>
             </div>
           </div>
-          <span className="text-[9px] font-bold text-slate-600/60 tracking-wider uppercase">Finalizado</span>
+          <span className="text-[9px] font-black text-white/20 tracking-widest uppercase font-display">Finalizado</span>
         </div>
 
         {partido.marcador_detalle?.tipo === 'carrera' ? (

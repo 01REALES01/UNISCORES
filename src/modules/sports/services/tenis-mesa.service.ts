@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // TenisMesaService — Tenis de Mesa (Ping-Pong)
 // Sets a 11 pts (diff ≥ 2); best-of-5 (gana con 3 sets)
+// Auto-avanza set_actual cuando alguien gana el set actual
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ScoreDetail, ScoreResult } from '@/modules/sports/types';
@@ -68,38 +69,61 @@ export class TenisMesaService extends BaseSportService {
     return this.recalculateTotals(d);
   }
 
+  /** Devuelve true si el set dado ya tiene un ganador */
+  private setIsWon(pA: number, pB: number): boolean {
+    if (pA >= 11 && pA - pB >= 2) return true;
+    if (pB >= 11 && pB - pA >= 2) return true;
+    return false;
+  }
+
   recalculateTotals(detalle: ScoreDetail): ScoreDetail {
     const d = this.clone(detalle) as any;
-    
+
     let setsA = 0;
     let setsB = 0;
 
     if (d.sets) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        Object.values(d.sets).forEach((set: any) => {
-            const pA = set.puntos_a || 0;
-            const pB = set.puntos_b || 0;
-
-            if (pA >= 11 && pA - pB >= 2) setsA++;
-            else if (pB >= 11 && pB - pA >= 2) setsB++;
-        });
+      Object.values(d.sets).forEach((set: any) => {
+        const pA = set.puntos_a || 0;
+        const pB = set.puntos_b || 0;
+        if (pA >= 11 && pA - pB >= 2) setsA++;
+        else if (pB >= 11 && pB - pA >= 2) setsB++;
+      });
     }
 
-    // 🛡️ Ensure fields for DB Migration
     d.sets_a = setsA;
     d.sets_b = setsB;
 
+    // Auto-advance: si el set actual ya tiene ganador y el partido no terminó, avanzar
     const currentSet = d.set_actual || 1;
-    d.puntos_a = d.sets?.[currentSet]?.puntos_a || 0;
-    d.puntos_b = d.sets?.[currentSet]?.puntos_b || 0;
+    const cur = d.sets?.[currentSet] || { puntos_a: 0, puntos_b: 0 };
+    const matchOver = setsA >= 3 || setsB >= 3;
+
+    if (!matchOver && this.setIsWon(cur.puntos_a || 0, cur.puntos_b || 0) && currentSet < 5) {
+      d.set_actual = currentSet + 1;
+      // Inicializar el nuevo set si no existe
+      if (!d.sets[d.set_actual]) {
+        d.sets[d.set_actual] = { puntos_a: 0, puntos_b: 0 };
+      }
+    }
+
+    const activeSet = d.set_actual || 1;
+    d.puntos_a = d.sets?.[activeSet]?.puntos_a || 0;
+    d.puntos_b = d.sets?.[activeSet]?.puntos_b || 0;
 
     return d;
   }
-  /** Avanza al siguiente set (máx 5); sin-op si ya terminó el partido */
+
+  /** Avanza manualmente al siguiente set (máx 5); sin-op si ya terminó el partido */
   override nextPeriod(detalle: ScoreDetail): ScoreDetail {
     const d = this.clone(detalle) as any;
     const set = d.set_actual || 1;
-    if (set < 5) d.set_actual = set + 1;
+    if (set < 5) {
+      d.set_actual = set + 1;
+      if (!d.sets[d.set_actual]) {
+        d.sets[d.set_actual] = { puntos_a: 0, puntos_b: 0 };
+      }
+    }
     return d;
   }
 }

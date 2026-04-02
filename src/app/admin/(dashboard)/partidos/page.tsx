@@ -44,6 +44,7 @@ export default function PartidosPage() {
     const [filter, setFilter] = useState('todos');
     const [sportFilter, setSportFilter] = useState('todos');
     const [genderFilter, setGenderFilter] = useState('todos');
+    const [categoriaFilter, setCategoriaFilter] = useState('todos');
     const [searchQuery, setSearchQuery] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -123,12 +124,15 @@ export default function PartidosPage() {
         }
     };
 
+    const showCategoriaFilter = ['Tenis', 'Tenis de Mesa', 'Natación'].includes(sportFilter);
+
     const filteredPartidos = partidos.filter(p => {
         if (filter === 'en_curso' && p.estado !== 'en_curso') return false;
         if (filter === 'programados' && p.estado !== 'programado') return false;
         if (filter === 'finalizados' && p.estado !== 'finalizado') return false;
         if (sportFilter !== 'todos' && p.disciplinas?.name !== sportFilter) return false;
         if (genderFilter !== 'todos' && (p.genero || 'masculino') !== genderFilter) return false;
+        if (categoriaFilter !== 'todos' && (p.categoria || null) !== categoriaFilter) return false;
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             const dispA = getDisplayName(p, 'a');
@@ -356,7 +360,7 @@ export default function PartidosPage() {
                             {uniqueSports.map(sport => (
                                 <button
                                     key={sport}
-                                    onClick={() => setSportFilter(sportFilter === sport ? 'todos' : sport)}
+                                    onClick={() => { setSportFilter(sportFilter === sport ? 'todos' : sport); setCategoriaFilter('todos'); }}
                                     className={cn(
                                         "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-500 whitespace-nowrap flex items-center gap-2",
                                         sportFilter === sport
@@ -391,6 +395,31 @@ export default function PartidosPage() {
                                 </button>
                             ))}
                         </div>
+
+                        {/* Categoria Filter — solo visible para Tenis, T. Mesa y Natación */}
+                        {showCategoriaFilter && (
+                            <div className="flex gap-1.5 p-1.5 rounded-[1.25rem] bg-black/40 border border-lime-500/20 shrink-0">
+                                {[
+                                    { value: 'todos', label: 'Todos' },
+                                    { value: 'principiante', label: 'Prim.' },
+                                    { value: 'intermedio', label: 'Inter.' },
+                                    { value: 'avanzado', label: 'Avanz.' },
+                                ].map(c => (
+                                    <button
+                                        key={c.value}
+                                        onClick={() => setCategoriaFilter(c.value)}
+                                        className={cn(
+                                            "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap",
+                                            categoriaFilter === c.value
+                                                ? "bg-lime-600 text-white shadow-lg shadow-lime-500/20"
+                                                : "text-zinc-500 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        {c.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </motion.div>

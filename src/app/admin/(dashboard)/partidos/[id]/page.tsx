@@ -14,6 +14,7 @@ import { AdminEventCreator } from "@/modules/admin/matches/components/admin-even
 import { AdminMatchTimeline } from "@/modules/admin/matches/components/admin-match-timeline";
 import { AdminModals } from "@/modules/admin/matches/components/admin-modals";
 import { AdminPlayerRoster } from "@/modules/admin/matches/components/admin-player-roster";
+import { AjedrezControl } from "@/modules/admin/matches/components/ajedrez-control";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { EditMatchModal } from "@/modules/matches/components/edit-match-modal";
@@ -137,12 +138,24 @@ export default function MatchControlPage() {
             <div className="relative z-10 max-w-7xl mx-auto px-6">
                 {match.marcador_detalle?.tipo === 'carrera' ? (
                     <Card className="p-8 mb-12">
-                        <RaceControl 
-                          matchId={matchId} 
-                          detalle={match.marcador_detalle} 
-                          onUpdate={fetchMatchDetails} 
-                          isLocked={match.estado === 'finalizado'} 
-                          profile={profile} 
+                        <RaceControl
+                          matchId={matchId}
+                          detalle={match.marcador_detalle}
+                          onUpdate={fetchMatchDetails}
+                          isLocked={match.estado === 'finalizado'}
+                          profile={profile}
+                          disciplinaId={match.disciplina_id}
+                          genero={match.genero}
+                          categoria={(match as any).categoria}
+                        />
+                    </Card>
+                ) : disciplinaName === 'Ajedrez' ? (
+                    <Card className="p-8 mb-12">
+                        <AjedrezControl
+                          matchId={matchId}
+                          match={match}
+                          onUpdate={fetchMatchDetails}
+                          profile={profile}
                         />
                     </Card>
                 ) : (

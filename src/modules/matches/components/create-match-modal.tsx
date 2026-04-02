@@ -42,6 +42,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
     const [fase, setFase] = useState("");
     const [grupo, setGrupo] = useState("");
     const [bracketOrder, setBracketOrder] = useState("");
+    const [categoria, setCategoria] = useState<string>("");
+    const [ajedrezRondas, setAjedrezRondas] = useState<number>(3);
     const [errorMsg, setErrorMsg] = useState("");
     // Swimming-specific fields
     const [natEstilo, setNatEstilo] = useState('Libre');
@@ -125,6 +127,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
             } else {
                 if (!equipoA || !equipoB) throw new Error('Por favor completa los nombres de los equipos');
             }
+            const needsCategoria = ['Tenis', 'Tenis de Mesa', 'Natación'].includes(disciplina);
+            if (needsCategoria && !categoria) throw new Error('Debes seleccionar la categoría (principiante / intermedio / avanzado)');
 
             const { data: disc, error: discError } = await supabase
                 .from('disciplinas')
@@ -184,19 +188,36 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                         5: { puntos_a: 0, puntos_b: 0 }
                     }
                 };
-            } else if (disciplina === 'Tenis' || disciplina === 'Tenis de Mesa') {
+            } else if (disciplina === 'Tenis') {
                 marcadorInicial = {
                     set_actual: 1,
                     sets_a: 0,
                     sets_b: 0,
+                    // Tenis: unidad = juego. Puntos reales (0/15/30/40/AD) se manejan en el engine.
                     sets: {
-                        1: { juegos_a: 0, juegos_b: 0 },
-                        2: { juegos_a: 0, juegos_b: 0 },
-                        3: { juegos_a: 0, juegos_b: 0 }
+                        1: { juegos_a: 0, juegos_b: 0, puntos_a: 0, puntos_b: 0 },
+                        2: { juegos_a: 0, juegos_b: 0, puntos_a: 0, puntos_b: 0 },
+                        3: { juegos_a: 0, juegos_b: 0, puntos_a: 0, puntos_b: 0 }
+                    }
+                };
+            } else if (disciplina === 'Tenis de Mesa') {
+                marcadorInicial = {
+                    set_actual: 1,
+                    sets_a: 0,
+                    sets_b: 0,
+                    // T. Mesa: best-of-5, unidad = punto (11 pts para ganar un set)
+                    sets: {
+                        1: { puntos_a: 0, puntos_b: 0 },
+                        2: { puntos_a: 0, puntos_b: 0 },
+                        3: { puntos_a: 0, puntos_b: 0 },
+                        4: { puntos_a: 0, puntos_b: 0 },
+                        5: { puntos_a: 0, puntos_b: 0 }
                     }
                 };
             } else if (disciplina === 'Ajedrez') {
-                marcadorInicial = { resultado: null }; // 'blancas', 'negras', 'empate'
+                const rondas: Record<string, { resultado: null }> = {};
+                for (let i = 1; i <= ajedrezRondas; i++) rondas[String(i)] = { resultado: null };
+                marcadorInicial = { total_a: 0, total_b: 0, ronda_actual: 1, total_rondas: ajedrezRondas, rondas };
             } else { // Default for other non-race sports
                 marcadorInicial = { total_a: 0, total_b: 0 };
             }
@@ -245,6 +266,7 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                 ...(fase ? { fase } : {}),
                 ...(grupo ? { grupo } : {}),
                 ...(bracketOrder ? { bracket_order: parseInt(bracketOrder) } : {}),
+                ...(categoria ? { categoria } : {}),
             }).select().single();
 
             if (error) throw error;
@@ -272,6 +294,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
             setFase("");
             setGrupo("");
             setBracketOrder("");
+            setCategoria("");
+            setAjedrezRondas(3);
             onClose();
         } catch (e: any) {
             setErrorMsg(e.message);
@@ -647,6 +671,60 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                 ))}
                             </div>
                         </div>
+
+                        {/* Número de rondas — solo para Ajedrez */}
+                        {disciplina === 'Ajedrez' && (
+                            <div className="col-span-1 sm:col-span-2 space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                    Número de rondas
+                                </label>
+                                <div className="flex p-1.5 bg-zinc-900/60 rounded-2xl border border-slate-500/20 backdrop-blur-sm h-12">
+                                    {[1, 3, 5, 7].map((n) => (
+                                        <button
+                                            key={n}
+                                            onClick={() => setAjedrezRondas(n)}
+                                            className={`flex-1 rounded-xl text-[11px] font-black transition-all duration-300 ${
+                                                ajedrezRondas === n
+                                                    ? 'bg-slate-600 text-white shadow-lg'
+                                                    : 'text-zinc-500 hover:text-zinc-300'
+                                            }`}
+                                        >
+                                            {n} {n === 1 ? 'ronda' : 'rondas'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Categoría — solo para Tenis, T. Mesa y Natación */}
+                        {['Tenis', 'Tenis de Mesa', 'Natación'].includes(disciplina) && (
+                            <div className="col-span-1 sm:col-span-2 space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-lime-500" />
+                                    Nivel / Categoría <span className="text-red-400">*</span>
+                                </label>
+                                <div className="flex p-1.5 bg-zinc-900/60 rounded-2xl border border-lime-500/20 backdrop-blur-sm h-12">
+                                    {[
+                                        { id: 'principiante', label: 'Principiante' },
+                                        { id: 'intermedio', label: 'Intermedio' },
+                                        { id: 'avanzado', label: 'Avanzado' },
+                                    ].map((c) => (
+                                        <button
+                                            key={c.id}
+                                            onClick={() => setCategoria(c.id)}
+                                            className={`flex-1 rounded-xl text-[10px] font-black transition-all duration-300 uppercase tracking-tight ${
+                                                categoria === c.id
+                                                    ? 'bg-lime-600 text-white shadow-lg shadow-lime-500/30'
+                                                    : 'text-zinc-500 hover:text-zinc-300'
+                                            }`}
+                                        >
+                                            {c.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Bracket / Fase — Refined */}
                         {!isIndividual && !isRaceSport && (
