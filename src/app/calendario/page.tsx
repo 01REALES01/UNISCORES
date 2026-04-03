@@ -517,152 +517,183 @@ export default function CalendarioPage() {
                                     <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-black/20 border border-white/5 rounded-2xl backdrop-blur-sm shadow-inner group transition-all hover:bg-white/5">
                                         <BatteryCharging size={40} className="text-white/20 mb-4 group-hover:text-violet-400/50 transition-colors" />
                                         <h4 className="text-white font-bold text-lg mb-2">¡Día Libre!</h4>
-                                        <p className="text-white/50 text-xs sm:text-sm font-medium max-w-[240px]">
+                                        <p className="text-sm text-white/50">
                                             No hay eventos programados para esta fecha.
                                         </p>
                                     </div>
                                 )}
 
                                 {!loading && upcomingFixtures.map(match => {
-                                    const sportAccent = SPORT_ACCENT[match.disciplinas?.name ?? ''] || 'text-violet-400';
+                                    const sportName = match.disciplinas?.name || 'Deporte';
+                                    const sportAccent = SPORT_ACCENT[sportName] || 'text-violet-400';
                                     const isLive = match.estado === 'en_curso';
+                                    const isFinished = match.estado === 'finalizado';
+                                    const genero = (match.genero || 'masculino').toLowerCase();
+                                    const categoria = (match as any).categoria;
+                                    const isRace = match.marcador_detalle?.tipo === 'carrera';
+
+                                    // Score logic
+                                    const det = match.marcador_detalle || {};
+                                    const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
+                                    const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
+                                    const subScoreA = det.puntos_a ?? det.juegos_a;
+                                    const subScoreB = det.puntos_b ?? det.juegos_b;
 
                                     return (
-                                        <Link key={match.id} href={`/partido/${match.id}`} className="block">
-                                            <div className="bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-2xl p-4 transition-all relative overflow-hidden group shadow-md hover:shadow-xl backdrop-blur-sm">
-                                                {/* Subtle gradient hover */}
-                                                <div className="absolute inset-0 bg-gradient-to-r from-violet-500/0 to-violet-500/0 group-hover:from-violet-500/10 group-hover:to-transparent transition-all pointer-events-none opacity-0 group-hover:opacity-100" />
-                                                
-                                                <div className="relative z-10 flex flex-col h-full justify-between">
-                                                    <div className="flex items-center justify-between mb-3 text-[10px] sm:text-xs uppercase font-bold text-white/50 tracking-widest">
-                                                        <div className="flex items-center gap-2 bg-black/20 px-2 py-1 rounded-md border border-white/5">
-                                                            <span className={cn(
-                                                                "w-5 h-5 rounded-full flex items-center justify-center border",
+                                        <Link key={match.id} href={`/partido/${match.id}`} className="block group/item">
+                                            <div className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/30 rounded-2xl p-4 transition-all relative overflow-hidden shadow-lg backdrop-blur-md">
+                                                {/* Left accent bar */}
+                                                <div className={cn(
+                                                    "absolute left-0 top-0 bottom-0 w-1 opacity-40 group-hover/item:opacity-100 transition-opacity",
+                                                    SPORT_ACCENT[sportName] || 'bg-violet-500'
+                                                )} />
+
+                                                <div className="relative z-10 flex flex-col gap-3">
+                                                    {/* Header: Sport & Status */}
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={cn(
+                                                                "w-7 h-7 rounded-lg flex items-center justify-center border",
                                                                 isLive ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : "bg-white/10 border-white/10 text-white/70"
                                                             )}>
-                                                                <SportIcon sport={match.disciplinas?.name ?? ''} size={14} variant="react" />
-                                                            </span>
-                                                            <span className={sportAccent}>{match.disciplinas?.name}</span>
+                                                                <SportIcon sport={sportName} size={16} variant="react" />
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className={cn("text-[11px] font-black uppercase tracking-wider", sportAccent)}>
+                                                                    {sportName}
+                                                                </span>
+                                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                                    <span className={cn(
+                                                                        "text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm",
+                                                                        genero === 'femenino' ? "bg-pink-500/10 text-pink-400 border border-pink-500/20" :
+                                                                        genero === 'mixto' ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" :
+                                                                        "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                                                                    )}>
+                                                                        {genero}
+                                                                    </span>
+                                                                    {categoria && (
+                                                                        <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm bg-white/10 text-white/50 border border-white/10">
+                                                                            {categoria}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span>{new Date(match.fecha).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
-                                                            {isLive && <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />}
+
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-[11px] font-black text-white/90 tabular-nums">
+                                                                {new Date(match.fecha).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                            </span>
+                                                            {isLive ? (
+                                                                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full mt-0.5">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                                    <span className="text-[7px] font-black text-emerald-400 uppercase tracking-widest">LIVE</span>
+                                                                </div>
+                                                            ) : isFinished ? (
+                                                                <span className="text-[8px] font-bold text-white/30 uppercase tracking-widest mt-0.5">Finalizado</span>
+                                                            ) : null}
                                                         </div>
                                                     </div>
 
-                                                    {match.marcador_detalle?.tipo === 'carrera' ? (
-                                                        <div className="flex flex-col items-center justify-center w-full py-3 bg-black/20 border border-white/5 rounded-xl mt-2">
-                                                            <h5 className="text-sm font-bold text-white uppercase tracking-tight text-center drop-shadow-sm">
-                                                                {match.marcador_detalle?.distancia}
-                                                            </h5>
-                                                            <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mt-0.5">
-                                                                {match.marcador_detalle?.estilo}
+                                                    {/* Teams / Competitors */}
+                                                    {isRace ? (
+                                                        <div className="bg-black/20 border border-white/5 rounded-xl p-3 flex flex-col items-center gap-1">
+                                                            <span className="text-sm font-black text-white tracking-tight text-center leading-tight">
+                                                                {det.distancia} {det.estilo}
                                                             </span>
-                                                            
-                                                            {match.estado === 'finalizado' ? (
-                                                                <div className="flex flex-col gap-1 w-full px-4 sm:px-6 mt-3">
-                                                                    {Array.isArray(match.marcador_detalle?.participantes) && 
-                                                                     [...match.marcador_detalle.participantes]
-                                                                        .sort((a: any, b: any) => Number(a.posicion) - Number(b.posicion))
+                                                            {isFinished ? (
+                                                                <div className="flex gap-2 mt-2 w-full justify-center">
+                                                                    {(Array.isArray(det.participantes) ? det.participantes : [])
+                                                                        .sort((a: any, b: any) => (a.posicion || 99) - (b.posicion || 99))
                                                                         .slice(0, 3)
                                                                         .map((p: any, idx: number) => (
-                                                                        <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 px-3 py-1.5 rounded-lg">
-                                                                            <div className="flex gap-2 items-center">
-                                                                                <span className={cn(
-                                                                                    "text-[10px] font-bold w-4 text-center",
-                                                                                    p.posicion === 1 ? "text-amber-400 shadow-amber-400" :
-                                                                                    p.posicion === 2 ? "text-slate-300 shadow-slate-300" :
-                                                                                    p.posicion === 3 ? "text-amber-600 shadow-amber-600" : "text-white/50"
-                                                                                )}>#{p.posicion}</span>
-                                                                                <span className="text-[10px] text-white/80 truncate max-w-[100px]">{p.nombre}</span>
+                                                                            <div key={idx} className="flex flex-col items-center gap-0.5 bg-white/5 px-2 py-1.5 rounded-lg border border-white/5 min-w-[70px]">
+                                                                                <span className="text-xs">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
+                                                                                <span className="text-[9px] font-bold text-white truncate max-w-[55px]">{p.nombre}</span>
+                                                                                <span className="text-[8px] font-mono text-cyan-400">{p.tiempo || '--'}</span>
                                                                             </div>
-                                                                            <span className="text-[10px] font-mono text-emerald-400">{p.tiempo}</span>
-                                                                        </div>
-                                                                    ))}
+                                                                        ))}
                                                                 </div>
                                                             ) : (
-                                                                <div className="mt-3">
-                                                                    <span className="text-[10px] text-white/50 font-medium bg-black/30 border border-white/5 px-3 py-1 rounded-full">
-                                                                        {match.marcador_detalle?.participantes?.length || 0} Participantes
-                                                                    </span>
-                                                                </div>
+                                                                <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-1">
+                                                                    {det.participantes?.length || 0} Participantes
+                                                                </span>
                                                             )}
                                                         </div>
                                                     ) : (
-                                                        <div className="flex items-center justify-between mt-2">
+                                                        <div className="flex flex-col gap-2">
                                                             {/* Team A */}
-                                                            <div className="flex items-center gap-3 flex-1 min-w-0 bg-black/10 px-3 py-2 rounded-l-xl border-y border-l border-white/5">
-                                                                <Avatar 
-                                                                    name={getDisplayName(match, 'a')} 
-                                                                    src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url}
-                                                                    className={cn(
-                                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black shrink-0 border bg-background shadow-md",
-                                                                        match.estado === 'finalizado' && (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0) > (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0)
-                                                                            ? "border-emerald-500"
-                                                                            : "border-white/10 opacity-90"
-                                                                    )} 
-                                                                />
-                                                                <div className="flex flex-col flex-1 min-w-0 pr-1">
-                                                                    <span className={cn(
-                                                                        "font-bold text-xs sm:text-sm truncate block w-full",
-                                                                        match.estado === 'finalizado' && (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0) > (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0) ? "text-white" : "text-white/70"
-                                                                    )}>
-                                                                        {getDisplayName(match, 'a')}
-                                                                    </span>
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                                    <Avatar 
+                                                                        name={getDisplayName(match, 'a')} 
+                                                                        src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} 
+                                                                        className="w-7 h-7 border border-white/10 shrink-0 text-[10px]" 
+                                                                    />
+                                                                    <div className="flex flex-col min-w-0">
+                                                                        <span className={cn(
+                                                                            "text-xs font-bold truncate leading-tight",
+                                                                            isFinished ? (scoreA > scoreB ? "text-white" : "text-white/40") : "text-white/90"
+                                                                        )}>{getDisplayName(match, 'a')}</span>
+                                                                        {getCarreraSubtitle(match, 'a') && (
+                                                                            <span className="text-[9px] text-white/30 truncate leading-tight -mt-0.5">{getCarreraSubtitle(match, 'a')}</span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-
-                                                            <div className="px-3 shrink-0 min-w-[70px] sm:min-w-[90px] flex flex-col items-center justify-center bg-black/20 py-2 border-y border-white/5 h-full">
-                                                                {isLive ? (
-                                                                    <>
-                                                                        {match.disciplinas?.name === 'Ajedrez' ? (
-                                                                            <span className="text-xs font-bold text-emerald-400 uppercase drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]">VS</span>
-                                                                        ) : (
-                                                                            <span className="text-sm font-black text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
-                                                                                {(match.marcador_detalle?.goles_a || match.marcador_detalle?.sets_a || match.marcador_detalle?.total_a || 0)} - {(match.marcador_detalle?.goles_b || match.marcador_detalle?.sets_b || match.marcador_detalle?.total_b || 0)}
-                                                                            </span>
+                                                                {(isLive || isFinished) && (
+                                                                    <div className="flex items-center gap-2">
+                                                                        {subScoreA !== undefined && (
+                                                                            <span className="text-[10px] font-bold text-white/30">({subScoreA})</span>
                                                                         )}
-                                                                    </>
-                                                                ) : match.estado === 'finalizado' ? (
-                                                                    <>
-                                                                        {match.disciplinas?.name === 'Ajedrez' ? (
-                                                                            <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">
-                                                                                {match.marcador_detalle?.goles_a === match.marcador_detalle?.goles_b ? 'EMP' : 'FIN'}
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span className="text-sm font-black text-white/90">
-                                                                                {(match.marcador_detalle?.goles_a ?? match.marcador_detalle?.sets_a ?? match.marcador_detalle?.total_a ?? 0)} - {(match.marcador_detalle?.goles_b ?? match.marcador_detalle?.sets_b ?? match.marcador_detalle?.total_b ?? 0)}
-                                                                            </span>
-                                                                        )}
-                                                                    </>
-                                                                ) : (
-                                                                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">VS</span>
+                                                                        <span className={cn(
+                                                                            "text-lg font-black tabular-nums min-w-[1.25rem] text-right",
+                                                                            isFinished ? (scoreA > scoreB ? "text-white" : "text-white/30") : (isLive ? "text-emerald-400" : "text-white/70")
+                                                                        )}>{scoreA}</span>
+                                                                    </div>
                                                                 )}
                                                             </div>
 
                                                             {/* Team B */}
-                                                            <div className="flex items-center gap-3 flex-1 min-w-0 flex-row-reverse justify-end bg-black/10 px-3 py-2 rounded-r-xl border-y border-r border-white/5">
-                                                                <Avatar 
-                                                                    name={getDisplayName(match, 'b')} 
-                                                                    src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url}
-                                                                    className={cn(
-                                                                        "w-8 h-8 sm:w-10 sm:h-10 text-[10px] font-black shrink-0 border bg-background shadow-md",
-                                                                        match.estado === 'finalizado' && (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0) > (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0)
-                                                                            ? "border-emerald-500"
-                                                                            : "border-white/10 opacity-90"
-                                                                    )}
-                                                                />
-                                                                <div className="flex flex-col flex-1 min-w-0 items-end text-right pl-1">
-                                                                    <span className={cn(
-                                                                        "font-bold text-xs sm:text-sm truncate block w-full",
-                                                                        match.estado === 'finalizado' && (match.marcador_detalle?.goles_b ?? match.marcador_detalle?.total_b ?? 0) > (match.marcador_detalle?.goles_a ?? match.marcador_detalle?.total_a ?? 0) ? "text-white" : "text-white/70"
-                                                                    )}>
-                                                                        {getDisplayName(match, 'b')}
-                                                                    </span>
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                                    <Avatar 
+                                                                        name={getDisplayName(match, 'b')} 
+                                                                        src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} 
+                                                                        className="w-7 h-7 border border-white/10 shrink-0 text-[10px]" 
+                                                                    />
+                                                                    <div className="flex flex-col min-w-0">
+                                                                        <span className={cn(
+                                                                            "text-xs font-bold truncate leading-tight",
+                                                                            isFinished ? (scoreB > scoreA ? "text-white" : "text-white/40") : "text-white/90"
+                                                                        )}>{getDisplayName(match, 'b')}</span>
+                                                                        {getCarreraSubtitle(match, 'b') && (
+                                                                            <span className="text-[9px] text-white/30 truncate leading-tight -mt-0.5">{getCarreraSubtitle(match, 'b')}</span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
+                                                                {(isLive || isFinished) && (
+                                                                    <div className="flex items-center gap-2">
+                                                                        {subScoreB !== undefined && (
+                                                                            <span className="text-[10px] font-bold text-white/30">({subScoreB})</span>
+                                                                        )}
+                                                                        <span className={cn(
+                                                                            "text-lg font-black tabular-nums min-w-[1.25rem] text-right",
+                                                                            isFinished ? (scoreB > scoreA ? "text-white" : "text-white/40") : (isLive ? "text-emerald-400" : "text-white/70")
+                                                                        )}>{scoreB}</span>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     )}
+
+                                                    {/* Footer Info */}
+                                                    <div className="flex items-center justify-between border-t border-white/5 pt-2 mt-1">
+                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                            <MapPin size={10} className="text-white/30 shrink-0" />
+                                                            <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest truncate">{match.lugar || 'Sede Ol\u00edmpica'}</span>
+                                                        </div>
+                                                        <Badge variant="outline" className="text-[8px] bg-white/5 border-white/10 text-white/40 py-0 px-1.5">Ver Detalle</Badge>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </Link>
@@ -671,6 +702,7 @@ export default function CalendarioPage() {
                             </div>
                         </div>
 
+                        {/* Calendar Column */}
                     </div>
                 </div>
             </main>
