@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button, Input, Badge } from "@/components/ui-primitives";
-import { X, Save, Trophy, Loader2, Calendar, Users, Activity, MapPin, Clock, Plus, GraduationCap, Swords } from "lucide-react";
+import { X, Save, Trophy, Loader2, Calendar, Users, Activity, MapPin, Clock, Plus, GraduationCap, Swords, Search, UserCircle, XCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { CARRERAS_UNINORTE, LUGARES_OLIMPICOS, NATACION_ESTILOS, NATACION_DISTANCIAS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -57,6 +57,15 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
     // IDs of all carreras in the selected combined team (for carrera_a_ids / carrera_b_ids)
     const [carreraAIds, setCarreraAIds] = useState<number[]>([]);
     const [carreraBIds, setCarreraBIds] = useState<number[]>([]);
+    // Athlete profile search (individual sports)
+    const [athleteAQuery, setAthleteAQuery] = useState("");
+    const [athleteBQuery, setAthleteBQuery] = useState("");
+    const [athleteAResults, setAthleteAResults] = useState<any[]>([]);
+    const [athleteBResults, setAthleteBResults] = useState<any[]>([]);
+    const [athleteASelected, setAthleteASelected] = useState<{ id: string; full_name: string; avatar_url?: string } | null>(null);
+    const [athleteBSelected, setAthleteBSelected] = useState<{ id: string; full_name: string; avatar_url?: string } | null>(null);
+    const [searchingA, setSearchingA] = useState(false);
+    const [searchingB, setSearchingB] = useState(false);
 
     useEffect(() => {
         if (isOpen) fetchCarreras();
@@ -88,6 +97,7 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
 
     const isIndividual = DISCIPLINES.find(d => d.name === disciplina)?.individual || false;
     const isRaceSport = ['Natación', 'Atletismo', 'Ciclismo', 'Triatlón'].includes(disciplina);
+    const supportsFase = ['Tenis', 'Tenis de Mesa'].includes(disciplina);
     const isTeamSport = !isIndividual && !isRaceSport;
 
     // Fetch enrolled teams from carrera_disciplina when disciplina/genero changes (team sports only)
@@ -112,6 +122,37 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [disciplina, genero, isOpen]);
 
+    // Athlete search — debounced queries
+    useEffect(() => {
+        const q = athleteAQuery.trim();
+        if (q.length < 2) { setAthleteAResults([]); return; }
+        setSearchingA(true);
+        const t = setTimeout(async () => {
+            const { data } = await supabase.from('profiles').select('id, full_name, avatar_url, carreras_ids').ilike('full_name', `%${q}%`).limit(8);
+            setAthleteAResults(data ?? []);
+            setSearchingA(false);
+        }, 350);
+        return () => { clearTimeout(t); setSearchingA(false); };
+    }, [athleteAQuery]);
+
+    useEffect(() => {
+        const q = athleteBQuery.trim();
+        if (q.length < 2) { setAthleteBResults([]); return; }
+        setSearchingB(true);
+        const t = setTimeout(async () => {
+            const { data } = await supabase.from('profiles').select('id, full_name, avatar_url, carreras_ids').ilike('full_name', `%${q}%`).limit(8);
+            setAthleteBResults(data ?? []);
+            setSearchingB(false);
+        }, 350);
+        return () => { clearTimeout(t); setSearchingB(false); };
+    }, [athleteBQuery]);
+
+    // Reset athlete selection when discipline changes
+    useEffect(() => {
+        setAthleteASelected(null); setAthleteAQuery(""); setAthleteAResults([]);
+        setAthleteBSelected(null); setAthleteBQuery(""); setAthleteBResults([]);
+    }, [disciplina]);
+
     if (!isOpen) return null;
 
     const handleCreate = async () => {
@@ -123,11 +164,14 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                 if (disciplina !== 'Natación' && !equipoA) throw new Error("Por favor ingresa el nombre de la prueba/evento");
             } else if (isIndividual) {
                 if (!delegacionA || !delegacionB) throw new Error('Debes seleccionar la carrera de cada participante');
-                if (!equipoA || !equipoB) throw new Error('Debes ingresar el nombre de cada participante');
+                // Accept either a selected profile or a manually typed name
+                const nameA = athleteASelected?.full_name || equipoA;
+                const nameB = athleteBSelected?.full_name || equipoB;
+                if (!nameA || !nameB) throw new Error('Debes ingresar el nombre de cada participante');
             } else {
                 if (!equipoA || !equipoB) throw new Error('Por favor completa los nombres de los equipos');
             }
-            const needsCategoria = ['Tenis', 'Tenis de Mesa', 'Natación'].includes(disciplina);
+            const needsCategoria = ['Tenis', 'Tenis de Mesa'].includes(disciplina);
             if (needsCategoria && !categoria) throw new Error('Debes seleccionar la categoría (principiante / intermedio / avanzado)');
 
             const { data: disc, error: discError } = await supabase
@@ -189,10 +233,17 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                     }
                 };
             } else if (disciplina === 'Tenis') {
+                // Determine match format based on fase
+                const matchFormat =
+                  (fase === 'semifinal' || fase === 'tercer_puesto' || fase === 'final')
+                    ? 'best_of_2sets'
+                    : 'propset_8games'; // default para primeras rondas
+
                 marcadorInicial = {
                     set_actual: 1,
                     sets_a: 0,
                     sets_b: 0,
+                    match_format: matchFormat,
                     // Tenis: unidad = juego. Puntos reales (0/15/30/40/AD) se manejan en el engine.
                     sets: {
                         1: { juegos_a: 0, juegos_b: 0, puntos_a: 0, puntos_b: 0 },
@@ -247,13 +298,19 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                 carreraBId = cData?.find(c => c.nombre === delegacionB)?.id || null;
             }
 
+            // Resolve final athlete names (profile-linked or typed)
+            const finalNameA = isIndividual ? (athleteASelected?.full_name || equipoA) : equipoA;
+            const finalNameB = isIndividual ? (athleteBSelected?.full_name || equipoB) : equipoB;
+
             // Insertar partido
             const { data: newMatch, error } = await supabase.from('partidos').insert({
                 disciplina_id: disc?.id,
-                equipo_a: isRaceSport && disciplina === 'Natación' ? `${natDistancia} ${natEstilo}` : equipoA,
-                equipo_b: isRaceSport ? 'Evento Múltiple' : equipoB,
+                equipo_a: isRaceSport && disciplina === 'Natación' ? `${natDistancia} ${natEstilo}` : finalNameA,
+                equipo_b: isRaceSport ? 'Evento Múltiple' : finalNameB,
                 delegacion_a: isIndividual ? delegacionA : equipoA,
                 delegacion_b: isIndividual ? delegacionB : equipoB,
+                ...(isIndividual && athleteASelected ? { athlete_a_id: athleteASelected.id } : {}),
+                ...(isIndividual && athleteBSelected ? { athlete_b_id: athleteBSelected.id } : {}),
                 carrera_a_id: carreraAId,
                 carrera_b_id: carreraBId,
                 ...(carreraAIds.length > 1 ? { carrera_a_ids: carreraAIds } : {}),
@@ -286,6 +343,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
             setEquipoB("");
             setCarreraAIds([]);
             setCarreraBIds([]);
+            setAthleteASelected(null); setAthleteAQuery(""); setAthleteAResults([]);
+            setAthleteBSelected(null); setAthleteBQuery(""); setAthleteBResults([]);
             setDisciplina("Fútbol");
             setEstado("programado");
             setGenero("masculino");
@@ -516,6 +575,7 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
 
                                         {isIndividual ? (
                                             <div className="space-y-3">
+                                                {/* Carrera selector */}
                                                 <div className="relative">
                                                     <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500/50" size={16} />
                                                     <select
@@ -523,22 +583,63 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                                         value={delegacionA}
                                                         onChange={(e) => setDelegacionA(e.target.value)}
                                                     >
-                                                    <option value="" disabled>
-                                                        {loadingCarreras ? "Cargando catálogo..." : fetchError ? `Error: ${fetchError}` : "Seleccionar Carrera..."}
-                                                    </option>
-                                                    {carreras.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                                                        <option value="" disabled>
+                                                            {loadingCarreras ? "Cargando..." : "Seleccionar Carrera..."}
+                                                        </option>
+                                                        {carreras.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
                                                     </select>
                                                 </div>
-                                                <Input
-                                                    placeholder="Nombre del Atleta"
-                                                    value={equipoA}
-                                                    onChange={e => setEquipoA(e.target.value)}
-                                                    disabled={!delegacionA}
-                                                    className={cn(
-                                                        "h-11 bg-black/60 border-white/10 focus:border-blue-500/50 rounded-xl font-black text-sm text-center transition-all",
-                                                        !delegacionA && "opacity-30 saturation-0"
-                                                    )}
-                                                />
+                                                {/* Athlete search */}
+                                                {athleteASelected ? (
+                                                    <div className="flex items-center gap-2 p-2 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                                                        {athleteASelected.avatar_url ? (
+                                                            <img src={athleteASelected.avatar_url} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                                                        ) : (
+                                                            <UserCircle size={28} className="text-blue-400 shrink-0" />
+                                                        )}
+                                                        <span className="text-xs font-black text-white truncate flex-1">{athleteASelected.full_name}</span>
+                                                        <button onClick={() => { setAthleteASelected(null); setEquipoA(""); setAthleteAQuery(""); }} className="text-white/30 hover:text-white/70 shrink-0">
+                                                            <XCircle size={16} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-1">
+                                                        <div className="relative">
+                                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500/40" size={14} />
+                                                            <input
+                                                                placeholder="Buscar atleta..."
+                                                                value={athleteAQuery}
+                                                                onChange={e => { setAthleteAQuery(e.target.value); setEquipoA(e.target.value); }}
+                                                                disabled={!delegacionA}
+                                                                className={cn(
+                                                                    "w-full h-10 bg-black/60 border border-white/10 rounded-xl pl-9 pr-8 text-xs font-bold text-white placeholder:text-zinc-600 focus:border-blue-500/50 outline-none transition-all",
+                                                                    !delegacionA && "opacity-30"
+                                                                )}
+                                                            />
+                                                            {searchingA && <Loader2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 animate-spin" />}
+                                                        </div>
+                                                        {athleteAResults.length > 0 && (
+                                                            <div className="rounded-xl border border-blue-500/20 bg-zinc-950 overflow-hidden">
+                                                                {athleteAResults.map(p => (
+                                                                    <button
+                                                                        key={p.id}
+                                                                        onClick={() => { setAthleteASelected(p); setEquipoA(p.full_name); setAthleteAQuery(""); setAthleteAResults([]); }}
+                                                                        className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-blue-500/10 active:bg-blue-500/20 transition-colors text-left border-b border-white/5 last:border-0"
+                                                                    >
+                                                                        {p.avatar_url ? (
+                                                                            <img src={p.avatar_url} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                                                                        ) : (
+                                                                            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+                                                                                <UserCircle size={18} className="text-blue-400" />
+                                                                            </div>
+                                                                        )}
+                                                                        <span className="text-xs font-bold text-white truncate">{p.full_name}</span>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
                                             <div className="relative group/sel">
@@ -581,29 +682,71 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
 
                                         {isIndividual ? (
                                             <div className="space-y-3">
+                                                {/* Carrera selector */}
                                                 <div className="relative">
                                                     <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-500/50" size={16} />
                                                     <select
-                                                        className="w-full h-10 bg-black/60 border border-white/10 rounded-xl pl-10 pr-4 text-xs font-bold text-white focus:border-pink-500/50 outline-none transition-all appearance-none text-right"
+                                                        className="w-full h-10 bg-black/60 border border-white/10 rounded-xl pl-10 pr-4 text-xs font-bold text-white focus:border-pink-500/50 outline-none transition-all appearance-none"
                                                         value={delegacionB}
                                                         onChange={(e) => setDelegacionB(e.target.value)}
                                                     >
                                                         <option value="" disabled>
-                                                            {loadingCarreras ? "Cargando catálogo..." : fetchError ? `Error: ${fetchError}` : "Seleccionar Carrera..."}
+                                                            {loadingCarreras ? "Cargando..." : "Seleccionar Carrera..."}
                                                         </option>
                                                         {carreras.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
                                                     </select>
                                                 </div>
-                                                <Input
-                                                    placeholder="Nombre del Atleta"
-                                                    value={equipoB}
-                                                    onChange={e => setEquipoB(e.target.value)}
-                                                    disabled={!delegacionB}
-                                                    className={cn(
-                                                        "h-11 bg-black/60 border-white/10 focus:border-pink-500/50 rounded-xl font-black text-sm text-center transition-all",
-                                                        !delegacionB && "opacity-30 saturation-0"
-                                                    )}
-                                                />
+                                                {/* Athlete search */}
+                                                {athleteBSelected ? (
+                                                    <div className="flex items-center gap-2 p-2 rounded-xl bg-pink-500/10 border border-pink-500/30">
+                                                        {athleteBSelected.avatar_url ? (
+                                                            <img src={athleteBSelected.avatar_url} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                                                        ) : (
+                                                            <UserCircle size={28} className="text-pink-400 shrink-0" />
+                                                        )}
+                                                        <span className="text-xs font-black text-white truncate flex-1">{athleteBSelected.full_name}</span>
+                                                        <button onClick={() => { setAthleteBSelected(null); setEquipoB(""); setAthleteBQuery(""); }} className="text-white/30 hover:text-white/70 shrink-0">
+                                                            <XCircle size={16} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-1">
+                                                        <div className="relative">
+                                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-500/40" size={14} />
+                                                            <input
+                                                                placeholder="Buscar atleta..."
+                                                                value={athleteBQuery}
+                                                                onChange={e => { setAthleteBQuery(e.target.value); setEquipoB(e.target.value); }}
+                                                                disabled={!delegacionB}
+                                                                className={cn(
+                                                                    "w-full h-10 bg-black/60 border border-white/10 rounded-xl pl-9 pr-8 text-xs font-bold text-white placeholder:text-zinc-600 focus:border-pink-500/50 outline-none transition-all",
+                                                                    !delegacionB && "opacity-30"
+                                                                )}
+                                                            />
+                                                            {searchingB && <Loader2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-pink-400 animate-spin" />}
+                                                        </div>
+                                                        {athleteBResults.length > 0 && (
+                                                            <div className="rounded-xl border border-pink-500/20 bg-zinc-950 overflow-hidden">
+                                                                {athleteBResults.map(p => (
+                                                                    <button
+                                                                        key={p.id}
+                                                                        onClick={() => { setAthleteBSelected(p); setEquipoB(p.full_name); setAthleteBQuery(""); setAthleteBResults([]); }}
+                                                                        className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-pink-500/10 active:bg-pink-500/20 transition-colors text-left border-b border-white/5 last:border-0"
+                                                                    >
+                                                                        {p.avatar_url ? (
+                                                                            <img src={p.avatar_url} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                                                                        ) : (
+                                                                            <div className="w-8 h-8 rounded-full bg-pink-500/20 flex items-center justify-center shrink-0">
+                                                                                <UserCircle size={18} className="text-pink-400" />
+                                                                            </div>
+                                                                        )}
+                                                                        <span className="text-xs font-bold text-white truncate">{p.full_name}</span>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
                                             <div className="relative group/sel">
@@ -697,8 +840,8 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                             </div>
                         )}
 
-                        {/* Categoría — solo para Tenis, T. Mesa y Natación */}
-                        {['Tenis', 'Tenis de Mesa', 'Natación'].includes(disciplina) && (
+                        {/* Categoría — solo para Tenis y Tenis de Mesa (NO Natación) */}
+                        {['Tenis', 'Tenis de Mesa'].includes(disciplina) && (
                             <div className="col-span-1 sm:col-span-2 space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1 flex items-center gap-2">
                                     <span className="w-1.5 h-1.5 rounded-full bg-lime-500" />
@@ -706,7 +849,6 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                                 </label>
                                 <div className="flex p-1.5 bg-zinc-900/60 rounded-2xl border border-lime-500/20 backdrop-blur-sm h-12">
                                     {[
-                                        { id: 'principiante', label: 'Principiante' },
                                         { id: 'intermedio', label: 'Intermedio' },
                                         { id: 'avanzado', label: 'Avanzado' },
                                     ].map((c) => (
@@ -727,7 +869,7 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                         )}
 
                         {/* Bracket / Fase — Refined */}
-                        {!isIndividual && !isRaceSport && (
+                        {(supportsFase || (!isIndividual && !isRaceSport)) && (
                             <div className="col-span-1 sm:col-span-2 p-4 rounded-3xl bg-zinc-900/40 border border-white/5 space-y-3">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1 border-l-2 border-primary ml-1">
                                     Fase de Torneo (Opcional)

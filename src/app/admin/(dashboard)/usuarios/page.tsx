@@ -69,6 +69,8 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [disciplinas, setDisciplinas] = useState<any[]>([]);
     const [selectedDisciplina, setSelectedDisciplina] = useState<string | null>(null);
+    // Multi-sport: tracks disciplina_ids per user from profile_disciplinas table
+    const [userDisciplinas, setUserDisciplinas] = useState<Record<string, number[]>>({});
     const { profile: currentProfile, isAdmin } = useAuth();
     const { logAction } = useAuditLogger();
     const router = useRouter();
@@ -98,11 +100,64 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
 
         if (data && !error) {
             setProfiles(data as Profile[]);
+            // Fetch multi-sport assignments for deportistas
+            const deportistas = data.filter((p: any) => p.roles?.includes('deportista'));
+            if (deportistas.length > 0) {
+                const { data: pdData } = await supabase
+                    .from('profile_disciplinas')
+                    .select('profile_id, disciplina_id')
+                    .in('profile_id', deportistas.map((p: any) => p.id));
+                if (pdData) {
+                    const map: Record<string, number[]> = {};
+                    pdData.forEach((row: any) => {
+                        if (!map[row.profile_id]) map[row.profile_id] = [];
+                        map[row.profile_id].push(row.disciplina_id);
+                    });
+                    setUserDisciplinas(map);
+                }
+            }
         }
         setLoading(false);
     };
 
-    const toggleRole = async (userId: string, targetRole: UserRole, disciplinaId?: number) => {
+    /** Toggle a single disciplina for a user in profile_disciplinas */
+    const toggleUserDisciplina = async (userId: string, disciplinaId: number) => {
+        const current = userDisciplinas[userId] || [];
+        const has = current.includes(disciplinaId);
+
+        if (has) {
+            // Remove
+            await supabase.from('profile_disciplinas')
+                .delete()
+                .eq('profile_id', userId)
+                .eq('disciplina_id', disciplinaId);
+        } else {
+            // Add
+            await supabase.from('profile_disciplinas')
+                .insert({ profile_id: userId, disciplina_id: disciplinaId });
+        }
+
+        // Re-fetch to get updated list
+        const { data: pdData } = await supabase
+            .from('profile_disciplinas')
+            .select('disciplina_id')
+            .eq('profile_id', userId);
+        const newIds = (pdData || []).map((r: any) => r.disciplina_id);
+        setUserDisciplinas(prev => ({ ...prev, [userId]: newIds }));
+
+        // Sync legacy field: athlete_disciplina_id = first sport or null
+        await supabase.from('profiles').update({
+            athlete_disciplina_id: newIds.length > 0 ? newIds[0] : null
+        }).eq('id', userId);
+
+        await logAction('UPDATE_ATHLETE_SPORT', 'usuario', userId, {
+            action: has ? 'remove' : 'add',
+            disciplina_id: disciplinaId,
+            all_disciplinas: newIds
+        });
+    };
+
+    const toggleRole = async (userId: string, targetRole: UserRole) => {
         if (userId === currentProfile?.id) {
             alert('No puedes cambiar tu propio rol');
             return;
@@ -138,8 +193,11 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
             updated_at: new Date().toISOString() 
         };
 
-        if (targetRole === 'deportista' && !currentRoles.includes('deportista') && disciplinaId) {
-            updates.athlete_disciplina_id = disciplinaId;
+        // If removing deportista, clear legacy field and join table
+        if (targetRole === 'deportista' && currentRoles.includes('deportista')) {
+            updates.athlete_disciplina_id = null;
+            await supabase.from('profile_disciplinas').delete().eq('profile_id', userId);
+            setUserDisciplinas(prev => { const n = { ...prev }; delete n[userId]; return n; });
         }
 
         const { error } = await supabase
@@ -150,15 +208,11 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
         if (error) {
             alert('Error al actualizar roles: ' + error.message);
         } else {
-            // Log Action
             await logAction('UPDATE_ROLE', 'usuario', userId, {
                 email: userToUpdate.email,
                 viejos_roles: currentRoles,
                 nuevos_roles: updatedRoles,
-                disciplina_atleta_id: disciplinaId
             });
-
-            // Optional: You could add a toast here if sonner is available
             await fetchProfiles();
         }
 
@@ -354,6 +408,52 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                                 {!isCurrentUser && <ChevronDown size={14} className="text-slate-500 transition-transform group-hover:text-white/80" />}
                                             </div>
 
+                                            {/* For current user who is deportista: show sport editor button */}
+                                            {isCurrentUser && userProfile.roles?.includes('deportista') && (
+                                                <div className="mt-2">
+                                                    <button
+                                                        onClick={() => setSelectedDisciplina(selectedDisciplina === userProfile.id ? null : userProfile.id)}
+                                                        className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all cursor-pointer"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <Trophy size={12} className="text-emerald-400" />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                                                                Mis Deportes
+                                                                {(userDisciplinas[userProfile.id] || []).length > 0
+                                                                    ? ` · ${(userDisciplinas[userProfile.id] || []).length}`
+                                                                    : ''}
+                                                            </span>
+                                                        </div>
+                                                        <ChevronDown size={12} className="text-emerald-400" />
+                                                    </button>
+
+                                                    {selectedDisciplina === userProfile.id && (
+                                                        <div className="mt-2 p-2 bg-white/5 rounded-xl border border-white/5 space-y-2 animate-in slide-in-from-top-2">
+                                                            <p className="text-[9px] font-black uppercase text-slate-500 px-2 tracking-widest">Selecciona tus deportes</p>
+                                                            <div className="grid grid-cols-1 gap-1 max-h-48 overflow-y-auto custom-scrollbar">
+                                                                {disciplinas.map(d => {
+                                                                    const isChecked = (userDisciplinas[userProfile.id] || []).includes(d.id);
+                                                                    return (
+                                                                        <button
+                                                                            key={d.id}
+                                                                            onClick={() => toggleUserDisciplina(userProfile.id, d.id)}
+                                                                            className={`w-full px-3 py-2 rounded-lg text-xs font-bold text-left transition-all flex items-center justify-between ${
+                                                                                isChecked
+                                                                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                                                                    : 'hover:bg-white/5 text-slate-300 hover:text-white border border-transparent'
+                                                                            }`}
+                                                                        >
+                                                                            {d.name}
+                                                                            {isChecked && <Check size={12} />}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             {/* Dropdown Menu */}
                                             {openDropdown === userProfile.id && (
                                                 <>
@@ -374,12 +474,19 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                                                 const Icon = config.icon;
                                                                 const isSelected = userProfile.roles?.includes(role) || (role === 'public' && (!userProfile.roles || userProfile.roles.length === 0));
                                                                 const isAthlete = role === 'deportista';
+                                                                const isDeportistaActive = userProfile.roles?.includes('deportista');
+                                                                const thisUserDiscs = userDisciplinas[userProfile.id] || [];
 
                                                                 return (
                                                                     <div key={role} className="space-y-1">
                                                                         <button
                                                                             onClick={() => {
-                                                                                if (isAthlete && !userProfile.roles?.includes('deportista')) {
+                                                                                if (isAthlete && !isDeportistaActive) {
+                                                                                    // First activate deportista role, then let them pick sports
+                                                                                    toggleRole(userProfile.id, role);
+                                                                                    setSelectedDisciplina(userProfile.id);
+                                                                                } else if (isAthlete && isDeportistaActive) {
+                                                                                    // Toggle sport picker panel
                                                                                     setSelectedDisciplina(selectedDisciplina === userProfile.id ? null : userProfile.id);
                                                                                 } else {
                                                                                     toggleRole(userProfile.id, role);
@@ -395,25 +502,52 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                                                             </div>
                                                                             <div className="flex-1">
                                                                                 <span className={`text-sm font-bold ${isSelected ? config.color : 'text-slate-300'}`}>{config.label}</span>
-                                                                                <p className="text-[10px] text-slate-500/80 leading-snug mt-0.5">{config.description}</p>
+                                                                                <p className="text-[10px] text-slate-500/80 leading-snug mt-0.5">
+                                                                                    {isAthlete && isDeportistaActive && thisUserDiscs.length > 0
+                                                                                        ? `${thisUserDiscs.length} deporte${thisUserDiscs.length > 1 ? 's' : ''} asignado${thisUserDiscs.length > 1 ? 's' : ''}`
+                                                                                        : config.description}
+                                                                                </p>
                                                                             </div>
-                                                                            {isSelected && <Check size={14} className={config.color} />}
-                                                                            {isAthlete && !isSelected && <ChevronDown size={14} className="text-slate-400" />}
+                                                                            {isSelected && !isAthlete && <Check size={14} className={config.color} />}
+                                                                            {isAthlete && <ChevronDown size={14} className={isDeportistaActive ? 'text-emerald-400' : 'text-slate-400'} />}
                                                                         </button>
 
+                                                                        {/* Multi-sport picker: shows when user is deportista and panel is open */}
                                                                         {isAthlete && selectedDisciplina === userProfile.id && (
                                                                             <div className="mx-1 p-2 bg-white/5 rounded-xl border border-white/5 space-y-2 animate-in slide-in-from-top-2">
-                                                                                <p className="text-[9px] font-black uppercase text-slate-500 px-2 tracking-widest">Selecciona Deporte</p>
-                                                                                <div className="grid grid-cols-1 gap-1 max-h-40 overflow-y-auto custom-scrollbar">
-                                                                                    {disciplinas.map(d => (
+                                                                                <div className="flex items-center justify-between px-2">
+                                                                                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Deportes (multi-selección)</p>
+                                                                                    {isDeportistaActive && (
                                                                                         <button
-                                                                                            key={d.id}
-                                                                                            onClick={() => toggleRole(userProfile.id, 'deportista', d.id)}
-                                                                                            className="w-full px-3 py-2 rounded-lg hover:bg-emerald-500/20 text-xs font-bold text-slate-300 hover:text-emerald-400 text-left transition-colors"
+                                                                                            onClick={() => {
+                                                                                                if (confirm('¿Quitar rol de deportista y todos sus deportes?')) {
+                                                                                                    toggleRole(userProfile.id, 'deportista');
+                                                                                                }
+                                                                                            }}
+                                                                                            className="text-[9px] font-black text-rose-400 hover:text-rose-300 transition-colors"
                                                                                         >
-                                                                                            {d.name}
+                                                                                            Quitar rol
                                                                                         </button>
-                                                                                    ))}
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="grid grid-cols-1 gap-1 max-h-40 overflow-y-auto custom-scrollbar">
+                                                                                    {disciplinas.map(d => {
+                                                                                        const isChecked = thisUserDiscs.includes(d.id);
+                                                                                        return (
+                                                                                            <button
+                                                                                                key={d.id}
+                                                                                                onClick={() => toggleUserDisciplina(userProfile.id, d.id)}
+                                                                                                className={`w-full px-3 py-2 rounded-lg text-xs font-bold text-left transition-all flex items-center justify-between ${
+                                                                                                    isChecked
+                                                                                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                                                                                        : 'hover:bg-white/5 text-slate-300 hover:text-white border border-transparent'
+                                                                                                }`}
+                                                                                            >
+                                                                                                {d.name}
+                                                                                                {isChecked && <Check size={12} />}
+                                                                                            </button>
+                                                                                        );
+                                                                                    })}
                                                                                 </div>
                                                                             </div>
                                                                         )}

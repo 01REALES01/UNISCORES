@@ -1,13 +1,17 @@
 import { Avatar } from "@/components/ui-primitives";
 import { Edit2, Play, Square } from "lucide-react";
-import { getDisplayName } from "@/lib/sport-helpers";
+import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { SPORT_COLORS } from "@/lib/constants";
+import Link from "next/link";
 
 interface AdminScoreboardProps {
   match: any;
   scoreA: any;
   scoreB: any;
+  labelA?: string;
+  labelB?: string;
+  scoreExtra?: string;
   onEditScore: () => void;
   onToggleCronometro: () => void;
   onFinalizar: () => void;
@@ -20,6 +24,9 @@ export const AdminScoreboard = ({
   match,
   scoreA,
   scoreB,
+  labelA,
+  labelB,
+  scoreExtra,
   onEditScore,
   onToggleCronometro,
   onFinalizar,
@@ -33,6 +40,8 @@ export const AdminScoreboard = ({
   const sportColor = SPORT_COLORS[disciplinaName] || '#6366f1';
 
   const detalle = match.marcador_detalle || {};
+  const tenisSet = detalle.set_actual || 1;
+
   const canAdvancePeriod = isLive && !!onCambiarPeriodo && (
     (disciplinaName === 'Fútbol' && (detalle.tiempo_actual || 1) < 2) ||
     disciplinaName === 'Baloncesto' ||
@@ -67,7 +76,18 @@ export const AdminScoreboard = ({
                   <Avatar src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} name={getDisplayName(match, 'a')} size="lg" className="h-full w-full rounded-[1.5rem]" />
                 </div>
               </div>
-              <h2 className="text-sm md:text-lg font-black text-white/90 uppercase tracking-wider text-center">{getDisplayName(match, 'a')}</h2>
+              <h2 className="text-sm md:text-lg font-black text-white/90 uppercase tracking-wider text-center">
+                {match.athlete_a_id ? (
+                  <Link href={`/perfil/${match.athlete_a_id}`} className="hover:text-emerald-400 transition-colors">{getDisplayName(match, 'a')}</Link>
+                ) : getDisplayName(match, 'a')}
+              </h2>
+              {getCarreraSubtitle(match, 'a') && (
+                match.carrera_a_id ? (
+                  <Link href={`/carrera/${match.carrera_a_id}`} className="text-[10px] text-white/30 font-medium hover:text-white/60 transition-colors">{getCarreraSubtitle(match, 'a')}</Link>
+                ) : (
+                  <span className="text-[10px] text-white/30 font-medium">{getCarreraSubtitle(match, 'a')}</span>
+                )
+              )}
             </div>
 
             {/* Center */}
@@ -84,14 +104,34 @@ export const AdminScoreboard = ({
                 <div className="flex items-center justify-center gap-4 sm:gap-6 px-8 sm:px-12 py-6 sm:py-8 rounded-[2.5rem] border shadow-2xl relative overflow-hidden"
                   style={{ borderColor: `${sportColor}12`, background: `linear-gradient(to bottom, ${sportColor}06, ${sportColor}02)` }}>
                   <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
-                  <span className="text-5xl sm:text-7xl md:text-8xl font-black tabular-nums relative z-10 text-white drop-shadow-xl">{scoreA}</span>
+                  <span className={cn(
+                    "font-black tabular-nums relative z-10 text-white drop-shadow-xl",
+                    (labelA === 'DEUCE' || labelB === 'DEUCE' || labelA === 'AD' || labelB === 'AD')
+                      ? "text-3xl sm:text-5xl" : "text-5xl sm:text-7xl md:text-8xl"
+                  )}>{labelA ?? scoreA}</span>
                   <div className="flex flex-col items-center gap-1 relative z-10">
                     <span className="text-xl sm:text-3xl font-black text-white/10">:</span>
                     {isLive && <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: sportColor }} />}
                   </div>
-                  <span className="text-5xl sm:text-7xl md:text-8xl font-black tabular-nums relative z-10 text-white drop-shadow-xl">{scoreB}</span>
+                  <span className={cn(
+                    "font-black tabular-nums relative z-10 text-white drop-shadow-xl",
+                    (labelA === 'DEUCE' || labelB === 'DEUCE' || labelA === 'AD' || labelB === 'AD')
+                      ? "text-3xl sm:text-5xl" : "text-5xl sm:text-7xl md:text-8xl"
+                  )}>{labelB ?? scoreB}</span>
                 </div>
+                {scoreExtra && isLive && (
+                  <div className="flex items-center justify-center gap-3 mt-2 text-xs font-black tabular-nums text-white/40">
+                    {scoreExtra}
+                  </div>
+                )}
               </div>
+
+              {(disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa') && match.categoria && (
+                <span className="px-3 py-1 rounded-xl border text-[10px] font-black uppercase tracking-widest text-lime-400"
+                  style={{ borderColor: `${sportColor}20`, background: `${sportColor}08` }}>
+                  {match.categoria === 'intermedio' ? 'Intermedio' : 'Avanzado'}
+                </span>
+              )}
 
               {isLive ? (
                 <div className="flex items-center gap-2.5">
@@ -158,7 +198,18 @@ export const AdminScoreboard = ({
                   <Avatar src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} name={getDisplayName(match, 'b')} size="lg" className="h-full w-full rounded-[1.5rem]" />
                 </div>
               </div>
-              <h2 className="text-sm md:text-lg font-black text-white/90 uppercase tracking-wider text-center">{getDisplayName(match, 'b')}</h2>
+              <h2 className="text-sm md:text-lg font-black text-white/90 uppercase tracking-wider text-center">
+                {match.athlete_b_id ? (
+                  <Link href={`/perfil/${match.athlete_b_id}`} className="hover:text-emerald-400 transition-colors">{getDisplayName(match, 'b')}</Link>
+                ) : getDisplayName(match, 'b')}
+              </h2>
+              {getCarreraSubtitle(match, 'b') && (
+                match.carrera_b_id ? (
+                  <Link href={`/carrera/${match.carrera_b_id}`} className="text-[10px] text-white/30 font-medium hover:text-white/60 transition-colors">{getCarreraSubtitle(match, 'b')}</Link>
+                ) : (
+                  <span className="text-[10px] text-white/30 font-medium">{getCarreraSubtitle(match, 'b')}</span>
+                )
+              )}
             </div>
           </div>
         </div>

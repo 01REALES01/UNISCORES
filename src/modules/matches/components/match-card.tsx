@@ -28,8 +28,10 @@ export function getRelativeDate(fecha: string, includeTime = true) {
 
 export function LiveMatchCard({ partido }: { partido: Partido }) {
   const sportName = partido.disciplinas?.name || 'Deporte';
-  const { scoreA, scoreB, extra } = getCurrentScore(sportName, partido.marcador_detalle || {});
+  const { scoreA, scoreB, extra, subScoreA, subScoreB, labelA, labelB } = getCurrentScore(sportName, partido.marcador_detalle || {});
   const genero = (partido.genero || 'masculino').toLowerCase();
+  const categoria = partido.categoria;
+  const isSetSport = ['Tenis', 'Tenis de Mesa', 'V\u00f3leibol', 'Voleibol', 'B\u00e1dminton', 'Badminton'].includes(sportName);
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block h-full">
@@ -54,6 +56,19 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[10px] md:text-[11px] font-bold text-white/30 leading-tight truncate uppercase tracking-wider">{partido.lugar || 'Coliseo Central'}</span>
                 </div>
+                {/* Categoria badge — Intermedio / Avanzado */}
+                {categoria && (
+                  <span className={cn(
+                    "mt-1 inline-block self-start text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md",
+                    categoria.toLowerCase() === 'avanzado'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      : categoria.toLowerCase() === 'intermedio'
+                        ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                        : 'bg-white/10 text-white/50 border border-white/10'
+                  )}>
+                    {categoria}
+                  </span>
+                )}
               </div>
             </div>
             <div className="z-10">
@@ -117,14 +132,18 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                     </span>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center gap-1 md:gap-2 font-black text-3xl md:text-6xl text-white tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
-                    <span>{scoreA}</span>
+                  <div className={cn(
+                    "flex items-center justify-center gap-1 md:gap-2 font-black tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] text-white",
+                    (labelA === 'DEUCE' || labelB === 'DEUCE' || labelA === 'AD' || labelB === 'AD')
+                      ? "text-xl md:text-4xl" : "text-3xl md:text-6xl"
+                  )}>
+                    <span>{labelA ?? scoreA}</span>
                     <span className="text-slate-300/40 text-2xl md:text-4xl -mt-1 md:-mt-2">:</span>
-                    <span>{scoreB}</span>
+                    <span>{labelB ?? scoreB}</span>
                   </div>
                 )}
 
-                <div className="flex flex-col items-center gap-1.5 mt-3">
+                <div className="flex flex-col items-center gap-1 mt-3">
                   <div className={cn(
                     "text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-1000",
                     genero === 'femenino' ? "text-pink-400 drop-shadow-[0_0_8px_rgba(244,114,182,0.8)]" :
@@ -134,7 +153,41 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                     {genero}
                   </div>
 
-                  {extra && (
+                  {/* Set indicator: [sA dots] SET X [sB dots] for set-sports; plain extra for others */}
+                  {extra && isSetSport ? (
+                    <div className="flex items-center justify-between w-full min-w-[160px] px-1">
+                      {/* Team A: número sets + dots */}
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-black tabular-nums text-white/70">{subScoreA ?? 0}</span>
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: Math.max(subScoreA ?? 0, 0) }).map((_, i) => (
+                            <span key={i} className="w-1.5 h-1.5 rounded-full bg-white/80 shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
+                          ))}
+                          {(subScoreA ?? 0) === 0 && <span className="w-1.5 h-1.5 rounded-full bg-white/15 border border-white/20" />}
+                        </div>
+                      </div>
+
+                      {/* SET N label — solo el número de set */}
+                      <div className={cn(
+                        "text-[9px] font-black tracking-[0.25em] uppercase",
+                        SPORT_ACCENT[sportName] || 'text-white/60',
+                        "drop-shadow-[0_0_8px_currentColor] brightness-125"
+                      )}>
+                        {extra?.includes('Set') ? `SET ${extra.split('Set').pop()?.trim()}` : extra}
+                      </div>
+
+                      {/* Team B: dots + número sets */}
+                      <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: Math.max(subScoreB ?? 0, 0) }).map((_, i) => (
+                            <span key={i} className="w-1.5 h-1.5 rounded-full bg-white/80 shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
+                          ))}
+                          {(subScoreB ?? 0) === 0 && <span className="w-1.5 h-1.5 rounded-full bg-white/15 border border-white/20" />}
+                        </div>
+                        <span className="text-xs font-black tabular-nums text-white/70">{subScoreB ?? 0}</span>
+                      </div>
+                    </div>
+                  ) : extra ? (
                     <div className={cn(
                       "text-[10px] font-black tracking-[0.25em] uppercase transition-all duration-300",
                       SPORT_ACCENT[sportName] || 'text-white/60',
@@ -142,7 +195,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                     )}>
                       {extra}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
@@ -253,10 +306,17 @@ export function UpcomingMatchCard({ partido }: { partido: Partido }) {
 
 export function ResultCard({ partido }: { partido: Partido }) {
   const sportName = partido.disciplinas?.name || 'Deporte';
-  const { scoreA, scoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
+  const { scoreA, scoreB, subScoreA, subScoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
   const winnerA = scoreA > scoreB;
   const isDraw = scoreA === scoreB;
   const genero = (partido.genero || 'masculino').toLowerCase();
+  const categoria = partido.categoria;
+  const isSetSport = ['Tenis', 'Tenis de Mesa', 'V\u00f3leibol', 'Voleibol', 'B\u00e1dminton', 'Badminton'].includes(sportName);
+  // For set sports, winner is who won more sets
+  const sA = subScoreA ?? scoreA;
+  const sB = subScoreB ?? scoreB;
+  const setWinnerA = isSetSport ? sA > sB : winnerA;
+  const setWinnerB = isSetSport ? sB > sA : !winnerA && scoreB > scoreA;
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block">
@@ -283,6 +343,18 @@ export function ResultCard({ partido }: { partido: Partido }) {
               )}>
                 {genero === 'mixto' ? 'Mixto' : genero === 'femenino' ? 'Femenino' : 'Masculino'}
               </span>
+              {categoria && (
+                <span className={cn(
+                  "mt-0.5 inline-block self-start text-[7px] font-black uppercase tracking-widest px-1 py-0.5 rounded",
+                  categoria.toLowerCase() === 'avanzado'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : categoria.toLowerCase() === 'intermedio'
+                      ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                      : 'bg-white/10 text-white/50 border border-white/10'
+                )}>
+                  {categoria}
+                </span>
+              )}
             </div>
           </div>
           <span className="text-[9px] font-black text-white/20 tracking-widest uppercase font-display">Finalizado</span>
@@ -359,7 +431,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
               <div className="flex items-center gap-2.5 min-w-0">
                 <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-black/40" />
                 <div className="flex flex-col min-w-0">
-                  <span className={cn("text-[13px] font-bold truncate", winnerA || isDraw ? "text-white" : "text-slate-500")}>
+                  <span className={cn("text-[13px] font-bold truncate", setWinnerA || isDraw ? "text-white" : "text-slate-500")}>
                     {getDisplayName(partido, 'a')}
                   </span>
                   {getCarreraSubtitle(partido, 'a') && (
@@ -367,16 +439,24 @@ export function ResultCard({ partido }: { partido: Partido }) {
                   )}
                 </div>
               </div>
-              <span className={cn("text-xl font-black tabular-nums ml-2", winnerA ? "text-white" : "text-slate-600")}>
-                {scoreA}
-              </span>
+              <div className="flex items-center gap-1.5 ml-2">
+                {/* For set sports: show sets won as primary, current set score as secondary */}
+                {isSetSport ? (
+                  <>
+                    <span className={cn("text-xl font-black tabular-nums", setWinnerA ? "text-white" : "text-slate-600")}>{sA}</span>
+                    <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({scoreA})</span>
+                  </>
+                ) : (
+                  <span className={cn("text-xl font-black tabular-nums", winnerA ? "text-white" : "text-slate-600")}>{scoreA}</span>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-black/40" />
                 <div className="flex flex-col min-w-0">
-                  <span className={cn("text-[13px] font-bold truncate", !winnerA && scoreB > scoreA ? "text-white" : isDraw ? "text-white" : "text-slate-500")}>
+                  <span className={cn("text-[13px] font-bold truncate", setWinnerB || isDraw ? "text-white" : "text-slate-500")}>
                     {getDisplayName(partido, 'b')}
                   </span>
                   {getCarreraSubtitle(partido, 'b') && (
@@ -384,9 +464,16 @@ export function ResultCard({ partido }: { partido: Partido }) {
                   )}
                 </div>
               </div>
-              <span className={cn("text-xl font-black tabular-nums ml-2", !winnerA && scoreB > scoreA ? "text-white" : "text-slate-600")}>
-                {scoreB}
-              </span>
+              <div className="flex items-center gap-1.5 ml-2">
+                {isSetSport ? (
+                  <>
+                    <span className={cn("text-xl font-black tabular-nums", setWinnerB ? "text-white" : "text-slate-600")}>{sB}</span>
+                    <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({scoreB})</span>
+                  </>
+                ) : (
+                  <span className={cn("text-xl font-black tabular-nums", !winnerA && scoreB > scoreA ? "text-white" : "text-slate-600")}>{scoreB}</span>
+                )}
+              </div>
             </div>
           </div>
         )}

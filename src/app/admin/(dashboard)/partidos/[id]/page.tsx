@@ -124,7 +124,7 @@ export default function MatchControlPage() {
     const disciplinaName = match.disciplinas?.name || 'Fútbol';
     const bgGradient = DISCIPLINES_COLORS[disciplinaName] || 'from-slate-700 to-slate-900';
     const actions = GET_SPORT_ACTIONS(disciplinaName);
-    const { scoreA, scoreB } = getCurrentScore(disciplinaName, match.marcador_detalle || {});
+    const { scoreA, scoreB, labelA, labelB, extra: scoreExtra } = getCurrentScore(disciplinaName, match.marcador_detalle || {});
 
     return (
         <div className="min-h-screen bg-background pb-24 text-white">
@@ -163,6 +163,9 @@ export default function MatchControlPage() {
                         match={match}
                         scoreA={scoreA}
                         scoreB={scoreB}
+                        labelA={labelA}
+                        labelB={labelB}
+                        scoreExtra={scoreExtra}
                         onEditScore={() => setIsEditingScore(true)}
                         onToggleCronometro={toggleCronometro}
                         onFinalizar={() => setIsEndingMatch(true)}

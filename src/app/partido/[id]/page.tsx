@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { formatTenisPunto } from "@/modules/sports/services/tenis.service";
 import { getDisplayName, getCarreraName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_ACCENT, SPORT_COLORS, SPORT_BORDER, SPORT_GLOW, SPORT_GRADIENT } from "@/lib/constants";
 import { SportIcon } from "@/components/sport-icons";
@@ -45,7 +46,7 @@ export default function PublicMatchDetail() {
         setFetchError(null);
         try {
             const PARTIDO_SELECT = [
-                'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle',
+                'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria',
                 'fase, grupo, bracket_order, delegacion_a, delegacion_b',
                 'delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
                 'disciplinas:disciplina_id(name)',
@@ -69,7 +70,7 @@ export default function PublicMatchDetail() {
                 const fallbackRes = await safeQuery(
                     supabase
                         .from('partidos')
-                        .select('id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id')
+                        .select('id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id')
                         .eq('id', matchId)
                         .single(),
                     'partido-detail-fallback'
@@ -249,6 +250,11 @@ export default function PublicMatchDetail() {
     const hasTimer = ['Fútbol', 'Baloncesto', 'Futsal'].includes(sportName);
     const sportColor = SPORT_COLORS[sportName] || '#10b981';
 
+    const tenisDetalle = match.marcador_detalle || {};
+    const tenisSet = tenisDetalle.set_actual || 1;
+    const tenisSetData = tenisDetalle.sets?.[tenisSet] || {};
+    const { labelA: tenisPuntoA, labelB: tenisPuntoB } = formatTenisPunto(tenisSetData.puntos_a || 0, tenisSetData.puntos_b || 0);
+
     return (
         <div className="min-h-screen text-slate-200 font-sans selection:bg-white/10 transition-colors duration-1000" style={{ backgroundColor: `${sportColor}08` }}>
             {/* Ambient Background */}
@@ -327,6 +333,12 @@ export default function PublicMatchDetail() {
                                             generoMatch === 'mixto' ? 'text-purple-400' : 'text-blue-400'
                                     )}>{generoMatch}</span>
                                 </div>
+
+                                {(sportName === 'Tenis' || sportName === 'Tenis de Mesa') && (match as any).categoria && (
+                                    <span className="px-3 py-1.5 rounded-xl bg-background/80 border border-white/10 text-[10px] font-black uppercase tracking-widest text-lime-400 shadow-lg">
+                                        {(match as any).categoria === 'intermedio' ? 'Intermedio' : 'Avanzado'}
+                                    </span>
+                                )}
                             </div>
                         </div>
 
@@ -404,16 +416,22 @@ export default function PublicMatchDetail() {
                                         <Avatar name={getDisplayName(match, 'a')} src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-background" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        <Link 
-                                            href={(match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` : match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : '#'} 
-                                            className={cn("transition-colors underline-offset-4", ((match as any).delegacion_a_id || match.carrera_a_id) ? "hover:text-emerald-400 hover:underline cursor-pointer" : "cursor-default")}
-                                            onClick={(e) => { if (!(match as any).delegacion_a_id && !match.carrera_a_id) e.preventDefault(); }}
+                                        <Link
+                                            href={match.athlete_a_id ? `/perfil/${match.athlete_a_id}` : (match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` : match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : '#'}
+                                            className={cn("transition-colors underline-offset-4", (match.athlete_a_id || (match as any).delegacion_a_id || match.carrera_a_id) ? "hover:text-emerald-400 hover:underline cursor-pointer" : "cursor-default")}
+                                            onClick={(e) => { if (!match.athlete_a_id && !(match as any).delegacion_a_id && !match.carrera_a_id) e.preventDefault(); }}
                                         >
                                             {getDisplayName(match, 'a')}
                                         </Link>
                                     </h2>
                                     {getCarreraSubtitle(match, 'a') && (
-                                        <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'a')}</span>
+                                        match.carrera_a_id ? (
+                                            <Link href={`/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}`} className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center hover:text-slate-300 transition-colors">
+                                                {getCarreraSubtitle(match, 'a')}
+                                            </Link>
+                                        ) : (
+                                            <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'a')}</span>
+                                        )
                                     )}
                                 </div>
 
@@ -442,6 +460,7 @@ export default function PublicMatchDetail() {
                                             )}
                                         </div>
                                     ) : (
+                                        <>
                                         <div className={cn(
                                             "flex items-center justify-center gap-2 sm:gap-6 font-black text-5xl sm:text-7xl tabular-nums tracking-tighter transition-all duration-300",
                                             isLive ? "text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "text-white/80"
@@ -450,6 +469,14 @@ export default function PublicMatchDetail() {
                                             <div className="w-3 sm:w-6 h-1 sm:h-2 bg-white/20 rounded-full shrink-0 mx-2" />
                                             <span className="w-12 sm:w-24 text-left flex-1">{scoreB}</span>
                                         </div>
+                                        {sportName === 'Tenis' && (isLive || isFinished) && (tenisPuntoA || tenisPuntoB) && (
+                                            <div className="flex items-center justify-center gap-3 mt-1 text-xs sm:text-sm font-black tabular-nums text-white/40">
+                                                <span>{tenisPuntoA}</span>
+                                                <span className="text-white/20">·</span>
+                                                <span>{tenisPuntoB}</span>
+                                            </div>
+                                        )}
+                                        </>
                                     )}
 
                                     {/* Info Row: Time, Quarter/Set, and Status Bar */}
@@ -508,16 +535,22 @@ export default function PublicMatchDetail() {
                                         <Avatar name={getDisplayName(match, 'b')} src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-background" />
                                     </div>
                                     <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        <Link 
-                                            href={(match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` : match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` : '#'} 
-                                            className={cn("transition-colors underline-offset-4", ((match as any).delegacion_b_id || match.carrera_b_id) ? "hover:text-emerald-400 hover:underline cursor-pointer" : "cursor-default")}
-                                            onClick={(e) => { if (!(match as any).delegacion_b_id && !match.carrera_b_id) e.preventDefault(); }}
+                                        <Link
+                                            href={match.athlete_b_id ? `/perfil/${match.athlete_b_id}` : (match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` : match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` : '#'}
+                                            className={cn("transition-colors underline-offset-4", (match.athlete_b_id || (match as any).delegacion_b_id || match.carrera_b_id) ? "hover:text-emerald-400 hover:underline cursor-pointer" : "cursor-default")}
+                                            onClick={(e) => { if (!match.athlete_b_id && !(match as any).delegacion_b_id && !match.carrera_b_id) e.preventDefault(); }}
                                         >
                                             {getDisplayName(match, 'b')}
                                         </Link>
                                     </h2>
                                     {getCarreraSubtitle(match, 'b') && (
-                                        <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'b')}</span>
+                                        match.carrera_b_id ? (
+                                            <Link href={`/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}`} className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center hover:text-slate-300 transition-colors">
+                                                {getCarreraSubtitle(match, 'b')}
+                                            </Link>
+                                        ) : (
+                                            <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'b')}</span>
+                                        )
                                     )}
                                 </div>
                             </div>

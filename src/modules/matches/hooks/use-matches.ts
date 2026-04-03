@@ -10,7 +10,7 @@ import type { PartidoWithRelations } from "@/modules/matches/types";
 // partidos.carrera_a_id / carrera_b_id → carreras
 // partidos.athlete_a_id / athlete_b_id → profiles
 const MATCH_COLUMNS = [
-    'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle',
+    'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria',
     'fase, grupo, bracket_order, delegacion_a, delegacion_b',
     'carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
     'disciplinas:disciplina_id(name)',

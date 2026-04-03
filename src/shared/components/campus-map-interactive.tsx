@@ -15,6 +15,8 @@ const VENUE_COORDINATES: Record<string, { x: number; y: number; label: string }>
     'Coliseo Uninorte': { x: 44, y: 48, label: 'Coliseo' },
     'Cancha de Fútbol': { x: 64, y: 64, label: 'Cancha de Fútbol' },
     'Piscina Centro Deportivo': { x: 82, y: 80, label: 'Piscinas' },
+    'Cancha de Tenis': { x: 50, y: 53, label: 'Tenis' },
+    'Baambu': { x: 28, y: 48, label: 'Bambu' },
 };
 
 type Match = {
@@ -67,6 +69,8 @@ export function CampusMapInteractive({ matches, onVenueSelect, externalSelectedV
             if (m.lugar?.includes('Coliseo')) venueKey = 'Coliseo Uninorte';
             else if (m.lugar?.toLowerCase().includes('futbol') || m.lugar?.toLowerCase().includes('fútbol') || m.lugar?.includes('Cancha #1') || m.lugar?.includes('Cancha #2')) venueKey = 'Cancha de Fútbol';
             else if (m.lugar?.includes('Piscina')) venueKey = 'Piscina Centro Deportivo';
+            else if (m.lugar?.toLowerCase().includes('tenis')) venueKey = 'Cancha de Tenis';
+            else if (m.lugar?.toLowerCase().includes('baambu')) venueKey = 'Baambu';
             else {
                 // Fallback: búsqueda exacta en la lista oficial
                 venueKey = LUGARES_OLIMPICOS.find(v => m.lugar?.includes(v));

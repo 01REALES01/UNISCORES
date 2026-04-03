@@ -89,6 +89,19 @@ export async function GET(request: NextRequest) {
                     console.error('[Auth Callback] Profile upsert failed:', insertError.message)
                 }
             }
+
+            // ── Auto-link jugador if email matches (Excel import) ─────────────
+            if (user.email) {
+                const { error: linkError } = await supabase
+                    .from('jugadores')
+                    .update({ profile_id: user.id })
+                    .eq('email', user.email)
+                    .is('profile_id', null)
+
+                if (linkError) {
+                    console.error('[Auth Callback] Auto-link jugador failed:', linkError.message)
+                }
+            }
         } catch (err: any) {
             console.error('[Auth Callback] Profile check/creation error:', err?.message)
         }

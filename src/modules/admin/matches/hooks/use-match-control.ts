@@ -10,6 +10,7 @@ import {
   nextPeriod,
   removePoints,
   addPoints,
+  setPoints,
   isCountdownSport,
   getPeriodDuration,
   getCurrentPeriodNumber
@@ -275,17 +276,30 @@ export function useMatchControl(matchId: string) {
         const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
         const currentDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
 
-        if (tipo.startsWith('gol') || tipo.startsWith('punto') || tipo.startsWith('set')) {
+        if (tipo.startsWith('gol') || tipo.startsWith('punto')) {
             let puntos = 1;
             if (tipo === 'punto_2') puntos = 2;
             if (tipo === 'punto_3') puntos = 3;
             const nuevoMarcador = addPoints(disciplinaName, currentDetalle, equipo as any, puntos);
             await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
+            // Optimistic local update so scoreboard re-renders immediately
+            setMatch((prev: any) => prev ? { ...prev, marcador_detalle: nuevoMarcador } : null);
 
             await logAction('UPDATE_SCORE', 'partido', matchId, {
                 tipo_evento: tipo,
                 equipo: equipo,
                 puntos: puntos,
+                nuevo_marcador: nuevoMarcador
+            });
+        } else if (tipo === 'set') {
+            // 'set' button = manually advance to next set/period
+            const nuevoMarcador = nextPeriod(disciplinaName, currentDetalle);
+            await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
+            setMatch((prev: any) => prev ? { ...prev, marcador_detalle: nuevoMarcador } : null);
+
+            await logAction('CHANGE_PERIOD', 'partido', matchId, {
+                tipo_evento: 'set',
+                equipo: equipo,
                 nuevo_marcador: nuevoMarcador
             });
         } else {
@@ -300,13 +314,20 @@ export function useMatchControl(matchId: string) {
 
     const handleManualScoreUpdate = async (field: string, value: number) => {
         if (!match || !profile) return;
+        const disciplinaName = match.disciplinas?.name || 'Fútbol';
+        const equipo: 'equipo_a' | 'equipo_b' = field.endsWith('_a') ? 'equipo_a' : 'equipo_b';
+        
         const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
-        const nuevoMarcador = { ...(freshMatch?.marcador_detalle || match.marcador_detalle || {}) };
-        nuevoMarcador[field] = value;
-        const finalDetalle = recalculateTotals(match.disciplinas?.name || 'Fútbol', nuevoMarcador);
+        const currentDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
+        
+        // Use the scoring engine to set points correctly according to the sport's structure
+        const finalDetalle = setPoints(disciplinaName, currentDetalle, equipo, value);
+        
         await supabase.from('partidos').update({ 
             marcador_detalle: auditDetalle(finalDetalle)
         }).eq('id', matchId);
+
+        setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: finalDetalle }) : null);
 
         // Log Action
         await logAction('UPDATE_SCORE', 'partido', matchId, {

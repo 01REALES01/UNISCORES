@@ -49,6 +49,22 @@ const FACILITIES_INFO = [
         image: '/images/installations/piscina.png',
         description: 'Nuestras piscinas ofrecen un ambiente olímpico para la natación competitiva y el recreo, con agua cristalina y carriles reglamentarios.',
         details: ['Medidas Olímpicas', 'Carriles Marcados', 'Zona de Calentamiento']
+    },
+    {
+        id: 'tenis',
+        name: 'Complejo de Tenis',
+        mapVenue: 'Cancha de Tenis',
+        image: '/images/installations/tenis.png',
+        description: 'Canchas de tenis de superficie dura con medidas reglamentarias, ideales para torneos individuales y de dobles.',
+        details: ['Superficie Rápida', 'Medidas Oficiales', 'Gradas Laterales']
+    },
+    {
+        id: 'baambu',
+        name: 'Jardín Baambu',
+        mapVenue: 'Baambu',
+        image: '/images/installations/baambu.png',
+        description: 'Un espacio natural y relajante, ideal para deportes de mesa y actividades de bajo impacto rodeado de vegetación.',
+        details: ['Ambiente Natural', 'Zona de Descanso', 'Sombra Permanente']
     }
 ];
 

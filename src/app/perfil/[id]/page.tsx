@@ -50,6 +50,8 @@ export default function PublicProfilePage() {
     const [followedProfiles, setFollowedProfiles] = useState<any[]>([]);
     const [followedCareers, setFollowedCareers] = useState<any[]>([]);
     const [friendsCount, setFriendsCount] = useState(0);
+    const [athleteDisciplinas, setAthleteDisciplinas] = useState<any[]>([]);
+    const [athleteTeams, setAthleteTeams] = useState<any[]>([]);
     const [detailedStats, setDetailedStats] = useState<any>({
         goals: 0,
         pts3: 0,
@@ -150,6 +152,43 @@ export default function PublicProfilePage() {
             if (isAthlete) {
                 fetchHistory(p.id);
                 fetchDetailedStats(p.id);
+                // Fetch multi-sport disciplines
+                const { data: pdData } = await supabase
+                    .from('profile_disciplinas')
+                    .select('disciplina_id, disciplinas(id, name)')
+                    .eq('profile_id', p.id);
+                if (pdData) {
+                    setAthleteDisciplinas(pdData.map((r: any) => (Array.isArray(r.disciplinas) ? r.disciplinas[0] : r.disciplinas)).filter(Boolean));
+                }
+                // Fetch athlete's teams/delegations
+                if (p.carreras_ids?.length) {
+                    const discIds = (pdData || []).map((r: any) => r.disciplina_id);
+                    if (discIds.length === 0 && p.athlete_disciplina_id) discIds.push(p.athlete_disciplina_id);
+                    if (discIds.length > 0) {
+                        // Get athlete's genero from linked jugador row
+                        const { data: jugadorRow } = await supabase
+                            .from('jugadores')
+                            .select('genero')
+                            .eq('profile_id', p.id)
+                            .limit(1)
+                            .single();
+                        const athleteGenero = jugadorRow?.genero; // 'masculino' | 'femenino' | null
+
+                        let delegQuery = supabase
+                            .from('delegaciones')
+                            .select('id, nombre, genero, carrera_ids, disciplina_id, disciplinas(name)')
+                            .in('disciplina_id', discIds)
+                            .overlaps('carrera_ids', p.carreras_ids);
+
+                        // Filter by gender: show matching gender + mixto; skip filter if unknown
+                        if (athleteGenero && athleteGenero !== 'mixto') {
+                            delegQuery = delegQuery.in('genero', [athleteGenero, 'mixto']);
+                        }
+
+                        const { data: delegaciones } = await delegQuery;
+                        if (delegaciones) setAthleteTeams(delegaciones);
+                    }
+                }
             }
 
             const isOwnProfile = p.id === user?.id;
@@ -675,6 +714,80 @@ export default function PublicProfilePage() {
                         ) : (
                             <div className="rounded-[3rem] bg-black/20 border-2 border-dashed border-white/5 p-16 text-center backdrop-blur-md">
                                 <span className="text-[11px] font-display font-black uppercase tracking-[0.4em] text-white/10">Identidad Académica no vinculada</span>
+                            </div>
+                        )}
+
+                        {/* ━━━ ACTIVIDAD DEPORTIVA: Deportes + Equipos ━━━ */}
+                        {isDeportista && (athleteDisciplinas.length > 0 || athleteTeams.length > 0) && (
+                            <div className="rounded-[3rem] bg-black/20 border border-white/10 p-8 lg:p-12 shadow-2xl backdrop-blur-md space-y-8 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] pointer-events-none" />
+                                
+                                {/* Deportes del atleta */}
+                                {athleteDisciplinas.length > 0 && (
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="p-2.5 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 shadow-inner">
+                                                <Activity size={20} className="text-emerald-400" />
+                                            </div>
+                                            <h3 className="text-[11px] font-display font-bold tracking-[0.3em] text-white/50">DEPORTES</h3>
+                                        </div>
+                                        <div className="flex flex-wrap gap-3">
+                                            {athleteDisciplinas.map((d: any) => (
+                                                <div key={d.id} className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-black/40 border border-white/10 hover:border-emerald-500/30 transition-all shadow-lg group">
+                                                    <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                        <SportIcon sport={d.name || ''} size={16} />
+                                                    </div>
+                                                    <span className="text-sm font-black text-white tracking-tight">{d.name}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Equipos / Delegaciones */}
+                                {athleteTeams.length > 0 && (
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-4 mb-6 pt-6 border-t border-white/5">
+                                            <div className="p-2.5 bg-violet-500/10 rounded-2xl border border-violet-500/20 shadow-inner">
+                                                <Users size={20} className="text-violet-400" />
+                                            </div>
+                                            <h3 className="text-[11px] font-display font-bold tracking-[0.3em] text-white/50">EQUIPOS</h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {athleteTeams.map((team: any) => {
+                                                const discName = (Array.isArray(team.disciplinas) ? team.disciplinas[0] : team.disciplinas)?.name || '';
+                                                return (
+                                                    <Link key={team.id} href={`/equipo/${team.id}`} className="group/team">
+                                                        <div className="flex items-center gap-4 p-5 rounded-[2rem] bg-black/40 border border-white/5 hover:border-violet-500/20 hover:bg-white/[0.05] transition-all shadow-xl">
+                                                            <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover/team:scale-110 transition-transform">
+                                                                <SportIcon sport={discName} size={22} />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-[14px] font-black text-white truncate font-display tracking-tight leading-tight group-hover/team:text-violet-400 transition-colors">
+                                                                    {team.nombre}
+                                                                </p>
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{discName}</span>
+                                                                    {team.genero && team.genero !== 'mixto' && (
+                                                                        <span className={cn(
+                                                                            "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border",
+                                                                            team.genero === 'femenino'
+                                                                                ? 'bg-pink-500/10 text-pink-400 border-pink-500/20'
+                                                                                : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                                        )}>
+                                                                            {team.genero}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <ArrowUpRight size={16} className="text-white/10 group-hover/team:text-violet-400 transition-colors shrink-0" />
+                                                        </div>
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 

@@ -28,7 +28,9 @@ export const LUGARES_OLIMPICOS = [
     'Cancha de Fútbol',
     'Cancha #1',
     'Cancha #2',
-    'Piscina Centro Deportivo'
+    'Piscina Centro Deportivo',
+    'Cancha de Tenis',
+    'Baambu'
 ];
 
 export const CARRERAS_UNINORTE = [
@@ -48,6 +50,7 @@ export const CARRERAS_UNINORTE = [
     'Ingeniería Eléctrica',
     'Ingeniería Electrónica',
     'Ingeniería Industrial',
+    'Ingeniería Biomédica',
     'Ingeniería Mecánica',
     'Lenguas Modernas y Cultura',
     'Medicina',

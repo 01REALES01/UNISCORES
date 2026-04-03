@@ -124,7 +124,7 @@ export default function PartidosPage() {
         }
     };
 
-    const showCategoriaFilter = ['Tenis', 'Tenis de Mesa', 'Natación'].includes(sportFilter);
+    const showCategoriaFilter = ['Tenis', 'Tenis de Mesa'].includes(sportFilter);
 
     const filteredPartidos = partidos.filter(p => {
         if (filter === 'en_curso' && p.estado !== 'en_curso') return false;

@@ -51,21 +51,66 @@ type CarreraTab = "partidos" | "deportes" | "noticias" | "deportistas";
 
 
 
+// ─── Jugador (Excel-imported) Card ───────────────────────────────────────────
+
+function JugadorCard({ j }: { j: any }) {
+    const href = j.profile_id ? `/perfil/${j.profile_id}` : `/jugador/${j.id}`;
+    const activated = !!j.profile_id;
+    const initials = j.nombre.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
+
+    return (
+        <Link href={href} className="group">
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-violet-600/5 transition-all duration-300 flex items-center gap-3">
+                <div className={cn(
+                    "w-11 h-11 rounded-xl border flex items-center justify-center text-sm font-black flex-shrink-0",
+                    activated ? "bg-white/10 border-white/10 text-white/60" : "bg-white/5 border-white/5 text-white/30"
+                )}>
+                    {initials}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <h4 className={cn(
+                        "text-sm font-bold tracking-tight truncate transition-colors",
+                        activated ? "text-white group-hover:text-emerald-400" : "text-white/50 group-hover:text-white/70"
+                    )}>
+                        {j.nombre}
+                        {j.numero && <span className="ml-1.5 text-white/30 text-[10px] font-mono">#{j.numero}</span>}
+                    </h4>
+                    <span className={cn(
+                        "text-[10px] font-black uppercase tracking-widest",
+                        activated ? "text-emerald-500" : "text-white/25"
+                    )}>
+                        {activated ? "Activado" : "No activado"}
+                    </span>
+                </div>
+                <ArrowUpRight size={14} className="text-white/10 group-hover:text-emerald-500 transition-colors shrink-0" />
+            </div>
+        </Link>
+    );
+}
+
 // ─── Sport-Grouped Athletes Component ─────────────────────────────────────────
 
-function SportGroupedAthletes({ athletes }: { athletes: any[] }) {
+function SportGroupedAthletes({ athletes, jugadores }: { athletes: any[]; jugadores: any[] }) {
     const [openSports, setOpenSports] = useState<Record<string, boolean>>({});
 
-    // Group athletes by sport
+    // Group athletes (registered) by sport
     const grouped = useMemo(() => {
-        const map: Record<string, any[]> = {};
+        const map: Record<string, { registered: any[]; imported: any[] }> = {};
         for (const a of athletes) {
             const sport = a.disciplina?.name || "Multideporte";
-            if (!map[sport]) map[sport] = [];
-            map[sport].push(a);
+            if (!map[sport]) map[sport] = { registered: [], imported: [] };
+            map[sport].registered.push(a);
+        }
+        // Also group imported jugadores by sport
+        for (const j of jugadores) {
+            const sport = j.disciplina?.name || "Multideporte";
+            if (!map[sport]) map[sport] = { registered: [], imported: [] };
+            // Only add if not already in registered (avoid duplicates for linked profiles)
+            const alreadyInRegistered = map[sport].registered.some((a: any) => a.id === j.profile_id);
+            if (!alreadyInRegistered) map[sport].imported.push(j);
         }
         return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
-    }, [athletes]);
+    }, [athletes, jugadores]);
 
     const toggle = (sport: string) =>
         setOpenSports((prev) => ({ ...prev, [sport]: !prev[sport] }));
@@ -90,7 +135,7 @@ function SportGroupedAthletes({ athletes }: { athletes: any[] }) {
                                 <div className="text-left">
                                     <p className="text-sm font-black tracking-tight text-white">{sport}</p>
                                     <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
-                                        {list.length} deportista{list.length !== 1 ? 's' : ''}
+                                        {list.registered.length + list.imported.length} deportista{(list.registered.length + list.imported.length) !== 1 ? 's' : ''}
                                     </p>
                                 </div>
                             </div>
@@ -107,12 +152,9 @@ function SportGroupedAthletes({ athletes }: { athletes: any[] }) {
                         {isOpen && (
                             <div className="border-t border-white/5 px-2 pb-2">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                                    {list.map((a: any) => (
-                                        <Link
-                                            key={a.id}
-                                            href={`/perfil/${a.id}`}
-                                            className="group"
-                                        >
+                                    {/* Registered athletes (with profiles) */}
+                                    {list.registered.map((a: any) => (
+                                        <Link key={a.id} href={`/perfil/${a.id}`} className="group">
                                             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-violet-600/5 transition-all duration-300 flex items-center gap-3">
                                                 <Avatar
                                                     name={a.full_name}
@@ -125,22 +167,18 @@ function SportGroupedAthletes({ athletes }: { athletes: any[] }) {
                                                     </h4>
                                                     {a.points > 0 && (
                                                         <div className="flex items-center gap-1 mt-0.5">
-                                                            <Star
-                                                                size={10}
-                                                                className="text-amber-500 fill-amber-500"
-                                                            />
-                                                            <span className="text-[10px] font-black text-amber-500/80 tabular-nums">
-                                                                {a.points} pts
-                                                            </span>
+                                                            <Star size={10} className="text-amber-500 fill-amber-500" />
+                                                            <span className="text-[10px] font-black text-amber-500/80 tabular-nums">{a.points} pts</span>
                                                         </div>
                                                     )}
                                                 </div>
-                                                <ArrowUpRight
-                                                    size={14}
-                                                    className="text-white/10 group-hover:text-emerald-500 transition-colors shrink-0"
-                                                />
+                                                <ArrowUpRight size={14} className="text-white/10 group-hover:text-emerald-500 transition-colors shrink-0" />
                                             </div>
                                         </Link>
+                                    ))}
+                                    {/* Imported jugadores (with or without profile) */}
+                                    {list.imported.map((j: any) => (
+                                        <JugadorCard key={`j-${j.id}`} j={j} />
                                     ))}
                                 </div>
                             </div>
@@ -162,6 +200,16 @@ export default function CarreraProfilePage() {
     const { user, profile, isStaff } = useAuth();
     const { carrera, matches, news, athletes, stats, deportesInscritos, loading, error, mutate } =
         useCarreraProfile(carreraId);
+
+    const [jugadores, setJugadores] = useState<any[]>([]);
+    useEffect(() => {
+        if (!carreraId) return;
+        supabase
+            .from('jugadores')
+            .select('id, nombre, numero, profile_id, sexo, genero, disciplina:disciplina_id(id, name)')
+            .eq('carrera_id', carreraId)
+            .then(({ data }) => { if (data) setJugadores(data); });
+    }, [carreraId]);
 
     const escudoInputRef = useRef<HTMLInputElement>(null);
     const [uploadingEscudo, setUploadingEscudo] = useState(false);
@@ -317,6 +365,22 @@ export default function CarreraProfilePage() {
         const withStats = new Set(disciplineEntries.map(d => d.name));
         return deportesInscritos.filter(e => !withStats.has(e.disciplina_name));
     }, [disciplineEntries, deportesInscritos]);
+
+    // Sports only known via jugadores (individual sports with no delegacion)
+    const jugadorOnlyEntries = useMemo(() => {
+        const alreadyShown = new Set([
+            ...disciplineEntries.map(d => d.name),
+            ...deportesInscritos.map(e => e.disciplina_name),
+        ]);
+        const map: Record<string, number> = {};
+        for (const j of jugadores) {
+            const sport = j.disciplina?.name;
+            if (sport && !alreadyShown.has(sport)) {
+                map[sport] = (map[sport] || 0) + 1;
+            }
+        }
+        return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+    }, [jugadores, disciplineEntries, deportesInscritos]);
 
     // Map: disciplina_name → equipo info (for stats cards)
     const deportesEquipoMap = useMemo(() => {
@@ -691,7 +755,7 @@ export default function CarreraProfilePage() {
                             transition={{ duration: 0.4 }}
                             className="space-y-6"
                         >
-                            {disciplineEntries.length === 0 && enrolledOnlyEntries.length === 0 ? (
+                            {disciplineEntries.length === 0 && enrolledOnlyEntries.length === 0 && jugadorOnlyEntries.length === 0 ? (
                                 <EmptyState
                                     icon={
                                         <Medal
@@ -867,6 +931,41 @@ export default function CarreraProfilePage() {
                                             </div>
                                         );
                                     })}
+
+                                    {/* Individual sports from Excel roster (no delegacion) */}
+                                    {jugadorOnlyEntries.map(([sport, count]) => {
+                                        const accent = SPORT_ACCENT[sport] || "text-white/40";
+                                        const border = SPORT_BORDER[sport] || "border-white/5";
+                                        return (
+                                            <div
+                                                key={`jugador_${sport}`}
+                                                className={cn(
+                                                    "relative overflow-hidden rounded-[2rem] border bg-white/[0.02] p-6",
+                                                    border
+                                                )}
+                                            >
+                                                <div className="absolute top-4 right-4 opacity-5">
+                                                    <SportIcon sport={sport} size={64} />
+                                                </div>
+                                                <div className="relative z-10 flex items-center gap-3">
+                                                    <div className="p-2.5 rounded-xl bg-black/30 border border-white/5">
+                                                        <SportIcon sport={sport} size={22} />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <h3 className="text-sm font-black uppercase tracking-wider font-sans">
+                                                            {sport}
+                                                        </h3>
+                                                        <p className={cn("text-[10px] font-bold uppercase tracking-widest", accent)}>
+                                                            {count} deportista{count !== 1 ? 's' : ''}
+                                                        </p>
+                                                    </div>
+                                                    <span className="ml-auto shrink-0 text-[10px] font-bold text-white/20 uppercase tracking-widest border border-white/10 rounded-full px-2 py-0.5">
+                                                        Individual
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </motion.div>
@@ -912,7 +1011,7 @@ export default function CarreraProfilePage() {
                             transition={{ duration: 0.4 }}
                             className="space-y-4"
                         >
-                            {athletes.length === 0 ? (
+                            {athletes.length === 0 && jugadores.length === 0 ? (
                                 <EmptyState
                                     icon={
                                         <Users
@@ -924,7 +1023,7 @@ export default function CarreraProfilePage() {
                                     description="No hay atletas vinculados a esta carrera aún."
                                 />
                             ) : (
-                                <SportGroupedAthletes athletes={athletes} />
+                                <SportGroupedAthletes athletes={athletes} jugadores={jugadores} />
                             )}
                         </motion.div>
                     )}

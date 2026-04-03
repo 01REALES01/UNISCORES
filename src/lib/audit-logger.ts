@@ -7,7 +7,7 @@ export type AuditAction =
     | 'ADD_EVENT' | 'DELETE_EVENT'
     | 'ADD_PLAYER'
     | 'CREATE_NEWS' | 'UPDATE_NEWS' | 'DELETE_NEWS' | 'TOGGLE_PUBLISH'
-    | 'UPDATE_ROLE'
+    | 'UPDATE_ROLE' | 'UPDATE_ATHLETE_SPORT'
     | 'IMPORT_EXCEL' | 'SET_CLASIFICACION'
     | 'OTHER';
 
