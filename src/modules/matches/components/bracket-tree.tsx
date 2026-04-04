@@ -176,24 +176,39 @@ function RoundColumn({ title, matches, sportName, gapClass }: { title: string; m
 }
 
 // ─── Main BracketTree Component ──────────────────────────────────────────────
+const EARLY_ROUND_ORDER = ['primera_ronda', 'octavos', 'cuartos', 'semifinal'];
+const FASE_LABELS: Record<string, string> = {
+    primera_ronda: '1ra Ronda',
+    octavos: 'Octavos',
+    cuartos: 'Cuartos de Final',
+    semifinal: 'Semifinal',
+    final: 'Final',
+    tercer_puesto: '3er Puesto',
+};
+
 export function BracketTree({ matches, sportName }: BracketTreeProps) {
     const rounds = useMemo(() => {
         const sortByOrder = (a: Match, b: Match) => (a.bracket_order ?? 0) - (b.bracket_order ?? 0);
 
-        const cuartos = matches.filter(m => m.fase === 'cuartos').sort(sortByOrder);
-        const semis = matches.filter(m => m.fase === 'semifinal').sort(sortByOrder);
+        // Detect which early rounds exist
+        const earlyRounds: Record<string, Match[]> = {};
+        EARLY_ROUND_ORDER.forEach(fase => {
+            const filtered = matches.filter(m => m.fase === fase).sort(sortByOrder);
+            if (filtered.length > 0) earlyRounds[fase] = filtered;
+        });
+
+        // Final rounds (always fixed)
         const final = matches.filter(m => m.fase === 'final').sort(sortByOrder);
         const tercer = matches.filter(m => m.fase === 'tercer_puesto').sort(sortByOrder);
 
-        return { cuartos, semis, final, tercer };
+        return { earlyRounds, final, tercer };
     }, [matches]);
 
-    const hasCuartos = rounds.cuartos.length > 0;
-    const hasSemis = rounds.semis.length > 0;
+    const hasAnyEarlyRound = Object.keys(rounds.earlyRounds).length > 0;
     const hasFinal = rounds.final.length > 0;
     const hasTercer = rounds.tercer.length > 0;
 
-    const noMatches = !hasCuartos && !hasSemis && !hasFinal && !hasTercer;
+    const noMatches = !hasAnyEarlyRound && !hasFinal && !hasTercer;
 
     if (noMatches) {
         return (
@@ -205,9 +220,26 @@ export function BracketTree({ matches, sportName }: BracketTreeProps) {
         );
     }
 
-    // Pad arrays with nulls to maintain bracket structure
-    const cuartosDisplay = hasCuartos ? [...rounds.cuartos, ...Array(Math.max(0, 4 - rounds.cuartos.length)).fill(null)] : [];
-    const semisDisplay = hasSemis ? [...rounds.semis, ...Array(Math.max(0, 2 - rounds.semis.length)).fill(null)] : [];
+    // Determine gap classes based on round type
+    const getGapClass = (fase: string): string => {
+        if (fase === 'primera_ronda') return 'gap-1';
+        if (fase === 'octavos') return 'gap-2';
+        if (fase === 'cuartos') return 'gap-4';
+        if (fase === 'semifinal') return 'gap-[104px]';
+        return 'gap-4';
+    };
+
+    // Determine connector line style based on round type
+    const getConnectorCount = (fase: string): number => {
+        if (fase === 'primera_ronda') return Math.floor(rounds.earlyRounds[fase]?.length / 2) || 1;
+        if (fase === 'octavos') return 4;
+        if (fase === 'cuartos') return 2;
+        if (fase === 'semifinal') return 1;
+        return 1;
+    };
+
+    // Get early round order
+    const earlyRoundOrder = EARLY_ROUND_ORDER.filter(r => rounds.earlyRounds[r]);
     const finalDisplay = hasFinal ? rounds.final : [null];
 
     return (
@@ -215,42 +247,37 @@ export function BracketTree({ matches, sportName }: BracketTreeProps) {
             {/* Bracket Tree */}
             <div className="overflow-x-auto pb-8 pt-4 w-full flex justify-start lg:justify-center no-scrollbar">
                 <div className="flex items-stretch gap-6 min-w-max px-4">
-                    {/* Cuartos de Final */}
-                    {cuartosDisplay.length > 0 && (
-                        <>
+                    {/* Dynamic Early Rounds */}
+                    {earlyRoundOrder.map((fase, roundIdx) => (
+                        <div key={fase}>
                             <RoundColumn
-                                title="Cuartos de Final"
-                                matches={cuartosDisplay}
+                                title={FASE_LABELS[fase]}
+                                matches={rounds.earlyRounds[fase]}
                                 sportName={sportName}
-                                gapClass="gap-4"
+                                gapClass={getGapClass(fase)}
                             />
-                            {/* Connector Lines */}
-                            <div className="flex flex-col justify-center w-10 flex-shrink-0 opacity-40">
-                                {[0, 1].map(i => (
-                                    <div key={i} className="flex-1 flex flex-col justify-center relative my-11">
-                                        <div className="border-r border-t border-b border-white/20 rounded-r-2xl h-1/2 w-full ml-0 transition-colors hover:border-violet-400/50" />
-                                        <div className="absolute top-1/2 right-0 w-4 border-t border-white/20 translate-x-full transition-colors hover:border-violet-400/50" />
-                                    </div>
-                                ))}
-                            </div>
-                        </>
-                    )}
-
-                    {/* Semifinales */}
-                    {semisDisplay.length > 0 && (
-                        <div className="flex gap-6">
-                            <RoundColumn
-                                title="Semifinales"
-                                matches={semisDisplay}
-                                sportName={sportName}
-                                gapClass="gap-[104px]"
-                            />
-                            {/* Connector Lines */}
-                            <div className="flex flex-col justify-center w-10 flex-shrink-0 opacity-40">
-                                <div className="relative h-[256px] flex flex-col justify-center w-full">
-                                    <div className="border-r border-t border-b border-white/20 rounded-r-2xl h-full w-full ml-0 transition-colors hover:border-violet-400/50" />
-                                    <div className="absolute top-1/2 right-0 w-4 border-t border-white/20 translate-x-full transition-colors hover:border-violet-400/50" />
+                            {/* Connector Lines (except last round) */}
+                            {roundIdx < earlyRoundOrder.length - 1 && (
+                                <div className="flex flex-col justify-center w-10 flex-shrink-0 opacity-40">
+                                    {Array(getConnectorCount(fase))
+                                        .fill(null)
+                                        .map((_, i) => (
+                                            <div key={i} className="flex-1 flex flex-col justify-center relative my-11">
+                                                <div className="border-r border-t border-b border-white/20 rounded-r-2xl h-1/2 w-full ml-0 transition-colors hover:border-violet-400/50" />
+                                                <div className="absolute top-1/2 right-0 w-4 border-t border-white/20 translate-x-full transition-colors hover:border-violet-400/50" />
+                                            </div>
+                                        ))}
                                 </div>
+                            )}
+                        </div>
+                    ))}
+
+                    {/* Connector from last early round to final */}
+                    {earlyRoundOrder.length > 0 && hasFinal && (
+                        <div className="flex flex-col justify-center w-10 flex-shrink-0 opacity-40">
+                            <div className="relative h-[256px] flex flex-col justify-center w-full">
+                                <div className="border-r border-t border-b border-white/20 rounded-r-2xl h-full w-full ml-0 transition-colors hover:border-violet-400/50" />
+                                <div className="absolute top-1/2 right-0 w-4 border-t border-white/20 translate-x-full transition-colors hover:border-violet-400/50" />
                             </div>
                         </div>
                     )}

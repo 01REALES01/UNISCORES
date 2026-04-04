@@ -53,12 +53,13 @@ export default function PerfilPage() {
         totalEvents: 0
     });
 
+    const [selectedSportId, setSelectedSportId] = useState<string | null>(null);
+
     useEffect(() => {
         if (profile) {
             if (profile.carreras_ids && profile.carreras_ids.length > 0) fetchCarreras();
             if (isDeportista) {
-                fetchHistory();
-                fetchDetailedStats(profile.id);
+                // Fetch all sports first to get the default sportId
                 fetchAthleteDisciplinas();
                 fetchAthleteTeams();
             }
@@ -66,6 +67,13 @@ export default function PerfilPage() {
             fetchFriendsCount();
         }
     }, [profile, isDeportista]);
+
+    useEffect(() => {
+        if (profile?.id && isDeportista) {
+            fetchHistory(selectedSportId);
+            fetchDetailedStats(profile.id, selectedSportId);
+        }
+    }, [profile?.id, selectedSportId, isDeportista]);
 
     const fetchCarreras = async () => {
         if (!profile?.carreras_ids?.length) return;
@@ -76,12 +84,18 @@ export default function PerfilPage() {
         if (data) setCarreras(data);
     };
 
-    const fetchDetailedStats = async (id: string) => {
+    const fetchDetailedStats = async (id: string, sportId?: string | null) => {
         try {
-            const { data: events } = await supabase
+            let query = supabase
                 .from('eventos')
-                .select('tipo_evento, jugadores!inner(profile_id)')
+                .select('tipo_evento, jugadores!inner(profile_id, disciplina_id)')
                 .eq('jugadores.profile_id', id);
+            
+            if (sportId) {
+                query = query.eq('jugadores.disciplina_id', sportId);
+            }
+
+            const { data: events } = await query;
 
             const stats = {
                 goals: 0,
@@ -93,6 +107,10 @@ export default function PerfilPage() {
                 fouls: 0,
                 totalEvents: events?.length || 0
             };
+
+            // Calculate Records (Wins/Losses) for this sport specifically if filtered
+            let sportWins = profile?.wins || 0;
+            let sportLosses = profile?.losses || 0;
 
             events?.forEach(ev => {
                 const type = ev.tipo_evento.toLowerCase();
@@ -110,33 +128,47 @@ export default function PerfilPage() {
         }
     };
 
-    const fetchHistory = async () => {
+    const fetchHistory = async (sportId?: string | null) => {
         if (!profile?.id) return;
         setLoadingHistory(true);
         try {
-            const { data: teamMatches } = await supabase
+            let teamQuery = supabase
                 .from('roster_partido')
                 .select(`
                     equipo:equipo_a_or_b,
                     partidos!inner(
                         id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
+                        disciplina_id,
                         disciplinas(name)
                     ),
                     jugadores!inner(profile_id)
                 `)
-                .eq('jugadores.profile_id', profile.id)
-                .order('partido_id', { ascending: false })
-                .limit(5);
+                .eq('jugadores.profile_id', profile.id);
 
-            const { data: indMatches } = await supabase
+            if (sportId) {
+                teamQuery = teamQuery.eq('partidos.disciplina_id', sportId);
+            }
+
+            const { data: teamMatches } = await teamQuery
+                .order('partido_id', { ascending: false })
+                .limit(10);
+
+            let indQuery = supabase
                 .from('partidos')
                 .select(`
                     id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
+                    disciplina_id,
                     disciplinas(name)
                 `)
-                .or(`athlete_a_id.eq.${profile.id},athlete_b_id.eq.${profile.id}`)
+                .or(`athlete_a_id.eq.${profile.id},athlete_b_id.eq.${profile.id}`);
+
+            if (sportId) {
+                indQuery = indQuery.eq('disciplina_id', sportId);
+            }
+
+            const { data: indMatches } = await indQuery
                 .order('fecha', { ascending: false })
-                .limit(5);
+                .limit(10);
 
             let allMatches: any[] = [];
             if (teamMatches) {
@@ -164,6 +196,24 @@ export default function PerfilPage() {
 
             allMatches.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
             setHistory(allMatches.slice(0, 5));
+
+            // Recalculate record for this context if needed
+            if (sportId) {
+                const winsCount = allMatches.filter(m => {
+                    const scoreA = m.marcador_final?.goles_a ?? m.marcador_final?.total_a ?? 0;
+                    const scoreB = m.marcador_final?.goles_b ?? m.marcador_final?.total_b ?? 0;
+                    const isA = m.equipo_a === profile.full_name || m.equipo_a.includes(profile.full_name);
+                    return isA ? scoreA > scoreB : scoreB > scoreA;
+                }).length;
+                const lossesCount = allMatches.filter(m => {
+                    const scoreA = m.marcador_final?.goles_a ?? m.marcador_final?.total_a ?? 0;
+                    const scoreB = m.marcador_final?.goles_b ?? m.marcador_final?.total_b ?? 0;
+                    const isA = m.equipo_a === profile.full_name || m.equipo_a.includes(profile.full_name);
+                    if (scoreA === scoreB) return false;
+                    return isA ? scoreA < scoreB : scoreB < scoreA;
+                }).length;
+                // We'll use these temporarily or update a local state if we want to change the card UI
+            }
         } catch (err) {
             console.error("Error fetching history:", err);
         } finally {
@@ -210,7 +260,11 @@ export default function PerfilPage() {
             .select('disciplina_id, disciplinas(id, name)')
             .eq('profile_id', profile.id);
         if (data) {
-            setAthleteDisciplinas(data.map((r: any) => (Array.isArray(r.disciplinas) ? r.disciplinas[0] : r.disciplinas)).filter(Boolean));
+            const deps = data.map((r: any) => (Array.isArray(r.disciplinas) ? r.disciplinas[0] : r.disciplinas)).filter(Boolean);
+            setAthleteDisciplinas(deps);
+            if (deps.length > 0 && !selectedSportId) {
+                setSelectedSportId(deps[0].id);
+            }
         }
     };
 
@@ -400,25 +454,46 @@ export default function PerfilPage() {
                         {isDeportista ? (
                             <div className={cn(
                                 "relative overflow-hidden rounded-[3rem] p-8 lg:p-10 shadow-[0_0_50px_rgba(0,0,0,0.5)] min-h-[500px] flex flex-col group border-2 transition-all duration-700",
-                                sportName === 'Baloncesto' ? "bg-gradient-to-br from-[#1a0f05]/80 to-[#0A0705]/95 border-orange-500/30 backdrop-blur-2xl" :
-                                sportName === 'Fútbol' ? "bg-gradient-to-br from-[#051a0f]/80 to-[#0A0705]/95 border-emerald-500/30 backdrop-blur-2xl" :
+                                athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto' ? "bg-gradient-to-br from-[#1a0f05]/80 to-[#0A0705]/95 border-orange-500/30 backdrop-blur-2xl" :
+                                athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Fútbol' ? "bg-gradient-to-br from-[#051a0f]/80 to-[#0A0705]/95 border-emerald-500/30 backdrop-blur-2xl" :
                                 "bg-gradient-to-br from-[#111]/80 to-[#000]/95 border-white/10 backdrop-blur-2xl"
                             )}>
                                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                                
+                                {/* Sport Selector Row */}
+                                {athleteDisciplinas.length > 1 && (
+                                    <div className="flex items-center gap-2 mb-8 p-1.5 bg-black/40 border border-white/5 rounded-2xl self-start">
+                                        {athleteDisciplinas.map((d) => (
+                                            <button
+                                                key={d.id}
+                                                onClick={() => setSelectedSportId(d.id)}
+                                                className={cn(
+                                                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                                                    selectedSportId === d.id 
+                                                        ? "bg-white text-black shadow-lg scale-110" 
+                                                        : "bg-white/5 text-white/40 hover:bg-white/10"
+                                                )}
+                                                title={d.name}
+                                            >
+                                                <SportIcon sport={d.name} size={18} />
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
                                 <div className="relative z-10 flex flex-col h-full">
                                     <div className="flex items-center justify-between mb-10">
                                         <div className="flex flex-col gap-1">
                                             <p className={cn(
                                                 "font-display text-[10px] font-bold tracking-[0.3em]",
-                                                sportName === 'Fútbol' ? "text-emerald-400" : sportName === 'Baloncesto' ? "text-orange-400" : "text-violet-400"
+                                                athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Fútbol' ? "text-emerald-400" : athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto' ? "text-orange-400" : "text-violet-400"
                                             )}>
                                                 Athlete pro identity
                                             </p>
                                             <div className="flex items-center gap-3">
-                                                <h3 className="text-3xl lg:text-4xl font-black text-white font-display tracking-tighter leading-none">Estadísticas</h3>
-                                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
-                                                  <SportIcon sport={sportName} size={22} />
-                                                </div>
+                                                <h3 className="text-3xl lg:text-4xl font-black text-white font-display tracking-tighter leading-none">
+                                                    {athleteDisciplinas.find(d => d.id === selectedSportId)?.name || 'Estadísticas'}
+                                                </h3>
                                             </div>
                                         </div>
                                         <div className="relative w-20 h-20 flex items-center justify-center">
@@ -451,23 +526,23 @@ export default function PerfilPage() {
                                         <div className="flex items-center justify-around py-5">
                                             <div className="flex flex-col items-center">
                                                 <p className="text-3xl font-black font-mono text-emerald-400 leading-none mb-2">{detailedStats.goals}</p>
-                                                <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Goles</p>
+                                                <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">{athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto' ? 'Triples' : 'Goles'}</p>
                                             </div>
                                             <div className="w-[1px] h-10 bg-white/10" />
                                             <div className="flex flex-col items-center">
                                                 <div className="flex gap-2 mb-2">
-                                                    <div className="w-3 h-4 bg-amber-500 rounded-sm" />
-                                                    <p className="text-lg font-black font-mono text-white leading-none">{detailedStats.yellowCards}</p>
+                                                    <div className={cn("w-3 h-4 rounded-sm", athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto' ? 'bg-orange-500' : 'bg-amber-500')} />
+                                                    <p className="text-lg font-black font-mono text-white leading-none">{athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto' ? detailedStats.pts2 : detailedStats.yellowCards}</p>
                                                 </div>
-                                                <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Amarillas</p>
+                                                <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">{athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto' ? 'Dobles' : 'Amarillas'}</p>
                                             </div>
                                             <div className="w-[1px] h-10 bg-white/10" />
                                             <div className="flex flex-col items-center">
                                                 <div className="flex gap-2 mb-2">
-                                                    <div className="w-3 h-4 bg-rose-600 rounded-sm" />
-                                                    <p className="text-lg font-black font-mono text-white leading-none">{detailedStats.redCards}</p>
+                                                    <div className={cn("w-3 h-4 rounded-sm", athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto' ? 'bg-amber-200' : 'bg-rose-600')} />
+                                                    <p className="text-lg font-black font-mono text-white leading-none">{athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto' ? detailedStats.pts1 : detailedStats.redCards}</p>
                                                 </div>
-                                                <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Rojas</p>
+                                                <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">{athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto' ? 'Libres' : 'Rojas'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -704,8 +779,8 @@ export default function PerfilPage() {
                                     </div>
                                 </div>
                                 {followedProfiles.length > 0 ? (
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {followedProfiles.slice(0, 6).map((f) => (
+                                    <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                                        {followedProfiles.map((f) => (
                                             <Link 
                                                 key={f.id} href={`/perfil/${f.id}`}
                                                 className="flex items-center gap-5 p-5 rounded-[2rem] bg-black/60 border border-white/5 hover:border-violet-500/20 hover:bg-white/[0.05] transition-all group/item shadow-2xl"
@@ -742,8 +817,8 @@ export default function PerfilPage() {
                                     </div>
                                 </div>
                                 {followedCareers.length > 0 ? (
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {followedCareers.slice(0, 4).map((c) => (
+                                    <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                                        {followedCareers.map((c) => (
                                             <Link 
                                                 key={c.id} href={`/carrera/${c.id}`}
                                                 className="flex items-center gap-5 p-5 rounded-[2rem] bg-black/60 border border-white/5 hover:border-emerald-500/20 hover:bg-white/[0.05] transition-all group/item shadow-2xl"

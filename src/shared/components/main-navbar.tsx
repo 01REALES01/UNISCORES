@@ -113,7 +113,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                             activeItem={getActiveIndex()}
                             alwaysShowLabels={false}
                             tabs={navItems.map(item => ({ title: item.title, icon: item.icon }))}
-                            onChange={(index) => router.push(navItems[index].href)}
+                            onChange={(index) => { if (typeof index === 'number' && navItems[index]) router.push(navItems[index].href); }}
                         />
                     </div>
 
