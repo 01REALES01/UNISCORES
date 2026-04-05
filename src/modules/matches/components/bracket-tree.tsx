@@ -59,8 +59,8 @@ function BracketMatchCard({ match, sportName }: { match: Match | null; sportName
     const { scoreA, scoreB } = getScoreFromMatch(match);
     const rawTeamA = match.delegacion_a || match.equipo_a;
     const rawTeamB = match.delegacion_b || match.equipo_b;
-    const isByeA = rawTeamA?.toUpperCase() === 'BYE';
-    const isByeB = rawTeamB?.toUpperCase() === 'BYE';
+    const isByeA = rawTeamA?.toUpperCase() === 'BYE' || rawTeamA?.toUpperCase() === 'TBD';
+    const isByeB = rawTeamB?.toUpperCase() === 'BYE' || rawTeamB?.toUpperCase() === 'TBD';
     const teamA = isByeA ? 'Por Definir' : rawTeamA;
     const teamB = isByeB ? 'Por Definir' : rawTeamB;
     const isLive = match.estado === 'en_curso';
@@ -99,7 +99,7 @@ function BracketMatchCard({ match, sportName }: { match: Match | null; sportName
                                 "text-[11px] font-black uppercase tracking-tight truncate",
                                 isByeA ? "text-white/25 italic" : winnerA ? "text-white" : "text-white/60 group-hover:text-white/80"
                             )}>
-                                {teamA || 'TBD'}
+                                {teamA || 'Por Definir'}
                             </span>
                         </div>
                         {!isByeA && (
@@ -126,7 +126,7 @@ function BracketMatchCard({ match, sportName }: { match: Match | null; sportName
                                 "text-[11px] font-black uppercase tracking-tight truncate",
                                 isByeB ? "text-white/25 italic" : winnerB ? "text-white" : "text-white/60 group-hover:text-white/80"
                             )}>
-                                {teamB || 'TBD'}
+                                {teamB || 'Por Definir'}
                             </span>
                         </div>
                         {!isByeB && (

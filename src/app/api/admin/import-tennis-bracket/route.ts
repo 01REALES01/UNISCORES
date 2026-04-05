@@ -202,44 +202,45 @@ export async function POST(_req: NextRequest) {
     // Build all matches to insert
     const toInsert: object[] = [];
 
-    // Helper: push a bracket into toInsert.
-    // Only matches (b !== 'BYE') go to fase='primera_ronda' with actual player names.
-    // Seeds are skipped here — octavos slots are created empty and filled by auto-advance
-    // when the corresponding ganador de primera_ronda is determined.
-    function pushBracket(bracket: BracketEntry[], genero: string, categoria: string) {
-      let matchOrder = 0;
-      bracket.forEach((entry) => {
-        const isSeed = entry.b.toUpperCase() === 'BYE';
-        // Only push real matches to primera_ronda. Seeds will be populated by auto-advance.
-        if (!isSeed) {
-          toInsert.push({
-            disciplina_id, genero, categoria,
-            equipo_a: entry.a, equipo_b: entry.b,
-            estado: 'programado', lugar, fecha,
-            fase: 'primera_ronda',
-            bracket_order: matchOrder++,
-            marcador_detalle: buildMarcador(),
-          });
-        }
-      });
-    }
+    // Push full bracket into toInsert:
+    // - ALL entries go to primera_ronda with their original bracket position.
+    // - Seeds (b=BYE) are marked estado='finalizado' immediately (seed auto-wins).
+    // - Real matches (b!=BYE) are estado='programado' and need to be played.
+    //
+    // Also create empty octavos slots, pre-filled where seeds already won.
+    // The auto-advance system will fill remaining octavos slots as matches complete.
+    function pushBracketWithOctavos(bracket: BracketEntry[], genero: string, categoria: string) {
+      const octavosCount = Math.ceil(bracket.length / 2);
 
-    // After all brackets are pushed, create empty octavos slots
-    // These will be populated by auto-advance with winners from primera_ronda
-    function createEmptyOctavosSlots(
-      brackets: BracketEntry[],
-      genero: string,
-      categoria: string
-    ) {
-      const seedCount = brackets.filter(e => e.b.toUpperCase() === 'BYE').length;
-      // Create octavos slots: one per pair of primera_ronda matches + one per seed
-      // octavos[i] = winner of primera_ronda[2*i] vs winner of primera_ronda[2*i+1]
-      // OR if seed exists at that position, seed stays and one slot remains for winner
-      const octavosCount = Math.ceil(brackets.length / 2);
-      for (let i = 0; i < octavosCount; i++) {
+      // Step 1: Insert all primera_ronda entries (seeds are auto-finalized)
+      bracket.forEach((entry, idx) => {
+        const isSeed = entry.b.toUpperCase() === 'BYE';
         toInsert.push({
           disciplina_id, genero, categoria,
-          equipo_a: 'TBD', equipo_b: 'TBD',  // Empty slots
+          equipo_a: entry.a, equipo_b: entry.b,
+          estado: isSeed ? 'finalizado' : 'programado',
+          lugar, fecha,
+          fase: 'primera_ronda',
+          bracket_order: idx,
+          marcador_detalle: isSeed
+            ? { ...buildMarcador(), sets_a: 2, sets_b: 0 }  // seed wins by default
+            : buildMarcador(),
+        });
+      });
+
+      // Step 2: Create octavos slots, pre-filling seeds that already advanced
+      for (let i = 0; i < octavosCount; i++) {
+        const slotA = bracket[i * 2];       // primera_ronda entry for equipo_a side
+        const slotB = bracket[i * 2 + 1];   // primera_ronda entry for equipo_b side
+
+        // If the primera_ronda entry is a seed (BYE), the seed goes directly into octavos
+        const seedA = slotA?.b.toUpperCase() === 'BYE' ? slotA.a : 'TBD';
+        const seedB = slotB?.b.toUpperCase() === 'BYE' ? slotB.a : 'TBD';
+
+        toInsert.push({
+          disciplina_id, genero, categoria,
+          equipo_a: seedA,
+          equipo_b: seedB || 'TBD',
           estado: 'programado', lugar, fecha,
           fase: 'octavos',
           bracket_order: i,
@@ -248,17 +249,14 @@ export async function POST(_req: NextRequest) {
       }
     }
 
-    // ── Intermedio Masculino ──────────────────────────────────────────────────
-    pushBracket(BRACKET_INT_M, 'masculino', 'intermedio');
-    createEmptyOctavosSlots(BRACKET_INT_M, 'masculino', 'intermedio');
+    // ── Intermedio Masculino (32 → 16 octavos) ─────────────────────────────
+    pushBracketWithOctavos(BRACKET_INT_M, 'masculino', 'intermedio');
 
-    // ── Intermedio Femenino ────────────────────────────────────────────────────
-    pushBracket(BRACKET_INT_F, 'femenino', 'intermedio');
-    createEmptyOctavosSlots(BRACKET_INT_F, 'femenino', 'intermedio');
+    // ── Intermedio Femenino (15 → 8 octavos) ─────────────────────────────────
+    pushBracketWithOctavos(BRACKET_INT_F, 'femenino', 'intermedio');
 
-    // ── Avanzado Masculino ─────────────────────────────────────────────────────
-    pushBracket(BRACKET_AVA_M, 'masculino', 'avanzado');
-    createEmptyOctavosSlots(BRACKET_AVA_M, 'masculino', 'avanzado');
+    // ── Avanzado Masculino (16 → 8 octavos) ─────────────────────────────────
+    pushBracketWithOctavos(BRACKET_AVA_M, 'masculino', 'avanzado');
 
     // ── Avanzado Femenino (Round Robin grupos) ───────────────────────────────
     AVANZADO_FEMENINO_GRUPOS.forEach(({ match: raw, grupo }, idx) => {

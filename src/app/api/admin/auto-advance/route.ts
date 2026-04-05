@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     // Fetch the match and its discipline
     const { data: match, error: matchError } = await supabase
       .from('partidos')
-      .select('id, disciplina_id, genero, fase, bracket_order, estado, equipo_a, equipo_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id, marcador_detalle, disciplinas(name)')
+      .select('id, disciplina_id, genero, categoria, fase, bracket_order, estado, equipo_a, equipo_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id, marcador_detalle, disciplinas(name)')
       .eq('id', partido_id)
       .single() as any;
 
@@ -67,15 +67,18 @@ export async function POST(request: NextRequest) {
 
     const currentFase = match.fase;
     const sportName = match.disciplinas?.name || 'Unknown';
+    const categoria = match.categoria;  // For Tenis: 'intermedio' | 'avanzado'
 
-    // Count unfinalized matches in this phase
-    const { data: unfinalized, error: countError } = await supabase
+    // Count unfinalized matches in this phase (filter by categoria if it exists)
+    let unfinalizedQuery = supabase
       .from('partidos')
       .select('id', { count: 'exact' })
       .eq('disciplina_id', disciplina_id)
       .eq('genero', genero)
       .eq('fase', currentFase)
       .neq('estado', 'finalizado');
+    if (categoria) unfinalizedQuery = unfinalizedQuery.eq('categoria', categoria);
+    const { data: unfinalized, error: countError } = await unfinalizedQuery;
 
     if (countError) {
       return NextResponse.json({ error: 'Error counting unfinalized matches' }, { status: 500 });
@@ -94,25 +97,21 @@ export async function POST(request: NextRequest) {
     let advanceSuccess = false;
 
     if (currentFase === 'grupos') {
-      // Handle group advancement to eliminatory bracket
-      advanceSuccess = await handleGroupAdvancement(supabase, disciplina_id, genero, sportName);
+      advanceSuccess = await handleGroupAdvancement(supabase, disciplina_id, genero, sportName, categoria);
       if (advanceSuccess) {
         const config = getBracketConfig(sportName, genero);
         nextFase = config?.eliminatoryPhase || 'cuartos';
       }
     } else if (currentFase === 'final') {
-      // Calculate final positions (podium)
-      advanceSuccess = await calculateFinalPositions(supabase, disciplina_id, genero, sportName);
+      advanceSuccess = await calculateFinalPositions(supabase, disciplina_id, genero, sportName, categoria);
       nextFase = 'posiciones';
     } else if (['cuartos', 'octavos', 'semifinal'].includes(currentFase)) {
-      // Standard bracket advancement: winners advance to next round
-      advanceSuccess = await advanceBracketWinners(supabase, disciplina_id, genero, currentFase, sportName);
+      advanceSuccess = await advanceBracketWinners(supabase, disciplina_id, genero, currentFase, sportName, categoria);
       if (advanceSuccess) {
         nextFase = NEXT_FASE[currentFase] || 'final';
       }
     } else if (currentFase === 'primera_ronda') {
-      // For sports like Tenis: advance winners from primera_ronda to octavos
-      advanceSuccess = await advanceBracketWinners(supabase, disciplina_id, genero, currentFase, sportName);
+      advanceSuccess = await advanceBracketWinners(supabase, disciplina_id, genero, currentFase, sportName, categoria);
       if (advanceSuccess) {
         nextFase = 'octavos';
       }
@@ -134,7 +133,8 @@ async function handleGroupAdvancement(
   supabase: any,
   disciplina_id: number,
   genero: string,
-  sportName: string
+  sportName: string,
+  categoria?: string
 ): Promise<boolean> {
   try {
     // Use the existing resolver logic by calling its endpoint
@@ -146,13 +146,15 @@ async function handleGroupAdvancement(
     }
 
     // Fetch all finalized group matches
-    const { data: groupMatches, error: matchError } = await supabase
+    let groupQuery = supabase
       .from('partidos')
       .select('*')
       .eq('disciplina_id', disciplina_id)
       .eq('genero', genero)
       .eq('fase', 'grupos')
       .eq('estado', 'finalizado');
+    if (categoria) groupQuery = groupQuery.eq('categoria', categoria);
+    const { data: groupMatches, error: matchError } = await groupQuery;
 
     if (matchError || !groupMatches?.length) {
       console.warn('No group matches to resolve');
@@ -201,13 +203,15 @@ async function handleGroupAdvancement(
     }
 
     // Fetch eliminatory matches to populate
-    const { data: eliminatoryMatches, error: elimError } = await supabase
+    let elimQuery = supabase
       .from('partidos')
       .select('id, bracket_order')
       .eq('disciplina_id', disciplina_id)
       .eq('genero', genero)
       .eq('fase', config.eliminatoryPhase)
       .order('bracket_order', { ascending: true });
+    if (categoria) elimQuery = elimQuery.eq('categoria', categoria);
+    const { data: eliminatoryMatches, error: elimError } = await elimQuery;
 
     if (elimError || !eliminatoryMatches?.length) {
       console.warn('No eliminatory matches found');
@@ -257,17 +261,20 @@ async function advanceBracketWinners(
   disciplina_id: number,
   genero: string,
   currentFase: string,
-  sportName: string
+  sportName: string,
+  categoria?: string
 ): Promise<boolean> {
   try {
     // Fetch all finalized matches in current phase
-    const { data: finalized, error: matchError } = await supabase
+    let finalizedQuery = supabase
       .from('partidos')
       .select('*')
       .eq('disciplina_id', disciplina_id)
       .eq('genero', genero)
       .eq('fase', currentFase)
       .eq('estado', 'finalizado');
+    if (categoria) finalizedQuery = finalizedQuery.eq('categoria', categoria);
+    const { data: finalized, error: matchError } = await finalizedQuery;
 
     if (matchError || !finalized?.length) {
       console.warn('No finalized matches in bracket');
@@ -281,13 +288,15 @@ async function advanceBracketWinners(
     }
 
     // Fetch next round matches to populate
-    const { data: nextRoundMatches, error: nextError } = await supabase
+    let nextQuery = supabase
       .from('partidos')
       .select('*')
       .eq('disciplina_id', disciplina_id)
       .eq('genero', genero)
       .eq('fase', nextFase)
       .order('bracket_order', { ascending: true });
+    if (categoria) nextQuery = nextQuery.eq('categoria', categoria);
+    const { data: nextRoundMatches, error: nextError } = await nextQuery;
 
     if (nextError || !nextRoundMatches?.length) {
       console.warn('No next round matches found');
@@ -311,25 +320,29 @@ async function advanceBracketWinners(
 
       // Calculate next slot
       const nextSlot = Math.floor(match.bracket_order / 2);
-      const side = match.bracket_order % 2 === 0 ? 'equipo_a' : 'equipo_b';
-      const oppositeSide = side === 'equipo_a' ? 'equipo_b' : 'equipo_a';
+      const ab = match.bracket_order % 2 === 0 ? 'a' : 'b';  // 'a' or 'b' suffix
+      const side = `equipo_${ab}`;  // 'equipo_a' or 'equipo_b'
 
       // Find corresponding next-round match
       const nextMatch = nextRoundMatches.find((m: any) => m.bracket_order === nextSlot);
       if (!nextMatch) continue;
 
+      // Skip if this slot is already correctly filled (e.g. seed pre-placed by import)
+      const currentValue = nextMatch[side];
+      if (currentValue && currentValue !== 'TBD' && currentValue === winnerTeam) continue;
+
       const updates: any = { [side]: winnerTeam };
 
       if (winnerDelegacion) {
-        updates[`delegacion_${side}_id`] = winnerDelegacion;
+        updates[`delegacion_${ab}_id`] = winnerDelegacion;
       }
       if (winnerCarrera) {
-        updates[`carrera_${side}_id`] = winnerCarrera;
+        updates[`carrera_${ab}_id`] = winnerCarrera;
       }
 
       // For individual sports, also propagate athlete_id
       if (isIndividual && winnerAthlete) {
-        updates[`athlete_${side}_id`] = winnerAthlete;
+        updates[`athlete_${ab}_id`] = winnerAthlete;
       }
 
       const { error: updateError } = await supabase
@@ -355,27 +368,30 @@ async function calculateFinalPositions(
   supabase: any,
   disciplina_id: number,
   genero: string,
-  sportName: string
+  sportName: string,
+  categoria?: string
 ): Promise<boolean> {
   try {
     // Fetch finalized final and tercerPuesto matches
-    const { data: finalMatch, error: finalError } = await supabase
+    let finalQuery = supabase
       .from('partidos')
       .select('*')
       .eq('disciplina_id', disciplina_id)
       .eq('genero', genero)
       .eq('fase', 'final')
-      .eq('estado', 'finalizado')
-      .single();
+      .eq('estado', 'finalizado');
+    if (categoria) finalQuery = finalQuery.eq('categoria', categoria);
+    const { data: finalMatch, error: finalError } = await finalQuery.single();
 
-    const { data: tercerMatch } = await supabase
+    let tercerQuery = supabase
       .from('partidos')
       .select('*')
       .eq('disciplina_id', disciplina_id)
       .eq('genero', genero)
       .eq('fase', 'tercer_puesto')
-      .eq('estado', 'finalizado')
-      .single();
+      .eq('estado', 'finalizado');
+    if (categoria) tercerQuery = tercerQuery.eq('categoria', categoria);
+    const { data: tercerMatch } = await tercerQuery.single();
 
     if (finalError || !finalMatch) {
       console.warn('No finalized final match');
