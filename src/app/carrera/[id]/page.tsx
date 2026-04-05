@@ -382,11 +382,12 @@ export default function CarreraProfilePage() {
         return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
     }, [jugadores, disciplineEntries, deportesInscritos]);
 
-    // Map: disciplina_name → equipo info (for stats cards)
+    // Map: disciplina_name + genero → equipo info (for stats cards)
     const deportesEquipoMap = useMemo(() => {
         const map: Record<string, { delegacion_id: number; equipo_nombre: string; isCombined: boolean }> = {};
         for (const e of deportesInscritos) {
-            map[e.disciplina_name] = { delegacion_id: e.delegacion_id, equipo_nombre: e.equipo_nombre, isCombined: e.isCombined };
+            const key = `${e.disciplina_name}_${e.genero}`;
+            map[key] = { delegacion_id: e.delegacion_id, equipo_nombre: e.equipo_nombre, isCombined: e.isCombined };
         }
         return map;
     }, [deportesInscritos]);
@@ -814,14 +815,25 @@ export default function CarreraProfilePage() {
                                                             <h3 className="text-sm font-black uppercase tracking-wider font-sans">
                                                                 {d.name}
                                                             </h3>
-                                                            {deportesEquipoMap[d.name]?.isCombined && (
-                                                                <Link
-                                                                    href={`/equipo/${deportesEquipoMap[d.name].delegacion_id}`}
-                                                                    onClick={e => e.stopPropagation()}
-                                                                    className="text-[10px] font-bold text-violet-400/70 hover:text-violet-300 uppercase tracking-widest truncate max-w-[140px] hover:underline block"
-                                                                >
-                                                                    {deportesEquipoMap[d.name].equipo_nombre} · combinado
-                                                                </Link>
+                                                            {/* Note: Finished disciplines (stats) currently merge Masc/Fem in the byDiscipline lookup.
+                                                                If a specific gendered version is found in enrolled, show its combined info. */}
+                                                            { (deportesEquipoMap[`${d.name}_masculino`]?.isCombined || deportesEquipoMap[`${d.name}_femenino`]?.isCombined) && (
+                                                                <div className="flex flex-col gap-1">
+                                                                    {['masculino', 'femenino'].map(g => {
+                                                                        const info = deportesEquipoMap[`${d.name}_${g}`];
+                                                                        if (!info?.isCombined) return null;
+                                                                        return (
+                                                                            <Link
+                                                                                key={g}
+                                                                                href={`/equipo/${info.delegacion_id}`}
+                                                                                onClick={e => e.stopPropagation()}
+                                                                                className="text-[9px] font-bold text-violet-400/70 hover:text-violet-300 uppercase tracking-widest truncate max-w-[140px] hover:underline block"
+                                                                            >
+                                                                                {info.equipo_nombre} · {g}
+                                                                            </Link>
+                                                                        );
+                                                                    })}
+                                                                </div>
                                                             )}
                                                             <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">
                                                                 {d.played}{" "}

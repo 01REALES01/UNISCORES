@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import Link from "next/link";
 import {
     Upload, CheckCircle, XCircle, AlertTriangle,
     FileSpreadsheet, Calendar, Users, ChevronDown, ChevronRight,
@@ -454,13 +455,13 @@ export default function FixturePage() {
                 )}
 
                 <div className="flex flex-col gap-2">
-                    <a
+                    <Link
                         href="/admin/partidos"
                         className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-sm font-bold transition-colors"
                     >
                         <Calendar size={14} />
                         Ver partidos creados
-                    </a>
+                    </Link>
                     <button
                         onClick={reset}
                         className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/50 text-sm transition-colors"

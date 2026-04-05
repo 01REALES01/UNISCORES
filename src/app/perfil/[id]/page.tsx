@@ -173,13 +173,15 @@ export default function PublicProfilePage() {
                     const discIds = (pdData || []).map((r: any) => r.disciplina_id);
                     if (discIds.length === 0 && p.athlete_disciplina_id) discIds.push(p.athlete_disciplina_id);
                     if (discIds.length > 0) {
-                        // Get athlete's genero from linked jugador row
+                        // Get athlete's official genero from linked jugador rows, avoiding nulls
                         const { data: jugadorRow } = await supabase
                             .from('jugadores')
                             .select('genero')
                             .eq('profile_id', p.id)
+                            .not('genero', 'is', null)
+                            .order('id', { ascending: false }) // Prefer most recent
                             .limit(1)
-                            .single();
+                            .maybeSingle();
                         const athleteGenero = jugadorRow?.genero; // 'masculino' | 'femenino' | null
 
                         let delegQuery = supabase

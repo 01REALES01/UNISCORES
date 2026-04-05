@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { supabase } from "@/lib/supabase";
 import { useEffect } from "react";
 import { computeCareerStats, CareerStats } from "@/lib/sport-helpers";
+import { EQUIPO_NOMBRE_TO_CARRERAS } from "@/lib/constants";
 
 // ─── Column Selections ──────────────────────────────────────────────────────
 
@@ -46,10 +47,19 @@ async function fetchTeamProfile(delegacionId: number) {
     }
 
     // 2. Fetch the allied careers for their badges and names
+    // Fallback/Override: Use our config map to find all careers that SHOULD be in this team
+    const configCareerNames = EQUIPO_NOMBRE_TO_CARRERAS[delegacion.nombre] || [];
+    const dbCareerIds = delegacion.carrera_ids || [];
+
+    // Query careers by either ID (from DB) or Name (from Config)
     const { data: carreras } = await supabase
         .from('carreras')
         .select('id, nombre, escudo_url')
-        .in('id', delegacion.carrera_ids || []);
+        .or(`id.in.(${dbCareerIds.join(',') || '0'}),nombre.in.("${configCareerNames.join('","') || 'none'}")`);
+
+    // Update careers in memory to ensure they reflect the full set
+    const finalCareerIds = carreras ? carreras.map((c: any) => c.id) : dbCareerIds;
+    delegacion.carrera_ids = Array.from(new Set([...dbCareerIds, ...finalCareerIds]));
 
     // 3. Fetch all matches where this delegacion participates
     const [matchesA, matchesB] = await Promise.all([

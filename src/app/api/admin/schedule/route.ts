@@ -26,13 +26,13 @@ const FUSION_MAP: Record<string, string[]> = {
     'ODONTOLOGÍA/CONTADURÍA':                      ['Odontología', 'Contaduría Pública'],
     'MÚSICA/PSICOLOGÍA':                           ['Música', 'Psicología'],
     'NEGOCIOS INT./ADMÓN.':                        ['Negocios Internacionales', 'Administración de Empresas'],
+    'ESCUELA DE NEGOCIOS':                         ['Administración de Empresas', 'Contaduría Pública', 'Negocios Internacionales'],
     'ING. INDUSTRIAL/MECÁNICA':                    ['Ingeniería Industrial', 'Ingeniería Mecánica'],
     'INGENIERÍA INDUSTRIAL/MECÁNICA':              ['Ingeniería Industrial', 'Ingeniería Mecánica'],
     'HUMANIDES(PSICOLOGÍA/COM.SOCIAL/ECONOMÍA)':   ['Psicología', 'Comunicación Social y Periodismo', 'Economía'],
     'HUMANIDADES(PSICOLOGÍA/COM.SOCIAL/ECONOMÍA)': ['Psicología', 'Comunicación Social y Periodismo', 'Economía'],
     'ECONOMÁ/COM. SOCIAL':                         ['Economía', 'Comunicación Social y Periodismo'],
     'ECONOMÍA/COM. SOCIAL':                        ['Economía', 'Comunicación Social y Periodismo'],
-    'ESCUELA DE NEGOCIOS':                         ['Negocios Internacionales'],
 
     // Typos in fútbol masculino
     'DRECHO':             ['Derecho'],

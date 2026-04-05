@@ -87,12 +87,12 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
         fetchDisciplinas();
     }, []);
 
-    const fetchDisciplinas = async () => {
+    async function fetchDisciplinas() {
         const { data } = await supabase.from('disciplinas').select('id, name').order('name');
         if (data) setDisciplinas(data);
-    };
+    }
 
-    const fetchProfiles = async () => {
+    async function fetchProfiles() {
         const { data, error } = await supabase
             .from('profiles')
             .select('*')
@@ -118,7 +118,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
             }
         }
         setLoading(false);
-    };
+    }
 
     /** Toggle a single disciplina for a user in profile_disciplinas */
     const toggleUserDisciplina = async (userId: string, disciplinaId: number) => {

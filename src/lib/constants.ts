@@ -79,7 +79,7 @@ export const EQUIPO_NOMBRE_TO_CARRERAS: Record<string, string[]> = {
     'ING. ELÉCTRICA':                      ['Ingeniería Eléctrica', 'Ingeniería Electrónica'],
     'INGENIERÍA ELÉCTRICA':                ['Ingeniería Eléctrica', 'Ingeniería Electrónica'],
     'COM. SOCIAL/PSICOLOGÍA':              ['Comunicación Social y Periodismo', 'Psicología'],
-    'ESCUELA DE NEGOCIOS':                 ['Negocios Internacionales'],
+    'ESCUELA DE NEGOCIOS':                 ['Administración de Empresas', 'Contaduría Pública', 'Negocios Internacionales'],
     'ARQUITECTURA':                        ['Arquitectura'],
 };
 

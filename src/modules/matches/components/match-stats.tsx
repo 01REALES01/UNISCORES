@@ -12,6 +12,60 @@ interface MatchStatsProps {
     sportName?: string;
 }
 
+// Comparative stat row helper
+const StatRow = ({ label, valueA, valueB, colorA, colorB }: { label: string, valueA: number, valueB: number, colorA: string, colorB: string }) => {
+    const total = valueA + valueB || 1;
+    return (
+        <div className="flex items-center gap-3 sm:gap-4 py-2.5 border-b border-white/[0.03] last:border-0">
+            <span className="text-base sm:text-lg font-black tabular-nums w-8 text-right" style={{ color: colorA }}>{valueA}</span>
+            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden flex">
+                <div className="h-full rounded-l-full transition-all duration-700" style={{ width: `${(valueA / total) * 100}%`, backgroundColor: colorA, opacity: 0.7 }} />
+                <div className="h-full rounded-r-full transition-all duration-700" style={{ width: `${(valueB / total) * 100}%`, backgroundColor: colorB, opacity: 0.7 }} />
+            </div>
+            <span className="text-base sm:text-lg font-black tabular-nums w-8 text-left" style={{ color: colorB }}>{valueB}</span>
+            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-white/30 w-20 sm:w-24 text-right">{label}</span>
+        </div>
+    );
+};
+
+// Basketball leader card helper
+const LeaderCard = ({ label, player, count, color }: { label: string, player: any, count: number, color: string }) => {
+    if (!player) return (
+        <div className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.02] border border-white/[0.03]">
+            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                <Target size={12} className="text-white/15" />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-[8px] font-black uppercase tracking-widest text-white/20">{label}</p>
+                <p className="text-[10px] text-white/15 italic">Sin datos</p>
+            </div>
+        </div>
+    );
+    const cardContent = (
+        <div className={cn(
+            "flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.03] border border-white/5 transition-all duration-200",
+            player.profile.profile_id ? "hover:bg-white/[0.08] hover:border-white/10 hover:scale-[1.02] active:scale-[0.98] cursor-pointer" : ""
+        )}>
+            <Avatar name={player.profile.nombre} className="w-8 h-8 text-[10px] border border-white/10 shrink-0" />
+            <div className="flex-1 min-w-0">
+                <p className="text-[8px] font-black uppercase tracking-widest text-white/30">{label}</p>
+                <p className="text-[10px] sm:text-xs font-black text-white/80 truncate">{player.profile.nombre}</p>
+            </div>
+            <span className="text-sm font-black tabular-nums shrink-0 px-2 py-0.5 rounded-lg border border-white/5 bg-black/40" style={{ color }}>{count}</span>
+        </div>
+    );
+
+    if (player.profile.profile_id) {
+        return (
+            <Link href={`/perfil/${player.profile.profile_id}`}>
+                {cardContent}
+            </Link>
+        );
+    }
+
+    return cardContent;
+};
+
 export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
     const isBasketball = sportName?.toLowerCase().includes('baloncesto') || sportName?.toLowerCase().includes('basket');
     const isFootball = sportName?.toLowerCase().includes('futbol') || sportName?.toLowerCase().includes('fútbol') || sportName?.toLowerCase().includes('micro') || sportName?.toLowerCase().includes('sala');
@@ -103,68 +157,15 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
         );
     }
 
-    const sportColor = SPORT_COLORS[sportName || ''] || '#7c3aed';
-    const teamBColor = '#64748b';
-
     const { teamA, teamB, mvp, mvpPoints, topScorersA, topScorersB,
         leaderTriples_A, leaderDoubles_A, leaderFreeThrows_A, leaderPoints_A,
         leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B, leaderPoints_B } = stats;
     const totalGoals = teamA.goals + teamB.goals || 1;
     const totalFouls = teamA.fouls + teamB.fouls || 1;
 
-    // Comparative stat row helper
-    const StatRow = ({ label, valueA, valueB, colorA = sportColor, colorB = teamBColor }: { label: string, valueA: number, valueB: number, colorA?: string, colorB?: string }) => {
-        const total = valueA + valueB || 1;
-        return (
-            <div className="flex items-center gap-3 sm:gap-4 py-2.5 border-b border-white/[0.03] last:border-0">
-                <span className="text-base sm:text-lg font-black tabular-nums w-8 text-right" style={{ color: colorA }}>{valueA}</span>
-                <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden flex">
-                    <div className="h-full rounded-l-full transition-all duration-700" style={{ width: `${(valueA / total) * 100}%`, backgroundColor: colorA, opacity: 0.7 }} />
-                    <div className="h-full rounded-r-full transition-all duration-700" style={{ width: `${(valueB / total) * 100}%`, backgroundColor: colorB, opacity: 0.7 }} />
-                </div>
-                <span className="text-base sm:text-lg font-black tabular-nums w-8 text-left" style={{ color: colorB }}>{valueB}</span>
-                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-white/30 w-20 sm:w-24 text-right">{label}</span>
-            </div>
-        );
-    };
+    const sportColor = SPORT_COLORS[sportName || ''] || '#7c3aed';
+    const teamBColor = '#64748b';
 
-    // Basketball leader card helper
-    const LeaderCard = ({ label, player, count, color }: { label: string, player: any, count: number, color: string }) => {
-        if (!player) return (
-            <div className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.02] border border-white/[0.03]">
-                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                    <Target size={12} className="text-white/15" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-white/20">{label}</p>
-                    <p className="text-[10px] text-white/15 italic">Sin datos</p>
-                </div>
-            </div>
-        );
-        const cardContent = (
-            <div className={cn(
-                "flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.03] border border-white/5 transition-all duration-200",
-                player.profile.profile_id ? "hover:bg-white/[0.08] hover:border-white/10 hover:scale-[1.02] active:scale-[0.98] cursor-pointer" : ""
-            )}>
-                <Avatar name={player.profile.nombre} className="w-8 h-8 text-[10px] border border-white/10 shrink-0" />
-                <div className="flex-1 min-w-0">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-white/30">{label}</p>
-                    <p className="text-[10px] sm:text-xs font-black text-white/80 truncate">{player.profile.nombre}</p>
-                </div>
-                <span className="text-sm font-black tabular-nums shrink-0 px-2 py-0.5 rounded-lg border border-white/5 bg-black/40" style={{ color }}>{count}</span>
-            </div>
-        );
-
-        if (player.profile.profile_id) {
-            return (
-                <Link href={`/perfil/${player.profile.profile_id}`}>
-                    {cardContent}
-                </Link>
-            );
-        }
-
-        return cardContent;
-    };
 
     return (
         <div className="rounded-[2rem] max-w-4xl mx-auto bg-gradient-to-b from-[#0A0705] to-[#040302] border border-white/5 p-5 sm:p-8 mt-10 shadow-2xl relative overflow-hidden flex flex-col gap-8">
@@ -202,9 +203,9 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                     {/* Shooting Breakdown – Clean horizontal rows */}
                     <div className="bg-white/[0.02] rounded-2xl p-4 sm:p-5 border border-white/5">
                         <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 mb-4 text-center">Desglose de Tiros</p>
-                        <StatRow label="Triples" valueA={teamA.pts3} valueB={teamB.pts3} />
-                        <StatRow label="Dobles" valueA={teamA.pts2} valueB={teamB.pts2} />
-                        <StatRow label="T. Libres" valueA={teamA.pts1} valueB={teamB.pts1} />
+                        <StatRow label="Triples" valueA={teamA.pts3} valueB={teamB.pts3} colorA={sportColor} colorB={teamBColor} />
+                        <StatRow label="Dobles" valueA={teamA.pts2} valueB={teamB.pts2} colorA={sportColor} colorB={teamBColor} />
+                        <StatRow label="T. Libres" valueA={teamA.pts1} valueB={teamB.pts1} colorA={sportColor} colorB={teamBColor} />
                     </div>
 
                     {/* Per-Team Leaders – Mirrored Dual Columns */}
@@ -233,7 +234,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
             {isFootball && (
                 <div className="relative z-10 bg-white/[0.02] rounded-2xl p-4 sm:p-5 border border-white/5">
                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 mb-4 text-center">Disciplina</p>
-                    <StatRow label="Faltas" valueA={teamA.fouls} valueB={teamB.fouls} />
+                    <StatRow label="Faltas" valueA={teamA.fouls} valueB={teamB.fouls} colorA={sportColor} colorB={teamBColor} />
                     <StatRow label="Amarillas" valueA={teamA.yellowCards} valueB={teamB.yellowCards} colorA="#eab308" colorB="#eab308" />
                     <StatRow label="Rojas" valueA={teamA.redCards} valueB={teamB.redCards} colorA="#f43f5e" colorB="#f43f5e" />
                 </div>
