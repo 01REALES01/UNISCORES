@@ -404,6 +404,26 @@ export function useMatchControl(matchId: string) {
                 marcador_final: finalDetalle
             });
 
+            // Auto-advance: if all matches in this phase are now finalized, advance to next round
+            try {
+                const autoAdvRes = await fetch('/api/admin/auto-advance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        partido_id: matchId,
+                        disciplina_id: match.disciplina_id,
+                        genero: match.genero,
+                    }),
+                });
+                const autoAdvData = await autoAdvRes.json();
+                if (autoAdvData.advanced && autoAdvData.next_fase) {
+                    toast.success(`🏆 ${autoAdvData.message}`);
+                }
+            } catch (advErr: any) {
+                // Silently fail — match finalization already succeeded
+                console.warn('Auto-advance failed (non-critical):', advErr.message);
+            }
+
             toast.success("Partido finalizado");
             return true;
         } else {
