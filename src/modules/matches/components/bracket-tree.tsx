@@ -57,8 +57,12 @@ function BracketMatchCard({ match, sportName }: { match: Match | null; sportName
     }
 
     const { scoreA, scoreB } = getScoreFromMatch(match);
-    const teamA = match.delegacion_a || match.equipo_a;
-    const teamB = match.delegacion_b || match.equipo_b;
+    const rawTeamA = match.delegacion_a || match.equipo_a;
+    const rawTeamB = match.delegacion_b || match.equipo_b;
+    const isByeA = rawTeamA?.toUpperCase() === 'BYE';
+    const isByeB = rawTeamB?.toUpperCase() === 'BYE';
+    const teamA = isByeA ? 'Por Definir' : rawTeamA;
+    const teamB = isByeB ? 'Por Definir' : rawTeamB;
     const isLive = match.estado === 'en_curso';
     const isFinished = match.estado === 'finalizado';
     const winnerA = isFinished && scoreA > scoreB;
@@ -87,23 +91,25 @@ function BracketMatchCard({ match, sportName }: { match: Match | null; sportName
                         winnerA ? "bg-white/[0.04]" : "hover:bg-white/[0.02]"
                     )}>
                         <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
-                            {winnerA 
+                            {winnerA
                                 ? <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                                 : <div className="w-1.5 h-1.5 rounded-full bg-white/10 flex-shrink-0" />
                             }
                             <span className={cn(
                                 "text-[11px] font-black uppercase tracking-tight truncate",
-                                winnerA ? "text-white" : "text-white/60 group-hover:text-white/80"
+                                isByeA ? "text-white/25 italic" : winnerA ? "text-white" : "text-white/60 group-hover:text-white/80"
                             )}>
                                 {teamA || 'TBD'}
                             </span>
                         </div>
-                        <span className={cn(
-                            "text-[13px] font-black font-mono ml-2 flex-shrink-0 tabular-nums",
-                            isLive ? "text-emerald-400" : winnerA ? "text-white" : "text-white/30"
-                        )}>
-                            {isFinished || isLive ? scoreA : '-'}
-                        </span>
+                        {!isByeA && (
+                            <span className={cn(
+                                "text-[13px] font-black font-mono ml-2 flex-shrink-0 tabular-nums",
+                                isLive ? "text-emerald-400" : winnerA ? "text-white" : "text-white/30"
+                            )}>
+                                {isFinished || isLive ? scoreA : '-'}
+                            </span>
+                        )}
                     </div>
 
                     {/* Team B */}
@@ -112,23 +118,25 @@ function BracketMatchCard({ match, sportName }: { match: Match | null; sportName
                         winnerB ? "bg-white/[0.04]" : "hover:bg-white/[0.02]"
                     )}>
                         <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
-                            {winnerB 
+                            {winnerB
                                 ? <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                                 : <div className="w-1.5 h-1.5 rounded-full bg-white/10 flex-shrink-0" />
                             }
                             <span className={cn(
                                 "text-[11px] font-black uppercase tracking-tight truncate",
-                                winnerB ? "text-white" : "text-white/60 group-hover:text-white/80"
+                                isByeB ? "text-white/25 italic" : winnerB ? "text-white" : "text-white/60 group-hover:text-white/80"
                             )}>
                                 {teamB || 'TBD'}
                             </span>
                         </div>
-                        <span className={cn(
-                            "text-[13px] font-black font-mono ml-2 flex-shrink-0 tabular-nums",
-                            isLive ? "text-emerald-400" : winnerB ? "text-white" : "text-white/30"
-                        )}>
-                            {isFinished || isLive ? scoreB : '-'}
-                        </span>
+                        {!isByeB && (
+                            <span className={cn(
+                                "text-[13px] font-black font-mono ml-2 flex-shrink-0 tabular-nums",
+                                isLive ? "text-emerald-400" : winnerB ? "text-white" : "text-white/30"
+                            )}>
+                                {isFinished || isLive ? scoreB : '-'}
+                            </span>
+                        )}
                     </div>
                 </div>
 
@@ -150,24 +158,41 @@ function BracketMatchCard({ match, sportName }: { match: Match | null; sportName
 }
 
 // ─── Round Column ────────────────────────────────────────────────────────────
-function RoundColumn({ title, matches, sportName, gapClass }: { title: string; matches: (Match | null)[]; sportName: string; gapClass: string }) {
+function RoundColumn({ title, matches, sportName, roundRank, totalMaxRank }: { 
+    title: string; 
+    matches: (Match | null)[]; 
+    sportName: string;
+    roundRank: number;
+    totalMaxRank: number;
+}) {
+    // Base height for the most populated round (e.g. 140px per match in R64)
+    // As we go to later rounds, slot height doubles to maintain centering.
+    const baseHeight = 110; 
+    const slotHeight = baseHeight * Math.pow(2, (totalMaxRank - roundRank));
+
     return (
         <div className="flex flex-col items-center flex-shrink-0">
             {/* Round Title */}
-            <div className="mb-6 flex justify-center w-full">
+            <div className="mb-4 h-12 flex items-center justify-center w-full shrink-0">
                 <span className={cn(
-                    "text-sm font-display font-black tracking-wide px-5 py-2 rounded-full border border-white/5 bg-white/[0.02]",
-                    title === 'Final' ? "text-amber-400 border-amber-500/20 shadow-[0_0_15px_rgba(251,191,36,0.15)] bg-amber-500/10" : "text-white/60"
+                    "text-[10px] font-display font-black tracking-[0.2em] px-5 py-2 rounded-full border border-white/5 bg-white/[0.02] uppercase shadow-inner whitespace-nowrap",
+                    (title === 'Final' || title === 'final') ? "text-amber-400 border-amber-500/20 shadow-[0_0_20px_rgba(251,191,36,0.1)] bg-amber-500/10" : "text-white/40"
                 )}>
                     {title}
                 </span>
             </div>
 
-            {/* Match Cards */}
-            <div className={cn("flex flex-col items-center justify-center flex-1 w-full", gapClass)}>
+            {/* Match Cards Container - Fixed Progression Scaling */}
+            <div className="flex flex-col w-[260px]">
                 {matches.map((match, idx) => (
-                    <div key={idx} className="w-[220px]">
-                        <BracketMatchCard match={match} sportName={sportName} />
+                    <div 
+                        key={idx} 
+                        className="relative z-10 flex items-center justify-center transition-all duration-700"
+                        style={{ height: `${slotHeight}px` }}
+                    >
+                        <div className="w-[210px]">
+                            <BracketMatchCard match={match} sportName={sportName} />
+                        </div>
                     </div>
                 ))}
             </div>
@@ -176,41 +201,90 @@ function RoundColumn({ title, matches, sportName, gapClass }: { title: string; m
 }
 
 // ─── Main BracketTree Component ──────────────────────────────────────────────
-const EARLY_ROUND_ORDER = ['primera_ronda', 'octavos', 'cuartos', 'semifinal'];
 const FASE_LABELS: Record<string, string> = {
     primera_ronda: '1ra Ronda',
+    dieciseisavos: '1/16 Final',
+    treintaidosavos: '1/32 Final',
     octavos: 'Octavos',
     cuartos: 'Cuartos de Final',
     semifinal: 'Semifinal',
     final: 'Final',
     tercer_puesto: '3er Puesto',
 };
+// Phase progression order: earliest round first → final last
+const PHASE_ORDER = ['primera_ronda', 'treintaidosavos', 'dieciseisavos', 'octavos', 'cuartos', 'semifinal', 'final'];
 
 export function BracketTree({ matches, sportName }: BracketTreeProps) {
-    const rounds = useMemo(() => {
-        const sortByOrder = (a: Match, b: Match) => (a.bracket_order ?? 0) - (b.bracket_order ?? 0);
-
-        // Detect which early rounds exist
-        const earlyRounds: Record<string, Match[]> = {};
-        EARLY_ROUND_ORDER.forEach(fase => {
-            const filtered = matches.filter(m => m.fase === fase).sort(sortByOrder);
-            if (filtered.length > 0) earlyRounds[fase] = filtered;
-        });
-
-        // Final rounds (always fixed)
-        const final = matches.filter(m => m.fase === 'final').sort(sortByOrder);
-        const tercer = matches.filter(m => m.fase === 'tercer_puesto').sort(sortByOrder);
-
-        return { earlyRounds, final, tercer };
+    const tercerPuesto = useMemo(() => {
+        return matches
+            .filter(m => m.fase === 'tercer_puesto')
+            .sort((a, b) => (a.bracket_order ?? 0) - (b.bracket_order ?? 0));
     }, [matches]);
 
-    const hasAnyEarlyRound = Object.keys(rounds.earlyRounds).length > 0;
-    const hasFinal = rounds.final.length > 0;
-    const hasTercer = rounds.tercer.length > 0;
+    const hasTercer = tercerPuesto.length > 0;
 
-    const noMatches = !hasAnyEarlyRound && !hasFinal && !hasTercer;
+    // Determine connector line style based on round type
+    const getConnectorCount = (matchesCount: number): number => {
+        return Math.floor(matchesCount / 2);
+    };
 
-    if (noMatches) {
+    // Normalize rounds: only create columns for phases that have matches,
+    // assign consecutive ranks to avoid empty intermediate columns.
+    const normalizedRounds = useMemo(() => {
+        // 1. Group matches by fase
+        const byFase: Record<string, Match[]> = {};
+        matches.forEach((m: any) => {
+            const f = (m.fase || '').toLowerCase().trim();
+            if (f === 'tercer_puesto') return;
+            if (!byFase[f]) byFase[f] = [];
+            byFase[f].push(m);
+        });
+
+        // 2. Keep only phases that have matches, in bracket progression order
+        const existing = PHASE_ORDER.filter(f => byFase[f]?.length > 0);
+        if (existing.length === 0) return { rounds: [], maxRank: 0 };
+
+        // 3. Determine maxRank from the largest round's match count
+        //    This ensures the first column's slot height is correct for centering
+        const largestRound = Math.max(...existing.map(f => byFase[f].length));
+        const maxRank = Math.max(
+            Math.ceil(Math.log2(Math.max(largestRound, 2))),
+            existing.length - 1
+        );
+
+        // 4. Build columns: earliest round gets highest rank, final gets 0
+        const result: { fase: string; matches: (Match | null)[]; rank: number }[] = [];
+        existing.forEach((fase, i) => {
+            const rank = maxRank - i;
+            const ms = byFase[fase].sort((a: Match, b: Match) =>
+                (a.bracket_order ?? 0) - (b.bracket_order ?? 0)
+            );
+
+            // Slot count: at least 2^rank, but never fewer than actual matches
+            const slotCount = Math.max(Math.pow(2, rank), ms.length);
+            const slice: (Match | null)[] = new Array(slotCount).fill(null);
+
+            // Place matches using bracket_order (0-indexed) directly
+            ms.forEach((m: Match, idx: number) => {
+                const pos = m.bracket_order ?? idx;
+                if (pos >= 0 && pos < slotCount && slice[pos] === null) {
+                    slice[pos] = m;
+                } else {
+                    // Fallback: find first empty slot
+                    const empty = slice.findIndex(s => s === null);
+                    if (empty !== -1) slice[empty] = m;
+                }
+            });
+
+            result.push({ fase, matches: slice, rank });
+        });
+
+        return { rounds: result, maxRank };
+    }, [matches]);
+
+    const { rounds: displayRounds, maxRank } = normalizedRounds;
+
+    if (displayRounds.length === 0 && !hasTercer) {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center">
                 <Trophy size={48} className="text-white/10 mb-4" />
@@ -220,96 +294,61 @@ export function BracketTree({ matches, sportName }: BracketTreeProps) {
         );
     }
 
-    // Determine gap classes based on round type
-    const getGapClass = (fase: string): string => {
-        if (fase === 'primera_ronda') return 'gap-1';
-        if (fase === 'octavos') return 'gap-2';
-        if (fase === 'cuartos') return 'gap-4';
-        if (fase === 'semifinal') return 'gap-[104px]';
-        return 'gap-4';
-    };
-
-    // Determine connector line style based on round type
-    const getConnectorCount = (fase: string): number => {
-        if (fase === 'primera_ronda') return Math.floor(rounds.earlyRounds[fase]?.length / 2) || 1;
-        if (fase === 'octavos') return 4;
-        if (fase === 'cuartos') return 2;
-        if (fase === 'semifinal') return 1;
-        return 1;
-    };
-
-    // Get early round order
-    const earlyRoundOrder = EARLY_ROUND_ORDER.filter(r => rounds.earlyRounds[r]);
-    const finalDisplay = hasFinal ? rounds.final : [null];
-
     return (
         <div className="space-y-8">
             {/* Bracket Tree */}
-            <div className="overflow-x-auto pb-8 pt-4 w-full flex justify-start lg:justify-center no-scrollbar">
-                <div className="flex items-stretch gap-6 min-w-max px-4">
-                    {/* Dynamic Early Rounds */}
-                    {earlyRoundOrder.map((fase, roundIdx) => (
-                        <div key={fase}>
-                            <RoundColumn
-                                title={FASE_LABELS[fase]}
-                                matches={rounds.earlyRounds[fase]}
-                                sportName={sportName}
-                                gapClass={getGapClass(fase)}
-                            />
-                            {/* Connector Lines (except last round) */}
-                            {roundIdx < earlyRoundOrder.length - 1 && (
-                                <div className="flex flex-col justify-center w-10 flex-shrink-0 opacity-40">
-                                    {Array(getConnectorCount(fase))
+            <div className="overflow-x-auto pb-12 pt-4 w-full flex justify-start scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                <div className="flex items-start gap-0 min-w-max px-4">
+                    {displayRounds.map((round, roundIdx) => (
+                        <div key={`${round.fase}-${round.rank}`} className="flex">
+                            <div className="w-[260px]">
+                                <RoundColumn
+                                    title={FASE_LABELS[round.fase] || round.fase}
+                                    matches={round.matches}
+                                    sportName={sportName}
+                                    roundRank={round.rank}
+                                    totalMaxRank={maxRank}
+                                />
+                            </div>
+                            
+                            {/* Connector Lines - Dynamic Heights */}
+                            {roundIdx < displayRounds.length - 1 && (
+                                <div className="flex flex-col w-24 flex-shrink-0 opacity-20">
+                                    {/* Offset for Title */}
+                                    <div className="h-16 shrink-0" />
+                                    {Array(getConnectorCount(round.matches.length))
                                         .fill(null)
-                                        .map((_, i) => (
-                                            <div key={i} className="flex-1 flex flex-col justify-center relative my-11">
-                                                <div className="border-r border-t border-b border-white/20 rounded-r-2xl h-1/2 w-full ml-0 transition-colors hover:border-violet-400/50" />
-                                                <div className="absolute top-1/2 right-0 w-4 border-t border-white/20 translate-x-full transition-colors hover:border-violet-400/50" />
-                                            </div>
-                                        ))}
+                                        .map((_, i) => {
+                                            const baseH = 110;
+                                            const pairHeight = baseH * Math.pow(2, (maxRank - round.rank));
+                                            return (
+                                                <div 
+                                                    key={i} 
+                                                    className="relative"
+                                                    style={{ height: `${pairHeight}px` }}
+                                                >
+                                                    <div className="absolute top-1/4 bottom-1/4 right-0 left-0 border-r-2 border-t-2 border-b-2 border-white rounded-r-[3rem]" />
+                                                    <div className="absolute top-1/2 right-0 w-12 border-t-2 border-white translate-x-full" />
+                                                </div>
+                                            );
+                                        })}
                                 </div>
                             )}
                         </div>
                     ))}
-
-                    {/* Connector from last early round to final */}
-                    {earlyRoundOrder.length > 0 && hasFinal && (
-                        <div className="flex flex-col justify-center w-10 flex-shrink-0 opacity-40">
-                            <div className="relative h-[256px] flex flex-col justify-center w-full">
-                                <div className="border-r border-t border-b border-white/20 rounded-r-2xl h-full w-full ml-0 transition-colors hover:border-violet-400/50" />
-                                <div className="absolute top-1/2 right-0 w-4 border-t border-white/20 translate-x-full transition-colors hover:border-violet-400/50" />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Final */}
-                    <div className="flex flex-col items-center flex-shrink-0">
-                        <div className="mb-6 flex items-center justify-center w-full px-5 py-2 rounded-full border border-amber-500/30 bg-amber-500/10 shadow-[0_0_20px_rgba(251,191,36,0.15)] relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent translate-x-[-100%] animate-[shimmer_3s_infinite]" />
-                            <Trophy size={16} className="text-amber-400 mr-2 relative z-10" />
-                            <span className="text-sm font-display font-black tracking-wide text-amber-400 relative z-10">
-                                La Gran Final
-                            </span>
-                        </div>
-                        <div className="flex flex-col items-center justify-center flex-1 w-full" style={{ paddingLeft: '16px' }}>
-                            <div className="w-[220px]">
-                                <BracketMatchCard match={finalDisplay[0]} sportName={sportName} />
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             {/* Tercer Puesto (Separate section below) */}
             {hasTercer && (
-                <div className="max-w-[260px] mx-auto mt-12 bg-black/20 p-6 rounded-[2rem] border border-white/5 shadow-xl flex flex-col items-center">
-                    <div className="mb-5 flex items-center justify-center w-full px-4 py-2 rounded-full border border-orange-500/20 bg-orange-500/5">
-                        <span className="text-sm font-display font-black tracking-wide text-orange-400/80">
+                <div className="max-w-[280px] mx-auto mt-16 bg-black/40 p-8 rounded-[3rem] border border-white/5 shadow-3xl flex flex-col items-center backdrop-blur-xl group">
+                    <div className="mb-6 flex items-center justify-center w-full px-5 py-2.5 rounded-full border border-orange-500/20 bg-orange-500/5 shadow-inner">
+                        <span className="text-[11px] font-display font-black tracking-[0.2em] text-orange-400/80 uppercase">
                             🥉 Tercer Puesto
                         </span>
                     </div>
-                    <div className="w-[220px]">
-                        <BracketMatchCard match={rounds.tercer[0]} sportName={sportName} />
+                    <div className="w-[220px] group-hover:scale-105 transition-transform duration-500">
+                        <BracketMatchCard match={tercerPuesto[0]} sportName={sportName} />
                     </div>
                 </div>
             )}

@@ -49,6 +49,7 @@ export default function PartidosPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [importingTennis, setImportingTennis] = useState(false);
+    const [deletingTennis, setDeletingTennis] = useState(false);
     const [matchToDelete, setMatchToDelete] = useState<any>(null);
     const router = useRouter();
     const { isPeriodista } = useAuth();
@@ -125,17 +126,36 @@ export default function PartidosPage() {
         }
     };
 
+    const deleteTennisBrackets = async () => {
+        if (!confirm('⚠️ Esto eliminará TODOS los partidos de tenis creados.\n\nEsta acción no se puede deshacer. ¿Estás seguro?')) return;
+
+        setDeletingTennis(true);
+        try {
+            const res = await fetch('/api/admin/delete-tennis-bracket', { method: 'POST' });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error);
+
+            toast.success(`🗑️ ${data.deleted} partidos de tenis eliminados`);
+            await fetchPartidos();
+        } catch (err: any) {
+            toast.error(err.message || 'Error eliminando brackets');
+        } finally {
+            setDeletingTennis(false);
+        }
+    };
+
     const importTennisBrackets = async () => {
         if (!confirm('⚠️ Esto importará todos los partidos de 1ra ronda de los archivos Excel.\n\n¿Estás seguro?')) return;
-        
+
         setImportingTennis(true);
         try {
             const res = await fetch('/api/admin/import-tennis-bracket', { method: 'POST' });
             const data = await res.json();
-            
+
             if (!res.ok) throw new Error(data.error);
-            
-            toast.success(`✅ ${data.created} partidos de tenis creados`);
+
+            toast.success(`✅ ${data.created} partidos creados • ${data.rosterLinked} jugadores vinculados`);
             await fetchPartidos();
         } catch (err: any) {
             toast.error(err.message || 'Error importando brackets');
@@ -302,6 +322,25 @@ export default function PartidosPage() {
                                     {importingTennis ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} strokeWidth={3} />}
                                 </div>
                                 {importingTennis ? 'Importando...' : 'Brackets Tenis'}
+                            </div>
+                        </Button>
+                    </motion.div>
+
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <Button
+                            onClick={deleteTennisBrackets}
+                            disabled={deletingTennis}
+                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-red-600 via-red-500 to-rose-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(220,38,38,0.4)] border-0 relative overflow-hidden group/btn disabled:opacity-60"
+                        >
+                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                            <div className="relative flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-white/20">
+                                    {deletingTennis ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} strokeWidth={3} />}
+                                </div>
+                                {deletingTennis ? 'Eliminando...' : 'Limpiar Brackets'}
                             </div>
                         </Button>
                     </motion.div>
