@@ -191,93 +191,106 @@ export default function ClasificacionPage() {
                 </div>
 
                 {/* Filters Area */}
-                <div className="flex flex-col lg:flex-row gap-6 mb-12">
-                    {/* Sport Selector Tabs */}
-                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 w-full lg:w-auto">
-                        {BRACKET_SPORTS.map((sport) => {
-                            const isActive = selectedSport === sport;
-                            return (
-                                <button
-                                    key={sport}
-                                    onClick={() => setSelectedSport(sport)}
-                                    className={cn(
-                                        "group relative min-w-[110px] h-28 rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0",
-                                        isActive
-                                            ? "bg-white/5 border-violet-500/40 shadow-[0_0_30px_rgba(124,58,237,0.15)] scale-105"
-                                            : "bg-black/20 border-white/5 hover:border-white/20 hover:bg-white/5"
-                                    )}
-                                >
-                                    {/* Active Glow */}
-                                    {isActive && (
-                                        <div className="absolute inset-0 bg-gradient-to-b from-violet-600/20 to-transparent mix-blend-overlay" />
-                                    )}
-                                    
-                                    {/* 3D Icon */}
-                                    <div className="z-10 flex flex-col items-center gap-3">
-                                        <SportIcon 
-                                            sport={sport} 
-                                            size={isActive ? 42 : 32} 
-                                            className={cn(
-                                                "transition-all duration-500",
-                                                isActive ? "drop-shadow-[0_10px_15px_rgba(255,255,255,0.2)] scale-110" : "grayscale-[0.6] opacity-60 group-hover:grayscale-0 group-hover:opacity-100"
-                                            )} 
-                                        />
-                                        <span className={cn(
-                                            "text-[10px] font-black uppercase tracking-[0.2em] transition-colors",
-                                            isActive ? "text-white" : "text-white/40 group-hover:text-white/80"
-                                        )}>
-                                            {sport}
-                                        </span>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* Gender Selector (always visible now) */}
-                    <div className="flex lg:flex-row gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-                        <div className="flex lg:flex-col gap-2">
-                            {GENDERS.map((g) => {
-                                const isSelected = selectedGender === g.value;
+                <div className="flex flex-col gap-6 mb-12">
+                    {/* 1. Sport Selector Tabs */}
+                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 w-full group">
+                        <div className="flex gap-3 min-w-max px-1">
+                            {BRACKET_SPORTS.map((sport) => {
+                                const isActive = selectedSport === sport;
                                 return (
                                     <button
-                                        key={g.value}
-                                        onClick={() => setSelectedGender(g.value)}
+                                        key={sport}
+                                        onClick={() => setSelectedSport(sport)}
                                         className={cn(
-                                            "relative flex items-center justify-center gap-2.5 px-6 lg:px-8 py-3.5 rounded-full text-xs font-display font-black tracking-wide transition-all overflow-hidden border",
-                                            isSelected
-                                                ? "bg-white text-violet-950 border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-                                                : "bg-white/[0.03] border-white/10 text-white/50 hover:bg-white/10 hover:text-white/80"
+                                            "group/btn relative min-w-[110px] h-28 rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0",
+                                            isActive
+                                                ? "bg-white/5 border-violet-500/40 shadow-[0_0_30px_rgba(124,58,237,0.15)] scale-105"
+                                                : "bg-black/20 border-white/5 hover:border-white/20 hover:bg-white/5"
                                         )}
                                     >
-                                        <span className={cn("relative z-10 text-base leading-none transition-colors", isSelected ? "text-violet-600" : "")}>{g.icon}</span>
-                                        <span className="relative z-10 uppercase tracking-widest">{g.label}</span>
+                                        {/* Active Glow */}
+                                        {isActive && (
+                                            <div className="absolute inset-0 bg-gradient-to-b from-violet-600/20 to-transparent mix-blend-overlay" />
+                                        )}
+                                        
+                                        {/* 3D Icon */}
+                                        <div className="z-10 flex flex-col items-center gap-3">
+                                            <SportIcon 
+                                                sport={sport} 
+                                                size={isActive ? 42 : 32} 
+                                                className={cn(
+                                                    "transition-all duration-500",
+                                                    isActive ? "drop-shadow-[0_10px_15px_rgba(255,255,255,0.2)] scale-110" : "grayscale-[0.6] opacity-60 group-hover/btn:grayscale-0 group-hover/btn:opacity-100"
+                                                )} 
+                                            />
+                                            <span className={cn(
+                                                "text-[10px] font-black uppercase tracking-[0.2em] transition-colors",
+                                                isActive ? "text-white" : "text-white/40 group-hover/btn:text-white/80"
+                                            )}>
+                                                {sport}
+                                            </span>
+                                        </div>
                                     </button>
                                 );
                             })}
                         </div>
+                    </div>
 
-                        {isTenis && (
-                            <div className="flex lg:flex-col gap-2">
-                                {CATEGORIES.map((c: { label: string, value: string }) => {
-                                    const isSelected = selectedCategory === c.value;
+                    {/* 2. Gender & Level Selectors (Mobile optimized horizontal row) */}
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                        {/* Mobile scroll hint */}
+                        <div className="flex sm:hidden items-center justify-between mb-3 px-2">
+                            <span className="text-[9px] font-black uppercase text-white/20 tracking-[0.3em]">Opciones de categoría</span>
+                            <span className="text-[9px] font-bold text-violet-400/50 italic">Desliza ↔</span>
+                        </div>
+
+                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-1 -mx-4 sm:mx-0 px-4 sm:px-0">
+                            <div className="flex gap-2 shrink-0">
+                                {GENDERS.map((g) => {
+                                    const isSelected = selectedGender === g.value;
                                     return (
                                         <button
-                                            key={c.value}
-                                            onClick={() => setSelectedCategory(c.value)}
+                                            key={g.value}
+                                            onClick={() => setSelectedGender(g.value)}
                                             className={cn(
-                                                "relative flex items-center justify-center gap-2.5 px-6 lg:px-8 py-3.5 rounded-full text-xs font-display font-black tracking-wide transition-all overflow-hidden border uppercase",
+                                                "relative flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-full text-xs font-display font-black tracking-wide transition-all overflow-hidden border whitespace-nowrap",
                                                 isSelected
-                                                    ? "bg-emerald-500 text-white border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
-                                                    : "bg-white/[0.03] border-white/10 text-white/50 hover:bg-white/10 hover:text-white/80"
+                                                    ? "bg-white text-violet-950 border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105"
+                                                    : "bg-white/[0.03] border-white/10 text-white/50 hover:bg-white/10 hover:text-white"
                                             )}
                                         >
-                                            <span className="relative z-10 tracking-widest">{c.label}</span>
+                                            <span className={cn("relative z-10 text-base leading-none", isSelected ? "text-violet-600" : "text-white/40")}>{g.icon}</span>
+                                            <span className="relative z-10 uppercase tracking-widest">{g.label}</span>
                                         </button>
                                     );
                                 })}
                             </div>
-                        )}
+
+                            {/* Separator line on mobile if tennis */}
+                            {isTenis && <div className="w-px bg-white/10 my-2 shrink-0 h-8 self-center" />}
+
+                            {isTenis && (
+                                <div className="flex gap-2 shrink-0">
+                                    {CATEGORIES.map((c) => {
+                                        const isSelected = selectedCategory === c.value;
+                                        return (
+                                            <button
+                                                key={c.value}
+                                                onClick={() => setSelectedCategory(c.value)}
+                                                className={cn(
+                                                    "relative flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-full text-xs font-display font-black tracking-wide transition-all overflow-hidden border uppercase whitespace-nowrap",
+                                                    isSelected
+                                                        ? "bg-emerald-500 text-white border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-105"
+                                                        : "bg-white/[0.03] border-white/10 text-white/50 hover:bg-white/10 hover:text-white"
+                                                )}
+                                            >
+                                                <span className="relative z-10 tracking-widest">{c.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
