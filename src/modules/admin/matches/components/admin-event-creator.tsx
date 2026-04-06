@@ -16,6 +16,14 @@ interface AdminEventCreatorProps {
   disciplinaName: string;
 }
 
+const StepBadge = ({ n, active, sportColor }: { n: number, active: boolean, sportColor: string }) => (
+  <span className="w-5 h-5 rounded-lg flex items-center justify-center text-[9px] font-black border transition-all"
+    style={active
+      ? { background: sportColor, color: '#000', borderColor: sportColor }
+      : { background: `${sportColor}10`, borderColor: `${sportColor}20`, color: `${sportColor}60` }
+    }>{n}</span>
+);
+
 export const AdminEventCreator = ({
   match,
   actions,
@@ -39,8 +47,7 @@ export const AdminEventCreator = ({
   const isVolleyball = disciplinaName === 'Voleibol';
   const isFutbol = disciplinaName === 'Fútbol';
   const needsPlayer = !isIndividualSport;
-  const isAsyncMatch = match.marcador_detalle?.modo_registro === 'asincronico';
-  const playerOptional = isVolleyball || isAsyncMatch || isFutbol;
+  const playerOptional = isVolleyball;
 
   // Players expelled by red card — cannot receive more events
   const expelledPlayerIds = new Set(
@@ -75,28 +82,7 @@ export const AdminEventCreator = ({
     }
   };
 
-  const isMatchOver = match.estado === 'finalizado' || match.estado === 'cancelado';
-
   const step = !nuevoEvento.tipo ? 1 : !nuevoEvento.equipo ? 2 : 3;
-
-  const StepBadge = ({ n, active }: { n: number, active: boolean }) => (
-    <span className="w-5 h-5 rounded-lg flex items-center justify-center text-[9px] font-black border transition-all"
-      style={active
-        ? { background: sportColor, color: '#000', borderColor: sportColor }
-        : { background: `${sportColor}10`, borderColor: `${sportColor}20`, color: `${sportColor}60` }
-      }>{n}</span>
-  );
-
-  if (isMatchOver) {
-    return (
-      <div className="rounded-[2rem] border overflow-hidden relative flex items-center justify-center py-8 px-6"
-        style={{ borderColor: `${sportColor}10`, background: `linear-gradient(to bottom, ${sportColor}06, transparent)` }}>
-        <p className="text-sm text-white/40 text-center">
-          Partido finalizado — no se pueden registrar más eventos.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="rounded-[2rem] border overflow-hidden backdrop-blur-sm relative"
@@ -127,7 +113,7 @@ export const AdminEventCreator = ({
         {/* Step 1: Action */}
         <div>
           <p className="text-[9px] font-black uppercase text-white/25 mb-3 tracking-[0.25em] flex items-center gap-2">
-            <StepBadge n={1} active={step === 1} /> Acción
+            <StepBadge n={1} active={step === 1} sportColor={sportColor} /> Acción
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {actions.map(action => (
@@ -152,7 +138,7 @@ export const AdminEventCreator = ({
         {/* Step 2: Team */}
         <div className={cn("transition-all duration-300", nuevoEvento.tipo ? "opacity-100" : "opacity-20 pointer-events-none blur-[1px]")}>
           <p className="text-[9px] font-black uppercase text-white/25 mb-3 tracking-[0.25em] flex items-center gap-2">
-            <StepBadge n={2} active={step === 2} /> Competidor
+            <StepBadge n={2} active={step === 2} sportColor={sportColor} /> Competidor
           </p>
           <div className="grid grid-cols-2 gap-3">
             {['equipo_a', 'equipo_b'].map(tid => (
@@ -183,7 +169,7 @@ export const AdminEventCreator = ({
           <div className={cn("transition-all duration-300", nuevoEvento.equipo ? "opacity-100" : "opacity-20 pointer-events-none blur-[1px]")}>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
               <p className="text-[9px] font-black uppercase text-white/25 tracking-[0.25em] flex items-center gap-2">
-                <StepBadge n={3} active={step === 3} /> Jugador {playerOptional && <span className="text-white/15 normal-case tracking-normal ml-1">(opcional)</span>}
+                <StepBadge n={3} active={step === 3} sportColor={sportColor} /> Jugador {playerOptional && <span className="text-white/15 normal-case tracking-normal ml-1">(opcional)</span>}
               </p>
               <div className="flex items-center gap-1.5 w-full sm:w-auto">
                 {playerOptional && (

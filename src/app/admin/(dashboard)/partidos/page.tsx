@@ -44,9 +44,12 @@ export default function PartidosPage() {
     const [filter, setFilter] = useState('todos');
     const [sportFilter, setSportFilter] = useState('todos');
     const [genderFilter, setGenderFilter] = useState('todos');
+    const [categoriaFilter, setCategoriaFilter] = useState('todos');
     const [searchQuery, setSearchQuery] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [importingTennis, setImportingTennis] = useState(false);
+    const [deletingTennis, setDeletingTennis] = useState(false);
     const [matchToDelete, setMatchToDelete] = useState<any>(null);
     const router = useRouter();
     const { isPeriodista } = useAuth();
@@ -123,12 +126,53 @@ export default function PartidosPage() {
         }
     };
 
+    const deleteTennisBrackets = async () => {
+        if (!confirm('⚠️ Esto eliminará TODOS los partidos de tenis creados.\n\nEsta acción no se puede deshacer. ¿Estás seguro?')) return;
+
+        setDeletingTennis(true);
+        try {
+            const res = await fetch('/api/admin/delete-tennis-bracket', { method: 'POST' });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error);
+
+            toast.success(`🗑️ ${data.deleted} partidos de tenis eliminados`);
+            await fetchPartidos();
+        } catch (err: any) {
+            toast.error(err.message || 'Error eliminando brackets');
+        } finally {
+            setDeletingTennis(false);
+        }
+    };
+
+    const importTennisBrackets = async () => {
+        if (!confirm('⚠️ Esto importará todos los partidos de 1ra ronda de los archivos Excel.\n\n¿Estás seguro?')) return;
+
+        setImportingTennis(true);
+        try {
+            const res = await fetch('/api/admin/import-tennis-bracket', { method: 'POST' });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error);
+
+            toast.success(`✅ ${data.created} partidos creados • ${data.rosterLinked} jugadores vinculados`);
+            await fetchPartidos();
+        } catch (err: any) {
+            toast.error(err.message || 'Error importando brackets');
+        } finally {
+            setImportingTennis(false);
+        }
+    };
+
+    const showCategoriaFilter = ['Tenis', 'Tenis de Mesa'].includes(sportFilter);
+
     const filteredPartidos = partidos.filter(p => {
         if (filter === 'en_curso' && p.estado !== 'en_curso') return false;
         if (filter === 'programados' && p.estado !== 'programado') return false;
         if (filter === 'finalizados' && p.estado !== 'finalizado') return false;
         if (sportFilter !== 'todos' && p.disciplinas?.name !== sportFilter) return false;
         if (genderFilter !== 'todos' && (p.genero || 'masculino') !== genderFilter) return false;
+        if (categoriaFilter !== 'todos' && (p.categoria || null) !== categoriaFilter) return false;
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             const dispA = getDisplayName(p, 'a');
@@ -262,6 +306,44 @@ export default function PartidosPage() {
                         </Button>
                     </motion.div>
                 </div>
+
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <Button
+                            onClick={importTennisBrackets}
+                            disabled={importingTennis}
+                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-lime-600 via-lime-500 to-green-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(132,204,22,0.4)] border-0 relative overflow-hidden group/btn disabled:opacity-60"
+                        >
+                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                            <div className="relative flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-white/20">
+                                    {importingTennis ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} strokeWidth={3} />}
+                                </div>
+                                {importingTennis ? 'Importando...' : 'Brackets Tenis'}
+                            </div>
+                        </Button>
+                    </motion.div>
+
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <Button
+                            onClick={deleteTennisBrackets}
+                            disabled={deletingTennis}
+                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-red-600 via-red-500 to-rose-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(220,38,38,0.4)] border-0 relative overflow-hidden group/btn disabled:opacity-60"
+                        >
+                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                            <div className="relative flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-white/20">
+                                    {deletingTennis ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} strokeWidth={3} />}
+                                </div>
+                                {deletingTennis ? 'Eliminando...' : 'Limpiar Brackets'}
+                            </div>
+                        </Button>
+                    </motion.div>
             </motion.div>
              {/* ─── STATS CARDS "Tech Pods" ─── */}
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
@@ -356,7 +438,7 @@ export default function PartidosPage() {
                             {uniqueSports.map(sport => (
                                 <button
                                     key={sport}
-                                    onClick={() => setSportFilter(sportFilter === sport ? 'todos' : sport)}
+                                    onClick={() => { setSportFilter(sportFilter === sport ? 'todos' : sport); setCategoriaFilter('todos'); }}
                                     className={cn(
                                         "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-500 whitespace-nowrap flex items-center gap-2",
                                         sportFilter === sport
@@ -391,6 +473,31 @@ export default function PartidosPage() {
                                 </button>
                             ))}
                         </div>
+
+                        {/* Categoria Filter — solo visible para Tenis, T. Mesa y Natación */}
+                        {showCategoriaFilter && (
+                            <div className="flex gap-1.5 p-1.5 rounded-[1.25rem] bg-black/40 border border-lime-500/20 shrink-0">
+                                {[
+                                    { value: 'todos', label: 'Todos' },
+                                    { value: 'principiante', label: 'Prim.' },
+                                    { value: 'intermedio', label: 'Inter.' },
+                                    { value: 'avanzado', label: 'Avanz.' },
+                                ].map(c => (
+                                    <button
+                                        key={c.value}
+                                        onClick={() => setCategoriaFilter(c.value)}
+                                        className={cn(
+                                            "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap",
+                                            categoriaFilter === c.value
+                                                ? "bg-lime-600 text-white shadow-lg shadow-lime-500/20"
+                                                : "text-zinc-500 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        {c.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </motion.div>

@@ -15,6 +15,7 @@ export type Partido = {
   estado: 'programado' | 'en_curso' | 'finalizado' | 'cancelado';
   lugar?: string;
   genero?: string;
+  categoria?: string;
   // Las páginas UI usan acceso dinámico (md.goles_a ?? md.total_a, etc.)
   // El union estricto MarcadorDetalle se usa en modules/sports para el engine.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

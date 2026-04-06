@@ -170,10 +170,11 @@ export function MedalLeaderboard() {
             }
 
             // 2. Race-specific logic (Swimming / Athletics)
-            if (det.tipo === 'carrera' && det.resultados) {
-                const results = det.resultados as any[];
+            // RaceControl saves to `participantes`; legacy data may use `resultados`
+            if (det.tipo === 'carrera' && (det.participantes || det.resultados)) {
+                const results = (det.participantes || det.resultados) as any[];
                 results.forEach(res => {
-                    const possibleName = res.equipo_nombre || res.equipo || res.delegacion;
+                    const possibleName = res.equipo_nombre || res.equipo || res.carrera || res.delegacion;
                     if (!possibleName) return;
                     const matchedCareer = getMatchedCareer(possibleName);
 

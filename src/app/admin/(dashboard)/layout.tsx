@@ -105,6 +105,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             { name: "Sorteo", href: "/admin/sorteo", icon: Shuffle },
             { name: "Inscripciones", href: "/admin/inscripciones", icon: ClipboardList },
             { name: "Directorio", href: "/admin/directorio", icon: BookOpen },
+            { name: "Jugadores", href: "/admin/jugadores", icon: Users },
             { name: "Importar", href: "/admin/importar", icon: Upload },
             ...(isAdmin ? [{ name: "Usuarios", href: "/admin/usuarios", icon: Users }] : []),
         ];

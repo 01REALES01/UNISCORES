@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Upload, CheckCircle, XCircle, AlertTriangle, FileSpreadsheet, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
@@ -344,13 +345,13 @@ export default function ImportarPage() {
                     </div>
                 )}
                 <div className="flex flex-col gap-2">
-                    <a
+                    <Link
                         href="/admin/partidos"
                         className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 text-sm transition-colors"
                     >
                         <ExternalLink size={14} />
                         Ver partidos
-                    </a>
+                    </Link>
                     <button
                         onClick={() => { setStep('upload'); setReview(null); setCommitResult(null); }}
                         className="px-4 py-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 text-sm font-bold transition-colors"

@@ -18,12 +18,18 @@ export class VoleibolService extends BaseSportService {
   getCurrentScore(detalle: ScoreDetail): ScoreResult {
     const d = detalle as any;
     const set = d.set_actual || 1;
+    const setsA = d.sets_total_a ?? d.sets_a ?? 0;
+    const setsB = d.sets_total_b ?? d.sets_b ?? 0;
+    const s = d.sets?.[set] || {};
+    const pA = s.puntos_a ?? d.puntos_a ?? d.total_a ?? d.goles_a ?? 0;
+    const pB = s.puntos_b ?? d.puntos_b ?? d.total_b ?? d.goles_b ?? 0;
+
     return {
-      scoreA: d.sets?.[set]?.puntos_a || 0,
-      scoreB: d.sets?.[set]?.puntos_b || 0,
-      subScoreA: d.sets_a || 0,
-      subScoreB: d.sets_b || 0,
-      extra: `Set ${set}`,
+      scoreA: pA,
+      scoreB: pB,
+      subScoreA: setsA,
+      subScoreB: setsB,
+      extra: `${setsA}–${setsB} · Set ${set}`,
       subLabel: 'Sets',
     };
   }
@@ -88,9 +94,34 @@ export class VoleibolService extends BaseSportService {
         });
     }
 
-    // 🛡️ Ensure fields for DB Migration
     d.sets_a = setsA;
     d.sets_b = setsB;
+    d.sets_total_a = setsA;
+    d.sets_total_b = setsB;
+
+    // Sincronizar el set actual a la raíz (facilidad de lectura y compatibilidad)
+    const currentSet = d.set_actual || 1;
+    const cur = d.sets?.[currentSet] || { puntos_a: 0, puntos_b: 0 };
+    d.puntos_a = cur.puntos_a || 0;
+    d.puntos_b = cur.puntos_b || 0;
+    d.total_a = cur.puntos_a || 0;
+    d.total_b = cur.puntos_b || 0;
+    d.goles_a = cur.puntos_a || 0; // alias
+    d.goles_b = cur.puntos_b || 0;
+    const pA = cur.puntos_a || 0;
+    const pB = cur.puntos_b || 0;
+    const minPts = currentSet === 5 ? 15 : 25;
+    const setWon = (pA >= minPts && pA - pB >= 2) || (pB >= minPts && pB - pA >= 2);
+    const matchOver = setsA >= 3 || setsB >= 3;
+
+    if (!matchOver && setWon && currentSet < 5) {
+      d.set_actual = currentSet + 1;
+      if (!d.sets) d.sets = {};
+      if (!d.sets[d.set_actual]) {
+        d.sets[d.set_actual] = { puntos_a: 0, puntos_b: 0 };
+      }
+    }
+
     return d;
   }
 

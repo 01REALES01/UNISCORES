@@ -28,7 +28,9 @@ export const LUGARES_OLIMPICOS = [
     'Cancha de Fútbol',
     'Cancha #1',
     'Cancha #2',
-    'Piscina Centro Deportivo'
+    'Piscina Centro Deportivo',
+    'Cancha de Tenis',
+    'Baambu'
 ];
 
 export const CARRERAS_UNINORTE = [
@@ -46,7 +48,9 @@ export const CARRERAS_UNINORTE = [
     'Ingeniería Civil',
     'Ingeniería de Sistemas',
     'Ingeniería Eléctrica',
+    'Ingeniería Electrónica',
     'Ingeniería Industrial',
+    'Ingeniería Biomédica',
     'Ingeniería Mecánica',
     'Lenguas Modernas y Cultura',
     'Medicina',
@@ -59,105 +63,125 @@ export const CARRERAS_UNINORTE = [
     'Egresados'
 ];
 
+// ── Team name → carrera names mapping (from Excel fixture file) ──────────────
+// Some teams are combined (multiple programs playing together).
+// Each member carrera receives full Olympic points independently.
+export const EQUIPO_NOMBRE_TO_CARRERAS: Record<string, string[]> = {
+    'DCPRI':                               ['Derecho', 'Ciencia Política y Gobierno', 'Relaciones Internacionales'],
+    'INGENIERÍA MECÁNICA':                 ['Ingeniería Mecánica'],
+    'MEDICINA':                            ['Medicina'],
+    'INGENIERÍA INDUSTRIAL':               ['Ingeniería Industrial'],
+    'INGENIERÍA CIVIL':                    ['Ingeniería Civil'],
+    'INGENIERÍA DE SISTEMAS':              ['Ingeniería de Sistemas'],
+    'ING. ELÉCTRICA/CIENCIA DATOS':        ['Ingeniería Eléctrica', 'Ingeniería Electrónica', 'Ciencia de Datos'],
+    'INGENIERÍA ELÉCTRICA/CIENCIA DATOS':  ['Ingeniería Eléctrica', 'Ingeniería Electrónica', 'Ciencia de Datos'],
+    'ING.A ELÉCTRICA/CIENCIA DATOS':       ['Ingeniería Eléctrica', 'Ingeniería Electrónica', 'Ciencia de Datos'],
+    'ING. ELÉCTRICA':                      ['Ingeniería Eléctrica', 'Ingeniería Electrónica'],
+    'INGENIERÍA ELÉCTRICA':                ['Ingeniería Eléctrica', 'Ingeniería Electrónica'],
+    'COM. SOCIAL/PSICOLOGÍA':              ['Comunicación Social y Periodismo', 'Psicología'],
+    'ESCUELA DE NEGOCIOS':                 ['Administración de Empresas', 'Contaduría Pública', 'Negocios Internacionales'],
+    'ARQUITECTURA':                        ['Arquitectura'],
+};
+
 export const SPORT_EMOJI: Record<string, string> = {
     'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
     'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',
 };
 
-// Purple & Clean Design System - Brand Consistent Sport Styles
-export const SPORT_GRADIENT: Record<string, string> = {
-    'Fútbol': 'from-emerald-500/30 to-emerald-900/10',
-    'Baloncesto': 'from-orange-500/30 to-orange-900/10',
-    'Voleibol': 'from-indigo-500/30 to-indigo-900/10',
-    'Tenis': 'from-lime-500/30 to-lime-900/10',
-    'Tenis de Mesa': 'from-rose-500/30 to-rose-900/10',
-    'Ajedrez': 'from-violet-500/25 to-violet-900/10',
-    'Natación': 'from-cyan-500/30 to-cyan-900/10',
+// Olimpiadas 2026 - Clean Sport Styles (each sport has a unique color)
+export const SPORT_COLORS: Record<string, string> = {
+    'Fútbol': '#10B981',
+    'Baloncesto': '#F59E0B',
+    'Voleibol': '#F97316',
+    'Tenis': '#22D3EE',
+    'Tenis de Mesa': '#EC4899',
+    'Ajedrez': '#F5F5DC',
+    'Natación': '#3B82F6',
 };
 
 export const SPORT_SOFT_BG: Record<string, string> = {
     'Fútbol': 'bg-emerald-500/10',
-    'Baloncesto': 'bg-primary/10',
-    'Voleibol': 'bg-secondary/10',
-    'Tenis': 'bg-primary/5',
-    'Tenis de Mesa': 'bg-secondary/5',
-    'Ajedrez': 'bg-primary/20',
-    'Natación': 'bg-secondary/20',
+    'Baloncesto': 'bg-amber-500/10',
+    'Voleibol': 'bg-orange-500/10',
+    'Tenis': 'bg-cyan-500/10',
+    'Tenis de Mesa': 'bg-pink-500/10',
+    'Ajedrez': 'bg-white/10',
+    'Natación': 'bg-blue-500/10',
 };
 
 export const SPORT_ACCENT: Record<string, string> = {
-    'Fútbol': 'text-emerald-500',
-    'Baloncesto': 'text-primary',
-    'Voleibol': 'text-secondary',
-    'Tenis': 'text-primary/80',
-    'Tenis de Mesa': 'text-secondary/80',
-    'Ajedrez': 'text-primary',
-    'Natación': 'text-secondary',
+    'Fútbol': 'text-emerald-400',
+    'Baloncesto': 'text-amber-400',
+    'Voleibol': 'text-orange-400',
+    'Tenis': 'text-cyan-400',
+    'Tenis de Mesa': 'text-pink-400',
+    'Ajedrez': 'text-[#F5F5DC]',
+    'Natación': 'text-blue-400',
 };
 
 export const SPORT_BORDER: Record<string, string> = {
     'Fútbol': 'border-emerald-500/20',
-    'Baloncesto': 'border-primary/20',
-    'Voleibol': 'border-secondary/20',
-    'Tenis': 'border-primary/10',
-    'Tenis de Mesa': 'border-secondary/10',
-    'Ajedrez': 'border-primary/30',
-    'Natación': 'border-secondary/30',
+    'Baloncesto': 'border-amber-500/20',
+    'Voleibol': 'border-orange-500/20',
+    'Tenis': 'border-cyan-500/20',
+    'Tenis de Mesa': 'border-pink-500/20',
+    'Ajedrez': 'border-white/20',
+    'Natación': 'border-blue-500/20',
 };
-
-export const SPORT_GLOW: Record<string, string> = {
-    'Fútbol': 'hover:shadow-lg hover:shadow-emerald-500/10',
-    'Baloncesto': 'hover:shadow-lg hover:shadow-primary-500/10',
-    'Voleibol': 'hover:shadow-lg hover:shadow-secondary-500/10',
-    'Tenis': 'hover:shadow-lg hover:shadow-primary-500/5',
-    'Tenis de Mesa': 'hover:shadow-lg hover:shadow-secondary-500/5',
-    'Ajedrez': 'hover:shadow-lg hover:shadow-primary-500/15',
-    'Natación': 'hover:shadow-lg hover:shadow-secondary-500/15',
-};
-
-
 
 export const SPORT_LIVE_TEXT: Record<string, string> = {
-    'Fútbol': 'text-emerald-500',
-    'Baloncesto': 'text-primary',
-    'Voleibol': 'text-secondary',
-    'Tenis': 'text-primary',
-    'Tenis de Mesa': 'text-secondary',
-    'Ajedrez': 'text-primary',
-    'Natación': 'text-secondary',
-    'default': 'text-primary'
+    'Fútbol': 'text-emerald-400',
+    'Baloncesto': 'text-amber-400',
+    'Voleibol': 'text-orange-400',
+    'Tenis': 'text-cyan-400',
+    'Tenis de Mesa': 'text-pink-400',
+    'Ajedrez': 'text-white',
+    'Natación': 'text-blue-400',
+    'default': 'text-violet-300'
 };
 
 export const SPORT_LIVE_BG_WRAPPER: Record<string, string> = {
     'Fútbol': 'bg-emerald-500/10',
-    'Baloncesto': 'bg-primary/10',
-    'Voleibol': 'bg-secondary/10',
-    'Tenis': 'bg-primary/5',
-    'Tenis de Mesa': 'bg-secondary/5',
-    'Ajedrez': 'bg-primary/15',
-    'Natación': 'bg-secondary/15',
-    'default': 'bg-primary/10'
+    'Baloncesto': 'bg-amber-500/10',
+    'Voleibol': 'bg-orange-500/10',
+    'Tenis': 'bg-cyan-500/10',
+    'Tenis de Mesa': 'bg-pink-500/10',
+    'Ajedrez': 'bg-white/10',
+    'Natación': 'bg-blue-500/10',
+    'default': 'bg-violet-500/10'
 };
 
 export const SPORT_LIVE_BAR: Record<string, string> = {
     'Fútbol': 'bg-emerald-500',
-    'Baloncesto': 'bg-primary',
-    'Voleibol': 'bg-secondary',
-    'Tenis': 'bg-primary',
-    'Tenis de Mesa': 'bg-secondary',
-    'Ajedrez': 'bg-primary',
-    'Natación': 'bg-secondary',
-    'default': 'bg-primary'
+    'Baloncesto': 'bg-amber-500',
+    'Voleibol': 'bg-orange-500',
+    'Tenis': 'bg-cyan-500',
+    'Tenis de Mesa': 'bg-pink-500',
+    'Ajedrez': 'bg-white',
+    'Natación': 'bg-blue-500',
+    'default': 'bg-violet-500'
 };
 
-export const SPORT_COLORS: Record<string, string> = {
-    'Fútbol': '#10b981',
-    'Baloncesto': '#6D28D9',
-    'Voleibol': '#10b981',
-    'Tenis': '#6D28D9',
-    'Tenis de Mesa': '#10b981',
-    'Ajedrez': '#6D28D9',
-    'Natación': '#10b981',
+export const SPORT_GLOW: Record<string, string> = {
+    'Fútbol': 'hover:shadow-lg hover:shadow-emerald-500/20',
+    'Baloncesto': 'hover:shadow-lg hover:shadow-amber-500/20',
+    'Voleibol': 'hover:shadow-lg hover:shadow-orange-500/20',
+    'Tenis': 'hover:shadow-lg hover:shadow-cyan-500/20',
+    'Tenis de Mesa': 'hover:shadow-lg hover:shadow-pink-500/20',
+    'Ajedrez': 'hover:shadow-lg hover:shadow-white/20',
+    'Natación': 'hover:shadow-lg hover:shadow-blue-500/20',
+    'default': 'hover:shadow-lg hover:shadow-primary/20'
+};
+
+export const SPORT_GRADIENT: Record<string, string> = {
+    'Fútbol': 'from-emerald-500/20 to-transparent',
+    'Baloncesto': 'from-amber-500/20 to-transparent',
+    'Voleibol': 'from-orange-500/20 to-transparent',
+    'Tenis': 'from-cyan-500/20 to-transparent',
+    'Tenis de Mesa': 'from-pink-500/20 to-transparent',
+    'Ajedrez': 'from-white/20 to-transparent',
+    'Natación': 'from-blue-500/20 to-transparent',
+    'default': 'from-primary/10 to-transparent'
 };
 
 export const BRAND_VALUES = [

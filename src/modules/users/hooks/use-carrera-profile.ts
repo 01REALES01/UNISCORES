@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { supabase } from "@/lib/supabase";
 import { useEffect } from "react";
 import { computeCareerStats, CareerStats } from "@/lib/sport-helpers";
+import { EQUIPO_NOMBRE_TO_CARRERAS } from "@/lib/constants";
 
 // ─── Column Selections ──────────────────────────────────────────────────────
 
@@ -106,10 +107,15 @@ async function fetchCarreraProfile(carreraId: number) {
     const stats = computeCareerStats(matches, carreraId);
 
     // 6. Fetch enrolled sports from delegaciones (carrera appears in carrera_ids[])
+    // Strategy: Also search by name for known Escuela de Negocios teams if current career is one of them.
+    const businessNames = ['ESCUELA DE NEGOCIOS', 'NEGOCIOS INT. / ADMÓN.'];
+    const businessCareerIds = [1, 6, 20];
+    const isBusiness = businessCareerIds.includes(carreraId);
+
     const { data: delegData } = await supabase
         .from('delegaciones')
         .select('id, disciplina_id, genero, nombre, carrera_ids, disciplinas(name)')
-        .contains('carrera_ids', [carreraId])
+        .or(`carrera_ids.cs.{${carreraId}}` + (isBusiness ? `,nombre.in.("${businessNames.join('","')}")` : ''))
         .not('disciplina_id', 'is', null)
         .not('genero', 'is', null);
 
@@ -121,13 +127,16 @@ async function fetchCarreraProfile(carreraId: number) {
     for (const d of (delegData || []) as any[]) {
         const dname = Array.isArray(d.disciplinas) ? d.disciplinas[0]?.name : d.disciplinas?.name ?? '';
         const key = `${d.disciplina_id}_${d.genero}`;
+        const memberCarreras = EQUIPO_NOMBRE_TO_CARRERAS[d.nombre] || [];
+        const isCombinedByConfig = memberCarreras.length > 1;
+
         const entry: DeporteInscrito = {
             delegacion_id: d.id,
             disciplina_id: d.disciplina_id,
             genero: d.genero,
             equipo_nombre: d.nombre,
             disciplina_name: dname,
-            isCombined: (d.carrera_ids?.length ?? 0) > 1,
+            isCombined: (d.carrera_ids?.length ?? 0) > 1 || isCombinedByConfig,
         };
         // Prefer combined-team names (longer / different from the carrera name)
         if (!deduped.has(key) || d.nombre !== carrera.nombre) {

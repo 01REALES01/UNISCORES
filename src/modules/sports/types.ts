@@ -80,6 +80,10 @@ export type ScoreDetail = MarcadorDetalle | Record<string, any>;
 export type ScoreResult = {
   scoreA: number;
   scoreB: number;
+  /** Display label override for scoreA (e.g. tennis: "15", "30", "40", "DEUCE") */
+  labelA?: string;
+  /** Display label override for scoreB */
+  labelB?: string;
   /** Puntos del sub-período actual (set, cuarto, tiempo) */
   subScoreA?: number;
   subScoreB?: number;

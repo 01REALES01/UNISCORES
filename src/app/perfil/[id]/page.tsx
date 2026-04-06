@@ -50,6 +50,8 @@ export default function PublicProfilePage() {
     const [followedProfiles, setFollowedProfiles] = useState<any[]>([]);
     const [followedCareers, setFollowedCareers] = useState<any[]>([]);
     const [friendsCount, setFriendsCount] = useState(0);
+    const [athleteDisciplinas, setAthleteDisciplinas] = useState<any[]>([]);
+    const [athleteTeams, setAthleteTeams] = useState<any[]>([]);
     const [detailedStats, setDetailedStats] = useState<any>({
         goals: 0,
         pts3: 0,
@@ -60,6 +62,8 @@ export default function PublicProfilePage() {
         fouls: 0,
         totalEvents: 0
     });
+    const [selectedSportId, setSelectedSportId] = useState<string | null>(null);
+    const [sportStatsMap, setSportStatsMap] = useState<Record<string, any>>({});
 
     const renderRoleCard = (role: string) => {
         const roleLower = role.toLowerCase();
@@ -150,6 +154,51 @@ export default function PublicProfilePage() {
             if (isAthlete) {
                 fetchHistory(p.id);
                 fetchDetailedStats(p.id);
+                // Fetch multi-sport disciplines
+                const { data: pdData } = await supabase
+                    .from('profile_disciplinas')
+                    .select('disciplina_id, disciplinas(id, name)')
+                    .eq('profile_id', p.id);
+                if (pdData) {
+                    const deps = pdData.map((r: any) => (Array.isArray(r.disciplinas) ? r.disciplinas[0] : r.disciplinas)).filter(Boolean);
+                    setAthleteDisciplinas(deps);
+                    if (deps.length > 0 && !selectedSportId) {
+                        setSelectedSportId(deps[0].id);
+                    } else if (p.athlete_disciplina_id && !selectedSportId) {
+                        setSelectedSportId(p.athlete_disciplina_id);
+                    }
+                }
+                // Fetch athlete's teams/delegations
+                if (p.carreras_ids?.length) {
+                    const discIds = (pdData || []).map((r: any) => r.disciplina_id);
+                    if (discIds.length === 0 && p.athlete_disciplina_id) discIds.push(p.athlete_disciplina_id);
+                    if (discIds.length > 0) {
+                        // Get athlete's official genero from linked jugador rows, avoiding nulls
+                        const { data: jugadorRow } = await supabase
+                            .from('jugadores')
+                            .select('genero')
+                            .eq('profile_id', p.id)
+                            .not('genero', 'is', null)
+                            .order('id', { ascending: false }) // Prefer most recent
+                            .limit(1)
+                            .maybeSingle();
+                        const athleteGenero = jugadorRow?.genero; // 'masculino' | 'femenino' | null
+
+                        let delegQuery = supabase
+                            .from('delegaciones')
+                            .select('id, nombre, genero, carrera_ids, disciplina_id, disciplinas(name)')
+                            .in('disciplina_id', discIds)
+                            .overlaps('carrera_ids', p.carreras_ids);
+
+                        // Filter by gender: show matching gender + mixto; skip filter if unknown
+                        if (athleteGenero && athleteGenero !== 'mixto') {
+                            delegQuery = delegQuery.in('genero', [athleteGenero, 'mixto']);
+                        }
+
+                        const { data: delegaciones } = await delegQuery;
+                        if (delegaciones) setAthleteTeams(delegaciones);
+                    }
+                }
             }
 
             const isOwnProfile = p.id === user?.id;
@@ -205,31 +254,34 @@ export default function PublicProfilePage() {
             // events aggregation: iterate over all events associated with any jugador linked to this profile
             const { data: events } = await supabase
                 .from('eventos')
-                .select('tipo_evento, jugadores!inner(profile_id)')
+                .select('tipo_evento, jugador_id, jugadores!inner(profile_id, disciplina_id)')
                 .eq('jugadores.profile_id', id);
 
-            const stats = {
-                goals: 0,
-                pts3: 0,
-                pts2: 0,
-                pts1: 0,
-                yellowCards: 0,
-                redCards: 0,
-                fouls: 0,
-                totalEvents: events?.length || 0
-            };
+            const statsMap: Record<string, any> = {};
 
             events?.forEach(ev => {
+                const discId = (ev.jugadores as any)?.disciplina_id;
+                if (!discId) return;
+
+                if (!statsMap[discId]) {
+                    statsMap[discId] = {
+                        goals: 0, pts3: 0, pts2: 0, pts1: 0,
+                        yellowCards: 0, redCards: 0, fouls: 0, totalEvents: 0
+                    };
+                }
+
+                const s = statsMap[discId];
                 const type = ev.tipo_evento.toLowerCase();
-                if (type === 'gol' || type === 'anotacion') stats.goals++;
-                if (type === 'punto_3' || type.includes('triple')) stats.pts3++;
-                if (type === 'punto_2' || type.includes('doble')) stats.pts2++;
-                if (type === 'punto_1' || type.includes('libre')) stats.pts1++;
-                if (type.includes('amarilla')) stats.yellowCards++;
-                if (type.includes('roja')) stats.redCards++;
-                if (type === 'falta') stats.fouls++;
+                s.totalEvents++;
+                if (type === 'gol' || type === 'anotacion') s.goals++;
+                if (type === 'punto_3' || type.includes('triple')) s.pts3++;
+                if (type === 'punto_2' || type.includes('doble')) s.pts2++;
+                if (type === 'punto_1' || type.includes('libre')) s.pts1++;
+                if (type.includes('amarilla')) s.yellowCards++;
+                if (type.includes('roja')) s.redCards++;
+                if (type === 'falta') s.fouls++;
             });
-            setDetailedStats(stats);
+            setSportStatsMap(prev => ({ ...prev, ...statsMap }));
         } catch (err) {
             console.error("Error fetching detailed stats:", err);
         }
@@ -245,13 +297,12 @@ export default function PublicProfilePage() {
                     equipo:equipo_a_or_b,
                     partidos!inner(
                         id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
-                        disciplinas(name)
+                        disciplina_id, disciplinas(name)
                     ),
-                    jugadores!inner(profile_id)
+                    jugadores!inner(profile_id, disciplina_id)
                 `)
                 .eq('jugadores.profile_id', id)
-                .order('partido_id', { ascending: false })
-                .limit(5);
+                .order('partido_id', { ascending: false });
 
 
             // Second, get individual matches directly from partidos
@@ -259,43 +310,83 @@ export default function PublicProfilePage() {
                 .from('partidos')
                 .select(`
                     id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
-                    disciplinas(name)
+                    disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id
                 `)
                 .or(`athlete_a_id.eq.${id},athlete_b_id.eq.${id}`)
-                .order('fecha', { ascending: false })
-                .limit(5);
+                .order('fecha', { ascending: false });
 
             let allMatches: any[] = [];
+            const winLossBySport: Record<string, { wins: number, losses: number }> = {};
 
             if (teamMatches && teamMatches.length > 0) {
-                const mappedTeam = teamMatches
-                    .filter((d: any) => d.partidos?.estado === 'finalizado' || d.partidos?.estado === 'en_curso')
-                    .map((d: any) => ({
-                        match_id: d.partidos.id,
-                        fecha: d.partidos.fecha,
-                        disciplina: d.partidos.disciplinas?.name,
-                        equipo_a: d.partidos.equipo_a,
-                        equipo_b: d.partidos.equipo_b,
-                        estado: d.partidos.estado,
-                        marcador_final: d.partidos.marcador_detalle
-                    }));
-                allMatches = [...allMatches, ...mappedTeam];
+                teamMatches.forEach((d: any) => {
+                    const p = d.partidos;
+                    const discId = p.disciplina_id;
+                    if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
+                    
+                    if (p.estado === 'finalizado') {
+                        const det = p.marcador_detalle || {};
+                        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
+                        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
+                        const side = d.equipo; // 'equipo_a' or 'equipo_b'
+                        
+                        if (side === 'equipo_a' && scoreA > scoreB) winLossBySport[discId].wins++;
+                        else if (side === 'equipo_b' && scoreB > scoreA) winLossBySport[discId].wins++;
+                        else if (scoreA !== scoreB) winLossBySport[discId].losses++;
+                    }
+
+                    if (p.estado === 'finalizado' || p.estado === 'en_curso') {
+                        allMatches.push({
+                            match_id: p.id,
+                            fecha: p.fecha,
+                            disciplina: p.disciplinas?.name,
+                            equipo_a: p.equipo_a,
+                            equipo_b: p.equipo_b,
+                            estado: p.estado,
+                            marcador_final: p.marcador_detalle
+                        });
+                    }
+                });
             }
 
             if (indMatches && indMatches.length > 0) {
-                const mappedInd = indMatches
-                    .filter((d: any) => d.estado === 'finalizado' || d.estado === 'en_curso')
-                    .map((d: any) => ({
-                        match_id: d.id,
-                        fecha: d.fecha,
-                        disciplina: d.disciplinas?.name,
-                        equipo_a: d.equipo_a,
-                        equipo_b: d.equipo_b,
-                        estado: d.estado,
-                        marcador_final: d.marcador_detalle
-                    }));
-                allMatches = [...allMatches, ...mappedInd];
+                indMatches.forEach((p: any) => {
+                    const discId = p.disciplina_id;
+                    if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
+
+                    if (p.estado === 'finalizado') {
+                        const det = p.marcador_detalle || {};
+                        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
+                        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
+                        const isAthleteA = p.athlete_a_id === id;
+                        
+                        if (isAthleteA && scoreA > scoreB) winLossBySport[discId].wins++;
+                        else if (!isAthleteA && scoreB > scoreA) winLossBySport[discId].wins++;
+                        else if (scoreA !== scoreB) winLossBySport[discId].losses++;
+                    }
+
+                    if (p.estado === 'finalizado' || p.estado === 'en_curso') {
+                        allMatches.push({
+                            match_id: p.id,
+                            fecha: p.fecha,
+                            disciplina: p.disciplinas?.name,
+                            equipo_a: p.equipo_a,
+                            equipo_b: p.equipo_b,
+                            estado: p.estado,
+                            marcador_final: p.marcador_detalle
+                        });
+                    }
+                });
             }
+
+            // Update sportStatsMap with wins/losses
+            setSportStatsMap(prev => {
+                const newMap = { ...prev };
+                Object.keys(winLossBySport).forEach(sid => {
+                    newMap[sid] = { ...(newMap[sid] || {}), ...winLossBySport[sid] };
+                });
+                return newMap;
+            });
 
             // Sort descending locally to ensure correct inter-leaving of team & individual
             allMatches.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
@@ -510,19 +601,37 @@ export default function PublicProfilePage() {
 
                 {/* ━━━ CONTENT GRID ━━━ */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* LEFT COLUMN: Athlete Hub */}
-                    <div className="lg:col-span-4 lg:sticky lg:top-24">
+                                <div className="lg:col-span-4 lg:sticky lg:top-24">
                         {isDeportista ? (
                             <div className={cn(
                                 "relative overflow-hidden rounded-[3rem] p-8 lg:p-10 shadow-[0_0_50px_rgba(0,0,0,0.5)] min-h-[500px] flex flex-col group border-2 transition-all duration-700",
-                                sportName === 'Baloncesto' ? "bg-gradient-to-br from-[#1a0f05]/80 to-[#0A0705]/95 border-orange-500/30 backdrop-blur-2xl" :
-                                sportName === 'Fútbol' ? "bg-gradient-to-br from-[#051a0f]/80 to-[#0A0705]/95 border-emerald-500/30 backdrop-blur-2xl" :
+                                (athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto') ? "bg-gradient-to-br from-[#1a0f05]/80 to-[#0A0705]/95 border-orange-500/30 backdrop-blur-2xl" :
+                                (athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Fútbol') ? "bg-gradient-to-br from-[#051a0f]/80 to-[#0A0705]/95 border-emerald-500/30 backdrop-blur-2xl" :
                                 "bg-gradient-to-br from-[#111]/80 to-[#000]/95 border-white/10 backdrop-blur-2xl"
                             )}>
                                 {/* Glass Shine Effect */}
                                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                                 
                                 <div className="relative z-10 flex flex-col h-full">
+                                    {/* Multi-sport Selector */}
+                                    <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+                                        {athleteDisciplinas.map((d: any) => (
+                                            <button 
+                                                key={d.id}
+                                                onClick={() => setSelectedSportId(d.id)}
+                                                className={cn(
+                                                    "shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center transition-all",
+                                                    selectedSportId === d.id 
+                                                        ? "bg-white/20 border-white/40 text-white shadow-lg scale-110" 
+                                                        : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10"
+                                                )}
+                                                title={d.name}
+                                            >
+                                                <SportIcon sport={d.name} size={18} />
+                                            </button>
+                                        ))}
+                                    </div>
+
                                     <div className="flex items-center justify-between mb-10">
                                         <div className="flex flex-col">
                                             <h3 className="text-white/40 font-display font-black uppercase text-[10px] tracking-[0.4em] mb-2">
@@ -530,43 +639,55 @@ export default function PublicProfilePage() {
                                             </h3>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shadow-inner group-hover:border-violet-500/30 transition-colors">
-                                                  <SportIcon sport={sportName} size={28} />
+                                                  <SportIcon sport={athleteDisciplinas.find(d => d.id === selectedSportId)?.name} size={28} />
                                                 </div>
-                                                <span className="text-2xl font-black text-white font-sans tracking-tight drop-shadow-md">{sportName}</span>
+                                                <span className="text-2xl font-black text-white font-sans tracking-tight drop-shadow-md">{athleteDisciplinas.find(d => d.id === selectedSportId)?.name || sportName}</span>
                                             </div>
                                         </div>
-                                        <div className="relative w-20 h-20 flex items-center justify-center">
-                                            <svg className="w-full h-full -rotate-90 filter drop-shadow-[0_0_10px_rgba(0,0,0,0.3)]">
-                                                <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-white/5" />
-                                                <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="6" fill="transparent" 
-                                                    strokeDasharray={213.6} 
-                                                    strokeDashoffset={213.6 * (1 - (wins / (wins + losses || 1)))} 
-                                                    strokeLinecap="round"
-                                                    className={cn(
-                                                        "transition-all duration-1000",
-                                                        (wins / (wins + losses || 1)) > 0.5 ? "text-emerald-400" : "text-amber-400"
-                                                    )} 
-                                                    style={{ filter: `drop-shadow(0 0 8px ${(wins / (wins + losses || 1)) > 0.5 ? 'rgba(52,211,153,0.3)' : 'rgba(251,191,36,0.3)'})` }}
-                                                />
-                                            </svg>
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                <span className="text-[18px] font-black font-mono tabular-nums leading-none tracking-tighter text-white drop-shadow-lg">{Math.round((wins / (wins + losses || 1)) * 100)}%</span>
-                                                <span className="text-[7px] font-display font-black text-white/30 uppercase tracking-widest mt-1">Win Rate</span>
-                                            </div>
-                                        </div>
+                                        {(() => {
+                                            const s = sportStatsMap[selectedSportId || ''] || { wins: 0, losses: 0 };
+                                            const total = (s.wins || 0) + (s.losses || 0);
+                                            const rate = total > 0 ? Math.round((s.wins / total) * 100) : 0;
+                                            return (
+                                                <div className="relative w-20 h-20 flex items-center justify-center">
+                                                    <svg className="w-full h-full -rotate-90 filter drop-shadow-[0_0_10px_rgba(0,0,0,0.3)]">
+                                                        <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-white/5" />
+                                                        <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="6" fill="transparent" 
+                                                            strokeDasharray={213.6} 
+                                                            strokeDashoffset={213.6 * (1 - (total > 0 ? (s.wins / total) : 0))} 
+                                                            strokeLinecap="round"
+                                                            className={cn(
+                                                                "transition-all duration-1000",
+                                                                rate > 50 ? "text-emerald-400" : rate > 0 ? "text-amber-400" : "text-white/10"
+                                                            )} 
+                                                            style={{ filter: `drop-shadow(0 0 8px ${rate > 50 ? 'rgba(52,211,153,0.3)' : 'rgba(251,191,36,0.3)'})` }}
+                                                        />
+                                                    </svg>
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                        <span className="text-[18px] font-black font-mono tabular-nums leading-none tracking-tighter text-white drop-shadow-lg">{rate}%</span>
+                                                        <span className="text-[7px] font-display font-black text-white/30 uppercase tracking-widest mt-1">Win Rate</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                     
                                     {/* Record Row */}
-                                    <div className="grid grid-cols-2 gap-4 mb-10">
-                                        <div className="bg-white/5 border border-white/5 rounded-[1.5rem] p-5 transition-all hover:bg-white/10 hover:-translate-y-1 shadow-xl">
-                                            <p className="text-[10px] font-display font-black uppercase tracking-widest text-emerald-400/60 mb-2">Victorias</p>
-                                            <p className="text-4xl font-black font-mono tabular-nums tracking-tighter text-white drop-shadow-md">{wins}</p>
-                                        </div>
-                                        <div className="bg-white/5 border border-white/5 rounded-[1.5rem] p-5 transition-all hover:bg-white/10 hover:-translate-y-1 shadow-xl">
-                                            <p className="text-[10px] font-display font-black uppercase tracking-widest text-rose-400/60 mb-2">Derrotas</p>
-                                            <p className="text-4xl font-black font-mono tabular-nums tracking-tighter text-white drop-shadow-md">{losses}</p>
-                                        </div>
-                                    </div>
+                                    {(() => {
+                                        const s = sportStatsMap[selectedSportId || ''] || { wins: 0, losses: 0 };
+                                        return (
+                                            <div className="grid grid-cols-2 gap-4 mb-10">
+                                                <div className="bg-white/5 border border-white/5 rounded-[1.5rem] p-5 transition-all hover:bg-white/10 hover:-translate-y-1 shadow-xl">
+                                                    <p className="text-[10px] font-display font-black uppercase tracking-widest text-emerald-400/60 mb-2">Victorias</p>
+                                                    <p className="text-4xl font-black font-mono tabular-nums tracking-tighter text-white drop-shadow-md">{s.wins || 0}</p>
+                                                </div>
+                                                <div className="bg-white/5 border border-white/5 rounded-[1.5rem] p-5 transition-all hover:bg-white/10 hover:-translate-y-1 shadow-xl">
+                                                    <p className="text-[10px] font-display font-black uppercase tracking-widest text-rose-400/60 mb-2">Derrotas</p>
+                                                    <p className="text-4xl font-black font-mono tabular-nums tracking-tighter text-white drop-shadow-md">{s.losses || 0}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
 
                                     {/* Performance Metrics */}
                                     <div className="bg-black/40 border border-white/5 rounded-[2rem] p-6 flex-1 shadow-inner relative overflow-hidden group/metrics">
@@ -575,43 +696,52 @@ export default function PublicProfilePage() {
                                           <Activity size={12} /> Analytics
                                         </p>
                                         
-                                        {sportName === 'Baloncesto' ? (
-                                            <div className="grid grid-cols-3 gap-3">
-                                                {[
-                                                  { val: detailedStats.pts3, label: '3PT' },
-                                                  { val: detailedStats.pts2, label: '2PT' },
-                                                  { val: detailedStats.pts1, label: 'FT' }
-                                                ].map((s, idx) => (
-                                                  <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
-                                                      <p className="text-2xl font-black font-mono text-amber-400 mb-1 drop-shadow-md">{s.val}</p>
-                                                      <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{s.label}</p>
-                                                  </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center justify-around py-5">
-                                                <div className="flex flex-col items-center group/item">
-                                                    <p className="text-3xl font-black font-mono text-emerald-400 leading-none mb-2 drop-shadow-md group-hover/item:scale-110 transition-transform">{detailedStats.goals}</p>
-                                                    <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Goles</p>
-                                                </div>
-                                                <div className="w-[1px] h-10 bg-white/10" />
-                                                <div className="flex flex-col items-center">
-                                                    <div className="flex gap-2 mb-2">
-                                                        <div className="w-3 h-4 bg-amber-500 rounded-sm shadow-[0_0_15px_rgba(245,158,11,0.4)]" />
-                                                        <p className="text-lg font-black font-mono text-white leading-none">{detailedStats.yellowCards}</p>
+                                        {(() => {
+                                            const s = sportStatsMap[selectedSportId || ''] || {};
+                                            const currentSportName = athleteDisciplinas.find(d => d.id === selectedSportId)?.name;
+                                            
+                                            if (currentSportName === 'Baloncesto') {
+                                                return (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {[
+                                                          { val: s.pts3 || 0, label: '3PT' },
+                                                          { val: s.pts2 || 0, label: '2PT' },
+                                                          { val: s.pts1 || 0, label: 'FT' }
+                                                        ].map((s, idx) => (
+                                                          <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
+                                                              <p className="text-2xl font-black font-mono text-amber-400 mb-1 drop-shadow-md">{s.val}</p>
+                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{s.label}</p>
+                                                          </div>
+                                                        ))}
                                                     </div>
-                                                    <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Amarillas</p>
-                                                </div>
-                                                <div className="w-[1px] h-10 bg-white/10" />
-                                                <div className="flex flex-col items-center">
-                                                    <div className="flex gap-2 mb-2">
-                                                        <div className="w-3 h-4 bg-rose-600 rounded-sm shadow-[0_0_15px_rgba(225,29,72,0.4)]" />
-                                                        <p className="text-lg font-black font-mono text-white leading-none">{detailedStats.redCards}</p>
+                                                );
+                                            }
+                                            
+                                            return (
+                                                <div className="flex items-center justify-around py-5">
+                                                    <div className="flex flex-col items-center group/item">
+                                                        <p className="text-3xl font-black font-mono text-emerald-400 leading-none mb-2 drop-shadow-md group-hover/item:scale-110 transition-transform">{s.goals || 0}</p>
+                                                        <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Goles</p>
                                                     </div>
-                                                    <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Rojas</p>
+                                                    <div className="w-[1px] h-10 bg-white/10" />
+                                                    <div className="flex flex-col items-center">
+                                                        <div className="flex gap-2 mb-2">
+                                                            <div className="w-3 h-4 bg-amber-500 rounded-sm shadow-[0_0_15px_rgba(245,158,11,0.4)]" />
+                                                            <p className="text-lg font-black font-mono text-white leading-none">{s.yellowCards || 0}</p>
+                                                        </div>
+                                                        <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Amarillas</p>
+                                                    </div>
+                                                    <div className="w-[1px] h-10 bg-white/10" />
+                                                    <div className="flex flex-col items-center">
+                                                        <div className="flex gap-2 mb-2">
+                                                            <div className="w-3 h-4 bg-rose-600 rounded-sm shadow-[0_0_15px_rgba(225,29,72,0.4)]" />
+                                                            <p className="text-lg font-black font-mono text-white leading-none">{s.redCards || 0}</p>
+                                                        </div>
+                                                        <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Rojas</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </div>
@@ -675,6 +805,80 @@ export default function PublicProfilePage() {
                         ) : (
                             <div className="rounded-[3rem] bg-black/20 border-2 border-dashed border-white/5 p-16 text-center backdrop-blur-md">
                                 <span className="text-[11px] font-display font-black uppercase tracking-[0.4em] text-white/10">Identidad Académica no vinculada</span>
+                            </div>
+                        )}
+
+                        {/* ━━━ ACTIVIDAD DEPORTIVA: Deportes + Equipos ━━━ */}
+                        {isDeportista && (athleteDisciplinas.length > 0 || athleteTeams.length > 0) && (
+                            <div className="rounded-[3rem] bg-black/20 border border-white/10 p-8 lg:p-12 shadow-2xl backdrop-blur-md space-y-8 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] pointer-events-none" />
+                                
+                                {/* Deportes del atleta */}
+                                {athleteDisciplinas.length > 0 && (
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="p-2.5 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 shadow-inner">
+                                                <Activity size={20} className="text-emerald-400" />
+                                            </div>
+                                            <h3 className="text-[11px] font-display font-bold tracking-[0.3em] text-white/50">DEPORTES</h3>
+                                        </div>
+                                        <div className="flex flex-wrap gap-3">
+                                            {athleteDisciplinas.map((d: any) => (
+                                                <div key={d.id} className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-black/40 border border-white/10 hover:border-emerald-500/30 transition-all shadow-lg group">
+                                                    <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                        <SportIcon sport={d.name || ''} size={16} />
+                                                    </div>
+                                                    <span className="text-sm font-black text-white tracking-tight">{d.name}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Equipos / Delegaciones */}
+                                {athleteTeams.length > 0 && (
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-4 mb-6 pt-6 border-t border-white/5">
+                                            <div className="p-2.5 bg-violet-500/10 rounded-2xl border border-violet-500/20 shadow-inner">
+                                                <Users size={20} className="text-violet-400" />
+                                            </div>
+                                            <h3 className="text-[11px] font-display font-bold tracking-[0.3em] text-white/50">EQUIPOS</h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {athleteTeams.map((team: any) => {
+                                                const discName = (Array.isArray(team.disciplinas) ? team.disciplinas[0] : team.disciplinas)?.name || '';
+                                                return (
+                                                    <Link key={team.id} href={`/equipo/${team.id}`} className="group/team">
+                                                        <div className="flex items-center gap-4 p-5 rounded-[2rem] bg-black/40 border border-white/5 hover:border-violet-500/20 hover:bg-white/[0.05] transition-all shadow-xl">
+                                                            <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover/team:scale-110 transition-transform">
+                                                                <SportIcon sport={discName} size={22} />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-[14px] font-black text-white truncate font-display tracking-tight leading-tight group-hover/team:text-violet-400 transition-colors">
+                                                                    {team.nombre}
+                                                                </p>
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{discName}</span>
+                                                                    {team.genero && team.genero !== 'mixto' && (
+                                                                        <span className={cn(
+                                                                            "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border",
+                                                                            team.genero === 'femenino'
+                                                                                ? 'bg-pink-500/10 text-pink-400 border-pink-500/20'
+                                                                                : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                                        )}>
+                                                                            {team.genero}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <ArrowUpRight size={16} className="text-white/10 group-hover/team:text-violet-400 transition-colors shrink-0" />
+                                                        </div>
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -787,8 +991,8 @@ export default function PublicProfilePage() {
                                             </div>
                                             
                                             {followedProfiles.length > 0 ? (
-                                                <div className="grid grid-cols-1 gap-4">
-                                                    {followedProfiles.slice(0, 6).map((f) => (
+                                                <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                                                    {followedProfiles.map((f) => (
                                                         <Link 
                                                             key={f.id} 
                                                             href={`/perfil/${f.id}`}
@@ -830,8 +1034,8 @@ export default function PublicProfilePage() {
                                             </div>
 
                                             {followedCareers.length > 0 ? (
-                                                <div className="space-y-4">
-                                                    {followedCareers.slice(0, 4).map((c) => (
+                                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                                                    {followedCareers.map((c) => (
                                                         <Link 
                                                             key={c.id} 
                                                             href={`/carreras/${c.id}`}

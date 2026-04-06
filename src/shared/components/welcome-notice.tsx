@@ -30,18 +30,42 @@ export function WelcomeNotice() {
         const hasSeenNotice = sessionStorage.getItem('welcome-notice-seen');
         if (hasSeenNotice) return;
 
-        // Sincronizar con el final de la Splash (aprox 3.8s para ser inmediato al fadeout)
-        const timer = setTimeout(() => setIsVisible(true), 3800);
-        
-        const autoClose = setTimeout(() => {
-            setIsVisible(false);
-            sessionStorage.setItem('welcome-notice-seen', 'true');
-        }, DURATION + 3800);
+        const SPLASH_KEY = "uninorte_splash_seen";
+        const splashAlreadySeen = sessionStorage.getItem(SPLASH_KEY) === "true";
 
-        return () => {
-            clearTimeout(timer);
-            clearTimeout(autoClose);
+        let autoCloseTimer: NodeJS.Timeout;
+
+        const showNotice = () => {
+            // Pequeño delay de 800ms tras el fin del splash para mayor elegancia
+            const timer = setTimeout(() => {
+                setIsVisible(true);
+                
+                // Configurar auto-cierre tras aparecer
+                autoCloseTimer = setTimeout(() => {
+                    setIsVisible(false);
+                    sessionStorage.setItem('welcome-notice-seen', 'true');
+                }, DURATION);
+            }, 800);
+            
+            return () => clearTimeout(timer);
         };
+
+        if (splashAlreadySeen) {
+            const cleanup = showNotice();
+            return () => {
+                cleanup();
+                if (autoCloseTimer) clearTimeout(autoCloseTimer);
+            };
+        } else {
+            const handleSplashFinished = () => {
+                showNotice();
+            };
+            window.addEventListener('splash-finished', handleSplashFinished);
+            return () => {
+                window.removeEventListener('splash-finished', handleSplashFinished);
+                if (autoCloseTimer) clearTimeout(autoCloseTimer);
+            };
+        }
     }, []);
 
     const handleClose = () => {
@@ -78,66 +102,66 @@ export function WelcomeNotice() {
                             }
                         }}
                     >
-                        <div className="relative group overflow-hidden rounded-[4rem] border border-white/10 bg-black/60 backdrop-blur-3xl p-10 shadow-[0_40px_100px_rgba(0,0,0,0.9),0_0_40px_rgba(139,92,246,0.1)] ring-1 ring-white/5 transition-all hover:scale-[1.02]">
+                        <div className="relative group overflow-hidden rounded-[2.5rem] border border-white/10 bg-black/70 backdrop-blur-3xl p-7 shadow-[0_40px_100px_rgba(0,0,0,0.9),0_0_40px_rgba(139,92,246,0.1)] ring-1 ring-white/5 transition-all hover:scale-[1.01]">
                             {/* Top Accent Line - Premium Violet Glow */}
-                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-violet-600 via-indigo-500 to-emerald-500 shadow-[0_0_15px_rgba(124,58,237,0.5)]" />
+                            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-violet-600 via-indigo-500 to-emerald-500 shadow-[0_0_15px_rgba(124,58,237,0.5)]" />
                             
                             {/* Orbital Glow */}
                             <div className="absolute -top-32 -right-32 w-80 h-80 bg-violet-600/15 rounded-full blur-[100px] pointer-events-none" />
-                            <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
                             
                             <div className="relative z-10">
-                                <div className="flex justify-between items-start mb-10">
-                                    <div className="p-6 rounded-[2.5rem] bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-2xl shadow-violet-600/40 transform -rotate-6 group-hover:rotate-0 transition-all duration-700">
-                                        <Edit3 size={36} strokeWidth={2.5} />
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-xl shadow-violet-600/40 transform -rotate-3 group-hover:rotate-0 transition-all duration-700">
+                                        <Edit3 size={24} strokeWidth={2.5} />
                                     </div>
                                     <button 
                                         onClick={(e) => { e.stopPropagation(); handleClose(); }}
-                                        className="p-3 rounded-2xl text-white/20 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+                                        className="p-6 -mt-4 -mr-4 text-white/20 hover:text-white transition-all active:scale-90 group/close"
+                                        aria-label="Cerrar"
                                     >
-                                        <X size={24} strokeWidth={3} />
+                                        <X size={20} strokeWidth={3} className="opacity-40 group-hover/close:opacity-100 transition-opacity" />
                                     </button>
                                 </div>
                                 
-                                <div className="space-y-5">
-                                    <h3 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-display leading-[0.85] text-balance mb-2">
-                                        Personaliza <br/>
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-emerald-400 drop-shadow-sm">Tu Historia</span>
+                                <div className="space-y-4">
+                                    <h3 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter font-display leading-[0.85] text-balance mb-1">
+                                        Identidad <br/>
+                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-emerald-400 drop-shadow-sm">Imparable</span>
                                     </h3>
-                                    <p className="text-base sm:text-lg font-bold text-white/50 leading-relaxed font-sans mt-4">
-                                        ¡Actualiza tu perfil ahora! Sube tu foto y define tu disciplina para destacar en el medallero oficial.
+                                    <p className="text-sm sm:text-base font-bold text-white/50 leading-snug font-sans">
+                                        ¡Define tu presencia! Elige la <span className="text-white/80">carrera que representas</span> y el <span className="text-white/80">color de tu nombre</span>. Haz que cada victoria lleve tu sello único.
                                     </p>
                                 </div>
 
-                                <div className="mt-10 pt-8 border-t border-white/10 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex -space-x-3">
+                                <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex -space-x-2.5">
                                             {[1, 2, 3].map(i => (
-                                                <div key={i} className="w-10 h-10 rounded-full border-2 border-black bg-zinc-800 flex items-center justify-center overflow-hidden shadow-lg">
+                                                <div key={i} className="w-8 h-8 rounded-full border-2 border-black bg-zinc-800 flex items-center justify-center overflow-hidden shadow-lg">
                                                     <div className="w-full h-full bg-gradient-to-br from-white/30 to-transparent" />
                                                 </div>
                                             ))}
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-black font-display text-white leading-none">
+                                            <span className="text-xs font-black font-display text-white leading-none">
                                                 {userCount !== null ? `+${userCount}` : "..." }
                                             </span>
-                                            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mt-1 font-display">Atletas Reales</span>
+                                            <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mt-1 font-display">Atletas Reales</span>
                                         </div>
                                     </div>
-                                    <span className="text-[10px] font-black text-violet-400/50 uppercase tracking-[0.5em] text-right font-display items-end flex flex-col justify-end leading-none">
-                                        Uninorte <br/><span className="text-white/20 mt-1">2026</span>
+                                    <span className="text-[9px] font-black text-violet-400/40 uppercase tracking-[0.4em] text-right font-display leading-none">
+                                        Uninorte <br/><span className="text-white/15 mt-1 inline-block">2026</span>
                                     </span>
                                 </div>
                             </div>
 
-                            {/* Synchronized Progress Bar - Premium Emerald */}
-                            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/5 overflow-hidden">
+                            {/* Synchronized Progress Bar */}
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5 overflow-hidden">
                                 <motion.div 
                                     initial={{ width: "100%" }}
                                     animate={{ width: "0%" }}
                                     transition={{ duration: DURATION / 1000, ease: "linear" }}
-                                    className="h-full bg-gradient-to-r from-emerald-500 to-violet-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                                    className="h-full bg-gradient-to-r from-emerald-500 to-violet-600"
                                 />
                             </div>
                         </div>

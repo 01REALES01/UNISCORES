@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Save, Medal, Trophy, Timer, ArrowDown01, CheckCircle2, AlertTriangle, Ban, Clock, GraduationCap } from "lucide-react";
+import { Plus, Trash2, Save, Medal, Trophy, Timer, ArrowDown01, CheckCircle2, AlertTriangle, Ban, Clock, GraduationCap, Download } from "lucide-react";
 import { Button, Input, Badge, Card } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,9 @@ type RaceControlProps = {
     onUpdate: () => void;
     isLocked?: boolean;
     profile?: Profile | null;
+    disciplinaId?: number | null;
+    genero?: string | null;
+    categoria?: string | null;
 };
 
 // ── Status config ────────────────────────────────────────────────────────────
@@ -47,13 +50,14 @@ const STATUS_CONFIG: Record<ParticipantStatus, { label: string; color: string; i
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, profile }: RaceControlProps) {
+export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, profile, disciplinaId, genero, categoria }: RaceControlProps) {
     const [participantes, setParticipantes] = useState<Participante[]>([]);
     const [newCarrera, setNewCarrera] = useState("");
     const [newNombre, setNewNombre] = useState("");
     const [newCarril, setNewCarril] = useState("");
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [loadingInscritos, setLoadingInscritos] = useState(false);
 
     // Initialize from detalle
     useEffect(() => {
@@ -99,6 +103,56 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, prof
         const updated = participantes.filter(p => p.id !== id);
         setParticipantes(updated);
         saveParticipantes(updated);
+    };
+
+    // ── Load enrolled delegaciones ───────────────────────────────────────────
+    const handleCargarInscritos = async () => {
+        if (!disciplinaId) {
+            toast.error('No se encontró la disciplina del partido');
+            return;
+        }
+        setLoadingInscritos(true);
+        try {
+            let query = supabase
+                .from('delegaciones')
+                .select('id, nombre, carrera_ids')
+                .eq('disciplina_id', disciplinaId)
+                .not('carrera_ids', 'eq', '{}');
+            if (genero) query = query.eq('genero', genero);
+
+            const { data, error } = await query;
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                toast.info('No hay delegaciones inscritas en esta disciplina');
+                return;
+            }
+
+            // Only add delegaciones not already in the list
+            const existingCarreras = new Set(participantes.map(p => p.carrera.toLowerCase()));
+            const nuevos: Participante[] = data
+                .filter((d: any) => !existingCarreras.has(d.nombre.toLowerCase()))
+                .map((d: any) => ({
+                    id: Math.random().toString(36).substring(2, 9),
+                    nombre: '',
+                    carrera: d.nombre,
+                    estado: 'pending' as ParticipantStatus,
+                    puntos: 0,
+                }));
+
+            if (nuevos.length === 0) {
+                toast.info('Todos los inscritos ya están en la lista');
+                return;
+            }
+
+            const updated = [...participantes, ...nuevos];
+            setParticipantes(updated);
+            saveParticipantes(updated);
+            toast.success(`${nuevos.length} delegaciones cargadas. Completa los nombres.`);
+        } catch (e: any) {
+            toast.error('Error cargando inscritos: ' + e.message);
+        } finally {
+            setLoadingInscritos(false);
+        }
     };
 
     // ── Update field ─────────────────────────────────────────────────────────
@@ -266,6 +320,12 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, prof
         return parts.join(' · ');
     }, [detalle]);
 
+    const categoriaLabel: Record<string, string> = {
+        principiante: 'Principiante',
+        intermedio: 'Intermedio',
+        avanzado: 'Avanzado',
+    };
+
     // ── Render ───────────────────────────────────────────────────────────────
     return (
         <Card className="p-0 bg-background border-white/10 overflow-hidden">
@@ -278,13 +338,32 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, prof
                         </div>
                         <div>
                             <h3 className="text-xl font-bold text-white">Control de Prueba</h3>
-                            {eventMeta && (
-                                <p className="text-sm text-cyan-400/80 font-medium">{eventMeta}</p>
-                            )}
+                            <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                {eventMeta && (
+                                    <p className="text-sm text-cyan-400/80 font-medium">{eventMeta}</p>
+                                )}
+                                {categoria && (
+                                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-lime-500/20 text-lime-400 border border-lime-500/30">
+                                        {categoriaLabel[categoria] ?? categoria}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                     {!isLocked && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap justify-end">
+                            {disciplinaId && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleCargarInscritos}
+                                    disabled={loadingInscritos || saving}
+                                    className="border-violet-500/30 hover:bg-violet-500/10 text-violet-300 text-xs"
+                                >
+                                    <Download size={14} className="mr-1.5" />
+                                    {loadingInscritos ? 'Cargando...' : 'Cargar inscritos'}
+                                </Button>
+                            )}
                             <Button
                                 variant="outline"
                                 size="sm"

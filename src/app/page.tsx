@@ -239,7 +239,8 @@ export default function Home() {
                   <span className="truncate w-full z-10">{carrera.nombre}</span>
                   {isSelected && (
                     <div className="absolute top-0 right-0 p-1 bg-violet-600 rounded-bl-lg">
-                      <Star size={10} className="text-white fill-current" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/FavoritosIcono.png" alt="" className="w-2 h-2 object-contain" />
                     </div>
                   )}
                 </button>
@@ -301,7 +302,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-white font-sans selection:bg-violet-500/30">
       <SplashScreen />
-      
+
       {/* Ambient Background Gradient - HYBRID */}
       <div className="fixed inset-0 z-0 pointer-events-none opacity-40 mix-blend-screen">
         <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-violet-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '8s' }} />
@@ -334,10 +335,11 @@ export default function Home() {
         {hideMatches ? (
           <div className="relative rounded-[2rem] overflow-hidden border border-white/10 shadow-xl group my-8 bg-gradient-to-br from-white/10 to-white/[0.02] backdrop-blur-xl animate-in slide-in-from-bottom-8 fade-in duration-700">
             <div className="absolute inset-0 bg-background mix-blend-overlay opacity-30" />
-            
+
             <div className="relative z-10 flex flex-col items-center justify-center p-10 text-center gap-6">
               <div className="w-20 h-20 rounded-2xl bg-black/20 border border-white/10 flex items-center justify-center shadow-lg overflow-hidden backdrop-blur-sm">
-                <Star size={40} className="text-violet-400" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/FavoritosIcono.png" alt="Favoritos" className="w-5 h-5 object-contain" />
               </div>
               <div>
                 <h3 className="text-2xl font-black text-white mb-2 tracking-tight">Carreras favoritas</h3>
@@ -445,7 +447,7 @@ export default function Home() {
 
                   {isSelectingCareers && (
                     <div className="w-full" onClick={(e) => e.stopPropagation()}>
-                       {renderSelectionGrid()}
+                      {renderSelectionGrid()}
                     </div>
                   )}
                 </div>
@@ -543,7 +545,7 @@ export default function Home() {
             </div>
           </div>
         )}
-        
+
         <AboutFooter />
       </main>
     </div >

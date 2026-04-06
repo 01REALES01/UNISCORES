@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { supabase } from "@/lib/supabase";
 import { useEffect } from "react";
 import { computeCareerStats, CareerStats } from "@/lib/sport-helpers";
+import { EQUIPO_NOMBRE_TO_CARRERAS } from "@/lib/constants";
 
 // ─── Column Selections ──────────────────────────────────────────────────────
 
@@ -46,10 +47,19 @@ async function fetchTeamProfile(delegacionId: number) {
     }
 
     // 2. Fetch the allied careers for their badges and names
+    // Fallback/Override: Use our config map to find all careers that SHOULD be in this team
+    const configCareerNames = EQUIPO_NOMBRE_TO_CARRERAS[delegacion.nombre] || [];
+    const dbCareerIds = delegacion.carrera_ids || [];
+
+    // Query careers by either ID (from DB) or Name (from Config)
     const { data: carreras } = await supabase
         .from('carreras')
         .select('id, nombre, escudo_url')
-        .in('id', delegacion.carrera_ids || []);
+        .or(`id.in.(${dbCareerIds.join(',') || '0'}),nombre.in.("${configCareerNames.join('","') || 'none'}")`);
+
+    // Update careers in memory to ensure they reflect the full set
+    const finalCareerIds = carreras ? carreras.map((c: any) => c.id) : dbCareerIds;
+    delegacion.carrera_ids = Array.from(new Set([...dbCareerIds, ...finalCareerIds]));
 
     // 3. Fetch all matches where this delegacion participates
     const [matchesA, matchesB] = await Promise.all([
@@ -77,18 +87,30 @@ async function fetchTeamProfile(delegacionId: number) {
     // 4. Fetch athletes (Plantilla) that belong to these careers AND play this sport
     let athletesData: any[] = [];
     if (delegacion.carrera_ids && delegacion.carrera_ids.length > 0 && delegacion.disciplina_id) {
-        // We use .overlaps to find athletes belonging to ANY of the allied careers
-        const { data } = await supabase
-            .from('profiles')
-            .select('id, full_name, avatar_url, roles, athlete_disciplina_id, points, disciplina:disciplinas(name), carreras_ids')
-            .overlaps('carreras_ids', delegacion.carrera_ids)
-            .eq('athlete_disciplina_id', delegacion.disciplina_id);
-            
-        athletesData = data || [];
-        // Filter by gender if the delegation has a specific gender
-        if (delegacion.genero && delegacion.genero !== 'mixto') {
-            // Wait, does profile have gender? If it does, we would filter it here.
-            // Currently profiles don't consistently expose gender in this query, we skip filtering for now.
+        // First, get profile_ids that play this sport via the join table
+        const { data: pdProfiles } = await supabase
+            .from('profile_disciplinas')
+            .select('profile_id')
+            .eq('disciplina_id', delegacion.disciplina_id);
+        
+        const sportProfileIds = (pdProfiles || []).map((r: any) => r.profile_id);
+
+        if (sportProfileIds.length > 0) {
+            // Fetch profiles that belong to one of the allied careers AND are in the sport
+            const { data } = await supabase
+                .from('profiles')
+                .select('id, full_name, avatar_url, roles, athlete_disciplina_id, points, disciplina:disciplinas(name), carreras_ids')
+                .overlaps('carreras_ids', delegacion.carrera_ids)
+                .in('id', sportProfileIds);
+            athletesData = data || [];
+        } else {
+            // Fallback to legacy scalar field for backward compat
+            const { data } = await supabase
+                .from('profiles')
+                .select('id, full_name, avatar_url, roles, athlete_disciplina_id, points, disciplina:disciplinas(name), carreras_ids')
+                .overlaps('carreras_ids', delegacion.carrera_ids)
+                .eq('athlete_disciplina_id', delegacion.disciplina_id);
+            athletesData = data || [];
         }
     }
 
