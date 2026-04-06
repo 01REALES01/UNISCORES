@@ -107,7 +107,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
 
                         <Link href="/" className="shrink-0">
                             <Image
-                                src="/Logo Olimpiadas NEW.png"
+                                src="/Olimpiadas elementos.png"
                                 alt="Logo"
                                 width={280}
                                 height={80}
@@ -204,7 +204,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                             {/* Drawer Header */}
                             <div className="px-5 pt-10 pb-6 flex items-center justify-between relative z-10 border-b border-white/5">
                                 <Link href="/" onClick={() => setMobileMenuOpen(false)}>
-                                    <Image src="/Logo Olimpiadas NEW.png" alt="Logo" width={220} height={50} className="h-8 w-auto object-contain" />
+                                    <Image src="/Olimpiadas elementos.png" alt="Logo" width={220} height={50} className="h-8 w-auto object-contain" />
                                 </Link>
                                 <button onClick={() => setMobileMenuOpen(false)} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20 hover:text-white transition-all shadow-md active:scale-95 border border-white/10">
                                     <X size={20} />

@@ -34,10 +34,12 @@ export function WelcomeHero() {
                         <Zap size={14} className="mr-2 fill-current" /> 60 Años de Excelencia
                     </Badge>
 
-                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-[#F5F5DC] mb-6 leading-[0.9]">
-                        OLIMPIADAS <br />
-                        UNINORTE 2026
-                    </h1>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src="/Olimpiadas elementos.png"
+                        alt="Olimpiadas Deportivas Interprogramas Uninorte"
+                        className="w-[320px] md:w-[500px] lg:w-[600px] h-auto mx-auto mb-6"
+                    />
 
                     <p className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
                         Vive la pasión, el esfuerzo y la gloria del evento deportivo más grande de nuestra institución. Más de 5 disciplinas, un solo espíritu.

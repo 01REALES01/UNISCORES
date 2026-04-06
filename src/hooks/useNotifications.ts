@@ -115,7 +115,10 @@ export function useNotifications() {
                     if (!mountedRef.current) return;
                     const newNotif = payload.new as Notification;
 
-                    setNotifications(prev => [newNotif, ...prev]);
+                    setNotifications(prev => {
+                        if (prev.some(n => n.id === newNotif.id)) return prev;
+                        return [newNotif, ...prev];
+                    });
                     setUnreadCount(prev => prev + 1);
 
                     // Show toast for new notification
