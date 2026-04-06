@@ -140,14 +140,50 @@ export async function GET(request: NextRequest) {
                     }
                 }
 
-                // 3. Propagate: update athlete_X_id on partidos via roster
+                // 3. Sync profile data + propagate to partidos
                 if (linked) {
                     const { data: jugadores } = await admin
                         .from('jugadores')
-                        .select('id')
+                        .select('id, carrera_id, disciplina_id')
                         .eq('profile_id', user.id);
 
                     if (jugadores?.length) {
+                        // Collect unique carrera_ids and disciplina_ids from all linked jugadores
+                        const carreraIds = [...new Set(jugadores.map((j: any) => j.carrera_id).filter(Boolean))];
+                        const disciplinaIds = [...new Set(jugadores.map((j: any) => j.disciplina_id).filter(Boolean))];
+
+                        // Sync carreras_ids to profile
+                        if (carreraIds.length) {
+                            const { data: prof } = await admin
+                                .from('profiles')
+                                .select('carreras_ids')
+                                .eq('id', user.id)
+                                .single();
+                            const existing = prof?.carreras_ids || [];
+                            const merged = [...new Set([...existing, ...carreraIds])];
+                            await admin.from('profiles').update({ carreras_ids: merged }).eq('id', user.id);
+                        }
+
+                        // Add 'deportista' role
+                        const { data: prof } = await admin
+                            .from('profiles')
+                            .select('roles')
+                            .eq('id', user.id)
+                            .single();
+                        const roles: string[] = prof?.roles || [];
+                        if (!roles.includes('deportista')) {
+                            await admin.from('profiles').update({ roles: [...roles, 'deportista'] }).eq('id', user.id);
+                        }
+
+                        // Register disciplines in profile_disciplinas
+                        if (disciplinaIds.length) {
+                            await admin.from('profile_disciplinas').upsert(
+                                disciplinaIds.map((did: any) => ({ profile_id: user.id, disciplina_id: did })),
+                                { onConflict: 'profile_id,disciplina_id', ignoreDuplicates: true }
+                            );
+                        }
+
+                        // Propagate athlete_X_id to partidos via roster
                         for (const jug of jugadores) {
                             const { data: roster } = await admin
                                 .from('roster_partido')
