@@ -169,19 +169,19 @@ export default function PartidosPage() {
 
                 {/* ── Sticky Sport Filter Bar ── */}
                 <div className="sticky top-16 sm:top-[4.5rem] z-40 -mx-4 px-4 py-3 bg-background/90 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
-                    <div className="flex items-center gap-2 overflow-x-auto pt-2 pb-3 px-1 scrollbar-hide -my-2">
-                        {/* "Todos" chip */}
+                    <div className="flex items-center gap-3 overflow-x-auto pt-2 pb-3 px-1 scrollbar-hide -my-2">
+                        {/* "Todos" icon */}
                         <button
                             onClick={() => setSelectedSport("Todos")}
                             className={cn(
-                                "flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider whitespace-nowrap border transition-all duration-300 shrink-0",
+                                "flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 border",
                                 selectedSport === "Todos"
-                                    ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.2)] scale-105"
-                                    : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/60"
+                                    ? "bg-indigo-500/20 border-indigo-500/30 text-white shadow-[0_0_20px_rgba(99,102,241,0.2)] scale-105"
+                                    : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:text-white"
                             )}
+                            title="Todos"
                         >
-                            <LayoutGrid size={14} />
-                            Todos
+                            <LayoutGrid size={22} />
                         </button>
 
                         {availableSports.map(sport => (
@@ -189,14 +189,14 @@ export default function PartidosPage() {
                                 key={sport}
                                 onClick={() => setSelectedSport(sport)}
                                 className={cn(
-                                    "flex items-center gap-2.5 px-4 py-2.5 rounded-full text-[11px] font-black font-display uppercase tracking-widest whitespace-nowrap border transition-all duration-300 shrink-0 outline-none",
+                                    "flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 border",
                                     selectedSport === sport
-                                        ? "bg-white text-black border-white shadow-[0_0_25px_rgba(255,255,255,0.3)] scale-105"
-                                        : "bg-white/5 border-white/10 text-white/30 hover:bg-white/10 hover:text-white/50"
+                                        ? "bg-indigo-500/20 border-indigo-500/30 text-white shadow-[0_0_20px_rgba(99,102,241,0.2)] scale-105"
+                                        : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:text-white"
                                 )}
+                                title={sport}
                             >
-                                <SportIcon sport={sport} size={15} variant="react" className={cn("transition-all", selectedSport === sport ? "text-black" : "text-white/40")} />
-                                <span>{sport}</span>
+                                <SportIcon sport={sport} size={22} />
                             </button>
                         ))}
                     </div>
