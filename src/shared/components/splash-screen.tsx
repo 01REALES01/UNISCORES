@@ -36,9 +36,9 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
         const isMobileDevice = window.innerWidth < 768;
         const currentConfig = isMobileDevice ? {
             folder: "/animacion_movil/",
-            total: 200,
-            interval: 22,
-            startFrame: 20, // Skip first 20 frames as requested
+            total: 240,
+            interval: 16.67,
+            startFrame: 0,
             isMobile: true
         } : {
             folder: "/animacion_UNISCORES/",
