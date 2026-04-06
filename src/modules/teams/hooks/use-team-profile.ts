@@ -96,14 +96,19 @@ async function fetchTeamProfile(delegacionId: number) {
             .eq('genero', delegacion.genero);
 
         if (jugadores) {
-            athletesData = jugadores.map(j => ({
-                id: j.profile?.id || `jugador-${j.id}`, // Generar fallback ID si no tienen un perfil de plataforma conectado
-                full_name: j.profile?.full_name || j.nombre,
-                avatar_url: j.profile?.avatar_url || null,
-                roles: j.profile?.roles || ['deportista'], 
-                points: j.profile?.points || 0,
-                disciplina: j.profile?.disciplina || { name: delegacion.disciplinas?.name }
-            }));
+            athletesData = (jugadores as any[]).map(j => {
+                const profileObj = Array.isArray(j.profile) ? j.profile[0] : j.profile;
+                const discObj = Array.isArray(profileObj?.disciplina) ? profileObj.disciplina[0] : profileObj?.disciplina;
+
+                return {
+                    id: profileObj?.id || `jugador-${j.id}`,
+                    full_name: profileObj?.full_name || j.nombre,
+                    avatar_url: profileObj?.avatar_url || null,
+                    roles: profileObj?.roles || ['deportista'], 
+                    points: profileObj?.points || 0,
+                    disciplina: discObj || { name: (Array.isArray(delegacion.disciplinas) ? delegacion.disciplinas[0] : delegacion.disciplinas)?.name }
+                };
+            });
             
             // Deduplica por si el administrador incribió dos veces en jugadores a un perfil validado único.
             const uniqueAthletes = new Map();
