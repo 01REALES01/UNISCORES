@@ -1,8 +1,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 20260405_backfill_jugador_profiles.sql
--- Vincula retroactivamente todos los jugadores a sus profiles existentes.
--- Corre una sola vez para usuarios que ya se registraron antes de que
--- existiera el auto-link.
+-- Vincula retroactivamente todos los jugadores a sus profiles existentes
+-- y sincroniza carrera, rol deportista, disciplina y partidos FKs.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- PASO 1: Vincular jugadores por email (match exacto, case-insensitive)
@@ -14,7 +13,7 @@ WHERE LOWER(j.email) = LOWER(p.email)
   AND j.email IS NOT NULL
   AND j.email <> '';
 
--- PASO 2: Vincular jugadores por nombre exacto (para los que no tienen email o no matcheó)
+-- PASO 2: Vincular jugadores por nombre exacto (para los que no tienen email)
 UPDATE public.jugadores j
 SET profile_id = p.id,
     email = COALESCE(j.email, p.email)
@@ -24,7 +23,35 @@ WHERE UPPER(TRIM(j.nombre)) = UPPER(TRIM(p.full_name))
   AND p.full_name IS NOT NULL
   AND p.full_name <> '';
 
--- PASO 3: Propagar profile_id a partidos via roster_partido (equipo_a)
+-- PASO 3: Sincronizar carrera_id → profiles.carreras_ids
+UPDATE public.profiles p
+SET carreras_ids = (
+    SELECT array_agg(DISTINCT j.carrera_id) FILTER (WHERE j.carrera_id IS NOT NULL)
+    FROM public.jugadores j
+    WHERE j.profile_id = p.id
+)
+FROM public.jugadores j
+WHERE j.profile_id = p.id
+  AND j.carrera_id IS NOT NULL
+  AND NOT (COALESCE(p.carreras_ids, ARRAY[]::bigint[]) @> ARRAY[j.carrera_id]);
+
+-- PASO 4: Agregar rol 'deportista' a todos los perfiles vinculados
+UPDATE public.profiles p
+SET roles = array_append(COALESCE(roles, ARRAY[]::text[]), 'deportista')
+WHERE EXISTS (
+    SELECT 1 FROM public.jugadores j WHERE j.profile_id = p.id
+)
+AND NOT ('deportista' = ANY(COALESCE(p.roles, ARRAY[]::text[])));
+
+-- PASO 5: Registrar disciplinas en profile_disciplinas
+INSERT INTO public.profile_disciplinas (profile_id, disciplina_id)
+SELECT DISTINCT j.profile_id, j.disciplina_id
+FROM public.jugadores j
+WHERE j.profile_id IS NOT NULL
+  AND j.disciplina_id IS NOT NULL
+ON CONFLICT (profile_id, disciplina_id) DO NOTHING;
+
+-- PASO 6: Propagar profile_id a partidos vía roster_partido (equipo_a)
 UPDATE public.partidos p
 SET athlete_a_id = j.profile_id
 FROM public.roster_partido rp
@@ -34,7 +61,7 @@ WHERE rp.equipo_a_or_b = 'equipo_a'
   AND j.profile_id IS NOT NULL
   AND p.athlete_a_id IS NULL;
 
--- PASO 4: Propagar profile_id a partidos via roster_partido (equipo_b)
+-- PASO 7: Propagar profile_id a partidos vía roster_partido (equipo_b)
 UPDATE public.partidos p
 SET athlete_b_id = j.profile_id
 FROM public.roster_partido rp
@@ -44,9 +71,14 @@ WHERE rp.equipo_a_or_b = 'equipo_b'
   AND j.profile_id IS NOT NULL
   AND p.athlete_b_id IS NULL;
 
--- Verificación: cuántos jugadores quedaron vinculados
+-- Verificación final
 SELECT
-  COUNT(*) FILTER (WHERE profile_id IS NOT NULL) AS vinculados,
-  COUNT(*) FILTER (WHERE profile_id IS NULL)     AS sin_vincular,
-  COUNT(*)                                        AS total
+  COUNT(*) FILTER (WHERE profile_id IS NOT NULL) AS jugadores_vinculados,
+  COUNT(*) FILTER (WHERE profile_id IS NULL)     AS jugadores_sin_vincular,
+  COUNT(*)                                        AS total_jugadores
 FROM public.jugadores;
+
+SELECT
+  COUNT(*) FILTER (WHERE 'deportista' = ANY(COALESCE(roles, ARRAY[]::text[]))) AS perfiles_deportista,
+  COUNT(*)                                                                        AS total_perfiles
+FROM public.profiles;
