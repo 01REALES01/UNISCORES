@@ -36,6 +36,7 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
     const [delegacionA, setDelegacionA] = useState("");
     const [delegacionB, setDelegacionB] = useState("");
     const [estado, setEstado] = useState("programado");
+    const [modoRegistro, setModoRegistro] = useState<'en_vivo' | 'asincronico'>('en_vivo');
     const [genero, setGenero] = useState("masculino");
     const [lugar, setLugar] = useState("");
     const [fecha, setFecha] = useState("");
@@ -319,7 +320,10 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                 estado: estado,
                 genero: genero,
                 lugar: lugar || 'Coliseo Central',
-                marcador_detalle: stampAudit(marcadorInicial, profile),
+                marcador_detalle: stampAudit({ 
+                    ...marcadorInicial, 
+                    modo_registro: modoRegistro 
+                }, profile),
                 ...(fase ? { fase } : {}),
                 ...(grupo ? { grupo } : {}),
                 ...(bracketOrder ? { bracket_order: parseInt(bracketOrder) } : {}),
@@ -930,19 +934,37 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
                         </div>
 
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1">Estado</label>
-                            <div className="flex p-1 bg-zinc-900/60 rounded-2xl border border-white/5 h-11">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1">Estado y Registro</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-zinc-900/40 p-2 rounded-[2rem] border border-white/5 backdrop-blur-sm">
                                 <button
-                                    onClick={() => setEstado('programado')}
-                                    className={`flex-1 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-2 ${estado === 'programado' ? 'bg-zinc-800 text-white shadow-lg border border-white/10' : 'text-zinc-600 hover:text-zinc-400'}`}
+                                    onClick={() => { setEstado('programado'); setModoRegistro('en_vivo'); }}
+                                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-[10px] font-black transition-all border ${
+                                        estado === 'programado' && modoRegistro === 'en_vivo' 
+                                        ? 'bg-zinc-800 text-white border-white/20 shadow-lg' 
+                                        : 'bg-black/20 border-transparent text-zinc-600 hover:bg-black/40 hover:text-zinc-400'
+                                    }`}
                                 >
                                     <Clock size={14} /> PROGRAMADO
                                 </button>
                                 <button
-                                    onClick={() => setEstado('en_curso')}
-                                    className={`flex-1 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-2 ${estado === 'en_curso' ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-zinc-600 hover:text-red-500'}`}
+                                    onClick={() => { setEstado('en_curso'); setModoRegistro('en_vivo'); }}
+                                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-[10px] font-black transition-all border ${
+                                        estado === 'en_curso' && modoRegistro === 'en_vivo' 
+                                        ? 'bg-red-600/20 text-red-500 border-red-500/30 shadow-lg shadow-red-900/20' 
+                                        : 'bg-black/20 border-transparent text-zinc-600 hover:bg-red-500/10 hover:text-red-400'
+                                    }`}
                                 >
-                                    <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" /> VIVO
+                                    <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" /> EN VIVO
+                                </button>
+                                <button
+                                    onClick={() => { setEstado('en_curso'); setModoRegistro('asincronico'); }}
+                                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-[10px] font-black transition-all border ${
+                                        modoRegistro === 'asincronico' 
+                                        ? 'bg-amber-600/20 text-amber-500 border-amber-500/30 shadow-lg shadow-amber-900/20' 
+                                        : 'bg-black/20 border-transparent text-zinc-600 hover:bg-amber-500/10 hover:text-amber-400'
+                                    }`}
+                                >
+                                    <Clock size={14} /> ASINCRÓNICO
                                 </button>
                             </div>
                         </div>
