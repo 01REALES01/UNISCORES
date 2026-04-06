@@ -30,18 +30,42 @@ export function WelcomeNotice() {
         const hasSeenNotice = sessionStorage.getItem('welcome-notice-seen');
         if (hasSeenNotice) return;
 
-        // Sincronizar con el final de la Splash (aprox 3.8s para ser inmediato al fadeout)
-        const timer = setTimeout(() => setIsVisible(true), 3800);
-        
-        const autoClose = setTimeout(() => {
-            setIsVisible(false);
-            sessionStorage.setItem('welcome-notice-seen', 'true');
-        }, DURATION + 3800);
+        const SPLASH_KEY = "uninorte_splash_seen";
+        const splashAlreadySeen = sessionStorage.getItem(SPLASH_KEY) === "true";
 
-        return () => {
-            clearTimeout(timer);
-            clearTimeout(autoClose);
+        let autoCloseTimer: NodeJS.Timeout;
+
+        const showNotice = () => {
+            // Pequeño delay de 800ms tras el fin del splash para mayor elegancia
+            const timer = setTimeout(() => {
+                setIsVisible(true);
+                
+                // Configurar auto-cierre tras aparecer
+                autoCloseTimer = setTimeout(() => {
+                    setIsVisible(false);
+                    sessionStorage.setItem('welcome-notice-seen', 'true');
+                }, DURATION);
+            }, 800);
+            
+            return () => clearTimeout(timer);
         };
+
+        if (splashAlreadySeen) {
+            const cleanup = showNotice();
+            return () => {
+                cleanup();
+                if (autoCloseTimer) clearTimeout(autoCloseTimer);
+            };
+        } else {
+            const handleSplashFinished = () => {
+                showNotice();
+            };
+            window.addEventListener('splash-finished', handleSplashFinished);
+            return () => {
+                window.removeEventListener('splash-finished', handleSplashFinished);
+                if (autoCloseTimer) clearTimeout(autoCloseTimer);
+            };
+        }
     }, []);
 
     const handleClose = () => {

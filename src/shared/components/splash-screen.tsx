@@ -110,6 +110,7 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
                     try { sessionStorage.setItem(SPLASH_KEY, "true"); } catch { }
                     setTimeout(() => {
                         setIsVisible(false);
+                        window.dispatchEvent(new CustomEvent("splash-finished"));
                         onComplete?.();
                     }, 700);
                     return;
@@ -157,6 +158,7 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
                     try { sessionStorage.setItem(SPLASH_KEY, "true"); } catch { }
                     setTimeout(() => {
                         setIsVisible(false);
+                        window.dispatchEvent(new CustomEvent("splash-finished"));
                         onComplete?.();
                     }, 400);
                 }}
