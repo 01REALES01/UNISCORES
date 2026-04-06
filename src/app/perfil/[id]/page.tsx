@@ -474,7 +474,7 @@ export default function PublicProfilePage() {
 
             <MainNavbar user={user} profile={currentUserProfile} isStaff={isStaff} />
 
-            <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-8 pb-32 relative z-10 space-y-16">
+            <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-6 sm:pt-8 pb-32 relative z-10 space-y-12 sm:space-y-16">
                 {/* Back button */}
                 <div>
                     <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-sans">
@@ -503,7 +503,7 @@ export default function PublicProfilePage() {
                             <Avatar
                                 name={profile.full_name}
                                 className={cn(
-                                    "relative w-44 h-44 lg:w-64 lg:h-64 rounded-[3rem] border border-white/10 shadow-2xl bg-black text-5xl lg:text-7xl font-sans ring-1 ring-white/5",
+                                    "relative w-32 h-32 sm:w-44 sm:h-44 lg:w-64 lg:h-64 rounded-[2.5rem] sm:rounded-[3rem] border border-white/10 shadow-2xl bg-black text-3xl sm:text-5xl lg:text-7xl font-sans ring-1 ring-white/5",
                                     isProjectCreator && "border-amber-500/40 ring-amber-500/20 shadow-amber-500/10"
                                 )}
                             />
@@ -515,9 +515,9 @@ export default function PublicProfilePage() {
                         </div>
 
                         {/* Text Content Hub */}
-                        <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left gap-6">
-                            <div className="space-y-2">
-                                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-4">
+                        <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left gap-6 w-full">
+                            <div className="space-y-4 w-full">
+                                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
                                     {profile.roles?.map((role: string) => renderRoleCard(role))}
                                     {isProjectCreator && (
                                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
@@ -538,7 +538,7 @@ export default function PublicProfilePage() {
                                 </div>
                                 <h1
                                     className={cn(
-                                        "text-5xl lg:text-8xl font-black font-sans tracking-tight leading-none mb-2 drop-shadow-2xl",
+                                        "text-2xl sm:text-5xl lg:text-8xl font-black font-sans tracking-tighter leading-[1.1] mb-2 drop-shadow-2xl break-all sm:break-words",
                                         isProjectCreator
                                             ? "text-transparent bg-clip-text bg-gradient-to-b from-white via-amber-200 to-amber-500"
                                             : !profile.name_color ? "text-white" : undefined
@@ -547,51 +547,63 @@ export default function PublicProfilePage() {
                                 >
                                     {profile.full_name}
                                 </h1>
-                                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5 mt-2 lg:mt-4">
+                                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5 mt-2 lg:mt-4 justify-center lg:justify-start w-fit mx-auto lg:mx-0">
                                   <Clock size={12} className="text-white/20" />
                                   <span className="text-[10px] font-display font-black tracking-widest text-white/30 uppercase">Member Since: {memberSince}</span>
                                 </div>
                             </div>
 
-                            {/* Integrated Social Stats Bar */}
-                            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1 p-1.5 bg-black/40 border border-white/10 rounded-[2rem] backdrop-blur-xl shadow-2xl">
-                                {/* Puntos */}
-                                <div className="flex items-center gap-3 px-6 py-4 rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors">
-                                    <div className="p-2 bg-violet-500/15 rounded-xl text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.1)] group-hover/stat:scale-110 transition-transform">
-                                        <Target size={18} />
+                            {/* ━━━ SOCIAL ENGINE ━━━ */}
+                            <div className="flex flex-col gap-3 w-full sm:w-auto">
+                                {/* 1. Statistical Counters (3-column grid on mobile) */}
+                                <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-stretch justify-center lg:justify-start gap-1.5 p-1 bg-black/40 border border-white/10 rounded-[2.5rem] sm:rounded-[2rem] backdrop-blur-xl shadow-2xl w-full sm:w-auto overflow-hidden">
+                                    {/* Puntos */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-2 sm:px-6 py-4 rounded-[2rem] sm:rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors justify-center min-w-0">
+                                        <div className="p-1.5 sm:p-2 bg-violet-500/15 rounded-xl text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.1)] group-hover/stat:scale-110 transition-transform shrink-0">
+                                            <Target size={14} className="sm:w-[18px] sm:h-[18px]" />
+                                        </div>
+                                        <div className="leading-tight text-center sm:text-left min-w-0 w-full">
+                                            <p className="text-[14px] sm:text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md truncate">{points}</p>
+                                            <p className="text-[7px] sm:text-[9px] font-display font-black text-white/30 uppercase tracking-[0.1em] sm:tracking-[0.2em]">Puntos</p>
+                                        </div>
                                     </div>
-                                    <div className="leading-tight">
-                                        <p className="text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md">{points}</p>
-                                        <p className="text-[9px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Puntos Globales</p>
+                                    {/* AMIGOS */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-2 sm:px-6 py-4 rounded-[2rem] sm:rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors justify-center min-w-0">
+                                        <div className="p-1.5 sm:p-2 bg-emerald-500/15 rounded-xl text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] group-hover/stat:scale-110 transition-transform shrink-0">
+                                            <Users size={14} className="sm:w-[18px] sm:h-[18px]" />
+                                        </div>
+                                        <div className="leading-tight text-center sm:text-left min-w-0 w-full">
+                                            <p className="text-[14px] sm:text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md truncate">{friendsCount}</p>
+                                            <p className="text-[7px] sm:text-[9px] font-display font-black text-white/30 uppercase tracking-[0.1em] sm:tracking-[0.2em]">Amigos</p>
+                                        </div>
+                                    </div>
+                                    {/* SEGUIDORES (FANS) */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-2 sm:px-6 py-4 rounded-[2rem] sm:rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors justify-center min-w-0">
+                                        <div className="p-1.5 sm:p-2 bg-blue-500/15 rounded-xl text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)] group-hover/stat:scale-110 transition-transform shrink-0">
+                                            <Star size={14} className="sm:w-[18px] sm:h-[18px]" />
+                                        </div>
+                                        <div className="leading-tight text-center sm:text-left min-w-0 w-full">
+                                            <p className="text-[14px] sm:text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md truncate">{profile.followers_count || 0}</p>
+                                            <p className="text-[7px] sm:text-[9px] font-display font-black text-white/30 uppercase tracking-[0.1em] sm:tracking-[0.2em]">Fans</p>
+                                        </div>
                                     </div>
                                 </div>
-                                {/* AMIGOS */}
-                                <div className="flex items-center gap-3 px-6 py-4 rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors">
-                                    <div className="p-2 bg-emerald-500/15 rounded-xl text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] group-hover/stat:scale-110 transition-transform">
-                                        <Users size={18} />
-                                    </div>
-                                    <div className="leading-tight">
-                                        <p className="text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md">{friendsCount}</p>
-                                        <p className="text-[9px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Amigos</p>
-                                    </div>
-                                </div>
-                                {/* ACTIONS */}
-                                <div className="flex items-center gap-2 pl-6 pr-3">
+
+                                {/* 2. Action Buttons (Separate row on mobile) */}
+                                <div className="flex gap-2 w-full">
                                     {profileId === user?.id ? (
                                         <Link 
                                             href="/perfil/editar" 
-                                            className="flex items-center gap-2 px-6 py-4 rounded-[1.5rem] bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20 hover:border-violet-500/40 transition-all group font-display font-black uppercase tracking-widest text-[10px] shadow-[0_0_20px_rgba(139,92,246,0.1)]"
+                                            className="flex items-center gap-2 px-6 py-4 rounded-[1.8rem] sm:rounded-[1.5rem] bg-violet-600 border border-violet-500 text-white hover:bg-violet-500 transition-all group font-display font-black uppercase tracking-widest text-[10px] shadow-[0_4px_20px_rgba(124,58,237,0.3)] w-full justify-center"
                                         >
-                                            <div className="p-1 bg-violet-400/20 rounded-lg group-hover:rotate-45 transition-transform">
-                                                <Zap size={14} className="fill-current" />
-                                            </div>
-                                            Configurar Perfil
+                                            <Zap size={14} className="fill-current group-hover:rotate-12 transition-transform" />
+                                            <span>Configuración</span>
                                         </Link>
                                     ) : (
-                                        <>
-                                            <FollowButton targetId={profileId} initialFollowersCount={profile.followers_count || 0} />
+                                        <div className="flex items-center gap-2 w-full">
+                                            <FollowButton targetId={profileId} initialFollowersCount={profile.followers_count || 0} variant="action-only" />
                                             <FriendButton currentUserId={user?.id} targetId={profileId} />
-                                        </>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -604,7 +616,7 @@ export default function PublicProfilePage() {
                                 <div className="lg:col-span-4 lg:sticky lg:top-24">
                         {isDeportista ? (
                             <div className={cn(
-                                "relative overflow-hidden rounded-[3rem] p-8 lg:p-10 shadow-[0_0_50px_rgba(0,0,0,0.5)] min-h-[500px] flex flex-col group border-2 transition-all duration-700",
+                                "relative overflow-hidden rounded-[2.5rem] sm:rounded-[3rem] p-6 sm:p-10 shadow-[0_0_50px_rgba(0,0,0,0.5)] min-h-[450px] sm:min-h-[500px] flex flex-col group border-2 transition-all duration-700",
                                 (athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto') ? "bg-gradient-to-br from-[#1a0f05]/80 to-[#0A0705]/95 border-orange-500/30 backdrop-blur-2xl" :
                                 (athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Fútbol') ? "bg-gradient-to-br from-[#051a0f]/80 to-[#0A0705]/95 border-emerald-500/30 backdrop-blur-2xl" :
                                 "bg-gradient-to-br from-[#111]/80 to-[#000]/95 border-white/10 backdrop-blur-2xl"
@@ -746,7 +758,7 @@ export default function PublicProfilePage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="relative overflow-hidden rounded-[3rem] bg-black/40 backdrop-blur-3xl border border-violet-500/20 p-10 shadow-2xl min-h-[400px] flex flex-col justify-between group">
+                            <div className="relative overflow-hidden rounded-[2.5rem] sm:rounded-[3rem] bg-black/40 backdrop-blur-3xl border border-violet-500/20 p-6 sm:p-10 shadow-2xl min-h-[350px] sm:min-h-[400px] flex flex-col justify-between group">
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.05] group-hover:scale-110 transition-transform duration-1000">
                                     <Target size={260} />
                                 </div>
@@ -775,7 +787,7 @@ export default function PublicProfilePage() {
                         {carreras.length > 0 ? (
                             <div className="grid grid-cols-1 gap-6">
                                 {carreras.map((c) => (
-                                    <Link key={c.id} href={`/carrera/${c.id}`} className="group relative rounded-[3rem] bg-black/40 border border-white/10 p-8 lg:p-10 overflow-hidden hover:border-violet-500/30 transition-all duration-500 shadow-2xl flex flex-col sm:flex-row items-center sm:items-stretch gap-10 backdrop-blur-xl">
+                                    <Link key={c.id} href={`/carrera/${c.id}`} className="group relative rounded-[2.5rem] sm:rounded-[3rem] bg-black/40 border border-white/10 p-6 sm:p-10 overflow-hidden hover:border-violet-500/30 transition-all duration-500 shadow-2xl flex flex-col sm:flex-row items-center sm:items-stretch gap-6 sm:gap-10 backdrop-blur-xl">
                                         {/* Large Blurry Background Escudo */}
                                         <div className="absolute -right-20 -top-20 w-96 h-96 opacity-[0.05] blur-[100px] rounded-full bg-violet-600 pointer-events-none group-hover:opacity-[0.08] transition-opacity duration-700" />
                                         

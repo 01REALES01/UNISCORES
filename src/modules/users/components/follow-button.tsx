@@ -9,9 +9,11 @@ import { cn } from "@/lib/utils";
 interface FollowButtonProps {
     targetId: string;
     initialFollowersCount: number;
+    variant?: 'default' | 'action-only';
+    showCount?: boolean;
 }
 
-export function FollowButton({ targetId, initialFollowersCount }: FollowButtonProps) {
+export function FollowButton({ targetId, initialFollowersCount, variant = 'default', showCount = true }: FollowButtonProps) {
     const { user } = useAuth();
     const [isFollowing, setIsFollowing] = useState(false);
     const [followersCount, setFollowersCount] = useState(initialFollowersCount);
@@ -93,6 +95,35 @@ export function FollowButton({ targetId, initialFollowersCount }: FollowButtonPr
                     <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.15em]">Seguidores</p>
                 </div>
             </div>
+        );
+    }
+
+    if (variant === 'action-only') {
+        return (
+            <button
+                onClick={handleFollowToggle}
+                disabled={isLoading}
+                className={cn(
+                    "flex flex-col items-center justify-center px-6 rounded-2xl border shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all h-[60px] flex-1 min-w-[120px] font-display font-black uppercase tracking-[0.1em]",
+                    isFollowing 
+                        ? "bg-black/60 border-white/10 hover:bg-black/80 hover:border-violet-500/40 text-white/40 hover:text-violet-400" 
+                        : "bg-violet-600 hover:bg-violet-500 border-violet-500 text-white shadow-[0_4px_25px_rgba(139,92,246,0.3)] hover:scale-105 active:scale-95"
+                )}
+            >
+                {isLoading ? (
+                    <Loader2 size={18} className="animate-spin text-white/20" />
+                ) : isFollowing ? (
+                    <>
+                        <UserMinus size={16} className="mb-0.5" />
+                        <span className="text-[9px]">SIGUIENDO</span>
+                    </>
+                ) : (
+                    <>
+                        <UserPlus size={16} className="mb-0.5" />
+                        <span className="text-[9px]">SEGUIR</span>
+                    </>
+                )}
+            </button>
         );
     }
 
