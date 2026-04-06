@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const SPLASH_KEY = "uninorte_splash_seen";
-const TOTAL_FRAMES = 80;
-const FRAME_INTERVAL_MS = 40; // ~25fps
+const TOTAL_FRAMES = 179;
+const FRAME_INTERVAL_MS = 22; // ~45fps to reach ~4s duration with 179 frames
 
 function getFramePath(index: number) {
-    return `/animacion_UNISCORES/The_general_idea_1080p_202602250113_${index.toString().padStart(3, '0')}.jpg`;
+    return `/animacion_UNISCORES/ezgif-frame-${(index + 1).toString().padStart(3, '0')}.jpg`;
 }
 
 export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
@@ -21,9 +21,34 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
     const animIdRef = useRef<number | null>(null);
     const lastTimeRef = useRef(0);
 
-    // Check session + preload all images
+    // Dynamic config based on device
+    const [config, setConfig] = useState({
+        folder: "/animacion_UNISCORES/",
+        total: 179,
+        interval: 22,
+        startFrame: 0,
+        isMobile: false
+    });
+
     useEffect(() => {
         setIsClient(true);
+
+        const isMobileDevice = window.innerWidth < 768;
+        const currentConfig = isMobileDevice ? {
+            folder: "/animacion_movil/",
+            total: 200,
+            interval: 22,
+            startFrame: 20, // Skip first 20 frames as requested
+            isMobile: true
+        } : {
+            folder: "/animacion_UNISCORES/",
+            total: 179,
+            interval: 22,
+            startFrame: 0,
+            isMobile: false
+        };
+        
+        setConfig(currentConfig);
 
         try {
             if (sessionStorage.getItem(SPLASH_KEY) === "true") {
@@ -33,24 +58,20 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
             }
         } catch { }
 
-        // Preload all frames into Image objects
+        // Preload frames
         let loaded = 0;
         const images: HTMLImageElement[] = [];
 
-        for (let i = 0; i < TOTAL_FRAMES; i++) {
+        for (let i = 0; i < currentConfig.total; i++) {
             const img = new Image();
-            img.src = getFramePath(i);
+            img.src = `${currentConfig.folder}ezgif-frame-${(i + 1).toString().padStart(3, '0')}.jpg`;
             img.onload = () => {
                 loaded++;
-                if (loaded >= TOTAL_FRAMES) {
-                    setIsReady(true);
-                }
+                if (loaded >= currentConfig.total) setIsReady(true);
             };
             img.onerror = () => {
                 loaded++;
-                if (loaded >= TOTAL_FRAMES) {
-                    setIsReady(true);
-                }
+                if (loaded >= currentConfig.total) setIsReady(true);
             };
             images.push(img);
         }
@@ -61,7 +82,6 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
         };
     }, [onComplete]);
 
-    // Start canvas animation once images are ready
     const startAnimation = useCallback(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -71,23 +91,21 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
         const images = imagesRef.current;
         if (images.length === 0) return;
 
-        // Set canvas size to match first image
         const firstImg = images[0];
         canvas.width = firstImg.naturalWidth;
         canvas.height = firstImg.naturalHeight;
 
-        frameRef.current = 0;
+        frameRef.current = config.startFrame;
         lastTimeRef.current = performance.now();
 
         const animate = (now: number) => {
             const elapsed = now - lastTimeRef.current;
 
-            if (elapsed >= FRAME_INTERVAL_MS) {
-                lastTimeRef.current = now - (elapsed % FRAME_INTERVAL_MS);
+            if (elapsed >= config.interval) {
+                lastTimeRef.current = now - (elapsed % config.interval);
                 const frame = frameRef.current;
 
-                if (frame >= TOTAL_FRAMES) {
-                    // Animation complete
+                if (frame >= config.total) {
                     setIsFadingOut(true);
                     try { sessionStorage.setItem(SPLASH_KEY, "true"); } catch { }
                     setTimeout(() => {
@@ -97,9 +115,8 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
                     return;
                 }
 
-                // Draw current frame
                 const img = images[frame];
-                if (img.complete && img.naturalWidth > 0) {
+                if (img && img.complete && img.naturalWidth > 0) {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 }
@@ -111,7 +128,7 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
         };
 
         animIdRef.current = requestAnimationFrame(animate);
-    }, [onComplete]);
+    }, [onComplete, config]);
 
     useEffect(() => {
         if (isReady) {
@@ -129,11 +146,10 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
             <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-black">
                 <canvas
                     ref={canvasRef}
-                    className="w-full h-full object-cover md:object-contain md:scale-[1.15]"
+                    className={`w-full h-full ${config.isMobile ? 'object-cover' : 'object-contain scale-[1.15]'}`}
                 />
             </div>
 
-            {/* Skip button */}
             <button
                 onClick={() => {
                     if (animIdRef.current) cancelAnimationFrame(animIdRef.current);
