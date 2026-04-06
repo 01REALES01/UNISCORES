@@ -72,6 +72,12 @@ export const PredictionCard = ({
 
   const scoreInfo = getCurrentScore(match.disciplinas?.name, match.marcador_detalle || {});
 
+  const isTenis = match.disciplinas?.name === 'Tenis';
+  const rosterA = match.roster_partido?.find((r: any) => r.equipo_a_or_b === 'equipo_a');
+  const rosterB = match.roster_partido?.find((r: any) => r.equipo_a_or_b === 'equipo_b');
+  const nameA = isTenis && rosterA?.jugador?.nombre ? rosterA.jugador.nombre : (match.carrera_a?.nombre || match.equipo_a);
+  const nameB = isTenis && rosterB?.jugador?.nombre ? rosterB.jugador.nombre : (match.carrera_b?.nombre || match.equipo_b);
+
   const getCardStyle = () => {
     if (isFinished && predictionCorrect === true) {
       return "bg-emerald-500/5 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.12)] ring-1 ring-emerald-500/10 backdrop-blur-3xl";
@@ -142,10 +148,10 @@ export const PredictionCard = ({
           <>
             <div className="flex flex-col items-center flex-1 max-w-[120px] relative z-10">
               <div className="w-20 h-20 rounded-full bg-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center text-3xl font-display font-black mb-4 shadow-[0_0_30px_rgba(255,255,255,0.05)] text-white/90 group-hover:scale-110 group-hover:bg-white/10 group-hover:text-white group-hover:border-white/40 transition-all duration-500">
-                {match.disciplinas?.name === 'Ajedrez' ? '♟' : (match.carrera_a?.nombre || match.equipo_a).substring(0, 1).toUpperCase()}
+                {match.disciplinas?.name === 'Ajedrez' ? '♟' : (nameA).substring(0, 1).toUpperCase()}
               </div>
               <p className="text-xs font-display font-black text-white/80 text-center leading-tight tracking-wide line-clamp-2 px-1">
-                {match.carrera_a?.nombre || match.equipo_a}
+                {nameA}
               </p>
             </div>
 
@@ -177,10 +183,10 @@ export const PredictionCard = ({
 
             <div className="flex flex-col items-center flex-1 max-w-[120px] relative z-10">
               <div className="w-20 h-20 rounded-full bg-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center text-3xl font-display font-black mb-4 shadow-[0_0_30px_rgba(255,255,255,0.05)] text-white/90 group-hover:scale-110 group-hover:bg-white/10 group-hover:text-white group-hover:border-white/40 transition-all duration-500">
-                {match.disciplinas?.name === 'Ajedrez' ? '♞' : (match.carrera_b?.nombre || match.equipo_b).substring(0, 1).toUpperCase()}
+                {match.disciplinas?.name === 'Ajedrez' ? '♞' : (nameB).substring(0, 1).toUpperCase()}
               </div>
               <p className="text-xs font-display font-black text-white/80 text-center leading-tight tracking-wide line-clamp-2 px-1">
-                {match.carrera_b?.nombre || match.equipo_b}
+                {nameB}
               </p>
             </div>
           </>
@@ -208,8 +214,8 @@ export const PredictionCard = ({
                 )}>
                   <Trophy size={16} className="fill-current" />
                   <span className="text-sm font-display font-black tracking-wide">
-                    {prediction?.winner_pick === 'A' ? match.carrera_a?.nombre || match.equipo_a :
-                      prediction?.winner_pick === 'B' ? match.carrera_b?.nombre || match.equipo_b : 'Empate'}
+                    {prediction?.winner_pick === 'A' ? nameA :
+                      prediction?.winner_pick === 'B' ? nameB : 'Empate'}
                   </span>
                 </div>
               )}
@@ -256,9 +262,9 @@ export const PredictionCard = ({
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { key: 'A', name: (match.carrera_a?.nombre || match.equipo_a) },
+                  { key: 'A', name: (nameA) },
                   { key: 'DRAW', name: 'Empate' },
-                  { key: 'B', name: (match.carrera_b?.nombre || match.equipo_b) }
+                  { key: 'B', name: (nameB) }
                 ].map((opt) => (
                   <button
                     key={opt.key}
@@ -307,8 +313,8 @@ export const PredictionCard = ({
           <VotePercentageBar
             matchId={match.id}
             allPredictions={allPredictions}
-            teamA={match.carrera_a?.nombre || match.equipo_a}
-            teamB={match.carrera_b?.nombre || match.equipo_b}
+            teamA={nameA}
+            teamB={nameB}
             sportName={match.disciplinas?.name}
           />
         </div>
