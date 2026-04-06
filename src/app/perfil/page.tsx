@@ -595,7 +595,7 @@ export default function PerfilPage() {
                                             </span>
                                             <h3 className="text-4xl lg:text-5xl font-black text-white group-hover:text-violet-400 transition-colors font-sans tracking-tight leading-none mb-6">{c.nombre}</h3>
                                             <div className="flex items-center justify-center sm:justify-start gap-3 text-[10px] font-display font-black tracking-[0.2em] text-white/30 group-hover:text-white transition-all">
-                                                <span className="border-b border-white/10 pb-1">Acceder al medallero de facultad</span>
+                                                <span className="border-b border-white/10 pb-1">Sección de equipos de facultad</span>
                                                 <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                             </div>
                                         </div>

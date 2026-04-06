@@ -273,10 +273,10 @@ export default function MedalleroPage() {
                 <div className="flex flex-col items-center text-center gap-2 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="flex items-center gap-2 px-3 py-1 bg-violet-600/10 rounded-full border border-violet-500/20 mb-2">
                         <Trophy size={12} className="text-violet-400" />
-                        <span className="font-sans text-[10px] font-black text-violet-400 uppercase tracking-[0.3em]">Carreras y Equipos</span>
+                        <span className="font-sans text-[10px] font-black text-violet-400 uppercase tracking-[0.3em]">Clasificación y Equipos</span>
                     </div>
                     <h1 className="text-4xl md:text-8xl font-black tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 drop-shadow-sm leading-none">
-                        Rendimiento
+                        Equipos
                     </h1>
                     <p className="text-white/40 font-bold max-w-xl mx-auto mt-4 text-sm md:text-base leading-relaxed uppercase tracking-widest font-sans opacity-80">
                         Consulta el desempeño de las carreras por disciplina.

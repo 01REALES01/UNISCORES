@@ -38,13 +38,13 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
 
     const getActiveIndex = () => {
         if (pathname === '/') return 0;
-        if (pathname.startsWith('/calendario')) return 1;
-        if (pathname.startsWith('/partidos')) return 2;
-        if (pathname.startsWith('/noticias')) return 3;
-        if (pathname.startsWith('/mapa')) return 4;
-        if (pathname.startsWith('/medallero')) return 5;
-        if (pathname.startsWith('/quiniela')) return 6;
-        if (pathname.startsWith('/clasificacion')) return 7;
+        if (pathname.startsWith('/partidos')) return 1;
+        if (pathname.startsWith('/clasificacion')) return 2;
+        if (pathname.startsWith('/medallero')) return 3;
+        if (pathname.startsWith('/calendario')) return 4;
+        if (pathname.startsWith('/quiniela')) return 5;
+        if (pathname.startsWith('/noticias')) return 6;
+        if (pathname.startsWith('/mapa')) return 7;
         if (pathname.startsWith('/estadisticas') || pathname.startsWith('/lideres')) return 8;
         if (pathname.startsWith('/admin') && isStaff) return 9;
         return null;
@@ -53,13 +53,13 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
     // User's specific requested text and casing based on the reference image
     const navItems = [
         { title: "Inicio", icon: HomeIcon, href: '/' },
-        { title: "CaLendario", icon: CalendarIcon, href: '/calendario' },
         { title: "PaRtidos", icon: Gamepad2, href: '/partidos' },
+        { title: "ClAsificación", icon: Swords, href: '/clasificacion' },
+        { title: "EqUipos", icon: Trophy, href: '/medallero' },
+        { title: "CaLendario", icon: CalendarIcon, href: '/calendario' },
+        { title: "Acierta y Gana", icon: BarChart3, href: '/quiniela' },
         { title: "NoTicias", icon: Newspaper, href: '/noticias' },
         { title: "MaPa", icon: MapPin, href: '/mapa' },
-        { title: "MeDallería", icon: Trophy, href: '/medallero' },
-        { title: "Acierta y Gana", icon: BarChart3, href: '/quiniela' },
-        { title: "ClAsificación", icon: Swords, href: '/clasificacion' },
         { title: "Líderes", icon: TrendingUp, href: '/estadisticas' },
         ...(isStaff ? [{ title: "Admin", icon: Shield, href: '/admin' }] : []),
     ];

@@ -795,7 +795,7 @@ export default function PublicProfilePage() {
                                                 {c.nombre}
                                             </h3>
                                             <div className="flex items-center justify-center sm:justify-start gap-3 text-[10px] font-display font-black uppercase tracking-[0.2em] text-white/30 group-hover:text-white transition-all">
-                                                <span className="border-b border-white/10 pb-1">ACCEDER AL MEDALLERO DE FACULTAD</span>
+                                                <span className="border-b border-white/10 pb-1">ACCEDER A LA SECCIÓN DE EQUIPOS</span>
                                                 <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                             </div>
                                         </div>

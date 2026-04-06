@@ -184,7 +184,7 @@ export default function ClasificacionPage() {
                                 className="mb-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-violet-500/20 bg-violet-500/10 text-violet-400/80 hover:text-violet-300 hover:bg-violet-500/20 text-xs font-bold transition-colors"
                             >
                                 <GraduationCap size={13} />
-                                Ver carreras
+                                Ver sección de equipos
                             </Link>
                         </div>
                     </div>
