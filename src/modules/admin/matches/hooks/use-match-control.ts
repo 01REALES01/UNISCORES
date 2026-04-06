@@ -405,6 +405,15 @@ export function useMatchControl(matchId: string) {
             detalle.sets = updatedSets;
             detalle.sets_a = sets_a;
             detalle.sets_b = sets_b;
+            // Sync all score aliases so getCurrentScore (reads sets_total_a first)
+            // and sport-helpers standings (reads goles_a first) both return the
+            // correct winner regardless of any prior recalculateTotals call.
+            detalle.sets_total_a = sets_a;
+            detalle.sets_total_b = sets_b;
+            // goles_a/b → standings winner: reflects the deciding set's final score
+            // (in best-of-3 the deciding set winner == match winner, always)
+            detalle.goles_a = puntosA;
+            detalle.goles_b = puntosB;
 
             // If a team has won 2 sets, the match is over — finalize immediately
             if (sets_a >= 2 || sets_b >= 2) {

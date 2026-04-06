@@ -141,6 +141,15 @@ export const AdminScoreboard = ({
                       >
                         <ArrowRight size={16} />
                       </button>
+                    ) : isLive && disciplinaName === 'Voleibol' && currentSet === 3 ? (
+                      <button
+                        onClick={() => handleSetClick(4)}
+                        className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center text-white/25 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all active:scale-95"
+                        style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}
+                        title="Finalizar Partido"
+                      >
+                        <Square size={16} />
+                      </button>
                     ) : (
                       <button onClick={onFinalizar}
                         className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center text-white/25 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all active:scale-95"
@@ -215,7 +224,9 @@ export const AdminScoreboard = ({
             </div>
             <h2 className="text-xl font-black uppercase tracking-tight text-white text-center mb-1">Cerrar Set {currentSet}</h2>
             <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest text-center mb-8">
-              Confirma el resultado antes de avanzar al Set {pendingSet}
+              {pendingSet! > 3
+                ? 'Confirma el resultado final del partido'
+                : `Confirma el resultado antes de avanzar al Set ${pendingSet}`}
             </p>
 
             {/* Set score — editable */}
@@ -247,7 +258,9 @@ export const AdminScoreboard = ({
             <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3 mb-6 flex gap-3">
               <AlertCircle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
               <p className="text-[10px] text-amber-200/80 leading-relaxed">
-                Una vez avances al Set {pendingSet} no podrás volver al Set {currentSet}.
+                {pendingSet! > 3
+                  ? 'Una vez finalices el partido no podrás revertir esta acción.'
+                  : `Una vez avances al Set ${pendingSet} no podrás volver al Set ${currentSet}.`}
               </p>
             </div>
 
@@ -264,7 +277,7 @@ export const AdminScoreboard = ({
                 className="flex-1 h-11 rounded-2xl font-black text-[9px] uppercase tracking-widest text-black transition-all active:scale-95"
                 style={{ background: sportColor, boxShadow: `0 4px 15px ${sportColor}40` }}
               >
-                Avanzar al Set {pendingSet}
+                {pendingSet! > 3 ? 'Finalizar Partido' : `Avanzar al Set ${pendingSet}`}
               </button>
             </div>
           </div>

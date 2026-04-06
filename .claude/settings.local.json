@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -l \"olympics_eventos\" \"/c/Users/H.P VICTUS/OneDrive/Escritorio/Uniscore/project_olympics\"/supabase/*.sql)"
+    ]
+  }
+}

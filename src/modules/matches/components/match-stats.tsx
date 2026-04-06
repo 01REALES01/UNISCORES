@@ -69,6 +69,7 @@ const LeaderCard = ({ label, player, count, color }: { label: string, player: an
 export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
     const isBasketball = sportName?.toLowerCase().includes('baloncesto') || sportName?.toLowerCase().includes('basket');
     const isFootball = sportName?.toLowerCase().includes('futbol') || sportName?.toLowerCase().includes('fútbol') || sportName?.toLowerCase().includes('micro') || sportName?.toLowerCase().includes('sala');
+    const isVolleyball = sportName === 'Voleibol';
 
     const stats = useMemo(() => {
         const teamA = { 
@@ -146,6 +147,69 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
     }, [eventos, match.equipo_a]);
 
     const hasEvents = eventos.length > 0;
+
+    // ═══ VOLLEYBALL: only show sets won ═══
+    if (isVolleyball) {
+        const detalle = match.marcador_detalle || {};
+        const setsA: number = detalle.sets_a ?? 0;
+        const setsB: number = detalle.sets_b ?? 0;
+        const totalSets = setsA + setsB || 1;
+        const sportColor = SPORT_COLORS[sportName || ''] || '#ef4444';
+        const teamBColor = '#64748b';
+        const nameA = match.carrera_a?.nombre || match.equipo_a || 'Equipo A';
+        const nameB = match.carrera_b?.nombre || match.equipo_b || 'Equipo B';
+
+        return (
+            <div className="rounded-[2rem] max-w-4xl mx-auto bg-gradient-to-b from-[#0A0705] to-[#040302] border border-white/5 p-5 sm:p-8 mt-10 shadow-2xl relative overflow-hidden flex flex-col gap-6">
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] blur-[120px] rounded-full pointer-events-none opacity-10" style={{ backgroundColor: sportColor }} />
+
+                {/* Header */}
+                <div className="flex items-center justify-center relative z-10 w-full border-b border-white/5 pb-5">
+                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-white/80 font-sans flex items-center gap-3">
+                        <Activity size={18} className="animate-pulse" style={{ color: sportColor }} /> Estadísticas del Partido
+                    </h3>
+                </div>
+
+                {/* Sets Bar */}
+                <div className="relative z-10 w-full">
+                    <div className="flex items-center justify-between text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-white/50 mb-3 px-1">
+                        <span className="truncate flex-1 text-left text-white/80 max-w-[100px] sm:max-w-none">{nameA}</span>
+                        <span className="px-2 flex-shrink-0 text-[7px] sm:text-[9px] tracking-[0.25em]" style={{ color: sportColor }}>SETS</span>
+                        <span className="truncate flex-1 text-right text-white/80 max-w-[100px] sm:max-w-none">{nameB}</span>
+                    </div>
+                    <div className="flex items-center gap-3 sm:gap-5">
+                        <span className="text-3xl sm:text-4xl font-black tabular-nums text-white">{setsA}</span>
+                        <div className="flex-1 h-2 sm:h-2.5 bg-white/5 rounded-full overflow-hidden flex shadow-inner">
+                            <div className="h-full rounded-l-full transition-all duration-1000" style={{ width: `${(setsA / totalSets) * 100}%`, backgroundColor: sportColor }} />
+                            <div className="h-full rounded-r-full transition-all duration-1000" style={{ width: `${(setsB / totalSets) * 100}%`, backgroundColor: teamBColor }} />
+                        </div>
+                        <span className="text-3xl sm:text-4xl font-black tabular-nums text-white">{setsB}</span>
+                    </div>
+                </div>
+
+                {/* Per-set detail — best of 3 */}
+                <div className="relative z-10 bg-white/[0.02] rounded-2xl p-4 sm:p-5 border border-white/5">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 mb-4 text-center">Resultado por Set</p>
+                    {[1, 2, 3].map((setNum) => {
+                        const scores = (detalle.sets as Record<string, { puntos_a: number; puntos_b: number }>)?.[setNum];
+                        const played = scores !== undefined;
+                        const isCurrent = setNum === (detalle.set_actual ?? 1) && match.estado === 'en_curso';
+                        return (
+                            <div key={setNum} className={played || isCurrent ? '' : 'opacity-25'}>
+                                <StatRow
+                                    label={`Set ${setNum}`}
+                                    valueA={scores?.puntos_a ?? 0}
+                                    valueB={scores?.puntos_b ?? 0}
+                                    colorA={sportColor}
+                                    colorB={teamBColor}
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
 
     if (!hasEvents) {
         return (

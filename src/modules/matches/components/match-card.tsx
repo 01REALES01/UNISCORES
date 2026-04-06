@@ -131,7 +131,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                       EN CURSO
                     </span>
                   </div>
-                ) : (
+                ) : sportName === 'Voleibol' ? null : (
                   <div className={cn(
                     "flex items-center justify-center gap-1 md:gap-2 font-black tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] text-white",
                     (labelA === 'DEUCE' || labelB === 'DEUCE' || labelA === 'AD' || labelB === 'AD')
@@ -153,8 +153,16 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                     {genero}
                   </div>
 
-                  {/* Set indicator: [sA dots] SET X [sB dots] for set-sports; plain extra for others */}
-                  {extra && isSetSport ? (
+                  {/* Voleibol: solo mostrar el set actual */}
+                  {sportName === 'Voleibol' && extra ? (
+                    <div className={cn(
+                      "text-[13px] font-black tracking-[0.25em] uppercase mt-1",
+                      SPORT_ACCENT[sportName] || 'text-white/60',
+                      "drop-shadow-[0_0_8px_currentColor] brightness-125"
+                    )}>
+                      {extra?.includes('Set') ? `SET ${extra.split('Set').pop()?.trim()}` : extra}
+                    </div>
+                  ) : extra && isSetSport ? (
                     <div className="flex items-center justify-between w-full min-w-[160px] px-1">
                       {/* Team A: número sets + dots */}
                       <div className="flex items-center gap-1">
@@ -167,7 +175,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                         </div>
                       </div>
 
-                      {/* SET N label — solo el número de set */}
+                      {/* SET N label */}
                       <div className={cn(
                         "text-[9px] font-black tracking-[0.25em] uppercase",
                         SPORT_ACCENT[sportName] || 'text-white/60',
@@ -440,11 +448,11 @@ export function ResultCard({ partido }: { partido: Partido }) {
                 </div>
               </div>
               <div className="flex items-center gap-1.5 ml-2">
-                {/* For set sports: show sets won as primary, current set score as secondary */}
+                {/* For set sports: show sets won as primary, current set score as secondary (not for volleyball) */}
                 {isSetSport ? (
                   <>
                     <span className={cn("text-xl font-black tabular-nums", setWinnerA ? "text-white" : "text-slate-600")}>{sA}</span>
-                    <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({scoreA})</span>
+                    {sportName !== 'Voleibol' && <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({scoreA})</span>}
                   </>
                 ) : (
                   <span className={cn("text-xl font-black tabular-nums", winnerA ? "text-white" : "text-slate-600")}>{scoreA}</span>
@@ -468,7 +476,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
                 {isSetSport ? (
                   <>
                     <span className={cn("text-xl font-black tabular-nums", setWinnerB ? "text-white" : "text-slate-600")}>{sB}</span>
-                    <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({scoreB})</span>
+                    {sportName !== 'Voleibol' && <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({scoreB})</span>}
                   </>
                 ) : (
                   <span className={cn("text-xl font-black tabular-nums", !winnerA && scoreB > scoreA ? "text-white" : "text-slate-600")}>{scoreB}</span>
