@@ -1,7 +1,16 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+
+/** Service-role client — bypasses RLS for jugador linking */
+function getSupabaseAdmin() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return null;  // graceful fallback if not configured
+    return createClient(url, key);
+}
 
 export async function GET(request: NextRequest) {
     const requestUrl = new URL(request.url)
@@ -90,16 +99,73 @@ export async function GET(request: NextRequest) {
                 }
             }
 
-            // ── Auto-link jugador if email matches (Excel import) ─────────────
-            if (user.email) {
-                const { error: linkError } = await supabase
-                    .from('jugadores')
-                    .update({ profile_id: user.id })
-                    .eq('email', user.email)
-                    .is('profile_id', null)
+            // ── Auto-link jugador → profile (by email, then by name) ─────────
+            // Uses service-role client to bypass RLS restrictions
+            const admin = getSupabaseAdmin();
+            if (admin) {
+                let linked = false;
 
-                if (linkError) {
-                    console.error('[Auth Callback] Auto-link jugador failed:', linkError.message)
+                // 1. Try email match
+                if (user.email) {
+                    const { data: byEmail } = await admin
+                        .from('jugadores')
+                        .update({ profile_id: user.id })
+                        .eq('email', user.email)
+                        .is('profile_id', null)
+                        .select('id');
+                    if (byEmail?.length) linked = true;
+                }
+
+                // 2. If no email match, try exact name match
+                if (!linked) {
+                    const fullName =
+                        user.user_metadata?.full_name ||
+                        user.user_metadata?.name || '';
+                    if (fullName) {
+                        const { data: byName } = await admin
+                            .from('jugadores')
+                            .select('id')
+                            .ilike('nombre', fullName.trim())
+                            .is('profile_id', null)
+                            .limit(2);
+
+                        // Only link if exactly 1 match (avoid ambiguity)
+                        if (byName?.length === 1) {
+                            await admin
+                                .from('jugadores')
+                                .update({ profile_id: user.id, email: user.email || null })
+                                .eq('id', byName[0].id);
+                            linked = true;
+                        }
+                    }
+                }
+
+                // 3. Propagate: update athlete_X_id on partidos via roster
+                if (linked) {
+                    const { data: jugadores } = await admin
+                        .from('jugadores')
+                        .select('id')
+                        .eq('profile_id', user.id);
+
+                    if (jugadores?.length) {
+                        for (const jug of jugadores) {
+                            const { data: roster } = await admin
+                                .from('roster_partido')
+                                .select('partido_id, equipo_a_or_b')
+                                .eq('jugador_id', jug.id);
+
+                            if (roster) {
+                                for (const r of roster) {
+                                    const col = r.equipo_a_or_b === 'equipo_a' ? 'athlete_a_id' : 'athlete_b_id';
+                                    await admin
+                                        .from('partidos')
+                                        .update({ [col]: user.id })
+                                        .eq('id', r.partido_id)
+                                        .is(col, null);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         } catch (err: any) {
