@@ -240,7 +240,7 @@ export function useMatchControl(matchId: string) {
     // Chronometer interval removed — matches no longer track time minute by minute
 
     // Handlers
-    const toggleCronometro = async () => {
+    const toggleCronometro = async (modo: 'en_vivo' | 'asincronico' = 'en_vivo') => {
         if (!match) return;
         try {
             const { data: freshMatch } = await supabase
@@ -252,12 +252,12 @@ export function useMatchControl(matchId: string) {
             const currentEstado = freshMatch?.estado || match.estado;
 
             if (currentEstado === 'programado') {
-                // Simply start the match — no chronometer
                 const sportName = match.disciplinas?.name || "";
                 const nuevoDetalle = {
                     ...freshDetalle,
                     tiempo_inicio: new Date().toISOString(),
                     estado_cronometro: 'pausado',
+                    modo_registro: modo,
                 };
 
                 if (sportName === 'Baloncesto' && !nuevoDetalle.cuarto_actual) {
@@ -270,11 +270,12 @@ export function useMatchControl(matchId: string) {
                 }).eq('id', matchId);
 
                 if (error) throw error;
-                registrarEventoSistema('inicio', 'Inicio del partido', 0, 1);
+                registrarEventoSistema('inicio', `Inicio del partido (${modo})`, 0, 1);
 
                 await logAction('UPDATE_MATCH', 'partido', matchId, {
                     nuevo_estado: 'en_curso',
-                    info: 'El partido ha comenzado'
+                    modo_registro: modo,
+                    info: `Partido iniciado en modo ${modo}`
                 });
             }
         } catch (err: any) {
@@ -285,6 +286,11 @@ export function useMatchControl(matchId: string) {
     const handleNuevoEvento = async (tipo: string, equipo: string, jugador_id: number | null) => {
         if (!match || !profile) return;
         const disciplinaName = match.disciplinas?.name || 'Deporte';
+
+        if (match.estado === 'finalizado' || match.estado === 'cancelado') {
+            toast.error('No se pueden registrar eventos en partidos ya finalizados.');
+            return;
+        }
 
         if (match.estado !== 'en_curso') {
             if (!(match.estado === 'programado' && tipo === 'cambio')) {
@@ -423,6 +429,74 @@ export function useMatchControl(matchId: string) {
         }
     };
 
+    const handleCambiarSetDirecto = async (setNum: number, puntosA: number, puntosB: number) => {
+        if (!match || !profile) return;
+        try {
+            const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
+            const detalle = { ...(freshMatch?.marcador_detalle || match.marcador_detalle || {}) };
+            const currentSetNum = detalle.set_actual || 1;
+
+            // Save confirmed scores for the set being closed
+            const updatedSets = {
+                ...(detalle.sets || {}),
+                [currentSetNum]: { puntos_a: puntosA, puntos_b: puntosB }
+            };
+
+            // Recalculate sets won from all sets
+            let sets_a = 0;
+            let sets_b = 0;
+            Object.values(updatedSets).forEach((s: any) => {
+                if (s.puntos_a > s.puntos_b) sets_a++;
+                else if (s.puntos_b > s.puntos_a) sets_b++;
+            });
+
+            detalle.sets = updatedSets;
+            detalle.sets_a = sets_a;
+            detalle.sets_b = sets_b;
+            // Sync all score aliases so getCurrentScore (reads sets_total_a first)
+            // and sport-helpers standings (reads goles_a first) both return the
+            // correct winner regardless of any prior recalculateTotals call.
+            detalle.sets_total_a = sets_a;
+            detalle.sets_total_b = sets_b;
+            // goles_a/b → standings winner: reflects the deciding set's final score
+            // (in best-of-3 the deciding set winner == match winner, always)
+            detalle.goles_a = puntosA;
+            detalle.goles_b = puntosB;
+
+            // If a team has won 2 sets, the match is over — finalize immediately
+            if (sets_a >= 2 || sets_b >= 2) {
+                detalle.estado_cronometro = 'detenido';
+                await supabase.from('partidos').update({
+                    estado: 'finalizado',
+                    marcador_detalle: auditDetalle(detalle)
+                }).eq('id', matchId);
+                invalidateCache('admin-partidos');
+                registrarEventoSistema('fin', `Partido finalizado — ${sets_a}-${sets_b} en sets`);
+                await logAction('UPDATE_MATCH', 'partido', matchId, {
+                    nuevo_estado: 'finalizado',
+                    marcador_final: detalle
+                });
+                toast.success(`¡Partido finalizado! ${sets_a}–${sets_b} en sets`);
+                return;
+            }
+
+            // Otherwise advance to the next set
+            detalle.set_actual = setNum;
+
+            await supabase.from('partidos').update({ marcador_detalle: auditDetalle(detalle) }).eq('id', matchId);
+            registrarEventoSistema('periodo', `Set ${setNum}`);
+            await logAction('CHANGE_PERIOD', 'partido', matchId, {
+                mensaje: `Set ${setNum}`,
+                set_cerrado: currentSetNum,
+                puntos_a: puntosA,
+                puntos_b: puntosB
+            });
+            toast.success(`Set ${setNum}`);
+        } catch (err: any) {
+            toast.error('Error al cambiar set: ' + err.message);
+        }
+    };
+
     const confirmarFinalizar = async () => {
         if (!match || !profile) return;
         setCronometroActivo(false);
@@ -435,7 +509,10 @@ export function useMatchControl(matchId: string) {
         };
 
         const sportName = match.disciplinas?.name || 'Fútbol';
-        const finalDetalle = recalculateTotals(sportName, nuevoDetalle);
+        // Skip recalculation for async matches — scores were set manually
+        const finalDetalle = nuevoDetalle.modo_registro === 'asincronico'
+            ? nuevoDetalle
+            : recalculateTotals(sportName, nuevoDetalle);
 
         const { error } = await supabase.from('partidos').update({
             estado: 'finalizado',
@@ -564,6 +641,7 @@ export function useMatchControl(matchId: string) {
         handleNuevoEvento,
         handleManualScoreUpdate,
         handleCambiarPeriodo,
+        handleCambiarSetDirecto,
         confirmarFinalizar,
         finalizarPorWO,
         requestDeleteEvento,

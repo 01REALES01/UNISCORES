@@ -721,11 +721,13 @@ export default function PublicMatchDetail() {
                     ) : null}
                 </div>
 
-                <MatchTimeline
-                    match={match}
-                    eventos={eventos}
-                    sportName={sportName}
-                />
+                {sportName !== 'Voleibol' && (
+                    <MatchTimeline
+                        match={match}
+                        eventos={eventos}
+                        sportName={sportName}
+                    />
+                )}
 
                 {/* Match Statistics */}
                 <div className="mt-8">

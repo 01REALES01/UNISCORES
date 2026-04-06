@@ -1,59 +1,60 @@
 import { Avatar } from "@/components/ui-primitives";
-import { Edit2, Play, Square } from "lucide-react";
-import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
+import { Play, Square, Radio, Clock, AlertCircle, CheckCircle, ArrowRight } from "lucide-react";
+import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { SPORT_COLORS } from "@/lib/constants";
-import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface AdminScoreboardProps {
   match: any;
   scoreA: any;
   scoreB: any;
-  labelA?: string;
-  labelB?: string;
-  scoreExtra?: string;
-  onEditScore: () => void;
-  onToggleCronometro: () => void;
+  onIniciarPartido: (modo: 'en_vivo' | 'asincronico') => void;
   onFinalizar: () => void;
-  onOpenFullEditor: () => void;
   onCambiarPeriodo?: () => void;
-  cronometroActivo: boolean;
+  onCambiarSet?: (setNum: number, puntosA: number, puntosB: number) => void;
 }
 
 export const AdminScoreboard = ({
   match,
   scoreA,
   scoreB,
-  labelA,
-  labelB,
-  scoreExtra,
-  onEditScore,
-  onToggleCronometro,
+  onIniciarPartido,
   onFinalizar,
-  onOpenFullEditor,
   onCambiarPeriodo,
-  cronometroActivo
+  onCambiarSet,
 }: AdminScoreboardProps) => {
+  const [showModeModal, setShowModeModal] = useState(false);
+  const [pendingSet, setPendingSet] = useState<number | null>(null);
+  const [editPuntosA, setEditPuntosA] = useState(0);
+  const [editPuntosB, setEditPuntosB] = useState(0);
   const isLive = match.estado === 'en_curso';
   const isFinal = match.estado === 'finalizado';
   const disciplinaName = match.disciplinas?.name || 'Fútbol';
   const sportColor = SPORT_COLORS[disciplinaName] || '#6366f1';
-
   const detalle = match.marcador_detalle || {};
-  const tenisSet = detalle.set_actual || 1;
+  const modoRegistro = detalle.modo_registro;
+  const currentSet = detalle.set_actual || 1;
 
-  const canAdvancePeriod = isLive && !!onCambiarPeriodo && (
-    (disciplinaName === 'Fútbol' && (detalle.tiempo_actual || 1) < 2) ||
-    disciplinaName === 'Baloncesto' ||
-    (disciplinaName === 'Voleibol' && (detalle.set_actual || 1) < 5)
-  );
-  const nextPeriodLabel = disciplinaName === 'Fútbol' ? '2º Tiempo'
-    : disciplinaName === 'Baloncesto'
-      ? ((detalle.cuarto_actual || 1) >= 4 ? 'Prórroga' : `Q${(detalle.cuarto_actual || 1) + 1}`)
-      : disciplinaName === 'Voleibol' ? `Set ${(detalle.set_actual || 1) + 1}`
-      : '';
+  const handleSetClick = (s: number) => {
+    if (s === currentSet) return;
+    if (s < currentSet) {
+      toast.error('No se puede volver a un set anterior.');
+      return;
+    }
+    if (s > currentSet + 1) {
+      toast.error(`Debes completar el Set ${currentSet} antes de avanzar al Set ${s}.`);
+      return;
+    }
+    // Valid next set — pre-fill scores and ask for confirmation
+    setEditPuntosA(detalle.sets?.[currentSet]?.puntos_a ?? 0);
+    setEditPuntosB(detalle.sets?.[currentSet]?.puntos_b ?? 0);
+    setPendingSet(s);
+  };
 
   return (
+    <>
     <div className="max-w-5xl mx-auto py-6">
       <div className="relative rounded-[2.5rem] border overflow-hidden backdrop-blur-sm"
         style={{ borderColor: `${sportColor}12`, background: `linear-gradient(to bottom, ${sportColor}08, transparent)` }}>
@@ -76,72 +77,38 @@ export const AdminScoreboard = ({
                   <Avatar src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} name={getDisplayName(match, 'a')} size="lg" className="h-full w-full rounded-[1.5rem]" />
                 </div>
               </div>
-              <h2 className="text-sm md:text-lg font-black text-white/90 uppercase tracking-wider text-center">
-                {match.athlete_a_id ? (
-                  <Link href={`/perfil/${match.athlete_a_id}`} className="hover:text-emerald-400 transition-colors">{getDisplayName(match, 'a')}</Link>
-                ) : getDisplayName(match, 'a')}
-              </h2>
-              {getCarreraSubtitle(match, 'a') && (
-                match.carrera_a_id ? (
-                  <Link href={`/carrera/${match.carrera_a_id}`} className="text-[10px] text-white/30 font-medium hover:text-white/60 transition-colors">{getCarreraSubtitle(match, 'a')}</Link>
-                ) : (
-                  <span className="text-[10px] text-white/30 font-medium">{getCarreraSubtitle(match, 'a')}</span>
-                )
-              )}
+              <h2 className="text-sm md:text-lg font-black text-white/90 uppercase tracking-wider text-center">{getDisplayName(match, 'a')}</h2>
             </div>
 
             {/* Center */}
             <div className="flex flex-col items-center gap-5 min-w-[240px] sm:min-w-[300px]">
-              <div className="relative group/score">
-                {isLive && (
-                  <button onClick={onEditScore}
-                    className="absolute -top-10 left-1/2 -translate-x-1/2 p-2.5 rounded-xl border text-white/40 opacity-0 group-hover/score:opacity-100 hover:text-white transition-all z-20 shadow-xl backdrop-blur-sm"
-                    style={{ borderColor: `${sportColor}30`, background: `${sportColor}15` }}
-                  >
-                    <Edit2 size={14} strokeWidth={3} />
-                  </button>
-                )}
-                <div className="flex items-center justify-center gap-4 sm:gap-6 px-8 sm:px-12 py-6 sm:py-8 rounded-[2.5rem] border shadow-2xl relative overflow-hidden"
-                  style={{ borderColor: `${sportColor}12`, background: `linear-gradient(to bottom, ${sportColor}06, ${sportColor}02)` }}>
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
-                  <span className={cn(
-                    "font-black tabular-nums relative z-10 text-white drop-shadow-xl",
-                    (labelA === 'DEUCE' || labelB === 'DEUCE' || labelA === 'AD' || labelB === 'AD')
-                      ? "text-3xl sm:text-5xl" : "text-5xl sm:text-7xl md:text-8xl"
-                  )}>{labelA ?? scoreA}</span>
-                  <div className="flex flex-col items-center gap-1 relative z-10">
-                    <span className="text-xl sm:text-3xl font-black text-white/10">:</span>
-                    {isLive && <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: sportColor }} />}
-                  </div>
-                  <span className={cn(
-                    "font-black tabular-nums relative z-10 text-white drop-shadow-xl",
-                    (labelA === 'DEUCE' || labelB === 'DEUCE' || labelA === 'AD' || labelB === 'AD')
-                      ? "text-3xl sm:text-5xl" : "text-5xl sm:text-7xl md:text-8xl"
-                  )}>{labelB ?? scoreB}</span>
+              <div className="flex items-center justify-center gap-4 sm:gap-6 px-8 sm:px-12 py-6 sm:py-8 rounded-[2.5rem] border shadow-2xl relative overflow-hidden"
+                style={{ borderColor: `${sportColor}12`, background: `linear-gradient(to bottom, ${sportColor}06, ${sportColor}02)` }}>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
+                <span className="text-5xl sm:text-7xl md:text-8xl font-black tabular-nums relative z-10 text-white drop-shadow-xl">{scoreA}</span>
+                <div className="flex flex-col items-center gap-1 relative z-10">
+                  <span className="text-xl sm:text-3xl font-black text-white/10">:</span>
+                  {isLive && <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: sportColor }} />}
                 </div>
-                {scoreExtra && isLive && (
-                  <div className="flex items-center justify-center gap-3 mt-2 text-xs font-black tabular-nums text-white/40">
-                    {scoreExtra}
-                  </div>
-                )}
+                <span className="text-5xl sm:text-7xl md:text-8xl font-black tabular-nums relative z-10 text-white drop-shadow-xl">{scoreB}</span>
               </div>
 
-              {(disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa') && match.categoria && (
-                <span className="px-3 py-1 rounded-xl border text-[10px] font-black uppercase tracking-widest text-lime-400"
-                  style={{ borderColor: `${sportColor}20`, background: `${sportColor}08` }}>
-                  {match.categoria === 'intermedio' ? 'Intermedio' : 'Avanzado'}
-                </span>
-              )}
-
               {isLive ? (
-                <div className="flex items-center gap-2.5">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: sportColor }} />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 shadow-[0_0_12px_currentColor]" style={{ background: sportColor }} />
-                  </span>
-                  <span className="font-black text-sm uppercase tracking-[0.2em] drop-shadow-[0_0_10px_currentColor]" style={{ color: sportColor }}>
-                    EN CURSO
-                  </span>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="flex items-center gap-2.5">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: sportColor }} />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 shadow-[0_0_12px_currentColor]" style={{ background: sportColor }} />
+                    </span>
+                    <span className="font-black text-sm uppercase tracking-[0.2em] drop-shadow-[0_0_10px_currentColor]" style={{ color: sportColor }}>
+                      EN CURSO
+                    </span>
+                  </div>
+                  {modoRegistro === 'asincronico' && (
+                    <span className="text-[9px] font-bold text-amber-400/60 uppercase tracking-widest flex items-center gap-1">
+                      <Clock size={10} /> Asincrónico
+                    </span>
+                  )}
                 </div>
               ) : match.estado === 'programado' ? (
                 <span className="text-sm font-black text-white/20 uppercase tracking-[0.2em]">Programado</span>
@@ -151,7 +118,7 @@ export const AdminScoreboard = ({
                 {!isFinal && (
                   <div className="flex items-center gap-2 p-1.5 rounded-2xl border w-full" style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}>
                     {match.estado === 'programado' ? (
-                      <button onClick={onToggleCronometro}
+                      <button onClick={() => setShowModeModal(true)}
                         className="flex-1 h-12 rounded-[0.875rem] flex items-center justify-center gap-2.5 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 text-white shadow-lg"
                         style={{ background: sportColor, boxShadow: `0 4px 15px ${sportColor}40` }}
                       >
@@ -165,21 +132,59 @@ export const AdminScoreboard = ({
                         EN CURSO
                       </div>
                     )}
-                    <button onClick={onFinalizar}
-                      className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center text-white/25 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all active:scale-95"
-                      style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}
-                      title="Finalizar"
-                    >
-                      <Square size={16} />
-                    </button>
+                    {isLive && disciplinaName === 'Voleibol' && currentSet <= 2 ? (
+                      <button
+                        onClick={() => handleSetClick(currentSet + 1)}
+                        className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center transition-all active:scale-95"
+                        style={{ borderColor: `${sportColor}25`, background: `${sportColor}10`, color: sportColor }}
+                        title={`Avanzar al Set ${currentSet + 1}`}
+                      >
+                        <ArrowRight size={16} />
+                      </button>
+                    ) : isLive && disciplinaName === 'Voleibol' && currentSet === 3 ? (
+                      <button
+                        onClick={() => handleSetClick(4)}
+                        className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center text-white/25 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all active:scale-95"
+                        style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}
+                        title="Finalizar Partido"
+                      >
+                        <Square size={16} />
+                      </button>
+                    ) : (
+                      <button onClick={onFinalizar}
+                        className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center text-white/25 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all active:scale-95"
+                        style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}
+                        title="Finalizar"
+                      >
+                        <Square size={16} />
+                      </button>
+                    )}
                   </div>
                 )}
-                {!isFinal && (
-                  <button onClick={onOpenFullEditor}
-                    className="w-full h-10 rounded-2xl border text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:bg-white/5 text-white/50 hover:text-white"
-                    style={{ borderColor: `${sportColor}15` }}>
-                    <Edit2 size={12} /> Edición Total
-                  </button>
+                {isLive && disciplinaName === 'Voleibol' && (
+                  <div className="flex items-center gap-2 px-1">
+                    {[1, 2, 3].map(s => {
+                      const isActive = currentSet === s;
+                      const isPast = s < currentSet;
+                      const isFutureFar = s > currentSet + 1;
+                      const isDisabled = isPast || isFutureFar;
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => handleSetClick(s)}
+                          className="flex-1 h-9 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95"
+                          style={isActive
+                            ? { background: sportColor, color: '#000', boxShadow: `0 2px 10px ${sportColor}40` }
+                            : isDisabled
+                              ? { background: `${sportColor}05`, color: `${sportColor}30`, border: `1px solid ${sportColor}10`, cursor: 'not-allowed' }
+                              : { background: `${sportColor}10`, color: `${sportColor}80`, border: `1px solid ${sportColor}20` }
+                          }
+                        >
+                          Set {s}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
               
@@ -198,22 +203,151 @@ export const AdminScoreboard = ({
                   <Avatar src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} name={getDisplayName(match, 'b')} size="lg" className="h-full w-full rounded-[1.5rem]" />
                 </div>
               </div>
-              <h2 className="text-sm md:text-lg font-black text-white/90 uppercase tracking-wider text-center">
-                {match.athlete_b_id ? (
-                  <Link href={`/perfil/${match.athlete_b_id}`} className="hover:text-emerald-400 transition-colors">{getDisplayName(match, 'b')}</Link>
-                ) : getDisplayName(match, 'b')}
-              </h2>
-              {getCarreraSubtitle(match, 'b') && (
-                match.carrera_b_id ? (
-                  <Link href={`/carrera/${match.carrera_b_id}`} className="text-[10px] text-white/30 font-medium hover:text-white/60 transition-colors">{getCarreraSubtitle(match, 'b')}</Link>
-                ) : (
-                  <span className="text-[10px] text-white/30 font-medium">{getCarreraSubtitle(match, 'b')}</span>
-                )
-              )}
+              <h2 className="text-sm md:text-lg font-black text-white/90 uppercase tracking-wider text-center">{getDisplayName(match, 'b')}</h2>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    {/* Volleyball Set Confirmation Modal */}
+    {pendingSet !== null && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="relative bg-[#0a0816] border rounded-[3rem] p-10 max-w-sm w-full shadow-2xl overflow-hidden animate-in zoom-in-95"
+          style={{ borderColor: `${sportColor}20` }}>
+          <div className="absolute top-0 left-0 right-0 h-1.5" style={{ background: `linear-gradient(to right, ${sportColor}, ${sportColor}80)` }} />
+
+          <div className="relative z-10">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 border"
+              style={{ background: `${sportColor}15`, borderColor: `${sportColor}30` }}>
+              <CheckCircle size={32} style={{ color: sportColor }} />
+            </div>
+            <h2 className="text-xl font-black uppercase tracking-tight text-white text-center mb-1">Cerrar Set {currentSet}</h2>
+            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest text-center mb-8">
+              {pendingSet! > 3
+                ? 'Confirma el resultado final del partido'
+                : `Confirma el resultado antes de avanzar al Set ${pendingSet}`}
+            </p>
+
+            {/* Set score — editable */}
+            <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 mb-6">
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 text-center mb-4">
+                Set {currentSet} — Marcador Final
+              </p>
+              <div className="flex items-center justify-center gap-4">
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-wider truncate max-w-[90px] text-center">{getDisplayName(match, 'a')}</p>
+                  <div className="flex items-center gap-1.5 bg-white/5 rounded-xl border border-white/10 p-1">
+                    <button onClick={() => setEditPuntosA(v => Math.max(0, v - 1))} className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white font-bold transition-all">−</button>
+                    <span className="text-3xl font-black tabular-nums text-white min-w-[36px] text-center">{editPuntosA}</span>
+                    <button onClick={() => setEditPuntosA(v => v + 1)} className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white font-bold transition-all" style={{ ['--hover-bg' as any]: `${sportColor}20` }}>+</button>
+                  </div>
+                </div>
+                <span className="text-white/20 font-black text-xl mt-5">:</span>
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-wider truncate max-w-[90px] text-center">{getDisplayName(match, 'b')}</p>
+                  <div className="flex items-center gap-1.5 bg-white/5 rounded-xl border border-white/10 p-1">
+                    <button onClick={() => setEditPuntosB(v => Math.max(0, v - 1))} className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white font-bold transition-all">−</button>
+                    <span className="text-3xl font-black tabular-nums text-white min-w-[36px] text-center">{editPuntosB}</span>
+                    <button onClick={() => setEditPuntosB(v => v + 1)} className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white font-bold transition-all">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3 mb-6 flex gap-3">
+              <AlertCircle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-[10px] text-amber-200/80 leading-relaxed">
+                {pendingSet! > 3
+                  ? 'Una vez finalices el partido no podrás revertir esta acción.'
+                  : `Una vez avances al Set ${pendingSet} no podrás volver al Set ${currentSet}.`}
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPendingSet(null)}
+                className="flex-1 h-11 rounded-2xl border text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white/60 transition-all"
+                style={{ borderColor: `${sportColor}15` }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { onCambiarSet?.(pendingSet!, editPuntosA, editPuntosB); setPendingSet(null); }}
+                className="flex-1 h-11 rounded-2xl font-black text-[9px] uppercase tracking-widest text-black transition-all active:scale-95"
+                style={{ background: sportColor, boxShadow: `0 4px 15px ${sportColor}40` }}
+              >
+                {pendingSet! > 3 ? 'Finalizar Partido' : `Avanzar al Set ${pendingSet}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Mode Selection Modal */}
+    {showModeModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="relative bg-[#0a0816] border rounded-[3rem] p-10 max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95"
+          style={{ borderColor: `${sportColor}20` }}>
+          <div className="absolute top-0 left-0 right-0 h-1.5" style={{ background: `linear-gradient(to right, ${sportColor}, ${sportColor}80)` }} />
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
+
+          <div className="relative z-10">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 border"
+              style={{ background: `${sportColor}15`, borderColor: `${sportColor}30` }}>
+              <Play size={32} style={{ color: sportColor }} />
+            </div>
+            <h2 className="text-xl font-black uppercase tracking-tight text-white text-center mb-2">Iniciar Partido</h2>
+            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest text-center mb-8">¿Cómo se registrará el resultado?</p>
+
+            <div className="space-y-3 mb-6">
+              <button
+                onClick={() => { setShowModeModal(false); onIniciarPartido('en_vivo'); }}
+                className="w-full p-5 rounded-2xl border text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
+                style={{ borderColor: `${sportColor}25`, background: `${sportColor}08` }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center border shrink-0"
+                    style={{ background: `${sportColor}20`, borderColor: `${sportColor}35` }}>
+                    <Radio size={20} style={{ color: sportColor }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-tight text-white mb-1">En Vivo</p>
+                    <p className="text-[9px] font-bold text-white/30 leading-relaxed">Resultado y eventos fieles a lo que está pasando en tiempo real.</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { setShowModeModal(false); onIniciarPartido('asincronico'); }}
+                className="w-full p-5 rounded-2xl border text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
+                style={{ borderColor: `${sportColor}15`, background: `${sportColor}04` }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center border shrink-0"
+                    style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}>
+                    <Clock size={20} className="text-white/50" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-tight text-white/70 mb-1">Asincrónico</p>
+                    <p className="text-[9px] font-bold text-white/20 leading-relaxed">El partido aparecerá en curso. El resultado se actualizará al finalizar el encuentro.</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowModeModal(false)}
+              className="w-full h-11 rounded-2xl border text-[9px] font-black uppercase tracking-widest text-white/30 hover:text-white/50 transition-all"
+              style={{ borderColor: `${sportColor}10` }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };

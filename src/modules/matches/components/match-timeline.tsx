@@ -75,10 +75,10 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
 
               return (
                 <div key={e.id || idx} className="relative flex items-center min-h-[90px] group/item">
-                  {/* Minute indicator - Centered */}
+                  {/* Event icon indicator - Centered */}
                   <div className="absolute left-1/2 -translate-x-1/2 z-20">
                     <div className="w-9 h-9 rounded-full bg-[#111] border border-white/10 flex items-center justify-center shadow-2xl ring-[6px] ring-[#0a0805] group-hover/item:scale-110 transition-transform duration-300">
-                      <span className="text-[11px] font-black tabular-nums text-white/80">{e.minuto}&apos;</span>
+                      <span className="relative z-10">{eventIcon}</span>
                     </div>
                   </div>
 

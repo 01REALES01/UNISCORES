@@ -93,6 +93,7 @@ export default function MatchControlPage() {
         handleNuevoEvento,
         handleManualScoreUpdate,
         handleCambiarPeriodo,
+        handleCambiarSetDirecto,
         confirmarFinalizar,
         finalizarPorWO,
         requestDeleteEvento,
@@ -163,15 +164,10 @@ export default function MatchControlPage() {
                         match={match}
                         scoreA={scoreA}
                         scoreB={scoreB}
-                        labelA={labelA}
-                        labelB={labelB}
-                        scoreExtra={scoreExtra}
-                        onEditScore={() => setIsEditingScore(true)}
-                        onToggleCronometro={toggleCronometro}
+                        onIniciarPartido={(modo) => toggleCronometro(modo)}
                         onFinalizar={() => setIsEndingMatch(true)}
-                        cronometroActivo={cronometroActivo}
-                        onOpenFullEditor={() => setShowFullEditor(true)}
                         onCambiarPeriodo={handleCambiarPeriodo}
+                        onCambiarSet={(setNum, pA, pB) => handleCambiarSetDirecto(setNum, pA, pB)}
                     />
                 )}
 
