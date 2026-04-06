@@ -5,6 +5,7 @@
 -- Necesario para que auth/callback pueda auto-vincular sin service role key.
 -- ─────────────────────────────────────────────────────────────────────────────
 
+DROP POLICY IF EXISTS "Users can self-link their jugador profile" ON public.jugadores;
 CREATE POLICY "Users can self-link their jugador profile"
     ON public.jugadores FOR UPDATE
     USING (
