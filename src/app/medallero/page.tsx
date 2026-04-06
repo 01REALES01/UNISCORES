@@ -121,22 +121,24 @@ export default function MedalleroPage() {
     }, [carreras, partidos, sportFilter, genderFilter]);
 
     const filteredCarreras = careerStatsList.filter(c => 
-        c.nombre.toLowerCase().includes(searchQuery.toLowerCase())
+        (c.nombre || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const filteredEquiposList = equipos.filter(e => {
         const matchesSport = sportFilter === "todos" || e.disciplina_id === sportFilter;
         const matchesGender = genderFilter === "todos" || e.genero === genderFilter;
-        const matchesSearch = e.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        
+        const safeName = e.nombre || "";
+        const matchesSearch = safeName.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             getCareerNames(e.carrera_ids || []).toLowerCase().includes(searchQuery.toLowerCase());
         
         // --- DEBUG & CLEANING LOGIC ---
         // 1. Check if it's a bracket placeholder (names like "1", "Finalista 1", "Ganador X")
-        const isPlaceholder = /^\d+$/.test(e.nombre.trim()) || 
-                            e.nombre.toLowerCase().includes("finalista") || 
-                            e.nombre.toLowerCase().includes("ganador") ||
-                            e.nombre.toLowerCase().includes("cupo") ||
-                            e.nombre.toLowerCase().includes("grupo");
+        const isPlaceholder = /^\d+$/.test(safeName.trim()) || 
+                            safeName.toLowerCase().includes("finalista") || 
+                            safeName.toLowerCase().includes("ganador") ||
+                            safeName.toLowerCase().includes("cupo") ||
+                            safeName.toLowerCase().includes("grupo");
         
         // 2. A real "Team" must be a combination of 2 or more careers
         const isRealCombinedTeam = (e.carrera_ids?.length || 0) >= 2;
