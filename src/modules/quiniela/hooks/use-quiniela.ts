@@ -19,7 +19,7 @@ export function useQuiniela() {
         setLoading(true);
 
         const [matchesRes, predsRes, allPredsRes, rankingRes, userPubRes] = await Promise.all([
-            safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)').order('fecha', { ascending: true }), 'quiniela-matches'),
+            safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url), roster_partido(equipo_a_or_b, jugador:jugadores(nombre))').order('fecha', { ascending: true }), 'quiniela-matches'),
             safeQuery(supabase.from('pronosticos').select('*').eq('user_id', user.id), 'quiniela-preds'),
             safeQuery(supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'), 'quiniela-allPreds'),
             safeQuery(supabase.from('public_profiles').select('*, display_name, avatar_url, points, current_streak, max_streak, total_predictions, correct_predictions').order('points', { ascending: false }).limit(50), 'quiniela-ranking'),
@@ -49,7 +49,7 @@ export function useQuiniela() {
                 if (userPreds) setPredictions(userPreds);
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, async () => {
-                const { data } = await safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)').order('fecha', { ascending: true }), 'rt-matches');
+                const { data } = await safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url), roster_partido(equipo_a_or_b, jugador:jugadores(nombre))').order('fecha', { ascending: true }), 'rt-matches');
                 if (data) setMatches(data);
             })
             .subscribe();

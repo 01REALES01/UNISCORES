@@ -48,25 +48,73 @@ export function useMatchControl(matchId: string) {
         if (data) setEventos(data);
     }, [matchId]);
 
-    const fetchJugadores = useCallback(async () => {
-        const { data } = await supabase
-            .from('roster_partido')
-            .select('*, jugador:jugadores(*)')
-            .eq('partido_id', matchId);
-        
-        if (data) {
-            // Transform roster data to look like simple players
-            const transformed = data.map((r: any) => ({
-                id: r.jugador?.id,
-                roster_id: r.id, // we might need this for deletion
-                nombre: r.jugador?.nombre,
-                numero: r.jugador?.numero,
-                equipo: r.equipo_a_or_b,
-                profile_id: r.jugador?.profile_id
-            }));
-            setJugadoresA(transformed.filter((j: any) => j.equipo === 'equipo_a'));
-            setJugadoresB(transformed.filter((j: any) => j.equipo === 'equipo_b'));
+    const fetchJugadores = useCallback(async (currentMatch?: Partido) => {
+        const m = currentMatch || match;
+        if (!m) return;
+
+        const isColectivo = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(m.disciplinas?.name || '');
+
+        if (!isColectivo) {
+            // Lógica original para deportes individuales (consulta roster manual)
+            const { data } = await supabase
+                .from('roster_partido')
+                .select('*, jugador:jugadores(*)')
+                .eq('partido_id', matchId);
+            
+            if (data) {
+                const transformed = data.map((r: any) => ({
+                    id: r.jugador?.id,
+                    roster_id: r.id, 
+                    nombre: r.jugador?.nombre,
+                    numero: r.jugador?.numero,
+                    equipo: r.equipo_a_or_b,
+                    profile_id: r.jugador?.profile_id
+                }));
+                setJugadoresA(transformed.filter((j: any) => j.equipo === 'equipo_a'));
+                setJugadoresB(transformed.filter((j: any) => j.equipo === 'equipo_b'));
+            }
+        } else {
+            // Plantilla Virtual para deportes colectivos usando array carrera_ids de Delegaciones
+            let idsA = m.carrera_a_id ? [m.carrera_a_id] : [];
+            let idsB = m.carrera_b_id ? [m.carrera_b_id] : [];
+
+            // Consultar tabla delegaciones por si son equipos fusionados
+            const { data: delegA } = await supabase.from('delegaciones').select('carrera_ids').eq('nombre', m.equipo_a).maybeSingle();
+            const { data: delegB } = await supabase.from('delegaciones').select('carrera_ids').eq('nombre', m.equipo_b).maybeSingle();
+
+            if (delegA?.carrera_ids?.length) idsA = delegA.carrera_ids;
+            if (delegB?.carrera_ids?.length) idsB = delegB.carrera_ids;
+
+            const allCarreraIds = [...new Set([...idsA, ...idsB])];
+
+            if (allCarreraIds.length === 0) {
+                setJugadoresA([]); setJugadoresB([]); return;
+            }
+
+            const { data: jugadores } = await supabase
+                .from('jugadores')
+                .select('*')
+                .eq('disciplina_id', m.disciplina_id)
+                .eq('genero', m.genero)
+                .in('carrera_id', allCarreraIds);
+
+            if (jugadores) {
+                // Ordenar por nombre para un Roster más organizado
+                jugadores.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+                const transformed = jugadores.map(j => ({
+                    id: j.id,
+                    roster_id: null, // Virtual, no se puede "borrar" del partido
+                    nombre: j.nombre,
+                    numero: j.numero,
+                    equipo: (idsA.includes(j.carrera_id) ? 'equipo_a' : 'equipo_b') as 'equipo_a' | 'equipo_b',
+                    profile_id: j.profile_id
+                }));
+                setJugadoresA(transformed.filter(j => j.equipo === 'equipo_a'));
+                setJugadoresB(transformed.filter(j => j.equipo === 'equipo_b'));
+            }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [matchId]);
 
     const fetchMatchDetails = useCallback(async () => {
@@ -89,7 +137,7 @@ export function useMatchControl(matchId: string) {
             if (detalle.minuto_actual !== undefined) setMinutoActual(detalle.minuto_actual);
             if (detalle.estado_cronometro === 'corriendo') setCronometroActivo(true);
 
-            await Promise.all([fetchJugadores(), fetchEventos()]);
+            await Promise.all([fetchJugadores(data as Partido), fetchEventos()]);
         } catch (err: any) {
             console.error(err);
             setErrorCtx(err.message === 'TIMEOUT' ? 'Tiempo de espera agotado. Vuelve a intentarlo.' : err.message);

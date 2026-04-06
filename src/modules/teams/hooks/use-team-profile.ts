@@ -87,30 +87,35 @@ async function fetchTeamProfile(delegacionId: number) {
     // 4. Fetch athletes (Plantilla) that belong to these careers AND play this sport
     let athletesData: any[] = [];
     if (delegacion.carrera_ids && delegacion.carrera_ids.length > 0 && delegacion.disciplina_id) {
-        // First, get profile_ids that play this sport via the join table
-        const { data: pdProfiles } = await supabase
-            .from('profile_disciplinas')
-            .select('profile_id')
-            .eq('disciplina_id', delegacion.disciplina_id);
         
-        const sportProfileIds = (pdProfiles || []).map((r: any) => r.profile_id);
+        const { data: jugadores } = await supabase
+            .from('jugadores')
+            .select('id, nombre, profile:profiles(id, full_name, avatar_url, roles, points, disciplina:disciplinas(name))')
+            .in('carrera_id', delegacion.carrera_ids)
+            .eq('disciplina_id', delegacion.disciplina_id)
+            .eq('genero', delegacion.genero);
 
-        if (sportProfileIds.length > 0) {
-            // Fetch profiles that belong to one of the allied careers AND are in the sport
-            const { data } = await supabase
-                .from('profiles')
-                .select('id, full_name, avatar_url, roles, athlete_disciplina_id, points, disciplina:disciplinas(name), carreras_ids')
-                .overlaps('carreras_ids', delegacion.carrera_ids)
-                .in('id', sportProfileIds);
-            athletesData = data || [];
-        } else {
-            // Fallback to legacy scalar field for backward compat
-            const { data } = await supabase
-                .from('profiles')
-                .select('id, full_name, avatar_url, roles, athlete_disciplina_id, points, disciplina:disciplinas(name), carreras_ids')
-                .overlaps('carreras_ids', delegacion.carrera_ids)
-                .eq('athlete_disciplina_id', delegacion.disciplina_id);
-            athletesData = data || [];
+        if (jugadores) {
+            athletesData = jugadores.map(j => ({
+                id: j.profile?.id || `jugador-${j.id}`, // Generar fallback ID si no tienen un perfil de plataforma conectado
+                full_name: j.profile?.full_name || j.nombre,
+                avatar_url: j.profile?.avatar_url || null,
+                roles: j.profile?.roles || ['deportista'], 
+                points: j.profile?.points || 0,
+                disciplina: j.profile?.disciplina || { name: delegacion.disciplinas?.name }
+            }));
+            
+            // Deduplica por si el administrador incribió dos veces en jugadores a un perfil validado único.
+            const uniqueAthletes = new Map();
+            athletesData.forEach(a => {
+                if (!uniqueAthletes.has(a.id)) {
+                    uniqueAthletes.set(a.id, a);
+                }
+            });
+            athletesData = Array.from(uniqueAthletes.values());
+            
+            // Los jugadores estarán temporalmente ordenados por puntuación, y sino por orden de nombre descendente.
+            athletesData.sort((a, b) => b.points - a.points || a.full_name.localeCompare(b.full_name));
         }
     }
 
@@ -178,7 +183,7 @@ async function fetchTeamProfile(delegacionId: number) {
         delegacion,
         carreras: carreras || [],
         matches,
-        athletes: athletesData.filter((a: any) => a.roles?.includes('deportista')),
+        athletes: athletesData, // Se quita el filtro para que todos los inscritos (incluyendo admins) en jugadores aparezcan.
         stats,
     };
 }
