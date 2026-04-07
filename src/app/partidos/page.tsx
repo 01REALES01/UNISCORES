@@ -5,7 +5,7 @@ import Link from "next/link";
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatches } from "@/hooks/use-matches";
-import { SPORT_ACCENT, SPORT_BORDER, SPORT_GRADIENT, SPORT_GLOW, SPORT_EMOJI } from "@/lib/constants";
+import { SPORT_ACCENT, SPORT_BORDER, SPORT_GRADIENT, SPORT_GLOW, SPORT_EMOJI, SPORT_COLORS } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { SportIcon } from "@/components/sport-icons";
 import { cn } from "@/lib/utils";
@@ -131,12 +131,12 @@ export default function PartidosPage() {
     }, [loading, groupedMatches.length]);
 
     return (
-        <div className="min-h-screen bg-background text-white font-sans pb-24 selection:bg-white/10">
+        <div className="min-h-screen bg-background text-white selection:bg-white/10 font-sans pb-20 relative overflow-x-hidden">
 
         {/* Background Element Watermark - MORE VISIBLE */}
-        <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-end overflow-hidden opacity-[0.18]">
+        <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-end overflow-hidden opacity-[0.25]">
             <img 
-                src="/elementos/12.png" 
+                src="/elementos/08.png" 
                 alt="" 
                 className="w-[800px] md:w-[1100px] h-auto translate-x-[15%] -translate-y-[10%] filter contrast-125 brightness-150" 
                 aria-hidden="true"
@@ -159,13 +159,13 @@ export default function PartidosPage() {
                         </h1>
                     </div>
                     <div className="relative w-full max-w-md animate-in slide-in-from-bottom duration-700">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60" size={18} />
                         <input
                             type="text"
                             placeholder="Busca tu equipo o deporte..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-[1.5rem] pl-12 pr-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500/30 transition-all placeholder:text-white/20 text-white shadow-2xl"
+                            className="w-full h-14 bg-white/[0.12] backdrop-blur-3xl border border-white/30 rounded-[1.5rem] pl-12 pr-6 text-sm font-bold focus:outline-none focus:bg-white/[0.18] focus:ring-4 focus:ring-white/10 focus:border-white/40 transition-all placeholder:text-white/40 text-white shadow-[0_0_30px_rgba(255,255,255,0.05)]"
                         />
                     </div>
                 </header>
@@ -291,7 +291,7 @@ export default function PartidosPage() {
                             <section
                                 key={group.fecha}
                                 id={`date-${group.fecha}`}
-                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-64"
+                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-64 bg-[#281345]/40 rounded-[2.5rem] p-5 md:p-8 border border-white/[0.03]"
                             >
                                 <div className="flex items-center gap-4 mb-2 sm:mb-8 sticky top-[280px] sm:top-[360px] z-30 py-4 pointer-events-none">
                                     <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/5 to-white/10" />
@@ -411,14 +411,22 @@ function UnifiedCard({
     return (
         <Link href={`/partido/${partido.id}`} className="group block h-full">
             <div className={cn(
-                "relative h-full overflow-hidden rounded-[2.2rem] border transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-1 bg-gradient-to-br from-white/10 to-white/[0.02] backdrop-blur-xl border-white/10 shadow-2xl",
+                "relative h-full overflow-hidden rounded-[2.2rem] border transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-1 backdrop-blur-xl shadow-2xl",
                 SPORT_BORDER[sportName] || 'border-white/10',
-            )}>
+            )} style={{ 
+                background: `linear-gradient(135deg, ${SPORT_COLORS[sportName]}15 0%, rgba(255,255,255,0.02) 100%)`,
+                borderColor: `${SPORT_COLORS[sportName]}30`
+            }}>
+                {/* Background Element 08 - Constant Presence */}
+                <div className="absolute -right-16 -bottom-16 w-48 h-48 opacity-[0.08] mix-blend-screen pointer-events-none group-hover:opacity-[0.12] transition-opacity duration-700">
+                    <img src="/elementos/08.png" alt="" className="w-full h-full object-contain filter contrast-125 saturate-150" />
+                </div>
+                
                 {/* Acierta y gana overlay logic */}
                 <div className="absolute inset-0 bg-background mix-blend-overlay opacity-40 group-hover:opacity-30 transition-opacity" />
                 
                 {/* Ambient Background - Large Sport Watermark (Redesigned style) */}
-                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none select-none opacity-[0.14] group-hover:opacity-[0.18] transition-opacity duration-700">
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none select-none opacity-[0.12] group-hover:opacity-[0.16] transition-opacity duration-700">
                     <SportIcon sport={sportName} size={220} className={cn("transition-all duration-700", SPORT_ACCENT[sportName] || 'text-white')} />
                 </div>
 
@@ -426,7 +434,7 @@ function UnifiedCard({
                     {/* Header */}
                     <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner group-hover:border-violet-500/30 transition-colors">
+                            <div className={cn("w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner group-hover:border-violet-500/30 transition-colors", sportName === 'Fútbol' ? 'border-emerald-500/30 shadow-emerald-500/10' : '')}>
                                 <SportIcon sport={sportName} size={15} variant="react" className="text-white transition-opacity group-hover:opacity-100 placeholder:grayscale" />
                             </div>
                             <div className="flex flex-col">
@@ -435,16 +443,16 @@ function UnifiedCard({
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-end gap-1">
+                        <div className="flex flex-col items-end gap-1.5 min-w-[80px] pr-2">
                             {statusLabel === 'LIVE' ? (
                                 <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportName} />
                             ) : (
                                 <div className={cn(
-                                    "flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 shadow-inner",
-                                    statusLabel === 'PROGRAMADO' ? "text-violet-400 border-violet-500/20 bg-violet-500/5" : "text-white/40"
+                                    "flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 shadow-inner",
+                                    statusLabel === 'PROGRAMADO' ? "text-violet-400 border-violet-500/20 bg-violet-500/5 transition-all group-hover:bg-violet-500/10" : "text-white/40"
                                 )}>
                                     {statusIcon}
-                                    <span className="text-[8px] font-bold uppercase tracking-widest">{statusLabel}</span>
+                                    <span className="text-[9px] font-black uppercase tracking-[0.1em]">{statusLabel}</span>
                                 </div>
                             )}
                         </div>

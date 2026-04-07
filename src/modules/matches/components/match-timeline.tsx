@@ -12,20 +12,20 @@ interface MatchTimelineProps {
 }
 
 export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps) {
-  const SPORT_ACCENT: Record<string, string> = {
-    'Fútbol': 'text-emerald-500',
-    'Baloncesto': 'text-orange-500',
-    'Voleibol': 'text-yellow-500',
-    'Tenis': 'text-lime-500',
-    'Tenis de Mesa': 'text-emerald-500',
-    'Ajedrez': 'text-slate-400',
-    'Natación': 'text-cyan-500',
-  };
+  const sportColor = {
+    'Fútbol': '#10B981',
+    'Baloncesto': '#FF8000',
+    'Voleibol': '#FFB000',
+    'Tenis': '#84CC16',
+    'Tenis de Mesa': '#10B981',
+    'Ajedrez': '#94A3B8',
+    'Natación': '#06B6D4',
+  }[sportName] || '#FFFFFF';
 
   return (
-    <div className="rounded-[2.5rem] bg-background/80 backdrop-blur-2xl border border-white/5 p-6 sm:p-10 animate-in fade-in duration-700 delay-200 shadow-2xl shadow-black/40">
+    <div className="rounded-[2.5rem] backdrop-blur-2xl border border-white/5 p-6 sm:p-10 animate-in fade-in duration-700 delay-200 shadow-2xl shadow-black/40" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
       <div className="flex items-center gap-3 mb-8 px-2">
-        <div className={cn("p-2.5 rounded-2xl bg-white/5 border border-white/10", SPORT_ACCENT[sportName])}>
+        <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10" style={{ color: sportColor }}>
           <AlignLeft size={22} className="drop-shadow-[0_0_8px_currentColor]" />
         </div>
         <div>
@@ -66,7 +66,7 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
                 const auditData = parseEventAudit(e.descripcion);
                 return (
                   <div key={e.id || idx} className="relative flex justify-center py-6 w-full">
-                    <div className="bg-background/80 backdrop-blur-md px-6 font-black text-[11px] text-white/30 uppercase tracking-[0.3em] text-center border border-white/5 rounded-full py-1.5 shadow-xl">
+                    <div className="backdrop-blur-md px-6 font-black text-[11px] text-white/30 uppercase tracking-[0.3em] text-center border border-white/5 rounded-full py-1.5 shadow-xl" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
                       {auditData.texto || 'Evento de Sistema'}
                     </div>
                   </div>
@@ -97,8 +97,8 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
                   </p>
                   <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-[0.15em]">{eventLabel}</p>
                 </div>
-                <div className="w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] rounded-xl border bg-emerald-500/10 border-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-lg relative group-hover/item:scale-110 transition-transform">
-                  <div className="absolute inset-0 bg-emerald-500/10 blur-md rounded-xl opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                <div className="w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] rounded-xl border flex items-center justify-center flex-shrink-0 shadow-lg relative group-hover/item:scale-110 transition-transform" style={{ backgroundColor: `${sportColor}15`, borderColor: `${sportColor}30`, color: sportColor }}>
+                  <div className="absolute inset-0 blur-md rounded-xl opacity-0 group-hover/item:opacity-100 transition-opacity" style={{ backgroundColor: `${sportColor}20` }} />
                   <span className="relative z-10">{eventIcon}</span>
                 </div>
                   </div>
@@ -108,14 +108,14 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
                     "w-1/2 pl-8 sm:pl-12 flex items-center justify-start gap-4 transition-all duration-300",
                     !isTeamB ? "opacity-0 pointer-events-none -translate-x-4" : "opacity-100 translate-x-0"
                   )}>
-                    <div className="w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] rounded-xl border bg-cyan-500/10 border-cyan-500/20 text-cyan-400 flex items-center justify-center flex-shrink-0 shadow-lg relative group-hover/item:scale-110 transition-transform">
-                      <div className="absolute inset-0 bg-cyan-500/10 blur-md rounded-xl opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                    <div className="w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] rounded-xl border flex items-center justify-center flex-shrink-0 shadow-lg relative group-hover/item:scale-110 transition-transform" style={{ backgroundColor: `${sportColor}15`, borderColor: `${sportColor}30`, color: sportColor }}>
+                      <div className="absolute inset-0 blur-md rounded-xl opacity-0 group-hover/item:opacity-100 transition-opacity" style={{ backgroundColor: `${sportColor}20` }} />
                       <span className="relative z-10">{eventIcon}</span>
                     </div>
                     <div className="text-left py-1">
                       <p className="text-[13px] sm:text-[15px] font-black leading-tight text-white/95 truncate max-w-[90px] sm:max-w-none">
                         {e.jugadores?.profile_id ? (
-                          <Link href={`/perfil/${e.jugadores.profile_id}`} className="hover:text-cyan-400 transition-colors">
+                          <Link href={`/perfil/${e.jugadores.profile_id}`} className="hover:opacity-80 transition-opacity">
                             {e.jugadores.nombre}
                           </Link>
                         ) : (e.jugadores?.nombre || getDisplayName(match, 'b'))}

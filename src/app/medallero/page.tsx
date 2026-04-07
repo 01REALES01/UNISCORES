@@ -289,7 +289,7 @@ export default function MedalleroPage() {
 
                 {/* Tab Switcher */}
                 <div className="flex flex-col md:flex-row items-center gap-6 mb-12 animate-in fade-in duration-700 delay-200">
-                    <div className="flex w-full md:w-auto p-1.5 bg-[#1a0b38]/60 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl">
+                    <div className="flex w-full md:w-auto p-1.5 bg-[#3a1c5e]/40 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl">
                         {tabs.map(tab => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
@@ -314,16 +314,16 @@ export default function MedalleroPage() {
                     {/* Search & Gender Filters */}
                     <div className="flex-1 w-full flex flex-col sm:flex-row items-center gap-4">
                         <div className="relative w-full">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60" size={18} />
                             <input 
                                 type="text" 
                                 placeholder={activeTab === "carreras" ? "Buscar facultad..." : "Buscar equipo..."}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-[#1a0b38]/60 backdrop-blur-xl border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all font-sans shadow-inner placeholder:text-white/20 text-white"
+                                className="w-full bg-white/[0.12] backdrop-blur-3xl border border-white/30 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:outline-none focus:bg-white/[0.18] focus:ring-4 focus:ring-white/10 focus:border-white/40 transition-all font-sans shadow-[0_0_30px_rgba(255,255,255,0.05)] placeholder:text-white/40 text-white"
                             />
                         </div>
-                        <div className="flex gap-2 p-1.5 bg-[#1a0b38]/60 backdrop-blur-xl border border-white/10 rounded-2xl shrink-0 shadow-inner">
+                        <div className="flex gap-2 p-1.5 bg-[#3a1c5e]/40 backdrop-blur-xl border border-white/10 rounded-2xl shrink-0 shadow-inner">
                             {[
                                 { id: 'todos', label: 'Todos', icon: <Users size={14} /> },
                                 { id: 'masculino', label: '♂', icon: null },
@@ -407,7 +407,7 @@ export default function MedalleroPage() {
                                     <Link
                                         key={entry.id}
                                         href={`/carrera/${entry.id}`}
-                                        className="flex flex-col sm:flex-row bg-gradient-to-br from-white/10 to-white/[0.02] backdrop-blur-xl border border-white/10 hover:border-violet-500/30 transition-all duration-500 hover:translate-x-1 group shadow-2xl rounded-3xl overflow-hidden min-h-[120px]"
+                                        className="flex flex-col sm:flex-row bg-[#3a1c5e]/40 backdrop-blur-xl border border-white/10 hover:border-violet-500/30 transition-all duration-500 hover:translate-x-1 group shadow-2xl rounded-3xl overflow-hidden min-h-[120px]"
                                     >
                                         <div className="absolute inset-0 bg-background mix-blend-overlay opacity-30 pointer-events-none group-hover:opacity-20 transition-opacity" />
                                         <div className="flex flex-1 w-full">
@@ -501,7 +501,7 @@ export default function MedalleroPage() {
                                 <Link
                                     key={e.id}
                                     href={`/equipo/${e.id}`}
-                                    className="group relative flex items-center gap-8 bg-gradient-to-br from-white/10 to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 lg:p-10 overflow-hidden hover:border-violet-500/30 transition-all duration-500 shadow-2xl"
+                                    className="group relative flex items-center gap-8 bg-[#3a1c5e]/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 lg:p-10 overflow-hidden hover:border-violet-500/30 transition-all duration-500 shadow-2xl"
                                 >
                                     <div className="absolute inset-0 bg-background mix-blend-overlay opacity-30 pointer-events-none group-hover:opacity-20 transition-opacity" />
                                     <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center p-6 shrink-0 shadow-inner group-hover:scale-105 group-hover:bg-white/10 transition-all duration-700 relative text-white/20 group-hover:text-violet-400">

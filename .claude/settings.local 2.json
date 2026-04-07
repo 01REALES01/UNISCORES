@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"use-carrera-profile\\\\|useCarreraProfile\" /Users/reales/Desktop/project_olympics/src/app/carrera/[id]/page.tsx)"
+    ]
+  }
+}

@@ -1,55 +1,38 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Badge, Button } from "@/components/ui-primitives";
-import { Trophy, Target, Award, Zap, History, Lock } from "lucide-react";
+import { Trophy, Target, Award, Zap, History, Lock, Clock, Users } from "lucide-react";
 import { SportIcon } from "@/components/sport-icons";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { VotePercentageBar } from "./vote-percentage-bar";
 import { getMatchResult } from "../helpers";
+import { SPORT_ACCENT } from "@/lib/constants";
 
 interface PredictionCardProps {
   match: any;
   prediction: any;
   onPredict: (matchId: any, data: any) => void;
   locked: boolean;
-  mode: 'score' | 'winner';
   allPredictions: any[];
 }
 
 export const PredictionCard = ({
-  match, prediction, onPredict, locked, mode, allPredictions
+  match, prediction, onPredict, locked, allPredictions
 }: PredictionCardProps) => {
-  const [scoreA, setScoreA] = useState(prediction?.goles_a ?? "");
-  const [scoreB, setScoreB] = useState(prediction?.goles_b ?? "");
   const [winnerPick, setWinnerPick] = useState(prediction?.winner_pick ?? null);
 
   useEffect(() => {
-    if (mode === 'score') {
-      setScoreA(prediction?.goles_a ?? "");
-      setScoreB(prediction?.goles_b ?? "");
-    } else {
-      setWinnerPick(prediction?.winner_pick ?? null);
-    }
-  }, [prediction, mode]);
+    setWinnerPick(prediction?.winner_pick ?? null);
+  }, [prediction]);
 
   const handleSave = () => {
-    if (mode === 'score') {
-      if (scoreA === "" || scoreB === "") return;
-      onPredict(match.id, {
-        prediction_type: 'score',
-        goles_a: parseInt(scoreA),
-        goles_b: parseInt(scoreB),
-        winner_pick: null
-      });
-    } else {
-      if (!winnerPick) return;
-      onPredict(match.id, {
-        prediction_type: 'winner',
-        goles_a: null,
-        goles_b: null,
-        winner_pick: winnerPick
-      });
-    }
+    if (!winnerPick) return;
+    onPredict(match.id, {
+      prediction_type: 'winner',
+      goles_a: null,
+      goles_b: null,
+      winner_pick: winnerPick
+    });
   };
 
   const isPredicted = prediction !== undefined && prediction !== null;
@@ -60,14 +43,7 @@ export const PredictionCard = ({
   const matchResult = getMatchResult(match);
   let predictionCorrect: boolean | null = null;
   if (isFinished && isPredicted && matchResult) {
-    if (prediction.prediction_type === 'winner' || prediction.winner_pick) {
-      predictionCorrect = prediction.winner_pick === matchResult;
-    } else if (prediction.prediction_type === 'score') {
-      const md = match.marcador_detalle || {};
-      const actualA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
-      const actualB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
-      predictionCorrect = prediction.goles_a === actualA && prediction.goles_b === actualB;
-    }
+    predictionCorrect = prediction.winner_pick === matchResult;
   }
 
   const scoreInfo = getCurrentScore(match.disciplinas?.name, match.marcador_detalle || {});
@@ -107,11 +83,15 @@ export const PredictionCard = ({
             <SportIcon sport={match.disciplinas?.name} size={14} className="opacity-80" />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-0.5">
-              {match.disciplinas?.name}
+            <p className={cn(
+              "text-[10px] font-black uppercase tracking-widest leading-none mb-1.5",
+              match.disciplinas?.name ? (SPORT_ACCENT[match.disciplinas.name] || "text-slate-500") : "text-slate-500"
+            )}>
+              {match.disciplinas?.name} • <span className="opacity-60">{match.genero || 'Masculino'}</span>
             </p>
-            <p className="text-[9px] font-bold text-white/40 uppercase tracking-tight leading-none tabular-nums">
-              {new Date(match.fecha).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} • {new Date(match.fecha).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false })}
+            <p className="text-[9px] font-bold text-white/20 uppercase tracking-tight leading-none tabular-nums flex items-center gap-1.5">
+              <Clock size={10} className="text-violet-400/40" />
+              {new Date(match.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} • {new Date(match.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false })}
             </p>
           </div>
         </div>
@@ -222,88 +202,59 @@ export const PredictionCard = ({
             </div>
           </div>
         ) : !isLocked ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-display font-black text-white/40 tracking-wide">¿Cuál será el resultado?</p>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => onPredict(match.id, { ...prediction, mode: 'score' })}
-                  className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-all", mode === 'score' ? "bg-violet-500 text-white shadow-lg" : "bg-white/5 text-slate-500")}
-                >
-                  <Target size={12} />
-                </button>
-                <button
-                  onClick={() => onPredict(match.id, { ...prediction, mode: 'winner' })}
-                  className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-all", mode === 'winner' ? "bg-violet-500 text-white shadow-lg" : "bg-white/5 text-slate-500")}
-                >
-                  <Award size={12} />
-                </button>
-              </div>
+          <div className="space-y-5">
+            <div className="flex items-center justify-between px-1">
+              <p className="text-[10px] font-black font-display text-white/30 tracking-[0.2em] uppercase">¿Cuál será el resultado?</p>
             </div>
 
-            {mode === 'score' ? (
-              <div className="flex items-center justify-center gap-4 py-2">
-                <input
-                  type="number"
-                  className="w-16 h-16 bg-black/40 border border-white/10 rounded-2xl text-center font-mono text-3xl font-black focus:border-violet-500 focus:bg-violet-500/10 focus:ring-1 focus:ring-violet-500/20 outline-none transition-all placeholder:text-white/5 shadow-inner text-white"
-                  value={scoreA}
-                  onChange={(e) => setScoreA(e.target.value)}
-                  placeholder="0"
-                />
-                <div className="w-4 h-1 bg-white/10 rounded-full" />
-                <input
-                  type="number"
-                  className="w-16 h-16 bg-black/40 border border-white/10 rounded-2xl text-center font-mono text-3xl font-black focus:border-violet-500 focus:bg-violet-500/10 focus:ring-1 focus:ring-violet-500/20 outline-none transition-all placeholder:text-white/5 shadow-inner text-white"
-                  value={scoreB}
-                  onChange={(e) => setScoreB(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { key: 'A', name: (nameA) },
-                  { key: 'DRAW', name: 'Empate' },
-                  { key: 'B', name: (nameB) }
-                ].map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => setWinnerPick(opt.key)}
-                    className={cn(
-                      "relative group/btn py-4 px-2 rounded-2xl text-[10px] sm:text-xs font-display font-black tracking-wide transition-all border-2",
-                      winnerPick === opt.key
-                        ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
-                        : "bg-black/20 border-white/5 text-white/40 hover:bg-white/10 hover:text-white hover:border-white/20"
-                    )}
-                  >
-                    <div className="truncate px-1">{opt.name.substring(0, 15)}</div>
-                    {winnerPick === opt.key && <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-zinc-900 shadow-sm flex items-center justify-center" ><span className="text-black font-black text-[8px]">✓</span></div>}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                { key: 'A', name: (nameA) },
+                { key: 'DRAW', name: 'Empate' },
+                { key: 'B', name: (nameB) }
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setWinnerPick(opt.key)}
+                  className={cn(
+                    "relative group/btn py-4 px-2 rounded-2xl text-[10px] sm:text-xs font-display font-black tracking-wide transition-all border-2 flex flex-col items-center justify-center gap-2 min-h-[80px]",
+                    winnerPick === opt.key
+                      ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.25)] scale-[1.02] z-10"
+                      : "bg-black/40 border-white/5 text-white/30 hover:bg-white/10 hover:text-white/60 hover:border-white/20"
+                  )}
+                >
+                  <div className="truncate w-full text-center px-1 font-black uppercase tracking-tighter">{opt.name.split(' ')[0]}</div>
+                  {opt.key === 'DRAW' ? <Users size={14} className="opacity-40" /> : <Trophy size={14} className={cn("transition-transform duration-500", winnerPick === opt.key ? "scale-110" : "opacity-40")} />}
+                  {winnerPick === opt.key && (
+                    <div className="absolute -top-2 -right-2 w-5 h-5 bg-emerald-500 rounded-full border-2 border-zinc-950 shadow-xl flex items-center justify-center animate-in zoom-in duration-300">
+                      <span className="text-black font-black text-[10px]">✓</span>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
 
             <Button
               className={cn(
-                "w-full rounded-2xl h-14 text-sm font-display font-black tracking-wide transition-all mt-4 border",
+                "w-full rounded-2xl h-14 text-sm font-display font-black tracking-[0.1em] transition-all border uppercase",
                 isPredicted
-                  ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)] border-transparent"
-                  : "bg-white/15 hover:bg-white text-white hover:text-black border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+                  ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_10px_30px_rgba(16,185,129,0.3)] border-transparent"
+                  : "bg-white/10 hover:bg-white text-white hover:text-black border-white/10 shadow-xl"
               )}
               onClick={handleSave}
-              disabled={mode === 'score' ? (scoreA === "" || scoreB === "") : (!winnerPick)}
+              disabled={!winnerPick}
             >
               {isPredicted ? (
-                <><History size={16} className="mr-2" /> Actualizar Predicción</>
+                <><History size={16} className="mr-3" /> Actualizar Acierto</>
               ) : (
-                <><Zap size={16} className="mr-2" /> Guardar Acierto</>
+                <><Zap size={16} className="mr-3" /> Confirmar Acierto</>
               )}
             </Button>
           </div>
         ) : (
-          <div className="py-4 text-center opacity-40 grayscale flex flex-col items-center gap-2">
-            <Lock size={20} />
-            <p className="text-[10px] font-black uppercase tracking-widest">Predicciones Cerradas</p>
+          <div className="py-6 text-center opacity-30 grayscale flex flex-col items-center gap-3 bg-black/20 rounded-3xl border border-dashed border-white/10">
+            <Lock size={24} />
+            <p className="text-[10px] font-black uppercase tracking-[0.3em]">Predicciones Cerradas</p>
           </div>
         )}
       </div>

@@ -211,7 +211,7 @@ export default function CalendarioPage() {
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 max-w-6xl mx-auto">
                     {/* LEFT COLUMN: CALENDAR */}
-                    <div className="xl:col-span-2 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-2xl p-6 relative overflow-hidden">
+                    <div className="xl:col-span-2 bg-[#311651]/50 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-2xl p-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-80 h-80 bg-violet-600/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                         
                         <div className="flex items-center justify-between mb-6">

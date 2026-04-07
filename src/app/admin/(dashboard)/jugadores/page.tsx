@@ -78,13 +78,13 @@ function DirectorioTab() {
         <div className="flex-1 min-w-[200px]">
           <label className="text-xs font-black uppercase tracking-widest text-white/40 block mb-2">Buscar</label>
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
             <input
               type="text"
               placeholder="Nombre del jugador..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/20"
+              className="w-full pl-9 pr-4 py-2 bg-white/[0.12] border border-white/30 rounded-xl text-white placeholder-white/40 text-sm focus:outline-none focus:bg-white/[0.18] focus:border-white/50 transition-all font-bold"
             />
           </div>
         </div>

@@ -107,9 +107,9 @@ export default function EstadisticasPage() {
                 ),
 
                 // 5. Top Careers by followers
-                supabase.from('carreras').select('id, nombre, escudo_url, followers_count').order('followers_count', { ascending: false }).limit(5),
+                supabase.from('carreras').select('id, nombre, escudo_url, followers_count').order('followers_count', { ascending: false }).limit(10),
                 // 6. Top Users by followers
-                supabase.from('profiles').select('id, full_name, avatar_url, followers_count').order('followers_count', { ascending: false }).limit(5)
+                supabase.from('profiles').select('id, full_name, avatar_url, followers_count').order('followers_count', { ascending: false }).limit(10)
             ]);
 
             setMatches(matchesRes.data || []);
@@ -542,75 +542,79 @@ export default function EstadisticasPage() {
                             Procesando datos del torneo...
                         </p>
                     </div>
-                ) : !hasData ? (
-                    <div className="text-center py-24 border border-white/5 rounded-2xl bg-white/[0.02]">
-                        <Target size={36} className="mx-auto text-white/15 mb-4" />
-                        <p className="text-[11px] font-bold text-white/20 tracking-wider font-display">
-                            Aún no hay partidos finalizados
-                        </p>
-                    </div>
                 ) : (
                     <div className="space-y-12 sm:space-y-16">
-                        {/* 1. Pulse Header */}
-                        <section>
-                            <SectionHeader title="Resumen General" delay={0.1} />
-                            <PulseHeader
-                                activeSport={activeSport}
-                                onSportChange={setActiveSport}
-                                availableSports={availableSports}
-                                data={pulseData}
-                            />
-                        </section>
-
-                        {/* 2. Sport Breakdown */}
-                        {sportStats.length > 0 && (
-                            <section>
-                                <SectionHeader title="Por Disciplina" delay={0.2} />
-                                <SportBreakdown sports={sportStats} />
-                            </section>
-                        )}
-
-                        {/* 2.5 Popularity Ranking */}
+                        {/* Always show Popularity Ranking if available */}
                         {(topCareers.length > 0 || topUsers.length > 0) && (
                             <section>
-                                <SectionHeader title="Ránking de Popularidad" delay={0.25} />
+                                <SectionHeader title="Ránking de Popularidad" delay={0.1} />
                                 <PopularityRanking topCareers={topCareers} topUsers={topUsers} />
                             </section>
                         )}
 
-                        {/* 3. Dominance Matrix */}
-                        {careerRankings.length > 0 && (
-                            <section>
-                                <SectionHeader title="Power Rankings" delay={0.3} />
-                                <DominanceMatrix rankings={careerRankings} />
-                            </section>
-                        )}
+                        {!hasData ? (
+                            <div className="text-center py-24 border border-white/5 rounded-2xl bg-white/[0.02]">
+                                <Target size={36} className="mx-auto text-white/15 mb-4" />
+                                <p className="text-[11px] font-bold text-white/20 tracking-wider font-display">
+                                    Aún no hay partidos finalizados para mostrar métricas de juego
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* 1. Pulse Header */}
+                                <section>
+                                    <SectionHeader title="Resumen General" delay={0.2} />
+                                    <PulseHeader
+                                        activeSport={activeSport}
+                                        onSportChange={setActiveSport}
+                                        availableSports={availableSports}
+                                        data={pulseData}
+                                    />
+                                </section>
 
-                        {/* 4. Record Book */}
-                        {records.length > 0 && (
-                            <section>
-                                <SectionHeader title="Récords del Torneo" delay={0.4} />
-                                <RecordBook records={records} />
-                            </section>
-                        )}
+                                {/* 2. Sport Breakdown */}
+                                {sportStats.length > 0 && (
+                                    <section>
+                                        <SectionHeader title="Por Disciplina" delay={0.3} />
+                                        <SportBreakdown sports={sportStats} />
+                                    </section>
+                                )}
 
-                        {/* 5. Discipline Tracker */}
-                        {(yellowLeaders.length > 0 || redLeaders.length > 0) && (
-                            <section>
-                                <SectionHeader title="Disciplina" delay={0.5} />
-                                <DisciplineTracker
-                                    yellowLeaders={yellowLeaders}
-                                    redLeaders={redLeaders}
-                                />
-                            </section>
-                        )}
+                                {/* 3. Dominance Matrix */}
+                                {careerRankings.length > 0 && (
+                                    <section>
+                                        <SectionHeader title="Power Rankings" delay={0.4} />
+                                        <DominanceMatrix rankings={careerRankings} />
+                                    </section>
+                                )}
 
-                        {/* 6. Head-to-Head */}
-                        {rivalries.length > 0 && (
-                            <section>
-                                <SectionHeader title="Rivalidades" delay={0.6} />
-                                <HeadToHead rivalries={rivalries} />
-                            </section>
+                                {/* 4. Record Book */}
+                                {records.length > 0 && (
+                                    <section>
+                                        <SectionHeader title="Récords del Torneo" delay={0.5} />
+                                        <RecordBook records={records} />
+                                    </section>
+                                )}
+
+                                {/* 5. Discipline Tracker */}
+                                {(yellowLeaders.length > 0 || redLeaders.length > 0) && (
+                                    <section>
+                                        <SectionHeader title="Disciplina" delay={0.6} />
+                                        <DisciplineTracker
+                                            yellowLeaders={yellowLeaders}
+                                            redLeaders={redLeaders}
+                                        />
+                                    </section>
+                                )}
+
+                                {/* 6. Head-to-Head */}
+                                {rivalries.length > 0 && (
+                                    <section>
+                                        <SectionHeader title="Rivalidades" delay={0.7} />
+                                        <HeadToHead rivalries={rivalries} />
+                                    </section>
+                                )}
+                            </>
                         )}
                     </div>
                 )}
