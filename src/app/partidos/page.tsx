@@ -131,7 +131,7 @@ export default function PartidosPage() {
     }, [loading, groupedMatches.length]);
 
     return (
-        <div className="min-h-screen bg-background text-white selection:bg-white/10 font-sans pb-20 relative overflow-x-hidden">
+        <div className="min-h-screen bg-background text-white selection:bg-white/10 font-sans pb-20 relative">
 
         {/* Background Element Watermark - MORE VISIBLE */}
         <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-end overflow-hidden opacity-[0.25]">
@@ -171,113 +171,113 @@ export default function PartidosPage() {
                 </header>
 
                 {/* ── Center Area: Large Sport & Gender Filters (Sticky & Responsive) ── */}
-                <div className="sticky top-[64px] sm:top-[72px] z-40 -mx-4 px-4 py-4 mb-4 bg-background/60 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
-                    <div className="flex flex-col gap-4 sm:gap-8 max-w-6xl mx-auto">
-                    {/* 1. Sport Selector Tiles */}
-                    <div className="flex justify-center w-full">
-                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3 px-1 w-full max-w-4xl justify-start sm:justify-center group">
-                            {/* "Todos" card */}
-                            <button
-                                onClick={() => setSelectedSport("Todos")}
-                                className={cn(
-                                    "relative min-w-[90px] sm:min-w-[110px] h-20 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
-                                    selectedSport === "Todos"
-                                        ? "bg-violet-600/30 border-violet-500/50 scale-105"
-                                        : "bg-background/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
-                                )}
-                            >
-                                <div className="z-10 flex flex-col items-center gap-3">
-                                    <div className={cn(
-                                        "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500",
-                                        selectedSport === "Todos" ? "bg-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)]" : "bg-white/5 border border-white/10"
-                                    )}>
-                                        <LayoutGrid 
-                                            size={24} 
-                                            className={selectedSport === "Todos" ? "text-white" : "text-white/40"} 
-                                        />
-                                    </div>
-                                    <span className={cn(
-                                        "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
-                                        selectedSport === "Todos" ? "text-white" : "text-white/20"
-                                    )}>
-                                        Todos
-                                    </span>
-                                </div>
-                            </button>
-
-                            {availableSports.map((sport) => {
-                                const isActive = selectedSport === sport;
-                                return (
-                                    <button
-                                        key={sport}
-                                        onClick={() => setSelectedSport(sport)}
-                                        className={cn(
-                                            "group/btn relative min-w-[90px] sm:min-w-[110px] h-20 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
-                                            isActive
-                                                ? "bg-violet-600/30 border-violet-500/50 scale-105"
-                                                : "bg-[#1a0b38]/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
-                                        )}
-                                    >
-                                        <div className="z-10 flex flex-col items-center gap-3">
-                                            <div className={cn(
-                                                "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500 overflow-hidden",
-                                                isActive ? "shadow-[0_0_20px_rgba(139,92,246,0.3)] border-transparent" : "bg-white/5 border border-white/10"
-                                            )}>
-                                                <SportIcon 
-                                                    sport={sport} 
-                                                    size={32} 
-                                                    className={cn(
-                                                        "transition-all duration-500",
-                                                        isActive ? "grayscale-0 opacity-100" : "grayscale-0 opacity-100 group-hover/btn:opacity-100"
-                                                    )} 
-                                                />
-                                            </div>
-                                            <span className={cn(
-                                                "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
-                                                isActive ? "text-white" : "text-white/20 group-hover/btn:text-white/40"
-                                            )}>
-                                                {sport}
-                                            </span>
+                <div className="sticky top-[64px] sm:top-[72px] z-50 px-4 py-4 mb-4 bg-background/40 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
+                    <div className="flex flex-col gap-4 sm:gap-6 max-w-6xl mx-auto">
+                        {/* 1. Sport Selector Tiles */}
+                        <div className="flex justify-center w-full">
+                            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 w-full max-w-4xl justify-start sm:justify-center group">
+                                {/* "Todos" card */}
+                                <button
+                                    onClick={() => setSelectedSport("Todos")}
+                                    className={cn(
+                                        "relative min-w-[90px] sm:min-w-[110px] h-20 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
+                                        selectedSport === "Todos"
+                                            ? "bg-violet-600/30 border-violet-500/50 scale-105"
+                                            : "bg-background/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
+                                    )}
+                                >
+                                    <div className="z-10 flex flex-col items-center gap-3">
+                                        <div className={cn(
+                                            "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500",
+                                            selectedSport === "Todos" ? "bg-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)]" : "bg-white/5 border border-white/10"
+                                        )}>
+                                            <LayoutGrid 
+                                                size={24} 
+                                                className={selectedSport === "Todos" ? "text-white" : "text-white/40"} 
+                                            />
                                         </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+                                        <span className={cn(
+                                            "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
+                                            selectedSport === "Todos" ? "text-white" : "text-white/20"
+                                        )}>
+                                            Todos
+                                        </span>
+                                    </div>
+                                </button>
 
-                    {/* 2. Gender Selectors */}
-                    <div className="flex justify-center w-full px-4 overflow-x-auto no-scrollbar">
-                        <div className="flex gap-2 p-1.5 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl">
-                            {GENDERS.map((g) => {
-                                const isSelected = selectedGender === g.value;
-                                return (
-                                    <button
-                                        key={g.value}
-                                        onClick={() => setSelectedGender(g.value)}
-                                        className={cn(
-                                            "relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-[8.5px] sm:text-[10px] font-display font-black tracking-widest transition-all overflow-hidden border whitespace-nowrap",
-                                            isSelected
-                                                ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105"
-                                                : "bg-transparent border-transparent text-white/30 hover:text-white/60"
-                                        )}
-                                    >
-                                        <span className={cn("text-xs sm:text-sm leading-none", isSelected ? "text-[#7C3AED]" : "text-violet-400")}>{g.icon}</span>
-                                        <span className="uppercase">{g.label}</span>
-                                    </button>
-                                );
-                            })}
+                                {availableSports.map((sport) => {
+                                    const isActive = selectedSport === sport;
+                                    return (
+                                        <button
+                                            key={sport}
+                                            onClick={() => setSelectedSport(sport)}
+                                            className={cn(
+                                                "group/btn relative min-w-[90px] sm:min-w-[110px] h-20 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
+                                                isActive
+                                                    ? "bg-violet-600/30 border-violet-500/50 scale-105"
+                                                    : "bg-[#1a0b38]/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
+                                            )}
+                                        >
+                                            <div className="z-10 flex flex-col items-center gap-3">
+                                                <div className={cn(
+                                                    "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500 overflow-hidden",
+                                                    isActive ? "shadow-[0_0_20px_rgba(139,92,246,0.3)] border-transparent" : "bg-white/5 border border-white/10"
+                                                )}>
+                                                    <SportIcon 
+                                                        sport={sport} 
+                                                        size={32} 
+                                                        className={cn(
+                                                            "transition-all duration-500",
+                                                            isActive ? "grayscale-0 opacity-100" : "grayscale-0 opacity-100 group-hover/btn:opacity-100"
+                                                        )} 
+                                                    />
+                                                </div>
+                                                <span className={cn(
+                                                    "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
+                                                    isActive ? "text-white" : "text-white/20 group-hover/btn:text-white/40"
+                                                )}>
+                                                    {sport}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
 
-                    {!loading && (
-                        <div className="text-center">
-                            <p className="text-[10px] font-black text-white/20 tracking-[0.3em] uppercase">
-                                {filteredMatches.length} encuentro{filteredMatches.length !== 1 ? 's' : ''} encontrado{filteredMatches.length !== 1 ? 's' : ''}
-                            </p>
+                        {/* 2. Gender Selectors */}
+                        <div className="flex justify-center w-full px-4 overflow-x-auto no-scrollbar">
+                            <div className="flex gap-2 p-1.5 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl">
+                                {GENDERS.map((g) => {
+                                    const isSelected = selectedGender === g.value;
+                                    return (
+                                        <button
+                                            key={g.value}
+                                            onClick={() => setSelectedGender(g.value)}
+                                            className={cn(
+                                                "relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-[8.5px] sm:text-[10px] font-display font-black tracking-widest transition-all overflow-hidden border whitespace-nowrap",
+                                                isSelected
+                                                    ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105"
+                                                    : "bg-transparent border-transparent text-white/30 hover:text-white/60"
+                                            )}
+                                        >
+                                            <span className={cn("text-xs sm:text-sm leading-none", isSelected ? "text-[#7C3AED]" : "text-violet-400")}>{g.icon}</span>
+                                            <span className="uppercase">{g.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    )}
+
+                        {!loading && (
+                            <div className="text-center">
+                                <p className="text-[10px] font-black text-white/20 tracking-[0.3em] uppercase">
+                                    {filteredMatches.length} encuentro{filteredMatches.length !== 1 ? 's' : ''} encontrado{filteredMatches.length !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
 
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -291,15 +291,15 @@ export default function PartidosPage() {
                             <section
                                 key={group.fecha}
                                 id={`date-${group.fecha}`}
-                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-64 bg-[#281345]/40 rounded-[2.5rem] p-5 md:p-8 border border-white/[0.03]"
+                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-[300px] sm:scroll-mt-[400px] bg-transparent pb-16"
                             >
-                                <div className="flex items-center gap-4 mb-2 sm:mb-8 sticky top-[280px] sm:top-[360px] z-30 py-4 pointer-events-none">
-                                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/5 to-white/10" />
+                                <div className="flex items-center justify-center gap-4 mb-6 sm:mb-10 sticky top-[250px] sm:top-[310px] z-40 py-4 pointer-events-none">
+                                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/20 to-white/10 max-w-[100px] sm:max-w-xs" />
                                     <h2 className={cn(
-                                        "flex items-center gap-3 px-4 sm:px-8 py-2 sm:py-3 rounded-full border backdrop-blur-2xl transition-all duration-500 shadow-2xl pointer-events-auto ring-1 ring-emerald-500/10",
+                                        "flex items-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-2xl pointer-events-auto",
                                         group.isToday
-                                            ? "bg-violet-900/60 border-emerald-500/40 text-white shadow-emerald-500/10 scale-105"
-                                            : "bg-violet-950/40 border-white/10 text-white/90 shadow-black/40"
+                                            ? "bg-black border-emerald-500/40 text-white shadow-[0_0_40px_rgba(139,92,246,0.2)] scale-105"
+                                            : "bg-[#09080d] border-white/20 text-white shadow-black/80 ring-1 ring-white/10"
                                     )}>
                                         <div className="flex items-baseline gap-2">
                                             {(() => {
@@ -307,12 +307,12 @@ export default function PartidosPage() {
                                                 return (
                                                     <>
                                                         <span className={cn(
-                                                            "text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-emerald-400"
+                                                            "text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-emerald-400"
                                                         )}>
                                                             {parts[0]}
                                                         </span>
                                                         {parts[1] && (
-                                                            <span className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                                                            <span className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">
                                                                 {parts[1]}
                                                             </span>
                                                         )}
@@ -327,7 +327,7 @@ export default function PartidosPage() {
                                             </div>
                                         )}
                                     </h2>
-                                    <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent via-white/5 to-white/10" />
+                                    <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent via-white/20 to-white/10 max-w-[100px] sm:max-w-xs" />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
