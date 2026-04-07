@@ -10,8 +10,8 @@ import { getCurrentScore } from "@/lib/sport-scoring";
 import { SportIcon } from "@/components/sport-icons";
 import { cn } from "@/lib/utils";
 import {
-    Calendar as CalendarIcon, Trophy, Zap, Search, Activity,
-    MapPin, LayoutGrid, Clock, ChevronRight, MoveRight, Filter
+    Calendar as CalendarIcon, Search, Activity,
+    LayoutGrid, MoveRight
 } from "lucide-react";
 import { Avatar, Badge, Button } from "@/components/ui-primitives";
 import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
@@ -32,7 +32,6 @@ export default function PartidosPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSport, setSelectedSport] = useState("Todos");
     const [selectedGender, setSelectedGender] = useState<string>("masculino");
-
     // Derive unique sport names from all matches
     const availableSports = useMemo(() => {
         const sports = new Set<string>();
@@ -114,7 +113,7 @@ export default function PartidosPage() {
                     const element = document.getElementById(`date-${targetDate}`);
                     if (element) {
                         const isMobile = window.innerWidth < 768;
-                        const offset = isMobile ? 140 : 180; // Adjusted offsets for sticky filter bar
+                        const offset = isMobile ? 140 : 180;
                         const bodyRect = document.body.getBoundingClientRect().top;
                         const elementRect = element.getBoundingClientRect().top;
                         const elementPosition = elementRect - bodyRect;
@@ -170,13 +169,12 @@ export default function PartidosPage() {
                     </div>
                 </header>
 
-                {/* ── Center Area: Large Sport & Gender Filters (Sticky & Responsive) ── */}
-                <div className="sticky top-[64px] sm:top-[72px] z-50 px-4 py-4 mb-4 bg-background/40 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
+                {/* ── Filter Bar ── */}
+                <div className="px-4 py-4 mb-4">
                     <div className="flex flex-col gap-4 sm:gap-6 max-w-6xl mx-auto">
-                        {/* 1. Sport Selector Tiles */}
+                        {/* Sport Selector Tiles */}
                         <div className="flex justify-center w-full">
-                            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 w-full max-w-4xl justify-start sm:justify-center group">
-                                {/* "Todos" card */}
+                            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 w-full max-w-4xl justify-start sm:justify-center">
                                 <button
                                     onClick={() => setSelectedSport("Todos")}
                                     className={cn(
@@ -191,20 +189,13 @@ export default function PartidosPage() {
                                             "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500",
                                             selectedSport === "Todos" ? "bg-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)]" : "bg-white/5 border border-white/10"
                                         )}>
-                                            <LayoutGrid 
-                                                size={24} 
-                                                className={selectedSport === "Todos" ? "text-white" : "text-white/40"} 
-                                            />
+                                            <LayoutGrid size={24} className={selectedSport === "Todos" ? "text-white" : "text-white/40"} />
                                         </div>
-                                        <span className={cn(
-                                            "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
-                                            selectedSport === "Todos" ? "text-white" : "text-white/20"
-                                        )}>
+                                        <span className={cn("text-[10px] font-bold uppercase tracking-[0.2em] transition-colors", selectedSport === "Todos" ? "text-white" : "text-white/20")}>
                                             Todos
                                         </span>
                                     </div>
                                 </button>
-
                                 {availableSports.map((sport) => {
                                     const isActive = selectedSport === sport;
                                     return (
@@ -223,19 +214,9 @@ export default function PartidosPage() {
                                                     "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500 overflow-hidden",
                                                     isActive ? "shadow-[0_0_20px_rgba(139,92,246,0.3)] border-transparent" : "bg-white/5 border border-white/10"
                                                 )}>
-                                                    <SportIcon 
-                                                        sport={sport} 
-                                                        size={32} 
-                                                        className={cn(
-                                                            "transition-all duration-500",
-                                                            isActive ? "grayscale-0 opacity-100" : "grayscale-0 opacity-100 group-hover/btn:opacity-100"
-                                                        )} 
-                                                    />
+                                                    <SportIcon sport={sport} size={32} />
                                                 </div>
-                                                <span className={cn(
-                                                    "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
-                                                    isActive ? "text-white" : "text-white/20 group-hover/btn:text-white/40"
-                                                )}>
+                                                <span className={cn("text-[10px] font-bold uppercase tracking-[0.2em] transition-colors", isActive ? "text-white" : "text-white/20 group-hover/btn:text-white/40")}>
                                                     {sport}
                                                 </span>
                                             </div>
@@ -244,23 +225,17 @@ export default function PartidosPage() {
                                 })}
                             </div>
                         </div>
-
-                        {/* 2. Gender Selectors */}
-                        <div className="flex justify-center w-full px-4 overflow-x-auto no-scrollbar">
+                        {/* Gender pills */}
+                        <div className="flex justify-center w-full">
                             <div className="flex gap-2 p-1.5 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl">
                                 {GENDERS.map((g) => {
                                     const isSelected = selectedGender === g.value;
                                     return (
-                                        <button
-                                            key={g.value}
-                                            onClick={() => setSelectedGender(g.value)}
+                                        <button key={g.value} onClick={() => setSelectedGender(g.value)}
                                             className={cn(
-                                                "relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-[8.5px] sm:text-[10px] font-display font-black tracking-widest transition-all overflow-hidden border whitespace-nowrap",
-                                                isSelected
-                                                    ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105"
-                                                    : "bg-transparent border-transparent text-white/30 hover:text-white/60"
-                                            )}
-                                        >
+                                                "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-[8.5px] sm:text-[10px] font-display font-black tracking-widest transition-all border whitespace-nowrap",
+                                                isSelected ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105" : "bg-transparent border-transparent text-white/30 hover:text-white/60"
+                                            )}>
                                             <span className={cn("text-xs sm:text-sm leading-none", isSelected ? "text-[#7C3AED]" : "text-violet-400")}>{g.icon}</span>
                                             <span className="uppercase">{g.label}</span>
                                         </button>
@@ -268,7 +243,6 @@ export default function PartidosPage() {
                                 })}
                             </div>
                         </div>
-
                         {!loading && (
                             <div className="text-center">
                                 <p className="text-[10px] font-black text-white/20 tracking-[0.3em] uppercase">
@@ -291,12 +265,12 @@ export default function PartidosPage() {
                             <section
                                 key={group.fecha}
                                 id={`date-${group.fecha}`}
-                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-[300px] sm:scroll-mt-[400px] bg-transparent pb-16"
+                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 bg-transparent pb-16"
                             >
-                                <div className="flex items-center justify-center gap-4 mb-6 sm:mb-10 sticky top-[250px] sm:top-[310px] z-40 py-4 pointer-events-none">
+                                <div className="flex items-center justify-center gap-4 mb-6 sm:mb-10 py-4">
                                     <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/20 to-white/10 max-w-[100px] sm:max-w-xs" />
                                     <h2 className={cn(
-                                        "flex items-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-2xl pointer-events-auto",
+                                        "flex items-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-2xl",
                                         group.isToday
                                             ? "bg-black border-emerald-500/40 text-white shadow-[0_0_40px_rgba(139,92,246,0.2)] scale-105"
                                             : "bg-[#09080d] border-white/20 text-white shadow-black/80 ring-1 ring-white/10"
@@ -306,9 +280,7 @@ export default function PartidosPage() {
                                                 const parts = group.label.split(',');
                                                 return (
                                                     <>
-                                                        <span className={cn(
-                                                            "text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-emerald-400"
-                                                        )}>
+                                                        <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-emerald-400">
                                                             {parts[0]}
                                                         </span>
                                                         {parts[1] && (

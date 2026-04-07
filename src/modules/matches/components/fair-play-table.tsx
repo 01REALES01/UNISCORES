@@ -38,14 +38,22 @@ export function FairPlayTable({ genero, sportName }: FairPlayTableProps) {
 
             if (!disc) { if (!cancelled) { setData([]); setLoading(false); } return; }
 
-            // Get all match IDs for this discipline/gender
+            // Get all match IDs (all phases) for events query
             const { data: partidos } = await supabase
                 .from('partidos')
-                .select('id, equipo_a, equipo_b, delegacion_a, delegacion_b')
+                .select('id')
                 .eq('disciplina_id', disc.id)
                 .eq('genero', genero);
 
-            if (!partidos || partidos.length === 0) {
+            // Get group stage matches to extract real tournament teams (never placeholders)
+            const { data: grupoPartidos } = await supabase
+                .from('partidos')
+                .select('equipo_a, equipo_b, delegacion_a, delegacion_b')
+                .eq('disciplina_id', disc.id)
+                .eq('genero', genero)
+                .eq('fase', 'grupos');
+
+            if (!partidos || partidos.length === 0 || !grupoPartidos || grupoPartidos.length === 0) {
                 if (!cancelled) { setData([]); setLoading(false); }
                 return;
             }
@@ -58,7 +66,7 @@ export function FairPlayTable({ genero, sportName }: FairPlayTableProps) {
             const rojas: Record<string, number> = {};
             const otros: Record<string, number> = {};
 
-            partidos.forEach((p: any) => {
+            grupoPartidos.forEach((p: any) => {
                 const a = p.delegacion_a || p.equipo_a;
                 const b = p.delegacion_b || p.equipo_b;
                 if (a && !(a in scores)) { scores[a] = 2000; amarillas[a] = 0; rojas[a] = 0; otros[a] = 0; }
