@@ -1,71 +1,91 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { SPORT_ACCENT, SPORT_BORDER, SPORT_EMOJI } from "@/lib/constants";
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { ShieldAlert, Trophy, ArrowRight, Activity, Zap, Medal } from "lucide-react";
+import { Activity, CheckCircle2, ChevronRight } from "lucide-react";
 import { calculateStandings, type TeamStanding } from "../utils/standings";
-import { Badge } from "@/shared/components/ui-primitives";
 import { SportIcon } from "@/components/sport-icons";
-
 
 function getScoreFromMatch(match: any): { scoreA: number; scoreB: number } {
     const md = match.marcador_detalle || {};
     const sport = match.disciplinas?.name || '';
-
-    if (sport === 'Fútbol') {
-        return { scoreA: md.goles_a ?? 0, scoreB: md.goles_b ?? 0 };
-    }
-    if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
+    if (sport === 'Fútbol') return { scoreA: md.goles_a ?? 0, scoreB: md.goles_b ?? 0 };
+    if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa')
         return { scoreA: md.sets_a ?? 0, scoreB: md.sets_b ?? 0 };
-    }
     return {
         scoreA: md.total_a ?? md.puntos_a ?? md.goles_a ?? 0,
-        scoreB: md.total_b ?? md.puntos_b ?? md.goles_b ?? 0
+        scoreB: md.total_b ?? md.puntos_b ?? md.goles_b ?? 0,
     };
+}
+
+// Color accent per group letter
+const GROUP_COLORS: Record<string, { bg: string; text: string; border: string; glow: string }> = {
+    A: { bg: 'bg-sky-500/10',    text: 'text-sky-400',    border: 'border-sky-500/20',    glow: 'shadow-sky-500/10' },
+    B: { bg: 'bg-rose-500/10',   text: 'text-rose-400',   border: 'border-rose-500/20',   glow: 'shadow-rose-500/10' },
+    C: { bg: 'bg-emerald-500/10',text: 'text-emerald-400',border: 'border-emerald-500/20',glow: 'shadow-emerald-500/10' },
+    D: { bg: 'bg-amber-500/10',  text: 'text-amber-400',  border: 'border-amber-500/20',  glow: 'shadow-amber-500/10' },
+    E: { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/20', glow: 'shadow-violet-500/10' },
+};
+const DEFAULT_GROUP_COLOR = { bg: 'bg-white/5', text: 'text-white/50', border: 'border-white/10', glow: '' };
+
+// Position medal style
+function PositionBadge({ idx }: { idx: number }) {
+    if (idx === 0) return (
+        <div className="w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-black border border-amber-400/30 bg-amber-400/10 text-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.15)]">
+            1
+        </div>
+    );
+    if (idx === 1) return (
+        <div className="w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-black border border-slate-400/30 bg-slate-400/10 text-slate-400">
+            2
+        </div>
+    );
+    return (
+        <div className={cn(
+            "w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-black border",
+            "border-white/8 bg-white/3 text-white/25"
+        )}>
+            {idx + 1}
+        </div>
+    );
 }
 
 interface GroupStageTableProps {
     matches: any[];
     sportName: string;
     grupo: string;
+    light?: boolean;
 }
 
-export function GroupStageTable({ matches, sportName, grupo }: GroupStageTableProps) {
+export function GroupStageTable({ matches, sportName, grupo, light = false }: GroupStageTableProps) {
     const [fairPlayData, setFairPlayData] = useState<Record<string, number>>({});
 
     useEffect(() => {
         const fetchFairPlay = async () => {
             const matchIds = matches.map(m => m.id);
             if (matchIds.length === 0) return;
-
             const { data, error } = await supabase
                 .from('olympics_eventos')
                 .select('tipo_evento, equipo')
                 .in('partido_id', matchIds)
                 .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento']);
-
             if (!error && data) {
                 const counts: Record<string, number> = {};
-                // Initialize all matches teams with 2000 base points
                 matches.forEach(m => {
-                    const teamA = m.delegacion_a || m.equipo_a;
-                    const teamB = m.delegacion_b || m.equipo_b;
-                    if (teamA && !counts[teamA]) counts[teamA] = 2000;
-                    if (teamB && !counts[teamB]) counts[teamB] = 2000;
+                    const a = m.delegacion_a || m.equipo_a;
+                    const b = m.delegacion_b || m.equipo_b;
+                    if (a && !counts[a]) counts[a] = 2000;
+                    if (b && !counts[b]) counts[b] = 2000;
                 });
-
                 data.forEach(e => {
-                    const team = e.equipo;
-                    if (!team) return;
-                    if (!(team in counts)) counts[team] = 2000;
-                    // Fútbol: -50 amarilla, -100 roja, -100 expulsion, -100 mal comportamiento
-                    if (e.tipo_evento === 'tarjeta_amarilla') counts[team] -= 50;
-                    if (e.tipo_evento === 'tarjeta_roja') counts[team] -= 100;
-                    if (e.tipo_evento === 'expulsion_delegado') counts[team] -= 100;
-                    if (e.tipo_evento === 'mal_comportamiento') counts[team] -= 100;
+                    if (!e.equipo) return;
+                    if (!(e.equipo in counts)) counts[e.equipo] = 2000;
+                    if (e.tipo_evento === 'tarjeta_amarilla') counts[e.equipo] -= 50;
+                    if (e.tipo_evento === 'tarjeta_roja') counts[e.equipo] -= 100;
+                    if (e.tipo_evento === 'expulsion_delegado') counts[e.equipo] -= 100;
+                    if (e.tipo_evento === 'mal_comportamiento') counts[e.equipo] -= 100;
                 });
                 setFairPlayData(counts);
             }
@@ -73,178 +93,298 @@ export function GroupStageTable({ matches, sportName, grupo }: GroupStageTablePr
         fetchFairPlay();
     }, [matches]);
 
-    const standings = useMemo(() => {
-        return calculateStandings(matches, sportName, fairPlayData);
-    }, [matches, sportName, fairPlayData]);
+    const standings = useMemo(() => calculateStandings(matches, sportName, fairPlayData), [matches, sportName, fairPlayData]);
 
-    const accent = "text-primary";
-    const border = "border-primary/10";
+    const gc = GROUP_COLORS[grupo?.toUpperCase()] || DEFAULT_GROUP_COLOR;
+    const played = matches.filter(m => m.estado === 'finalizado').length;
+    const total  = matches.length;
+    const isVoley = sportName === 'Voleibol';
 
     return (
-        <div className={cn("bg-black/20 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl")}>
-            {/* Group Header */}
-            <div className="px-6 py-6 sm:px-8 border-b border-white/5 flex items-center justify-between bg-white/[0.03]">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 shadow-lg transition-transform group-hover:scale-110">
-                        <SportIcon sport={sportName} size={24} className="scale-110 drop-shadow-md" />
+        <div className={cn(
+            "rounded-[2rem] border overflow-hidden shadow-xl transition-all duration-500",
+            light ? "bg-white border-slate-100" : "bg-black/30 border-white/8 backdrop-blur-xl"
+        )}>
+            {/* ── Group Header ── */}
+            <div className={cn(
+                "px-6 py-5 border-b flex items-center justify-between gap-4",
+                light ? "bg-slate-50 border-slate-100" : "bg-white/[0.03] border-white/5"
+            )}>
+                <div className="flex items-center gap-3">
+                    {/* Group letter badge */}
+                    <div className={cn(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center border font-black text-xl font-display shadow-inner shrink-0",
+                        gc.bg, gc.border, gc.text
+                    )}>
+                        {grupo}
                     </div>
                     <div>
-                        <h3 className="font-display font-black text-2xl text-white tracking-tight">
-                            Grupo {grupo}
-                        </h3>
-                        <p className="text-xs font-bold text-white/50 tracking-wide font-display mt-0.5">Fase de Grupos</p>
+                        <div className="flex items-center gap-2">
+                            <h3 className={cn(
+                                "font-display font-black text-lg tracking-tight",
+                                light ? "text-slate-900" : "text-white"
+                            )}>
+                                Grupo {grupo}
+                            </h3>
+                            <SportIcon sport={sportName} size={16} className="opacity-40" />
+                        </div>
+                        <p className={cn("text-[10px] font-bold uppercase tracking-widest mt-0.5", light ? "text-slate-400" : "text-white/30")}>
+                            {played}/{total} partidos jugados
+                        </p>
                     </div>
                 </div>
-                <Trophy size={20} className="text-white/20" />
+
+                {/* Progress bar */}
+                <div className="flex-1 max-w-[100px] hidden sm:block">
+                    <div className={cn("h-1.5 rounded-full overflow-hidden", light ? "bg-slate-100" : "bg-white/5")}>
+                        <div
+                            className={cn("h-full rounded-full transition-all duration-700", gc.bg.replace('/10', '/60'))}
+                            style={{ width: total > 0 ? `${(played / total) * 100}%` : '0%' }}
+                        />
+                    </div>
+                    <p className={cn("text-[8px] font-bold mt-1 text-right", light ? "text-slate-300" : "text-white/20")}>
+                        {total > 0 ? Math.round((played / total) * 100) : 0}%
+                    </p>
+                </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto min-w-full">
-                <table className="w-full text-xs min-w-[650px]">
+            {/* ── Standings Table ── */}
+            <div className="overflow-x-auto">
+                <table className="w-full text-xs min-w-[500px]">
                     <thead>
-                        <tr className="border-b border-white/5 text-white/30 uppercase tracking-[0.2em] text-[10px] font-black bg-white/[0.02]">
-                            <th className="text-left py-4 px-6 sm:px-8">#</th>
-                            <th className="text-left py-4 px-4 w-1/3">Equipo</th>
-                            <th className="text-center py-4 px-3 w-10">PJ</th>
-                            <th className="text-center py-4 px-3 w-10">PG</th>
-                            <th className="text-center py-4 px-3 w-10">PE</th>
-                            <th className="text-center py-4 px-3 w-10">PP</th>
-                            <th className="text-center py-4 px-3 w-10">{sportName === 'Voleibol' ? 'SG' : 'GF'}</th>
-                            <th className="text-center py-4 px-3 w-10">{sportName === 'Voleibol' ? 'SP' : 'GC'}</th>
-                            <th className="text-center py-4 px-3 w-10">{sportName === 'Voleibol' ? 'RS' : 'DIF'}</th>
-                            <th className="text-center py-4 px-3 w-12">FP</th>
-                            <th className="text-center py-4 px-6 sm:px-8 w-16 text-violet-300">PTS</th>
+                        <tr className={cn(
+                            "text-[9px] font-black uppercase tracking-[0.2em] border-b",
+                            light ? "bg-slate-50/60 border-slate-100 text-slate-400" : "bg-white/[0.015] border-white/5 text-white/25"
+                        )}>
+                            <th className="text-left py-3 px-5 w-8">#</th>
+                            <th className="text-left py-3 px-3">Equipo</th>
+                            <th className="text-center py-3 px-2 w-8">PJ</th>
+                            <th className="text-center py-3 px-2 w-8">PG</th>
+                            <th className="text-center py-3 px-2 w-8">PP</th>
+                            <th className="text-center py-3 px-2 w-14">{isVoley ? 'RS' : 'DIF'}</th>
+                            <th className={cn("text-center py-3 px-5 w-14", light ? "text-violet-500" : "text-violet-400")}>PTS</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody>
                         {standings.map((team, idx) => {
                             const qualified = idx < 2;
+                            const isLast = idx === standings.length - 1;
+                            const isQualifyLine = idx === 1 && standings.length > 2;
+
                             return (
-                                <tr
-                                    key={team.team}
-                                    className={cn(
-                                        "transition-all duration-300 hover:bg-white/[0.04]",
-                                        qualified && "bg-white/[0.02]"
-                                    )}
-                                >
-                                    <td className="py-4 px-6 sm:px-8">
-                                        <span className={cn(
-                                            "w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black shadow-inner border transition-all",
-                                            qualified ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-white/5 border-white/10 text-white/40"
-                                        )}>
-                                            {idx + 1}
-                                        </span>
-                                    </td>
-                                    <td className="py-4 px-4">
-                                        <span className={cn(
-                                            "font-black text-[13px] uppercase tracking-wide truncate max-w-[200px] block transition-colors",
-                                            qualified ? "text-white" : "text-white/70"
-                                        )}>
-                                            {team.team}
-                                        </span>
-                                    </td>
-                                    <td className="text-center py-4 px-3 text-white/50 font-bold tabular-nums">{team.played}</td>
-                                    <td className="text-center py-4 px-3 text-emerald-400 font-black tabular-nums">{team.won}</td>
-                                    <td className="text-center py-4 px-3 text-white/40 font-bold tabular-nums">{team.drawn}</td>
-                                    <td className="text-center py-4 px-3 text-rose-400 font-bold tabular-nums">{team.lost}</td>
-                                    <td className="text-center py-4 px-3 text-white/50 tabular-nums">
-                                        {sportName === 'Voleibol' ? team.setsWon : team.pointsFor}
-                                    </td>
-                                    <td className="text-center py-4 px-3 text-white/50 tabular-nums">
-                                        {sportName === 'Voleibol' ? team.setsLost : team.pointsAgainst}
-                                    </td>
-                                    <td className="text-center py-4 px-3 font-black tabular-nums">
-                                        {sportName === 'Voleibol' ? (
-                                            <span className="text-white/40 italic">
-                                                {(team.setsLost === 0 ? team.setsWon : (team.setsWon / team.setsLost)).toFixed(2)}
-                                            </span>
-                                        ) : (
-                                            <span className={cn("italic", team.diff > 0 ? 'text-emerald-400 font-black' : team.diff < 0 ? 'text-rose-400 font-bold' : 'text-white/40 font-bold')}>
-                                                {team.diff > 0 ? `+${team.diff}` : team.diff}
-                                            </span>
+                                <>
+                                    <tr
+                                        key={team.team}
+                                        className={cn(
+                                            "transition-all duration-200 group/row",
+                                            light
+                                                ? qualified ? "hover:bg-emerald-50/50" : "hover:bg-slate-50/50"
+                                                : qualified ? "hover:bg-white/[0.03]" : "hover:bg-white/[0.02]",
+                                            !isLast && (light ? "border-b border-slate-50" : "border-b border-white/[0.04]")
                                         )}
-                                    </td>
-                                    <td className="text-center py-4 px-3">
-                                        <div className={cn(
-                                            "inline-flex items-center justify-center gap-1.5 px-2 py-1 rounded-md border tabular-nums transition-colors",
-                                            team.fairPlay < 0 ? "bg-rose-500/10 border-rose-500/20 text-rose-400 font-black" : "bg-white/5 border-white/5 text-white/30 font-bold"
-                                        )}>
-                                            <ShieldAlert size={10} className="shrink-0" />
-                                            {team.fairPlay}
-                                        </div>
-                                    </td>
-                                    <td className="text-center py-4 px-6 sm:px-8">
-                                        <span className={cn(
-                                            "font-black text-xl italic tracking-tighter tabular-nums transition-all",
-                                            qualified ? "text-violet-300 scale-105 drop-shadow-md" : "text-white/60"
-                                        )}>
-                                            {team.points}
-                                        </span>
-                                    </td>
-                                </tr>
+                                    >
+                                        {/* Position */}
+                                        <td className="py-3.5 px-5">
+                                            <PositionBadge idx={idx} />
+                                        </td>
+
+                                        {/* Team name + qualify indicator */}
+                                        <td className="py-3.5 px-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className={cn(
+                                                    "font-black text-[12px] uppercase tracking-wide truncate max-w-[160px] sm:max-w-[220px] transition-colors",
+                                                    qualified
+                                                        ? (light ? "text-slate-900" : "text-white")
+                                                        : (light ? "text-slate-400" : "text-white/40")
+                                                )}>
+                                                    {team.team}
+                                                </span>
+                                                {qualified && (
+                                                    <CheckCircle2 size={12} className="text-emerald-400 shrink-0 opacity-70" />
+                                                )}
+                                            </div>
+                                        </td>
+
+                                        {/* PJ */}
+                                        <td className={cn("text-center py-3.5 px-2 font-bold tabular-nums", light ? "text-slate-400" : "text-white/35")}>
+                                            {team.played}
+                                        </td>
+
+                                        {/* PG */}
+                                        <td className="text-center py-3.5 px-2 tabular-nums">
+                                            <span className={cn(
+                                                "font-black",
+                                                team.won > 0 ? "text-emerald-400" : (light ? "text-slate-300" : "text-white/25")
+                                            )}>
+                                                {team.won}
+                                            </span>
+                                        </td>
+
+                                        {/* PP */}
+                                        <td className="text-center py-3.5 px-2 tabular-nums">
+                                            <span className={cn(
+                                                "font-bold",
+                                                team.lost > 0 ? "text-rose-400" : (light ? "text-slate-300" : "text-white/25")
+                                            )}>
+                                                {team.lost}
+                                            </span>
+                                        </td>
+
+                                        {/* DIF / RS */}
+                                        <td className="text-center py-3.5 px-2 tabular-nums">
+                                            {isVoley ? (
+                                                <span className={cn("font-black italic text-[11px]", light ? "text-slate-400" : "text-white/40")}>
+                                                    {(team.setsLost === 0 ? team.setsWon : (team.setsWon / team.setsLost)).toFixed(2)}
+                                                </span>
+                                            ) : (
+                                                <span className={cn(
+                                                    "font-black italic text-[11px]",
+                                                    team.diff > 0 ? "text-emerald-400" : team.diff < 0 ? "text-rose-400" : (light ? "text-slate-300" : "text-white/30")
+                                                )}>
+                                                    {team.diff > 0 ? `+${team.diff}` : team.diff}
+                                                </span>
+                                            )}
+                                        </td>
+
+                                        {/* PTS */}
+                                        <td className="text-center py-3.5 px-5">
+                                            <span className={cn(
+                                                "font-black text-lg tabular-nums tracking-tighter leading-none",
+                                                idx === 0
+                                                    ? "text-amber-400"
+                                                    : idx === 1
+                                                        ? "text-slate-400"
+                                                        : (light ? "text-slate-300" : "text-white/30")
+                                            )}>
+                                                {team.points}
+                                            </span>
+                                        </td>
+                                    </tr>
+
+                                    {/* Qualify zone separator */}
+                                    {isQualifyLine && (
+                                        <tr key={`sep-${grupo}`}>
+                                            <td colSpan={7} className="px-5 py-0">
+                                                <div className={cn(
+                                                    "flex items-center gap-2 py-1.5 border-t border-dashed",
+                                                    light ? "border-emerald-200" : "border-emerald-500/20"
+                                                )}>
+                                                    <CheckCircle2 size={9} className="text-emerald-400 shrink-0" />
+                                                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-400">
+                                                        Zona de clasificación
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </>
                             );
                         })}
                     </tbody>
                 </table>
             </div>
 
-            {/* Group Matches */}
-            <div className="px-6 py-6 sm:px-8 bg-black/40 border-t border-white/5 space-y-6">
-                <div className="flex items-center gap-4">
-                    <Activity size={18} className="text-white/40" />
-                    <p className="text-sm text-white/60 font-display font-black tracking-wide">Calendario de Jornadas</p>
-                    <div className="flex-1 h-px bg-white/5 ml-2" />
+            {/* ── Group Matches ── */}
+            <div className={cn(
+                "px-5 py-5 border-t space-y-2",
+                light ? "bg-slate-50/40 border-slate-100" : "bg-black/20 border-white/5"
+            )}>
+                <div className="flex items-center gap-2 mb-3">
+                    <Activity size={12} className={cn("shrink-0", light ? "text-slate-400" : "text-white/30")} />
+                    <span className={cn("text-[9px] font-black uppercase tracking-[0.2em]", light ? "text-slate-400" : "text-white/30")}>
+                        Partidos
+                    </span>
+                    <div className={cn("flex-1 h-px", light ? "bg-slate-100" : "bg-white/5")} />
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {matches.map((m) => {
                         const { scoreA, scoreB } = getScoreFromMatch(m);
                         const teamA = m.delegacion_a || m.equipo_a;
                         const teamB = m.delegacion_b || m.equipo_b;
+                        const isFinished = m.estado === 'finalizado';
+                        const isLive     = m.estado === 'en_curso';
+                        const winnerA = isFinished && scoreA > scoreB;
+                        const winnerB = isFinished && scoreB > scoreA;
 
                         return (
                             <Link href={`/partido/${m.id}`} key={m.id} className="block group/m">
                                 <div className={cn(
-                                    "flex items-center justify-between px-4 py-3.5 rounded-xl border transition-all duration-300",
-                                    m.estado === 'en_curso' 
-                                        ? "bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]" 
-                                        : "bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10"
+                                    "relative flex items-center justify-between px-3.5 py-2.5 rounded-xl border transition-all duration-200 overflow-hidden",
+                                    isLive
+                                        ? "bg-emerald-500/8 border-emerald-500/25 shadow-[0_0_12px_rgba(16,185,129,0.08)]"
+                                        : light
+                                            ? "bg-white border-slate-100 hover:border-slate-200 hover:shadow-sm"
+                                            : "bg-white/[0.03] border-white/8 hover:border-white/15 hover:bg-white/[0.05]"
                                 )}>
+                                    {/* Live pulse background */}
+                                    {isLive && (
+                                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-emerald-500/5 animate-pulse" />
+                                    )}
+
+                                    {/* Team A */}
                                     <span className={cn(
-                                        "text-[10px] font-black uppercase tracking-tight truncate w-1/3 transition-colors",
-                                        m.estado === 'finalizado' && scoreA > scoreB ? "text-white" : "text-white/60 group-hover/m:text-white/90"
+                                        "text-[10px] font-black uppercase tracking-tight truncate w-[38%] transition-colors relative z-10",
+                                        winnerA
+                                            ? (light ? "text-slate-900" : "text-white")
+                                            : isFinished
+                                                ? (light ? "text-slate-300" : "text-white/30")
+                                                : (light ? "text-slate-500" : "text-white/55 group-hover/m:text-white/80")
                                     )}>
                                         {teamA}
                                     </span>
-                                    
-                                    <div className="flex justify-center items-center w-1/3">
-                                        {m.estado === 'finalizado' ? (
-                                            <span className="font-black text-[11px] tabular-nums text-white bg-white/10 px-3 py-1 rounded-full border border-white/5 shadow-inner">
-                                                {scoreA} — {scoreB}
-                                            </span>
-                                        ) : m.estado === 'en_curso' ? (
-                                            <div className="flex flex-col items-center gap-1">
-                                                <Badge variant="live" className="px-1.5 py-0 min-h-[14px] text-[7px] leading-tight animate-pulse bg-emerald-500/20 text-emerald-400 border-emerald-500/30">EN CURSO</Badge>
-                                                <span className="font-black text-sm text-emerald-400 tabular-nums tracking-tighter drop-shadow-sm">
-                                                    {scoreA} — {scoreB}
+
+                                    {/* Score center */}
+                                    <div className="flex flex-col items-center justify-center w-[24%] relative z-10 shrink-0">
+                                        {isFinished ? (
+                                            <div className={cn(
+                                                "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border",
+                                                light ? "bg-slate-50 border-slate-100" : "bg-white/5 border-white/8"
+                                            )}>
+                                                <span className={cn("font-black text-[12px] tabular-nums", winnerA ? (light ? "text-slate-900" : "text-white") : (light ? "text-slate-400" : "text-white/40"))}>
+                                                    {scoreA}
+                                                </span>
+                                                <span className={cn("text-[9px]", light ? "text-slate-200" : "text-white/15")}>–</span>
+                                                <span className={cn("font-black text-[12px] tabular-nums", winnerB ? (light ? "text-slate-900" : "text-white") : (light ? "text-slate-400" : "text-white/40"))}>
+                                                    {scoreB}
+                                                </span>
+                                            </div>
+                                        ) : isLive ? (
+                                            <div className="flex flex-col items-center gap-0.5">
+                                                <span className="text-[7px] font-black text-emerald-400 uppercase tracking-widest animate-pulse">Live</span>
+                                                <span className="font-black text-[13px] text-emerald-400 tabular-nums">
+                                                    {scoreA}–{scoreB}
                                                 </span>
                                             </div>
                                         ) : (
-                                            <div className="flex flex-col items-center gap-1">
-                                                <Clock size={10} className="text-white/30" />
-                                                <span className="text-white/40 text-[9px] font-black tabular-nums tracking-wider uppercase">
-                                                    {new Date(m.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            <div className="flex flex-col items-center gap-0.5">
+                                                <span className={cn("text-[8px] font-black tabular-nums", light ? "text-slate-400" : "text-white/35")}>
+                                                    {new Date(m.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+                                                </span>
+                                                <span className={cn("text-[9px] font-black", light ? "text-slate-300" : "text-white/25")}>
+                                                    {new Date(m.fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
                                         )}
                                     </div>
 
+                                    {/* Team B */}
                                     <span className={cn(
-                                        "text-[10px] font-black uppercase tracking-tight truncate w-1/3 text-right transition-colors",
-                                        m.estado === 'finalizado' && scoreB > scoreA ? "text-white" : "text-white/60 group-hover/m:text-white/90"
+                                        "text-[10px] font-black uppercase tracking-tight truncate w-[38%] text-right transition-colors relative z-10",
+                                        winnerB
+                                            ? (light ? "text-slate-900" : "text-white")
+                                            : isFinished
+                                                ? (light ? "text-slate-300" : "text-white/30")
+                                                : (light ? "text-slate-500" : "text-white/55 group-hover/m:text-white/80")
                                     )}>
                                         {teamB}
                                     </span>
+
+                                    {/* Arrow on hover */}
+                                    <ChevronRight size={10} className={cn(
+                                        "absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/m:opacity-100 transition-all duration-200 group-hover/m:right-1",
+                                        light ? "text-slate-400" : "text-white/30"
+                                    )} />
                                 </div>
                             </Link>
                         );
@@ -253,13 +393,4 @@ export function GroupStageTable({ matches, sportName, grupo }: GroupStageTablePr
             </div>
         </div>
     );
-}
-
-// Minimal Clock icon for the pending state
-function Clock({ size, className }: { size: number, className?: string }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
-    )
 }

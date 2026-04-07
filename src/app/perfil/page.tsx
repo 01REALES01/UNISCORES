@@ -683,7 +683,7 @@ export default function PerfilPage() {
                         )}
 
                         {/* ━━━ INSTITUTIONAL BRAND BREAK ━━━ */}
-                        <div className="-mt-12 -mb-2 relative z-0">
+                        <div className="py-4 relative z-0">
                             <InstitutionalBanner />
                         </div>
 

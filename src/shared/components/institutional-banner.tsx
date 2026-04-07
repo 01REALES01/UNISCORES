@@ -16,12 +16,25 @@ export function InstitutionalBanner({ variant, className }: InstitutionalBannerP
     if (variant) {
       setSelectedVariant(variant);
     } else {
-      // El banner 1 fue eliminado, por lo que sorteamos entre 2 y 8
-      setSelectedVariant(Math.floor(Math.random() * 7) + 2);
+      // Sorteamos entre los 8 banners disponibles
+      setSelectedVariant(Math.floor(Math.random() * 8) + 1);
     }
   }, [variant]);
 
+  const BANNER_NAMES = [
+    "manilla_Alegria.png",
+    "manilla_Amistad.png",
+    "manilla_Cortesia.png",
+    "manilla_Perseverancia.png",
+    "manilla_Respeto.png",
+    "manilla_Solidaridad.png",
+    "manilla_Tolerancia.png",
+    "manilla_Trabajo_en_Equipo.png",
+  ];
+
   if (!selectedVariant) return null;
+
+  const bannerFile = BANNER_NAMES[selectedVariant - 1] || BANNER_NAMES[0];
 
   return (
     <motion.div
@@ -31,14 +44,14 @@ export function InstitutionalBanner({ variant, className }: InstitutionalBannerP
       transition={{ duration: 0.6, ease: "easeOut" }}
       className={cn("w-full flex justify-center", className)}
     >
-      <div className="relative w-full aspect-[16/1.4] overflow-hidden group">
+      <div className="relative w-full rounded-2xl overflow-hidden group">
         <img 
-          src={`/banners/b_${selectedVariant}.png`} 
+          src={`/banners/${bannerFile}`} 
           alt="Institutional Banner"
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.01]"
+          className="w-full h-auto block transition-transform duration-700 group-hover:scale-[1.01]"
         />
         {/* Sutil brillo al pasar el mouse */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/[0.03] to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-violet-500/[0.02] to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
       </div>
     </motion.div>
   );

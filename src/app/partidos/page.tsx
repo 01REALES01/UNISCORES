@@ -20,11 +20,18 @@ import { PublicLiveTimer } from "@/components/public-live-timer";
 // --- Types ---
 type MatchStatus = 'FINALIZADO' | 'EN_JUEGO' | 'PROGRAMADO';
 
+const GENDERS = [
+    { label: 'Todos', value: 'todos', icon: '⚥' },
+    { label: 'Masculino', value: 'masculino', icon: '♂' },
+    { label: 'Femenino', value: 'femenino', icon: '♀' },
+];
+
 export default function PartidosPage() {
     const { user, profile, isStaff } = useAuth();
     const { matches: rawMatches, loading } = useMatches();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSport, setSelectedSport] = useState("Todos");
+    const [selectedGender, setSelectedGender] = useState<string>("masculino");
 
     // Derive unique sport names from all matches
     const availableSports = useMemo(() => {
@@ -36,19 +43,21 @@ export default function PartidosPage() {
         return Array.from(sports).sort();
     }, [rawMatches]);
 
-    // 1. Filter by search + sport
+    // 1. Filter by search + sport + gender
     const filteredMatches = useMemo(() => {
         const q = searchQuery.toLowerCase();
         return rawMatches.filter(m => {
             // Sport filter
             if (selectedSport !== "Todos" && m.disciplinas?.name !== selectedSport) return false;
+            // Gender filter
+            if (selectedGender !== 'todos' && (m.genero || 'masculino').toLowerCase() !== selectedGender.toLowerCase()) return false;
             // Text search filter
             const teamA = (m.carrera_a?.nombre || m.equipo_a || "").toLowerCase();
             const teamB = (m.carrera_b?.nombre || m.equipo_b || "").toLowerCase();
             const sport = (m.disciplinas?.name || "").toLowerCase();
             return teamA.includes(q) || teamB.includes(q) || sport.includes(q);
         });
-    }, [rawMatches, searchQuery, selectedSport]);
+    }, [rawMatches, searchQuery, selectedSport, selectedGender]);
 
     // 2. Grouping Function
     const groupedMatches = useMemo(() => {
@@ -122,90 +131,153 @@ export default function PartidosPage() {
     }, [loading, groupedMatches.length]);
 
     return (
-        <div className="min-h-screen bg-background text-white font-sans pb-24">
-            {/* Ambient Background - HYBRID INSTITUTIONAL */}
-            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-violet-500/10 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] bg-white/5 rounded-full blur-[100px]" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_70%)]" />
-                
-                {/* Background Element Watermark */}
-                <div className="absolute inset-0 flex items-start justify-end">
-                    <img 
-                        src="/elementos/12.png" 
-                        alt="" 
-                        className="w-[600px] md:w-[900px] h-auto opacity-10 translate-x-[30%] -translate-y-[10%]" 
-                        aria-hidden="true"
-                    />
-                </div>
-            </div>
+        <div className="min-h-screen bg-background text-white font-sans pb-24 selection:bg-white/10">
+
+        {/* Background Element Watermark - MORE VISIBLE */}
+        <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-end overflow-hidden opacity-[0.18]">
+            <img 
+                src="/elementos/12.png" 
+                alt="" 
+                className="w-[800px] md:w-[1100px] h-auto translate-x-[15%] -translate-y-[10%] filter contrast-125 brightness-150" 
+                aria-hidden="true"
+            />
+        </div>
 
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <main className="relative z-10 max-w-6xl mx-auto px-4 pt-10">
                 <header className="mb-12 flex flex-col items-center text-center gap-4">
                     <div className="animate-in fade-in zoom-in duration-1000">
-                        <div className="flex items-center justify-center gap-2 mb-2 text-violet-400/80">
+                        <div className="flex items-center justify-center gap-2 mb-2">
                              <div className="p-1.5 rounded-xl bg-violet-500/10 border border-violet-500/20">
-                                <Activity size={20} />
+                                <Activity size={20} className="text-violet-400" />
                             </div>
-                            <h4 className="text-sm font-bold tracking-wide font-display">Temporada regular</h4>
+                            <h4 className="text-xs font-black text-violet-400 tracking-[0.2em] uppercase">Temporada regular</h4>
                         </div>
-                        <h1 className="text-5xl sm:text-7xl font-black tracking-tighter leading-none font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm">
+                        <h1 className="text-5xl sm:text-7xl font-bold tracking-tighter leading-none font-display text-white drop-shadow-2xl">
                             Partidos <span className="text-emerald-400">2026</span>
                         </h1>
                     </div>
                     <div className="relative w-full max-w-md animate-in slide-in-from-bottom duration-700">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" size={18} />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
                         <input
                             type="text"
                             placeholder="Busca tu equipo o deporte..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-14 bg-white/5 backdrop-blur-md border border-white/10 rounded-[1.5rem] pl-12 pr-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-white/10 focus:border-white/20 transition-all placeholder:text-white/20 shadow-lg"
+                            className="w-full h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-[1.5rem] pl-12 pr-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500/30 transition-all placeholder:text-white/20 text-white shadow-2xl"
                         />
                     </div>
                 </header>
 
-                {/* ── Sticky Sport Filter Bar ── */}
-                <div className="sticky top-16 sm:top-[4.5rem] z-40 -mx-4 px-4 py-3 bg-background/90 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
-                    <div className="flex items-center gap-3 overflow-x-auto pt-2 pb-3 px-1 scrollbar-hide -my-2">
-                        {/* "Todos" icon */}
-                        <button
-                            onClick={() => setSelectedSport("Todos")}
-                            className={cn(
-                                "flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 border",
-                                selectedSport === "Todos"
-                                    ? "bg-indigo-500/20 border-indigo-500/30 text-white shadow-[0_0_20px_rgba(99,102,241,0.2)] scale-105"
-                                    : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:text-white"
-                            )}
-                            title="Todos"
-                        >
-                            <LayoutGrid size={22} />
-                        </button>
-
-                        {availableSports.map(sport => (
+                {/* ── Center Area: Large Sport & Gender Filters (Sticky & Responsive) ── */}
+                <div className="sticky top-[64px] sm:top-[72px] z-40 -mx-4 px-4 py-4 mb-4 bg-background/60 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
+                    <div className="flex flex-col gap-4 sm:gap-8 max-w-6xl mx-auto">
+                    {/* 1. Sport Selector Tiles */}
+                    <div className="flex justify-center w-full">
+                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3 px-1 w-full max-w-4xl justify-start sm:justify-center group">
+                            {/* "Todos" card */}
                             <button
-                                key={sport}
-                                onClick={() => setSelectedSport(sport)}
+                                onClick={() => setSelectedSport("Todos")}
                                 className={cn(
-                                    "flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 border",
-                                    selectedSport === sport
-                                        ? "bg-indigo-500/20 border-indigo-500/30 text-white shadow-[0_0_20px_rgba(99,102,241,0.2)] scale-105"
-                                        : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:text-white"
+                                    "relative min-w-[90px] sm:min-w-[110px] h-20 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
+                                    selectedSport === "Todos"
+                                        ? "bg-violet-600/30 border-violet-500/50 scale-105"
+                                        : "bg-background/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
                                 )}
-                                title={sport}
                             >
-                                <SportIcon sport={sport} size={22} />
+                                <div className="z-10 flex flex-col items-center gap-3">
+                                    <div className={cn(
+                                        "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500",
+                                        selectedSport === "Todos" ? "bg-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)]" : "bg-white/5 border border-white/10"
+                                    )}>
+                                        <LayoutGrid 
+                                            size={24} 
+                                            className={selectedSport === "Todos" ? "text-white" : "text-white/40"} 
+                                        />
+                                    </div>
+                                    <span className={cn(
+                                        "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
+                                        selectedSport === "Todos" ? "text-white" : "text-white/20"
+                                    )}>
+                                        Todos
+                                    </span>
+                                </div>
                             </button>
-                        ))}
+
+                            {availableSports.map((sport) => {
+                                const isActive = selectedSport === sport;
+                                return (
+                                    <button
+                                        key={sport}
+                                        onClick={() => setSelectedSport(sport)}
+                                        className={cn(
+                                            "group/btn relative min-w-[90px] sm:min-w-[110px] h-20 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
+                                            isActive
+                                                ? "bg-violet-600/30 border-violet-500/50 scale-105"
+                                                : "bg-[#1a0b38]/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
+                                        )}
+                                    >
+                                        <div className="z-10 flex flex-col items-center gap-3">
+                                            <div className={cn(
+                                                "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500 overflow-hidden",
+                                                isActive ? "shadow-[0_0_20px_rgba(139,92,246,0.3)] border-transparent" : "bg-white/5 border border-white/10"
+                                            )}>
+                                                <SportIcon 
+                                                    sport={sport} 
+                                                    size={32} 
+                                                    className={cn(
+                                                        "transition-all duration-500",
+                                                        isActive ? "grayscale-0 opacity-100" : "grayscale-0 opacity-100 group-hover/btn:opacity-100"
+                                                    )} 
+                                                />
+                                            </div>
+                                            <span className={cn(
+                                                "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
+                                                isActive ? "text-white" : "text-white/20 group-hover/btn:text-white/40"
+                                            )}>
+                                                {sport}
+                                            </span>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
+
+                    {/* 2. Gender Selectors */}
+                    <div className="flex justify-center w-full px-4 overflow-x-auto no-scrollbar">
+                        <div className="flex gap-2 p-1.5 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl">
+                            {GENDERS.map((g) => {
+                                const isSelected = selectedGender === g.value;
+                                return (
+                                    <button
+                                        key={g.value}
+                                        onClick={() => setSelectedGender(g.value)}
+                                        className={cn(
+                                            "relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-[8.5px] sm:text-[10px] font-display font-black tracking-widest transition-all overflow-hidden border whitespace-nowrap",
+                                            isSelected
+                                                ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105"
+                                                : "bg-transparent border-transparent text-white/30 hover:text-white/60"
+                                        )}
+                                    >
+                                        <span className={cn("text-xs sm:text-sm leading-none", isSelected ? "text-[#7C3AED]" : "text-violet-400")}>{g.icon}</span>
+                                        <span className="uppercase">{g.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     {!loading && (
-                        <p className="text-[10px] font-bold text-white/20 mt-1.5 tracking-wider uppercase">
-                            Mostrando {filteredMatches.length} partido{filteredMatches.length !== 1 ? 's' : ''}
-                        </p>
+                        <div className="text-center">
+                            <p className="text-[10px] font-black text-white/20 tracking-[0.3em] uppercase">
+                                {filteredMatches.length} encuentro{filteredMatches.length !== 1 ? 's' : ''} encontrado{filteredMatches.length !== 1 ? 's' : ''}
+                            </p>
+                        </div>
                     )}
                 </div>
+            </div>
 
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -219,26 +291,43 @@ export default function PartidosPage() {
                             <section
                                 key={group.fecha}
                                 id={`date-${group.fecha}`}
-                                className="animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-24"
+                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-64"
                             >
-                                <div className="flex items-center gap-4 mb-8">
-                                    <div className={cn(
-                                        "h-px flex-1 bg-gradient-to-r from-transparent",
-                                        group.isToday ? "via-indigo-500/50 to-indigo-500/80" : "via-white/5 to-white/10"
-                                    )} />
+                                <div className="flex items-center gap-4 mb-2 sm:mb-8 sticky top-[280px] sm:top-[360px] z-30 py-4 pointer-events-none">
+                                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/5 to-white/10" />
                                     <h2 className={cn(
-                                        "text-[10px] font-black px-6 py-2 rounded-full border backdrop-blur-md uppercase tracking-[0.3em] transition-all duration-500",
+                                        "flex items-center gap-3 px-4 sm:px-8 py-2 sm:py-3 rounded-full border backdrop-blur-2xl transition-all duration-500 shadow-2xl pointer-events-auto ring-1 ring-emerald-500/10",
                                         group.isToday
-                                            ? "text-white border-indigo-500/50 bg-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.2)] scale-110"
-                                            : "text-white/60 border-white/10 bg-white/5"
+                                            ? "bg-violet-900/60 border-emerald-500/40 text-white shadow-emerald-500/10 scale-105"
+                                            : "bg-violet-950/40 border-white/10 text-white/90 shadow-black/40"
                                     )}>
-                                        {group.isToday && <span className="mr-2 text-indigo-400">●</span>}
-                                        {group.label}
+                                        <div className="flex items-baseline gap-2">
+                                            {(() => {
+                                                const parts = group.label.split(',');
+                                                return (
+                                                    <>
+                                                        <span className={cn(
+                                                            "text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-emerald-400"
+                                                        )}>
+                                                            {parts[0]}
+                                                        </span>
+                                                        {parts[1] && (
+                                                            <span className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                                                                {parts[1]}
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+                                        {group.isToday && (
+                                            <div className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                            </div>
+                                        )}
                                     </h2>
-                                    <div className={cn(
-                                        "h-px flex-1 bg-gradient-to-l from-transparent",
-                                        group.isToday ? "via-indigo-500/50 to-indigo-500/80" : "via-white/5 to-white/10"
-                                    )} />
+                                    <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent via-white/5 to-white/10" />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -292,6 +381,23 @@ function UnifiedCard({
 }) {
     const sportName = partido.disciplinas?.name || 'Deporte';
     const genero = (partido.genero || 'masculino').toLowerCase();
+
+    // Helper for Abbreviation
+    const getAbbr = (name?: string) => {
+        if (!name) return "??";
+        // Remove special characters and split
+        const words = name.replace(/[^\w\s]/gi, '').split(/\s+/).filter(word => word.length > 2);
+        if (words.length >= 2) {
+             return (words[0][0] + words[1][0]).toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    };
+
+    const displayNameA = getDisplayName(partido, 'a');
+    const displayNameB = getDisplayName(partido, 'b');
+    const sideAAbbr = getAbbr(displayNameA);
+    const sideBAbbr = getAbbr(displayNameB);
+
     const winnerA = highlightWinner && (
         (sportName !== 'Ajedrez' && Number(scoreDisplay?.a) > Number(scoreDisplay?.b)) ||
         (sportName === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'victoria_a')
@@ -305,26 +411,27 @@ function UnifiedCard({
     return (
         <Link href={`/partido/${partido.id}`} className="group block h-full">
             <div className={cn(
-                "relative h-full overflow-hidden rounded-[2rem] border bg-background/90 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
+                "relative h-full overflow-hidden rounded-[2.2rem] border transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-1 bg-gradient-to-br from-white/10 to-white/[0.02] backdrop-blur-xl border-white/10 shadow-2xl",
                 SPORT_BORDER[sportName] || 'border-white/10',
-                SPORT_GLOW[sportName] || 'hover:shadow-white/5'
             )}>
-                {/* Ambient Background */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-30 group-hover:opacity-50 transition-opacity duration-700`} />
-                <div className="absolute -bottom-4 -right-4 pointer-events-none select-none group-hover:scale-110 transition-transform duration-700 origin-bottom-right">
-                    <SportIcon sport={sportName} size={120} className={cn("opacity-[0.08] group-hover:opacity-[0.2] transition-all duration-500 drop-shadow-[0_0_20px_currentColor]", SPORT_ACCENT[sportName] || 'text-white')} />
+                {/* Acierta y gana overlay logic */}
+                <div className="absolute inset-0 bg-background mix-blend-overlay opacity-40 group-hover:opacity-30 transition-opacity" />
+                
+                {/* Ambient Background - Large Sport Watermark (Redesigned style) */}
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none select-none opacity-[0.14] group-hover:opacity-[0.18] transition-opacity duration-700">
+                    <SportIcon sport={sportName} size={220} className={cn("transition-all duration-700", SPORT_ACCENT[sportName] || 'text-white')} />
                 </div>
 
                 <div className="relative p-6 flex flex-col h-full justify-center">
                     {/* Header */}
                     <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-black/40 flex items-center justify-center border border-white/10 backdrop-blur-md shadow-sm group-hover:border-white/20 transition-colors">
-                                <SportIcon sport={sportName} size={15} variant="react" className="text-white/80 transition-opacity group-hover:opacity-100 placeholder:grayscale" />
+                            <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner group-hover:border-violet-500/30 transition-colors">
+                                <SportIcon sport={sportName} size={15} variant="react" className="text-white transition-opacity group-hover:opacity-100 placeholder:grayscale" />
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] md:text-[11px] font-black font-display text-white/50 uppercase tracking-[0.2em] leading-tight truncate drop-shadow-sm">{sportName}</span>
-                                <span className="text-[10px] md:text-[11px] font-bold text-white/30 leading-tight truncate uppercase tracking-wider mt-0.5">{partido.lugar || 'Sede'}</span>
+                                <span className="text-[10px] md:text-[11px] font-bold font-display text-white tracking-widest leading-tight truncate">{sportName}</span>
+                                <span className="text-[10px] md:text-[11px] font-medium text-white/30 leading-tight truncate uppercase tracking-wider mt-0.5">{partido.lugar || 'Sede'}</span>
                             </div>
                         </div>
 
@@ -333,11 +440,11 @@ function UnifiedCard({
                                 <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportName} />
                             ) : (
                                 <div className={cn(
-                                    "flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10",
-                                    statusColor
+                                    "flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 shadow-inner",
+                                    statusLabel === 'PROGRAMADO' ? "text-violet-400 border-violet-500/20 bg-violet-500/5" : "text-white/40"
                                 )}>
                                     {statusIcon}
-                                    <span className="text-[9px] font-black uppercase tracking-wider">{statusLabel}</span>
+                                    <span className="text-[8px] font-bold uppercase tracking-widest">{statusLabel}</span>
                                 </div>
                             )}
                         </div>
@@ -347,7 +454,7 @@ function UnifiedCard({
                     {partido.marcador_detalle?.tipo === 'carrera' ? (
                         /* ── RACE layout (Natación) ── */
                         <div className="flex-1 flex flex-col items-center justify-center gap-3 py-2 text-center w-full min-w-0">
-                            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tighter truncate w-full px-4">
+                            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tighter truncate w-full px-4 drop-shadow-2xl">
                                 {partido.marcador_detalle?.distancia} {partido.marcador_detalle?.estilo}
                             </h3>
                             <div className="flex flex-col items-center gap-1.5">
@@ -359,14 +466,14 @@ function UnifiedCard({
                                                 .sort((a: any, b: any) => (a.posicion ?? 99) - (b.posicion ?? 99))[i];
                                             if (!p) return null;
                                             return (
-                                                <span key={i} className="text-[11px] font-black text-white/70 tracking-tight">
+                                                <span key={i} className="text-[11px] font-black text-white/60 tracking-tight italic">
                                                     {medal} {p.nombre} {p.tiempo ? `• ${p.tiempo}` : ''}
                                                 </span>
                                             );
                                         })}
                                     </div>
                                 ) : (
-                                    <span className="text-sm font-bold text-cyan-400 uppercase tracking-widest">
+                                    <span className="text-sm font-bold text-cyan-600 uppercase tracking-widest">
                                         {(partido.marcador_detalle?.participantes || []).length} PARTICIPANTES
                                     </span>
                                 )}
@@ -381,31 +488,22 @@ function UnifiedCard({
                             </div>
                         </div>
                     ) : (
-                    /* ── NORMAL / AJEDREZ layout ── */
-                    <div className="flex-1 grid grid-cols-[1.2fr_auto_1.2fr] items-center gap-6 py-1">
+                    /* ── NORMAL / AJEDREZ layout (Redesigned) ── */
+                    <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-2">
                         {/* Team A */}
                         <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
-                            <Avatar 
-                                name={getDisplayName(partido, 'a')} 
-                                src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url}
-                                size="lg" 
-                                className={cn(
-                                "w-14 h-14 border-2 transition-all duration-500 bg-background",
-                                winnerA ? (
-                                    sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
-                                    sportName === 'Baloncesto' ? "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-110" :
-                                    sportName === 'Voleibol' ? "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110" :
-                                    sportName === 'Tenis' ? "border-lime-500 shadow-[0_0_20px_rgba(132,204,22,0.5)] scale-110" :
-                                    sportName === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.5)] scale-110" :
-                                    sportName === 'Ajedrez' ? "border-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)] scale-110" :
-                                    sportName === 'Natación' ? "border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.5)] scale-110" :
-                                    "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110"
-                                ) : "border-white/10 grayscale-[0.5] opacity-80"
-                            )} />
-                            <span className={cn("text-[10px] sm:text-[11px] font-black uppercase tracking-tighter leading-tight line-clamp-2 sm:line-clamp-3 w-full px-1", (winnerA || (sportName === 'Ajedrez' && isChessDraw)) ? "text-white" : "text-white/40")}>
-                                {getDisplayName(partido, 'a')}
+                             <div className={cn(
+                                "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-500 shadow-xl",
+                                winnerA ? "border-emerald-500/50 text-white shadow-emerald-500/10 scale-105" : "border-white/10 text-white"
+                            )}>
+                                {sideAAbbr}
+                            </div>
+                            <span className={cn(
+                                "text-[9px] font-bold uppercase tracking-widest leading-tight line-clamp-2 max-w-[85px] transition-all",
+                                winnerA ? "text-white" : "text-white/60"
+                            )}>
+                                {displayNameA}
                             </span>
-                            {/* Special Badge for Chess Winner */}
                             {sportName === 'Ajedrez' && winnerA && (
                                 <div className="absolute -top-2 bg-amber-500 text-black px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter shadow-lg z-20">
                                     Ganador
@@ -414,23 +512,22 @@ function UnifiedCard({
                         </div>
 
                         {/* Center Display (Score or Time) */}
-                        <div className="flex flex-col items-center justify-center min-w-[80px]">
+                        <div className="flex flex-col items-center justify-center min-w-[90px]">
                             {timeDisplay ? (
-                                <div className="text-4xl font-black text-white tabular-nums tracking-tighter drop-shadow-lg mb-1">
+                                <div className="text-3xl sm:text-4xl font-black text-white tabular-nums tracking-tighter mb-0.5 leading-none">
                                     {timeDisplay}
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center">
                                     {sportName !== 'Ajedrez' && (
-                                        <div className="flex items-center justify-center gap-2 font-black text-5xl text-white tracking-tighter tabular-nums drop-shadow-lg mb-1">
-                                            <span className={(winnerB && sportName !== 'Ajedrez') ? "opacity-30" : ""}>{scoreDisplay?.a}</span>
-                                            <span className="text-white/20 text-3xl -mt-1">:</span>
-                                            <span className={(winnerA && sportName !== 'Ajedrez') ? "opacity-30" : ""}>{scoreDisplay?.b}</span>
+                                        <div className="flex items-center justify-center gap-2.5 font-bold text-4xl sm:text-5xl text-white tracking-tighter tabular-nums mb-0.5 leading-none">
+                                            <span className={(winnerB && sportName !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.a}</span>
+                                            <span className="text-white/30 text-2xl -mt-1">:</span>
+                                            <span className={(winnerA && sportName !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.b}</span>
                                         </div>
                                     )}
-                                    {/* Draw Tag for Chess */}
                                     {sportName === 'Ajedrez' && isChessDraw && (
-                                        <div className="bg-white/5 text-slate-300 border border-white/10 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] shadow-sm mb-2">
+                                        <div className="bg-white/10 text-white/60 border border-white/20 px-2.5 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.2em] mb-2">
                                             Empate
                                         </div>
                                     )}
@@ -438,38 +535,29 @@ function UnifiedCard({
                             )}
 
                             <div className={cn(
-                                "text-[9px] font-black tracking-[0.2em] uppercase transition-all",
-                                genero === 'femenino' ? "text-pink-500/80" :
-                                    genero === 'mixto' ? "text-purple-500/80" :
-                                        "text-blue-500/80"
+                                "text-[9px] font-black tracking-[0.2em] uppercase transition-all flex items-center gap-1.5",
+                                genero === 'femenino' ? "text-[#FF4081]" : "text-[#4081FF]"
                             )}>
+                                <span className="w-1 h-1 rounded-full bg-current" aria-hidden="true"></span>
                                 {genero}
+                                <span className="w-1 h-1 rounded-full bg-current" aria-hidden="true"></span>
                             </div>
                         </div>
 
                         {/* Team B */}
                         <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
-                            <Avatar 
-                                name={getDisplayName(partido, 'b')} 
-                                src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url}
-                                size="lg" 
-                                className={cn(
-                                "w-14 h-14 border-2 transition-all duration-500 bg-background",
-                                winnerB ? (
-                                    sportName === 'Fútbol' ? "border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-110" :
-                                    sportName === 'Baloncesto' ? "border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-110" :
-                                    sportName === 'Voleibol' ? "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110" :
-                                    sportName === 'Tenis' ? "border-lime-500 shadow-[0_0_20px_rgba(132,204,22,0.5)] scale-110" :
-                                    sportName === 'Tenis de Mesa' ? "border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.5)] scale-110" :
-                                    sportName === 'Ajedrez' ? "border-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)] scale-110" :
-                                    sportName === 'Natación' ? "border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.5)] scale-110" :
-                                    "border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-110"
-                                ) : "border-white/10 grayscale-[0.5] opacity-80"
-                            )} />
-                            <span className={cn("text-[10px] sm:text-[11px] font-black uppercase tracking-tighter leading-tight line-clamp-2 sm:line-clamp-3 w-full px-1", (winnerB || (sportName === 'Ajedrez' && isChessDraw)) ? "text-white" : "text-white/40")}>
-                                {getDisplayName(partido, 'b')}
+                             <div className={cn(
+                                "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-500 shadow-xl",
+                                winnerB ? "border-emerald-500/50 text-white shadow-emerald-500/10 scale-105" : "border-white/10 text-white"
+                            )}>
+                                {sideBAbbr}
+                            </div>
+                            <span className={cn(
+                                "text-[9px] font-bold uppercase tracking-widest leading-tight line-clamp-2 max-w-[85px] transition-all",
+                                winnerB ? "text-white" : "text-white/60"
+                            )}>
+                                {displayNameB}
                             </span>
-                            {/* Special Badge for Chess Winner */}
                             {sportName === 'Ajedrez' && winnerB && (
                                 <div className="absolute -top-2 bg-amber-500 text-black px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter shadow-lg z-20">
                                     Ganador
@@ -479,10 +567,10 @@ function UnifiedCard({
                     </div>
                     )}
 
-                    {/* Footer */}
-                    <div className={cn(
-                        "mt-4 pt-3 border-t border-white/5 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.4em] transition-all duration-500 opacity-40 group-hover:opacity-100",
-                        SPORT_ACCENT[sportName] || 'text-white/40'
+                    {/* Footer - Redesigned Style */}
+                     <div className={cn(
+                        "mt-6 pt-4 border-t border-white/5 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.4em] transition-all duration-500 opacity-30 group-hover:opacity-100",
+                        SPORT_ACCENT[sportName] || 'text-white'
                     )}>
                         Analizar Partido <MoveRight size={12} className="ml-3 group-hover:translate-x-2 transition-transform" />
                     </div>

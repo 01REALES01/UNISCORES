@@ -45,7 +45,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className={`${montserrat.variable} font-sans antialiased`} suppressHydrationWarning>
+      <body className={`${montserrat.variable} font-sans antialiased relative`} suppressHydrationWarning>
+        {/* Global Ambient Background - Acierta y gana style */}
+        <div className="fixed inset-0 z-[-1] pointer-events-none opacity-40 mix-blend-screen overflow-hidden">
+            <div className="absolute top-[-10%] right-[-10%] w-[1000px] h-[1000px] bg-violet-600/30 rounded-full blur-[140px] animate-pulse" style={{ animationDuration: '8s' }} />
+            <div className="absolute bottom-[-10%] left-[-5%] w-[800px] h-[800px] bg-emerald-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+        </div>
+        
         <Providers>
           {children}
         </Providers>

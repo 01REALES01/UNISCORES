@@ -67,22 +67,34 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
 
             {/* Mode + Filter Row */}
             <div className="flex flex-col sm:flex-row gap-3">
-                <div className="inline-flex bg-white/[0.03] p-1 rounded-xl border border-white/5 flex-1">
+                <div className="flex bg-white/[0.03] p-1.5 rounded-2xl border border-white/5 flex-1 shadow-inner group/modes">
                     <button
                         onClick={() => setBettingMode('winner')}
-                        className={cn("flex-1 px-3 py-2 rounded-lg text-xs font-display font-black tracking-wide transition-all flex items-center justify-center gap-1.5", bettingMode === 'winner' ? "bg-white/10 text-white shadow-inner ring-1 ring-white/20" : "text-white/50 hover:text-white")}
+                        className={cn(
+                            "flex-1 py-3 rounded-xl text-[10px] font-display font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 border", 
+                            bettingMode === 'winner' 
+                                ? "bg-white/10 text-white border-white/10 shadow-lg ring-1 ring-white/10 scale-[1.02] z-10" 
+                                : "text-white/40 hover:text-white/60 border-transparent hover:bg-white/5"
+                        )}
                     >
-                        <HandMetal size={14} className={bettingMode === 'winner' ? "text-violet-400" : ""} /> Ganador
+                        <HandMetal size={16} className={cn("transition-colors", bettingMode === 'winner' ? "text-violet-400" : "opacity-50")} /> 
+                        <span className="uppercase tracking-[0.2em]">Ganador</span>
                     </button>
                     <button
                         onClick={() => setBettingMode('score')}
-                        className={cn("flex-1 px-3 py-2 rounded-lg text-xs font-display font-black tracking-wide transition-all flex items-center justify-center gap-1.5", bettingMode === 'score' ? "bg-white/10 text-white shadow-inner ring-1 ring-white/20" : "text-white/50 hover:text-white")}
+                        className={cn(
+                            "flex-1 py-3 rounded-xl text-[10px] font-display font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 border", 
+                            bettingMode === 'score' 
+                                ? "bg-white/10 text-white border-white/10 shadow-lg ring-1 ring-white/10 scale-[1.02] z-10" 
+                                : "text-white/40 hover:text-white/60 border-transparent hover:bg-white/5"
+                        )}
                     >
-                        <Gauge size={14} className={bettingMode === 'score' ? "text-violet-400" : ""} /> Marcador
+                        <Gauge size={16} className={cn("transition-colors", bettingMode === 'score' ? "text-violet-400" : "opacity-50")} /> 
+                        <span className="uppercase tracking-[0.2em]">Marcador</span>
                     </button>
                 </div>
 
-                <div className="inline-flex bg-white/[0.03] p-1 rounded-xl border border-white/5">
+                <div className="flex bg-white/[0.03] p-1.5 rounded-2xl border border-white/5 flex-1 shadow-inner group/filters">
                     {([
                         { key: 'upcoming', label: 'Próximos', icon: Clock },
                         { key: 'live', label: 'En Curso', icon: Zap },
@@ -93,12 +105,14 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
                             key={f.key}
                             onClick={() => setViewFilter(f.key)}
                             className={cn(
-                                "px-2.5 py-2 rounded-lg text-xs font-display font-black tracking-wide transition-all flex items-center justify-center gap-1.5",
-                                viewFilter === f.key ? "bg-white/10 text-white shadow-inner ring-1 ring-white/20" : "text-white/40 hover:text-white/70"
+                                "flex-1 py-3 rounded-xl text-[10px] font-display font-black tracking-widest transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1.5 border",
+                                viewFilter === f.key 
+                                    ? "bg-white/10 text-white border-white/10 shadow-lg ring-1 ring-white/10 scale-[1.02] z-10" 
+                                    : "text-white/30 hover:text-white/60 border-transparent hover:bg-white/5"
                             )}
                         >
-                            <f.icon size={12} className={viewFilter === f.key ? "text-emerald-400" : ""} />
-                            <span className="hidden sm:inline">{f.label}</span>
+                            <f.icon size={16} className={cn("transition-colors", viewFilter === f.key ? (f.key === 'live' ? "text-rose-400" : "text-emerald-400") : "opacity-50")} />
+                            <span className="hidden sm:inline uppercase tracking-[0.2em]">{f.label}</span>
                         </button>
                     ))}
                 </div>

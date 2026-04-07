@@ -388,8 +388,8 @@ export default function PublicProfilePage() {
                 return newMap;
             });
 
-            // Sort descending locally to ensure correct inter-leaving of team & individual
-            allMatches.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+            // Sort ascending locally to ensure correct inter-leaving of team & individual
+            allMatches.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
             // Deduplicate across the two calls just in case
             const uniqueMatches: any[] = [];
@@ -895,7 +895,7 @@ export default function PublicProfilePage() {
                         )}
 
                         {/* ━━━ INSTITUTIONAL BRAND BREAK ━━━ */}
-                        <div className="-mt-12 -mb-2 relative z-0">
+                        <div className="py-4 relative z-0">
                             <InstitutionalBanner />
                         </div>
 

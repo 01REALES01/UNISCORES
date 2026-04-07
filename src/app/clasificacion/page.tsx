@@ -8,7 +8,7 @@ import { GroupStageTable } from "@/components/group-stage-table";
 import { BracketTree } from "@/components/bracket-tree";
 import { SPORT_ACCENT, SPORT_GRADIENT, SPORT_BORDER } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { Trophy, Users, Swords, ShieldAlert, GraduationCap } from "lucide-react";
+import { Trophy, Users, Swords, ShieldAlert, GraduationCap, Mars, Venus } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { calculateStandings, compareStandings, type TeamStanding } from "@/modules/matches/utils/standings";
@@ -17,8 +17,8 @@ import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 
 const BRACKET_SPORTS = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis'] as const;
 const GENDERS = [
-    { label: 'Masculino', value: 'masculino', icon: '♂', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-    { label: 'Femenino', value: 'femenino', icon: '♀', color: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
+    { label: 'Masculino', value: 'masculino', icon: <Mars size={18} />, color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+    { label: 'Femenino', value: 'femenino', icon: <Venus size={18} />, color: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
 ] as const;
 
 const CATEGORIES = [
@@ -154,16 +154,16 @@ export default function ClasificacionPage() {
 
     return (
         <div className="min-h-screen bg-background text-white selection:bg-violet-500/30 font-sans relative overflow-x-hidden">
-            {/* Ambient background */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <div className="absolute inset-0 bg-background mix-blend-multiply opacity-50" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] max-w-[1400px] opacity-[0.05] mix-blend-screen pointer-events-none">
-                    <img src="/elementos/06.png" alt="3D Element" className="w-full h-auto object-contain filter invert opacity-80" />
-                </div>
-                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[150px]" />
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay" />
-            </div>
+
+        {/* Background Element Watermark - MORE VISIBLE */}
+        <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.04]">
+            <img 
+                src="/elementos/06.png" 
+                alt="" 
+                className="w-[1000px] md:w-[1300px] h-auto filter grayscale invert brightness-200" 
+                aria-hidden="true"
+            />
+        </div>
 
             {/* Navbar */}
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
@@ -171,19 +171,22 @@ export default function ClasificacionPage() {
             <main className="max-w-6xl mx-auto px-4 pt-8 pb-16 relative z-10 shrink-0">
                 {/* Header Section */}
                 <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
-                        <p className="font-display text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-emerald-400 tracking-wide mb-2">
-                            Tournament Bracket
-                        </p>
-                        <div className="flex items-end gap-4 flex-wrap justify-center lg:justify-start">
-                            <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm">
+                    <div className="flex flex-col items-center text-center">
+                        <div className="flex items-center justify-center gap-2 mb-2 text-violet-400">
+                             <div className="p-1.5 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                                <Trophy size={20} />
+                            </div>
+                            <h4 className="text-xs font-black tracking-widest font-display uppercase tracking-[0.2em]">Tournament Bracket</h4>
+                        </div>
+                        <div className="flex flex-col items-center gap-4">
+                            <h1 className="text-5xl sm:text-7xl font-bold tracking-tighter leading-none font-display text-white drop-shadow-2xl">
                                 Clasificación
                             </h1>
                             <Link
                                 href="/medallero"
-                                className="mb-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-violet-500/20 bg-violet-500/10 text-violet-400/80 hover:text-violet-300 hover:bg-violet-500/20 text-xs font-bold transition-colors"
+                                className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/10 bg-white/5 text-white/60 shadow-xl hover:bg-white/10 hover:text-white text-xs font-black uppercase tracking-widest transition-all"
                             >
-                                <GraduationCap size={13} />
+                                <GraduationCap size={14} />
                                 Ver sección de equipos
                             </Link>
                         </div>
@@ -193,8 +196,8 @@ export default function ClasificacionPage() {
                 {/* Filters Area */}
                 <div className="flex flex-col gap-6 mb-12">
                     {/* 1. Sport Selector Tabs */}
-                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 w-full group">
-                        <div className="flex gap-3 min-w-max px-1">
+                    <div className="flex justify-center w-full">
+                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3 px-1 w-full max-w-5xl justify-start sm:justify-center group animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
                             {BRACKET_SPORTS.map((sport) => {
                                 const isActive = selectedSport === sport;
                                 return (
@@ -204,13 +207,13 @@ export default function ClasificacionPage() {
                                         className={cn(
                                             "group/btn relative min-w-[110px] h-28 rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0",
                                             isActive
-                                                ? "bg-white/5 border-violet-500/40 shadow-[0_0_30px_rgba(124,58,237,0.15)] scale-105"
-                                                : "bg-black/20 border-white/5 hover:border-white/20 hover:bg-white/5"
+                                                ? "bg-violet-600/20 border-violet-500/50 shadow-[0_10px_30px_rgba(0,0,0,0.5)] scale-105"
+                                                : "bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10 backdrop-blur-3xl"
                                         )}
                                     >
                                         {/* Active Glow */}
                                         {isActive && (
-                                            <div className="absolute inset-0 bg-gradient-to-b from-violet-600/20 to-transparent mix-blend-overlay" />
+                                            <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/50 to-transparent pointer-events-none" />
                                         )}
                                         
                                         {/* 3D Icon */}
@@ -220,12 +223,12 @@ export default function ClasificacionPage() {
                                                 size={isActive ? 42 : 32} 
                                                 className={cn(
                                                     "transition-all duration-500",
-                                                    isActive ? "drop-shadow-[0_10px_15px_rgba(255,255,255,0.2)] scale-110" : "grayscale-[0.6] opacity-60 group-hover/btn:grayscale-0 group-hover/btn:opacity-100"
+                                                    isActive ? "drop-shadow-[0_0_10px_rgba(139,92,246,0.6)] scale-110" : "grayscale opacity-20 group-hover/btn:grayscale-0 group-hover/btn:opacity-100"
                                                 )} 
                                             />
                                             <span className={cn(
                                                 "text-[10px] font-black uppercase tracking-[0.2em] transition-colors",
-                                                isActive ? "text-white" : "text-white/40 group-hover/btn:text-white/80"
+                                                isActive ? "text-violet-400" : "text-white/30 group-hover/btn:text-white/60"
                                             )}>
                                                 {sport}
                                             </span>
@@ -237,14 +240,14 @@ export default function ClasificacionPage() {
                     </div>
 
                     {/* 2. Gender & Level Selectors (Mobile optimized horizontal row) */}
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                    <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
                         {/* Mobile scroll hint */}
-                        <div className="flex sm:hidden items-center justify-between mb-3 px-2">
-                            <span className="text-[9px] font-black uppercase text-white/20 tracking-[0.3em]">Opciones de categoría</span>
-                            <span className="text-[9px] font-bold text-violet-400/50 italic">Desliza ↔</span>
+                        <div className="flex sm:hidden items-center justify-between w-full mb-1 px-2 max-w-lg">
+                            <span className="text-[9px] font-black uppercase text-slate-400 tracking-[0.3em]">Opciones de categoría</span>
+                            <span className="text-[9px] font-bold text-violet-400 italic font-mono">Desliza ↔</span>
                         </div>
 
-                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-1 -mx-4 sm:mx-0 px-4 sm:px-0">
+                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-1 w-full justify-start sm:justify-center">
                             <div className="flex gap-2 shrink-0">
                                 {GENDERS.map((g) => {
                                     const isSelected = selectedGender === g.value;
@@ -255,11 +258,11 @@ export default function ClasificacionPage() {
                                             className={cn(
                                                 "relative flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-full text-xs font-display font-black tracking-wide transition-all overflow-hidden border whitespace-nowrap",
                                                 isSelected
-                                                    ? "bg-white text-violet-950 border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105"
-                                                    : "bg-white/[0.03] border-white/10 text-white/50 hover:bg-white/10 hover:text-white"
+                                                    ? "bg-violet-600 text-white border-violet-500 shadow-xl scale-105"
+                                                    : "bg-black/40 border-white/10 text-white/40 hover:bg-white/10"
                                             )}
                                         >
-                                            <span className={cn("relative z-10 text-base leading-none", isSelected ? "text-violet-600" : "text-white/40")}>{g.icon}</span>
+                                            <span className={cn("relative z-10 leading-none flex items-center justify-center", isSelected ? "text-white" : "text-violet-400")}>{g.icon}</span>
                                             <span className="relative z-10 uppercase tracking-widest">{g.label}</span>
                                         </button>
                                     );
@@ -267,7 +270,7 @@ export default function ClasificacionPage() {
                             </div>
 
                             {/* Separator line on mobile if tennis */}
-                            {isTenis && <div className="w-px bg-white/10 my-2 shrink-0 h-8 self-center" />}
+                            {isTenis && <div className="w-px bg-slate-100 my-2 shrink-0 h-8 self-center" />}
 
                             {isTenis && (
                                 <div className="flex gap-2 shrink-0">
@@ -280,8 +283,8 @@ export default function ClasificacionPage() {
                                                 className={cn(
                                                     "relative flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-full text-xs font-display font-black tracking-wide transition-all overflow-hidden border uppercase whitespace-nowrap",
                                                     isSelected
-                                                        ? "bg-emerald-500 text-white border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-105"
-                                                        : "bg-white/[0.03] border-white/10 text-white/50 hover:bg-white/10 hover:text-white"
+                                                        ? "bg-emerald-600 text-white border-emerald-500 shadow-xl scale-105"
+                                                        : "bg-black/40 border-white/10 text-white/40 hover:bg-white/10"
                                                 )}
                                             >
                                                 <span className="relative z-10 tracking-widest">{c.label}</span>
@@ -301,8 +304,8 @@ export default function ClasificacionPage() {
 
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-24">
-                        <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-                        <p className="text-white/30 text-xs mt-4 uppercase tracking-widest font-bold">Cargando clasificación...</p>
+                        <div className="w-8 h-8 border-2 border-violet-100 border-t-violet-600 rounded-full animate-spin" />
+                        <p className="text-slate-400 text-xs mt-4 uppercase tracking-widest font-bold">Cargando clasificación...</p>
                     </div>
                 ) : (
                     <div className="space-y-12">
@@ -310,11 +313,11 @@ export default function ClasificacionPage() {
                         {groups.length > 0 && (
                             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <Users size={22} className={accent} />
-                                    <h2 className="text-2xl font-display font-black tracking-tight text-white/90">
+                                    <Users size={22} className="text-violet-500" />
+                                    <h2 className="text-2xl font-display font-black tracking-tight text-white">
                                         Fase de Grupos
                                     </h2>
-                                    <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent ml-4" />
+                                    <div className="flex-1 h-px bg-gradient-to-r from-violet-100 to-transparent ml-4" />
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -326,6 +329,7 @@ export default function ClasificacionPage() {
                                                 matches={gMatches}
                                                 sportName={selectedSport}
                                                 grupo={grupo}
+                                                light={false}
                                             />
                                         );
                                     })}
@@ -337,14 +341,14 @@ export default function ClasificacionPage() {
                         {bestThirds.length > 0 && (
                             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <Trophy size={22} className="text-amber-400" />
-                                    <h2 className="text-2xl font-display font-black tracking-tight text-white/90">
+                                    <Trophy size={22} className="text-amber-500" />
+                                    <h2 className="text-2xl font-display font-black tracking-tight text-white">
                                         Tabla de Mejores Terceros
                                     </h2>
-                                    <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent ml-4" />
+                                    <div className="flex-1 h-px bg-gradient-to-r from-violet-100 to-transparent ml-4" />
                                 </div>
 
-                                <div className="bg-black/20 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                                <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
                                     <div className="overflow-x-auto min-w-full">
                                         <table className="w-full text-xs min-w-[600px]">
                                             <thead>
@@ -355,40 +359,40 @@ export default function ClasificacionPage() {
                                                     <th className="text-center py-4 px-3 w-12">PJ</th>
                                                     <th className="text-center py-4 px-3 w-16">{selectedSport === 'Voleibol' ? 'RS' : 'DIF'}</th>
                                                     <th className="text-center py-4 px-3 w-16">FP</th>
-                                                    <th className="text-center py-4 px-6 sm:px-8 w-16 text-violet-300">PTS</th>
+                                                    <th className="text-center py-4 px-6 sm:px-8 w-16 text-violet-400">PTS</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-white/5">
                                                 {bestThirds.map((team, idx) => (
-                                                    <tr key={team.team} className="transition-all duration-300 hover:bg-white/[0.04]">
+                                                    <tr key={team.team} className="transition-all duration-300 hover:bg-violet-50/50">
                                                         <td className="py-4 px-6 sm:px-8">
                                                             <span className={cn(
                                                                 "w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black shadow-inner border transition-all",
-                                                                idx < 2 ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-white/5 border-white/10 text-white/40"
+                                                                idx < 2 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600" : "bg-slate-50 border-slate-100 text-slate-400"
                                                             )}>
                                                                 {idx + 1}
                                                             </span>
                                                         </td>
                                                         <td className="py-4 px-4">
-                                                            <span className={cn(
+                                                        <span className={cn(
                                                                 "font-black text-[13px] uppercase tracking-wide truncate max-w-[200px] block transition-colors",
-                                                                idx < 2 ? "text-white" : "text-white/70"
+                                                                idx < 2 ? "text-white" : "text-white/40"
                                                             )}>
                                                                 {team.team}
                                                             </span>
                                                         </td>
-                                                        <td className="text-center py-4 px-3 text-white/40 font-black text-[13px] italic tracking-tight">{team.grupo}</td>
-                                                        <td className="text-center py-4 px-3 text-white/50 font-bold tabular-nums">{team.played}</td>
+                                                        <td className="text-center py-4 px-3 text-slate-400 font-black text-[13px] italic tracking-tight">{team.grupo}</td>
+                                                        <td className="text-center py-4 px-3 text-slate-400 font-bold tabular-nums">{team.played}</td>
                                                         <td className="text-center py-4 px-3 font-black tabular-nums">
                                                             {selectedSport === 'Voleibol' 
-                                                                ? <span className="text-white/40 italic">{(team.setsLost === 0 ? team.setsWon : (team.setsWon / team.setsLost)).toFixed(2)}</span>
-                                                                : <span className={cn("italic", team.diff > 0 ? 'text-emerald-400 font-black' : team.diff < 0 ? 'text-rose-400 font-bold' : 'text-white/40 font-bold')}>{team.diff > 0 ? `+${team.diff}` : team.diff}</span>
+                                                                ? <span className="text-slate-300 italic">{(team.setsLost === 0 ? team.setsWon : (team.setsWon / team.setsLost)).toFixed(2)}</span>
+                                                                : <span className={cn("italic", team.diff > 0 ? 'text-emerald-600 font-black' : team.diff < 0 ? 'text-rose-600 font-bold' : 'text-slate-300 font-bold')}>{team.diff > 0 ? `+${team.diff}` : team.diff}</span>
                                                             }
                                                         </td>
                                                         <td className="text-center py-4 px-3">
                                                             <div className={cn(
                                                                 "inline-flex items-center justify-center gap-1.5 px-2 py-1 rounded-md border tabular-nums transition-colors",
-                                                                team.fairPlay < 0 ? "bg-rose-500/10 border-rose-500/20 text-rose-400 font-black" : "bg-white/5 border-white/5 text-white/30 font-bold"
+                                                                team.fairPlay < 0 ? "bg-rose-50 border-rose-100 text-rose-600 font-black" : "bg-slate-50 border-slate-100 text-slate-300 font-bold"
                                                             )}>
                                                                 <ShieldAlert size={10} className="shrink-0" />
                                                                 {team.fairPlay}
@@ -397,7 +401,7 @@ export default function ClasificacionPage() {
                                                         <td className="text-center py-4 px-6 sm:px-8">
                                                             <span className={cn(
                                                                 "font-black text-xl italic tracking-tighter tabular-nums transition-all",
-                                                                idx < 2 ? "text-violet-300 scale-105 drop-shadow-md" : "text-white/60"
+                                                                idx < 2 ? "text-violet-600 scale-105 drop-shadow-sm" : "text-slate-400"
                                                             )}>
                                                                 {team.points}
                                                             </span>
@@ -408,7 +412,7 @@ export default function ClasificacionPage() {
                                         </table>
                                     </div>
                                     <div className="px-6 py-4 bg-white/[0.02] border-t border-white/5">
-                                        <p className="text-[10px] text-white/30 italic uppercase tracking-[0.2em] font-black">
+                                        <p className="text-[10px] text-white/20 italic uppercase tracking-[0.2em] font-black">
                                             * Los mejores terceros califican a la siguiente fase
                                         </p>
                                     </div>
@@ -420,20 +424,18 @@ export default function ClasificacionPage() {
                         {bracketMatches.length > 0 && (
                             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-500">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <Swords size={22} className={accent} />
-                                    <h2 className="text-2xl font-display font-black tracking-tight text-white/90">
+                                    <Swords size={22} className="text-violet-500" />
+                                    <h2 className="text-2xl font-display font-black tracking-tight text-white">
                                         Eliminación Directa
                                     </h2>
-                                    <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent ml-4" />
+                                    <div className="flex-1 h-px bg-gradient-to-r from-violet-100 to-transparent ml-4" />
                                 </div>
 
-                                <div className={cn(
-                                    "bg-black/20 backdrop-blur-3xl border rounded-[2.5rem] p-8 md:p-12 overflow-hidden shadow-2xl",
-                                    SPORT_BORDER[selectedSport] || "border-white/10"
-                                )}>
+                                <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 overflow-hidden shadow-2xl">
                                     <BracketTree
                                         matches={bracketMatches as any[]}
                                         sportName={selectedSport}
+                                        light={false}
                                     />
                                 </div>
                             </section>

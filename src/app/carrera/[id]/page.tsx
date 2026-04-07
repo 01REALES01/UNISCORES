@@ -10,7 +10,7 @@ import { MainNavbar } from "@/components/main-navbar";
 import { NewsListCard } from "@/components/news-card";
 import { FollowCareerButton } from "@/modules/careers/components/follow-career-button";
 import { SportIcon } from "@/components/sport-icons";
-import { Avatar, Badge, Button } from "@/components/ui-primitives";
+import { Avatar, Badge, Button } from "@/shared/components/ui-primitives";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 import { cn } from "@/lib/utils";
@@ -56,33 +56,35 @@ type CarreraTab = "partidos" | "deportes" | "noticias" | "deportistas";
 function JugadorCard({ j }: { j: any }) {
     const href = j.profile_id ? `/perfil/${j.profile_id}` : `/jugador/${j.id}`;
     const activated = !!j.profile_id;
-    const initials = j.nombre.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
+    const initials = (j.nombre || "").split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
 
     return (
         <Link href={href} className="group">
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-violet-600/5 transition-all duration-300 flex items-center gap-3">
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300 flex items-center gap-3 shadow-inner">
                 <div className={cn(
                     "w-11 h-11 rounded-xl border flex items-center justify-center text-sm font-black flex-shrink-0",
-                    activated ? "bg-white/10 border-white/10 text-white/60" : "bg-white/5 border-white/5 text-white/30"
+                    activated 
+                        ? "bg-violet-500/20 border-violet-500/30 text-violet-400" 
+                        : "bg-white/5 border-white/10 text-white/20"
                 )}>
                     {initials}
                 </div>
                 <div className="flex-1 min-w-0">
                     <h4 className={cn(
                         "text-sm font-bold tracking-tight truncate transition-colors",
-                        activated ? "text-white group-hover:text-emerald-400" : "text-white/50 group-hover:text-white/70"
+                        activated ? "text-white group-hover:text-violet-400" : "text-white/40 group-hover:text-white/60"
                     )}>
                         {j.nombre}
-                        {j.numero && <span className="ml-1.5 text-white/30 text-[10px] font-mono">#{j.numero}</span>}
+                        {j.numero && <span className="ml-1.5 text-white/20 text-[10px] font-mono">#{j.numero}</span>}
                     </h4>
                     <span className={cn(
                         "text-[10px] font-black uppercase tracking-widest",
-                        activated ? "text-emerald-500" : "text-white/25"
+                        activated ? "text-emerald-400" : "text-white/20"
                     )}>
-                        {activated ? "Activado" : "No activado"}
+                        {activated ? "Perfil Activo" : "Sin Perfil"}
                     </span>
                 </div>
-                <ArrowUpRight size={14} className="text-white/10 group-hover:text-emerald-500 transition-colors shrink-0" />
+                <ArrowUpRight size={14} className="text-white/10 group-hover:text-emerald-400 transition-colors shrink-0" />
             </div>
         </Link>
     );
@@ -119,50 +121,49 @@ function SportGroupedAthletes({ athletes, jugadores }: { athletes: any[]; jugado
         <div className="space-y-3">
             {grouped.map(([sport, list]) => {
                 const isOpen = openSports[sport] ?? false;
-        const accent = SPORT_ACCENT[sport] || "text-emerald-400";
+                const accent = SPORT_ACCENT[sport] || "text-emerald-400";
 
                 return (
-                    <div key={sport} className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+                    <div key={sport} className="rounded-2xl border border-white/10 bg-black/20 overflow-hidden group/sport">
                         {/* Header / Toggle */}
                         <button
                             onClick={() => toggle(sport)}
-                            className="w-full flex items-center justify-between gap-3 p-4 hover:bg-white/[0.04] transition-all duration-200 group"
+                            className="w-full flex items-center justify-between gap-3 p-4 hover:bg-white/5 transition-all duration-300 group"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
-                                    <SportIcon sport={sport} size={16} className={cn("opacity-80 scale-110 drop-shadow-sm", accent)} />
+                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shadow-inner group-hover/sport:scale-110 transition-transform">
+                                    <SportIcon sport={sport} size={18} className={cn("opacity-80 scale-110 drop-shadow-sm", accent)} />
                                 </div>
                                 <div className="text-left">
                                     <p className="text-sm font-black tracking-tight text-white">{sport}</p>
-                                    <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
                                         {list.registered.length + list.imported.length} deportista{(list.registered.length + list.imported.length) !== 1 ? 's' : ''}
                                     </p>
                                 </div>
                             </div>
-                            <ChevronDown
-                                size={18}
-                                className={cn(
-                                    "text-white/30 transition-transform duration-300 group-hover:text-white/60",
-                                    isOpen && "rotate-180"
-                                )}
-                            />
+                            <div className={cn(
+                                "p-2 rounded-lg bg-white/5 border border-white/10 transition-all",
+                                isOpen ? "rotate-180 bg-violet-600 border-transparent shadow-lg shadow-violet-500/20" : "text-white/20"
+                            )}>
+                                <ChevronDown size={14} className={isOpen ? "text-white" : ""} />
+                            </div>
                         </button>
 
                         {/* Collapsible List */}
                         {isOpen && (
-                            <div className="border-t border-white/5 px-2 pb-2">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                            <div className="border-t border-white/5 bg-black/40 px-3 pb-3 pt-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {/* Registered athletes (with profiles) */}
                                     {list.registered.map((a: any) => (
                                         <Link key={a.id} href={`/perfil/${a.id}`} className="group">
-                                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-violet-600/5 transition-all duration-300 flex items-center gap-3">
+                                            <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300 flex items-center gap-3 shadow-inner">
                                                 <Avatar
                                                     name={a.full_name}
                                                     src={a.avatar_url}
-                                                    className="w-11 h-11 rounded-xl border border-white/5"
+                                                    className="w-11 h-11 rounded-xl border border-white/10 bg-black/20 shadow-md"
                                                 />
                                                 <div className="flex-1 min-w-0">
-                                                    <h4 className="text-sm font-bold tracking-tight truncate group-hover:text-emerald-400 transition-colors">
+                                                    <h4 className="text-sm font-bold tracking-tight truncate group-hover:text-violet-400 transition-colors text-white">
                                                         {a.full_name}
                                                     </h4>
                                                     {a.points > 0 && (
@@ -172,7 +173,7 @@ function SportGroupedAthletes({ athletes, jugadores }: { athletes: any[]; jugado
                                                         </div>
                                                     )}
                                                 </div>
-                                                <ArrowUpRight size={14} className="text-white/10 group-hover:text-emerald-500 transition-colors shrink-0" />
+                                                <ArrowUpRight size={14} className="text-white/10 group-hover:text-violet-400 transition-colors shrink-0" />
                                             </div>
                                         </Link>
                                     ))}
@@ -308,7 +309,7 @@ export default function CarreraProfilePage() {
             groups[fecha].push(match);
         });
 
-        return Object.keys(groups).sort((a, b) => b.localeCompare(a)).map(fecha => {
+        return Object.keys(groups).sort((a, b) => a.localeCompare(b)).map(fecha => {
             const dateObj = new Date(fecha + 'T12:00:00');
             let label = dateObj.toLocaleDateString('es-ES', {
                 weekday: 'long', day: 'numeric', month: 'short',
@@ -405,19 +406,19 @@ export default function CarreraProfilePage() {
     if (!carrera || error) {
         return (
             <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-4">
-                <div className="w-20 h-20 rounded-full bg-violet-600/10 flex items-center justify-center mb-6 border border-violet-500/20">
+                <div className="w-20 h-20 rounded-full bg-violet-50 flex items-center justify-center mb-6 border border-violet-100">
                     <GraduationCap className="text-violet-400" size={32} />
                 </div>
                 <h1 className="text-2xl font-black mb-2 font-sans uppercase tracking-wider">
                     Carrera no encontrada
                 </h1>
-                <p className="text-white/40 mb-8 max-w-sm text-center font-bold">
+                <p className="text-slate-400 mb-8 max-w-sm text-center font-bold">
                     El programa académico que buscas no existe o no ha
                     participado en eventos.
                 </p>
                 <Button
                     onClick={() => router.back()}
-                    className="rounded-2xl px-8 h-12 bg-white text-black font-black uppercase tracking-widest hover:bg-slate-200"
+                    className="rounded-2xl px-8 h-12 bg-violet-600 text-white font-black uppercase tracking-widest hover:bg-violet-700"
                 >
                     <ChevronLeft className="mr-2" size={18} /> Volver atrás
                 </Button>
@@ -435,15 +436,15 @@ export default function CarreraProfilePage() {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen bg-background text-white selection:bg-violet-500/30 overflow-x-hidden relative">
+        <div className="min-h-screen bg-background text-white selection:bg-violet-500/30 overflow-x-hidden relative font-sans">
             {/* Ambient background */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <div className="absolute inset-0 bg-background mix-blend-multiply opacity-50" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[120vh] max-w-max opacity-[0.05] mix-blend-screen pointer-events-none">
-                    <img src="/elementos/10.png" alt="3D Element" className="h-full w-auto object-contain filter invert opacity-80 rotate-90 scale-125" />
+                <div className="absolute inset-0 bg-background/50" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[120vh] max-w-max opacity-[0.05] pointer-events-none">
+                    <img src="/elementos/10.png" alt="" className="h-full w-auto object-contain filter grayscale invert rotate-90 scale-125" />
                 </div>
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[150px]" />
-                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[150px]" />
+                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-600/5 rounded-full blur-[150px]" />
             </div>
 
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
@@ -455,7 +456,7 @@ export default function CarreraProfilePage() {
                         onClick={() => router.back()}
                         className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.2em]"
                     >
-                        <div className="p-2 rounded-xl bg-white/5 border border-white/5 group-hover:bg-violet-600 group-hover:text-white transition-all shadow-[0_0_15px_rgba(124,58,237,0)] group-hover:shadow-[0_0_15px_rgba(124,58,237,0.4)]">
+                        <div className="p-2 rounded-xl bg-white/5 border border-white/10 group-hover:bg-violet-600 group-hover:text-white transition-all shadow-xl">
                             <ChevronLeft size={14} />
                         </div>
                         Regresar
@@ -469,31 +470,31 @@ export default function CarreraProfilePage() {
                     className="relative mb-8 sm:mb-12"
                 >
                     {/* Animated Premium Background */}
-                    <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-violet-600/30 via-emerald-500/20 to-violet-900/40 rounded-[2.5rem] sm:rounded-[3rem] blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-700" />
+                    <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-violet-600/30 via-emerald-500/20 to-violet-900/30 rounded-[2.5rem] sm:rounded-[3rem] blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-700" />
                     
-                    <div className="relative bg-background/95 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl">
+                    <div className="relative bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl">
                         {/* Noise & Glows */}
-                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-600/20 to-emerald-500/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-violet-900/20 to-transparent blur-3xl rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] pointer-events-none mix-blend-overlay" />
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-600/20 to-emerald-500/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-violet-400/20 to-transparent blur-3xl rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
                         <div className="relative z-10 p-6 sm:p-10 md:p-12 flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12 text-center lg:text-left">
                             
                             {/* Avatar / Escudo Majestic Presentation */}
                             <div className="relative group/escudo shrink-0">
                                 {/* Back glow for avatar */}
-                                <div className="absolute -inset-2 bg-gradient-to-br from-violet-500/30 to-emerald-500/20 rounded-[2.5rem] blur-xl opacity-50 group-hover/escudo:opacity-80 transition-opacity duration-500" />
+                                <div className="absolute -inset-2 bg-gradient-to-br from-violet-500/40 to-emerald-500/20 rounded-[2.5rem] blur-xl opacity-50 group-hover/escudo:opacity-80 transition-opacity duration-500" />
                                 
-                                <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-[2rem] bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-2xl overflow-hidden p-3 transition-transform hover:scale-105 duration-500">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent mix-blend-overlay" />
+                                <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-[2rem] bg-black backdrop-blur-md border border-white/10 flex items-center justify-center shadow-2xl overflow-hidden p-3 transition-transform hover:scale-105 duration-500">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-transparent mix-blend-overlay" />
                                     {carrera.escudo_url ? (
                                         <img
                                             src={carrera.escudo_url}
                                             alt={`Escudo de ${carrera.nombre}`}
-                                            className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(0,0,0,0.8)] filter contrast-125"
+                                            className="w-full h-full object-contain filter drop-shadow-md"
                                         />
                                     ) : (
-                                        <span className="text-5xl md:text-7xl font-black text-white/20 font-sans truncate mix-blend-plus-lighter z-10">
+                                        <span className="text-5xl md:text-7xl font-black text-white/10 font-sans truncate z-10 filter contrast-200">
                                             {getInitials(carrera.nombre)}
                                         </span>
                                     )}
@@ -517,7 +518,7 @@ export default function CarreraProfilePage() {
                                             onClick={() => escudoInputRef.current?.click()}
                                             disabled={uploadingEscudo}
                                             title="Cambiar escudo"
-                                            className="absolute inset-0 rounded-[2rem] bg-black/70 opacity-0 group-hover/escudo:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-sm"
+                                            className="absolute inset-0 rounded-[2rem] bg-slate-900/70 opacity-0 group-hover/escudo:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-sm"
                                         >
                                             {uploadingEscudo ? (
                                                 <Loader2 size={28} className="text-white animate-spin" />
@@ -538,10 +539,10 @@ export default function CarreraProfilePage() {
 
                             {/* Info & Stats */}
                             <div className="flex-1 w-full max-w-2xl lg:max-w-none flex flex-col items-center lg:items-start">
-                                <p className="font-display text-[10px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-200 uppercase tracking-[0.3em] mb-3">
+                                <p className="font-display text-[10px] font-black text-violet-400 uppercase tracking-[0.3em] mb-3">
                                     Programa Académico
                                 </p>
-                                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter font-display uppercase leading-tight text-white drop-shadow-sm px-2 lg:px-0 mb-6">
+                                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter font-display uppercase leading-tight text-white drop-shadow-2xl px-2 lg:px-0 mb-6">
                                     {carrera.nombre}
                                 </h1>
 
@@ -555,36 +556,36 @@ export default function CarreraProfilePage() {
                                     {/* Record, Played, Win Rate */}
                                     <div className="grid grid-cols-3 gap-2 sm:gap-3 flex-1 w-full">
                                         {/* Match Record */}
-                                        <div className="col-span-3 sm:col-span-1 flex flex-col items-center justify-center bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-4 shadow-inner relative overflow-hidden">
+                                        <div className="col-span-3 sm:col-span-1 flex flex-col items-center justify-center bg-white/5 border border-white/10 rounded-2xl py-3 px-4 shadow-inner relative overflow-hidden">
                                             <div className="flex items-center gap-4 sm:gap-3 w-full justify-center">
                                                 <div className="flex flex-col items-center">
                                                     <span className="text-lg font-black text-emerald-400 tabular-nums">{stats.won}</span>
-                                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">W</span>
+                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">W</span>
                                                 </div>
                                                 <div className="flex flex-col items-center">
-                                                    <span className="text-lg font-black text-white/40 tabular-nums">{stats.draw}</span>
-                                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">D</span>
+                                                    <span className="text-lg font-black text-white/20 tabular-nums">{stats.draw}</span>
+                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">D</span>
                                                 </div>
                                                 <div className="flex flex-col items-center">
-                                                    <span className="text-lg font-black text-rose-400 tabular-nums">{stats.lost}</span>
-                                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">L</span>
+                                                    <span className="text-lg font-black text-rose-500 tabular-nums">{stats.lost}</span>
+                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">L</span>
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Matches Played */}
-                                        <div className="col-span-1 sm:col-span-1 flex flex-col items-center justify-center bg-white/[0.02] border border-white/5 rounded-2xl py-3 px-4 shadow-inner group/activity">
-                                            <span className="text-2xl font-black text-white group-hover/activity:text-white/80 transition-colors tabular-nums tracking-tighter">{stats.played}</span>
-                                            <span className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mt-1">JugADOS</span>
+                                        <div className="col-span-1 sm:col-span-1 flex flex-col items-center justify-center bg-black/20 border border-white/10 rounded-2xl py-3 px-4 shadow-sm group/activity">
+                                            <span className="text-2xl font-black text-white group-hover/activity:text-violet-400 transition-colors tabular-nums tracking-tighter">{stats.played}</span>
+                                            <span className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mt-1">JugADOS</span>
                                         </div>
 
                                         {/* Win Rate */}
-                                        <div className="col-span-2 sm:col-span-1 flex flex-col items-center justify-center bg-violet-500/5 border border-violet-500/10 rounded-2xl py-3 px-4 shadow-[0_0_15px_rgba(124,58,237,0.05)]">
+                                        <div className="col-span-2 sm:col-span-1 flex flex-col items-center justify-center bg-violet-600 border border-transparent rounded-2xl py-3 px-4 shadow-[0_10px_30px_rgba(124,58,237,0.3)]">
                                             <div className="flex items-center gap-1.5">
-                                                <TrendingUp size={12} className="text-violet-400" />
-                                                <span className="text-2xl font-black text-violet-400 tabular-nums tracking-tighter">{stats.played > 0 ? Math.round((stats.won / stats.played) * 100) : 0}%</span>
+                                                <TrendingUp size={12} className="text-white" />
+                                                <span className="text-2xl font-black text-white tabular-nums tracking-tighter">{stats.played > 0 ? Math.round((stats.won / stats.played) * 100) : 0}%</span>
                                             </div>
-                                            <span className="text-[8px] font-black text-violet-400/50 uppercase tracking-[0.2em] mt-1">EFECTIVIDAD</span>
+                                            <span className="text-[8px] font-black text-white/60 uppercase tracking-[0.2em] mt-1">EFECTIVIDAD</span>
                                         </div>
                                     </div>
                                 </div>
@@ -593,7 +594,7 @@ export default function CarreraProfilePage() {
 
                         {/* Edge-to-edge Win Rate Progress Bar */}
                         {stats.played > 0 && (
-                            <div className="absolute bottom-0 left-0 right-0 h-1.5 flex shadow-[0_-2px_10px_rgba(0,0,0,0.5)] bg-slate-800/50">
+                            <div className="absolute bottom-0 left-0 right-0 h-1.5 flex shadow-[0_-2px_10px_rgba(0,0,0,0.5)] bg-black/50">
                                 <div
                                     className="h-full bg-emerald-500 relative z-10 transition-all duration-1000 ease-out"
                                     style={{ width: `${(stats.won / stats.played) * 100}%` }}
@@ -601,11 +602,11 @@ export default function CarreraProfilePage() {
                                     <div className="absolute inset-0 bg-white/20 animate-pulse" />
                                 </div>
                                 <div
-                                    className="h-full bg-slate-400 relative z-10 transition-all duration-1000 ease-out"
+                                    className="h-full bg-slate-600 relative z-10 transition-all duration-1000 ease-out"
                                     style={{ width: `${(stats.draw / stats.played) * 100}%` }}
                                 />
                                 <div
-                                    className="h-full bg-rose-500 relative z-10 transition-all duration-1000 ease-out"
+                                    className="h-full bg-rose-600 relative z-10 transition-all duration-1000 ease-out"
                                     style={{ width: `${(stats.lost / stats.played) * 100}%` }}
                                 />
                             </div>
@@ -615,11 +616,11 @@ export default function CarreraProfilePage() {
 
                 {/* ━━━ INSTITUTIONAL BRAND BREAK ━━━ */}
                 <div className="mt-8 mb-4 relative z-0">
-                    <InstitutionalBanner />
+                    <InstitutionalBanner variant={3} className="rounded-[2.5rem] shadow-2xl" />
                 </div>
 
                 {/* ═══ TABS ═══ */}
-                <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/5 rounded-3xl mb-10 overflow-x-auto no-scrollbar">
+                <div className="flex gap-1 p-1 bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl mb-10 overflow-x-auto no-scrollbar shadow-xl">
                     <TabButton
                         active={activeTab === "partidos"}
                         onClick={() => setActiveTab("partidos")}
@@ -665,8 +666,8 @@ export default function CarreraProfilePage() {
                                         className={cn(
                                             "flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all",
                                             sportFilter === "todos"
-                                                ? "bg-white text-violet-950 border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                                                : "bg-transparent text-white/60 border-white/20 hover:bg-white/5"
+                                                ? "bg-violet-600 text-white border-transparent shadow-[0_10px_20px_rgba(124,58,237,0.2)]"
+                                                : "bg-white text-slate-400 border-violet-100 hover:bg-violet-50"
                                         )}
                                     >
                                         Todos
@@ -678,15 +679,15 @@ export default function CarreraProfilePage() {
                                             className={cn(
                                                 "flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap transition-all",
                                                 sportFilter === sport
-                                                    ? "bg-white text-violet-950 border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                                                    : "bg-transparent text-white/60 border-white/20 hover:bg-white/5"
+                                                    ? "bg-violet-600 text-white border-transparent shadow-[0_10px_20px_rgba(124,58,237,0.2)]"
+                                                    : "bg-white text-slate-400 border-violet-100 hover:bg-violet-50"
                                             )}
                                         >
                                             <div className="flex items-center justify-center shrink-0">
                                                 <SportIcon 
                                                     sport={sport} 
                                                     size={18} 
-                                                    className={sportFilter === sport ? "opacity-100 scale-110 drop-shadow-md" : "opacity-60 grayscale-[0.5]"} 
+                                                    className={sportFilter === sport ? "opacity-100 scale-110 drop-shadow-md text-white" : "opacity-60 text-slate-400"} 
                                                 />
                                             </div>
                                             {sport}
@@ -1061,17 +1062,27 @@ function TabButton({
     return (
         <button
             onClick={onClick}
-            role="tab"
-            aria-selected={active}
             className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-4 px-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all focus-visible:ring-2 focus-visible:ring-violet-500 outline-none",
+                "flex-1 flex flex-col items-center justify-center gap-1.5 py-3 sm:py-4 px-2 rounded-2xl transition-all relative overflow-hidden group min-w-[70px]",
                 active
-                    ? "bg-white text-black shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
-                    : "text-white/40 hover:text-white hover:bg-white/5"
+                    ? "text-white bg-white/5 shadow-inner"
+                    : "text-white/40 hover:bg-white/5 hover:text-white"
             )}
         >
-            {icon}
-            <span className="hidden sm:inline font-sans">{label}</span>
+            <div className="relative z-10 transition-transform group-hover:scale-110">
+                {icon}
+            </div>
+            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest relative z-10">
+                {label}
+            </span>
+            {active && (
+                <motion.div
+                    layoutId="carreraTabMarker"
+                    className="absolute inset-0 bg-gradient-to-t from-violet-600/20 to-transparent border-b-2 border-violet-500"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+            )}
         </button>
     );
 }
@@ -1087,11 +1098,11 @@ function EmptyState({
 }) {
     return (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10">
+            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10 shadow-xl">
                 {icon}
             </div>
-            <h3 className="text-lg font-bold text-white/30 mb-2">{title}</h3>
-            <p className="text-white/20 text-sm max-w-md">{description}</p>
+            <h3 className="text-lg font-black text-white/20 uppercase tracking-widest mb-2">{title}</h3>
+            <p className="text-white/40 text-sm max-w-md font-bold italic">{description}</p>
         </div>
     );
 }
@@ -1110,7 +1121,6 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
     const isFinal = estado === "finalizado";
 
     const accent = SPORT_ACCENT[disc || ""] || "text-white/60";
-    const border = SPORT_BORDER[disc || ""] || "border-white/5";
 
     // Winner calculations
     const scoreNumA = typeof scoreA === 'number' ? scoreA : parseInt(scoreA) || 0;
@@ -1122,53 +1132,40 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
     return (
         <Link href={`/partido/${match.id}`} className="block group/match">
             <div className={cn(
-                "relative flex flex-col p-4 sm:p-5 rounded-[1.5rem] border transition-all duration-500 overflow-hidden hover:shadow-2xl hover:-translate-y-0.5",
-                border,
-                "bg-gradient-to-br from-white/[0.04] via-[#0d0a0e] to-[#0d0a0e]"
+                "relative flex flex-col p-4 sm:p-5 rounded-[1.5rem] border border-white/5 transition-all duration-500 overflow-hidden hover:shadow-2xl hover:-translate-y-0.5 bg-white/[0.03] hover:bg-white/[0.05]"
             )}>
                 {/* Noise Texture */}
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.04] pointer-events-none mix-blend-overlay" />
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
                 {/* Sport Gradient Wash */}
                 <div className={cn(
-                    "absolute inset-0 opacity-[0.07] pointer-events-none bg-gradient-to-br",
+                    "absolute inset-0 opacity-[0.08] pointer-events-none bg-gradient-to-br transition-opacity group-hover/match:opacity-[0.12]",
                     SPORT_GRADIENT[disc || ""] || "from-white/10 to-transparent"
                 )} />
-                {/* Glow Blob */}
-                <div
-                    className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full blur-[80px] pointer-events-none transition-opacity duration-700 opacity-15 group-hover/match:opacity-30"
-                    style={{ backgroundColor: SPORT_COLORS[disc || ""] || '#ffffff10' }}
-                />
-                <div
-                    className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-[60px] pointer-events-none transition-opacity duration-700 opacity-5 group-hover/match:opacity-15"
-                    style={{ backgroundColor: SPORT_COLORS[disc || ""] || '#ffffff05' }}
-                />
-                {/* Bottom Accent Stripe */}
-                <div
-                    className="absolute bottom-0 left-0 right-0 h-[2px] opacity-30 group-hover/match:opacity-60 transition-opacity"
+                {/* Glow Bloom */}
+                <div 
+                    className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full blur-[80px] pointer-events-none transition-opacity duration-700 opacity-[0.08] group-hover/match:opacity-[0.15]"
                     style={{ backgroundColor: SPORT_COLORS[disc || ""] || '#ffffff10' }}
                 />
 
-                {/* Top Header Row (Asymmetrical) */}
+                {/* Top Header Row */}
                 <div className="flex items-center justify-between w-full mb-3 z-10">
-                    {/* Sport Badge (Top Left) */}
                     <div className="flex items-center gap-2">
                         <div className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center border shadow-inner transition-colors",
-                            isLive ? "bg-emerald-500/10 border-emerald-500/20" : "bg-white/5 border-white/10"
+                            "w-6 h-6 rounded-lg flex items-center justify-center border shadow-inner transition-colors",
+                            isLive ? "bg-red-500/20 border-red-500/30" : "bg-white/5 border-white/10"
                         )}>
-                            {disc ? <SportIcon sport={disc} size={18} className={isLive ? "animate-pulse drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "opacity-80 drop-shadow-sm"} /> : <Swords size={14} className="text-white/30" />}
+                            {disc ? <SportIcon sport={disc} size={12} className={isLive ? "text-red-400 animate-pulse" : "text-white/40 opacity-80"} /> : <Swords size={12} className="text-white/20" />}
                         </div>
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">{disc || 'Evento'}</span>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30">{disc || 'Evento'}</span>
                     </div>
 
-                    {/* Status/Date Pill (Top Right) */}
                     <div>
                         {isLive ? (
-                            <Badge className="bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 text-[9px] font-black px-3 py-1 animate-pulse uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(16,185,129,0.2)] rounded-full">
-                                DIRECTO
+                            <Badge className="bg-red-600 text-white border-transparent text-[9px] font-black px-3 py-1 animate-pulse uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(220,38,38,0.4)] rounded-full">
+                                EN VIVO
                             </Badge>
                         ) : (
-                            <div className="bg-white/[0.03] border border-white/10 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-white/30 shadow-inner">
+                            <div className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-white/40 shadow-inner">
                                 {new Date(match.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short" })}
                             </div>
                         )}
@@ -1181,11 +1178,11 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                     <div className="flex flex-col items-center gap-2 w-[80px] sm:w-[100px]">
                         <Avatar
                             name={nameA}
-                            src={match.carrera_a?.escudo_url || match.atleta_a?.avatar_url || match.equipo_a_id?.escudo_url}
+                            src={match.carrera_a?.escudo_url || match.atleta_a?.avatar_url}
                             className={cn(
-                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-background",
-                                winnerA ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
-                                !winnerA && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-black/20",
+                                winnerA ? `scale-105 shadow-[0_0_20px_rgba(16,185,129,0.3)] border-emerald-500` : "border-white/5",
+                                !winnerA && isFinal && !isDraw ? "opacity-20 grayscale-[0.5]" : ""
                             )}
                         />
                         <span className={cn(
@@ -1200,21 +1197,21 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                     <div className="flex flex-col items-center justify-center shrink-0">
                         {isFinal || isLive ? (
                             <div className="flex flex-col items-center">
-                                <div className="flex items-center justify-center gap-1.5 sm:gap-2 font-black text-3xl sm:text-4xl text-white tracking-tighter tabular-nums drop-shadow-xl">
-                                    <span className={winnerB ? "opacity-30" : ""}>{scoreA ?? 0}</span>
+                                <div className="flex items-center justify-center gap-1.5 sm:gap-2 font-black text-3xl sm:text-4xl text-white tracking-tighter tabular-nums">
+                                    <span className={winnerB ? "opacity-20" : "drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"}>{scoreA ?? 0}</span>
                                     <span className="text-white/10 text-lg -mt-0.5">:</span>
-                                    <span className={winnerA ? "opacity-30" : ""}>{scoreB ?? 0}</span>
+                                    <span className={winnerA ? "opacity-20" : "drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"}>{scoreB ?? 0}</span>
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tighter drop-shadow-xl mb-1 mt-1">
+                            <div className="text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tighter mb-1 mt-1 font-mono">
                                 {new Date(match.fecha).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
                             </div>
                         )}
                         {match.genero && (
                             <div className={cn(
                                 "text-[7px] sm:text-[8px] font-black tracking-[0.2em] uppercase transition-all mt-2",
-                                match.genero === 'femenino' ? "text-pink-500/80" : match.genero === 'mixto' ? "text-purple-500/80" : "text-blue-500/80"
+                                match.genero === 'femenino' ? "text-pink-400" : match.genero === 'mixto' ? "text-purple-400" : "text-blue-400"
                             )}>
                                 {match.genero}
                             </div>
@@ -1225,11 +1222,11 @@ function MatchRow({ match, carreraName }: { match: any; carreraName: string }) {
                     <div className="flex flex-col items-center gap-2 w-[80px] sm:w-[100px]">
                         <Avatar
                             name={nameB}
-                            src={match.carrera_b?.escudo_url || match.atleta_b?.avatar_url || match.equipo_b_id?.escudo_url}
+                            src={match.carrera_b?.escudo_url || match.atleta_b?.avatar_url}
                             className={cn(
-                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-background",
-                                winnerB ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
-                                !winnerB && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-black/20",
+                                winnerB ? `scale-105 shadow-[0_0_20px_rgba(16,185,129,0.3)] border-emerald-500` : "border-white/5",
+                                !winnerB && isFinal && !isDraw ? "opacity-20 grayscale-[0.5]" : ""
                             )}
                         />
                         <span className={cn(
