@@ -59,7 +59,7 @@ export default function Home() {
 
   // ─── SWR Hooks — cached, deduplicated, realtime-enabled ──────────────────
   const { matches: rawMatches, loading: matchesLoading } = useMatches();
-  const { news: latestNews, loading: newsLoading } = useNews(4);
+  const { news: latestNews, loading: newsLoading } = useNews(2);
   const { favoriteIds, loading: favoritosLoading, mutate: mutateFavoritos } = useFavoritos(user?.id);
   const { carreras, loading: carrerasLoading } = useCarreras();
   const loading = matchesLoading || (activeFilter === 'favoritos' && favoritosLoading);
@@ -461,12 +461,12 @@ export default function Home() {
         )}
 
         {/* ━━━ INSTITUTIONAL BRAND BREAK ━━━ */}
-        <div className="mt-4 mb-12 relative z-0">
+        <div className="mt-8 mb-20 relative z-0">
           <InstitutionalBanner />
         </div>
 
         {/* ÚLTIMAS NOTICIAS - HYBRID */}
-        <section className="animate-in slide-in-from-bottom-8 fade-in duration-1000">
+        <section className="animate-in slide-in-from-bottom-8 fade-in duration-1000 bg-white/[0.12] rounded-3xl p-6 border border-white/10">
           <div className="flex flex-col gap-1 mb-8 px-1">
             <p className="font-display text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-emerald-400 tracking-[0.3em]">
               Últimas del campus
