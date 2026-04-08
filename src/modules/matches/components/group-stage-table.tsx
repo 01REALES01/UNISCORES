@@ -46,7 +46,7 @@ interface GroupStageTableProps {
     sportName: string;
     grupo: string;
     light?: boolean;
-    teamIdMap?: Record<string, { teamId?: string; athleteId?: string }>;
+    teamIdMap?: Record<string, { teamId?: string; athleteId?: string; avatarUrl?: string; escudoUrl?: string }>;
 }
 
 export function GroupStageTable({ matches, sportName, grupo, light = false, teamIdMap = {} }: GroupStageTableProps) {
@@ -219,26 +219,36 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                         const isLive     = m.estado === 'en_curso';
                         const winnerA = isFinished && scoreA > scoreB;
                         const winnerB = isFinished && scoreB > scoreA;
+                        
+                        // Fallback icon logic using teamIdMap
+                        const nameA = m.delegacion_a || m.equipo_a || '';
+                        const nameB = m.delegacion_b || m.equipo_b || '';
+                        const mapA = teamIdMap[nameA.trim().toLowerCase()] || {};
+                        const mapB = teamIdMap[nameB.trim().toLowerCase()] || {};
+                        
+                        const iconA = m.atleta_a?.avatar_url || m.carrera_a?.escudo_url || m.delegacion_a_info?.escudo_url || mapA.avatarUrl || mapA.escudoUrl;
+                        const iconB = m.atleta_b?.avatar_url || m.carrera_b?.escudo_url || m.delegacion_b_info?.escudo_url || mapB.avatarUrl || mapB.escudoUrl;
+
                         return (
                             <Link href={`/partido/${m.id}`} key={m.id} className="block group/m">
                                 <div className={cn("relative flex items-center justify-between px-3.5 py-2.5 rounded-xl border transition-all duration-200 overflow-hidden", isLive ? "bg-emerald-500/8 border-emerald-500/25" : light ? "bg-white border-slate-100" : "bg-white/[0.03] border-white/8")}>
                                     <div className="flex items-center gap-2 w-[40%] relative z-10">
                                         <div className="w-5 h-5 rounded-md bg-white/5 border border-white/10 flex items-center justify-center p-0.5 shrink-0">
-                                            {(m.atleta_a?.avatar_url || m.carrera_a?.escudo_url || m.delegacion_a_info?.escudo_url) ? (
-                                                <img src={m.atleta_a?.avatar_url || m.carrera_a?.escudo_url || m.delegacion_a_info?.escudo_url} alt="" className="w-full h-full object-contain" />
-                                            ) : <div className="text-[6px] opacity-20">A</div>}
+                                            {iconA ? (
+                                                <img src={iconA} alt="" className="w-full h-full object-contain" />
+                                            ) : <div className="text-[6px] opacity-20">{nameA.substring(0,1)}</div>}
                                         </div>
-                                        <span className={cn("text-[10px] font-black uppercase tracking-tight truncate", winnerA ? "text-white" : isFinished ? "text-white/30" : "text-white/55")}>{m.delegacion_a || m.equipo_a}</span>
+                                        <span className={cn("text-[10px] font-black uppercase tracking-tight truncate", winnerA ? "text-white" : isFinished ? "text-white/30" : "text-white/55")}>{nameA}</span>
                                     </div>
                                     <div className="flex flex-col items-center justify-center w-[20%] relative z-10 shrink-0">
                                         <span className="font-black text-[12px] tabular-nums">{scoreA}–{scoreB}</span>
                                     </div>
                                     <div className="flex items-center gap-2 w-[40%] justify-end relative z-10">
-                                        <span className={cn("text-[10px] font-black uppercase tracking-tight truncate text-right", winnerB ? "text-white" : isFinished ? "text-white/30" : "text-white/55")}>{m.delegacion_b || m.equipo_b}</span>
+                                        <span className={cn("text-[10px] font-black uppercase tracking-tight truncate text-right", winnerB ? "text-white" : isFinished ? "text-white/30" : "text-white/55")}>{nameB}</span>
                                         <div className="w-5 h-5 rounded-md bg-white/5 border border-white/10 flex items-center justify-center p-0.5 shrink-0">
-                                            {(m.atleta_b?.avatar_url || m.carrera_b?.escudo_url || m.delegacion_b_info?.escudo_url) ? (
-                                                <img src={m.atleta_b?.avatar_url || m.carrera_b?.escudo_url || m.delegacion_b_info?.escudo_url} alt="" className="w-full h-full object-contain" />
-                                            ) : <div className="text-[6px] opacity-20">B</div>}
+                                            {iconB ? (
+                                                <img src={iconB} alt="" className="w-full h-full object-contain" />
+                                            ) : <div className="text-[6px] opacity-20">{nameB.substring(0,1)}</div>}
                                         </div>
                                     </div>
                                 </div>

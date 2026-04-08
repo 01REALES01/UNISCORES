@@ -55,7 +55,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
         { title: "Inicio", icon: HomeIcon, href: '/' },
         { title: "Partidos", icon: Gamepad2, href: '/partidos' },
         { title: "Clasificación", icon: Swords, href: '/clasificacion' },
-        { title: "Equipos", icon: Trophy, href: '/medallero' },
+        { title: "Programas", icon: Trophy, href: '/medallero' },
         { title: "Calendario", icon: CalendarIcon, href: '/calendario' },
         { title: "Acierta y Gana", icon: BarChart3, href: '/quiniela' },
         { title: "Noticias", icon: Newspaper, href: '/noticias' },

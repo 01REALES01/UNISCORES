@@ -30,6 +30,8 @@ export type Partido = {
   carrera_b_id?: number;
   athlete_a_id?: string;
   athlete_b_id?: string;
+  jugador_a_id?: number;
+  jugador_b_id?: number;
   responsable_id?: string;
   last_edited_by?: string;
   updated_at?: string;

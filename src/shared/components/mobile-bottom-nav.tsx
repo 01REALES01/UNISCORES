@@ -28,7 +28,7 @@ interface NavItem {
 const I: Record<string, NavItem> = {
     calendario:   { id: 'calendario',   label: 'Fecha',   icon: Calendar,   href: '/calendario'    },
     partidos:     { id: 'partidos',     label: 'Match',   icon: Gamepad2,   href: '/partidos'      },
-    medallero:    { id: 'medallero',    label: 'Equipos',   icon: Trophy,     href: '/medallero'     },
+    medallero:    { id: 'medallero',    label: 'Programas',   icon: Trophy,     href: '/medallero'     },
     clasificacion:{ id: 'clasificacion',label: 'Llaves',  icon: Swords,     href: '/clasificacion' },
     lideres:      { id: 'lideres',      label: 'Top',     icon: TrendingUp, href: '/estadisticas'  },
     noticias:     { id: 'noticias',     label: 'News',    icon: Newspaper,  href: '/noticias'      },

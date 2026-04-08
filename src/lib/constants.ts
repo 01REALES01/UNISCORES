@@ -93,50 +93,50 @@ export const SPORT_COLORS: Record<string, string> = {
     'Fútbol': '#10B981',
     'Baloncesto': '#F59E0B',
     'Voleibol': '#F97316',
-    'Tenis': '#22D3EE',
+    'Tenis': '#84cc16',
     'Tenis de Mesa': '#EC4899',
     'Ajedrez': '#F5F5DC',
-    'Natación': '#3B82F6',
+    'Natación': '#0ea5e9',
 };
 
 export const SPORT_SOFT_BG: Record<string, string> = {
     'Fútbol': 'bg-emerald-500/10',
     'Baloncesto': 'bg-amber-500/10',
     'Voleibol': 'bg-orange-500/10',
-    'Tenis': 'bg-cyan-500/10',
+    'Tenis': 'bg-lime-500/10',
     'Tenis de Mesa': 'bg-pink-500/10',
     'Ajedrez': 'bg-white/10',
-    'Natación': 'bg-blue-500/10',
+    'Natación': 'bg-sky-500/10',
 };
 
 export const SPORT_ACCENT: Record<string, string> = {
     'Fútbol': 'text-emerald-400',
     'Baloncesto': 'text-amber-400',
     'Voleibol': 'text-orange-400',
-    'Tenis': 'text-cyan-400',
+    'Tenis': 'text-lime-400',
     'Tenis de Mesa': 'text-pink-400',
     'Ajedrez': 'text-[#F5F5DC]',
-    'Natación': 'text-blue-400',
+    'Natación': 'text-sky-400',
 };
 
 export const SPORT_BORDER: Record<string, string> = {
     'Fútbol': 'border-emerald-500/20',
     'Baloncesto': 'border-amber-500/20',
     'Voleibol': 'border-orange-500/20',
-    'Tenis': 'border-cyan-500/20',
+    'Tenis': 'border-lime-500/20',
     'Tenis de Mesa': 'border-pink-500/20',
     'Ajedrez': 'border-white/20',
-    'Natación': 'border-blue-500/20',
+    'Natación': 'border-sky-500/20',
 };
 
 export const SPORT_LIVE_TEXT: Record<string, string> = {
     'Fútbol': 'text-emerald-400',
     'Baloncesto': 'text-amber-400',
     'Voleibol': 'text-orange-400',
-    'Tenis': 'text-cyan-400',
+    'Tenis': 'text-lime-400',
     'Tenis de Mesa': 'text-pink-400',
     'Ajedrez': 'text-white',
-    'Natación': 'text-blue-400',
+    'Natación': 'text-sky-400',
     'default': 'text-violet-300'
 };
 
@@ -144,10 +144,10 @@ export const SPORT_LIVE_BG_WRAPPER: Record<string, string> = {
     'Fútbol': 'bg-emerald-500/10',
     'Baloncesto': 'bg-amber-500/10',
     'Voleibol': 'bg-orange-500/10',
-    'Tenis': 'bg-cyan-500/10',
+    'Tenis': 'bg-lime-500/10',
     'Tenis de Mesa': 'bg-pink-500/10',
     'Ajedrez': 'bg-white/10',
-    'Natación': 'bg-blue-500/10',
+    'Natación': 'bg-sky-500/10',
     'default': 'bg-violet-500/10'
 };
 
@@ -155,10 +155,10 @@ export const SPORT_LIVE_BAR: Record<string, string> = {
     'Fútbol': 'bg-emerald-500',
     'Baloncesto': 'bg-amber-500',
     'Voleibol': 'bg-orange-500',
-    'Tenis': 'bg-cyan-500',
+    'Tenis': 'bg-lime-500',
     'Tenis de Mesa': 'bg-pink-500',
     'Ajedrez': 'bg-white',
-    'Natación': 'bg-blue-500',
+    'Natación': 'bg-sky-500',
     'default': 'bg-violet-500'
 };
 
@@ -166,10 +166,10 @@ export const SPORT_GLOW: Record<string, string> = {
     'Fútbol': 'hover:shadow-lg hover:shadow-emerald-500/20',
     'Baloncesto': 'hover:shadow-lg hover:shadow-amber-500/20',
     'Voleibol': 'hover:shadow-lg hover:shadow-orange-500/20',
-    'Tenis': 'hover:shadow-lg hover:shadow-cyan-500/20',
+    'Tenis': 'hover:shadow-lg hover:shadow-lime-500/20',
     'Tenis de Mesa': 'hover:shadow-lg hover:shadow-pink-500/20',
     'Ajedrez': 'hover:shadow-lg hover:shadow-white/20',
-    'Natación': 'hover:shadow-lg hover:shadow-blue-500/20',
+    'Natación': 'hover:shadow-lg hover:shadow-sky-500/20',
     'default': 'hover:shadow-lg hover:shadow-primary/20'
 };
 
@@ -177,10 +177,10 @@ export const SPORT_GRADIENT: Record<string, string> = {
     'Fútbol': 'from-emerald-500/20 to-transparent',
     'Baloncesto': 'from-amber-500/20 to-transparent',
     'Voleibol': 'from-orange-500/20 to-transparent',
-    'Tenis': 'from-cyan-500/20 to-transparent',
+    'Tenis': 'from-lime-500/20 to-transparent',
     'Tenis de Mesa': 'from-pink-500/20 to-transparent',
     'Ajedrez': 'from-white/20 to-transparent',
-    'Natación': 'from-blue-500/20 to-transparent',
+    'Natación': 'from-sky-500/20 to-transparent',
     'default': 'from-primary/10 to-transparent'
 };
 

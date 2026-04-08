@@ -129,7 +129,7 @@ function bestMatch(candidates: any[], searchName: string) {
     const score = matched / Math.max(searchWords.length, dbWords.length);
     if (score > bestScore) { bestScore = score; best = c; }
   }
-  return bestScore > 0 ? best : null;
+  return bestScore > 0.35 ? best : null;
 }
 
 // Find jugador by name — uses two longest words as AND filter, then scores.
@@ -157,17 +157,22 @@ async function findJugador(supabase: any, playerName: string, _discId: number) {
     if (data?.length > 1) return bestMatch(data, name);
   }
 
-  // 2. Fallback: just longest word, pick best scoring match
-  if (w1) {
-    const { data } = await supabase
-      .from('jugadores')
-      .select(cols)
-      .ilike('nombre', `%${w1}%`)
-      .limit(10);
-    if (data?.length) return bestMatch(data, name);
-  }
+    // 3. Fallback: search profiles table directly by name (word based)
+    if (w1 && w2) {
+        const { data: pros } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .ilike('full_name', `%${w1}%`)
+            .ilike('full_name', `%${w2}%`)
+            .limit(5);
+        if (pros?.length === 1) return { profile_id: pros[0].id };
+        if (pros?.length > 1) {
+            const best = bestMatch(pros.map((p: any) => ({ ...p, nombre: p.full_name })), name);
+            if (best) return { profile_id: best.id };
+        }
+    }
 
-  return null;
+    return null;
 }
 
 // ─── Main handler ────────────────────────────────────────────────────────────

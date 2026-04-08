@@ -115,7 +115,7 @@ export default function DirectorioPage() {
                         </div>
                         <div>
                             <h1 className="text-white font-black text-xl">Directorio</h1>
-                            <p className="text-white/30 text-xs">Programas y equipos del torneo</p>
+                            <p className="text-white/30 text-xs">Programas del torneo</p>
                         </div>
                     </div>
                     <button
@@ -142,7 +142,7 @@ export default function DirectorioPage() {
                             )}
                         >
                             {t === "carreras" ? <GraduationCap size={13} /> : <Users size={13} />}
-                            {t === "carreras" ? `Carreras (${carreras.length})` : `Equipos (${equipos.length})`}
+                            {t === "carreras" ? `Carreras (${carreras.length})` : `Programas (${equipos.length})`}
                         </button>
                     ))}
                 </div>
@@ -229,7 +229,7 @@ function EquiposTab({ equipos }: { equipos: Equipo[] }) {
                 <div key={key} className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
                     <div className="px-4 py-2.5 border-b border-white/5 bg-white/[0.02]">
                         <span className="text-white/60 text-xs font-bold">{group.label}</span>
-                        <span className="text-white/20 text-xs ml-2">{group.items.length} equipos</span>
+                        <span className="text-white/20 text-xs ml-2">{group.items.length} programas</span>
                     </div>
                     <div className="divide-y divide-white/5">
                         {group.items.map(e => (

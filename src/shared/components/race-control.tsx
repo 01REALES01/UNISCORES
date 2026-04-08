@@ -403,9 +403,9 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, prof
             </div>
 
             {/* Participant List */}
-            <div className="p-4 space-y-1.5">
-                {/* Column headers */}
-                <div className="grid grid-cols-[40px_1.5fr_1.5fr_60px_100px_90px_40px] gap-2 px-3 py-2 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+            <div className="p-3 md:p-4 space-y-2">
+                {/* Column headers — desktop only */}
+                <div className="hidden md:grid md:grid-cols-[44px_1.5fr_1.5fr_60px_116px_106px_40px] gap-2 px-3 py-2 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
                     <div className="text-center">Pos</div>
                     <div>Nadador</div>
                     <div>Carrera</div>
@@ -415,173 +415,218 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, prof
                     <div></div>
                 </div>
 
-                {participantes.map((p, idx) => {
+                {participantes.map((p) => {
                     const statusCfg = STATUS_CONFIG[p.estado] || STATUS_CONFIG.pending;
                     const StatusIcon = statusCfg.icon;
                     const isPodium = p.estado === 'valid' && p.posicion && p.posicion <= 3;
                     const isInvalid = p.estado === 'dq' || p.estado === 'dns';
 
-                    return (
-                        <div key={p.id} className={cn(
-                            "grid grid-cols-[40px_1.5fr_1.5fr_60px_100px_90px_40px] gap-2 items-center p-3 rounded-xl border transition-all",
-                            isPodium && p.posicion === 1 ? "bg-gradient-to-r from-yellow-500/15 to-transparent border-yellow-500/25 shadow-[0_0_15px_rgba(234,179,8,0.1)]" :
-                            isPodium && p.posicion === 2 ? "bg-gradient-to-r from-slate-400/10 to-transparent border-slate-400/20" :
-                            isPodium && p.posicion === 3 ? "bg-gradient-to-r from-orange-700/10 to-transparent border-orange-600/20" :
-                            isInvalid ? "bg-red-950/20 border-white/5 opacity-60" :
-                            "bg-white/[0.02] border-white/5 hover:bg-white/[0.04]"
-                        )}>
-                            {/* Position */}
-                            <div className="w-10 text-center">
-                                {isPodium ? (
-                                    <span className="text-xl">
-                                        {p.posicion === 1 ? '🥇' : p.posicion === 2 ? '🥈' : '🥉'}
-                                    </span>
-                                ) : isInvalid ? (
-                                    <span className="text-xs text-slate-600">—</span>
-                                ) : (
-                                    <span className="text-sm font-bold text-white/50">{p.posicion || '-'}</span>
-                                )}
-                            </div>
+                    const rowBg = cn(
+                        "rounded-xl border transition-all",
+                        isPodium && p.posicion === 1 ? "bg-gradient-to-r from-yellow-500/15 to-transparent border-yellow-500/25 shadow-[0_0_15px_rgba(234,179,8,0.1)]" :
+                        isPodium && p.posicion === 2 ? "bg-gradient-to-r from-slate-400/10 to-transparent border-slate-400/20" :
+                        isPodium && p.posicion === 3 ? "bg-gradient-to-r from-orange-700/10 to-transparent border-orange-600/20" :
+                        isInvalid ? "bg-red-950/20 border-white/5 opacity-60" :
+                        "bg-white/[0.02] border-white/5 hover:bg-white/[0.04]"
+                    );
 
-                            {/* Athlete */}
-                            <div className={cn("min-w-0", isInvalid && "line-through opacity-60")}>
-                                {isLocked ? (
-                                    p.profile_id ? (
-                                        <Link
-                                            href={`/perfil/${p.profile_id}`}
-                                            className="group/link flex items-center gap-1.5 hover:text-cyan-300 transition-colors"
-                                        >
-                                            <span className="font-semibold text-white text-sm truncate group-hover/link:text-cyan-300">{p.nombre}</span>
-                                            <ExternalLink size={10} className="text-cyan-500/50 group-hover/link:text-cyan-400 shrink-0" />
-                                        </Link>
-                                    ) : (
-                                        <span className="font-semibold text-white text-sm truncate block">{p.nombre}</span>
-                                    )
-                                ) : (
-                                    <div className="flex items-center gap-1">
-                                        <input
-                                            value={p.nombre}
-                                            onChange={(e) => handleChange(p.id, 'nombre', e.target.value)}
-                                            className="w-full bg-transparent text-white font-semibold text-sm focus:outline-none focus:border-b border-cyan-500/50 truncate"
-                                            placeholder="Nombre"
-                                        />
-                                        {p.profile_id && (
-                                            <Link href={`/perfil/${p.profile_id}`} target="_blank" className="text-cyan-500/40 hover:text-cyan-400 shrink-0">
-                                                <ExternalLink size={10} />
-                                            </Link>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                    /* ── Shared cells ─────────────────────────────────────── */
+                    const posCell = (
+                        <div className="w-10 shrink-0 flex items-center justify-center">
+                            {isPodium ? (
+                                <span className="text-xl leading-none">
+                                    {p.posicion === 1 ? '🥇' : p.posicion === 2 ? '🥈' : '🥉'}
+                                </span>
+                            ) : isInvalid ? (
+                                <span className="text-xs text-slate-600">—</span>
+                            ) : (
+                                <span className="text-sm font-bold text-white/40">{p.posicion ?? '-'}</span>
+                            )}
+                        </div>
+                    );
 
-                            {/* Carrera */}
-                            <div className="min-w-0">
-                                {isLocked ? (
-                                    p.carrera_id ? (
-                                        <Link href={`/carrera/${p.carrera_id}`} className="text-xs text-cyan-500/60 hover:text-cyan-400 truncate block transition-colors">
-                                            {p.carrera}
-                                        </Link>
-                                    ) : (
-                                        <span className="text-xs text-slate-400 truncate block">{p.carrera}</span>
-                                    )
+                    const athleteCell = (
+                        <div className={cn("min-w-0 flex-1", isInvalid && "opacity-60")}>
+                            {isLocked ? (
+                                p.profile_id ? (
+                                    <Link href={`/perfil/${p.profile_id}`} className="group/link flex items-center gap-1.5 hover:text-cyan-300 transition-colors">
+                                        <span className={cn("font-semibold text-white text-sm truncate", isInvalid && "line-through")}>{p.nombre}</span>
+                                        <ExternalLink size={10} className="text-cyan-500/50 group-hover/link:text-cyan-400 shrink-0" />
+                                    </Link>
                                 ) : (
+                                    <span className={cn("font-semibold text-white text-sm truncate block", isInvalid && "line-through")}>{p.nombre}</span>
+                                )
+                            ) : (
+                                <div className="flex items-center gap-1.5">
+                                    <input
+                                        value={p.nombre}
+                                        onChange={(e) => handleChange(p.id, 'nombre', e.target.value)}
+                                        className="min-w-0 flex-1 bg-transparent text-white font-semibold text-sm focus:outline-none border-b border-transparent focus:border-cyan-500/50 transition-colors truncate py-0.5"
+                                        placeholder="Nombre del nadador"
+                                    />
+                                    {p.profile_id && (
+                                        <Link href={`/perfil/${p.profile_id}`} target="_blank" className="text-cyan-500/40 hover:text-cyan-400 shrink-0 p-0.5">
+                                            <ExternalLink size={11} />
+                                        </Link>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+
+                    const carreraCell = (
+                        <div className="min-w-0">
+                            {isLocked ? (
+                                p.carrera_id ? (
+                                    <Link href={`/carrera/${p.carrera_id}`} className="text-xs text-cyan-500/70 hover:text-cyan-400 truncate block transition-colors">
+                                        {p.carrera}
+                                    </Link>
+                                ) : (
+                                    <span className="text-xs text-slate-400 truncate block">{p.carrera}</span>
+                                )
+                            ) : (
+                                <div className="flex items-center gap-1">
                                     <select
                                         value={p.carrera}
                                         onChange={(e) => handleChange(p.id, 'carrera', e.target.value)}
-                                        className="w-full bg-transparent text-xs text-slate-300 focus:outline-none border-none cursor-pointer truncate"
+                                        className="min-w-0 flex-1 bg-transparent text-xs text-slate-300 focus:outline-none border-none cursor-pointer"
                                     >
                                         <option value="" className="bg-zinc-900">Seleccionar...</option>
                                         {CARRERAS_UNINORTE.map(c => (
                                             <option key={c} value={c} className="bg-zinc-900">{c}</option>
                                         ))}
                                     </select>
+                                    {p.carrera_id && (
+                                        <Link href={`/carrera/${p.carrera_id}`} target="_blank" className="text-cyan-500/40 hover:text-cyan-400 shrink-0 p-0.5">
+                                            <ExternalLink size={11} />
+                                        </Link>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+
+                    const carrilCell = (
+                        isLocked ? (
+                            <span className="text-xs text-slate-500 tabular-nums">{p.carril ?? '-'}</span>
+                        ) : (
+                            <input
+                                type="number"
+                                value={p.carril || ''}
+                                onChange={(e) => handleChange(p.id, 'carril', parseInt(e.target.value) || undefined)}
+                                className="w-full bg-transparent text-center text-sm text-slate-300 focus:outline-none py-0.5"
+                                placeholder="#"
+                                min={1}
+                                max={10}
+                            />
+                        )
+                    );
+
+                    const tiempoCell = (
+                        isLocked ? (
+                            <span className={cn(
+                                "font-mono font-bold text-sm tabular-nums",
+                                isInvalid ? "text-slate-600 line-through" :
+                                isPodium ? "text-cyan-300" : "text-cyan-400/80"
+                            )}>
+                                {p.tiempo || (isInvalid ? '—' : '--:--.--')}
+                            </span>
+                        ) : (
+                            <input
+                                value={p.tiempo || ''}
+                                onChange={(e) => handleChange(p.id, 'tiempo', e.target.value)}
+                                className={cn(
+                                    "w-full bg-transparent font-mono font-bold text-sm focus:outline-none tabular-nums border-b border-transparent focus:border-cyan-500/50 transition-colors py-0.5",
+                                    p.tiempo && !isValidTimeFormat(p.tiempo) ? "text-red-400" : "text-cyan-400",
+                                    isInvalid && "text-slate-600 cursor-not-allowed"
                                 )}
+                                placeholder="ss.xx"
+                                disabled={isInvalid}
+                            />
+                        )
+                    );
+
+                    const estadoCell = (
+                        isLocked ? (
+                            <span className={cn(
+                                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border",
+                                statusCfg.color
+                            )}>
+                                <StatusIcon size={10} />
+                                {statusCfg.label}
+                            </span>
+                        ) : (
+                            <select
+                                value={p.estado}
+                                onChange={(e) => handleChange(p.id, 'estado', e.target.value as ParticipantStatus)}
+                                className={cn(
+                                    "w-full bg-transparent text-[10px] font-bold uppercase focus:outline-none cursor-pointer text-center rounded px-1 py-1 border",
+                                    statusCfg.color
+                                )}
+                            >
+                                <option value="pending" className="bg-zinc-900 text-yellow-400">Pendiente</option>
+                                <option value="valid" className="bg-zinc-900 text-emerald-400">Válido</option>
+                                <option value="dns" className="bg-zinc-900 text-slate-400">NSP</option>
+                                <option value="dq" className="bg-zinc-900 text-red-400">DQ</option>
+                            </select>
+                        )
+                    );
+
+                    const deleteCell = (
+                        <div className="flex justify-center">
+                            {!isLocked ? (
+                                <button
+                                    onClick={() => handleRemove(p.id)}
+                                    className="text-slate-600 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            ) : isPodium ? (
+                                <Medal size={14} className={cn(
+                                    p.posicion === 1 ? "text-yellow-400" :
+                                    p.posicion === 2 ? "text-slate-400" : "text-orange-600"
+                                )} />
+                            ) : null}
+                        </div>
+                    );
+
+                    return (
+                        <div key={p.id} className={rowBg}>
+                            {/* ── Mobile layout ───────────────────────────── */}
+                            <div className="md:hidden p-3 space-y-2">
+                                {/* Row 1: pos + name + delete */}
+                                <div className="flex items-center gap-2">
+                                    {posCell}
+                                    {athleteCell}
+                                    {deleteCell}
+                                </div>
+                                {/* Row 2: carrera + carril */}
+                                <div className="flex items-center gap-2 pl-11">
+                                    <div className="flex-1 min-w-0">{carreraCell}</div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        <span className="text-[10px] text-slate-600 uppercase tracking-wider">C</span>
+                                        <div className="w-10 text-center">{carrilCell}</div>
+                                    </div>
+                                </div>
+                                {/* Row 3: tiempo + estado */}
+                                <div className="flex items-center gap-2 pl-11">
+                                    <div className="flex items-center gap-2 flex-1">
+                                        <span className="text-[10px] text-slate-600 uppercase tracking-wider shrink-0">T</span>
+                                        <div className="flex-1 text-right">{tiempoCell}</div>
+                                    </div>
+                                    <div className="w-28 shrink-0 text-center">{estadoCell}</div>
+                                </div>
                             </div>
 
-                            {/* Lane */}
-                            <div className="text-center">
-                                {isLocked ? (
-                                    <span className="text-xs text-slate-500">{p.carril || '-'}</span>
-                                ) : (
-                                    <input
-                                        type="number"
-                                        value={p.carril || ''}
-                                        onChange={(e) => handleChange(p.id, 'carril', parseInt(e.target.value) || undefined)}
-                                        className="w-full bg-transparent text-center text-xs text-slate-300 focus:outline-none"
-                                        placeholder="#"
-                                        min={1}
-                                        max={10}
-                                    />
-                                )}
-                            </div>
-
-                            {/* Time */}
-                            <div className="text-right">
-                                {isLocked ? (
-                                    <span className={cn(
-                                        "font-mono font-bold text-sm tabular-nums",
-                                        isInvalid ? "text-slate-600 line-through" :
-                                        isPodium ? "text-cyan-300" : "text-cyan-400/70"
-                                    )}>
-                                        {p.tiempo || (isInvalid ? '—' : '--:--.--')}
-                                    </span>
-                                ) : (
-                                    <input
-                                        value={p.tiempo || ''}
-                                        onChange={(e) => handleChange(p.id, 'tiempo', e.target.value)}
-                                        className={cn(
-                                            "w-full bg-transparent text-right font-mono font-bold text-sm focus:outline-none tabular-nums",
-                                            p.tiempo && !isValidTimeFormat(p.tiempo) ? "text-red-400" : "text-cyan-400",
-                                            isInvalid && "text-slate-600 cursor-not-allowed"
-                                        )}
-                                        placeholder="ss.xx"
-                                        disabled={isInvalid}
-                                    />
-                                )}
-                            </div>
-
-                            {/* Status */}
-                            <div className="text-center">
-                                {isLocked ? (
-                                    <span className={cn(
-                                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border",
-                                        statusCfg.color
-                                    )}>
-                                        <StatusIcon size={10} />
-                                        {statusCfg.label}
-                                    </span>
-                                ) : (
-                                    <select
-                                        value={p.estado}
-                                        onChange={(e) => handleChange(p.id, 'estado', e.target.value as ParticipantStatus)}
-                                        className={cn(
-                                            "w-full bg-transparent text-[10px] font-bold uppercase focus:outline-none cursor-pointer text-center rounded px-1 py-0.5 border",
-                                            statusCfg.color
-                                        )}
-                                    >
-                                        <option value="pending" className="bg-zinc-900 text-yellow-400">Pendiente</option>
-                                        <option value="valid" className="bg-zinc-900 text-emerald-400">Válido</option>
-                                        <option value="dns" className="bg-zinc-900 text-slate-400">NSP</option>
-                                        <option value="dq" className="bg-zinc-900 text-red-400">DQ</option>
-                                    </select>
-                                )}
-                            </div>
-
-                            {/* Delete */}
-                            <div className="w-10 flex justify-center">
-                                {!isLocked ? (
-                                    <button
-                                        onClick={() => handleRemove(p.id)}
-                                        className="text-slate-600 hover:text-red-400 transition-colors p-1"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
-                                ) : isPodium ? (
-                                    <Medal size={14} className={cn(
-                                        p.posicion === 1 ? "text-yellow-400" :
-                                        p.posicion === 2 ? "text-slate-400" : "text-orange-600"
-                                    )} />
-                                ) : null}
+                            {/* ── Desktop layout ──────────────────────────── */}
+                            <div className="hidden md:grid md:grid-cols-[44px_1.5fr_1.5fr_60px_116px_106px_40px] gap-2 items-center p-3">
+                                {posCell}
+                                {athleteCell}
+                                {carreraCell}
+                                <div className="text-center">{carrilCell}</div>
+                                <div className="text-right">{tiempoCell}</div>
+                                <div className="text-center">{estadoCell}</div>
+                                {deleteCell}
                             </div>
                         </div>
                     );

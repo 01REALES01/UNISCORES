@@ -193,7 +193,7 @@ export default function ClasificacionPage() {
 
     // Build a global name-to-id map from all matches + careers table
     const teamIdMap = useMemo(() => {
-        const map: Record<string, { teamId?: string; athleteId?: string }> = {};
+        const map: Record<string, { teamId?: string; athleteId?: string; avatarUrl?: string; escudoUrl?: string }> = {};
         
         // 1. Fill from careers table (very reliable)
         carreras.forEach(c => {
@@ -202,10 +202,10 @@ export default function ClasificacionPage() {
             const clean = cleanName(c.nombre || '');
             const stripped = stripName(c.nombre || '');
             
-            if (raw) map[raw] = { teamId: String(c.id) };
-            if (norm) map[norm] = { teamId: String(c.id) };
-            if (clean) map[clean] = { teamId: String(c.id) };
-            if (stripped) map[stripped] = { teamId: String(c.id) };
+            if (raw) map[raw] = { teamId: String(c.id), escudoUrl: c.escudo_url };
+            if (norm) map[norm] = { teamId: String(c.id), escudoUrl: c.escudo_url };
+            if (clean) map[clean] = { teamId: String(c.id), escudoUrl: c.escudo_url };
+            if (stripped) map[stripped] = { teamId: String(c.id), escudoUrl: c.escudo_url };
         });
 
         // 2. Fill from matches (for athletes and as fallback)
@@ -213,13 +213,16 @@ export default function ClasificacionPage() {
             const teamA = m.delegacion_a || m.equipo_a || '';
             const teamB = m.delegacion_b || m.equipo_b || '';
             
-            const process = (name: string, cid?: any, aid?: any) => {
+            const process = (name: string, cid?: any, aid?: any, icon?: string) => {
                 if (!name) return;
                 const raw = name.trim().toLowerCase();
                 const norm = normalizeName(name);
                 const clean = cleanName(name);
                 const stripped = stripName(name);
-                const data = aid ? { athleteId: String(aid) } : (cid ? { teamId: String(cid) } : null);
+                
+                const data: any = aid 
+                    ? { athleteId: String(aid), avatarUrl: icon } 
+                    : (cid ? { teamId: String(cid), escudoUrl: icon } : (icon ? { avatarUrl: icon, escudoUrl: icon } : null));
                 
                 if (data) {
                     if (!map[raw]) map[raw] = data;
@@ -229,8 +232,8 @@ export default function ClasificacionPage() {
                 }
             };
 
-            process(teamA, m.carrera_a_id, m.athlete_a_id);
-            process(teamB, m.carrera_b_id, m.athlete_b_id);
+            process(teamA, m.carrera_a_id, m.athlete_a_id, m.atleta_a?.avatar_url || m.carrera_a?.escudo_url || m.delegacion_a_info?.escudo_url);
+            process(teamB, m.carrera_b_id, m.athlete_b_id, m.atleta_b?.avatar_url || m.carrera_b?.escudo_url || m.delegacion_b_info?.escudo_url);
         });
         return map;
     }, [matches, carreras]);

@@ -14,22 +14,22 @@ export async function POST(request: NextRequest) {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        // 1. Obtener ID de la disciplina Natación
-        const { data: disc } = await supabase
+        // 1. Obtener ID de la disciplina Natación (variaciones de nombre para seguridad)
+        const { data: disciplines } = await supabase
             .from('disciplinas')
-            .select('id')
-            .eq('name', 'Natación')
-            .limit(1)
-            .maybeSingle();
+            .select('id, name')
+            .or('name.ilike.Natación,name.ilike.Natacion,name.ilike.Swimming');
 
-        if (!disc) return NextResponse.json({ error: 'Disciplina Natación no encontrada' }, { status: 500 });
-        const disciplinaId = disc.id;
+        if (!disciplines || disciplines.length === 0) {
+            return NextResponse.json({ error: 'Disciplina Natación no encontrada' }, { status: 500 });
+        }
+        const disciplinaIds = disciplines.map(d => d.id);
 
         // 2. Fetch all Swimming matches
         const { data: partidos } = await supabase
             .from('partidos')
             .select('id')
-            .eq('disciplina_id', disciplinaId);
+            .in('disciplina_id', disciplinaIds);
 
         if (!partidos || partidos.length === 0) {
             return NextResponse.json({ deleted: 0 });

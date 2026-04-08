@@ -11,7 +11,7 @@ export type TeamStanding = {
     pointsAgainst: number;
     diff: number;
     points: number;
-    fairPlay: number;
+    fairPlayPoints: number;
     // Voley specific
     setsWon: number;
     setsLost: number;
@@ -30,19 +30,19 @@ export function compareStandings(a: TeamStanding, b: TeamStanding, sportName: st
         const pRatioA = a.gamePointsAgainst === 0 ? a.gamePointsFor + 1 : a.gamePointsFor / a.gamePointsAgainst;
         const pRatioB = b.gamePointsAgainst === 0 ? b.gamePointsFor + 1 : b.gamePointsFor / b.gamePointsAgainst;
         if (pRatioB !== pRatioA) return pRatioB - pRatioA;
-        return b.fairPlay - a.fairPlay;
+        return b.fairPlayPoints - a.fairPlayPoints;
     }
     if (b.points !== a.points) return b.points - a.points;
     if (b.diff !== a.diff) return b.diff - a.diff;
     if (b.pointsFor !== a.pointsFor) return b.pointsFor - a.pointsFor;
-    return b.fairPlay - a.fairPlay;
+    return b.fairPlayPoints - a.fairPlayPoints;
 }
 
 export function calculateStandings(
     matches: any[], 
     sportName: string, 
     fairPlayData: Record<string, number> = {},
-    nameToIdMap: Record<string, { teamId?: string; athleteId?: string }> = {}
+    nameToIdMap: Record<string, { teamId?: string; athleteId?: string; avatarUrl?: string; escudoUrl?: string }> = {}
 ): TeamStanding[] {
     const teams: Record<string, TeamStanding> = {};
 
@@ -58,7 +58,7 @@ export function calculateStandings(
                 team: teamA, 
                 played: 0, won: 0, lost: 0, drawn: 0,
                 pointsFor: 0, pointsAgainst: 0, diff: 0, points: 0,
-                fairPlay: fairPlayData[teamA] ?? 2000,
+                fairPlayPoints: fairPlayData[teamA] ?? 2000,
                 setsWon: 0, setsLost: 0, gamePointsFor: 0, gamePointsAgainst: 0,
                 grupo: m.grupo,
                 avatar_url: isIndividual 
@@ -71,7 +71,7 @@ export function calculateStandings(
                 team: teamB, 
                 played: 0, won: 0, lost: 0, drawn: 0,
                 pointsFor: 0, pointsAgainst: 0, diff: 0, points: 0,
-                fairPlay: fairPlayData[teamB] ?? 2000,
+                fairPlayPoints: fairPlayData[teamB] ?? 2000,
                 setsWon: 0, setsLost: 0, gamePointsFor: 0, gamePointsAgainst: 0,
                 grupo: m.grupo,
                 avatar_url: isIndividual 
@@ -102,6 +102,7 @@ export function calculateStandings(
             if (data) {
                 if (data.athleteId) teams[teamA].athleteId = data.athleteId;
                 else teams[teamA].teamId = data.teamId;
+                if (data.avatarUrl || data.escudoUrl) teams[teamA].avatar_url = data.avatarUrl || data.escudoUrl;
             }
         }
 
@@ -113,6 +114,7 @@ export function calculateStandings(
             if (data) {
                 if (data.athleteId) teams[teamB].athleteId = data.athleteId;
                 else teams[teamB].teamId = data.teamId;
+                if (data.avatarUrl || data.escudoUrl) teams[teamB].avatar_url = data.avatarUrl || data.escudoUrl;
             }
         }
 

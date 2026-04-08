@@ -187,8 +187,8 @@ export default function MedalleroPage() {
     }, [sportFilter, disciplinas]);
 
     const tabs: { id: Tab; label: string; icon: any }[] = [
-        { id: "carreras", label: "Programas", icon: GraduationCap },
-        { id: "equipos", label: "Equipos", icon: Users },
+        { id: "carreras", label: "Carreras", icon: GraduationCap },
+        { id: "equipos", label: "Programas", icon: Users },
     ];
 
 
@@ -217,10 +217,10 @@ export default function MedalleroPage() {
                 <div className="flex flex-col items-center text-center gap-2 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="flex items-center gap-2 px-3 py-1 bg-violet-500/10 rounded-full border border-violet-500/20 mb-2 shadow-inner">
                         <Trophy size={12} className="text-violet-400" />
-                        <span className="font-sans text-[10px] font-black text-violet-400 uppercase tracking-[0.3em]">Clasificación y Equipos</span>
+                        <span className="font-sans text-[10px] font-black text-violet-400 uppercase tracking-[0.3em]">Clasificación y Programas</span>
                     </div>
                     <h1 className="text-6xl md:text-8xl font-bold tracking-tighter font-display text-white drop-shadow-2xl leading-none">
-                        Equipos
+                        Programas
                     </h1>
                     <p className="text-white/30 font-bold max-w-xl mx-auto mt-4 text-sm md:text-base leading-relaxed uppercase tracking-widest font-sans italic">
                         Consulta el desempeño estratégico de las delegaciones.
