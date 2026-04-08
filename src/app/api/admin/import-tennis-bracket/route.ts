@@ -161,14 +161,14 @@ async function findJugador(supabase: any, playerName: string, _discId: number) {
     if (w1 && w2) {
         const { data: pros } = await supabase
             .from('profiles')
-            .select('id, full_name')
+            .select('id, full_name, carrera_id')
             .ilike('full_name', `%${w1}%`)
             .ilike('full_name', `%${w2}%`)
             .limit(5);
-        if (pros?.length === 1) return { profile_id: pros[0].id };
+        if (pros?.length === 1) return { profile_id: pros[0].id, carrera_id: pros[0].carrera_id };
         if (pros?.length > 1) {
             const best = bestMatch(pros.map((p: any) => ({ ...p, nombre: p.full_name })), name);
-            if (best) return { profile_id: best.id };
+            if (best) return { profile_id: best.id, carrera_id: best.carrera_id };
         }
     }
 

@@ -604,7 +604,7 @@ export default function PublicMatchDetail() {
                                                         onError={(e) => { (e.target as HTMLImageElement).src = '/logo_olimpiadas.png' }}
                                                     />
                                                     <span className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest group-hover/carrera:text-white transition-colors">
-                                                        {getCarreraSubtitle(match, 'a') || 'Competidor'}
+                                                        {getCarreraSubtitle(match, 'a') || 'Selección Uninorte'}
                                                     </span>
                                                 </Link>
                                             )}
@@ -760,7 +760,7 @@ export default function PublicMatchDetail() {
                                                         onError={(e) => { (e.target as HTMLImageElement).src = '/logo_olimpiadas.png' }}
                                                     />
                                                     <span className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest group-hover/carrera:text-white transition-colors">
-                                                        {getCarreraSubtitle(match, 'b') || 'Competidor'}
+                                                        {getCarreraSubtitle(match, 'b') || 'Selección Uninorte'}
                                                     </span>
                                                 </Link>
                                             )}
