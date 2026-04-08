@@ -49,12 +49,14 @@ export default function PartidosPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [importingTennis, setImportingTennis] = useState(false);
+    const [importingNatacion, setImportingNatacion] = useState(false);
     const [deletingTennis, setDeletingTennis] = useState(false);
     const [matchToDelete, setMatchToDelete] = useState<any>(null);
     const router = useRouter();
     const { isPeriodista } = useAuth();
     const { logAction } = useAuditLogger();
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const natacionFileRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isPeriodista) {
@@ -161,6 +163,37 @@ export default function PartidosPage() {
             toast.error(err.message || 'Error importando brackets');
         } finally {
             setImportingTennis(false);
+        }
+    };
+
+    const handleImportNatacion = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setImportingNatacion(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const res = await fetch('/api/admin/import-natacion', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error);
+
+            toast.success(`🏊‍♂️ ${data.jugadores_created} jugadores creados • ${data.partidos_created} carreras generadas`);
+            if (data.warnings?.length > 0) {
+                toast.warning(`⚠️ ${data.warnings.length} advertencias, revisa la consola`);
+                console.warn("Natación import warnings:", data.warnings);
+            }
+            await fetchPartidos();
+        } catch (err: any) {
+            toast.error(err.message || 'Error importando nadadores');
+        } finally {
+            setImportingNatacion(false);
+            if (natacionFileRef.current) natacionFileRef.current.value = '';
         }
     };
 
@@ -322,6 +355,32 @@ export default function PartidosPage() {
                                     {importingTennis ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} strokeWidth={3} />}
                                 </div>
                                 {importingTennis ? 'Importando...' : 'Brackets Tenis'}
+                            </div>
+                        </Button>
+                    </motion.div>
+
+                    <input 
+                        type="file" 
+                        accept=".xlsx,.xls" 
+                        className="hidden" 
+                        ref={natacionFileRef}
+                        onChange={handleImportNatacion} 
+                    />
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <Button
+                            onClick={() => natacionFileRef.current?.click()}
+                            disabled={importingNatacion}
+                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-cyan-600 via-cyan-500 to-blue-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(6,182,212,0.4)] border-0 relative overflow-hidden group/btn disabled:opacity-60"
+                        >
+                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                            <div className="relative flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-white/20">
+                                    {importingNatacion ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} strokeWidth={3} />}
+                                </div>
+                                {importingNatacion ? 'Importando...' : 'Importar Natación'}
                             </div>
                         </Button>
                     </motion.div>
