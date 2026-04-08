@@ -105,21 +105,33 @@ export async function POST(request: NextRequest) {
         if (rows.length === 0) return NextResponse.json({ error: 'No data rows found' }, { status: 400 });
 
         // Map headers
-        const rawHeaders = Object.keys(rows[0] || {});
+        // Buscamos cuál es la fila real de headers probando las primeras 5 filas
+        let headerRow = rows[0] || {};
+        for (let i = 0; i < Math.min(5, rows.length); i++) {
+            const rowKeys = Object.keys(rows[i] || {}).map(k => normalize(k));
+            if (rowKeys.some(k => k.includes('nombre')) && rowKeys.some(k => k.includes('programa') || k.includes('carrera'))) {
+                headerRow = rows[i];
+                break;
+            }
+        }
+
+        const rawHeaders = Object.keys(headerRow);
         let headerNombre = '', headerCarrera = '', headerSexo = '', headerRama = '';
         const pruebaHeaders: string[] = [];
 
         for (const h of rawHeaders) {
             const norm = normalize(h);
-            if (norm.match(/^(nombre|name)$/)) headerNombre = h;
-            else if (norm.match(/^(carrera|programa|program)$/)) headerCarrera = h;
-            else if (norm.match(/^(sexo|sex)$/)) headerSexo = h;
-            else if (norm.match(/^(rama|genero)$/)) headerRama = h;
-            else if (norm.match(/^(prueba)/)) pruebaHeaders.push(h); // Prueba1, Prueba 2, Prueba 3 etc
+            if (norm.includes('nombre') || norm.includes('name')) headerNombre = h;
+            else if (norm.includes('carrera') || norm.includes('programa') || norm.includes('program')) headerCarrera = h;
+            else if (norm.includes('sexo') || norm.includes('sex')) headerSexo = h;
+            else if (norm.includes('rama') || norm.includes('genero')) headerRama = h;
+            else if (norm.includes('prueba')) pruebaHeaders.push(h); // Prueba1, Prueba 2, Prueba 3 etc
         }
 
         if (!headerNombre || !headerCarrera || pruebaHeaders.length === 0) {
-            return NextResponse.json({ error: 'Columnas requeridas: nombre, carrera/programa, rama, prueba...' }, { status: 400 });
+            return NextResponse.json({ 
+                error: `Columnas requeridas no encontradas. Detectadas: Nombre=${headerNombre || 'NO'}, Programa=${headerCarrera || 'NO'}, Rama=${headerRama || 'NO'}, Pruebas=${pruebaHeaders.length}. Columnas en Excel: ${rawHeaders.join(', ')}` 
+            }, { status: 400 });
         }
 
         let jugadoresCreated = 0;
