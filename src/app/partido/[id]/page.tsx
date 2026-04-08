@@ -76,6 +76,8 @@ export default function PublicMatchDetail() {
                 'partido-detail'
             );
 
+            let finalMatch = matchRes.data;
+
             if (matchRes.error && !matchRes.data) {
                 console.warn('[fetchData] Full query failed, trying fallback:', matchRes.error.message);
                 const fallbackRes = await safeQuery(
@@ -91,15 +93,17 @@ export default function PublicMatchDetail() {
                     setFetchError(fallbackRes.error.message || matchRes.error.message || 'Error al cargar el partido');
                     return;
                 }
-                if (fallbackRes.data) setMatch(fallbackRes.data as unknown as Partido);
+                if (fallbackRes.data) {
+                    finalMatch = fallbackRes.data as any;
+                    setMatch(finalMatch);
+                }
             } else if (matchRes.data) {
                 setMatch(matchRes.data);
             }
 
-            // Fetch carrera logos for natación races
-            const matchData = matchRes.data as any;
-            if (matchData?.marcador_detalle?.tipo === 'carrera') {
-                const ids: number[] = (matchData.marcador_detalle.participantes || [])
+            // Fetch carrera logos for natación races (using updated finalMatch)
+            if (finalMatch?.marcador_detalle?.tipo === 'carrera') {
+                const ids: number[] = (finalMatch.marcador_detalle.participantes || [])
                     .map((p: any) => p.carrera_id)
                     .filter((id: any): id is number => typeof id === 'number');
                 const uniqueIds = [...new Set(ids)];
