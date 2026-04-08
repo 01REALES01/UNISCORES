@@ -222,6 +222,11 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                             <Link href={`/partido/${m.id}`} key={m.id} className="block group/m">
                                 <div className={cn("relative flex items-center justify-between px-3.5 py-2.5 rounded-xl border transition-all duration-200 overflow-hidden", isLive ? "bg-emerald-500/8 border-emerald-500/25" : light ? "bg-white border-slate-100" : "bg-white/[0.03] border-white/8")}>
                                     <div className="flex items-center gap-2 w-[40%] relative z-10">
+                                        <div className="w-5 h-5 rounded-md bg-white/5 border border-white/10 flex items-center justify-center p-0.5 shrink-0">
+                                            {(m.atleta_a?.avatar_url || m.carrera_a?.escudo_url || m.delegacion_a_info?.escudo_url) ? (
+                                                <img src={m.atleta_a?.avatar_url || m.carrera_a?.escudo_url || m.delegacion_a_info?.escudo_url} alt="" className="w-full h-full object-contain" />
+                                            ) : <div className="text-[6px] opacity-20">A</div>}
+                                        </div>
                                         <span className={cn("text-[10px] font-black uppercase tracking-tight truncate", winnerA ? "text-white" : isFinished ? "text-white/30" : "text-white/55")}>{m.delegacion_a || m.equipo_a}</span>
                                     </div>
                                     <div className="flex flex-col items-center justify-center w-[20%] relative z-10 shrink-0">
@@ -229,6 +234,11 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                                     </div>
                                     <div className="flex items-center gap-2 w-[40%] justify-end relative z-10">
                                         <span className={cn("text-[10px] font-black uppercase tracking-tight truncate text-right", winnerB ? "text-white" : isFinished ? "text-white/30" : "text-white/55")}>{m.delegacion_b || m.equipo_b}</span>
+                                        <div className="w-5 h-5 rounded-md bg-white/5 border border-white/10 flex items-center justify-center p-0.5 shrink-0">
+                                            {(m.atleta_b?.avatar_url || m.carrera_b?.escudo_url || m.delegacion_b_info?.escudo_url) ? (
+                                                <img src={m.atleta_b?.avatar_url || m.carrera_b?.escudo_url || m.delegacion_b_info?.escudo_url} alt="" className="w-full h-full object-contain" />
+                                            ) : <div className="text-[6px] opacity-20">B</div>}
+                                        </div>
                                     </div>
                                 </div>
                             </Link>

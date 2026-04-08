@@ -300,6 +300,7 @@ export async function POST(request: NextRequest) {
                 }
             } else {
                 // Create
+                params.fecha = new Date().toISOString(); // Asignar fecha actual por defecto para la agenda
                 params.marcador_detalle.participantes = finalParticipantes;
                 const { data: newMatch, error: matchErr } = await supabase
                     .from('partidos')
@@ -309,6 +310,7 @@ export async function POST(request: NextRequest) {
 
                 if (matchErr) {
                     console.error("Match Insert Error:", matchErr);
+                    warnings.push(`Error al crear la carrera ${params.equipo_a}: ${matchErr.message}`);
                     continue;
                 }
                 matchId = newMatch.id;

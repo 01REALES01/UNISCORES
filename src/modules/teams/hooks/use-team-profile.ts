@@ -86,14 +86,14 @@ async function fetchTeamProfile(delegacionId: number) {
 
     // 4. Fetch athletes (Plantilla) that belong to these careers AND play this sport
     let athletesData: any[] = [];
-    if (delegacion.carrera_ids && delegacion.carrera_ids.length > 0 && delegacion.disciplina_id) {
+    if (delegacion.carrera_ids && delegacion.carrera_ids.length > 0) {
         
         // 4. Fetch athletes (Plantilla) - Flexible gender matching
         const { data: jugadores } = await supabase
             .from('jugadores')
-            .select('id, nombre, genero, sexo, profile:profiles(id, full_name, avatar_url, roles, points, sexo, genero, disciplina:disciplinas(name))')
+            .select('id, nombre, genero, sexo, disciplina_id, profile:profiles(id, full_name, avatar_url, roles, points, sexo, genero, disciplina:disciplinas(name))')
             .in('carrera_id', delegacion.carrera_ids)
-            .eq('disciplina_id', delegacion.disciplina_id);
+            .or(`disciplina_id.eq.${delegacion.disciplina_id},disciplina_id.is.null`);
 
         if (jugadores) {
             // Filter in JS to be more flexible with 'm', 'f', 'masculino', 'femenino'
@@ -101,10 +101,17 @@ async function fetchTeamProfile(delegacionId: number) {
             
             athletesData = (jugadores as any[])
                 .filter(j => {
-                    const jGender = (j.sexo || j.genero || '').toLowerCase().trim();
+                    const profileObj = Array.isArray(j.profile) ? j.profile[0] : j.profile;
+                    const jGender = (j.sexo || j.genero || profileObj?.sexo || profileObj?.genero || '').toLowerCase().trim();
+                    
+                    // Gender rule: If mixed or no target gender, everyone is welcome.
                     if (!targetGender || targetGender === 'mixto') return true;
+                    // If player has no assigned gender data, we include them so they aren't invisible
+                    if (!jGender) return true;
+                    // Check specific matches
                     if (targetGender.startsWith('masc') && (jGender.startsWith('masc') || jGender === 'm')) return true;
                     if (targetGender.startsWith('feme') && (jGender.startsWith('feme') || jGender === 'f')) return true;
+                    
                     return jGender === targetGender;
                 })
                 .map(j => {
