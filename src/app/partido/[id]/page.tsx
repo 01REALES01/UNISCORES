@@ -545,67 +545,70 @@ export default function PublicMatchDetail() {
                                 <div className="flex flex-col items-center group w-full min-w-0">
                                     {/* Athlete Profile Link (Top Part) */}
                                     <div className="w-full flex flex-col items-center">
-                                        <Link 
-                                            href={match.athlete_a_id ? `/perfil/${match.athlete_a_id}` : match.jugador_a_id ? `/jugador/${match.jugador_a_id}` : '#'}
-                                            onClick={(e) => { if (!match.athlete_a_id && !match.jugador_a_id) e.preventDefault(); }}
-                                            className={cn(
-                                                "relative w-full flex flex-col items-center gap-3 transition-all duration-300 active:scale-95 group/btn",
-                                                (match.athlete_a_id || match.jugador_a_id) ? "cursor-pointer" : "cursor-default"
-                                            )}
-                                        >
-                                            <div className="relative shrink-0 p-1">
-                                                <div className={cn(
-                                                    "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
-                                                    `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
-                                                )} />
-                                                
-                                                <div className="relative group/avatar">
-                                                    <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover/btn:opacity-40 transition-opacity duration-500" style={{ backgroundColor: sportColor }} />
-                                                    <Avatar name={getDisplayName(match, 'a')} src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url || match.delegacion_a_info?.escudo_url} size="lg" className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} />
-                                                    
-                                                    {(match.athlete_a_id || match.jugador_a_id) && (
-                                                        <div className="absolute -bottom-2 z-30 flex justify-center w-full">
-                                                            <div className={cn(
-                                                                "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
-                                                                "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
-                                                                "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95"
-                                                            )} style={{ 
-                                                                backgroundColor: sportColor,
-                                                                color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
-                                                                boxShadow: `0 4px 12px ${sportColor}40`
-                                                            }}>
-                                                                VER PERFIL
+                                        {/* Athlete Profile Link (Top Part) */}
+                                        <div className="w-full flex flex-col items-center">
+                                            {getDisplayName(match, 'a') !== 'TBD' && getDisplayName(match, 'a') !== 'BYE' && (
+                                                <Link 
+                                                    href={match.athlete_a_id ? `/perfil/${match.athlete_a_id}` : match.jugador_a_id ? `/jugador/${match.jugador_a_id}` : `/jugadores?search=${encodeURIComponent(getDisplayName(match, 'a'))}`}
+                                                    className={cn(
+                                                        "relative w-full flex flex-col items-center gap-2.5 transition-all duration-300 active:scale-95 group/btn cursor-pointer"
+                                                    )}
+                                                >
+                                                    <div className="relative shrink-0 p-1">
+                                                        <div className={cn(
+                                                            "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
+                                                            `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
+                                                        )} />
+                                                        
+                                                        <div className="relative group/avatar">
+                                                            <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover/btn:opacity-40 transition-opacity duration-500" style={{ backgroundColor: sportColor }} />
+                                                            <Avatar name={getDisplayName(match, 'a')} src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url || match.delegacion_a_info?.escudo_url} size="lg" className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} />
+                                                            
+                                                            <div className="absolute -bottom-2 z-30 flex justify-center w-full">
+                                                                <div className={cn(
+                                                                    "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
+                                                                    "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
+                                                                    "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95"
+                                                                )} style={{ 
+                                                                    backgroundColor: sportColor,
+                                                                    color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
+                                                                    boxShadow: `0 4px 12px ${sportColor}40`
+                                                                }}>
+                                                                    VER PERFIL
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                                    </div>
 
-                                            <div className="flex flex-col items-center gap-0.5 w-full relative z-10">
-                                                <h2 className={cn(
-                                                    "font-black text-[12px] sm:text-lg leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm",
-                                                    (match.athlete_a_id || match.jugador_a_id) ? "group-hover/btn:text-white" : "text-white"
-                                                )}>
-                                                    {getDisplayName(match, 'a')}
-                                                </h2>
-                                            </div>
-                                        </Link>
+                                                    <div className="flex flex-col items-center gap-0.5 w-full relative z-10">
+                                                        <h2 className={cn(
+                                                            "font-black text-[12px] sm:text-[16px] leading-[1.1] uppercase tracking-tight text-center w-full px-2 transition-all duration-300 drop-shadow-sm text-white group-hover/btn:text-white/100"
+                                                        )}>
+                                                            {getDisplayName(match, 'a')}
+                                                        </h2>
+                                                    </div>
+                                                </Link>
+                                            )}
 
-                                        {/* Career Link (Bottom Part) */}
-                                        {getCarreraSubtitle(match, 'a') && (
-                                            <Link 
-                                                href={match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : (match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` : '#'}
-                                                onClick={(e) => { if (!match.carrera_a_id && !(match as any).delegacion_a_id) e.preventDefault(); }}
-                                                className="mt-2 group/carrera flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all active:scale-95"
-                                            >
-                                                {match.carrera_a?.escudo_url && (
-                                                    <img src={match.carrera_a.escudo_url} alt="" className="w-3 h-3 sm:w-4 sm:h-4 object-contain opacity-70 group-hover/carrera:opacity-100 transition-opacity" />
-                                                )}
-                                                <span className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-widest group-hover/carrera:text-white transition-colors">
-                                                    {getCarreraSubtitle(match, 'a')}
-                                                </span>
-                                            </Link>
-                                        )}
+                                            {/* Career Link (Bottom Part) - With Fallback if Null */}
+                                            {isIndividualSport(sportName) && getDisplayName(match, 'a') !== 'TBD' && getDisplayName(match, 'a') !== 'BYE' && (
+                                                <Link 
+                                                    href={match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : (match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` : '#'}
+                                                    onClick={(e) => { if (!match.carrera_a_id && !(match as any).delegacion_a_id) e.preventDefault(); }}
+                                                    className="mt-2 group/carrera flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all active:scale-95"
+                                                >
+                                                    <img 
+                                                        src={match.carrera_a?.escudo_url || '/logo_olimpiadas.png'} 
+                                                        alt="" 
+                                                        className="w-3 h-3 sm:w-4 sm:h-4 object-contain opacity-70 group-hover/carrera:opacity-100 transition-opacity" 
+                                                        onError={(e) => { (e.target as HTMLImageElement).src = '/logo_olimpiadas.png' }}
+                                                    />
+                                                    <span className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest group-hover/carrera:text-white transition-colors">
+                                                        {getCarreraSubtitle(match, 'a') || 'Competidor'}
+                                                    </span>
+                                                </Link>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -698,67 +701,70 @@ export default function PublicMatchDetail() {
                                 <div className="flex flex-col items-center group w-full min-w-0">
                                     {/* Athlete Profile Link (Top Part) */}
                                     <div className="w-full flex flex-col items-center">
-                                        <Link 
-                                            href={match.athlete_b_id ? `/perfil/${match.athlete_b_id}` : match.jugador_b_id ? `/jugador/${match.jugador_b_id}` : '#'}
-                                            onClick={(e) => { if (!match.athlete_b_id && !match.jugador_b_id) e.preventDefault(); }}
-                                            className={cn(
-                                                "relative w-full flex flex-col items-center gap-3 transition-all duration-300 active:scale-95 group/btn",
-                                                (match.athlete_b_id || match.jugador_b_id) ? "cursor-pointer" : "cursor-default"
-                                            )}
-                                        >
-                                            <div className="relative shrink-0 p-1">
-                                                <div className={cn(
-                                                    "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
-                                                    `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
-                                                )} />
-                                                
-                                                <div className="relative group/avatar">
-                                                    <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover/btn:opacity-40 transition-opacity duration-500" style={{ backgroundColor: sportColor }} />
-                                                    <Avatar name={getDisplayName(match, 'b')} src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url || match.delegacion_b_info?.escudo_url} size="lg" className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} />
-                                                    
-                                                    {(match.athlete_b_id || match.jugador_b_id) && (
-                                                        <div className="absolute -bottom-2 z-30 flex justify-center w-full">
-                                                            <div className={cn(
-                                                                "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
-                                                                "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
-                                                                "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95"
-                                                            )} style={{ 
-                                                                backgroundColor: sportColor,
-                                                                color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
-                                                                boxShadow: `0 4px 12px ${sportColor}40`
-                                                            }}>
-                                                                VER PERFIL
+                                        {/* Athlete Profile Link (Top Part) */}
+                                        <div className="w-full flex flex-col items-center">
+                                            {getDisplayName(match, 'b') !== 'TBD' && getDisplayName(match, 'b') !== 'BYE' && (
+                                                <Link 
+                                                    href={match.athlete_b_id ? `/perfil/${match.athlete_b_id}` : match.jugador_b_id ? `/jugador/${match.jugador_b_id}` : `/jugadores?search=${encodeURIComponent(getDisplayName(match, 'b'))}`}
+                                                    className={cn(
+                                                        "relative w-full flex flex-col items-center gap-2.5 transition-all duration-300 active:scale-95 group/btn cursor-pointer"
+                                                    )}
+                                                >
+                                                    <div className="relative shrink-0 p-1">
+                                                        <div className={cn(
+                                                            "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
+                                                            `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
+                                                        )} />
+                                                        
+                                                        <div className="relative group/avatar">
+                                                            <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover/btn:opacity-40 transition-opacity duration-500" style={{ backgroundColor: sportColor }} />
+                                                            <Avatar name={getDisplayName(match, 'b')} src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url || match.delegacion_b_info?.escudo_url} size="lg" className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} />
+                                                            
+                                                            <div className="absolute -bottom-2 z-30 flex justify-center w-full">
+                                                                <div className={cn(
+                                                                    "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
+                                                                    "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
+                                                                    "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95"
+                                                                )} style={{ 
+                                                                    backgroundColor: sportColor,
+                                                                    color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
+                                                                    boxShadow: `0 4px 12px ${sportColor}40`
+                                                                }}>
+                                                                    VER PERFIL
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                                    </div>
 
-                                            <div className="flex flex-col items-center gap-0.5 w-full relative z-10">
-                                                <h2 className={cn(
-                                                    "font-black text-[12px] sm:text-lg leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm",
-                                                    (match.athlete_b_id || match.jugador_b_id) ? "group-hover/btn:text-white" : "text-white"
-                                                )}>
-                                                    {getDisplayName(match, 'b')}
-                                                </h2>
-                                            </div>
-                                        </Link>
+                                                    <div className="flex flex-col items-center gap-0.5 w-full relative z-10">
+                                                        <h2 className={cn(
+                                                            "font-black text-[12px] sm:text-16px] leading-[1.1] uppercase tracking-tight text-center w-full px-2 transition-all duration-300 drop-shadow-sm text-white group-hover/btn:text-white/100"
+                                                        )}>
+                                                            {getDisplayName(match, 'b')}
+                                                        </h2>
+                                                    </div>
+                                                </Link>
+                                            )}
 
-                                        {/* Career Link (Bottom Part) */}
-                                        {getCarreraSubtitle(match, 'b') && (
-                                            <Link 
-                                                href={match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` : (match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` : '#'}
-                                                onClick={(e) => { if (!match.carrera_b_id && !(match as any).delegacion_b_id) e.preventDefault(); }}
-                                                className="mt-2 group/carrera flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all active:scale-95"
-                                            >
-                                                {match.carrera_b?.escudo_url && (
-                                                    <img src={match.carrera_b.escudo_url} alt="" className="w-3 h-3 sm:w-4 sm:h-4 object-contain opacity-70 group-hover/carrera:opacity-100 transition-opacity" />
-                                                )}
-                                                <span className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-widest group-hover/carrera:text-white transition-colors">
-                                                    {getCarreraSubtitle(match, 'b')}
-                                                </span>
-                                            </Link>
-                                        )}
+                                            {/* Career Link (Bottom Part) - With Fallback if Null */}
+                                            {isIndividualSport(sportName) && getDisplayName(match, 'b') !== 'TBD' && getDisplayName(match, 'b') !== 'BYE' && (
+                                                <Link 
+                                                    href={match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` : (match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` : '#'}
+                                                    onClick={(e) => { if (!match.carrera_b_id && !(match as any).delegacion_b_id) e.preventDefault(); }}
+                                                    className="mt-2 group/carrera flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all active:scale-95"
+                                                >
+                                                    <img 
+                                                        src={match.carrera_b?.escudo_url || '/logo_olimpiadas.png'} 
+                                                        alt="" 
+                                                        className="w-3 h-3 sm:w-4 sm:h-4 object-contain opacity-70 group-hover/carrera:opacity-100 transition-opacity" 
+                                                        onError={(e) => { (e.target as HTMLImageElement).src = '/logo_olimpiadas.png' }}
+                                                    />
+                                                    <span className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest group-hover/carrera:text-white transition-colors">
+                                                        {getCarreraSubtitle(match, 'b') || 'Competidor'}
+                                                    </span>
+                                                </Link>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
