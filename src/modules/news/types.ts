@@ -16,6 +16,7 @@ export type Noticia = {
   published: boolean;
   created_at: string;
   updated_at?: string;
+  news_reactions?: { emoji: string }[];
   // Joined relations
   partidos?: {
     id?: number;

@@ -11,7 +11,8 @@ const NEWS_COLUMNS = `
   id, titulo, contenido, imagen_url, categoria, created_at, published, autor_nombre, carrera,
   partidos(equipo_a, equipo_b, marcador_detalle, disciplinas(name),
     carrera_a:carreras!carrera_a_id(nombre),
-    carrera_b:carreras!carrera_b_id(nombre))
+    carrera_b:carreras!carrera_b_id(nombre)),
+  news_reactions(emoji)
 `;
 
 async function fetchNoticias(): Promise<Noticia[]> {

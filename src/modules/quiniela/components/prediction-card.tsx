@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Badge, Button } from "@/components/ui-primitives";
-import { Trophy, Target, Award, Zap, History, Lock, Clock, Users } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Badge, Button, Avatar } from "@/components/ui-primitives";
+import { Trophy, Target, Award, Zap, History, Lock, Clock, Users, ExternalLink } from "lucide-react";
 import { SportIcon } from "@/components/sport-icons";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { VotePercentageBar } from "./vote-percentage-bar";
 import { getMatchResult } from "../helpers";
-import { SPORT_ACCENT } from "@/lib/constants";
+import { SPORT_ACCENT, SPORT_COLORS } from "@/lib/constants";
+import { getDisplayName, getCarreraSubtitle, isIndividualSport } from "@/lib/sport-helpers";
 
 interface PredictionCardProps {
   match: any;
@@ -19,6 +23,7 @@ interface PredictionCardProps {
 export const PredictionCard = ({
   match, prediction, onPredict, locked, allPredictions
 }: PredictionCardProps) => {
+  const router = useRouter();
   const [winnerPick, setWinnerPick] = useState(prediction?.winner_pick ?? null);
 
   useEffect(() => {
@@ -48,11 +53,10 @@ export const PredictionCard = ({
 
   const scoreInfo = getCurrentScore(match.disciplinas?.name, match.marcador_detalle || {});
 
-  const isTenis = match.disciplinas?.name === 'Tenis';
-  const rosterA = match.roster_partido?.find((r: any) => r.equipo_a_or_b === 'equipo_a');
-  const rosterB = match.roster_partido?.find((r: any) => r.equipo_a_or_b === 'equipo_b');
-  const nameA = isTenis && rosterA?.jugador?.nombre ? rosterA.jugador.nombre : (match.carrera_a?.nombre || match.equipo_a);
-  const nameB = isTenis && rosterB?.jugador?.nombre ? rosterB.jugador.nombre : (match.carrera_b?.nombre || match.equipo_b);
+  const nameA = getDisplayName(match, 'a');
+  const nameB = getDisplayName(match, 'b');
+  const subtitleA = getCarreraSubtitle(match, 'a');
+  const subtitleB = getCarreraSubtitle(match, 'b');
 
   const getCardStyle = () => {
     if (isFinished && predictionCorrect === true) {
@@ -70,11 +74,21 @@ export const PredictionCard = ({
     return "bg-black/20 backdrop-blur-xl border-white/5 hover:bg-white/[0.04] hover:border-white/10";
   };
 
+  const sportName = match.disciplinas?.name;
+
   return (
-    <div className={cn(
-      "relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden group shadow-2xl",
-      getCardStyle()
-    )}>
+    <div 
+      onClick={() => router.push(`/partido/${match.id}`)}
+      className={cn(
+        "relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden group shadow-2xl cursor-pointer active:scale-[0.99]",
+        getCardStyle()
+      )}
+    >
+      {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
+      <div className="absolute -right-[12%] -bottom-[12%] flex items-center justify-center pointer-events-none select-none opacity-[0.08] group-hover:opacity-[0.12] transition-all duration-1000 rotate-[-20deg] z-0 text-white">
+        <SportIcon sport={sportName} size={180} className="transition-all duration-[1500ms] group-hover:scale-110 group-hover:rotate-[5deg]" />
+      </div>
+
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
 
       <div className="flex items-center justify-between mb-6">
@@ -84,13 +98,13 @@ export const PredictionCard = ({
           </div>
           <div>
             <p className={cn(
-              "text-[10px] font-black uppercase tracking-widest leading-none mb-1.5",
-              match.disciplinas?.name ? (SPORT_ACCENT[match.disciplinas.name] || "text-slate-500") : "text-slate-500"
+              "text-[10px] font-black uppercase tracking-[0.2em] leading-none mb-2",
+              match.disciplinas?.name ? (SPORT_ACCENT[match.disciplinas.name] || "text-slate-400") : "text-slate-400"
             )}>
-              {match.disciplinas?.name} • <span className="opacity-60">{match.genero || 'Masculino'}</span>
+              {match.disciplinas?.name} • <span className="text-white/40">{match.genero || 'Masculino'}</span>
             </p>
-            <p className="text-[9px] font-bold text-white/20 uppercase tracking-tight leading-none tabular-nums flex items-center gap-1.5">
-              <Clock size={10} className="text-violet-400/40" />
+            <p className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none tabular-nums flex items-center gap-1.5 shadow-sm">
+              <Clock size={10} className="text-violet-400" />
               {new Date(match.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} • {new Date(match.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false })}
             </p>
           </div>
@@ -126,48 +140,96 @@ export const PredictionCard = ({
           </div>
         ) : (
           <>
-            <div className="flex flex-col items-center flex-1 max-w-[120px] relative z-10">
-              <div className="w-20 h-20 rounded-full bg-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center text-3xl font-display font-black mb-4 shadow-[0_0_30px_rgba(255,255,255,0.05)] text-white/90 group-hover:scale-110 group-hover:bg-white/10 group-hover:text-white group-hover:border-white/40 transition-all duration-500">
-                {match.disciplinas?.name === 'Ajedrez' ? '♟' : (nameA).substring(0, 1).toUpperCase()}
+            <div className="flex flex-col items-center flex-1 max-w-[120px] relative z-10 group/team">
+              <Link 
+                href={match.athlete_a_id ? `/perfil/${match.athlete_a_id}` : match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : '#'}
+                onClick={(e) => {
+                  if (!match.athlete_a_id && !match.carrera_a_id) e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="w-20 h-20 rounded-full bg-white/[0.03] backdrop-blur-3xl border border-white/10 flex items-center justify-center text-3xl font-display font-black mb-1 shadow-[0_0_40px_rgba(0,0,0,0.5)] text-white group-hover/team:scale-110 group-hover:bg-white/[0.08] group-hover:border-white/30 transition-all duration-500 overflow-hidden relative"
+              >
+                <Avatar 
+                  name={nameA} 
+                  src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url || match.delegacion_a_info?.escudo_url} 
+                  size="lg" 
+                  className="w-full h-full text-2xl border-none p-0 bg-transparent"
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/team:opacity-100 transition-opacity" />
+                <div className="absolute -bottom-1 inset-x-0 flex justify-center opacity-0 group-hover/team:opacity-100 transition-all translate-y-2 group-hover/team:translate-y-0 translate-x-0 z-20">
+                  <div className="px-2 py-0.5 rounded-full bg-violet-600 text-white text-[6px] font-black uppercase tracking-tighter shadow-lg">PERFIL</div>
+                </div>
+              </Link>
+              <div className="flex flex-col items-center gap-0.5 min-h-[40px] justify-start pt-2">
+                <p className="text-xs font-display font-black text-white text-center leading-tight tracking-wide line-clamp-2 px-1 drop-shadow-sm group-hover/team:text-violet-400 transition-colors flex items-center gap-1">
+                  {nameA}
+                  {match.athlete_a_id && <ExternalLink size={10} className="opacity-30" />}
+                </p>
+                {subtitleA && (
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-tighter truncate w-full px-2 text-center">
+                    {subtitleA}
+                  </p>
+                )}
               </div>
-              <p className="text-xs font-display font-black text-white/80 text-center leading-tight tracking-wide line-clamp-2 px-1">
-                {nameA}
-              </p>
             </div>
 
             <div className="flex flex-col items-center justify-center min-w-[80px]">
               {(isLive || isFinished) ? (
-                <div className="space-y-1">
-                  <div className="text-3xl font-black tabular-nums font-mono tracking-tighter text-white flex items-center gap-2 justify-center">
+                <div className="space-y-2">
+                  <div className="text-4xl font-black tabular-nums font-mono tracking-tighter text-white flex items-center gap-2 justify-center drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
                     {match.disciplinas?.name === 'Ajedrez' ? (
                       <span className="text-2xl">{isFinished ? 'FIN' : 'VS'}</span>
                     ) : (
                       <>
                         <span>{scoreInfo.scoreA}</span>
-                        <span className="opacity-20">:</span>
+                        <span className="text-white/20">:</span>
                         <span>{scoreInfo.scoreB}</span>
                       </>
                     )}
                   </div>
-                  <p className="text-[8px] font-black text-center text-slate-500 uppercase tracking-[0.2em]">{match.disciplinas?.name === 'Ajedrez' ? 'Estado' : 'Marcador'}</p>
+                  <p className="text-[8px] font-black text-center text-white/40 uppercase tracking-[0.3em] font-display">{match.disciplinas?.name === 'Ajedrez' ? 'Estado' : 'Marcador'}</p>
                 </div>
               ) : (
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 bg-violet-500/20 blur-xl rounded-full" />
-                  <div className="w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-2xl transform rotate-45 group-hover:border-violet-500/50 transition-colors">
-                    <span className="text-xs font-display font-black text-white/50 italic -rotate-45">VS</span>
+                <div className="relative mb-6 group/vs">
+                  <div className="absolute inset-0 bg-violet-500/30 blur-2xl rounded-full opacity-0 group-hover/vs:opacity-100 transition-opacity duration-500" />
+                  <div className="relative w-12 h-12 rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 flex items-center justify-center shadow-2xl transform rotate-45 group-hover:border-violet-500/50 group-hover:bg-violet-500/10 transition-all duration-500">
+                    <span className="text-xs font-display font-black text-white/70 italic -rotate-45 group-hover:text-white transition-colors tracking-tighter">VS</span>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="flex flex-col items-center flex-1 max-w-[120px] relative z-10">
-              <div className="w-20 h-20 rounded-full bg-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center text-3xl font-display font-black mb-4 shadow-[0_0_30px_rgba(255,255,255,0.05)] text-white/90 group-hover:scale-110 group-hover:bg-white/10 group-hover:text-white group-hover:border-white/40 transition-all duration-500">
-                {match.disciplinas?.name === 'Ajedrez' ? '♞' : (nameB).substring(0, 1).toUpperCase()}
+            <div className="flex flex-col items-center flex-1 max-w-[120px] relative z-10 group/team">
+              <Link 
+                href={match.athlete_b_id ? `/perfil/${match.athlete_b_id}` : match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` : '#'}
+                onClick={(e) => {
+                  if (!match.athlete_b_id && !match.carrera_b_id) e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="w-20 h-20 rounded-full bg-white/[0.03] backdrop-blur-3xl border border-white/10 flex items-center justify-center text-3xl font-display font-black mb-1 shadow-[0_0_40px_rgba(0,0,0,0.5)] text-white group-hover/team:scale-110 group-hover:bg-white/[0.08] group-hover:border-white/30 transition-all duration-500 overflow-hidden relative"
+              >
+                <Avatar 
+                  name={nameB} 
+                  src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url || match.delegacion_b_info?.escudo_url} 
+                  size="lg" 
+                  className="w-full h-full text-2xl border-none p-0 bg-transparent"
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/team:opacity-100 transition-opacity" />
+                <div className="absolute -bottom-1 inset-x-0 flex justify-center opacity-0 group-hover/team:opacity-100 transition-all translate-y-2 group-hover/team:translate-y-0 translate-x-0 z-20">
+                  <div className="px-2 py-0.5 rounded-full bg-violet-600 text-white text-[6px] font-black uppercase tracking-tighter shadow-lg">PERFIL</div>
+                </div>
+              </Link>
+              <div className="flex flex-col items-center gap-0.5 min-h-[40px] justify-start pt-2">
+                <p className="text-xs font-display font-black text-white text-center leading-tight tracking-wide line-clamp-2 px-1 drop-shadow-sm group-hover/team:text-violet-400 transition-colors flex items-center gap-1">
+                  {nameB}
+                  {match.athlete_b_id && <ExternalLink size={10} className="opacity-30" />}
+                </p>
+                {subtitleB && (
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-tighter truncate w-full px-2 text-center">
+                    {subtitleB}
+                  </p>
+                )}
               </div>
-              <p className="text-xs font-display font-black text-white/80 text-center leading-tight tracking-wide line-clamp-2 px-1">
-                {nameB}
-              </p>
             </div>
           </>
         )}
@@ -176,7 +238,7 @@ export const PredictionCard = ({
       <div className="bg-white/[0.02] backdrop-blur-2xl rounded-[2rem] border border-white/10 p-5 mt-4 shadow-[inset_0_4px_24px_rgba(0,0,0,0.5)] relative overflow-hidden">
         {isFinished || isLive ? (
           <div className="text-center">
-            <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] mb-2 font-display">Tu Predicción</p>
+            <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.3em] mb-3 font-display shadow-sm">Tu Predicción</p>
             <div className="flex items-center justify-center gap-3">
               {prediction?.prediction_type === 'score' ? (
                 <p className={cn(
@@ -204,7 +266,7 @@ export const PredictionCard = ({
         ) : !isLocked ? (
           <div className="space-y-5">
             <div className="flex items-center justify-between px-1">
-              <p className="text-[10px] font-black font-display text-white/30 tracking-[0.2em] uppercase">¿Cuál será el resultado?</p>
+              <p className="text-[10px] font-black font-display text-white/50 tracking-[0.2em] uppercase drop-shadow-sm">¿Cuál será el resultado?</p>
             </div>
 
             <div className="grid grid-cols-3 gap-2.5">
@@ -215,12 +277,15 @@ export const PredictionCard = ({
               ].map((opt) => (
                 <button
                   key={opt.key}
-                  onClick={() => setWinnerPick(opt.key)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setWinnerPick(opt.key);
+                  }}
                   className={cn(
                     "relative group/btn py-4 px-2 rounded-2xl text-[10px] sm:text-xs font-display font-black tracking-wide transition-all border-2 flex flex-col items-center justify-center gap-2 min-h-[80px]",
                     winnerPick === opt.key
                       ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.25)] scale-[1.02] z-10"
-                      : "bg-black/40 border-white/5 text-white/30 hover:bg-white/10 hover:text-white/60 hover:border-white/20"
+                      : "bg-black/40 border-white/10 text-white/60 hover:bg-white/10 hover:text-white hover:border-white/30"
                   )}
                 >
                   <div className="truncate w-full text-center px-1 font-black uppercase tracking-tighter">{opt.name.split(' ')[0]}</div>
@@ -241,7 +306,10 @@ export const PredictionCard = ({
                   ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_10px_30px_rgba(16,185,129,0.3)] border-transparent"
                   : "bg-white/10 hover:bg-white text-white hover:text-black border-white/10 shadow-xl"
               )}
-              onClick={handleSave}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSave();
+              }}
               disabled={!winnerPick}
             >
               {isPredicted ? (

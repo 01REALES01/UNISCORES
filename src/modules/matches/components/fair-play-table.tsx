@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-import { Shield, AlertTriangle, Square } from "lucide-react";
+import Link from "next/link";
+import { Shield, AlertTriangle, Square, ChevronRight } from "lucide-react";
 
 interface TeamFairPlay {
     team: string;
+    teamId?: string;
+    athleteId?: string;
     score: number;
     amarillas: number;
     rojas: number;
@@ -16,9 +19,10 @@ interface TeamFairPlay {
 interface FairPlayTableProps {
     genero: string;
     sportName: string;
+    teamIdMap?: Record<string, { teamId?: string; athleteId?: string }>;
 }
 
-export function FairPlayTable({ genero, sportName }: FairPlayTableProps) {
+export function FairPlayTable({ genero, sportName, teamIdMap = {} }: FairPlayTableProps) {
     const [data, setData] = useState<TeamFairPlay[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -41,7 +45,7 @@ export function FairPlayTable({ genero, sportName }: FairPlayTableProps) {
             // Get all match IDs for this discipline/gender
             const { data: partidos } = await supabase
                 .from('partidos')
-                .select('id, equipo_a, equipo_b, delegacion_a, delegacion_b')
+                .select('id, equipo_a, equipo_b, delegacion_a, delegacion_b, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id')
                 .eq('disciplina_id', disc.id)
                 .eq('genero', genero);
 
@@ -58,11 +62,22 @@ export function FairPlayTable({ genero, sportName }: FairPlayTableProps) {
             const rojas: Record<string, number> = {};
             const otros: Record<string, number> = {};
 
+            const localTeamIdMap: Record<string, string> = {};
+            const localAthleteIdMap: Record<string, string> = {};
+
             partidos.forEach((p: any) => {
                 const a = p.delegacion_a || p.equipo_a;
                 const b = p.delegacion_b || p.equipo_b;
-                if (a && !(a in scores)) { scores[a] = 2000; amarillas[a] = 0; rojas[a] = 0; otros[a] = 0; }
-                if (b && !(b in scores)) { scores[b] = 2000; amarillas[b] = 0; rojas[b] = 0; otros[b] = 0; }
+                if (a && !(a in scores)) { 
+                    scores[a] = 2000; amarillas[a] = 0; rojas[a] = 0; otros[a] = 0; 
+                    if (p.athlete_a_id) localAthleteIdMap[a] = p.athlete_a_id;
+                    else if (p.carrera_a_id) localTeamIdMap[a] = p.carrera_a_id;
+                }
+                if (b && !(b in scores)) { 
+                    scores[b] = 2000; amarillas[b] = 0; rojas[b] = 0; otros[b] = 0; 
+                    if (p.athlete_b_id) localAthleteIdMap[b] = p.athlete_b_id;
+                    else if (p.carrera_b_id) localTeamIdMap[b] = p.carrera_b_id;
+                }
             });
 
             const { data: eventos } = await supabase
@@ -82,13 +97,26 @@ export function FairPlayTable({ genero, sportName }: FairPlayTableProps) {
                 else if (e.tipo_evento === 'ajuste_fair_play') { scores[team] += Number(e.descripcion ?? 0); otros[team]++; }
             });
 
-            const rows: TeamFairPlay[] = Object.keys(scores).map(team => ({
-                team,
-                score: scores[team],
-                amarillas: amarillas[team],
-                rojas: rojas[team],
-                otros: otros[team],
-            })).sort((a, b) => b.score - a.score);
+            const normalize = (n: string) => n.toLowerCase().trim().replace(/^ing\.?\s*/, 'ingeniería ').replace(/^lic\.?\s*/, 'licenciatura ').replace(/^odont\.?\s*/, 'odontología ').replace(/\s+/g, ' ');
+            const clean = (n: string) => normalize(n).replace(/^(ingeniería|licenciatura|odontología)\s+/, '').trim();
+            const strip = (n: string) => n.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            const rows: TeamFairPlay[] = Object.keys(scores).map(team => {
+                const norm = normalize(team);
+                const cl = clean(team);
+                const str = strip(team);
+                const globalData = teamIdMap[team.toLowerCase().trim()] || teamIdMap[norm] || teamIdMap[cl] || teamIdMap[str];
+
+                return {
+                    team,
+                    teamId: globalData?.teamId || localTeamIdMap[team],
+                    athleteId: globalData?.athleteId || localAthleteIdMap[team],
+                    score: scores[team],
+                    amarillas: amarillas[team],
+                    rojas: rojas[team],
+                    otros: otros[team],
+                };
+            }).sort((a, b) => b.score - a.score);
 
             if (!cancelled) { setData(rows); setLoading(false); }
         };
@@ -149,7 +177,31 @@ export function FairPlayTable({ genero, sportName }: FairPlayTableProps) {
                                 {/* Team name + bar */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-1.5">
-                                        <span className="text-sm font-bold text-white truncate">{row.team}</span>
+                                        {(() => {
+                                            const href = row.athleteId 
+                                                ? `/perfil/${row.athleteId}` 
+                                                : (row.teamId ? `/carrera/${row.teamId}` : null);
+                                            
+                                            const content = (
+                                                <span className={cn(
+                                                    "text-sm font-black uppercase tracking-wide transition-all duration-300",
+                                                    href ? "text-white group-hover/link:text-violet-400" : "text-white/60"
+                                                )}>
+                                                    {row.team}
+                                                </span>
+                                            );
+
+                                            return href ? (
+                                                <Link href={href} className="group/link -ml-2">
+                                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-violet-500/10 transition-all duration-300 border border-transparent hover:border-violet-500/20 active:scale-95">
+                                                        {content}
+                                                        <ChevronRight size={12} className="text-violet-400 opacity-0 group-hover/link:opacity-100 group-hover/link:translate-x-0.5 transition-all" />
+                                                    </div>
+                                                </Link>
+                                            ) : (
+                                                <div className="px-1 py-1 text-white/40 font-bold uppercase text-xs">{row.team}</div>
+                                            );
+                                        })()}
                                         <span className={cn(
                                             "text-xs font-black tabular-nums ml-2 shrink-0",
                                             isPerfect ? "text-emerald-400" : row.score >= 1900 ? "text-white/70" : row.score >= 1800 ? "text-amber-400" : "text-rose-400"

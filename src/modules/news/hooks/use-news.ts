@@ -9,7 +9,8 @@ const NEWS_COLUMNS = `
   id, titulo, contenido, imagen_url, categoria, created_at, published, autor_nombre, carrera,
   partidos(equipo_a, equipo_b, marcador_detalle, disciplinas(name),
     carrera_a:carreras!carrera_a_id(nombre, escudo_url),
-    carrera_b:carreras!carrera_b_id(nombre, escudo_url))
+    carrera_b:carreras!carrera_b_id(nombre, escudo_url)),
+  news_reactions(emoji)
 `.replace(/\s+/g, ' ').trim();
 
 const fetchNews = async (): Promise<Noticia[]> => {
@@ -30,9 +31,18 @@ function subscribeToNews() {
     if (isNewsSubscribed) return;
     isNewsSubscribed = true;
 
+    // Sub to noticias
     supabase
         .channel('global:noticias:changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'noticias' }, () => {
+            globalMutate('global:noticias');
+        })
+        .subscribe();
+
+    // Sub to reactions - trigger news refresh because it's a join
+    supabase
+        .channel('global:news_reactions:changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'news_reactions' }, () => {
             globalMutate('global:noticias');
         })
         .subscribe();

@@ -15,6 +15,15 @@ import { PublicLiveTimer } from "@/components/public-live-timer";
 // Helper para obtener iniciales
 const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
 
+// Helper para obtener el icono prioritario
+const getMatchIcon = (match: any, side: 'a' | 'b') => {
+    const athlete = side === 'a' ? match.atleta_a : match.atleta_b;
+    const carrera = side === 'a' ? match.carrera_a : match.carrera_b;
+    const delegation = side === 'a' ? match.delegacion_a_info : match.delegacion_b_info;
+    
+    return athlete?.avatar_url || carrera?.escudo_url || delegation?.escudo_url;
+};
+
 export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[], activeFilter?: string }) {
     const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -262,8 +271,16 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             transition={{ delay: 0.3 }}
                                             className="flex flex-col items-center gap-2 md:gap-3 flex-1 text-center"
                                         >
-                                            <div className="w-14 h-14 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm shrink-0">
-                                                <span className="text-xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'a'))}</span>
+                                            <div className="w-16 h-16 md:w-28 md:h-28 rounded-2xl md:rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-md shrink-0 overflow-hidden p-3 group-hover:border-white/20 transition-colors">
+                                                {getMatchIcon(currentMatch, 'a') ? (
+                                                    <img 
+                                                        src={getMatchIcon(currentMatch, 'a')} 
+                                                        alt={getDisplayName(currentMatch, 'a')} 
+                                                        className="w-full h-full object-contain drop-shadow-lg" 
+                                                    />
+                                                ) : (
+                                                    <span className="text-xl md:text-5xl font-black text-white/10">{getInitials(getDisplayName(currentMatch, 'a'))}</span>
+                                                )}
                                             </div>
                                             <h3 className="text-sm md:text-2xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'a')}
@@ -335,8 +352,16 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             transition={{ delay: 0.3 }}
                                             className="flex flex-col items-center gap-2 md:gap-3 flex-1 text-center"
                                         >
-                                            <div className="w-14 h-14 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-sm shrink-0">
-                                                <span className="text-xl md:text-4xl font-black">{getInitials(getDisplayName(currentMatch, 'b'))}</span>
+                                            <div className="w-16 h-16 md:w-28 md:h-28 rounded-2xl md:rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-md shrink-0 overflow-hidden p-3 group-hover:border-white/20 transition-colors">
+                                                {getMatchIcon(currentMatch, 'b') ? (
+                                                    <img 
+                                                        src={getMatchIcon(currentMatch, 'b')} 
+                                                        alt={getDisplayName(currentMatch, 'b')} 
+                                                        className="w-full h-full object-contain drop-shadow-lg" 
+                                                    />
+                                                ) : (
+                                                    <span className="text-xl md:text-5xl font-black text-white/10">{getInitials(getDisplayName(currentMatch, 'b'))}</span>
+                                                )}
                                             </div>
                                             <h3 className="text-sm md:text-2xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'b')}
@@ -355,22 +380,27 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.5 }}
-                            className="mt-4 flex flex-col items-center gap-3"
+                            className="mt-6 flex flex-col items-center gap-5"
                         >
-                            <div className="flex items-center gap-2 text-[11px] md:text-xs text-slate-500">
-                                <MapPin size={12} />
-                                {currentMatch.lugar}
-                                <span className="mx-2 text-slate-600/50">•</span>
-                                <ClockDisplay date={currentMatch.fecha} />
+                            <div className="flex items-center gap-6 text-[10px] md:text-sm font-bold tracking-[0.1em] uppercase">
+                                <div className="flex items-center gap-2 text-white/60">
+                                    <MapPin size={14} className="text-orange-500/80" />
+                                    <span>{currentMatch.lugar}</span>
+                                </div>
+                                <div className="w-[1px] h-3 bg-white/10" />
+                                <div className="flex items-center gap-2 text-white/60">
+                                    <Clock size={14} className="text-orange-500/80" />
+                                    <ClockDisplay date={currentMatch.fecha} />
+                                </div>
                             </div>
 
                             <Link href={`/partido/${currentMatch.id}`}>
                                 <Button
                                     variant="outline"
                                     className={cn(
-                                        "rounded-full px-6 h-9 text-[10px] font-black uppercase tracking-[0.2em] bg-white/5 hover:bg-white/10 backdrop-blur-md transition-all duration-300 shadow-none hover:shadow-none whitespace-nowrap",
+                                        "rounded-full px-10 h-10 md:h-12 text-[10px] md:text-xs font-black uppercase tracking-[0.25em] bg-white/5 hover:bg-white/10 backdrop-blur-md transition-all duration-300 shadow-none hover:shadow-none whitespace-nowrap",
                                         SPORT_ACCENT[currentMatch.disciplinas?.name] || 'text-white/80',
-                                        "hover:drop-shadow-[0_0_10px_currentColor] border-white/5 hover:border-white/20"
+                                        "hover:drop-shadow-[0_0_15px_currentColor] border-white/10 hover:border-white/20"
                                     )}
                                 >
                                     Ver Detalles
@@ -411,10 +441,15 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
 
 function ClockDisplay({ date }: { date: string }) {
     if (!date) return null;
+    const d = new Date(date);
+    const dateFormatted = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    const timeFormatted = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
     return (
-        <span className="flex items-center gap-1">
-            <Calendar size={14} />
-            {new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        <span className="flex items-center gap-1.5 font-bold uppercase tracking-tight">
+            <span className="text-white/80">{dateFormatted}</span>
+            <span className="text-white/40 leading-none pb-0.5">•</span>
+            <span className="text-white/80">{timeFormatted}</span>
         </span>
     );
 }

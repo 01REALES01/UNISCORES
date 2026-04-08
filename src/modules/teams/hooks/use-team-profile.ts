@@ -88,27 +88,41 @@ async function fetchTeamProfile(delegacionId: number) {
     let athletesData: any[] = [];
     if (delegacion.carrera_ids && delegacion.carrera_ids.length > 0 && delegacion.disciplina_id) {
         
+        // 4. Fetch athletes (Plantilla) - Flexible gender matching
         const { data: jugadores } = await supabase
             .from('jugadores')
-            .select('id, nombre, profile:profiles(id, full_name, avatar_url, roles, points, disciplina:disciplinas(name))')
+            .select('id, nombre, genero, sexo, profile:profiles(id, full_name, avatar_url, roles, points, sexo, genero, disciplina:disciplinas(name))')
             .in('carrera_id', delegacion.carrera_ids)
-            .eq('disciplina_id', delegacion.disciplina_id)
-            .eq('genero', delegacion.genero);
+            .eq('disciplina_id', delegacion.disciplina_id);
 
         if (jugadores) {
-            athletesData = (jugadores as any[]).map(j => {
-                const profileObj = Array.isArray(j.profile) ? j.profile[0] : j.profile;
-                const discObj = Array.isArray(profileObj?.disciplina) ? profileObj.disciplina[0] : profileObj?.disciplina;
+            // Filter in JS to be more flexible with 'm', 'f', 'masculino', 'femenino'
+            const targetGender = (delegacion.genero || '').toLowerCase().trim();
+            
+            athletesData = (jugadores as any[])
+                .filter(j => {
+                    const jGender = (j.sexo || j.genero || '').toLowerCase().trim();
+                    if (!targetGender || targetGender === 'mixto') return true;
+                    if (targetGender.startsWith('masc') && (jGender.startsWith('masc') || jGender === 'm')) return true;
+                    if (targetGender.startsWith('feme') && (jGender.startsWith('feme') || jGender === 'f')) return true;
+                    return jGender === targetGender;
+                })
+                .map(j => {
+                    const profileObj = Array.isArray(j.profile) ? j.profile[0] : j.profile;
+                    const discObj = Array.isArray(profileObj?.disciplina) ? profileObj.disciplina[0] : profileObj?.disciplina;
 
-                return {
-                    id: profileObj?.id || `jugador-${j.id}`,
-                    full_name: profileObj?.full_name || j.nombre,
-                    avatar_url: profileObj?.avatar_url || null,
-                    roles: profileObj?.roles || ['deportista'], 
-                    points: profileObj?.points || 0,
-                    disciplina: discObj || { name: (Array.isArray(delegacion.disciplinas) ? delegacion.disciplinas[0] : delegacion.disciplinas)?.name }
-                };
-            });
+                    return {
+                        id: profileObj?.id || `jugador-${j.id}`,
+                        full_name: profileObj?.full_name || j.nombre,
+                        avatar_url: profileObj?.avatar_url || null,
+                        roles: profileObj?.roles || ['deportista'], 
+                        points: profileObj?.points || 0,
+                        sexo: profileObj?.sexo || j.sexo || null,
+                        genero: profileObj?.genero || j.genero || null,
+                        isProfile: !!profileObj?.id,
+                        disciplina: discObj || { name: (Array.isArray(delegacion.disciplinas) ? delegacion.disciplinas[0] : delegacion.disciplinas)?.name }
+                    };
+                });
             
             // Deduplica por si el administrador incribió dos veces en jugadores a un perfil validado único.
             const uniqueAthletes = new Map();

@@ -8,7 +8,7 @@ import { GroupStageTable } from "@/components/group-stage-table";
 import { BracketTree } from "@/components/bracket-tree";
 import { SPORT_ACCENT, SPORT_GRADIENT, SPORT_BORDER, DEPORTES_INDIVIDUALES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { Trophy, Users, Swords, ShieldAlert, GraduationCap, Mars, Venus, Shield } from "lucide-react";
+import { Trophy, Users, Swords, ShieldAlert, GraduationCap, Mars, Venus, Shield, ChevronDown, Filter, Target, History, RefreshCcw } from "lucide-react";
 import { FairPlayTable } from "@/modules/matches/components/fair-play-table";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -119,6 +119,16 @@ export default function ClasificacionPage() {
         return Array.from(g).sort();
     }, [groupMatches]);
 
+    const [carreras, setCarreras] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchCarreras = async () => {
+            const { data } = await supabase.from('carreras').select('id, nombre');
+            if (data) setCarreras(data);
+        };
+        fetchCarreras();
+    }, []);
+
     const [fairPlayData, setFairPlayData] = useState<Record<string, number>>({});
 
     useEffect(() => {
@@ -157,19 +167,83 @@ export default function ClasificacionPage() {
         fetchFairPlay();
     }, [filteredMatches]);
 
+    // Helper to normalize career names (extremely robust)
+    const normalizeName = (name: string) => {
+        return name.toLowerCase()
+            .trim()
+            .replace(/^ing\.?\s*/, 'ingeniería ')
+            .replace(/^lic\.?\s*/, 'licenciatura ')
+            .replace(/^odont\.?\s*/, 'odontología ')
+            .replace(/\s+/g, ' ');
+    };
+
+    const cleanName = (name: string) => {
+        return normalizeName(name)
+            .replace(/^(ingeniería|licenciatura|odontología)\s+/, '')
+            .trim();
+    };
+
+    const stripName = (name: string) => {
+        return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    };
+
+    // Build a global name-to-id map from all matches + careers table
+    const teamIdMap = useMemo(() => {
+        const map: Record<string, { teamId?: string; athleteId?: string }> = {};
+        
+        // 1. Fill from careers table (very reliable)
+        carreras.forEach(c => {
+            const raw = (c.nombre || '').trim().toLowerCase();
+            const norm = normalizeName(c.nombre || '');
+            const clean = cleanName(c.nombre || '');
+            const stripped = stripName(c.nombre || '');
+            
+            if (raw) map[raw] = { teamId: String(c.id) };
+            if (norm) map[norm] = { teamId: String(c.id) };
+            if (clean) map[clean] = { teamId: String(c.id) };
+            if (stripped) map[stripped] = { teamId: String(c.id) };
+        });
+
+        // 2. Fill from matches (for athletes and as fallback)
+        matches.forEach(m => {
+            const teamA = m.delegacion_a || m.equipo_a || '';
+            const teamB = m.delegacion_b || m.equipo_b || '';
+            
+            const process = (name: string, cid?: any, aid?: any) => {
+                if (!name) return;
+                const raw = name.trim().toLowerCase();
+                const norm = normalizeName(name);
+                const clean = cleanName(name);
+                const stripped = stripName(name);
+                const data = aid ? { athleteId: String(aid) } : (cid ? { teamId: String(cid) } : null);
+                
+                if (data) {
+                    if (!map[raw]) map[raw] = data;
+                    if (!map[norm]) map[norm] = data;
+                    if (!map[clean]) map[clean] = data;
+                    if (!map[stripped]) map[stripped] = data;
+                }
+            };
+
+            process(teamA, m.carrera_a_id, m.athlete_a_id);
+            process(teamB, m.carrera_b_id, m.athlete_b_id);
+        });
+        return map;
+    }, [matches, carreras]);
+
     // Calculate best thirds if there are multiple groups
     const bestThirds = useMemo(() => {
         if (groups.length < 2) return [];
         const thirds: TeamStanding[] = [];
         groups.forEach(grupo => {
             const gMatches = groupMatches.filter(m => m.grupo === grupo);
-            const s = calculateStandings(gMatches, selectedSport, fairPlayData);
+            const s = calculateStandings(gMatches, selectedSport, fairPlayData, teamIdMap);
             if (s.length >= 3) {
                 thirds.push(s[2]); // 3rd place is index 2
             }
         });
         return thirds.sort((a, b) => compareStandings(a, b, selectedSport));
-    }, [groups, groupMatches, selectedSport, fairPlayData]);
+    }, [groups, groupMatches, selectedSport, fairPlayData, teamIdMap]);
 
     const accent = SPORT_ACCENT[selectedSport] || 'text-amber-400';
     const border = SPORT_BORDER[selectedSport] || 'border-white/10';
@@ -177,12 +251,12 @@ export default function ClasificacionPage() {
     return (
         <div className="min-h-screen bg-background text-white selection:bg-violet-500/30 font-sans relative overflow-x-hidden">
 
-        {/* Background Element Watermark - MORE VISIBLE */}
-        <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.12]">
+        {/* Background Element Watermark - WHITE-BEIGE STYLE */}
+        <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.08]">
             <img 
                 src="/elementos/06.png" 
                 alt="" 
-                className="w-[1000px] md:w-[1300px] h-auto filter grayscale invert brightness-200" 
+                className="w-[1000px] md:w-[1300px] h-auto filter grayscale brightness-[3] contrast-75" 
                 aria-hidden="true"
             />
         </div>
@@ -204,13 +278,6 @@ export default function ClasificacionPage() {
                             <h1 className="text-5xl sm:text-7xl font-bold tracking-tighter leading-none font-display text-white drop-shadow-2xl">
                                 Clasificación
                             </h1>
-                            <Link
-                                href="/medallero"
-                                className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/10 bg-white/5 text-white/60 shadow-xl hover:bg-white/10 hover:text-white text-xs font-black uppercase tracking-widest transition-all"
-                            >
-                                <GraduationCap size={14} />
-                                Ver sección de equipos
-                            </Link>
                         </div>
                     </div>
                 </div>
@@ -352,6 +419,7 @@ export default function ClasificacionPage() {
                                                 sportName={selectedSport}
                                                 grupo={grupo}
                                                 light={false}
+                                                teamIdMap={teamIdMap}
                                             />
                                         );
                                     })}
@@ -373,6 +441,7 @@ export default function ClasificacionPage() {
                                 <FairPlayTable
                                     genero={selectedGender}
                                     sportName={selectedSport}
+                                    teamIdMap={teamIdMap}
                                 />
                             </section>
                         )}

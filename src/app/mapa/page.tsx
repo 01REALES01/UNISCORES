@@ -24,6 +24,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import { useMatches } from "@/hooks/use-matches";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 
 const FACILITIES_INFO = [
     {
@@ -90,6 +91,9 @@ export default function CampusMapPage() {
             </div>
 
             <div className="w-full px-4 pt-12 pb-4 relative z-10 max-w-[1600px] mx-auto">
+                <div className="flex justify-start mb-6">
+                    <SafeBackButton fallback="/" />
+                </div>
                 <div className="flex flex-col items-center text-center gap-1 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <p className="font-display text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-emerald-400 tracking-[0.3em]">
                         Sedes & ubicaciones

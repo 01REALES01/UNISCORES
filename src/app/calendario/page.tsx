@@ -133,7 +133,7 @@ export default function CalendarioPage() {
                     </div>
                 </header>
 
-                <div className="sticky top-[72px] z-40 -mx-4 px-4 py-8 mb-12 bg-[#311651]/80 backdrop-blur-2xl border-b border-white/5 transition-all duration-300">
+                <div className="sticky top-[72px] z-40 -mx-4 px-4 py-8 mb-12 transition-all duration-300">
                     <div className="flex flex-col gap-4 sm:gap-8 max-w-6xl mx-auto">
                         <div className="flex justify-center w-full">
                             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3 px-1 w-full max-w-5xl justify-start sm:justify-center group">
@@ -211,7 +211,7 @@ export default function CalendarioPage() {
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 max-w-6xl mx-auto">
                     {/* LEFT COLUMN: CALENDAR */}
-                    <div className="xl:col-span-2 bg-[#311651]/50 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-2xl p-6 relative overflow-hidden">
+                    <div className="xl:col-span-2 bg-black/20 backdrop-blur-3xl rounded-[2.5rem] border border-white/[0.05] shadow-2xl p-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-80 h-80 bg-violet-600/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                         
                         <div className="flex items-center justify-between mb-6">
@@ -291,7 +291,7 @@ export default function CalendarioPage() {
                     {/* RIGHT COLUMN: CARDS */}
                     <div className="space-y-6 flex flex-col">
                         {matchOfTheDay ? (
-                            <div className="bg-[#311651]/80 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 p-6 sm:p-7 flex flex-col relative overflow-hidden shadow-2xl group transition-all duration-500">
+                            <div className="bg-black/20 backdrop-blur-3xl rounded-[2.5rem] border border-white/[0.05] p-6 sm:p-7 flex flex-col relative overflow-hidden shadow-2xl group transition-all duration-500">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                                 {matchOfTheDay.estado === 'en_curso' && (
                                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-[60px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
@@ -413,7 +413,7 @@ export default function CalendarioPage() {
                             </div>
                         )}
 
-                        <div className="bg-[#311651]/60 backdrop-blur-3xl rounded-[3rem] border border-white/10 shadow-2xl p-8 flex-1 flex flex-col min-h-[450px]">
+                        <div className="bg-black/20 backdrop-blur-3xl rounded-[3rem] border border-white/[0.05] shadow-2xl p-8 flex-1 flex flex-col min-h-[450px]">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex flex-col">
                                     <h3 className="text-xl font-black text-white tracking-tighter uppercase">Encuentros</h3>

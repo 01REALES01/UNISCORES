@@ -57,9 +57,10 @@ interface GroupStageTableProps {
     sportName: string;
     grupo: string;
     light?: boolean;
+    teamIdMap?: Record<string, { teamId?: string; athleteId?: string }>;
 }
 
-export function GroupStageTable({ matches, sportName, grupo, light = false }: GroupStageTableProps) {
+export function GroupStageTable({ matches, sportName, grupo, light = false, teamIdMap = {} }: GroupStageTableProps) {
     const [fairPlayData, setFairPlayData] = useState<Record<string, number>>({});
 
     useEffect(() => {
@@ -93,7 +94,7 @@ export function GroupStageTable({ matches, sportName, grupo, light = false }: Gr
         fetchFairPlay();
     }, [matches]);
 
-    const standings = useMemo(() => calculateStandings(matches, sportName, fairPlayData), [matches, sportName, fairPlayData]);
+    const standings = useMemo(() => calculateStandings(matches, sportName, fairPlayData, teamIdMap), [matches, sportName, fairPlayData, teamIdMap]);
 
     const gc = GROUP_COLORS[grupo?.toUpperCase()] || DEFAULT_GROUP_COLOR;
     const played = matches.filter(m => m.estado === 'finalizado').length;
@@ -191,14 +192,43 @@ export function GroupStageTable({ matches, sportName, grupo, light = false }: Gr
                                         {/* Team name + qualify indicator */}
                                         <td className="py-3.5 px-3">
                                             <div className="flex items-center gap-2">
-                                                <span className={cn(
-                                                    "font-black text-[12px] uppercase tracking-wide truncate max-w-[160px] sm:max-w-[220px] transition-colors",
-                                                    qualified
-                                                        ? (light ? "text-slate-900" : "text-white")
-                                                        : (light ? "text-slate-400" : "text-white/40")
-                                                )}>
-                                                    {team.team}
-                                                </span>
+                                                {(() => {
+                                                    const href = team.athleteId 
+                                                        ? `/perfil/${team.athleteId}` 
+                                                        : (team.teamId ? `/carrera/${team.teamId}` : null);
+                                                    
+                                                    const content = (
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className="w-6 h-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center p-1 shrink-0 group-hover/row:scale-110 transition-transform">
+                                                                {(team as any).avatar_url ? (
+                                                                    <img src={(team as any).avatar_url} alt="" className="w-full h-full object-contain" />
+                                                                ) : (
+                                                                    <div className="text-[8px] font-black opacity-20">{team.team.substring(0,2)}</div>
+                                                                )}
+                                                            </div>
+                                                            <span className={cn(
+                                                                "font-black text-[12px] uppercase tracking-wide truncate max-w-[140px] sm:max-w-[200px] transition-all duration-300",
+                                                                qualified
+                                                                    ? (light ? "text-slate-900" : "text-white")
+                                                                    : (light ? "text-slate-400" : "text-white/40"),
+                                                                href && "group-hover/row:text-violet-400"
+                                                            )}>
+                                                                {team.team}
+                                                            </span>
+                                                        </div>
+                                                    );
+
+                                                    return href ? (
+                                                        <Link href={href} className="flex items-center gap-2 group/link -ml-2">
+                                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-violet-500/10 transition-all duration-300 border border-transparent hover:border-violet-500/20 active:scale-95">
+                                                                {content}
+                                                                <ChevronRight size={10} className="text-violet-400 opacity-0 group-hover/link:opacity-100 group-hover/link:translate-x-0.5 transition-all" />
+                                                            </div>
+                                                        </Link>
+                                                    ) : (
+                                                        <div className="px-2 py-1">{content}</div>
+                                                    );
+                                                })()}
                                                 {qualified && (
                                                     <CheckCircle2 size={12} className="text-emerald-400 shrink-0 opacity-70" />
                                                 )}
@@ -323,16 +353,23 @@ export function GroupStageTable({ matches, sportName, grupo, light = false }: Gr
                                     )}
 
                                     {/* Team A */}
-                                    <span className={cn(
-                                        "text-[10px] font-black uppercase tracking-tight truncate w-[38%] transition-colors relative z-10",
-                                        winnerA
-                                            ? (light ? "text-slate-900" : "text-white")
-                                            : isFinished
-                                                ? (light ? "text-slate-300" : "text-white/30")
-                                                : (light ? "text-slate-500" : "text-white/55 group-hover/m:text-white/80")
-                                    )}>
-                                        {teamA}
-                                    </span>
+                                    <div className="flex items-center gap-2 w-[40%] relative z-10">
+                                        <div className="w-5 h-5 rounded-md bg-white/5 border border-white/10 flex items-center justify-center p-0.5 shrink-0">
+                                            {(m.atleta_a?.avatar_url || m.carrera_a?.escudo_url || m.delegacion_a?.escudo_url || m.delegacion_a_info?.escudo_url) ? (
+                                                <img src={m.atleta_a?.avatar_url || m.carrera_a?.escudo_url || m.delegacion_a?.escudo_url || m.delegacion_a_info?.escudo_url} alt="" className="w-full h-full object-contain" />
+                                            ) : <div className="text-[6px] opacity-20">A</div>}
+                                        </div>
+                                        <span className={cn(
+                                            "text-[10px] font-black uppercase tracking-tight truncate transition-colors",
+                                            winnerA
+                                                ? (light ? "text-slate-900" : "text-white")
+                                                : isFinished
+                                                    ? (light ? "text-slate-300" : "text-white/30")
+                                                    : (light ? "text-slate-500" : "text-white/55 group-hover/m:text-white/80")
+                                        )}>
+                                            {teamA}
+                                        </span>
+                                    </div>
 
                                     {/* Score center */}
                                     <div className="flex flex-col items-center justify-center w-[24%] relative z-10 shrink-0">
@@ -369,16 +406,23 @@ export function GroupStageTable({ matches, sportName, grupo, light = false }: Gr
                                     </div>
 
                                     {/* Team B */}
-                                    <span className={cn(
-                                        "text-[10px] font-black uppercase tracking-tight truncate w-[38%] text-right transition-colors relative z-10",
-                                        winnerB
-                                            ? (light ? "text-slate-900" : "text-white")
-                                            : isFinished
-                                                ? (light ? "text-slate-300" : "text-white/30")
-                                                : (light ? "text-slate-500" : "text-white/55 group-hover/m:text-white/80")
-                                    )}>
-                                        {teamB}
-                                    </span>
+                                    <div className="flex items-center gap-2 w-[40%] justify-end relative z-10">
+                                        <span className={cn(
+                                            "text-[10px] font-black uppercase tracking-tight truncate transition-colors text-right",
+                                            winnerB
+                                                ? (light ? "text-slate-900" : "text-white")
+                                                : isFinished
+                                                    ? (light ? "text-slate-300" : "text-white/30")
+                                                    : (light ? "text-slate-500" : "text-white/55 group-hover/m:text-white/80")
+                                        )}>
+                                            {teamB}
+                                        </span>
+                                        <div className="w-5 h-5 rounded-md bg-white/5 border border-white/10 flex items-center justify-center p-0.5 shrink-0">
+                                            {(m.atleta_b?.avatar_url || m.carrera_b?.escudo_url || m.delegacion_b?.escudo_url || m.delegacion_b_info?.escudo_url) ? (
+                                                <img src={m.atleta_b?.avatar_url || m.carrera_b?.escudo_url || m.delegacion_b?.escudo_url || m.delegacion_b_info?.escudo_url} alt="" className="w-full h-full object-contain" />
+                                            ) : <div className="text-[6px] opacity-20">B</div>}
+                                        </div>
+                                    </div>
 
                                     {/* Arrow on hover */}
                                     <ChevronRight size={10} className={cn(

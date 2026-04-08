@@ -266,7 +266,9 @@ export default function PublicProfilePage() {
                 if (!statsMap[discId]) {
                     statsMap[discId] = {
                         goals: 0, pts3: 0, pts2: 0, pts1: 0,
-                        yellowCards: 0, redCards: 0, fouls: 0, totalEvents: 0
+                        yellowCards: 0, redCards: 0, fouls: 0, totalEvents: 0,
+                        puntos: 0, sets: 0, victorias: 0, empates: 0,
+                        gold: 0, silver: 0, bronze: 0,
                     };
                 }
 
@@ -280,6 +282,12 @@ export default function PublicProfilePage() {
                 if (type.includes('amarilla')) s.yellowCards++;
                 if (type.includes('roja')) s.redCards++;
                 if (type === 'falta') s.fouls++;
+                if (type === 'punto') s.puntos++;
+                if (type === 'set') s.sets++;
+                if (type === 'victoria') { if (discId) s.victorias++; else s.gold++; }
+                if (type === 'segundo') s.silver++;
+                if (type === 'tercero') s.bronze++;
+                if (type === 'empate') s.empates++;
             });
             setSportStatsMap(prev => ({ ...prev, ...statsMap }));
         } catch (err) {
@@ -515,9 +523,9 @@ export default function PublicProfilePage() {
                         </div>
 
                         {/* Text Content Hub */}
-                        <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left gap-6 w-full">
+                        <div className="flex-1 flex flex-col items-center text-center gap-6 w-full">
                             <div className="space-y-4 w-full">
-                                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+                                <div className="flex flex-wrap items-center justify-center gap-2">
                                     {profile.roles?.map((role: string) => renderRoleCard(role))}
                                     {isProjectCreator && (
                                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
@@ -547,16 +555,16 @@ export default function PublicProfilePage() {
                                 >
                                     {profile.full_name}
                                 </h1>
-                                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5 mt-2 lg:mt-4 justify-center lg:justify-start w-fit mx-auto lg:mx-0">
+                                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5 mt-2 lg:mt-4 justify-center w-fit mx-auto">
                                   <Clock size={12} className="text-white/20" />
                                   <span className="text-[10px] font-display font-black tracking-widest text-white/30 uppercase">Member Since: {memberSince}</span>
                                 </div>
                             </div>
 
                             {/* ━━━ SOCIAL ENGINE ━━━ */}
-                            <div className="flex flex-col gap-3 w-full sm:w-auto">
+                            <div className="flex flex-col gap-3 w-full sm:w-auto items-center">
                                 {/* 1. Statistical Counters (3-column grid on mobile) */}
-                                <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-stretch justify-center lg:justify-start gap-1.5 p-1 bg-black/40 border border-white/10 rounded-[2.5rem] sm:rounded-[2rem] backdrop-blur-xl shadow-2xl w-full sm:w-auto overflow-hidden">
+                                <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-stretch justify-center gap-1.5 p-1 bg-black/40 border border-white/10 rounded-[2.5rem] sm:rounded-[2rem] backdrop-blur-xl shadow-2xl w-full sm:w-auto overflow-hidden">
                                     {/* Puntos */}
                                     <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-2 sm:px-6 py-4 rounded-[2rem] sm:rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors justify-center min-w-0">
                                         <div className="p-1.5 sm:p-2 bg-violet-500/15 rounded-xl text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.1)] group-hover/stat:scale-110 transition-transform shrink-0">
@@ -590,7 +598,7 @@ export default function PublicProfilePage() {
                                 </div>
 
                                 {/* 2. Action Buttons (Separate row on mobile) */}
-                                <div className="flex gap-2 w-full">
+                                <div className="flex gap-2 w-full justify-center">
                                     {profileId === user?.id ? (
                                         <Link 
                                             href="/perfil/editar" 
@@ -711,24 +719,94 @@ export default function PublicProfilePage() {
                                         {(() => {
                                             const s = sportStatsMap[selectedSportId || ''] || {};
                                             const currentSportName = athleteDisciplinas.find(d => d.id === selectedSportId)?.name;
-                                            
+
                                             if (currentSportName === 'Baloncesto') {
                                                 return (
                                                     <div className="grid grid-cols-3 gap-3">
                                                         {[
-                                                          { val: s.pts3 || 0, label: '3PT' },
-                                                          { val: s.pts2 || 0, label: '2PT' },
-                                                          { val: s.pts1 || 0, label: 'FT' }
-                                                        ].map((s, idx) => (
+                                                          { val: s.pts3 || 0, label: '3PT', color: 'text-amber-400' },
+                                                          { val: s.pts2 || 0, label: '2PT', color: 'text-amber-400' },
+                                                          { val: s.pts1 || 0, label: 'FT', color: 'text-amber-400' }
+                                                        ].map((st, idx) => (
                                                           <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
-                                                              <p className="text-2xl font-black font-mono text-amber-400 mb-1 drop-shadow-md">{s.val}</p>
-                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{s.label}</p>
+                                                              <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
+                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{st.label}</p>
                                                           </div>
                                                         ))}
                                                     </div>
                                                 );
                                             }
-                                            
+
+                                            if (currentSportName === 'Voleibol') {
+                                                const total = (s.wins || 0) + (s.losses || 0);
+                                                return (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {[
+                                                          { val: s.puntos || 0, label: 'Puntos', color: 'text-sky-400' },
+                                                          { val: total, label: 'Partidos', color: 'text-white/70' },
+                                                          { val: s.wins || 0, label: 'Ganados', color: 'text-emerald-400' },
+                                                        ].map((st, idx) => (
+                                                          <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
+                                                              <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
+                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{st.label}</p>
+                                                          </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (currentSportName === 'Tenis' || currentSportName === 'Tenis de Mesa') {
+                                                return (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {[
+                                                          { val: s.wins || 0, label: 'Victorias', color: 'text-emerald-400' },
+                                                          { val: s.sets || 0, label: 'Sets', color: 'text-lime-400' },
+                                                          { val: s.losses || 0, label: 'Derrotas', color: 'text-rose-400' },
+                                                        ].map((st, idx) => (
+                                                          <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
+                                                              <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
+                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{st.label}</p>
+                                                          </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (currentSportName === 'Ajedrez') {
+                                                return (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {[
+                                                          { val: s.wins || 0, label: 'Victorias', color: 'text-emerald-400' },
+                                                          { val: s.empates || 0, label: 'Empates', color: 'text-amber-400' },
+                                                          { val: s.losses || 0, label: 'Derrotas', color: 'text-rose-400' },
+                                                        ].map((st, idx) => (
+                                                          <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
+                                                              <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
+                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{st.label}</p>
+                                                          </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (currentSportName === 'Natación') {
+                                                return (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {[
+                                                          { val: s.gold || 0, label: '1er Lugar', color: 'text-amber-400' },
+                                                          { val: s.silver || 0, label: '2do Lugar', color: 'text-slate-300' },
+                                                          { val: s.bronze || 0, label: '3er Lugar', color: 'text-orange-400' },
+                                                        ].map((st, idx) => (
+                                                          <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
+                                                              <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
+                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{st.label}</p>
+                                                          </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Default: Fútbol (Goles + Tarjetas)
                                             return (
                                                 <div className="flex items-center justify-around py-5">
                                                     <div className="flex flex-col items-center group/item">

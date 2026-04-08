@@ -18,22 +18,26 @@ CREATE INDEX IF NOT EXISTS idx_news_reactions_noticia ON public.news_reactions(n
 -- RLS
 ALTER TABLE public.news_reactions ENABLE ROW LEVEL SECURITY;
 
--- Anyone can read reactions (public counts)
+-- Anyone can view reactions (public counts)
+DROP POLICY IF EXISTS "Anyone can view reactions" ON public.news_reactions;
 CREATE POLICY "Anyone can view reactions"
     ON public.news_reactions FOR SELECT
     USING (true);
 
 -- Authenticated users can insert their own reactions
+DROP POLICY IF EXISTS "Users can insert own reactions" ON public.news_reactions;
 CREATE POLICY "Users can insert own reactions"
     ON public.news_reactions FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
 -- Authenticated users can update their own reactions (switch emoji)
+DROP POLICY IF EXISTS "Users can update own reactions" ON public.news_reactions;
 CREATE POLICY "Users can update own reactions"
     ON public.news_reactions FOR UPDATE
     USING (auth.uid() = user_id);
 
 -- Authenticated users can delete their own reactions
+DROP POLICY IF EXISTS "Users can delete own reactions" ON public.news_reactions;
 CREATE POLICY "Users can delete own reactions"
     ON public.news_reactions FOR DELETE
     USING (auth.uid() = user_id);

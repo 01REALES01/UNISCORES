@@ -41,8 +41,9 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
         SPORT_GLOW[sportName] || 'hover:shadow-indigo-500/10'
       )}>
         <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-50 group-hover:opacity-70 transition-opacity`} />
-        <div className="absolute -bottom-6 -right-6 pointer-events-none select-none group-hover:scale-110 transition-transform duration-700 origin-bottom-right">
-          <SportIcon sport={sportName} size={150} className={cn("opacity-[0.12] group-hover:opacity-[0.25] transition-all duration-500 drop-shadow-[0_0_30px_currentColor]", SPORT_ACCENT[sportName] || 'text-white')} />
+        {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
+        <div className="absolute -right-[10%] -bottom-[10%] flex items-center justify-center pointer-events-none select-none opacity-[0.15] group-hover:opacity-[0.25] transition-all duration-1000 rotate-[-12deg] z-0">
+          <SportIcon sport={sportName} size={220} className={cn("transition-all duration-[1500ms] group-hover:scale-110 group-hover:rotate-[5deg]", SPORT_ACCENT[sportName] || 'text-white')} />
         </div>
 
         <div className="relative p-5 flex flex-col h-full">
@@ -240,8 +241,9 @@ export function UpcomingMatchCard({ partido }: { partido: Partido }) {
     <Link href={`/partido/${partido.id}`} className="group block">
       <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 hover:bg-black/30 shadow-[0_4px_20px_rgba(0,0,0,0.35)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:border-white/20 transition-all duration-300 p-3 sm:p-4 hover:-translate-y-1 cursor-pointer">
         <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-30 group-hover:opacity-50 transition-opacity`} />
-        <div className="absolute -bottom-3 -right-3 pointer-events-none select-none group-hover:scale-110 transition-transform duration-500">
-          <SportIcon sport={sportName} size={70} className={cn("opacity-[0.12] group-hover:opacity-[0.20] transition-all duration-500", SPORT_ACCENT[sportName] || 'text-white')} />
+        {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
+        <div className="absolute -right-[12%] -bottom-[12%] flex items-center justify-center pointer-events-none select-none opacity-[0.1] group-hover:opacity-[0.2] transition-all duration-1000 rotate-[-12deg] z-0 text-white">
+          <SportIcon sport={sportName} size={120} className="transition-all duration-[1500ms] group-hover:scale-110 group-hover:rotate-[5deg]" />
         </div>
 
         <div className="relative z-10 flex items-center justify-between mb-2 pb-2 border-b border-white/5">
@@ -330,8 +332,9 @@ export function ResultCard({ partido }: { partido: Partido }) {
     <Link href={`/partido/${partido.id}`} className="group block">
       <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 hover:bg-black/30 shadow-[0_4px_20px_rgba(0,0,0,0.35)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:border-white/20 transition-all duration-300 p-3 sm:p-4 hover:-translate-y-1 cursor-pointer">
         <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-30 group-hover:opacity-50 transition-opacity`} />
-        <div className="absolute -bottom-3 -right-3 pointer-events-none select-none group-hover:scale-110 transition-transform duration-500">
-          <SportIcon sport={sportName} size={70} className={cn("opacity-[0.12] group-hover:opacity-[0.20] transition-all duration-500", SPORT_ACCENT[sportName] || 'text-white')} />
+        {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
+        <div className="absolute -right-[12%] -bottom-[12%] flex items-center justify-center pointer-events-none select-none opacity-[0.1] group-hover:opacity-[0.2] transition-all duration-1000 rotate-[-12deg] z-0 text-white">
+          <SportIcon sport={sportName} size={120} className="transition-all duration-[1500ms] group-hover:scale-110 group-hover:rotate-[5deg]" />
         </div>
 
         <div className="relative z-10 flex items-center justify-between mb-2 pb-2 border-b border-white/5">

@@ -6,12 +6,13 @@ import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { Noticia, NewsListCard } from "@/components/news-card";
 import { Avatar, Button } from "@/components/ui-primitives";
-import { ArrowLeft, Clock, GraduationCap, MapPin, Share2, ChevronRight } from "lucide-react";
+import { ArrowLeft, Clock, GraduationCap, MapPin, Share2, ChevronRight, Calendar, Zap } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
 import { NewsReactions } from "@/components/news-reactions";
 import UniqueLoading from "@/components/ui/morph-loading";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
     cronica: { label: 'Crónica', color: 'text-blue-400', bg: 'bg-blue-500/15 border-blue-500/20' },
@@ -81,6 +82,18 @@ export default function NoticiaDetailPage() {
         }
     };
 
+    useEffect(() => {
+        const handleScroll = () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            const el = document.getElementById('reading-progress');
+            if (el) el.style.width = scrolled + '%';
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white">
@@ -111,169 +124,283 @@ export default function NoticiaDetailPage() {
     const paragraphs = content.split(/\n\n+/).filter(Boolean);
 
     return (
-        <div className="min-h-screen bg-background text-white selection:bg-red-500/30">
+        <div className="min-h-screen bg-background text-white selection:bg-red-500/30 font-sans overflow-x-hidden">
+            {/* Ambient Background Glows */}
+            <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[120px] -z-10 animate-pulse" />
+            <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-violet-600/5 rounded-full blur-[120px] -z-10" />
+
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5">
-                <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <Link href="/noticias">
-                        <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full">
-                            <ArrowLeft size={20} />
-                        </Button>
-                    </Link>
-                    <button onClick={handleShare} className="p-2 rounded-full hover:bg-white/10 transition-colors">
-                        <Share2 size={18} className="text-white/50" />
+            <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-2xl border-b border-white/5 transition-all duration-300">
+                {/* Reading Progress Bar */}
+                <div className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-violet-600 to-red-600 transition-all duration-150 ease-out z-50" id="reading-progress" style={{ width: '0%' }} />
+                
+                <div className="max-w-5xl mx-auto px-6 h-16 sm:h-20 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <SafeBackButton fallback="/noticias" />
+                        <div className="hidden sm:block h-6 w-[1px] bg-white/10" />
+                        <div className="hidden sm:flex items-center gap-2">
+                             <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Lectura en curso</span>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={handleShare} 
+                        className="p-3 rounded-2xl bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2 group"
+                    >
+                        <Share2 size={16} className="group-hover:scale-110 transition-transform" />
+                        <span className="text-xs font-bold hidden sm:inline">Compartir</span>
                     </button>
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto px-4 pt-20 pb-16">
-                {/* Hero Image */}
-                {noticia.imagen_url && (
-                    <div className="relative h-[300px] sm:h-[450px] rounded-3xl overflow-hidden mb-8 border border-white/5">
-                        <img
-                            src={noticia.imagen_url}
-                            alt={noticia.titulo}
-                            className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0805] via-transparent to-transparent" />
-                    </div>
-                )}
+            <main className="max-w-4xl mx-auto px-6 pt-28 sm:pt-40 pb-24 relative">
 
-                {/* Meta */}
-                <div className="flex flex-wrap items-center gap-3 mb-4">
-                    <span className={cn("inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border", cat.bg, cat.color)}>
-                        {cat.label}
-                    </span>
-                    {noticia.carrera && (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-white/40 bg-white/5 rounded-full px-3 py-1.5 border border-white/5">
-                            <GraduationCap size={13} /> {noticia.carrera}
-                        </span>
+                <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                    {/* Meta & Category Info */}
+                    <div className="flex flex-wrap items-center gap-3 mb-8">
+                        <div className={cn(
+                            "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] border shadow-lg", 
+                            cat.bg, cat.color
+                        )}>
+                            <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                            {cat.label}
+                        </div>
+                        {noticia.carrera && (
+                            <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/50 bg-white/5 rounded-xl px-4 py-2 border border-white/5 backdrop-blur-md">
+                                <GraduationCap size={14} className="text-violet-400" /> 
+                                {noticia.carrera}
+                            </div>
+                        )}
+                        <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/30 px-3">
+                            <Clock size={14} /> {readTime} min
+                        </div>
+                    </div>
+
+                    {/* Title Section */}
+                    <h1 className="text-4xl sm:text-6xl md:text-7xl font-black leading-[1.05] tracking-tighter mb-10 text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 drop-shadow-2xl">
+                        {noticia.titulo}
+                    </h1>
+
+                    {/* Author Footer */}
+                    <div className="flex items-center gap-5 mb-12 sm:mb-20">
+                        <div className="p-1 rounded-[1.8rem] bg-gradient-to-br from-white/10 via-white/5 to-transparent border border-white/10 shadow-2xl backdrop-blur-3xl group cursor-pointer hover:border-violet-500/50 transition-all duration-500 animate-in fade-in slide-in-from-left-4">
+                            <div className="flex items-center gap-4 py-2 px-3 pr-6">
+                                <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center overflow-hidden border border-white/5 shadow-inner transition-transform group-hover:scale-110">
+                                    <Avatar name={noticia.autor_nombre} className="w-full h-full text-lg font-black bg-white/5 text-white/40" />
+                                </div>
+                                <div className="flex flex-col">
+                                    {noticia.autor_nombre.toLowerCase() !== 'redacción' && noticia.autor_nombre.toLowerCase() !== 'redaccion' ? (
+                                        <>
+                                            <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-1">Autor</span>
+                                            <span className="text-xs sm:text-sm font-black text-white group-hover:text-violet-400 transition-colors uppercase tracking-widest">{noticia.autor_nombre}</span>
+                                        </>
+                                    ) : (
+                                        <span className="text-xs sm:text-sm font-black text-white group-hover:text-violet-400 transition-colors uppercase tracking-[0.3em]">Redacción</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="h-10 w-[1px] bg-white/5 ml-auto" />
+                        <div className="text-right flex flex-col items-end">
+                            <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-1">Publicado</span>
+                            <span className="text-[10px] sm:text-[11px] font-black text-white/60 uppercase tracking-widest">{formattedDate}</span>
+                        </div>
+                    </div>
+
+                    {/* Hero Image - High Impact */}
+                    {noticia.imagen_url && (
+                        <div className="relative aspect-[16/10] sm:aspect-[21/9] rounded-[2.5rem] overflow-hidden mb-16 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-white/5 group">
+                            <img
+                                src={noticia.imagen_url}
+                                alt={noticia.titulo}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-60" />
+                            
+                            {/* Decorative corner glow */}
+                            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-red-600/20 blur-3xl rounded-full" />
+                        </div>
+                    )}
+
+                    {/* Associated Match Card - Premium Redesign */}
+                    {noticia.partidos && (
+                        <Link href={`/partido/${noticia.partido_id}`}>
+                            <div className="relative mb-16 group">
+                                {/* Border glow on hover */}
+                                <div className="absolute -inset-[1px] bg-gradient-to-r from-violet-600/0 via-violet-600/50 to-violet-600/0 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity blur-[2px]" />
+                                
+                                <div className="relative bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[2rem] p-6 sm:p-8 flex flex-col md:flex-row items-center gap-8 shadow-2xl overflow-hidden transition-all duration-500 hover:bg-white/[0.06] hover:translate-y-[-4px]">
+                                    
+                                    {/* Left Status Pillar */}
+                                    <div className="flex flex-col items-center justify-center text-center px-4 md:border-r border-white/10 shrink-0 min-w-[100px]">
+                                        {noticia.partidos.estado === 'programado' ? (
+                                            <>
+                                                <Calendar size={18} className="text-violet-400 mb-2" />
+                                                <span className="text-lg font-black text-white">
+                                                    {noticia.partidos.fecha ? new Date(noticia.partidos.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                </span>
+                                                <span className="text-[10px] font-black text-white/30 uppercase tracking-widest mt-1">
+                                                    {noticia.partidos.fecha ? new Date(noticia.partidos.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '--'}
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className={cn(
+                                                    "px-3 py-1 rounded-full text-[9px] font-black tracking-[0.2em] mb-3",
+                                                    noticia.partidos.estado === 'en_curso' ? 'bg-red-500/20 text-red-500 animate-pulse border border-red-500/20' : 'bg-white/5 text-white/40 border border-white/10'
+                                                )}>
+                                                    {noticia.partidos.estado === 'en_curso' ? 'EN VIVO' : 'FINALIZADO'}
+                                                </div>
+                                                <Zap size={18} className={cn("mb-2", noticia.partidos.estado === 'en_curso' ? 'text-red-500' : 'text-white/20')} />
+                                                <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">RESULTADO</span>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Scoreline Center */}
+                                    <div className="flex-1 flex items-center justify-around w-full relative">
+                                        {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
+                                        <div className="absolute -right-[10%] -bottom-[15%] flex items-center justify-center pointer-events-none select-none opacity-[0.08] group-hover:opacity-[0.12] transition-all duration-1000 rotate-[-15deg] -z-0">
+                                            <SportIcon sport={noticia.partidos.disciplinas?.name} size={240} className="transition-all duration-[1500ms] group-hover:scale-110 group-hover:rotate-[5deg]" />
+                                        </div>
+
+                                        {/* Team A */}
+                                        <div className="flex flex-col items-center gap-4 flex-1 text-center group/team">
+                                            <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-3xl bg-black/60 border border-white/10 flex items-center justify-center p-4 shadow-2xl group-hover/team:scale-110 group-hover/team:shadow-violet-500/20 transition-all duration-700 relative overflow-hidden">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover/team:opacity-100 transition-opacity" />
+                                                <img src={noticia.partidos.carrera_a?.escudo_url || '/placeholder-team.png'} alt="" className="w-full h-full object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] relative z-10" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Local</span>
+                                                <span className="block text-xs sm:text-base font-black uppercase tracking-tight max-w-[140px] line-clamp-1 group-hover/team:text-violet-400 transition-colors">{noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* VS / SCORE */}
+                                        <div className="flex flex-col items-center px-4">
+                                            {noticia.partidos.estado === 'programado' ? (
+                                                <div className="text-2xl italic font-black text-white/10">VS</div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 sm:gap-4 font-mono text-34xl sm:text-5xl font-black tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                                                    <span>{(noticia.partidos.marcador_detalle?.goles_a ?? noticia.partidos.marcador_detalle?.sets_a ?? noticia.partidos.marcador_detalle?.total_a ?? 0)}</span>
+                                                    <span className="text-white/10 font-sans text-xl sm:text-2xl">-</span>
+                                                    <span>{(noticia.partidos.marcador_detalle?.goles_b ?? noticia.partidos.marcador_detalle?.sets_b ?? noticia.partidos.marcador_detalle?.total_b ?? 0)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Team B */}
+                                        <div className="flex flex-col items-center gap-4 flex-1 text-center group/team">
+                                            <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-3xl bg-black/60 border border-white/10 flex items-center justify-center p-4 shadow-2xl group-hover/team:scale-110 group-hover/team:shadow-violet-500/20 transition-all duration-700 relative overflow-hidden">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover/team:opacity-100 transition-opacity" />
+                                                <img src={noticia.partidos.carrera_b?.escudo_url || '/placeholder-team.png'} alt="" className="w-full h-full object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] relative z-10" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Visitante</span>
+                                                <span className="block text-xs sm:text-base font-black uppercase tracking-tight max-w-[140px] line-clamp-1 group-hover/team:text-violet-400 transition-colors">{noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Right Action Pillar */}
+                                    <div className="hidden lg:flex flex-col items-end gap-3 px-4 shrink-0">
+                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-violet-400">
+                                            <SportIcon sport={noticia.partidos.disciplinas?.name} size={14} className="opacity-70" />
+                                            {noticia.partidos.disciplinas?.name}
+                                        </div>
+                                        <Button variant="outline" className="rounded-xl h-9 px-6 text-[9px] font-black uppercase tracking-widest bg-white/5 border-white/10 hover:bg-violet-600 hover:text-white hover:border-violet-500 hover:shadow-[0_0_20px_rgba(124,58,237,0.3)] transition-all">
+                                            Ver Partido
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </Link>
+                    )}
+
+                    {/* Main Content Article */}
+                    <article className="relative">
+                        {/* Decorative Vertical Line */}
+                        <div className="absolute left-[-30px] top-0 bottom-0 w-[1px] bg-gradient-to-b from-violet-500/20 via-white/5 to-transparent hidden md:block" />
+
+                        <div className="prose prose-invert prose-p:text-white/70 prose-p:leading-relaxed prose-p:text-lg sm:prose-p:text-xl prose-p:font-medium prose-p:mb-8 sm:prose-p:mb-10 prose-headings:font-black prose-headings:tracking-tighter prose-strong:text-white prose-strong:font-black max-w-none">
+                            {paragraphs.map((p, i) => {
+                                // Formatting helpers
+                                const formatted = p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                                
+                                // Editorial Headers
+                                if (p.startsWith('### ')) {
+                                    return <h3 key={i} className="text-2xl sm:text-3xl font-black text-white mt-12 mb-6 group flex items-center gap-4">
+                                        <div className="w-8 h-1 bg-violet-600 rounded-full group-hover:w-12 transition-all" />
+                                        {p.replace('### ', '')}
+                                    </h3>;
+                                }
+                                if (p.startsWith('## ')) {
+                                    return <h2 key={i} className="text-3xl sm:text-4xl font-black text-white mt-16 mb-8 border-l-4 border-red-500 pl-6 drop-shadow-lg">
+                                        {p.replace('## ', '')}
+                                    </h2>;
+                                }
+
+                                // Special Blockquote styling if a paragraph is short and starts with "
+                                if (p.length < 200 && p.startsWith('"')) {
+                                   return (
+                                        <div key={i} className="my-12 sm:my-16 px-8 sm:px-12 py-10 rounded-[2rem] bg-gradient-to-br from-white/[0.05] to-transparent border-l-8 border-violet-600 relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 p-8 text-8xl font-black font-serif text-white/5 select-none transition-transform group-hover:scale-110">”</div>
+                                            <p className="text-2xl sm:text-3xl italic font-black text-white/90 leading-tight relative z-10">
+                                                {p.replace(/^"|"$/g, '')}
+                                            </p>
+                                        </div>
+                                   );
+                                }
+
+                                // Drop Cap for the first paragraph
+                                if (i === 0) {
+                                    return (
+                                        <p
+                                            key={i}
+                                            className="first-letter:text-7xl first-letter:font-black first-letter:mr-4 first-letter:float-left first-letter:text-violet-500 first-letter:font-sans first-line:uppercase first-line:tracking-widest first-line:text-sm first-line:font-black first-line:text-white/40"
+                                            dangerouslySetInnerHTML={{ __html: formatted }}
+                                        />
+                                    );
+                                }
+
+                                return (
+                                    <p
+                                        key={i}
+                                        dangerouslySetInnerHTML={{ __html: formatted }}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </article>
+
+                    {/* Interaction Area */}
+                    <div className="mt-20 pt-16 border-t border-white/5">
+                        <NewsReactions noticiaId={id} />
+                    </div>
+
+                    {/* Related Post Grids */}
+                    {related.length > 0 && (
+                        <div className="mt-24 pt-20 border-t border-white/5 space-y-12">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-xl font-black uppercase tracking-tighter text-white">
+                                    Historias Relacionadas
+                                </h2>
+                                <Link href="/noticias">
+                                    <Button variant="ghost" size="sm" className="text-white/40 hover:text-white hover:bg-white/5 text-[10px] font-black uppercase tracking-widest">
+                                        Ver Todo <ChevronRight size={14} className="ml-2" />
+                                    </Button>
+                                </Link>
+                            </div>
+                            <div className="grid grid-cols-1 gap-4">
+                                {related.map(n => (
+                                    <div key={n.id} className="hover:translate-x-2 transition-transform duration-500">
+                                        <NewsListCard noticia={n} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     )}
                 </div>
-
-                {/* Title */}
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black leading-tight tracking-tight mb-6">
-                    {noticia.titulo}
-                </h1>
-
-                {/* Author & Date */}
-                <div className="flex flex-wrap items-center gap-4 text-sm text-white/40 font-bold mb-10 pb-8 border-b border-white/5">
-                    <span className="text-white/60">{noticia.autor_nombre}</span>
-                    <span>·</span>
-                    <span className="capitalize">{formattedDate}</span>
-                    <span>·</span>
-                    <span className="flex items-center gap-1"><Clock size={13} /> {readTime} min lectura</span>
-                </div>
-
-                {/* Associated Match Card */}
-                {noticia.partidos && (
-                    <Link href={`/partido/${noticia.partido_id}`}>
-                        <div className="flex items-center justify-between w-full bg-background/80 border border-white/5 rounded-2xl p-4 sm:p-5 mb-10 hover:bg-white/5 hover:border-white/10 transition-all group overflow-hidden relative shadow-lg">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-
-                            {/* Left: Time & Day or Status */}
-                            <div className="flex flex-col items-center justify-center border-r border-white/10 pr-3 sm:pr-6 shrink-0 w-[20%] sm:w-[15%] relative z-10">
-                                {noticia.partidos.estado === 'programado' ? (
-                                    <>
-                                        <span className="text-sm font-black text-white">
-                                            {noticia.partidos.fecha ? new Date(noticia.partidos.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                                        </span>
-                                        <span className="text-[9px] font-bold text-white/50 uppercase mt-0.5">
-                                            {noticia.partidos.fecha ? new Date(noticia.partidos.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '--'}
-                                        </span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className={cn("text-[10px] sm:text-xs font-black tracking-widest uppercase", noticia.partidos.estado === 'en_curso' ? 'text-rose-500 animate-pulse' : 'text-white/60')}>
-                                            {noticia.partidos.estado === 'en_curso' ? 'EN CURSO' : 'FINAL'}
-                                        </span>
-                                        <span className="text-[9px] font-bold text-white/30 uppercase mt-1">
-                                            {noticia.partidos.fecha ? new Date(noticia.partidos.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '--'}
-                                        </span>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* Middle: Teams */}
-                            <div className="flex items-center justify-center gap-1 sm:gap-4 flex-1 px-1 sm:px-4 relative z-10">
-                                <div className="flex items-center justify-end gap-2 sm:gap-3 flex-1">
-                                    <span className="text-xs sm:text-sm font-black truncate text-right">{noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a}</span>
-                                    <Avatar name={noticia.partidos.carrera_a?.nombre || noticia.partidos.equipo_a} src={noticia.partidos.carrera_a?.escudo_url} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-background text-[10px]" />
-                                </div>
-
-                                {noticia.partidos.estado === 'programado' ? (
-                                    <div className="text-[9px] font-black text-white/20 uppercase px-1 sm:px-2 py-0.5 rounded shrink-0">
-                                        VS
-                                    </div>
-                                ) : (
-                                    <div className={cn("flex items-center text-sm sm:text-xl font-black tabular-nums tracking-tighter shrink-0 px-2", noticia.partidos.estado === 'en_curso' ? 'text-rose-500' : 'text-white/90')}>
-                                        <span>{(noticia.partidos.marcador_detalle?.goles_a ?? noticia.partidos.marcador_detalle?.sets_a ?? noticia.partidos.marcador_detalle?.total_a ?? 0)}</span>
-                                        <span className="text-white/20 mx-1 font-medium">-</span>
-                                        <span>{(noticia.partidos.marcador_detalle?.goles_b ?? noticia.partidos.marcador_detalle?.sets_b ?? noticia.partidos.marcador_detalle?.total_b ?? 0)}</span>
-                                    </div>
-                                )}
-
-                                <div className="flex items-center justify-start gap-2 sm:gap-3 flex-1">
-                                    <Avatar name={noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b} src={noticia.partidos.carrera_b?.escudo_url} className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 bg-background text-[10px]" />
-                                    <span className="text-xs sm:text-sm font-black truncate text-left">{noticia.partidos.carrera_b?.nombre || noticia.partidos.equipo_b}</span>
-                                </div>
-                            </div>
-
-                            {/* Right: Tournament & Button */}
-                            <div className="hidden md:flex flex-col items-start border-l border-white/10 pl-6 w-[25%] shrink-0 gap-1.5 relative z-10">
-                                <span className="text-xs font-bold text-white flex items-center gap-2">
-                                    <SportIcon sport={noticia.partidos.disciplinas?.name} size={14} className="text-white/60" /> {noticia.partidos.disciplinas?.name}
-                                </span>
-                                <span className="text-[10px] text-white/40 truncate max-w-[150px] flex items-center gap-1.5">
-                                    <MapPin size={10} /> {noticia.partidos.lugar || 'Sede UNINORTE'}
-                                </span>
-                            </div>
-
-                            <div className="ml-2 sm:ml-4 flex shrink-0 relative z-10">
-                                <div className="px-4 py-2 text-[10px] font-bold text-white uppercase tracking-wider bg-white/5 border border-white/10 rounded-full group-hover:bg-white/10 transition-colors">
-                                    Details
-                                </div>
-                            </div>
-                        </div>
-                    </Link>
-                )}
-
-                {/* Content */}
-                <article className="prose prose-invert max-w-none">
-                    {paragraphs.map((p, i) => {
-                        // Check for bold markers **text**
-                        const formatted = p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                        // Check for headers (lines starting with ## or ###)
-                        if (p.startsWith('### ')) {
-                            return <h3 key={i} className="text-lg font-black text-white/90 mt-8 mb-3">{p.replace('### ', '')}</h3>;
-                        }
-                        if (p.startsWith('## ')) {
-                            return <h2 key={i} className="text-xl font-black text-white/90 mt-10 mb-4">{p.replace('## ', '')}</h2>;
-                        }
-                        return (
-                            <p
-                                key={i}
-                                className="text-base sm:text-lg leading-relaxed text-white/70 mb-5"
-                                dangerouslySetInnerHTML={{ __html: formatted }}
-                            />
-                        );
-                    })}
-                </article>
-
-                {/* Reactions */}
-                <NewsReactions noticiaId={id} />
-
-                {/* Related News */}
-                {related.length > 0 && (
-                    <div className="mt-16 pt-10 border-t border-white/5">
-                        <h2 className="text-sm font-black uppercase tracking-widest text-white/30 mb-6">
-                            Más Noticias
-                        </h2>
-                        <div className="flex flex-col gap-3">
-                            {related.map(n => <NewsListCard key={n.id} noticia={n} />)}
-                        </div>
-                    </div>
-                )}
             </main>
         </div>
     );

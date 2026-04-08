@@ -85,7 +85,7 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
         const previousReaction = userReaction;
 
         if (previousReaction === emoji) {
-            // Same → remove
+            // Remove
             setUserReaction(null);
             setCounts((prev) => {
                 const next = { ...prev, [emoji]: Math.max(0, (prev[emoji] || 0) - 1) };
@@ -100,55 +100,44 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
                 .eq("user_id", user.id);
 
             if (error) {
+                console.error("Delete reaction error:", error);
                 setUserReaction(previousReaction);
                 setCounts((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
-                toast.error("Error al quitar reacción");
+                toast.error(`Error al quitar reacción: ${error.message || 'Error desconocido'}`);
             }
-        } else if (previousReaction) {
-            // Switch
+        } else {
+            // Upsert (New or Switch)
             setUserReaction(emoji);
             setCounts((prev) => {
-                const next = {
-                    ...prev,
-                    [previousReaction]: Math.max(0, (prev[previousReaction] || 0) - 1),
-                    [emoji]: (prev[emoji] || 0) + 1,
-                };
-                if (next[previousReaction] === 0) delete next[previousReaction];
+                const next = { ...prev };
+                if (previousReaction) {
+                    next[previousReaction] = Math.max(0, (prev[previousReaction] || 0) - 1);
+                    if (next[previousReaction] === 0) delete next[previousReaction];
+                }
+                next[emoji] = (prev[emoji] || 0) + 1;
                 return next;
             });
 
             const { error } = await supabase
                 .from("news_reactions")
-                .update({ emoji })
-                .eq("noticia_id", noticiaId)
-                .eq("user_id", user.id);
+                .upsert(
+                    { noticia_id: noticiaId, user_id: user.id, emoji },
+                    { onConflict: 'noticia_id,user_id' }
+                );
 
             if (error) {
+                console.error("Upsert reaction error:", error);
                 setUserReaction(previousReaction);
-                setCounts((prev) => ({
-                    ...prev,
-                    [previousReaction]: (prev[previousReaction] || 0) + 1,
-                    [emoji]: Math.max(0, (prev[emoji] || 0) - 1),
-                }));
-                toast.error("Error al cambiar reacción");
-            }
-        } else {
-            // New
-            setUserReaction(emoji);
-            setCounts((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
-
-            const { error } = await supabase
-                .from("news_reactions")
-                .insert({ noticia_id: noticiaId, user_id: user.id, emoji });
-
-            if (error) {
-                setUserReaction(null);
                 setCounts((prev) => {
-                    const next = { ...prev, [emoji]: Math.max(0, (prev[emoji] || 0) - 1) };
+                    const next = { ...prev };
+                    if (previousReaction) {
+                        next[previousReaction] = (prev[previousReaction] || 0) + 1;
+                    }
+                    next[emoji] = Math.max(0, (next[emoji] || 0) - 1);
                     if (next[emoji] === 0) delete next[emoji];
                     return next;
                 });
-                toast.error("Error al reaccionar");
+                toast.error(`Error al reaccionar: ${error.message || 'Error desconocido'}`);
             }
         }
     };
@@ -167,105 +156,111 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
     );
 
     return (
-        <div className="mt-10 pt-8 border-t border-white/5">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30 mb-4">
-                ¿Qué te pareció?
-            </p>
-
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                {sortedEmojis.map((emoji) => {
-                    const isActive = userReaction === emoji;
-                    const count = counts[emoji] || 0;
-                    const isAnimating = animating === emoji;
-
-                    return (
-                        <button
-                            key={emoji}
-                            onClick={() => toggleReaction(emoji)}
-                            disabled={loading}
-                            className={cn(
-                                "relative flex items-center gap-1.5 px-3 py-2 rounded-full border text-sm font-bold transition-all duration-300 select-none",
-                                "hover:scale-105 active:scale-95",
-                                isActive
-                                    ? "bg-white/10 border-white/20 text-white shadow-[0_0_15px_rgba(255,255,255,0.08)] ring-1 ring-white/10"
-                                    : "bg-white/[0.03] border-white/5 text-white/50 hover:bg-white/[0.07] hover:border-white/10",
-                                loading && "opacity-50 pointer-events-none"
-                            )}
-                        >
-                            <span
-                                className={cn(
-                                    "text-lg transition-transform duration-300",
-                                    isAnimating && "animate-bounce"
-                                )}
-                            >
-                                {emoji}
-                            </span>
-                            {count > 0 && (
-                                <span
-                                    className={cn(
-                                        "tabular-nums text-xs font-black transition-colors",
-                                        isActive ? "text-white" : "text-white/40"
-                                    )}
-                                >
-                                    {count}
-                                </span>
-                            )}
-                        </button>
-                    );
-                })}
-
-                {/* "+" Picker Button */}
-                <div className="relative" ref={pickerRef}>
-                    <button
-                        onClick={() => setPickerOpen(!pickerOpen)}
-                        disabled={loading}
-                        className={cn(
-                            "flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-300 select-none",
-                            "hover:scale-105 active:scale-95",
-                            pickerOpen
-                                ? "bg-white/10 border-white/20 text-white"
-                                : "bg-white/[0.03] border-white/5 text-white/30 hover:bg-white/[0.07] hover:text-white/60",
-                            loading && "opacity-50 pointer-events-none"
-                        )}
-                        title="Más emojis"
-                    >
-                        <Plus
-                            size={16}
-                            className={cn(
-                                "transition-transform duration-300",
-                                pickerOpen && "rotate-45"
-                            )}
-                        />
-                    </button>
-
-                    {/* emoji-mart Full Picker — carga lazy cuando se abre */}
-                    {pickerOpen && (
-                        <div className="absolute bottom-full mb-2 right-0 z-50">
-                            <Picker
-                                data={emojiData ?? getEmojiData}
-                                onEmojiSelect={(emoji: any) => toggleReaction(emoji.native)}
-                                theme="dark"
-                                locale="es"
-                                previewPosition="none"
-                                skinTonePosition="none"
-                                maxFrequentRows={1}
-                                perLine={8}
-                                emojiSize={28}
-                                emojiButtonSize={36}
-                                icons="outline"
-                                set="native"
-                            />
-                        </div>
+        <div className="mt-20 pt-12 border-t border-white/5">
+            <div className="flex flex-col items-center gap-8">
+                <div className="text-center space-y-2">
+                    <h4 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.4em] text-white/30 drop-shadow-sm">
+                        ¿Qué te pareció esta noticia?
+                    </h4>
+                    {totalReactions > 0 && (
+                        <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest bg-emerald-500/5 px-4 py-1.5 rounded-full border border-emerald-500/10 inline-block">
+                            {totalReactions} {totalReactions === 1 ? "interacción" : "interacciones"}
+                        </p>
                     )}
                 </div>
-            </div>
 
-            {totalReactions > 0 && (
-                <p className="text-[11px] text-white/20 font-bold mt-3">
-                    {totalReactions}{" "}
-                    {totalReactions === 1 ? "reacción" : "reacciones"}
-                </p>
-            )}
+                <div className="relative p-2 sm:p-3 bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[2.5rem] shadow-2xl flex items-center justify-center gap-1.5 sm:gap-3 transition-all duration-500 hover:bg-white/[0.05] hover:border-white/20">
+                    {/* Inner Glow Overlay */}
+                    <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+
+                    {sortedEmojis.map((emoji) => {
+                        const isActive = userReaction === emoji;
+                        const count = counts[emoji] || 0;
+                        const isAnimating = animating === emoji;
+
+                        return (
+                            <button
+                                key={emoji}
+                                onClick={() => toggleReaction(emoji)}
+                                disabled={loading}
+                                className={cn(
+                                    "relative flex flex-col items-center gap-1 min-w-[50px] sm:min-w-[65px] py-4 rounded-2xl transition-all duration-500 group/reaction h-full overflow-hidden",
+                                    isActive 
+                                        ? "bg-white shadow-[0_10px_40px_rgba(255,255,255,0.25)] scale-[1.05] z-10" 
+                                        : "hover:bg-white/5 active:scale-95"
+                                )}
+                            >
+                                <span className={cn(
+                                    "text-2xl sm:text-3xl transition-all duration-500",
+                                    isAnimating ? "scale-150 rotate-12" : "group-hover/reaction:scale-125 group-hover/reaction:-rotate-6",
+                                    isActive ? "filter-none" : "grayscale opacity-60 group-hover/reaction:grayscale-0 group-hover/reaction:opacity-100"
+                                )}>
+                                    {emoji}
+                                </span>
+                                
+                                {count > 0 && (
+                                    <span className={cn(
+                                        "text-[10px] sm:text-xs font-black tabular-nums transition-colors",
+                                        isActive ? "text-violet-900" : "text-white/30 group-hover/reaction:text-white/60"
+                                    )}>
+                                        {count}
+                                    </span>
+                                )}
+
+                                {/* Glow ring when active */}
+                                {isActive && (
+                                    <div className="absolute inset-0 border-2 border-white/20 rounded-2xl animate-pulse" />
+                                )}
+                            </button>
+                        );
+                    })}
+
+                    <div className="w-[1px] h-10 bg-white/10 mx-1" />
+
+                    {/* "+" Picker Button */}
+                    <div className="relative" ref={pickerRef}>
+                        <button
+                            onClick={() => setPickerOpen(!pickerOpen)}
+                            disabled={loading}
+                            className={cn(
+                                "flex flex-col items-center justify-center w-12 h-16 sm:w-16 rounded-2xl transition-all duration-500 group/plus",
+                                pickerOpen 
+                                    ? "bg-violet-600 text-white shadow-[0_10px_30px_rgba(124,58,237,0.4)]" 
+                                    : "hover:bg-white/5 text-white/20 hover:text-white/60"
+                            )}
+                        >
+                            <Plus 
+                                size={22} 
+                                className={cn(
+                                    "transition-transform duration-500",
+                                    pickerOpen ? "rotate-45" : "group-hover/plus:rotate-90"
+                                )}
+                            />
+                        </button>
+
+                        {pickerOpen && (
+                            <div className="absolute bottom-full mb-6 right-1/2 translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
+                                <div className="shadow-[0_40px_80px_rgba(0,0,0,0.8)] rounded-3xl overflow-hidden border border-white/10 ring-1 ring-black backdrop-blur-2xl">
+                                    <Picker
+                                        data={emojiData ?? getEmojiData}
+                                        onEmojiSelect={(emoji: any) => toggleReaction(emoji.native)}
+                                        theme="dark"
+                                        locale="es"
+                                        previewPosition="none"
+                                        skinTonePosition="none"
+                                        maxFrequentRows={1}
+                                        perLine={8}
+                                        emojiSize={26}
+                                        emojiButtonSize={34}
+                                        icons="outline"
+                                        set="native"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

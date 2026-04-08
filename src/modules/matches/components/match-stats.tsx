@@ -16,14 +16,18 @@ interface MatchStatsProps {
 const StatRow = ({ label, valueA, valueB, colorA, colorB }: { label: string, valueA: number, valueB: number, colorA: string, colorB: string }) => {
     const total = valueA + valueB || 1;
     return (
-        <div className="flex items-center gap-3 sm:gap-4 py-2.5 border-b border-white/[0.03] last:border-0">
-            <span className="text-base sm:text-lg font-black tabular-nums w-8 text-right" style={{ color: colorA }}>{valueA}</span>
-            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden flex">
-                <div className="h-full rounded-l-full transition-all duration-700" style={{ width: `${(valueA / total) * 100}%`, backgroundColor: colorA, opacity: 0.7 }} />
-                <div className="h-full rounded-r-full transition-all duration-700" style={{ width: `${(valueB / total) * 100}%`, backgroundColor: colorB, opacity: 0.7 }} />
+        <div className="flex items-center gap-3 sm:gap-4 py-3 border-b border-white/[0.05] last:border-0">
+            <span className="text-xl sm:text-2xl font-black tabular-nums w-10 text-right drop-shadow-[0_0_10px_currentColor]" style={{ color: colorA }}>{valueA}</span>
+            <div className="flex-1 h-3 bg-black/40 rounded-full overflow-hidden flex p-[2px] border border-white/5 shadow-inner">
+                <div className="h-full rounded-l-full transition-all duration-1000 relative" style={{ width: `${(valueA / total) * 100}%`, backgroundColor: colorA }}>
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+                </div>
+                <div className="h-full rounded-r-full transition-all duration-1000 relative" style={{ width: `${(valueB / total) * 100}%`, backgroundColor: colorB }}>
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
+                </div>
             </div>
-            <span className="text-base sm:text-lg font-black tabular-nums w-8 text-left" style={{ color: colorB }}>{valueB}</span>
-            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-white/30 w-20 sm:w-24 text-right">{label}</span>
+            <span className="text-xl sm:text-2xl font-black tabular-nums w-10 text-left drop-shadow-[0_0_10px_currentColor]" style={{ color: colorB }}>{valueB}</span>
+            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-white/50 w-24 sm:w-28 text-right font-display">{label}</span>
         </div>
     );
 };
@@ -179,7 +183,7 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                             <Activity size={22} className="animate-pulse" style={{ color: sportColorVoli }} />
                         </div>
                         <div>
-                            <h3 className="text-xl font-black text-white tracking-tight">Estadísticas</h3>
+                            <h3 className="text-2xl font-black text-white tracking-tight uppercase">Estadísticas</h3>
                             <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.2em] mt-0.5">Rendimiento por set</p>
                         </div>
                     </div>
@@ -260,20 +264,19 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
             <div className="absolute bottom-0 left-0 w-[250px] h-[250px] blur-[100px] rounded-full pointer-events-none opacity-5" style={{ backgroundColor: teamBColor }} />
 
             {/* Header-like Title */}
-            <div className="flex items-center justify-between relative z-10 w-full border-b border-white/5 pb-6">
+            <div className="flex items-center justify-between relative z-10 w-full border-b border-white/10 pb-6">
                 <div className="flex items-center gap-4">
-                    <div className={cn("p-2.5 rounded-2xl bg-white/5 border border-white/10 shadow-lg", `text-${sportColor}`)}>
-                        <Activity size={22} className="animate-pulse" style={{ color: sportColor }} />
+                    <div className={cn("p-2.5 rounded-xl bg-white/5 border border-white/10")}>
+                        <Activity size={20} className="animate-pulse" style={{ color: sportColor }} />
                     </div>
                     <div>
-                        <h3 className="text-xl font-black text-white tracking-tight">{isBasketball ? 'Métricas de Juego' : 'Rendimiento Global'}</h3>
-                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.2em] mt-0.5">Estadísticas en tiempo real</p>
+                        <h3 className="text-2xl font-black text-white tracking-tighter uppercase font-sans leading-none">Estadísticas</h3>
                     </div>
                 </div>
                 {isProgrammed && (
-                    <Badge className="bg-white/5 text-white/40 border-white/10 font-black text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-xl">
-                        Previo al encuentro
-                    </Badge>
+                    <div className="bg-white/10 text-white font-black text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-lg border border-white/10">
+                        Próximo Encuentro
+                    </div>
                 )}
             </div>
 
@@ -333,11 +336,14 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
 
             {/* ═══ FOOTBALL SECTION ═══ */}
             {isFootball && (
-                <div className="relative z-10 bg-white/[0.03] rounded-3xl p-6 border border-white/5 space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-6 px-1 underline decoration-white/10 underline-offset-8">Disciplina Táctica</p>
+                <div className="relative z-10 space-y-2 bg-white/5 rounded-[2rem] p-6 border border-white/10 transition-all hover:bg-white/[0.07]">
+                    <div className="flex items-center gap-3 mb-6 px-1">
+                        <div className="w-1 h-4 rounded-full" style={{ backgroundColor: sportColor }} />
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/80 font-sans">Disciplina</p>
+                    </div>
                     <StatRow label="Faltas" valueA={teamA.fouls} valueB={teamB.fouls} colorA={sportColor} colorB={teamBColor} />
-                    <StatRow label="Amarillas" valueA={teamA.yellowCards} valueB={teamB.yellowCards} colorA="#fbbf24" colorB="#fbbf24" />
-                    <StatRow label="Rojas" valueA={teamA.redCards} valueB={teamB.redCards} colorA="#f43f5e" colorB="#f43f5e" />
+                    <StatRow label="Amarillas" valueA={teamA.yellowCards} valueB={teamB.yellowCards} colorA="#FFD700" colorB="#FFD700" />
+                    <StatRow label="Rojas" valueA={teamA.redCards} valueB={teamB.redCards} colorA="#FF3B30" colorB="#FF3B30" />
                 </div>
             )}
 
@@ -386,63 +392,68 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                 )}
 
                 {/* Team Scorers – Side by Side */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Team A */}
-                    <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-5 flex flex-col relative overflow-hidden transition-colors hover:bg-white/[0.05]">
-                        <div className="absolute top-0 right-0 w-24 h-24 blur-3xl rounded-full opacity-10" style={{ backgroundColor: sportColor }} />
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-4 relative z-10 border-l-2 pl-3" style={{ borderColor: sportColor }}>
-                            {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Top Performers')}
-                        </p>
-                        <div className="space-y-3 flex-1 relative z-10">
+                    <div className="bg-white/5 border border-white/10 rounded-3xl p-5 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.08]">
+                        <div className="flex items-center gap-2 mb-4 px-1">
+                            <div className="w-1 h-3 rounded-full" style={{ backgroundColor: sportColor }} />
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/80 font-sans">
+                                {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Participantes')}
+                            </p>
+                        </div>
+                        <div className="space-y-2 flex-1 relative z-10">
                             {topScorersA.length > 0 ? topScorersA.slice(0, 4).map((player, idx) => {
                                 const row = (
                                     <div key={idx} className={cn(
-                                        "flex items-center gap-3 p-1 rounded-xl transition-all",
-                                        player.profile.profile_id ? "hover:bg-white/5 cursor-pointer" : ""
+                                        "flex items-center gap-3 p-1.5 rounded-xl transition-all",
+                                        player.profile.profile_id ? "hover:bg-white/10 cursor-pointer active:scale-95" : ""
                                     )}>
                                         <Avatar name={player.profile.nombre} className="w-8 h-8 text-[10px] border border-white/10 shrink-0 shadow-lg" />
                                         <div className="flex-1 min-w-0">
-                                            <span className="text-[11px] font-black text-white/90 truncate block">{player.profile.nombre}</span>
-                                            {isBasketball && <span className="text-[8px] font-bold text-white/20 uppercase tracking-tighter">{player.pts3}T·{player.pts2}D·{player.pts1}L</span>}
+                                            <span className="text-[11px] font-black text-white/90 truncate block uppercase tracking-tight">{player.profile.nombre}</span>
+                                            {isBasketball && <span className="text-[8px] font-black text-white/30 uppercase tracking-tighter">{player.pts3}T · {player.pts2}D · {player.pts1}L</span>}
                                         </div>
-                                        <span className="text-base font-black tabular-nums text-white shrink-0 drop-shadow-md" style={{ color: sportColor }}>{isFootball ? player.goals : player.points}</span>
+                                        <span className="text-lg font-black tabular-nums text-white/90 shrink-0 drop-shadow-md" style={{ color: sportColor }}>{isFootball ? player.goals : player.points}</span>
                                     </div>
                                 );
                                 return player.profile.profile_id ? <Link key={idx} href={`/perfil/${player.profile.profile_id}`}>{row}</Link> : row;
                             }) : (
-                                <div className="flex flex-col items-center justify-center py-6 opacity-5">
-                                    <Users size={24} className="mb-2" />
-                                    <span className="text-[9px] font-black uppercase tracking-widest">Sin registros</span>
+                                <div className="flex flex-col items-center justify-center py-6 bg-black/10 rounded-2xl border border-dashed border-white/5">
+                                    <Users size={20} className="mb-2 text-white/5" />
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-white/10">Sin registros</span>
                                 </div>
                             )}
                         </div>
                     </div>
+
                     {/* Team B */}
-                    <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-5 flex flex-col relative overflow-hidden transition-colors hover:bg-white/[0.05]">
-                        <div className="absolute top-0 right-0 w-24 h-24 blur-3xl rounded-full opacity-10" style={{ backgroundColor: teamBColor }} />
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-4 relative z-10 border-l-2 pl-3" style={{ borderColor: teamBColor }}>
-                            {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Top Performers')}
-                        </p>
-                        <div className="space-y-3 flex-1 relative z-10">
+                    <div className="bg-white/5 border border-white/10 rounded-3xl p-5 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.08]">
+                        <div className="flex items-center gap-2 mb-4 px-1">
+                            <div className="w-1 h-3 rounded-full" style={{ backgroundColor: teamBColor }} />
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/80 font-sans">
+                                {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Participantes')}
+                            </p>
+                        </div>
+                        <div className="space-y-2 flex-1 relative z-10">
                             {topScorersB.length > 0 ? topScorersB.slice(0, 4).map((player, idx) => {
                                 const row = (
                                     <div key={idx} className={cn(
-                                        "flex items-center gap-3 p-1 rounded-xl transition-all",
-                                        player.profile.profile_id ? "hover:bg-white/5 cursor-pointer" : ""
+                                        "flex items-center gap-3 p-1.5 rounded-xl transition-all",
+                                        player.profile.profile_id ? "hover:bg-white/10 cursor-pointer active:scale-95" : ""
                                     )}>
                                         <Avatar name={player.profile.nombre} className="w-8 h-8 text-[10px] border border-white/10 shrink-0 shadow-lg" />
                                         <div className="flex-1 min-w-0">
-                                            <span className="text-[11px] font-black text-white/90 truncate block">{player.profile.nombre}</span>
-                                            {isBasketball && <span className="text-[8px] font-bold text-white/20 uppercase tracking-tighter">{player.pts3}T·{player.pts2}D·{player.pts1}L</span>}
+                                            <span className="text-[11px] font-black text-white/90 truncate block uppercase tracking-tight">{player.profile.nombre}</span>
+                                            {isBasketball && <span className="text-[8px] font-black text-white/30 uppercase tracking-tighter">{player.pts3}T · {player.pts2}D · {player.pts1}L</span>}
                                         </div>
-                                        <span className="text-base font-black tabular-nums text-white/90 shrink-0 drop-shadow-md">{isFootball ? player.goals : player.points}</span>
+                                        <span className="text-lg font-black tabular-nums text-white/90 shrink-0 drop-shadow-md">{isFootball ? player.goals : player.points}</span>
                                     </div>
                                 );
                                 return player.profile.profile_id ? <Link key={idx} href={`/perfil/${player.profile.profile_id}`}>{row}</Link> : row;
                             }) : (
-                                <div className="flex flex-col items-center justify-center py-6 opacity-5">
-                                    <Users size={24} className="mb-2" />
-                                    <span className="text-[9px] font-black uppercase tracking-widest">Sin registros</span>
+                                <div className="flex flex-col items-center justify-center py-6 bg-black/10 rounded-2xl border border-dashed border-white/5">
+                                    <Users size={20} className="mb-2 text-white/5" />
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-white/10">Sin registros</span>
                                 </div>
                             )}
                         </div>

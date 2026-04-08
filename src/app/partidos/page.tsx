@@ -114,7 +114,7 @@ export default function PartidosPage() {
                     const element = document.getElementById(`date-${targetDate}`);
                     if (element) {
                         const isMobile = window.innerWidth < 768;
-                        const offset = isMobile ? 140 : 180; // Adjusted offsets for sticky filter bar
+                        const offset = isMobile ? 220 : 250; // Increased offsets for taller filter bar
                         const bodyRect = document.body.getBoundingClientRect().top;
                         const elementRect = element.getBoundingClientRect().top;
                         const elementPosition = elementRect - bodyRect;
@@ -171,7 +171,7 @@ export default function PartidosPage() {
                 </header>
 
                 {/* ── Center Area: Large Sport & Gender Filters (Sticky & Responsive) ── */}
-                <div className="sticky top-[64px] sm:top-[72px] z-50 px-4 py-4 mb-4 bg-background/40 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
+                <div className="sticky top-[64px] sm:top-[72px] z-50 px-4 py-4 mb-4 transition-all duration-300">
                     <div className="flex flex-col gap-4 sm:gap-6 max-w-6xl mx-auto">
                         {/* 1. Sport Selector Tiles */}
                         <div className="flex justify-center w-full">
@@ -180,7 +180,7 @@ export default function PartidosPage() {
                                 <button
                                     onClick={() => setSelectedSport("Todos")}
                                     className={cn(
-                                        "relative min-w-[90px] sm:min-w-[110px] h-20 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
+                                        "relative min-w-[105px] sm:min-w-[110px] h-24 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
                                         selectedSport === "Todos"
                                             ? "bg-violet-600/30 border-violet-500/50 scale-105"
                                             : "bg-background/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
@@ -188,7 +188,7 @@ export default function PartidosPage() {
                                 >
                                     <div className="z-10 flex flex-col items-center gap-3">
                                         <div className={cn(
-                                            "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500",
+                                            "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500",
                                             selectedSport === "Todos" ? "bg-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)]" : "bg-white/5 border border-white/10"
                                         )}>
                                             <LayoutGrid 
@@ -197,8 +197,8 @@ export default function PartidosPage() {
                                             />
                                         </div>
                                         <span className={cn(
-                                            "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
-                                            selectedSport === "Todos" ? "text-white" : "text-white/20"
+                                            "text-[11px] font-black uppercase tracking-[0.2em] transition-colors",
+                                            selectedSport === "Todos" ? "text-white" : "text-white/30"
                                         )}>
                                             Todos
                                         </span>
@@ -212,7 +212,7 @@ export default function PartidosPage() {
                                             key={sport}
                                             onClick={() => setSelectedSport(sport)}
                                             className={cn(
-                                                "group/btn relative min-w-[90px] sm:min-w-[110px] h-20 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
+                                                "group/btn relative min-w-[105px] sm:min-w-[110px] h-24 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
                                                 isActive
                                                     ? "bg-violet-600/30 border-violet-500/50 scale-105"
                                                     : "bg-[#1a0b38]/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
@@ -220,7 +220,7 @@ export default function PartidosPage() {
                                         >
                                             <div className="z-10 flex flex-col items-center gap-3">
                                                 <div className={cn(
-                                                    "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500 overflow-hidden",
+                                                    "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500 overflow-hidden",
                                                     isActive ? "shadow-[0_0_20px_rgba(139,92,246,0.3)] border-transparent" : "bg-white/5 border border-white/10"
                                                 )}>
                                                     <SportIcon 
@@ -233,8 +233,8 @@ export default function PartidosPage() {
                                                     />
                                                 </div>
                                                 <span className={cn(
-                                                    "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
-                                                    isActive ? "text-white" : "text-white/20 group-hover/btn:text-white/40"
+                                                    "text-[11px] font-black uppercase tracking-[0.2em] transition-colors",
+                                                    isActive ? "text-white" : "text-white/30 group-hover/btn:text-white/60"
                                                 )}>
                                                     {sport}
                                                 </span>
@@ -271,8 +271,8 @@ export default function PartidosPage() {
 
                         {!loading && (
                             <div className="text-center">
-                                <p className="text-[10px] font-black text-white/20 tracking-[0.3em] uppercase">
-                                    {filteredMatches.length} encuentro{filteredMatches.length !== 1 ? 's' : ''} encontrado{filteredMatches.length !== 1 ? 's' : ''}
+                                <p className="text-[11px] font-black text-white/60 tracking-[0.4em] uppercase">
+                                    {filteredMatches.length} ENCUENTROS
                                 </p>
                             </div>
                         )}
@@ -291,9 +291,9 @@ export default function PartidosPage() {
                             <section
                                 key={group.fecha}
                                 id={`date-${group.fecha}`}
-                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-[300px] sm:scroll-mt-[400px] bg-transparent pb-16"
+                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-[350px] sm:scroll-mt-[450px] bg-transparent pb-16"
                             >
-                                <div className="flex items-center justify-center gap-4 mb-6 sm:mb-10 sticky top-[250px] sm:top-[310px] z-40 py-4 pointer-events-none">
+                                <div className="flex items-center justify-center gap-4 mb-6 sm:mb-10 sticky top-[275px] sm:top-[320px] z-40 py-4 pointer-events-none">
                                     <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/20 to-white/10 max-w-[100px] sm:max-w-xs" />
                                     <h2 className={cn(
                                         "flex items-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-2xl pointer-events-auto",
@@ -425,12 +425,12 @@ function UnifiedCard({
                 {/* Acierta y gana overlay logic */}
                 <div className="absolute inset-0 bg-background mix-blend-overlay opacity-40 group-hover:opacity-30 transition-opacity" />
                 
-                {/* Ambient Background - Large Sport Watermark (Redesigned style) */}
-                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none select-none opacity-[0.12] group-hover:opacity-[0.16] transition-opacity duration-700">
-                    <SportIcon sport={sportName} size={220} className={cn("transition-all duration-700", SPORT_ACCENT[sportName] || 'text-white')} />
+                {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
+                <div className="absolute -right-[15%] -bottom-[20%] flex items-center justify-center pointer-events-none select-none opacity-[0.1] group-hover:opacity-[0.15] transition-all duration-1000 rotate-[-12deg]">
+                    <SportIcon sport={sportName} size={320} className={cn("transition-all duration-[1500ms] group-hover:scale-110 group-hover:rotate-[5deg]", SPORT_ACCENT[sportName] || 'text-white')} />
                 </div>
 
-                <div className="relative p-6 flex flex-col h-full justify-center">
+                <div className="relative p-7 sm:p-10 flex flex-col h-full justify-center">
                     {/* Header */}
                     <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-2.5">
@@ -499,21 +499,23 @@ function UnifiedCard({
                     /* ── NORMAL / AJEDREZ layout (Redesigned) ── */
                     <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-2">
                         {/* Team A */}
-                        <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
-                             <div className={cn(
-                                "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-500 shadow-xl",
-                                winnerA ? "border-emerald-500/50 text-white shadow-emerald-500/10 scale-105" : "border-white/10 text-white"
-                            )}>
-                                {sideAAbbr}
-                            </div>
+                        <div className="flex flex-col items-center gap-3 text-center relative min-w-0 w-full">
+                            <Avatar 
+                                name={displayNameA} 
+                                src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url || partido.delegacion_a_info?.escudo_url} 
+                                className={cn(
+                                    "w-16 h-16 sm:w-20 sm:h-20 border-2 transition-all duration-500 bg-black/40 shadow-xl self-center",
+                                    winnerA ? "border-emerald-500 scale-105 shadow-emerald-500/20" : "border-white/10"
+                                )} 
+                            />
                             <span className={cn(
-                                "text-[9px] font-bold uppercase tracking-widest leading-tight line-clamp-2 max-w-[85px] transition-all",
-                                winnerA ? "text-white" : "text-white/60"
+                                "text-[12px] sm:text-[13px] font-black uppercase tracking-widest leading-tight line-clamp-2 max-w-[110px] sm:max-w-[130px] transition-all",
+                                winnerA ? "text-white" : "text-slate-200"
                             )}>
                                 {displayNameA}
                             </span>
                             {sportName === 'Ajedrez' && winnerA && (
-                                <div className="absolute -top-2 bg-amber-500 text-black px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter shadow-lg z-20">
+                                <div className="absolute top-14 bg-amber-500 text-black px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter shadow-lg z-20">
                                     Ganador
                                 </div>
                             )}
@@ -522,15 +524,15 @@ function UnifiedCard({
                         {/* Center Display (Score or Time) */}
                         <div className="flex flex-col items-center justify-center min-w-[90px]">
                             {timeDisplay ? (
-                                <div className="text-3xl sm:text-4xl font-black text-white tabular-nums tracking-tighter mb-0.5 leading-none">
+                                <div className="text-4xl sm:text-5xl font-black text-white tabular-nums tracking-tighter mb-0.5 leading-none">
                                     {timeDisplay}
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center">
                                     {sportName !== 'Ajedrez' && (
-                                        <div className="flex items-center justify-center gap-2.5 font-bold text-4xl sm:text-5xl text-white tracking-tighter tabular-nums mb-0.5 leading-none">
+                                        <div className="flex items-center justify-center gap-2.5 font-bold text-5xl sm:text-6xl text-white tracking-tighter tabular-nums mb-0.5 leading-none">
                                             <span className={(winnerB && sportName !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.a}</span>
-                                            <span className="text-white/30 text-2xl -mt-1">:</span>
+                                            <span className="text-white/30 text-3xl -mt-1">:</span>
                                             <span className={(winnerA && sportName !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.b}</span>
                                         </div>
                                     )}
@@ -553,21 +555,23 @@ function UnifiedCard({
                         </div>
 
                         {/* Team B */}
-                        <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
-                             <div className={cn(
-                                "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-500 shadow-xl",
-                                winnerB ? "border-emerald-500/50 text-white shadow-emerald-500/10 scale-105" : "border-white/10 text-white"
-                            )}>
-                                {sideBAbbr}
-                            </div>
+                        <div className="flex flex-col items-center gap-3 text-center relative min-w-0 w-full">
+                            <Avatar 
+                                name={displayNameB} 
+                                src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url || partido.delegacion_b_info?.escudo_url} 
+                                className={cn(
+                                    "w-16 h-16 sm:w-20 sm:h-20 border-2 transition-all duration-500 bg-black/40 shadow-xl self-center",
+                                    winnerB ? "border-emerald-500 scale-105 shadow-emerald-500/20" : "border-white/10"
+                                )} 
+                            />
                             <span className={cn(
-                                "text-[9px] font-bold uppercase tracking-widest leading-tight line-clamp-2 max-w-[85px] transition-all",
-                                winnerB ? "text-white" : "text-white/60"
+                                "text-[12px] sm:text-[13px] font-black uppercase tracking-widest leading-tight line-clamp-2 max-w-[110px] sm:max-w-[130px] transition-all",
+                                winnerB ? "text-white" : "text-slate-200"
                             )}>
                                 {displayNameB}
                             </span>
                             {sportName === 'Ajedrez' && winnerB && (
-                                <div className="absolute -top-2 bg-amber-500 text-black px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter shadow-lg z-20">
+                                <div className="absolute top-14 bg-amber-500 text-black px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter shadow-lg z-20">
                                     Ganador
                                 </div>
                             )}
@@ -577,10 +581,12 @@ function UnifiedCard({
 
                     {/* Footer - Redesigned Style */}
                      <div className={cn(
-                        "mt-6 pt-4 border-t border-white/5 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.4em] transition-all duration-500 opacity-30 group-hover:opacity-100",
+                        "mt-8 py-3 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center text-[11px] font-black uppercase tracking-[0.3em] transition-all duration-500 shadow-xl",
                         SPORT_ACCENT[sportName] || 'text-white'
                     )}>
-                        Analizar Partido <MoveRight size={12} className="ml-3 group-hover:translate-x-2 transition-transform" />
+                        <div className="flex items-center gap-3 drop-shadow-[0_0_8px_currentColor]">
+                            Analizar Partido <MoveRight size={14} className="group-hover:translate-x-2 transition-transform" />
+                        </div>
                     </div>
                 </div>
             </div>

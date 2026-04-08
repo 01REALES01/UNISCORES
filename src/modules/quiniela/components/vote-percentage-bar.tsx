@@ -35,11 +35,11 @@ export const VotePercentageBar = ({ matchId, allPredictions, teamA, teamB, sport
           <Users size={12} className="text-violet-400" />
           <span className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em]">{total} {total === 1 ? 'Acierto' : 'Aciertos'}</span>
         </div>
-        <div className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Tendencia</div>
+        <div className="text-[9px] font-black text-white/50 uppercase tracking-[0.25em] drop-shadow-sm">Tendencia</div>
       </div>
 
       <div className="relative group/bar px-0.5">
-        <div className="flex gap-[2px] h-3.5 rounded-full overflow-hidden bg-black/40 border border-white/5 p-[1.5px] shadow-2xl relative">
+        <div className="flex gap-[2px] h-3.5 rounded-full overflow-hidden bg-white/[0.02] border border-white/10 p-[1.5px] shadow-[inset_0_2px_8px_rgba(0,0,0,0.4)] relative backdrop-blur-sm">
           {pctA > 0 && (
             <div
               className={cn("transition-all duration-1000 rounded-l-full relative shadow-lg", SPORT_ACCENT[sportName] || "bg-violet-500")}
@@ -68,19 +68,19 @@ export const VotePercentageBar = ({ matchId, allPredictions, teamA, teamB, sport
       </div>
 
       <div className="grid grid-cols-3 gap-2 px-1">
-        <div className="flex flex-col items-start gap-0.5">
-          <span className="text-[9px] font-black text-white/20 uppercase tracking-widest truncate w-full">{teamA.split(' ')[0]}</span>
-          <span className={cn("text-sm font-black tabular-nums font-mono tracking-tighter", SPORT_ACCENT[sportName] || "text-white")}>{pctA}%</span>
+        <div className="flex flex-col items-start gap-1">
+          <span className="text-[9px] font-black text-white/50 uppercase tracking-[0.15em] truncate w-full drop-shadow-sm">{teamA.split(' ')[0]}</span>
+          <span className={cn("text-base font-black tabular-nums font-mono tracking-tighter drop-shadow-[0_0_8px_rgba(255,255,255,0.1)]", SPORT_ACCENT[sportName] || "text-white")}>{pctA}%</span>
         </div>
         
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">EMPATE</span>
-          <span className="text-sm font-black tabular-nums font-mono tracking-tighter text-slate-500">{pctDraw}%</span>
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.15em] drop-shadow-sm">EMPATE</span>
+          <span className="text-base font-black tabular-nums font-mono tracking-tighter text-white/40">{pctDraw}%</span>
         </div>
-
-        <div className="flex flex-col items-end gap-0.5">
-          <span className="text-[9px] font-black text-white/20 uppercase tracking-widest truncate w-full text-right">{teamB.split(' ')[0]}</span>
-          <span className={cn("text-sm font-black tabular-nums font-mono tracking-tighter", SPORT_ACCENT[sportName] || "text-white")} style={{ filter: 'brightness(1.4)' }}>{pctB}%</span>
+ 
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-[9px] font-black text-white/50 uppercase tracking-[0.15em] truncate w-full text-right drop-shadow-sm">{teamB.split(' ')[0]}</span>
+          <span className={cn("text-base font-black tabular-nums font-mono tracking-tighter drop-shadow-[0_0_8px_rgba(255,255,255,0.1)]", SPORT_ACCENT[sportName] || "text-white")} style={{ filter: 'brightness(1.4)' }}>{pctB}%</span>
         </div>
       </div>
     </div>

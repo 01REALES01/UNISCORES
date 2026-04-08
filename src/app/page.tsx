@@ -22,6 +22,16 @@ const NewsListCard = dynamic(() => import('@/components/news-card').then(mod => 
   loading: () => <NewsListSkeleton />
 });
 
+const NewsCompactHero = dynamic(() => import('@/components/news-card').then(mod => mod.NewsCompactHero), {
+  ssr: false,
+  loading: () => <NewsListSkeleton />
+});
+
+const NewsGridCard = dynamic(() => import('@/components/news-card').then(mod => mod.NewsGridCard), {
+  ssr: false,
+  loading: () => <NewsListSkeleton />
+});
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -483,10 +493,17 @@ export default function Home() {
               {[1, 2].map(i => <NewsListSkeleton key={i} />)}
             </div>
           ) : filteredNews.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4 relative z-10">
-              {filteredNews.map(noticia => (
-                <NewsListCard key={noticia.id} noticia={noticia} />
-              ))}
+            <div className={cn(
+              "relative z-10 grid gap-4 sm:gap-6",
+              filteredNews.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"
+            )}>
+              {filteredNews.length === 1 ? (
+                <NewsCompactHero noticia={filteredNews[0]} />
+              ) : (
+                filteredNews.map(noticia => (
+                  <NewsGridCard key={noticia.id} noticia={noticia} />
+                ))
+              )}
             </div>
           ) : (
             <div className="text-center py-10 bg-black/20 border border-white/5 rounded-2xl relative z-10 backdrop-blur-sm">

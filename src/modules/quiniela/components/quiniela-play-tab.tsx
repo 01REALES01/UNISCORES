@@ -40,7 +40,7 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
              {/* 1. Sport Selection (Mobile First - Descriptive) */}
             <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-black uppercase text-white/30 tracking-[0.2em]">Deporte</span>
+                    <span className="text-[10px] font-black uppercase text-white/50 tracking-[0.25em] drop-shadow-sm">Deporte</span>
                     {sportFilter !== 'todos' && (
                         <button onClick={() => setSportFilter('todos')} className="text-[9px] font-bold text-violet-400 uppercase tracking-widest hover:text-white transition-colors">Limpiar</button>
                     )}
@@ -66,7 +66,7 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
                                 "flex items-center gap-3 px-6 py-3.5 rounded-2xl border transition-all duration-300 shrink-0",
                                 sportFilter === sport
                                     ? [SPORT_ACCENT[sport] || "text-white", "bg-white/10 border-current shadow-lg scale-105"]
-                                    : "bg-white/5 border-white/10 text-white/30 hover:bg-white/10 hover:text-white"
+                                    : "bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white"
                             )}
                         >
                             <SportIcon sport={sport} size={18} className="text-current" />
@@ -93,7 +93,7 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
                                     "relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-[10px] font-display font-black tracking-widest transition-all border whitespace-nowrap",
                                     isSelected
                                         ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105"
-                                        : "bg-transparent border-transparent text-white/30 hover:text-white/60"
+                                        : "bg-transparent border-transparent text-white/50 hover:text-white/80"
                                 )}
                             >
                                 <g.icon size={12} className={cn(isSelected ? "text-[#7C3AED]" : "text-violet-400")} />
@@ -119,7 +119,7 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
                             "flex-1 py-3 rounded-xl text-[10px] font-display font-black tracking-widest transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1.5 border",
                             viewFilter === f.key 
                                 ? "bg-white/10 text-white border-white/10 shadow-lg ring-1 ring-white/10 scale-[1.02] z-10" 
-                                : "text-white/30 hover:text-white/60 border-transparent hover:bg-white/5"
+                                : "text-white/50 hover:text-white/80 border-transparent hover:bg-white/5"
                         )}
                     >
                         <f.icon size={16} className={cn("transition-colors", viewFilter === f.key ? (f.key === 'live' ? "text-rose-400" : "text-emerald-400") : "opacity-50")} />
