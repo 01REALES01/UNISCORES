@@ -52,10 +52,11 @@ function parseGenero(rama: string): 'masculino' | 'femenino' | 'mixto' | null {
     return null;
 }
 
-// "50 metros Libre" → { distancia: "50m", estilo: "Libre" }
+// "50 metros Libre" o "50m Libre" o "50 libre" o "50 mts Libre" → { distancia: "50m", estilo: "Libre" }
 function parsePrueba(raw: string): { distancia: string; estilo: string } | null {
     if (!raw || typeof raw !== 'string') return null;
-    const match = raw.match(/(\d+)\s*metros?\s+(.+)/i);
+    // Regex que atrapa el número, un separador opcional de metros (m, mt, mts, metros) y luego el estilo
+    const match = raw.match(/(\d+)\s*(?:m|mts?|metros?)?\s+(.+)/i);
     if (!match) return null;
     const distancia = match[1] + 'm';
     const estilo = match[2].trim();
