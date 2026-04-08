@@ -180,31 +180,42 @@ export async function POST(request: NextRequest) {
                 continue; // Skip si no hay carrera (o manejar como error? mejor ignorar)
             }
 
-            // Create upsert structure for player
-            const playerRec = {
-                nombre,
-                carrera_id: carreraId,
-                disciplina_id: disciplinaId,
-                genero,
-                sexo,
-                validado: true,
-                updated_at: new Date().toISOString()
-            };
-
-            // Proceed to upsert player
-            const upsertResult = await supabase
+            let playerId = null;
+            const { data: existingPlayer } = await supabase
                 .from('jugadores')
-                .upsert(playerRec, { onConflict: 'nombre, carrera_id', ignoreDuplicates: false })
-                .select('id, nombre')
-                .single();
+                .select('id')
+                .eq('nombre', nombre)
+                .eq('carrera_id', carreraId)
+                .limit(1)
+                .maybeSingle();
 
-            if (upsertResult.error) {
-                console.error("Jugador Upsert Error:", upsertResult.error);
-                continue;
+            if (existingPlayer) {
+                playerId = existingPlayer.id;
+            } else {
+                const playerRec = {
+                    nombre,
+                    carrera_id: carreraId,
+                    disciplina_id: disciplinaId,
+                    genero,
+                    sexo,
+                    validado: true,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { data: newPlayer, error: insertErr } = await supabase
+                    .from('jugadores')
+                    .insert(playerRec)
+                    .select('id')
+                    .single();
+
+                if (insertErr) {
+                    console.error("Jugador Insert Error:", insertErr);
+                    warnings.push(`No se pudo crear al jugador ${nombre}: ${insertErr.message}`);
+                    continue;
+                }
+                playerId = newPlayer.id;
+                jugadoresCreated++;
             }
-
-            const playerId = upsertResult.data.id;
-            jugadoresCreated++;
 
             // Process Pruebas
             for (const ph of pruebaHeaders) {
