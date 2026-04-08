@@ -16,7 +16,7 @@ const VENUE_COORDINATES: Record<string, { x: number; y: number; label: string }>
     'Cancha de Fútbol': { x: 64, y: 64, label: 'Cancha de Fútbol' },
     'Piscina Centro Deportivo': { x: 82, y: 80, label: 'Piscinas' },
     'Cancha de Tenis': { x: 50, y: 53, label: 'Tenis' },
-    'Baambu': { x: 28, y: 48, label: 'Bambu' },
+    'Baambu': { x: 28, y: 48, label: 'Bambú' },
 };
 
 type Match = {
