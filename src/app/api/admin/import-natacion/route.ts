@@ -198,7 +198,6 @@ export async function POST(request: NextRequest) {
                     disciplina_id: disciplinaId,
                     genero,
                     sexo,
-                    validado: true,
                     updated_at: new Date().toISOString()
                 };
 
