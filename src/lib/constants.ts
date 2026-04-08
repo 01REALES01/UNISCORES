@@ -28,9 +28,7 @@ export const LUGARES_OLIMPICOS = [
     'Cancha de Fútbol',
     'Cancha #1',
     'Cancha #2',
-    'Piscina Centro Deportivo',
-    'Cancha de Tenis',
-    'Baambu'
+    'Piscina Centro Deportivo'
 ];
 
 export const CARRERAS_UNINORTE = [
@@ -50,7 +48,6 @@ export const CARRERAS_UNINORTE = [
     'Ingeniería Eléctrica',
     'Ingeniería Electrónica',
     'Ingeniería Industrial',
-    'Ingeniería Biomédica',
     'Ingeniería Mecánica',
     'Lenguas Modernas y Cultura',
     'Medicina',
@@ -79,7 +76,7 @@ export const EQUIPO_NOMBRE_TO_CARRERAS: Record<string, string[]> = {
     'ING. ELÉCTRICA':                      ['Ingeniería Eléctrica', 'Ingeniería Electrónica'],
     'INGENIERÍA ELÉCTRICA':                ['Ingeniería Eléctrica', 'Ingeniería Electrónica'],
     'COM. SOCIAL/PSICOLOGÍA':              ['Comunicación Social y Periodismo', 'Psicología'],
-    'ESCUELA DE NEGOCIOS':                 ['Administración de Empresas', 'Contaduría Pública', 'Negocios Internacionales'],
+    'ESCUELA DE NEGOCIOS':                 ['Negocios Internacionales'],
     'ARQUITECTURA':                        ['Arquitectura'],
 };
 

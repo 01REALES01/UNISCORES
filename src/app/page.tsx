@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import useSWR from "swr";
 import dynamic from "next/dynamic";
 import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
@@ -62,6 +63,23 @@ export default function Home() {
   const { news: latestNews, loading: newsLoading } = useNews(4);
   const { favoriteIds, loading: favoritosLoading, mutate: mutateFavoritos } = useFavoritos(user?.id);
   const { carreras, loading: carrerasLoading } = useCarreras();
+
+  // delegaciones: nombre → Set<carrera_id> — used for ID-based favorites filtering in team sports
+  const { data: delegacionesData } = useSWR('delegaciones:carrera_ids', async () => {
+    const { data } = await supabase.from('delegaciones').select('nombre, carrera_ids');
+    return data ?? [];
+  }, { revalidateOnFocus: false, dedupingInterval: 300000 });
+
+  const delegacionCarreraMap = useMemo(() => {
+    const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const map = new Map<string, Set<number>>();
+    for (const d of delegacionesData ?? []) {
+      if (d.nombre && Array.isArray(d.carrera_ids)) {
+        map.set(norm(d.nombre), new Set((d.carrera_ids as number[]).map(Number)));
+      }
+    }
+    return map;
+  }, [delegacionesData]);
   const loading = matchesLoading || (activeFilter === 'favoritos' && favoritosLoading);
 
   const favoriteNames = useMemo(() => {
@@ -266,14 +284,21 @@ export default function Home() {
   const filteredPartidos = partidos.filter(p => {
     if (activeFilter !== 'todos' && activeFilter !== 'favoritos' && p.disciplinas?.name !== activeFilter) return false;
     if (activeFilter === 'favoritos' && favoriteIds.length > 0) {
+      const favSet = new Set(favoriteIds);
+      const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      // Individual sports: carrera_a_id set directly on the match
       const idA = p.carrera_a_id != null ? Number(p.carrera_a_id) : null;
       const idB = p.carrera_b_id != null ? Number(p.carrera_b_id) : null;
-      const matchById = (idA !== null && favoriteIds.includes(idA)) || (idB !== null && favoriteIds.includes(idB));
-      // Fallback: name-based match for matches created without carrera_a_id
-      const carA = getCarreraName(p, 'a');
-      const carB = getCarreraName(p, 'b');
-      const matchByName = favoriteNames.includes(carA) || favoriteNames.includes(carB);
-      if (!matchById && !matchByName) return false;
+      if ((idA !== null && favSet.has(idA)) || (idB !== null && favSet.has(idB))) return true;
+
+      // Team sports: look up carrera_ids from the delegaciones map by team name
+      const idsA = delegacionCarreraMap.get(norm(p.equipo_a || ''));
+      const idsB = delegacionCarreraMap.get(norm(p.equipo_b || ''));
+      if (idsA && [...idsA].some(id => favSet.has(id))) return true;
+      if (idsB && [...idsB].some(id => favSet.has(id))) return true;
+
+      return false;
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -297,9 +322,20 @@ export default function Home() {
     return true;
   });
 
-  const liveMatches = filteredPartidos.filter(p => p.estado === 'en_curso');
-  const upcomingMatches = filteredPartidos.filter(p => p.estado === 'programado');
-  const finishedMatches = filteredPartidos.filter(p => p.estado === 'finalizado');
+  // In favorites mode: 5 closest non-finished matches across all sports
+  const displayPartidos = useMemo(() => {
+    if (activeFilter !== 'favoritos') return filteredPartidos;
+
+    const live     = filteredPartidos.filter(p => p.estado === 'en_curso');
+    const upcoming = [...filteredPartidos.filter(p => p.estado === 'programado')]
+      .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+
+    return [...live, ...upcoming].slice(0, 5);
+  }, [filteredPartidos, activeFilter]);
+
+  const liveMatches = displayPartidos.filter(p => p.estado === 'en_curso');
+  const upcomingMatches = displayPartidos.filter(p => p.estado === 'programado');
+  const finishedMatches = displayPartidos.filter(p => p.estado === 'finalizado');
   const recentFinished = [...finishedMatches].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
   return (
@@ -384,7 +420,7 @@ export default function Home() {
 
               return (
                 <div>
-                  <HeroSlider matches={activeFilter === 'favoritos' ? filteredPartidos : partidos} activeFilter={activeFilter} />
+                  <HeroSlider matches={activeFilter === 'favoritos' ? displayPartidos : partidos} activeFilter={activeFilter} />
                 </div>
               );
             })()}
