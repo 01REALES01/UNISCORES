@@ -50,6 +50,7 @@ export default function PartidosPage() {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [importingTennis, setImportingTennis] = useState(false);
     const [importingNatacion, setImportingNatacion] = useState(false);
+    const [backfillingNatacion, setBackfillingNatacion] = useState(false);
     const [deletingTennis, setDeletingTennis] = useState(false);
     const [matchToDelete, setMatchToDelete] = useState<any>(null);
     const router = useRouter();
@@ -213,6 +214,21 @@ export default function PartidosPage() {
         } finally {
             setImportingNatacion(false);
             if (natacionFileRef.current) natacionFileRef.current.value = '';
+        }
+    };
+
+    const handleBackfillNatacion = async () => {
+        if (!confirm('Esto va a buscar y vincular los perfiles de todos los nadadores existentes en los partidos.\n\n¿Continuar?')) return;
+        setBackfillingNatacion(true);
+        try {
+            const res = await fetch('/api/admin/backfill-natacion');
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            toast.success(`✅ ${data.updatedCount} partidos actualizados de ${data.matchesFound} encontrados`);
+        } catch (err: any) {
+            toast.error(err.message || 'Error en backfill');
+        } finally {
+            setBackfillingNatacion(false);
         }
     };
 
@@ -419,6 +435,25 @@ export default function PartidosPage() {
                                     {deletingTennis ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} strokeWidth={3} />}
                                 </div>
                                 {deletingTennis ? 'Eliminando...' : 'Borrar Natación'}
+                            </div>
+                        </Button>
+                    </motion.div>
+
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <Button
+                            onClick={handleBackfillNatacion}
+                            disabled={backfillingNatacion}
+                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(16,185,129,0.4)] border-0 relative overflow-hidden group/btn disabled:opacity-60"
+                        >
+                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                            <div className="relative flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-white/20">
+                                    {backfillingNatacion ? <Loader2 size={20} className="animate-spin" /> : <Users size={20} strokeWidth={3} />}
+                                </div>
+                                {backfillingNatacion ? 'Vinculando...' : 'Vincular Perfiles'}
                             </div>
                         </Button>
                     </motion.div>

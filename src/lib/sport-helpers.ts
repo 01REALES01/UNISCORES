@@ -70,11 +70,17 @@ export function getCarreraSubtitle(partido: PartidoLike, side: 'a' | 'b'): strin
     const sportName = partido.disciplinas?.name;
     if (!isIndividualSport(sportName)) return null;
 
-    // En individuales, la carrera viene de carrera_a?.nombre o delegacion_a
-    if (side === 'a') {
-        return partido.carrera_a?.nombre || partido.delegacion_a || null;
+    const mainName = getDisplayName(partido, side);
+    const subtitle = side === 'a' 
+        ? (partido.carrera_a?.nombre || partido.delegacion_a || null)
+        : (partido.carrera_b?.nombre || partido.delegacion_b || null);
+
+    // Evitar redundancia si el subtítulo es igual al nombre (común en errores de data o carga manual)
+    if (subtitle && mainName && subtitle.toLowerCase().trim() === mainName.toLowerCase().trim()) {
+        return null;
     }
-    return partido.carrera_b?.nombre || partido.delegacion_b || null;
+
+    return subtitle;
 }
 
 /**
