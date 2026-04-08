@@ -265,12 +265,15 @@ export default function Home() {
 
   const filteredPartidos = partidos.filter(p => {
     if (activeFilter !== 'todos' && activeFilter !== 'favoritos' && p.disciplinas?.name !== activeFilter) return false;
-    if (activeFilter === 'favoritos' && favoriteNames.length > 0) {
+    if (activeFilter === 'favoritos' && favoriteIds.length > 0) {
+      const idA = p.carrera_a_id != null ? Number(p.carrera_a_id) : null;
+      const idB = p.carrera_b_id != null ? Number(p.carrera_b_id) : null;
+      const matchById = (idA !== null && favoriteIds.includes(idA)) || (idB !== null && favoriteIds.includes(idB));
+      // Fallback: name-based match for matches created without carrera_a_id
       const carA = getCarreraName(p, 'a');
       const carB = getCarreraName(p, 'b');
-      if (!favoriteNames.includes(carA) && !favoriteNames.includes(carB)) {
-        return false;
-      }
+      const matchByName = favoriteNames.includes(carA) || favoriteNames.includes(carB);
+      if (!matchById && !matchByName) return false;
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
