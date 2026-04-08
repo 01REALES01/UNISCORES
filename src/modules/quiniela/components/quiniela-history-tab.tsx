@@ -51,7 +51,7 @@ export function QuinielaHistoryTab({ predictions, matches }: QuinielaHistoryTabP
                 >
                     <LayoutGrid size={22} />
                 </button>
-                {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'].map(sport => (
+                {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez'].map(sport => (
                     <button
                         key={sport}
                         onClick={() => setSportFilter(sport)}
@@ -148,13 +148,34 @@ export function QuinielaHistoryTab({ predictions, matches }: QuinielaHistoryTabP
                                     )}
                                 </div>
 
-                                <div className="mt-4 p-3 rounded-2xl bg-black/40 border border-white/5 text-center shadow-inner">
+                                <div className="mt-4 p-3 rounded-2xl bg-black/40 border border-white/5 text-center shadow-inner space-y-2">
                                     <p className="text-[9px] font-black uppercase text-white/40 mb-1 tracking-widest">Tu Predicción</p>
                                     <p className="text-xs font-black">
-                                        {pred.winner_pick 
+                                        {pred.winner_pick
                                             ? (pred.winner_pick === 'A' ? m.carrera_a?.nombre || m.equipo_a : pred.winner_pick === 'B' ? m.carrera_b?.nombre || m.equipo_b : 'Empate')
                                             : `${pred.goles_a} - ${pred.goles_b}`}
                                     </p>
+                                    {/* Bonus prediction detail */}
+                                    {pred.prediction_type === 'score' && (
+                                        <p className="text-[10px] font-bold text-violet-400">
+                                            {m.disciplinas?.name === 'Baloncesto'
+                                                ? (pred.goles_a === 0 ? 'Cerrado (≤10)' : 'Amplio (>10)')
+                                                : m.disciplinas?.name === 'Voleibol'
+                                                    ? `Sets: ${pred.goles_a} - ${pred.goles_b}`
+                                                    : `Marcador: ${pred.goles_a} - ${pred.goles_b}`}
+                                        </p>
+                                    )}
+                                    {/* Points earned */}
+                                    {isFinished && pred.puntos_ganados !== null && pred.puntos_ganados !== undefined && (
+                                        <div className={cn(
+                                            "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black",
+                                            pred.puntos_ganados > 0
+                                                ? "bg-emerald-500/15 text-emerald-400"
+                                                : "bg-white/5 text-white/30"
+                                        )}>
+                                            <span>+{pred.puntos_ganados} pts</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </Link>

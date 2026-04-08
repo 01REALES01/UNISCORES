@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
 import { Badge, Avatar, Button } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink, Target, ChevronDown, Minus, Plus } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,6 +38,10 @@ export default function PublicMatchDetail() {
     const [matchPredictions, setMatchPredictions] = useState<any[]>([]);
     const [userPrediction, setUserPrediction] = useState<any>(null);
     const [votingPick, setVotingPick] = useState<string | null>(null);
+    const [showBonus, setShowBonus] = useState(false);
+    const [bonusGolesA, setBonusGolesA] = useState<number | null>(null);
+    const [bonusGolesB, setBonusGolesB] = useState<number | null>(null);
+    const [marginPick, setMarginPick] = useState<'CLOSE' | 'WIDE' | null>(null);
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState<string | null>(null);
@@ -114,6 +118,16 @@ export default function PublicMatchDetail() {
                 if (userPred) {
                     setUserPrediction(userPred);
                     setVotingPick(userPred.winner_pick);
+                    if (userPred.prediction_type === 'score') {
+                        setShowBonus(true);
+                        const sport = (matchRes?.data as any)?.disciplinas?.name;
+                        if (sport === 'Baloncesto') {
+                            setMarginPick(userPred.goles_a === 0 ? 'CLOSE' : 'WIDE');
+                        } else {
+                            setBonusGolesA(userPred.goles_a);
+                            setBonusGolesB(userPred.goles_b);
+                        }
+                    }
                 }
             }
         } catch (err: any) {
@@ -132,6 +146,14 @@ export default function PublicMatchDetail() {
         setVotingPick(pick);
         setSaving(true);
 
+        const sportN = (match as any).disciplinas?.name;
+        const BONUS_SPORTS = ['Fútbol', 'Voleibol', 'Baloncesto'];
+        const hasBonusBet = showBonus && BONUS_SPORTS.includes(sportN) && (
+            (sportN === 'Fútbol' && bonusGolesA !== null && bonusGolesB !== null) ||
+            (sportN === 'Voleibol' && bonusGolesA !== null && bonusGolesB !== null) ||
+            (sportN === 'Baloncesto' && marginPick !== null)
+        );
+
         try {
             // Ensure profile exists
             await supabase.from('profiles').upsert(
@@ -142,10 +164,14 @@ export default function PublicMatchDetail() {
             const payload = {
                 user_id: user.id,
                 match_id: parseInt(matchId),
-                prediction_type: 'winner',
-                goles_a: null,
-                goles_b: null,
-                winner_pick: pick
+                prediction_type: hasBonusBet ? 'score' : 'winner',
+                winner_pick: pick,
+                goles_a: hasBonusBet
+                    ? (sportN === 'Baloncesto' ? (marginPick === 'CLOSE' ? 0 : 1) : bonusGolesA)
+                    : null,
+                goles_b: hasBonusBet
+                    ? (sportN === 'Baloncesto' ? null : bonusGolesB)
+                    : null,
             };
 
             if (userPrediction) {
@@ -174,6 +200,20 @@ export default function PublicMatchDetail() {
             toast.error('Error al guardar: ' + err.message);
         } finally {
             setSaving(false);
+        }
+    };
+
+    // Handle winner change (auto-open bonus, reset volley)
+    const handleWinnerChange = (pick: string) => {
+        setVotingPick(pick);
+        const sportN = (match as any)?.disciplinas?.name;
+        const BONUS_SPORTS = ['Fútbol', 'Voleibol', 'Baloncesto'];
+        if (BONUS_SPORTS.includes(sportN) && (pick !== 'DRAW' || sportN === 'Fútbol')) {
+            setShowBonus(true);
+        }
+        if (sportN === 'Voleibol') {
+            setBonusGolesA(null);
+            setBonusGolesB(null);
         }
     };
 
@@ -750,44 +790,156 @@ export default function PublicMatchDetail() {
                                     {userPrediction ? 'Cambiar predicción' : '¿Quién ganará?'}
                                 </p>
                             </div>
-                            <div className="grid grid-cols-3 gap-3">
-                                <button
-                                    onClick={() => handleVote('A')}
-                                    disabled={saving}
-                                    className={cn(
-                                        "py-2.5 px-2 rounded-[1.25rem] text-[10px] font-black tracking-widest transition-all border-2 uppercase font-sans",
-                                        votingPick === 'A'
-                                            ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105"
-                                            : "bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/20 active:scale-95"
-                                    )}
-                                >
-                                    {getDisplayName(match, 'a')?.split(' ')[0]}
-                                </button>
-                                <button
-                                    onClick={() => handleVote('DRAW')}
-                                    disabled={saving}
-                                    className={cn(
-                                        "py-2.5 px-2 rounded-[1.25rem] text-[10px] font-black tracking-widest transition-all border-2 uppercase font-sans",
-                                        votingPick === 'DRAW'
-                                            ? "bg-slate-300 text-black border-slate-300 shadow-lg scale-105"
-                                            : "bg-white/5 border-white/5 text-white/60 hover:bg-white/10 hover:border-white/20 active:scale-95"
-                                    )}
-                                >
-                                    Empate
-                                </button>
-                                <button
-                                    onClick={() => handleVote('B')}
-                                    disabled={saving}
-                                    className={cn(
-                                        "py-2.5 px-2 rounded-[1.25rem] text-[10px] font-black tracking-widest transition-all border-2 uppercase font-sans",
-                                        votingPick === 'B'
-                                            ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105"
-                                            : "bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/20 active:scale-95"
-                                    )}
-                                >
-                                    {getDisplayName(match, 'b')?.split(' ')[0]}
-                                </button>
-                            </div>
+                            {(() => {
+                                const sName = (match as any).disciplinas?.name;
+                                const supportsDraws = ['Fútbol', 'Ajedrez'].includes(sName);
+                                const BONUS_SPORTS = ['Fútbol', 'Voleibol', 'Baloncesto'];
+                                const hasBonus = BONUS_SPORTS.includes(sName);
+
+                                const winnerOpts = supportsDraws
+                                    ? [
+                                        { key: 'A', name: getDisplayName(match, 'a')?.split(' ')[0] || 'A' },
+                                        { key: 'DRAW', name: 'Empate' },
+                                        { key: 'B', name: getDisplayName(match, 'b')?.split(' ')[0] || 'B' }
+                                    ]
+                                    : [
+                                        { key: 'A', name: getDisplayName(match, 'a')?.split(' ')[0] || 'A' },
+                                        { key: 'B', name: getDisplayName(match, 'b')?.split(' ')[0] || 'B' }
+                                    ];
+
+                                const volleyOpts = votingPick === 'A'
+                                    ? [{ a: 2, b: 0 }, { a: 2, b: 1 }]
+                                    : votingPick === 'B'
+                                        ? [{ a: 0, b: 2 }, { a: 1, b: 2 }]
+                                        : [];
+
+                                return (
+                                    <div className="space-y-4">
+                                        <div className={cn("grid gap-3", supportsDraws ? "grid-cols-3" : "grid-cols-2")}>
+                                            {winnerOpts.map(opt => (
+                                                <button
+                                                    key={opt.key}
+                                                    onClick={() => handleWinnerChange(opt.key)}
+                                                    disabled={saving}
+                                                    className={cn(
+                                                        "py-2.5 px-2 rounded-[1.25rem] text-[10px] font-black tracking-widest transition-all border-2 uppercase font-sans",
+                                                        votingPick === opt.key
+                                                            ? opt.key === 'DRAW'
+                                                                ? "bg-slate-300 text-black border-slate-300 shadow-lg scale-105"
+                                                                : "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105"
+                                                            : "bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/20 active:scale-95"
+                                                    )}
+                                                >
+                                                    {opt.name}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Bonus Section */}
+                                        {hasBonus && votingPick && (votingPick !== 'DRAW' || sName === 'Fútbol') && showBonus && (
+                                            <div className="bg-black/30 rounded-2xl border border-white/5 p-4 space-y-4 animate-in slide-in-from-top-2 fade-in duration-300">
+                                                        {/* Fútbol: Exact Score */}
+                                                        {sName === 'Fútbol' && (
+                                                            <>
+                                                                <p className="text-[10px] font-display font-black text-white/50 uppercase tracking-widest text-center">Marcador exacto</p>
+                                                                <div className="flex items-center justify-center gap-6">
+                                                                    <div className="flex flex-col items-center gap-2">
+                                                                        <span className="text-[9px] font-black text-white/40 uppercase tracking-wider">{getDisplayName(match, 'a')?.split(' ')[0]}</span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <button onClick={() => setBonusGolesA(Math.max(0, (bonusGolesA ?? 0) - 1))} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"><Minus size={12} /></button>
+                                                                            <span className="text-2xl font-black font-mono tabular-nums text-white w-8 text-center">{bonusGolesA ?? 0}</span>
+                                                                            <button onClick={() => setBonusGolesA((bonusGolesA ?? 0) + 1)} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"><Plus size={12} /></button>
+                                                                        </div>
+                                                                    </div>
+                                                                    <span className="text-white/20 text-xl font-black">-</span>
+                                                                    <div className="flex flex-col items-center gap-2">
+                                                                        <span className="text-[9px] font-black text-white/40 uppercase tracking-wider">{getDisplayName(match, 'b')?.split(' ')[0]}</span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <button onClick={() => setBonusGolesB(Math.max(0, (bonusGolesB ?? 0) - 1))} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"><Minus size={12} /></button>
+                                                                            <span className="text-2xl font-black font-mono tabular-nums text-white w-8 text-center">{bonusGolesB ?? 0}</span>
+                                                                            <button onClick={() => setBonusGolesB((bonusGolesB ?? 0) + 1)} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"><Plus size={12} /></button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </>
+                                                        )}
+
+                                                        {/* Voleibol: Set Result */}
+                                                        {sName === 'Voleibol' && (
+                                                            <>
+                                                                <p className="text-[10px] font-display font-black text-white/50 uppercase tracking-widest text-center">Resultado en sets</p>
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    {volleyOpts.map((opt) => (
+                                                                        <button
+                                                                            key={`${opt.a}-${opt.b}`}
+                                                                            onClick={() => { setBonusGolesA(opt.a); setBonusGolesB(opt.b); }}
+                                                                            className={cn(
+                                                                                "py-3 px-4 rounded-xl font-display font-black text-lg border-2 transition-all",
+                                                                                bonusGolesA === opt.a && bonusGolesB === opt.b
+                                                                                    ? "bg-violet-500/15 border-violet-500 text-violet-300 shadow-[0_0_15px_rgba(139,92,246,0.2)]"
+                                                                                    : "bg-black/30 border-white/10 text-white/50 hover:bg-white/5 hover:text-white"
+                                                                            )}
+                                                                        >
+                                                                            {opt.a} - {opt.b}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </>
+                                                        )}
+
+                                                        {/* Baloncesto: Margin */}
+                                                        {sName === 'Baloncesto' && (
+                                                            <>
+                                                                <p className="text-[10px] font-display font-black text-white/50 uppercase tracking-widest text-center">¿Cómo será el partido?</p>
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <button
+                                                                        onClick={() => setMarginPick('CLOSE')}
+                                                                        className={cn(
+                                                                            "py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5",
+                                                                            marginPick === 'CLOSE'
+                                                                                ? "bg-violet-500/15 border-violet-500 text-violet-300 shadow-[0_0_15px_rgba(139,92,246,0.2)]"
+                                                                                : "bg-black/30 border-white/10 text-white/50 hover:bg-white/5 hover:text-white"
+                                                                        )}
+                                                                    >
+                                                                        <span className="text-xs font-display font-black uppercase tracking-wider">Cerrado</span>
+                                                                        <span className="text-[9px] text-white/30 font-bold">{"≤"}10 pts</span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setMarginPick('WIDE')}
+                                                                        className={cn(
+                                                                            "py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5",
+                                                                            marginPick === 'WIDE'
+                                                                                ? "bg-violet-500/15 border-violet-500 text-violet-300 shadow-[0_0_15px_rgba(139,92,246,0.2)]"
+                                                                                : "bg-black/30 border-white/10 text-white/50 hover:bg-white/5 hover:text-white"
+                                                                        )}
+                                                                    >
+                                                                        <span className="text-xs font-display font-black uppercase tracking-wider">Amplio</span>
+                                                                        <span className="text-[9px] text-white/30 font-bold">{">"}10 pts</span>
+                                                                    </button>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                            </div>
+                                        )}
+
+                                        {/* Save button */}
+                                        {votingPick && (
+                                            <button
+                                                onClick={() => handleVote(votingPick)}
+                                                disabled={saving}
+                                                className={cn(
+                                                    "w-full py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all border-2",
+                                                    userPrediction
+                                                        ? "bg-emerald-500 text-black border-emerald-500 shadow-[0_10px_30px_rgba(16,185,129,0.3)] hover:bg-emerald-400"
+                                                        : "bg-white/10 text-white border-white/10 hover:bg-white hover:text-black shadow-xl"
+                                                )}
+                                            >
+                                                {saving ? 'Guardando...' : userPrediction ? 'Actualizar Acierto' : 'Confirmar Acierto'}
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     ) : match?.estado === 'programado' && !user ? (
                         <div className="mt-5 pt-4 border-t border-white/5 text-center">
@@ -797,7 +949,7 @@ export default function PublicMatchDetail() {
                         </div>
                     ) : match?.estado !== 'programado' && userPrediction ? (
                         <div className={cn(
-                            "mt-5 pt-4 border-t border-white/5 text-center p-3 rounded-xl",
+                            "mt-5 pt-4 border-t border-white/5 text-center p-3 rounded-xl space-y-2",
                             match?.estado === 'finalizado'
                                 ? ((() => {
                                     const md = match?.marcador_detalle || {};
@@ -821,6 +973,34 @@ export default function PublicMatchDetail() {
                                 {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'a')}</> :
                                     userPrediction.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'b')}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
                             </p>
+                            {/* Show bonus prediction */}
+                            {userPrediction.prediction_type === 'score' && (() => {
+                                const sName = (match as any).disciplinas?.name;
+                                const bonusLabel = sName === 'Baloncesto'
+                                    ? (userPrediction.goles_a === 0 ? 'Cerrado (≤10)' : 'Amplio (>10)')
+                                    : sName === 'Voleibol'
+                                        ? `Sets: ${userPrediction.goles_a} - ${userPrediction.goles_b}`
+                                        : `Marcador: ${userPrediction.goles_a} - ${userPrediction.goles_b}`;
+                                return (
+                                    <div className="flex items-center justify-center">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                                            <Target size={12} className="text-violet-400" />
+                                            <span className="text-[10px] font-display font-black text-violet-300">{bonusLabel}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                            {/* Points earned */}
+                            {match?.estado === 'finalizado' && userPrediction.puntos_ganados !== null && userPrediction.puntos_ganados !== undefined && (
+                                <div className="flex items-center justify-center mt-1">
+                                    <div className={cn(
+                                        "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black",
+                                        userPrediction.puntos_ganados > 0 ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-white/30"
+                                    )}>
+                                        <span>+{userPrediction.puntos_ganados} pts</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : null}
                 </div>
