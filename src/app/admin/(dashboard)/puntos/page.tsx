@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuditLogger } from "@/hooks/useAuditLogger";
-import { Trophy, Settings, Save, Trash2, Zap } from "lucide-react";
+import { Trophy, Settings, Save, Trash2, Zap, LayoutDashboard, Shield, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { DEPORTES_INDIVIDUALES, DEPORTES_CON_CATEGORIA, DEPORTES_CON_BRACKET } from "@/lib/constants";
@@ -309,28 +309,28 @@ function ClasificacionTab() {
                 <select
                     value={selectedDisc ?? ''}
                     onChange={e => setSelectedDisc(Number(e.target.value) || null)}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
+                    className="bg-[#1a1730] border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
                 >
-                    <option value="">Selecciona disciplina...</option>
+                    <option value="" className="bg-[#1a1730] text-white">Selecciona disciplina...</option>
                     {disciplinas.map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
+                        <option key={d.id} value={d.id} className="bg-[#1a1730] text-white">{d.name}</option>
                     ))}
                 </select>
                 <select
                     value={selectedGenero}
                     onChange={e => setSelectedGenero(e.target.value as typeof selectedGenero)}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
+                    className="bg-[#1a1730] border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
                 >
-                    {GENEROS.map(g => <option key={g} value={g}>{g}</option>)}
+                    {GENEROS.map(g => <option key={g} value={g} className="bg-[#1a1730] text-white">{g}</option>)}
                 </select>
                 {hasCategoria && (
                     <select
                         value={selectedCategoria ?? ''}
                         onChange={e => setSelectedCategoria(e.target.value as Categoria || null)}
-                        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
+                        className="bg-[#1a1730] border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
                     >
                         {CATEGORIAS.map(cat => (
-                            <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                            <option key={cat} value={cat} className="bg-[#1a1730] text-white">{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
                         ))}
                     </select>
                 )}
@@ -385,11 +385,11 @@ function ClasificacionTab() {
                                     <select
                                         value={positions[pos] ?? ''}
                                         onChange={e => setPositions(prev => ({ ...prev, [pos]: e.target.value || null }))}
-                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
+                                        className="flex-1 bg-[#1a1730] border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
                                     >
-                                        <option value="">Sin asignar</option>
+                                        <option value="" className="bg-[#1a1730] text-white">Sin asignar</option>
                                         {dropdownOptions.map(opt => (
-                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            <option key={opt.value} value={opt.value} className="bg-[#1a1730] text-white">{opt.label}</option>
                                         ))}
                                     </select>
                                     <span className="text-amber-400/70 text-xs font-bold w-12 text-right">
@@ -451,32 +451,324 @@ function ClasificacionTab() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Tab 3: Configuración General
+// ─────────────────────────────────────────────────────────────────────────────
+function ConfigGeneralTab() {
+    return (
+        <div className="space-y-6">
+            <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                    <span className="text-xs font-black uppercase tracking-widest text-violet-400">Visibilidad de Brackets</span>
+                </div>
+                <div className="p-6">
+                    <div className="flex items-center justify-between gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/10 transition-all">
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-white mb-1">Ocultar Brackets en Deportes de Equipo</p>
+                            <p className="text-xs text-white/30 italic">Aplica para Fútbol, Voleibol y Baloncesto. Tenis siempre es visible.</p>
+                        </div>
+                        <BracketVisibilityToggle />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function BracketVisibilityToggle() {
+    const [hidden, setHidden] = useState<boolean>(false);
+    const [updating, setUpdating] = useState(true);
+
+    useEffect(() => {
+        supabase.from('site_config').select('value').eq('key', 'hide_team_brackets').maybeSingle()
+            .then(({ data, error }) => {
+                if (error) console.error('site_config fetch error:', error);
+                if (data) setHidden(data.value === true);
+                setUpdating(false);
+            });
+    }, []);
+
+    const toggle = async () => {
+        setUpdating(true);
+        const newValue = !hidden;
+        const { error } = await supabase
+            .from('site_config')
+            .update({ value: newValue, updated_at: new Date().toISOString() })
+            .eq('key', 'hide_team_brackets');
+        if (error) {
+            toast.error('Error al actualizar configuración');
+        } else {
+            setHidden(newValue);
+            toast.success(newValue ? 'Brackets ahora están ocultos' : 'Brackets ahora son visibles');
+        }
+        setUpdating(false);
+    };
+
+    if (updating) return <div className="w-8 h-8 rounded-full border border-white/10 border-t-violet-500 animate-spin" />;
+
+    return (
+        <button
+            onClick={toggle}
+            className={cn(
+                "relative w-12 h-6 rounded-full transition-all duration-300",
+                hidden ? "bg-violet-600 shadow-[0_0_15px_rgba(124,58,237,0.4)]" : "bg-white/10"
+            )}
+        >
+            <div className={cn(
+                "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-sm",
+                hidden ? "translate-x-6" : "translate-x-0"
+            )} />
+        </button>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 4: Fair Play admin adjustments
+// ─────────────────────────────────────────────────────────────────────────────
+interface FairPlayEntry { id: number; equipo: string; descripcion: string; partido_id: number }
+interface TeamFP { team: string; score: number; amarillas: number; rojas: number; otros: number }
+
+function FairPlayAdminTab() {
+    const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
+    const [selectedDisc, setSelectedDisc] = useState<number | null>(null);
+    const [selectedGenero, setSelectedGenero] = useState<'masculino' | 'femenino' | 'mixto'>('masculino');
+    const [teamData, setTeamData] = useState<TeamFP[]>([]);
+    const [ajustes, setAjustes] = useState<FairPlayEntry[]>([]);
+    const [partidos, setPartidos] = useState<{ id: number; equipo_a: string; equipo_b: string }[]>([]);
+    const [loadingData, setLoadingData] = useState(false);
+    const [form, setForm] = useState<{ team: string; valor: number; partido_id: number | '' } | null>(null);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        supabase.from('disciplinas').select('id, name').order('name')
+            .then(({ data }) => {
+                if (data) setDisciplinas((data as Disciplina[]).filter(d => !DEPORTES_INDIVIDUALES.includes(d.name)));
+            });
+    }, []);
+
+    const loadData = useCallback(async (discId: number, genero: string) => {
+        setLoadingData(true);
+        const { data: pts } = await supabase
+            .from('partidos')
+            .select('id, equipo_a, equipo_b, delegacion_a, delegacion_b')
+            .eq('disciplina_id', discId)
+            .eq('genero', genero);
+
+        setPartidos((pts ?? []) as any);
+        const matchIds = (pts ?? []).map((p: any) => p.id);
+        if (matchIds.length === 0) { setTeamData([]); setAjustes([]); setLoadingData(false); return; }
+
+        const scores: Record<string, number> = {};
+        const amarillas: Record<string, number> = {};
+        const rojas: Record<string, number> = {};
+        const otros: Record<string, number> = {};
+        (pts ?? []).forEach((p: any) => {
+            [p.delegacion_a || p.equipo_a, p.delegacion_b || p.equipo_b].forEach((t: string) => {
+                if (t && !(t in scores)) { scores[t] = 2000; amarillas[t] = 0; rojas[t] = 0; otros[t] = 0; }
+            });
+        });
+
+        const { data: eventos } = await supabase
+            .from('olympics_eventos')
+            .select('id, tipo_evento, equipo, descripcion, partido_id')
+            .in('partido_id', matchIds)
+            .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play']);
+
+        const adjList: FairPlayEntry[] = [];
+        (eventos ?? []).forEach((e: any) => {
+            const t = e.equipo;
+            if (!t) return;
+            if (!(t in scores)) { scores[t] = 2000; amarillas[t] = 0; rojas[t] = 0; otros[t] = 0; }
+            if (e.tipo_evento === 'tarjeta_amarilla') { scores[t] -= 50; amarillas[t]++; }
+            else if (e.tipo_evento === 'tarjeta_roja') { scores[t] -= 100; rojas[t]++; }
+            else if (e.tipo_evento === 'expulsion_delegado') { scores[t] -= 100; otros[t]++; }
+            else if (e.tipo_evento === 'mal_comportamiento') { scores[t] -= 100; otros[t]++; }
+            else if (e.tipo_evento === 'ajuste_fair_play') {
+                scores[t] += Number(e.descripcion ?? 0);
+                adjList.push({ id: e.id, equipo: t, descripcion: e.descripcion, partido_id: e.partido_id });
+            }
+        });
+
+        setTeamData(Object.keys(scores).map(t => ({ team: t, score: scores[t], amarillas: amarillas[t], rojas: rojas[t], otros: otros[t] })).sort((a, b) => b.score - a.score));
+        setAjustes(adjList);
+        setLoadingData(false);
+    }, []);
+
+    useEffect(() => {
+        if (selectedDisc) loadData(selectedDisc, selectedGenero);
+    }, [selectedDisc, selectedGenero, loadData]);
+
+    const handleSave = async () => {
+        if (!form || !form.team || form.valor === 0 || form.partido_id === '') return;
+        setSaving(true);
+        const res = await fetch('/api/admin/fair-play-adjustment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partido_id: form.partido_id, equipo: form.team, valor: form.valor }),
+        });
+        if (res.ok) {
+            toast.success('Ajuste guardado');
+            setForm(null);
+            if (selectedDisc) loadData(selectedDisc, selectedGenero);
+        } else {
+            const err = await res.json();
+            toast.error(err.error ?? 'Error al guardar');
+        }
+        setSaving(false);
+    };
+
+    const handleDelete = async (eventoId: number) => {
+        const res = await fetch('/api/admin/fair-play-adjustment', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ evento_id: eventoId }),
+        });
+        if (res.ok) {
+            toast.success('Ajuste eliminado');
+            if (selectedDisc) loadData(selectedDisc, selectedGenero);
+        } else {
+            toast.error('Error al eliminar');
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-wrap gap-3">
+                <select value={selectedDisc ?? ''} onChange={e => setSelectedDisc(Number(e.target.value) || null)}
+                    className="bg-[#1a1730] border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50">
+                    <option value="" className="bg-[#1a1730] text-white">Selecciona disciplina...</option>
+                    {disciplinas.map(d => <option key={d.id} value={d.id} className="bg-[#1a1730] text-white">{d.name}</option>)}
+                </select>
+                <select value={selectedGenero} onChange={e => setSelectedGenero(e.target.value as any)}
+                    className="bg-[#1a1730] border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50">
+                    {GENEROS.map(g => <option key={g} value={g} className="bg-[#1a1730] text-white">{g}</option>)}
+                </select>
+            </div>
+
+            {selectedDisc && (
+                <>
+                    <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+                        <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                            <Shield size={14} className="text-emerald-400" />
+                            <span className="text-xs font-black uppercase tracking-widest text-emerald-400/80">Scores actuales</span>
+                        </div>
+                        {loadingData ? (
+                            <div className="py-6 text-center text-white/30 text-xs animate-pulse">Cargando...</div>
+                        ) : (
+                            <div className="divide-y divide-white/5">
+                                {teamData.map((row, idx) => (
+                                    <div key={row.team} className="flex items-center gap-4 px-4 py-3">
+                                        <span className="text-white/30 text-xs w-5">{idx + 1}</span>
+                                        <span className="text-white/80 text-sm flex-1">{row.team}</span>
+                                        <span className={cn("text-sm font-black tabular-nums", row.score === 2000 ? "text-emerald-400" : row.score >= 1900 ? "text-white/60" : "text-rose-400")}>
+                                            {row.score}
+                                        </span>
+                                        <button
+                                            onClick={() => setForm({ team: row.team, valor: -50, partido_id: partidos[0]?.id ?? '' })}
+                                            className="text-xs text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
+                                        >
+                                            <Plus size={10} /> Ajuste
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {form && (
+                        <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-4 space-y-3">
+                            <p className="text-xs font-black uppercase text-violet-400 tracking-widest">Nuevo ajuste — {form.team}</p>
+                            <div className="flex flex-wrap gap-3">
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-[10px] text-white/40 font-bold uppercase">Valor (neg = penalización)</label>
+                                    <input
+                                        type="number"
+                                        value={form.valor}
+                                        onChange={e => setForm(f => f ? { ...f, valor: Number(e.target.value) } : f)}
+                                        className="w-28 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-violet-500/50"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-[10px] text-white/40 font-bold uppercase">Partido</label>
+                                    <select
+                                        value={form.partido_id}
+                                        onChange={e => setForm(f => f ? { ...f, partido_id: Number(e.target.value) } : f)}
+                                        className="bg-[#1a1730] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-violet-500/50"
+                                    >
+                                        <option value="" className="bg-[#1a1730] text-white">Selecciona partido...</option>
+                                        {partidos.map(p => (
+                                            <option key={p.id} value={p.id} className="bg-[#1a1730] text-white">{p.equipo_a} vs {p.equipo_b}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={handleSave} disabled={saving || form.partido_id === ''} className="px-4 py-2 rounded-xl bg-violet-500/20 border border-violet-500/30 text-violet-300 text-xs font-bold hover:bg-violet-500/30 transition-colors disabled:opacity-40">
+                                    {saving ? 'Guardando...' : 'Guardar'}
+                                </button>
+                                <button onClick={() => setForm(null)} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/40 text-xs font-bold hover:bg-white/10 transition-colors">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {ajustes.length > 0 && (
+                        <div className="space-y-2">
+                            <p className="text-xs text-white/30 uppercase font-black">Ajustes manuales guardados</p>
+                            {ajustes.map(a => (
+                                <div key={a.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                                    <div className="flex items-center gap-3">
+                                        {Number(a.descripcion) < 0
+                                            ? <Minus size={12} className="text-rose-400" />
+                                            : <Plus size={12} className="text-emerald-400" />
+                                        }
+                                        <span className="text-white/60 text-sm">{a.equipo}</span>
+                                        <span className={cn("text-sm font-black tabular-nums", Number(a.descripcion) < 0 ? "text-rose-400" : "text-emerald-400")}>
+                                            {Number(a.descripcion) > 0 ? '+' : ''}{a.descripcion}
+                                        </span>
+                                    </div>
+                                    <button onClick={() => handleDelete(a.id)} className="text-white/20 hover:text-rose-400 transition-colors">
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────────────────────────────────────
 export default function PuntosAdminPage() {
-    const { profile, isAdmin } = useAuth();
-    const [tab, setTab] = useState<'clasificacion' | 'config'>('clasificacion');
+    const { isAdmin } = useAuth();
+    const [tab, setTab] = useState<'clasificacion' | 'config' | 'general' | 'fairplay'>('clasificacion');
 
     const tabs = [
         { id: 'clasificacion', label: 'Clasificación', icon: Trophy },
-        ...(isAdmin ? [{ id: 'config', label: 'Configurar Puntos', icon: Settings }] : []),
+        ...(isAdmin ? [
+            { id: 'config', label: 'Configurar Puntos', icon: Settings },
+            { id: 'general', label: 'Ajustes Generales', icon: LayoutDashboard },
+            { id: 'fairplay', label: 'Fair Play', icon: Shield },
+        ] : []),
     ] as const;
 
     return (
         <div className="min-h-screen bg-background p-6">
             <div className="max-w-3xl mx-auto space-y-6">
-                {/* Header */}
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
                         <Trophy size={18} className="text-amber-400" />
                     </div>
                     <div>
                         <h1 className="text-white font-black text-xl">Sistema de Puntos</h1>
-                        <p className="text-white/30 text-xs">Ingresa las posiciones finales por disciplina</p>
+                        <p className="text-white/30 text-xs">Administra las posiciones y ajustes globales</p>
                     </div>
                 </div>
 
-                {/* Tabs */}
                 <div className="flex gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/5 w-fit">
                     {tabs.map(t => (
                         <button
@@ -495,9 +787,10 @@ export default function PuntosAdminPage() {
                     ))}
                 </div>
 
-                {/* Tab content */}
                 {tab === 'clasificacion' && <ClasificacionTab />}
                 {tab === 'config' && <PuntosConfigTab isAdmin={isAdmin} />}
+                {tab === 'general' && <ConfigGeneralTab />}
+                {tab === 'fairplay' && <FairPlayAdminTab />}
             </div>
         </div>
     );
