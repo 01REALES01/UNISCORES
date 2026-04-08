@@ -187,7 +187,7 @@ export default function MedalleroPage() {
     }, [sportFilter, disciplinas]);
 
     const tabs: { id: Tab; label: string; icon: any }[] = [
-        { id: "carreras", label: "Carreras", icon: GraduationCap },
+        { id: "carreras", label: "Programas", icon: GraduationCap },
         { id: "equipos", label: "Equipos", icon: Users },
     ];
 

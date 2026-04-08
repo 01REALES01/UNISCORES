@@ -84,6 +84,7 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
     }, [matches]);
 
     const standings = useMemo(() => calculateStandings(matches, sportName, fairPlayData, teamIdMap), [matches, sportName, fairPlayData, teamIdMap]);
+
     const gc = GROUP_COLORS[grupo?.toUpperCase()] || DEFAULT_GROUP_COLOR;
     const played = matches.filter(m => m.estado === 'finalizado').length;
     const total  = matches.length;

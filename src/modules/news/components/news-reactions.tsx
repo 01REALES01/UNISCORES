@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import dynamic from "next/dynamic";
+import { m, AnimatePresence } from "framer-motion";
 
 // Carga emoji-mart SOLO cuando el picker se abre — evita 424KB en el bundle inicial
 const Picker = dynamic(() => import("@emoji-mart/react"), { ssr: false });
@@ -24,6 +25,7 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
     const [counts, setCounts] = useState<Record<string, number>>({});
     const [userReaction, setUserReaction] = useState<string | null>(null);
     const [animating, setAnimating] = useState<string | null>(null);
+    const [floatingEmojis, setFloatingEmojis] = useState<{ id: number; emoji: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [pickerOpen, setPickerOpen] = useState(false);
     const [emojiData, setEmojiData] = useState<unknown>(null);
@@ -81,6 +83,12 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
         setPickerOpen(false);
         setAnimating(emoji);
         setTimeout(() => setAnimating(null), 400);
+
+        const floatId = Date.now() + Math.random();
+        setFloatingEmojis(prev => [...prev, { id: floatId, emoji }]);
+        setTimeout(() => {
+            setFloatingEmojis(prev => prev.filter(f => f.id !== floatId));
+        }, 1000);
 
         const previousReaction = userReaction;
 
@@ -184,7 +192,7 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
                                 onClick={() => toggleReaction(emoji)}
                                 disabled={loading}
                                 className={cn(
-                                    "relative flex flex-col items-center gap-1 min-w-[50px] sm:min-w-[65px] py-4 rounded-2xl transition-all duration-500 group/reaction h-full overflow-hidden",
+                                    "relative flex flex-col items-center gap-1 min-w-[50px] sm:min-w-[65px] py-4 rounded-2xl transition-all duration-500 group/reaction h-full",
                                     isActive 
                                         ? "bg-white shadow-[0_10px_40px_rgba(255,255,255,0.25)] scale-[1.05] z-10" 
                                         : "hover:bg-white/5 active:scale-95"
@@ -211,6 +219,26 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
                                 {isActive && (
                                     <div className="absolute inset-0 border-2 border-white/20 rounded-2xl animate-pulse" />
                                 )}
+
+                                {/* Floating Facebook-style Animation */}
+                                <AnimatePresence>
+                                    {floatingEmojis.filter(f => f.emoji === emoji).map((f) => (
+                                        <m.div
+                                            key={f.id}
+                                            initial={{ opacity: 1, y: 0, scale: 0.5 }}
+                                            animate={{ 
+                                                opacity: [1, 1, 0], 
+                                                y: -80 - Math.random() * 40,
+                                                x: (Math.random() - 0.5) * 40,
+                                                scale: [0.5, 1.8, 1.2]
+                                            }}
+                                            transition={{ duration: 1, ease: "easeOut" }}
+                                            className="absolute top-2 pointer-events-none z-50 text-4xl drop-shadow-xl"
+                                        >
+                                            {f.emoji}
+                                        </m.div>
+                                    ))}
+                                </AnimatePresence>
                             </button>
                         );
                     })}

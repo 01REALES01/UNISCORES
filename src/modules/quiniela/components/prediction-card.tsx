@@ -4,13 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge, Button, Avatar } from "@/components/ui-primitives";
-import { Trophy, Target, Award, Zap, History, Lock, Clock, Users, ExternalLink } from "lucide-react";
+import { Trophy, Target, Award, Zap, History, Lock, Clock, Users, ExternalLink, Minus, Plus } from "lucide-react";
 import { SportIcon } from "@/components/sport-icons";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { VotePercentageBar } from "./vote-percentage-bar";
 import { getMatchResult } from "../helpers";
 import { SPORT_ACCENT, SPORT_COLORS } from "@/lib/constants";
 import { getDisplayName, getCarreraSubtitle, isIndividualSport } from "@/lib/sport-helpers";
+
+const SPORTS_WITH_DRAW = ['Fútbol', 'Ajedrez'];
+const SPORTS_WITH_BONUS = ['Fútbol', 'Voleibol', 'Baloncesto'];
 
 interface PredictionCardProps {
   match: any;
@@ -24,19 +27,63 @@ export const PredictionCard = ({
   match, prediction, onPredict, locked, allPredictions
 }: PredictionCardProps) => {
   const router = useRouter();
+  const sportName = match.disciplinas?.name;
+  const supportsDraws = SPORTS_WITH_DRAW.includes(sportName);
+  const hasBonus = SPORTS_WITH_BONUS.includes(sportName);
+
   const [winnerPick, setWinnerPick] = useState(prediction?.winner_pick ?? null);
+  const [showBonus, setShowBonus] = useState(prediction?.prediction_type === 'score');
+  const [bonusGolesA, setBonusGolesA] = useState<number | null>(prediction?.goles_a ?? null);
+  const [bonusGolesB, setBonusGolesB] = useState<number | null>(prediction?.goles_b ?? null);
+  const [marginPick, setMarginPick] = useState<'CLOSE' | 'WIDE' | null>(
+    prediction?.prediction_type === 'score' && sportName === 'Baloncesto'
+      ? (prediction.goles_a === 0 ? 'CLOSE' : 'WIDE')
+      : null
+  );
 
   useEffect(() => {
     setWinnerPick(prediction?.winner_pick ?? null);
-  }, [prediction]);
+    if (prediction?.prediction_type === 'score') {
+      setShowBonus(true);
+      if (sportName === 'Baloncesto') {
+        setMarginPick(prediction.goles_a === 0 ? 'CLOSE' : 'WIDE');
+      } else {
+        setBonusGolesA(prediction.goles_a ?? null);
+        setBonusGolesB(prediction.goles_b ?? null);
+      }
+    }
+  }, [prediction, sportName]);
+
+  // Reset volley bonus when winner changes, auto-open bonus
+  const handleWinnerChange = (key: string) => {
+    setWinnerPick(key);
+    if (hasBonus && (key !== 'DRAW' || sportName === 'Fútbol')) {
+      setShowBonus(true);
+    }
+    if (sportName === 'Voleibol') {
+      setBonusGolesA(null);
+      setBonusGolesB(null);
+    }
+  };
 
   const handleSave = () => {
     if (!winnerPick) return;
+
+    const hasBonusBet = showBonus && hasBonus && (winnerPick !== 'DRAW' || sportName === 'Fútbol') && (
+      (sportName === 'Fútbol' && bonusGolesA !== null && bonusGolesB !== null) ||
+      (sportName === 'Voleibol' && bonusGolesA !== null && bonusGolesB !== null) ||
+      (sportName === 'Baloncesto' && marginPick !== null)
+    );
+
     onPredict(match.id, {
-      prediction_type: 'winner',
-      goles_a: null,
-      goles_b: null,
-      winner_pick: winnerPick
+      prediction_type: hasBonusBet ? 'score' : 'winner',
+      winner_pick: winnerPick,
+      goles_a: hasBonusBet
+        ? (sportName === 'Baloncesto' ? (marginPick === 'CLOSE' ? 0 : 1) : bonusGolesA)
+        : null,
+      goles_b: hasBonusBet
+        ? (sportName === 'Baloncesto' ? null : bonusGolesB)
+        : null,
     });
   };
 
@@ -74,10 +121,67 @@ export const PredictionCard = ({
     return "bg-black/20 backdrop-blur-xl border-white/5 hover:bg-white/[0.04] hover:border-white/10";
   };
 
-  const sportName = match.disciplinas?.name;
+  // Winner options based on sport
+  const winnerOptions = supportsDraws
+    ? [
+      { key: 'A', name: nameA },
+      { key: 'DRAW', name: 'Empate' },
+      { key: 'B', name: nameB }
+    ]
+    : [
+      { key: 'A', name: nameA },
+      { key: 'B', name: nameB }
+    ];
+
+  // Volley set options filtered by winner pick
+  const getVolleyOptions = () => {
+    if (winnerPick === 'A') return [{ a: 2, b: 0 }, { a: 2, b: 1 }];
+    if (winnerPick === 'B') return [{ a: 0, b: 2 }, { a: 1, b: 2 }];
+    return [];
+  };
+
+  // Bonus prediction label for finished/live display
+  const getBonusPredictionLabel = () => {
+    if (!prediction || prediction.prediction_type !== 'score') return null;
+    if (sportName === 'Baloncesto') {
+      return prediction.goles_a === 0 ? 'Cerrado (≤10)' : 'Amplio (>10)';
+    }
+    if (sportName === 'Voleibol') {
+      return `Sets: ${prediction.goles_a} - ${prediction.goles_b}`;
+    }
+    if (sportName === 'Fútbol') {
+      return `Marcador: ${prediction.goles_a} - ${prediction.goles_b}`;
+    }
+    return null;
+  };
+
+  // Check if bonus prediction was correct (for display)
+  const isBonusCorrect = () => {
+    if (!prediction || prediction.prediction_type !== 'score' || !isFinished) return null;
+    const md = match.marcador_detalle || {};
+    if (sportName === 'Fútbol') {
+      const realA = md.goles_a ?? 0;
+      const realB = md.goles_b ?? 0;
+      return prediction.goles_a === realA && prediction.goles_b === realB;
+    }
+    if (sportName === 'Voleibol') {
+      const realA = md.sets_a ?? 0;
+      const realB = md.sets_b ?? 0;
+      return prediction.goles_a === realA && prediction.goles_b === realB;
+    }
+    if (sportName === 'Baloncesto') {
+      const totalA = md.total_a ?? md.puntos_a ?? 0;
+      const totalB = md.total_b ?? md.puntos_b ?? 0;
+      const margin = Math.abs(totalA - totalB);
+      const predictedClose = prediction.goles_a === 0;
+      const actualClose = margin <= 10;
+      return predictedClose === actualClose;
+    }
+    return null;
+  };
 
   return (
-    <div 
+    <div
       onClick={() => router.push(`/partido/${match.id}`)}
       className={cn(
         "relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden group shadow-2xl cursor-pointer active:scale-[0.99]",
@@ -141,7 +245,7 @@ export const PredictionCard = ({
         ) : (
           <>
             <div className="flex flex-col items-center flex-1 max-w-[120px] relative z-10 group/team">
-              <Link 
+              <Link
                 href={match.athlete_a_id ? `/perfil/${match.athlete_a_id}` : match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : '#'}
                 onClick={(e) => {
                   if (!match.athlete_a_id && !match.carrera_a_id) e.preventDefault();
@@ -149,10 +253,10 @@ export const PredictionCard = ({
                 }}
                 className="w-20 h-20 rounded-full bg-white/[0.03] backdrop-blur-3xl border border-white/10 flex items-center justify-center text-3xl font-display font-black mb-1 shadow-[0_0_40px_rgba(0,0,0,0.5)] text-white group-hover/team:scale-110 group-hover:bg-white/[0.08] group-hover:border-white/30 transition-all duration-500 overflow-hidden relative"
               >
-                <Avatar 
-                  name={nameA} 
-                  src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url || match.delegacion_a_info?.escudo_url} 
-                  size="lg" 
+                <Avatar
+                  name={nameA}
+                  src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url || match.delegacion_a_info?.escudo_url}
+                  size="lg"
                   className="w-full h-full text-2xl border-none p-0 bg-transparent"
                 />
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/team:opacity-100 transition-opacity" />
@@ -200,7 +304,7 @@ export const PredictionCard = ({
             </div>
 
             <div className="flex flex-col items-center flex-1 max-w-[120px] relative z-10 group/team">
-              <Link 
+              <Link
                 href={match.athlete_b_id ? `/perfil/${match.athlete_b_id}` : match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` : '#'}
                 onClick={(e) => {
                   if (!match.athlete_b_id && !match.carrera_b_id) e.preventDefault();
@@ -208,10 +312,10 @@ export const PredictionCard = ({
                 }}
                 className="w-20 h-20 rounded-full bg-white/[0.03] backdrop-blur-3xl border border-white/10 flex items-center justify-center text-3xl font-display font-black mb-1 shadow-[0_0_40px_rgba(0,0,0,0.5)] text-white group-hover/team:scale-110 group-hover:bg-white/[0.08] group-hover:border-white/30 transition-all duration-500 overflow-hidden relative"
               >
-                <Avatar 
-                  name={nameB} 
-                  src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url || match.delegacion_b_info?.escudo_url} 
-                  size="lg" 
+                <Avatar
+                  name={nameB}
+                  src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url || match.delegacion_b_info?.escudo_url}
+                  size="lg"
                   className="w-full h-full text-2xl border-none p-0 bg-transparent"
                 />
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/team:opacity-100 transition-opacity" />
@@ -237,49 +341,55 @@ export const PredictionCard = ({
 
       <div className="bg-white/[0.02] backdrop-blur-2xl rounded-[2rem] border border-white/10 p-5 mt-4 shadow-[inset_0_4px_24px_rgba(0,0,0,0.5)] relative overflow-hidden">
         {isFinished || isLive ? (
-          <div className="text-center">
+          <div className="text-center space-y-3">
             <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.3em] mb-3 font-display shadow-sm">Tu Predicción</p>
             <div className="flex items-center justify-center gap-3">
-              {prediction?.prediction_type === 'score' ? (
-                <p className={cn(
-                  "text-3xl font-black tabular-nums font-mono tracking-tighter",
-                  isFinished ? (predictionCorrect ? "text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.5)]") : "text-white"
-                )}>
-                  {prediction.goles_a} <span className="opacity-20">-</span> {prediction.goles_b}
-                </p>
-              ) : (
-                <div className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 rounded-2xl border",
-                  isFinished 
-                    ? (predictionCorrect ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]" : "bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.2)]") 
-                    : "bg-white/5 border-white/10 text-white shadow-inner"
-                )}>
-                  <Trophy size={16} className="fill-current" />
-                  <span className="text-sm font-display font-black tracking-wide">
-                    {prediction?.winner_pick === 'A' ? nameA :
-                      prediction?.winner_pick === 'B' ? nameB : 'Empate'}
-                  </span>
-                </div>
-              )}
+              <div className={cn(
+                "flex items-center gap-2 px-5 py-2.5 rounded-2xl border",
+                isFinished
+                  ? (predictionCorrect ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]" : "bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.2)]")
+                  : "bg-white/5 border-white/10 text-white shadow-inner"
+              )}>
+                <Trophy size={16} className="fill-current" />
+                <span className="text-sm font-display font-black tracking-wide">
+                  {prediction?.winner_pick === 'A' ? nameA :
+                    prediction?.winner_pick === 'B' ? nameB : 'Empate'}
+                </span>
+              </div>
             </div>
+            {/* Show bonus prediction if exists */}
+            {getBonusPredictionLabel() && (
+              <div className="flex items-center justify-center mt-2">
+                <div className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-display font-black",
+                  isFinished
+                    ? (isBonusCorrect()
+                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                      : "bg-rose-500/10 border-rose-500/20 text-rose-400")
+                    : "bg-white/5 border-white/10 text-white/70"
+                )}>
+                  <Target size={14} />
+                  <span>{getBonusPredictionLabel()}</span>
+                  {isFinished && (
+                    <span className="text-[10px]">{isBonusCorrect() ? '+bonus' : ''}</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ) : !isLocked ? (
           <div className="space-y-5">
             <div className="flex items-center justify-between px-1">
-              <p className="text-[10px] font-black font-display text-white/50 tracking-[0.2em] uppercase drop-shadow-sm">¿Cuál será el resultado?</p>
+              <p className="text-[10px] font-black font-display text-white/50 tracking-[0.2em] uppercase drop-shadow-sm">¿Quién ganará?</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
-              {[
-                { key: 'A', name: (nameA) },
-                { key: 'DRAW', name: 'Empate' },
-                { key: 'B', name: (nameB) }
-              ].map((opt) => (
+            <div className={cn("grid gap-2.5", supportsDraws ? "grid-cols-3" : "grid-cols-2")}>
+              {winnerOptions.map((opt) => (
                 <button
                   key={opt.key}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setWinnerPick(opt.key);
+                    handleWinnerChange(opt.key);
                   }}
                   className={cn(
                     "relative group/btn py-4 px-2 rounded-2xl text-[10px] sm:text-xs font-display font-black tracking-wide transition-all border-2 flex flex-col items-center justify-center gap-2 min-h-[80px]",
@@ -298,6 +408,119 @@ export const PredictionCard = ({
                 </button>
               ))}
             </div>
+
+            {/* ── Bonus Section ── */}
+            {hasBonus && winnerPick && (winnerPick !== 'DRAW' || sportName === 'Fútbol') && showBonus && (
+              <div className="bg-black/30 rounded-2xl border border-white/5 p-4 space-y-4 animate-in slide-in-from-top-2 fade-in duration-300">
+                    {/* Fútbol: Exact Score */}
+                    {sportName === 'Fútbol' && (
+                      <>
+                        <p className="text-[10px] font-display font-black text-white/50 uppercase tracking-widest text-center">Marcador exacto</p>
+                        <div className="flex items-center justify-center gap-6">
+                          <div className="flex flex-col items-center gap-2">
+                            <span className="text-[9px] font-black text-white/40 uppercase tracking-wider">{nameA.split(' ')[0]}</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setBonusGolesA(Math.max(0, (bonusGolesA ?? 0) - 1)); }}
+                                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"
+                              >
+                                <Minus size={12} />
+                              </button>
+                              <span className="text-2xl font-black font-mono tabular-nums text-white w-8 text-center">{bonusGolesA ?? 0}</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setBonusGolesA((bonusGolesA ?? 0) + 1); }}
+                                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"
+                              >
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                          </div>
+                          <span className="text-white/20 text-xl font-black">-</span>
+                          <div className="flex flex-col items-center gap-2">
+                            <span className="text-[9px] font-black text-white/40 uppercase tracking-wider">{nameB.split(' ')[0]}</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setBonusGolesB(Math.max(0, (bonusGolesB ?? 0) - 1)); }}
+                                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"
+                              >
+                                <Minus size={12} />
+                              </button>
+                              <span className="text-2xl font-black font-mono tabular-nums text-white w-8 text-center">{bonusGolesB ?? 0}</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setBonusGolesB((bonusGolesB ?? 0) + 1); }}
+                                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"
+                              >
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Voleibol: Set Result */}
+                    {sportName === 'Voleibol' && (
+                      <>
+                        <p className="text-[10px] font-display font-black text-white/50 uppercase tracking-widest text-center">Resultado en sets</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {getVolleyOptions().map((opt) => (
+                            <button
+                              key={`${opt.a}-${opt.b}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setBonusGolesA(opt.a);
+                                setBonusGolesB(opt.b);
+                              }}
+                              className={cn(
+                                "py-3 px-4 rounded-xl font-display font-black text-lg border-2 transition-all",
+                                bonusGolesA === opt.a && bonusGolesB === opt.b
+                                  ? "bg-violet-500/15 border-violet-500 text-violet-300 shadow-[0_0_15px_rgba(139,92,246,0.2)]"
+                                  : "bg-black/30 border-white/10 text-white/50 hover:bg-white/5 hover:text-white"
+                              )}
+                            >
+                              {opt.a} - {opt.b}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Baloncesto: Margin */}
+                    {sportName === 'Baloncesto' && (
+                      <>
+                        <p className="text-[10px] font-display font-black text-white/50 uppercase tracking-widest text-center">¿Cómo será el partido?</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setMarginPick('CLOSE'); }}
+                            className={cn(
+                              "py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5",
+                              marginPick === 'CLOSE'
+                                ? "bg-violet-500/15 border-violet-500 text-violet-300 shadow-[0_0_15px_rgba(139,92,246,0.2)]"
+                                : "bg-black/30 border-white/10 text-white/50 hover:bg-white/5 hover:text-white"
+                            )}
+                          >
+                            <span className="text-lg">🤝</span>
+                            <span className="text-xs font-display font-black uppercase tracking-wider">Cerrado</span>
+                            <span className="text-[9px] text-white/30 font-bold">≤10 pts</span>
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setMarginPick('WIDE'); }}
+                            className={cn(
+                              "py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5",
+                              marginPick === 'WIDE'
+                                ? "bg-violet-500/15 border-violet-500 text-violet-300 shadow-[0_0_15px_rgba(139,92,246,0.2)]"
+                                : "bg-black/30 border-white/10 text-white/50 hover:bg-white/5 hover:text-white"
+                            )}
+                          >
+                            <span className="text-lg">💥</span>
+                            <span className="text-xs font-display font-black uppercase tracking-wider">Amplio</span>
+                            <span className="text-[9px] text-white/30 font-bold">&gt;10 pts</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+              </div>
+            )}
 
             <Button
               className={cn(

@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui-primitives";
-import { MoveRight, Zap, Star, Trophy, Calendar } from "lucide-react";
+import { MoveRight, Zap, Star, Trophy, Calendar, Users } from "lucide-react";
 import { SportIcon } from "@/components/sport-icons";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { SPORT_GRADIENT, SPORT_ACCENT, SPORT_BORDER, SPORT_GLOW } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import type { PartidoWithRelations as Partido } from '../types';
+import type { JornadaWithResults } from '@/hooks/use-jornadas';
 
 // Helper: relative date label
 export function getRelativeDate(fecha: string, includeTime = true) {
@@ -495,6 +496,117 @@ export function ResultCard({ partido }: { partido: Partido }) {
           "opacity-20 group-hover:opacity-100 group-hover:translate-x-0.5"
         )}>
           Ver Detalles <MoveRight size={10} className="ml-2 transition-transform group-hover:translate-x-0.5" />
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// JornadaCard — for Ajedrez and Tenis de Mesa multi-participant events
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function JornadaCard({ jornada }: { jornada: JornadaWithResults }) {
+  const sportName = (jornada.disciplinas as any)?.name ?? 'Deporte';
+  const isFinalized = jornada.estado === 'finalizado';
+  const isLive = jornada.estado === 'en_curso';
+
+  const top3 = [...(jornada.jornada_resultados ?? [])]
+    .sort((a, b) => a.posicion - b.posicion)
+    .slice(0, 3);
+
+  const dateLabel = getRelativeDate(jornada.scheduled_at);
+  const generoLabel = jornada.genero === 'femenino' ? 'F' : 'M';
+
+  return (
+    <Link href={`/jornadas/${jornada.id}`} className="group block h-full">
+      <div className={cn(
+        "relative h-full overflow-hidden rounded-[2rem] border bg-black/20 backdrop-blur-xl transition-all duration-500 shadow-[0_4px_24px_rgba(0,0,0,0.4)] hover:shadow-2xl hover:-translate-y-1 cursor-pointer",
+        SPORT_BORDER[sportName] || 'border-white/10',
+        SPORT_GLOW[sportName] || 'hover:shadow-indigo-500/10'
+      )}>
+        {/* Sport gradient background */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/5 to-transparent'} opacity-50 group-hover:opacity-70 transition-opacity`} />
+
+        {/* Sport icon watermark */}
+        <div className="absolute -bottom-6 -right-6 pointer-events-none select-none group-hover:scale-110 transition-transform duration-700 origin-bottom-right">
+          <SportIcon sport={sportName} size={150} className={cn("opacity-[0.12] group-hover:opacity-[0.25] transition-all duration-500 drop-shadow-[0_0_30px_currentColor]", SPORT_ACCENT[sportName] || 'text-white')} />
+        </div>
+
+        <div className="relative p-5 flex flex-col h-full gap-3">
+          {/* Top row: sport + status */}
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-2">
+              <span className={cn("text-[10px] font-black tracking-widest uppercase px-2 py-1 rounded-lg bg-black/30 border", SPORT_ACCENT[sportName] || 'text-white/60', SPORT_BORDER[sportName] || 'border-white/10')}>
+                {sportName}
+              </span>
+              <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
+                {generoLabel}
+              </span>
+            </div>
+
+            {isLive ? (
+              <span className="flex items-center gap-1.5 text-[10px] font-black tracking-widest uppercase text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                En curso
+              </span>
+            ) : isFinalized ? (
+              <span className="text-[10px] font-black tracking-widest uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg">
+                Finalizado
+              </span>
+            ) : (
+              <span className="text-[10px] font-black tracking-widest uppercase text-white/30 bg-white/5 border border-white/10 px-2 py-1 rounded-lg">
+                {dateLabel}
+              </span>
+            )}
+          </div>
+
+          {/* Title */}
+          <div>
+            <p className="text-white font-black text-lg leading-tight">
+              {jornada.nombre ?? `Ronda ${jornada.numero}`}
+            </p>
+            {jornada.lugar && (
+              <p className="text-white/30 text-xs mt-0.5">{jornada.lugar}</p>
+            )}
+          </div>
+
+          {/* Participants count or mini podium */}
+          {isFinalized && top3.length > 0 ? (
+            <div className="space-y-1.5">
+              {top3.map((r, i) => {
+                const carrera = (r.carreras as any)?.nombre ?? '—';
+                const jugador = (r.jugadores as any)?.nombre;
+                const medal = ['🥇', '🥈', '🥉'][i];
+                return (
+                  <div key={r.carrera_id} className="flex items-center gap-2 text-xs">
+                    <span className="text-sm">{medal}</span>
+                    <span className="font-bold text-white/80 truncate">{jugador ?? carrera}</span>
+                    {jugador && <span className="text-white/30 truncate">{carrera}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-white/30 text-xs">
+              <Users size={12} />
+              <span>
+                {jornada.jornada_resultados?.length > 0
+                  ? `${jornada.jornada_resultados.length} participantes`
+                  : 'Todos los participantes'
+                }
+              </span>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className={cn(
+            "mt-auto pt-3 border-t border-white/5 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 group-hover:drop-shadow-[0_0_8px_currentColor]",
+            SPORT_ACCENT[sportName] || 'text-white/40',
+            "opacity-20 group-hover:opacity-100"
+          )}>
+            {isFinalized ? 'Ver Resultados' : 'Ver Jornada'} <MoveRight size={10} className="ml-2 transition-transform group-hover:translate-x-0.5" />
+          </div>
         </div>
       </div>
     </Link>

@@ -4,14 +4,22 @@ import { useEffect, useState, useMemo } from "react";
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatches } from "@/hooks/use-matches";
+import { useJornadas } from "@/hooks/use-jornadas";
+import { SPORT_ACCENT, SPORT_BORDER, SPORT_GRADIENT, SPORT_GLOW, SPORT_EMOJI, SPORT_COLORS } from "@/lib/constants";
+import { getCurrentScore } from "@/lib/sport-scoring";
 import { SportIcon } from "@/components/sport-icons";
+
 import { cn } from "@/lib/utils";
 import {
     Calendar as CalendarIcon, Search, Activity,
     LayoutGrid
 } from "lucide-react";
-import { getCurrentScore } from "@/lib/sport-scoring";
 import { UnifiedCard } from "@/modules/matches/components/unified-card";
+import { Avatar, Badge, Button } from "@/components/ui-primitives";
+import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
+import { PublicLiveTimer } from "@/components/public-live-timer";
+import { JornadaCard } from "@/modules/matches/components/match-card";
+
 
 // --- Types ---
 const GENDERS = [
@@ -23,26 +31,26 @@ const GENDERS = [
 export default function PartidosPage() {
     const { user, profile, isStaff } = useAuth();
     const { matches: rawMatches, loading } = useMatches();
+    const { jornadas, loading: jornadasLoading } = useJornadas();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSport, setSelectedSport] = useState("Todos");
     const [selectedGender, setSelectedGender] = useState<string>("masculino");
-    
-    // Derive unique sport names from all matches
+    // Derive unique sport names from all matches + jornadas
+
     const availableSports = useMemo(() => {
         const sports = new Set<string>();
-        rawMatches.forEach(m => {
-            const name = m.disciplinas?.name;
-            if (name) sports.add(name);
-        });
+        rawMatches.forEach(m => { if (m.disciplinas?.name) sports.add(m.disciplinas.name); });
+        jornadas.forEach(j => { if (j.disciplinas?.name) sports.add(j.disciplinas.name); });
         return Array.from(sports).sort();
-    }, [rawMatches]);
+    }, [rawMatches, jornadas]);
 
-    // 1. Filter by search + sport + gender
+    // 1. Filter matches by search + sport + gender
     const filteredMatches = useMemo(() => {
         const q = searchQuery.toLowerCase();
         return rawMatches.filter(m => {
             if (selectedSport !== "Todos" && m.disciplinas?.name !== selectedSport) return false;
-            if (selectedGender !== 'todos' && (m.genero || 'masculino').toLowerCase() !== selectedGender.toLowerCase()) return false;
+            const matchGender = (m.genero || 'masculino').toLowerCase();
+            if (selectedGender !== 'todos' && matchGender !== selectedGender.toLowerCase() && matchGender !== 'mixto') return false;
             const teamA = (m.carrera_a?.nombre || m.equipo_a || "").toLowerCase();
             const teamB = (m.carrera_b?.nombre || m.equipo_b || "").toLowerCase();
             const sport = (m.disciplinas?.name || "").toLowerCase();
@@ -50,9 +58,21 @@ export default function PartidosPage() {
         });
     }, [rawMatches, searchQuery, selectedSport, selectedGender]);
 
-    // 2. Grouping Function
+    // 2. Filter jornadas
+    const filteredJornadas = useMemo(() => {
+        const q = searchQuery.toLowerCase();
+        return jornadas.filter(j => {
+            if (selectedSport !== "Todos" && j.disciplinas?.name !== selectedSport) return false;
+            if (selectedGender !== 'todos' && j.genero !== selectedGender && j.genero !== 'mixto') return false;
+            const sport = (j.disciplinas?.name || '').toLowerCase();
+            const nombre = (j.nombre || '').toLowerCase();
+            return sport.includes(q) || nombre.includes(q);
+        });
+    }, [jornadas, searchQuery, selectedSport, selectedGender]);
+
+    // 3. Unified date-grouped feed (partidos + jornadas)
     const groupedMatches = useMemo(() => {
-        const groups: Record<string, any[]> = {};
+        const groups: Record<string, { partidos: any[], jornadas: any[] }> = {};
         const todayStr = new Date().toISOString().split('T')[0];
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -61,8 +81,14 @@ export default function PartidosPage() {
 
         filteredMatches.forEach(match => {
             const fecha = match.fecha.split('T')[0];
-            if (!groups[fecha]) groups[fecha] = [];
-            groups[fecha].push(match);
+            if (!groups[fecha]) groups[fecha] = { partidos: [], jornadas: [] };
+            groups[fecha].partidos.push(match);
+        });
+
+        filteredJornadas.forEach(j => {
+            const fecha = j.scheduled_at.split('T')[0];
+            if (!groups[fecha]) groups[fecha] = { partidos: [], jornadas: [] };
+            groups[fecha].jornadas.push(j);
         });
 
         return Object.keys(groups).sort().map(fecha => {
@@ -79,19 +105,20 @@ export default function PartidosPage() {
             else if (isYesterday) label = `Ayer — ${label}`;
             else if (isTomorrow) label = `Mañana — ${label}`;
 
-            const sorted = groups[fecha].sort((a, b) => {
-                const stateOrder = { "en_curso": 0, "programado": 1, "finalizado": 2 };
+            const stateOrder = { "en_curso": 0, "programado": 1, "finalizado": 2 };
+            const sorted = groups[fecha].partidos.sort((a, b) => {
+
                 const orderA = stateOrder[a.estado as keyof typeof stateOrder] ?? 99;
                 const orderB = stateOrder[b.estado as keyof typeof stateOrder] ?? 99;
                 if (orderA !== orderB) return orderA - orderB;
                 return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
             });
 
-            return { fecha, label, partidos: sorted, isToday };
+            return { fecha, label, partidos: sorted, jornadas: groups[fecha].jornadas, isToday };
         });
-    }, [filteredMatches]);
+    }, [filteredMatches, filteredJornadas]);
 
-    // 3. Auto-scroll to today
+    // 4. Auto-scroll to today
     useEffect(() => {
         if (!loading && groupedMatches.length > 0) {
             const todayStr = new Date().toISOString().split('T')[0];
@@ -237,10 +264,18 @@ export default function PartidosPage() {
                                 })}
                             </div>
                         </div>
+                        {!loading && !jornadasLoading && (
+                            <div className="text-center">
+                                <p className="text-[10px] font-black text-white/20 tracking-[0.3em] uppercase">
+                                    {filteredMatches.length} encuentro{filteredMatches.length !== 1 ? 's' : ''}{filteredJornadas.length > 0 ? ` · ${filteredJornadas.length} jornada${filteredJornadas.length !== 1 ? 's' : ''}` : ''}
+                                </p>
+                            </div>
+                        )}
+
                     </div>
                 </div>
 
-                {loading ? (
+                {loading || jornadasLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[1, 2, 3, 4, 5, 6].map(i => (
                             <div key={i} className="h-48 rounded-[2rem] bg-white/5 animate-pulse border border-white/5" />
@@ -292,6 +327,11 @@ export default function PartidosPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {group.partidos.map(partido => (
                                         <MatchCardEntry key={partido.id} partido={partido} />
+                                    ))}
+                                    {group.jornadas.map(jornada => (
+                                        <div key={`jornada-${jornada.id}`} className="h-full">
+                                            <JornadaCard jornada={jornada} />
+                                        </div>
                                     ))}
                                 </div>
                             </section>

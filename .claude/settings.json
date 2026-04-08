@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"import.*rediction\\\\|import.*uiniela\\\\|import.*oting\" /Users/orlandopalma/Documents/GitHub/project_olympics/src/app/partido/[id]/page.tsx)"
+    ]
+  }
+}

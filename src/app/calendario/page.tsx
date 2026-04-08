@@ -12,10 +12,12 @@ import { Avatar, Badge } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { SportIcon } from "@/components/sport-icons";
 import { useMatches } from "@/hooks/use-matches";
+import { useJornadas } from "@/hooks/use-jornadas";
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { getDisplayName, getCarreraSubtitle, getAbbr } from "@/lib/sport-helpers";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
+import { JornadaCard } from "@/modules/matches/components/match-card";
 
 const SPORTS_FILTERS = [
     { id: 'all', label: 'Todos', icon: Trophy },
@@ -46,6 +48,7 @@ type Match = {
 export default function CalendarioPage() {
     const { user, profile, isStaff } = useAuth();
     const { matches, loading } = useMatches();
+    const { jornadas, loading: jornadasLoading } = useJornadas();
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -76,10 +79,20 @@ export default function CalendarioPage() {
                     if (m.estado !== 'en_curso') return false;
                 } else if (m.disciplinas?.name !== activeFilter) return false;
             }
-            if (selectedGender !== 'todos' && (m.genero || 'masculino').toLowerCase() !== selectedGender.toLowerCase()) return false;
+            const matchGender = (m.genero || 'masculino').toLowerCase();
+            if (selectedGender !== 'todos' && matchGender !== selectedGender.toLowerCase() && matchGender !== 'mixto') return false;
             return true;
         });
     }, [matches, activeFilter, selectedGender]);
+
+    const filteredJornadas = useMemo(() => {
+        return jornadas.filter(j => {
+            if (activeFilter !== 'all' && activeFilter !== 'live' && j.disciplinas?.name !== activeFilter) return false;
+            if (activeFilter === 'live' && j.estado !== 'en_curso') return false;
+            if (selectedGender !== 'todos' && j.genero !== selectedGender && j.genero !== 'mixto') return false;
+            return true;
+        });
+    }, [jornadas, activeFilter, selectedGender]);
 
     const selectedDateMatches = useMemo(() => {
         return filteredMatches.filter(m => {
@@ -87,6 +100,10 @@ export default function CalendarioPage() {
             return isSameDay(matchDate, selectedDate);
         });
     }, [filteredMatches, selectedDate]);
+
+    const selectedDateJornadas = useMemo(() => {
+        return filteredJornadas.filter(j => isSameDay(new Date(j.scheduled_at), selectedDate));
+    }, [filteredJornadas, selectedDate]);
 
     const matchOfTheDay = useMemo(() => {
         const liveMatch = filteredMatches.find(m => m.estado === 'en_curso');
@@ -245,11 +262,16 @@ export default function CalendarioPage() {
                                     const isSelected = isSameDay(selectedDate, dayDate);
                                     const isToday = isSameDay(new Date(), dayDate);
                                     const eventsToday = filteredMatches.filter(m => isSameDay(new Date(m.fecha), dayDate));
-                                    const hasEvents = eventsToday.length > 0;
+                                    const jornadasToday = filteredJornadas.filter(j => isSameDay(new Date(j.scheduled_at), dayDate));
+                                    const hasEvents = eventsToday.length > 0 || jornadasToday.length > 0;
                                     const uniqueSportsMap = new Map<string, string>();
                                     eventsToday.forEach(e => {
                                         const sportName = e.disciplinas?.name;
                                         if (sportName) uniqueSportsMap.set(sportName, e.estado);
+                                    });
+                                    jornadasToday.forEach(j => {
+                                        const sportName = j.disciplinas?.name;
+                                        if (sportName) uniqueSportsMap.set(sportName, j.estado);
                                     });
                                     const uniqueSportsEvents = Array.from(uniqueSportsMap.entries()).map(([name, estado]) => ({ name, estado }));
 
@@ -421,17 +443,17 @@ export default function CalendarioPage() {
                                 </div>
                                 <div className="px-5 py-2.5 bg-black/40 rounded-2xl border border-white/10 flex items-center gap-3 shadow-inner">
                                     <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" />
-                                    <span className="text-sm font-black text-white/60 tabular-nums">{upcomingFixtures.length}</span>
+                                    <span className="text-sm font-black text-white/60 tabular-nums">{upcomingFixtures.length + selectedDateJornadas.length}</span>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 gap-5 flex-1 overflow-y-auto pr-2 custom-scrollbar content-start">
-                                {loading ? (
+                                {loading || jornadasLoading ? (
                                     <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-20">
                                         <Activity size={48} className="animate-spin text-white" />
                                         <span className="text-[10px] font-black uppercase tracking-[1em] ml-[1em]">Cargando</span>
                                     </div>
-                                ) : upcomingFixtures.length === 0 ? (
+                                ) : upcomingFixtures.length === 0 && selectedDateJornadas.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-24 px-8 text-center bg-black/20 border border-white/5 rounded-[3rem] group transition-all">
                                         <div className="w-20 h-20 rounded-[2.5rem] bg-white/[0.03] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-700 border border-white/5 group-hover:border-emerald-500/20">
                                             <BatteryCharging size={40} className="text-white/5 group-hover:text-emerald-400/40 transition-colors" />
@@ -440,7 +462,11 @@ export default function CalendarioPage() {
                                         <p className="text-white/[0.08] text-[10px] uppercase tracking-[0.3em] leading-relaxed max-w-[220px]">No hay más eventos programados.</p>
                                     </div>
                                 ) : (
-                                    upcomingFixtures.map(match => {
+                                    <>
+                                    {selectedDateJornadas.map(jornada => (
+                                        <JornadaCard key={`jornada-${jornada.id}`} jornada={jornada} />
+                                    ))}
+                                    {upcomingFixtures.map(match => {
                                         const sportName = match.disciplinas?.name || 'Deporte';
                                         const sportAccent = SPORT_ACCENT[sportName] || 'text-violet-500';
                                         const isLive = match.estado === 'en_curso';
@@ -529,7 +555,8 @@ export default function CalendarioPage() {
                                                 </div>
                                             </Link>
                                         );
-                                    })
+                                    })}
+                                    </>
                                 )}
                             </div>
                         </div>

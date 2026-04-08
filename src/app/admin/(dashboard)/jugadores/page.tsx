@@ -90,7 +90,7 @@ function DirectorioTab() {
         </div>
 
         <div>
-          <label className="text-xs font-black uppercase tracking-widest text-white/40 block mb-2">Carrera</label>
+          <label className="text-xs font-black uppercase tracking-widest text-white/40 block mb-2">Programa</label>
           <select
             value={filterCarrera || ''}
             onChange={(e) => setFilterCarrera(e.target.value ? parseInt(e.target.value) : null)}
@@ -118,7 +118,7 @@ function DirectorioTab() {
           <thead>
             <tr className="bg-white/5 border-b border-white/10">
               <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-white/40">Nombre</th>
-              <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-white/40">Carrera</th>
+              <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-white/40">Programa</th>
               <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-white/40">Deporte</th>
               <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-white/40">Rama</th>
               <th className="px-4 py-3 text-center text-xs font-black uppercase tracking-widest text-white/40">Sexo</th>
@@ -316,7 +316,7 @@ function ImportarTab() {
             <thead>
               <tr className="bg-white/5 border-b border-white/10">
                 <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest text-white/40">Nombre</th>
-                <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest text-white/40">Carrera</th>
+                <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest text-white/40">Programa</th>
                 <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest text-white/40">Deporte</th>
                 <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest text-white/40">Rama</th>
                 <th className="px-3 py-2 text-center text-[10px] font-black uppercase tracking-widest text-white/40">Sexo</th>

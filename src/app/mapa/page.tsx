@@ -55,15 +55,15 @@ const FACILITIES_INFO = [
         id: 'tenis',
         name: 'Complejo de Tenis',
         mapVenue: 'Cancha de Tenis',
-        image: '/images/installations/tenis.png',
+        image: '/CANCHA DE TENIS.jpg',
         description: 'Canchas de tenis de superficie dura con medidas reglamentarias, ideales para torneos individuales y de dobles.',
         details: ['Superficie Rápida', 'Medidas Oficiales', 'Gradas Laterales']
     },
     {
         id: 'baambu',
-        name: 'Jardín Baambu',
+        name: 'Jardín Bambú',
         mapVenue: 'Baambu',
-        image: '/images/installations/baambu.png',
+        image: '/BAMBU.jpg',
         description: 'Un espacio natural y relajante, ideal para deportes de mesa y actividades de bajo impacto rodeado de vegetación.',
         details: ['Ambiente Natural', 'Zona de Descanso', 'Sombra Permanente']
     }

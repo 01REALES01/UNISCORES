@@ -18,6 +18,7 @@ interface DryRunResult {
     dry_run: true;
     matches_found: number;
     teams_found: number;
+    jornadas_found: number;      // ← Ajedrez / Tenis de Mesa sessions
     parse_errors: ParseError[];
     match_issues: string[];
     team_issues: string[];
@@ -28,6 +29,7 @@ interface CommitResult {
     success: true;
     partidos_creados: number;
     delegaciones_reg: number;
+    jornadas_creadas: number;    // ← Ajedrez / Tenis de Mesa sessions
     partidos_skipped: number;
     parse_errors: ParseError[];
     commit_errors: string[];
@@ -353,15 +355,26 @@ export default function FixturePage() {
                 </div>
 
                 {/* Summary numbers */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                     <StatCard label="Partidos" value={preview.matches_found} color="text-white" />
                     <StatCard label="Delegaciones" value={preview.teams_found} color="text-primary" />
+                    <StatCard
+                        label="Jornadas"
+                        value={preview.jornadas_found ?? 0}
+                        color={(preview.jornadas_found ?? 0) > 0 ? "text-violet-400" : "text-white/20"}
+                    />
                     <StatCard
                         label="Problemas"
                         value={preview.match_issues.length + preview.team_issues.length + preview.parse_errors.length}
                         color={hasBlockers ? "text-rose-400" : "text-amber-400"}
                     />
                 </div>
+                {(preview.jornadas_found ?? 0) === 0 && (
+                    <div className="rounded-xl border border-amber-500/20 bg-amber-500/05 px-4 py-3 text-amber-400 text-sm">
+                        ⚠️ No se detectaron jornadas de Ajedrez/Tenis de Mesa en el Excel. Verifica que la hoja
+                        &ldquo;POR DIA GENERAL&rdquo; contenga filas con &ldquo;TODOS LOS PARTICIPANTES&rdquo; para esos deportes.
+                    </div>
+                )}
 
                 {hasBlockers && (
                     <div className="rounded-xl border border-rose-500/20 bg-rose-500/05 px-4 py-3 text-rose-400 text-sm">
@@ -431,23 +444,30 @@ export default function FixturePage() {
                 {result && (
                     <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 space-y-2 text-sm text-left">
                         {[
-                            { label: 'Partidos creados',      value: result.partidos_creados,  color: 'text-emerald-400' },
-                            { label: 'Delegaciones registradas', value: result.delegaciones_reg, color: 'text-primary' },
-                            { label: 'Partidos ya existían',  value: result.partidos_skipped,  color: 'text-white/40' },
+                            { label: 'Partidos creados',         value: result.partidos_creados,  color: 'text-emerald-400' },
+                            { label: 'Jornadas creadas',         value: result.jornadas_creadas ?? 0, color: (result.jornadas_creadas ?? 0) > 0 ? 'text-violet-400' : 'text-white/30' },
+                            { label: 'Delegaciones registradas', value: result.delegaciones_reg,  color: 'text-primary' },
+                            { label: 'Partidos ya existían',     value: result.partidos_skipped,  color: 'text-white/40' },
                         ].map(row => (
                             <div key={row.label} className="flex justify-between">
                                 <span className="text-white/50">{row.label}</span>
                                 <span className={cn("font-bold", row.color)}>{row.value}</span>
                             </div>
                         ))}
+                        {(result.jornadas_creadas ?? 0) === 0 && (
+                            <div className="pt-2 mt-2 border-t border-white/5">
+                                <p className="text-xs text-amber-400 font-bold">⚠️ Jornadas: 0 creadas</p>
+                                <p className="text-xs text-white/30 mt-1">Verifica que la migración de jornadas esté aplicada en Supabase y que el Excel tenga filas &ldquo;TODOS LOS PARTICIPANTES&rdquo; para Ajedrez/Tenis de Mesa.</p>
+                            </div>
+                        )}
                         {result.commit_errors.length > 0 && (
                             <div className="pt-2 mt-2 border-t border-white/5">
                                 <p className="text-xs text-amber-400 font-bold mb-1">{result.commit_errors.length} advertencia(s):</p>
-                                {result.commit_errors.slice(0, 3).map((e, i) => (
+                                {result.commit_errors.slice(0, 5).map((e, i) => (
                                     <p key={i} className="text-xs text-white/30">{e}</p>
                                 ))}
-                                {result.commit_errors.length > 3 && (
-                                    <p className="text-xs text-white/20">+{result.commit_errors.length - 3} más</p>
+                                {result.commit_errors.length > 5 && (
+                                    <p className="text-xs text-white/20">+{result.commit_errors.length - 5} más</p>
                                 )}
                             </div>
                         )}
