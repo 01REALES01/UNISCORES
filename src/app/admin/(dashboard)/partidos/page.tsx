@@ -166,6 +166,25 @@ export default function PartidosPage() {
         }
     };
 
+    const deleteNatacionData = async () => {
+        if (!confirm('⚠️ Esto eliminará TODAS las carreras de Natación creadas.\n\nEsta acción no se puede deshacer. ¿Estás seguro?')) return;
+
+        setDeletingTennis(true); // Re-uso el estado de deleting para simplicidad
+        try {
+            const res = await fetch('/api/admin/delete-natacion', { method: 'POST' });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error);
+
+            toast.success(`🗑️ ${data.deleted} carreras de natación eliminadas`);
+            await fetchPartidos();
+        } catch (err: any) {
+            toast.error(err.message || 'Error eliminando natación');
+        } finally {
+            setDeletingTennis(false);
+        }
+    };
+
     const handleImportNatacion = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -381,6 +400,25 @@ export default function PartidosPage() {
                                     {importingNatacion ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} strokeWidth={3} />}
                                 </div>
                                 {importingNatacion ? 'Importando...' : 'Importar Natación'}
+                            </div>
+                        </Button>
+                    </motion.div>
+
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <Button
+                            onClick={deleteNatacionData}
+                            disabled={deletingTennis}
+                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(79,70,229,0.4)] border-0 relative overflow-hidden group/btn disabled:opacity-60"
+                        >
+                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                            <div className="relative flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-white/20">
+                                    {deletingTennis ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} strokeWidth={3} />}
+                                </div>
+                                {deletingTennis ? 'Eliminando...' : 'Borrar Natación'}
                             </div>
                         </Button>
                     </motion.div>

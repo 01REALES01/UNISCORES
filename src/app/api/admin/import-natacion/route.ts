@@ -237,8 +237,11 @@ export async function POST(request: NextRequest) {
                 const parsedList = extractPruebas(pVal);
                 
                 for (const parsed of parsedList) {
-                    const pruebaKey = `${parsed.distancia} ${parsed.estilo}-${genero}`;
-                    processedPruebas.add(`${parsed.distancia} ${parsed.estilo} (${genero})`);
+                    // Evitar inyección cruzada garantizando que el `genero` sea inmutable en este scope
+                    const currentGender = genero; 
+                    
+                    const pruebaKey = `${parsed.distancia} ${parsed.estilo}-${currentGender}`;
+                    processedPruebas.add(`${parsed.distancia} ${parsed.estilo} (${currentGender})`);
 
                     const participante = {
                         id: generateShortId(),
@@ -255,8 +258,8 @@ export async function POST(request: NextRequest) {
                             params: {
                                 disciplina_id: disciplinaId,
                                 equipo_a: `${parsed.distancia} ${parsed.estilo}`, // "50m Libre"
-                                equipo_b: genero === 'femenino' ? 'Femenino' : genero === 'masculino' ? 'Masculino' : 'Mixto',
-                                genero: genero,
+                                equipo_b: currentGender === 'femenino' ? 'Femenino' : currentGender === 'masculino' ? 'Masculino' : 'Mixto',
+                                genero: currentGender,
                                 estado: 'programado',
                                 lugar: 'Piscina Centro Deportivo',
                                 marcador_detalle: {
