@@ -107,11 +107,12 @@ export function GroupStageTable({ matches, sportName, grupo }: GroupStageTablePr
                             <th className="text-left py-4 px-4 w-1/3">Equipo</th>
                             <th className="text-center py-4 px-3 w-10">PJ</th>
                             <th className="text-center py-4 px-3 w-10">PG</th>
-                            <th className="text-center py-4 px-3 w-10">PE</th>
+                            {sportName !== 'Voleibol' && <th className="text-center py-4 px-3 w-10">PE</th>}
                             <th className="text-center py-4 px-3 w-10">PP</th>
                             <th className="text-center py-4 px-3 w-10">{sportName === 'Voleibol' ? 'SG' : 'GF'}</th>
                             <th className="text-center py-4 px-3 w-10">{sportName === 'Voleibol' ? 'SP' : 'GC'}</th>
-                            <th className="text-center py-4 px-3 w-10">{sportName === 'Voleibol' ? 'RS' : 'DIF'}</th>
+                            {sportName === 'Voleibol' && <th className="text-center py-4 px-3 w-14" title="Coeficiente de Puntos">CP</th>}
+                            <th className="text-center py-4 px-3 w-10">{sportName === 'Voleibol' ? 'CS' : 'DIF'}</th>
                             <th className="text-center py-4 px-3 w-12">FP</th>
                             <th className="text-center py-4 px-6 sm:px-8 w-16 text-violet-300">PTS</th>
                         </tr>
@@ -145,7 +146,7 @@ export function GroupStageTable({ matches, sportName, grupo }: GroupStageTablePr
                                     </td>
                                     <td className="text-center py-4 px-3 text-white/50 font-bold tabular-nums">{team.played}</td>
                                     <td className="text-center py-4 px-3 text-emerald-400 font-black tabular-nums">{team.won}</td>
-                                    <td className="text-center py-4 px-3 text-white/40 font-bold tabular-nums">{team.drawn}</td>
+                                    {sportName !== 'Voleibol' && <td className="text-center py-4 px-3 text-white/40 font-bold tabular-nums">{team.drawn}</td>}
                                     <td className="text-center py-4 px-3 text-rose-400 font-bold tabular-nums">{team.lost}</td>
                                     <td className="text-center py-4 px-3 text-white/50 tabular-nums">
                                         {sportName === 'Voleibol' ? team.setsWon : team.pointsFor}
@@ -153,10 +154,17 @@ export function GroupStageTable({ matches, sportName, grupo }: GroupStageTablePr
                                     <td className="text-center py-4 px-3 text-white/50 tabular-nums">
                                         {sportName === 'Voleibol' ? team.setsLost : team.pointsAgainst}
                                     </td>
+                                    {sportName === 'Voleibol' && (
+                                        <td className="text-center py-4 px-3 tabular-nums">
+                                            <span className="text-white/40 italic">
+                                                {(team.gamePointsAgainst === 0 ? team.gamePointsFor : team.gamePointsFor / team.gamePointsAgainst).toFixed(3)}
+                                            </span>
+                                        </td>
+                                    )}
                                     <td className="text-center py-4 px-3 font-black tabular-nums">
                                         {sportName === 'Voleibol' ? (
                                             <span className="text-white/40 italic">
-                                                {(team.setsLost === 0 ? team.setsWon : (team.setsWon / team.setsLost)).toFixed(2)}
+                                                {(team.setsLost === 0 ? team.setsWon : (team.setsWon / team.setsLost)).toFixed(3)}
                                             </span>
                                         ) : (
                                             <span className={cn("italic", team.diff > 0 ? 'text-emerald-400 font-black' : team.diff < 0 ? 'text-rose-400 font-bold' : 'text-white/40 font-bold')}>
