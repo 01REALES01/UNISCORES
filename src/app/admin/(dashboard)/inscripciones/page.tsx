@@ -183,7 +183,7 @@ export default function InscripcionesPage() {
                         {[
                             { label: 'Equipos totales', value: delegaciones.length },
                             { label: 'Disciplinas activas', value: grouped.length },
-                            { label: 'Carreras inscritas', value: totalCarreras },
+                            { label: 'Programas inscritos', value: totalCarreras },
                         ].map(s => (
                             <div key={s.label} className="rounded-2xl border border-white/5 bg-white/[0.02] px-4 py-3 text-center">
                                 <div className="text-violet-400 font-black text-2xl">{s.value}</div>

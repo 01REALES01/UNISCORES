@@ -115,7 +115,7 @@ export default function DirectorioPage() {
                         </div>
                         <div>
                             <h1 className="text-white font-black text-xl">Directorio</h1>
-                            <p className="text-white/30 text-xs">Carreras y equipos del torneo</p>
+                            <p className="text-white/30 text-xs">Programas y equipos del torneo</p>
                         </div>
                     </div>
                     <button

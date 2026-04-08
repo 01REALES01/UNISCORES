@@ -57,11 +57,34 @@ export interface ScheduleTeam {
     sheet: string;
 }
 
+export interface ScheduleJornada {
+    /** Sport name (canonical, e.g. "Ajedrez", "Tenis de Mesa") */
+    sport: string;
+    /** Gender */
+    genero: 'masculino' | 'femenino';
+    /** Sequential round number within this sport+gender (1-based) */
+    numero: number;
+    /** Raw round label from the block header, e.g. "1era Ronda", "Jornada" */
+    nombre: string;
+    /** Venue name */
+    venue: string;
+    /** ISO 8601 timestamp in COT (UTC-5) */
+    scheduled_at: string;
+    /** Source sheet name */
+    sheet: string;
+    /** Source row index (0-based) */
+    row: number;
+}
+
 export interface ScheduleParseResult {
     matches: ScheduleMatch[];
     teams: ScheduleTeam[];
+    jornadas: ScheduleJornada[];
     errors: Array<{ sheet: string; row: number; message: string }>;
 }
+
+// Sports modeled as Jornadas instead of 1v1 matches
+const JORNADA_SPORT_NAMES = new Set(['Ajedrez', 'Tenis de Mesa']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sport name normalization
@@ -257,8 +280,19 @@ function isMatchRow(row: unknown[]): boolean {
 }
 
 function isSpecialEventRow(row: unknown[]): boolean {
-    // "TODOS LOS PARTICIPANTES" in col 0
-    return String(row[0] ?? '').toUpperCase().includes('TODOS LOS PARTICIPANTES');
+    // Check first 5 columns — Excel offset can shift the text rightward
+    for (let i = 0; i < Math.min(5, row.length); i++) {
+        if (String(row[i] ?? '').toUpperCase().includes('TODOS LOS PARTICIPANTES')) return true;
+    }
+    return false;
+}
+
+/** Returns which column index contains "TODOS LOS PARTICIPANTES" (0-based). */
+function getSpecialEventOffset(row: unknown[]): number {
+    for (let i = 0; i < Math.min(5, row.length); i++) {
+        if (String(row[i] ?? '').toUpperCase().includes('TODOS LOS PARTICIPANTES')) return i;
+    }
+    return 0;
 }
 
 function isBlockHeaderRow(row: unknown[]): boolean {
@@ -277,9 +311,12 @@ function isBlockHeaderRow(row: unknown[]): boolean {
 function parseGeneralSheet(
     rows: unknown[][],
     sheetName: string
-): { matches: ScheduleMatch[]; errors: Array<{ sheet: string; row: number; message: string }> } {
+): { matches: ScheduleMatch[]; jornadas: ScheduleJornada[]; errors: Array<{ sheet: string; row: number; message: string }> } {
     const matches: ScheduleMatch[] = [];
+    const jornadas: ScheduleJornada[] = [];
     const errors: Array<{ sheet: string; row: number; message: string }> = [];
+    // Counter for jornada round numbers, keyed by "sport|genero"
+    const jornadaCounter: Record<string, number> = {};
 
     let currentSport: string | null = null;
     let currentGenero: 'masculino' | 'femenino' = 'masculino';
@@ -301,7 +338,55 @@ function parseGeneralSheet(
             continue;
         }
 
-        if (isSpecialEventRow(row)) continue; // events handled separately
+        if (isSpecialEventRow(row)) {
+            // Capture jornada rows for Ajedrez and Tenis de Mesa
+            if (currentSport && JORNADA_SPORT_NAMES.has(currentSport) && currentRound) {
+                // Use offset-aware column reading (mirrors the match-row logic)
+                const colOffset = getSpecialEventOffset(row);
+                const venue   = cell(row, colOffset + 5);
+                // Try offset-adjusted positions first, then fall back to fixed positions
+                const dateRaw = row[colOffset + 6] ?? row[6];
+                const timeRaw = row[colOffset + 7] ?? row[7];
+
+                const dateParsed = parseDate(dateRaw);
+                const timeParsed = parseTime(timeRaw);
+
+                if (dateParsed && timeParsed) {
+                    const key = `${currentSport}|${currentGenero}`;
+                    jornadaCounter[key] = (jornadaCounter[key] ?? 0) + 1;
+                    jornadas.push({
+                        sport:        currentSport,
+                        genero:       currentGenero,
+                        numero:       jornadaCounter[key],
+                        nombre:       currentRound,
+                        venue,
+                        scheduled_at: buildTimestamp(dateParsed, timeParsed),
+                        sheet:        sheetName,
+                        row:          rowIdx,
+                    });
+                } else {
+                    errors.push({
+                        sheet: sheetName,
+                        row: rowIdx,
+                        message: `Jornada (${currentSport} ${currentGenero}): fecha/hora no reconocida. Offset=${colOffset}, dateRaw="${dateRaw}", timeRaw="${timeRaw}"`,
+                    });
+                }
+            } else if (currentSport && !JORNADA_SPORT_NAMES.has(currentSport)) {
+                // Debug: tells us why a "TODOS LOS PARTICIPANTES" row was ignored
+                errors.push({
+                    sheet: sheetName,
+                    row: rowIdx,
+                    message: `"TODOS LOS PARTICIPANTES" encontrado para deporte "${currentSport}" (no es Ajedrez/Tenis de Mesa) — ignorado`,
+                });
+            } else if (!currentSport) {
+                errors.push({
+                    sheet: sheetName,
+                    row: rowIdx,
+                    message: '"TODOS LOS PARTICIPANTES" encontrado sin deporte activo — bloque de deporte no detectado antes de esta fila',
+                });
+            }
+            continue;
+        }
 
         if (isBlockHeaderRow(row)) {
             // Extract sport+gender from the last non-empty cell (col 8 / col index 8)
@@ -389,7 +474,7 @@ function parseGeneralSheet(
         }
     }
 
-    return { matches, errors };
+    return { matches, jornadas, errors };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -471,7 +556,7 @@ export function parseScheduleExcel(buffer: Buffer): ScheduleParseResult {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const wb = XLSX.read(buffer, { type: 'buffer', cellDates: true, defval: '' } as any);
 
-    const result: ScheduleParseResult = { matches: [], teams: [], errors: [] };
+    const result: ScheduleParseResult = { matches: [], teams: [], jornadas: [], errors: [] };
 
     for (const sheetName of wb.SheetNames) {
         const sheet = wb.Sheets[sheetName];
@@ -505,8 +590,9 @@ export function parseScheduleExcel(buffer: Buffer): ScheduleParseResult {
                                 sheetName.toLowerCase().includes('general');
 
         if (isPorDiaGeneral) {
-            const { matches, errors } = parseGeneralSheet(mergedRows, sheetName);
+            const { matches, jornadas, errors } = parseGeneralSheet(mergedRows, sheetName);
             result.matches.push(...matches);
+            result.jornadas.push(...jornadas);
             result.errors.push(...errors);
         } else {
             // Sport-specific sheet: parse team registrations

@@ -276,7 +276,7 @@ export default function NuevaNoticiaPage() {
 
                 {/* Linked Carrera */}
                 <div>
-                    <label className="text-xs font-black uppercase tracking-widest text-white/30 block mb-3">Vincular a Carrera (opcional)</label>
+                    <label className="text-xs font-black uppercase tracking-widest text-white/30 block mb-3">Vincular a Programa (opcional)</label>
                     <select
                         value={form.carrera}
                         onChange={(e) => setForm(prev => ({ ...prev, carrera: e.target.value }))}

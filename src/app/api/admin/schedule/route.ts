@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteSupabase } from '@/lib/supabase-route-handler';
 import { parseScheduleExcel } from '@/lib/schedule-parser';
-import type { ScheduleMatch, ScheduleTeam } from '@/lib/schedule-parser';
+import type { ScheduleMatch, ScheduleTeam, ScheduleJornada } from '@/lib/schedule-parser';
 
 export const maxDuration = 60;
 
@@ -142,9 +142,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Error al parsear el Excel: ${e.message}` }, { status: 400 });
     }
 
-    if (parsed.matches.length === 0) {
+    if (parsed.matches.length === 0 && parsed.jornadas.length === 0) {
         return NextResponse.json({
-            error: 'No se encontraron partidos en el archivo',
+            error: 'No se encontraron partidos ni jornadas en el archivo',
             parse_errors: parsed.errors,
         }, { status: 400 });
     }
@@ -171,6 +171,7 @@ export async function POST(request: NextRequest) {
             dry_run: true,
             matches_found:    parsed.matches.length,
             teams_found:      parsed.teams.length,
+            jornadas_found:   parsed.jornadas.length,
             parse_errors:     parsed.errors,
             match_issues:     matchIssues,
             team_issues:      teamIssues,
@@ -182,6 +183,7 @@ export async function POST(request: NextRequest) {
     const created = {
         partidos:     0,
         delegaciones: 0,
+        jornadas:     0,
         skipped:      0,
         errors:       [] as string[],
     };
@@ -281,6 +283,47 @@ export async function POST(request: NextRequest) {
         created.partidos++;
     }
 
+    // Step 3: Upsert jornadas (Ajedrez / Tenis de Mesa sessions)
+    for (const jornada of parsed.jornadas) {
+        const disciplinaId = disciplinaByName.get(jornada.sport.toLowerCase());
+        if (!disciplinaId) {
+            created.errors.push(`Disciplina no encontrada para jornada: "${jornada.sport}"`);
+            continue;
+        }
+
+        // Check if this jornada already exists and is finalizado — don't overwrite estado
+        const { data: existing } = await supabase
+            .from('jornadas')
+            .select('id, estado')
+            .eq('disciplina_id', disciplinaId)
+            .eq('genero', jornada.genero)
+            .eq('numero', jornada.numero)
+            .maybeSingle();
+
+        if (existing?.estado === 'finalizado') {
+            created.skipped++;
+            continue; // never overwrite a finalized jornada
+        }
+
+        const { error } = await supabase.from('jornadas').upsert(
+            {
+                disciplina_id: disciplinaId,
+                genero:        jornada.genero,
+                numero:        jornada.numero,
+                nombre:        jornada.nombre,
+                scheduled_at:  jornada.scheduled_at,
+                lugar:         jornada.venue,
+            },
+            { onConflict: 'disciplina_id,genero,numero' }
+        );
+
+        if (error) {
+            created.errors.push(`Error al crear jornada "${jornada.sport} ${jornada.genero} #${jornada.numero}": ${error.message}`);
+        } else {
+            created.jornadas++;
+        }
+    }
+
     // ── Audit log ─────────────────────────────────────────────────────────────
     await supabase.from('admin_audit_logs').insert({
         admin_id:    user.id,
@@ -293,6 +336,7 @@ export async function POST(request: NextRequest) {
             filename:           file.name,
             partidos_creados:   created.partidos,
             delegaciones_reg:   created.delegaciones,
+            jornadas_creadas:   created.jornadas,
             partidos_skipped:   created.skipped,
             errors_count:       created.errors.length,
         },
@@ -302,6 +346,7 @@ export async function POST(request: NextRequest) {
         success:           true,
         partidos_creados:  created.partidos,
         delegaciones_reg:  created.delegaciones,
+        jornadas_creadas:  created.jornadas,
         partidos_skipped:  created.skipped,
         parse_errors:      parsed.errors,
         commit_errors:     created.errors,

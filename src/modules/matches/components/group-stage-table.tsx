@@ -96,6 +96,18 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
 
     const standings = useMemo(() => calculateStandings(matches, sportName, fairPlayData, teamIdMap), [matches, sportName, fairPlayData, teamIdMap]);
 
+    // Build a map: teamName → delegacionId, using delegacion_a_id/b_id which are always set
+    const teamCarreraMap = useMemo(() => {
+        const map: Record<string, number> = {};
+        matches.forEach(m => {
+            const nameA = m.delegacion_a || m.equipo_a;
+            const nameB = m.delegacion_b || m.equipo_b;
+            if (nameA && m.delegacion_a_id) map[nameA] = m.delegacion_a_id;
+            if (nameB && m.delegacion_b_id) map[nameB] = m.delegacion_b_id;
+        });
+        return map;
+    }, [matches]);
+
     const gc = GROUP_COLORS[grupo?.toUpperCase()] || DEFAULT_GROUP_COLOR;
     const played = matches.filter(m => m.estado === 'finalizado').length;
     const total  = matches.length;
@@ -229,6 +241,7 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                                                         <div className="px-2 py-1">{content}</div>
                                                     );
                                                 })()}
+
                                                 {qualified && (
                                                     <CheckCircle2 size={12} className="text-emerald-400 shrink-0 opacity-70" />
                                                 )}
