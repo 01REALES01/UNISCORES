@@ -42,14 +42,22 @@ export function FairPlayTable({ genero, sportName, teamIdMap = {} }: FairPlayTab
 
             if (!disc) { if (!cancelled) { setData([]); setLoading(false); } return; }
 
-            // Get all match IDs for this discipline/gender
+            // Get all match IDs (all phases) for events query
             const { data: partidos } = await supabase
                 .from('partidos')
                 .select('id, equipo_a, equipo_b, delegacion_a, delegacion_b, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id')
                 .eq('disciplina_id', disc.id)
                 .eq('genero', genero);
 
-            if (!partidos || partidos.length === 0) {
+            // Get group stage matches to extract real tournament teams (never placeholders)
+            const { data: grupoPartidos } = await supabase
+                .from('partidos')
+                .select('equipo_a, equipo_b, delegacion_a, delegacion_b')
+                .eq('disciplina_id', disc.id)
+                .eq('genero', genero)
+                .eq('fase', 'grupos');
+
+            if (!partidos || partidos.length === 0 || !grupoPartidos || grupoPartidos.length === 0) {
                 if (!cancelled) { setData([]); setLoading(false); }
                 return;
             }
@@ -65,19 +73,27 @@ export function FairPlayTable({ genero, sportName, teamIdMap = {} }: FairPlayTab
             const localTeamIdMap: Record<string, string> = {};
             const localAthleteIdMap: Record<string, string> = {};
 
+            // Prioritize group stage matches for team names but use all matches for mapping
             partidos.forEach((p: any) => {
                 const a = p.delegacion_a || p.equipo_a;
                 const b = p.delegacion_b || p.equipo_b;
-                if (a && !(a in scores)) { 
-                    scores[a] = 2000; amarillas[a] = 0; rojas[a] = 0; otros[a] = 0; 
+                
+                if (a) {
                     if (p.athlete_a_id) localAthleteIdMap[a] = p.athlete_a_id;
                     else if (p.carrera_a_id) localTeamIdMap[a] = p.carrera_a_id;
                 }
-                if (b && !(b in scores)) { 
-                    scores[b] = 2000; amarillas[b] = 0; rojas[b] = 0; otros[b] = 0; 
+                if (b) {
                     if (p.athlete_b_id) localAthleteIdMap[b] = p.athlete_b_id;
                     else if (p.carrera_b_id) localTeamIdMap[b] = p.carrera_b_id;
                 }
+            });
+
+            // Ensure only teams from group matches are in the scores
+            grupoPartidos.forEach((p: any) => {
+                const a = p.delegacion_a || p.equipo_a;
+                const b = p.delegacion_b || p.equipo_b;
+                if (a && !(a in scores)) { scores[a] = 2000; amarillas[a] = 0; rojas[a] = 0; otros[a] = 0; }
+                if (b && !(b in scores)) { scores[b] = 2000; amarillas[b] = 0; rojas[b] = 0; otros[b] = 0; }
             });
 
             const { data: eventos } = await supabase

@@ -380,14 +380,16 @@ function RoundConnector({
 }
 
 // ─── Main BracketTree ─────────────────────────────────────────────────────────
-export function BracketTree({ matches, light = false }: BracketTreeProps) {
+export function BracketTree({ matches, sportName, light = false }: BracketTreeProps) {
+    const isTenis = sportName === 'Tenis' || sportName === 'Tenis de Mesa';
     const tercerPuesto = useMemo(() => {
         return matches
             .filter(m => m.fase === 'tercer_puesto')
             .sort((a, b) => (a.bracket_order ?? 0) - (b.bracket_order ?? 0));
     }, [matches]);
 
-    const hasTercer = tercerPuesto.length > 0;
+    // Oficial: NINGÚN deporte en el torneo tiene partido de tercer puesto
+    const hasTercer = false;
 
     const normalizedRounds = useMemo(() => {
         const byFase: Record<string, Match[]> = {};
@@ -482,12 +484,14 @@ export function BracketTree({ matches, light = false }: BracketTreeProps) {
                                 />
 
                                 {roundIdx < displayRounds.length - 1 && (
-                                    <RoundConnector
-                                        pairCount={pairCount}
-                                        pairHeight={pairHeight}
-                                        light={light}
-                                        isFinalConnector={isNextFinal}
-                                    />
+                                    isTenis
+                                        ? <div className="w-4 flex-shrink-0" />
+                                        : <RoundConnector
+                                            pairCount={pairCount}
+                                            pairHeight={pairHeight}
+                                            light={light}
+                                            isFinalConnector={isNextFinal}
+                                        />
                                 )}
                             </div>
                         );

@@ -38,13 +38,17 @@ export default function ClasificacionPage() {
     const isTenis = selectedSport === 'Tenis';
     const isTeamSport = ['Fútbol', 'Voleibol', 'Baloncesto'].includes(selectedSport);
 
-    // Fetch site configuration
+    // Fetch site configuration + realtime updates
     useEffect(() => {
-        const fetchConfig = async () => {
-            const { data } = await supabase.from('site_config').select('value').eq('key', 'hide_team_brackets').maybeSingle();
-            if (data) setHideTeamBrackets(data.value === true);
-        };
-        fetchConfig();
+        supabase.from('site_config').select('value').eq('key', 'hide_team_brackets').maybeSingle()
+            .then(({ data }) => { if (data) setHideTeamBrackets(data.value === true); });
+
+        const channel = supabase.channel('site_config_bracket')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_config', filter: 'key=eq.hide_team_brackets' },
+                (payload) => setHideTeamBrackets(payload.new.value === true))
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
     }, []);
 
     // Smart auto-selection: If the current filter is empty but other categories have data, switch to them.

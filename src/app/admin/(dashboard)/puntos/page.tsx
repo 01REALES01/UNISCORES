@@ -356,7 +356,8 @@ function BracketVisibilityToggle() {
 
     useEffect(() => {
         supabase.from('site_config').select('value').eq('key', 'hide_team_brackets').maybeSingle()
-            .then(({ data }) => {
+            .then(({ data, error }) => {
+                if (error) console.error('site_config fetch error:', error);
                 if (data) setHidden(data.value === true);
                 setUpdating(false);
             });
@@ -367,10 +368,13 @@ function BracketVisibilityToggle() {
         const newValue = !hidden;
         const { error } = await supabase
             .from('site_config')
-            .upsert({ key: 'hide_team_brackets', value: newValue, updated_at: new Date().toISOString() });
-        
-        if (error) toast.error('Error al actualizar configuración');
-        else {
+            .update({ value: newValue, updated_at: new Date().toISOString() })
+            .eq('key', 'hide_team_brackets');
+
+        if (error) {
+            console.error('site_config update error:', error);
+            toast.error('Error al actualizar configuración');
+        } else {
             setHidden(newValue);
             toast.success(newValue ? 'Brackets ahora están ocultos' : 'Brackets ahora son visibles');
         }
