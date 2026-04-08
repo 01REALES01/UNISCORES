@@ -40,7 +40,7 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
                             </div>
                             <div>
                                 <h3 className="text-2xl font-black font-sans tracking-tight text-white leading-none mb-1.5">Top Programas</h3>
-                                <p className="text-[10px] font-display font-black tracking-[0.2em] text-white/40 uppercase">Carreras más apoyadas</p>
+                                <p className="text-[10px] font-display font-black tracking-[0.2em] text-white/40 uppercase">Programas más apoyados</p>
                             </div>
                         </div>
                     </div>

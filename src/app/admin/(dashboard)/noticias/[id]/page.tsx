@@ -230,7 +230,7 @@ export default function EditNoticiaPage() {
                     </select>
                 </div>
                 <div>
-                    <label className="text-xs font-black uppercase tracking-widest text-white/30 block mb-3">Carrera</label>
+                    <label className="text-xs font-black uppercase tracking-widest text-white/30 block mb-3">Programa</label>
                     <select value={form.carrera} onChange={(e) => setForm(prev => ({ ...prev, carrera: e.target.value }))}
                         className="w-full bg-white/[0.02] border border-white/10 rounded-xl text-sm text-white/70 px-4 py-3 focus:outline-none appearance-none cursor-pointer">
                         <option value="">Ninguna</option>
