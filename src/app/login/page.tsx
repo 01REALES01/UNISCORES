@@ -54,7 +54,7 @@ function LoginPageContent() {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "azure",
             options: {
-                scopes: "email profile",
+                scopes: "openid email",
                 redirectTo: `${window.location.origin}/auth/callback`,
             },
         });
