@@ -97,7 +97,7 @@ async function fetchTeamProfile(delegacionId: number) {
         
         let query = supabase
             .from('jugadores')
-            .select('id, nombre, genero, sexo, disciplina_id, profile:profiles(id, full_name, avatar_url, roles, points, sexo, genero, disciplina:disciplinas(name))')
+            .select('id, nombre, genero, sexo, disciplina_id, profile:profiles(id, full_name, avatar_url, roles, points, genero, disciplina:disciplinas(name))')
             .in('carrera_id', delegacion.carrera_ids);
 
         if (delegacion.disciplina_id) {
