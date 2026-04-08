@@ -313,12 +313,12 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                 </div>
 
             {/* Filters & Search */}
-            <div className="relative overflow-hidden rounded-2xl bg-white/8/40 backdrop-blur-md border border-white/5 p-4">
+            <div className="relative overflow-hidden rounded-2xl bg-white/[0.12] backdrop-blur-3xl border border-white/30 p-4 shadow-[0_0_30px_rgba(255,255,255,0.05)]">
                 <SuggestiveSearch
                     value={searchQuery}
                     onChange={setSearchQuery}
                     suggestions={["Buscar por nombre...", "Buscar por correo...", "Encuentra un admin..."]}
-                    className="h-11 rounded-xl bg-white/5 border border-white/10 focus-within:border-purple-500/50 focus-within:bg-white/10 focus-within:ring-2 focus-within:ring-purple-500/10 transition-all w-full"
+                    className="h-11 rounded-xl bg-white/5 border border-white/10 focus-within:border-white/60 focus-within:bg-white/10 focus-within:ring-4 focus-within:ring-white/10 transition-all w-full"
                 />
             </div>
 

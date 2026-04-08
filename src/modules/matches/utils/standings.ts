@@ -1,6 +1,8 @@
-
 export type TeamStanding = {
     team: string;
+    teamId?: string;
+    athleteId?: string; // For individual sports
+    avatar_url?: string; // Icon/Logo URL
     played: number;
     won: number;
     lost: number;
@@ -36,30 +38,82 @@ export function compareStandings(a: TeamStanding, b: TeamStanding, sportName: st
     return b.fairPlay - a.fairPlay;
 }
 
-export function calculateStandings(matches: any[], sportName: string, fairPlayData: Record<string, number> = {}): TeamStanding[] {
+export function calculateStandings(
+    matches: any[], 
+    sportName: string, 
+    fairPlayData: Record<string, number> = {},
+    nameToIdMap: Record<string, { teamId?: string; athleteId?: string }> = {}
+): TeamStanding[] {
     const teams: Record<string, TeamStanding> = {};
 
     matches.forEach((m) => {
         const teamA = m.delegacion_a || m.equipo_a;
         const teamB = m.delegacion_b || m.equipo_b;
+        const teamAId = m.carrera_a_id || m.athlete_a_id;
+        const teamBId = m.carrera_b_id || m.athlete_b_id;
+        const isIndividual = !!m.athlete_a_id;
 
         if (!teams[teamA]) {
             teams[teamA] = {
-                team: teamA, played: 0, won: 0, lost: 0, drawn: 0,
+                team: teamA, 
+                played: 0, won: 0, lost: 0, drawn: 0,
                 pointsFor: 0, pointsAgainst: 0, diff: 0, points: 0,
                 fairPlay: fairPlayData[teamA] ?? 2000,
                 setsWon: 0, setsLost: 0, gamePointsFor: 0, gamePointsAgainst: 0,
-                grupo: m.grupo
+                grupo: m.grupo,
+                avatar_url: isIndividual 
+                    ? (m.atleta_a?.avatar_url || m.athlete_a?.avatar_url) 
+                    : (m.carrera_a?.escudo_url || m.delegacion_a?.escudo_url || m.delegacion_a_info?.escudo_url)
             };
         }
         if (!teams[teamB]) {
             teams[teamB] = {
-                team: teamB, played: 0, won: 0, lost: 0, drawn: 0,
+                team: teamB, 
+                played: 0, won: 0, lost: 0, drawn: 0,
                 pointsFor: 0, pointsAgainst: 0, diff: 0, points: 0,
                 fairPlay: fairPlayData[teamB] ?? 2000,
                 setsWon: 0, setsLost: 0, gamePointsFor: 0, gamePointsAgainst: 0,
-                grupo: m.grupo
+                grupo: m.grupo,
+                avatar_url: isIndividual 
+                    ? (m.atleta_b?.avatar_url || m.athlete_b?.avatar_url) 
+                    : (m.carrera_b?.escudo_url || m.delegacion_b?.escudo_url || m.delegacion_b_info?.escudo_url)
             };
+        }
+
+        const subNormalize = (n: string) => n.toLowerCase().trim().replace(/^ing\.?\s*/, 'ingeniería ').replace(/^lic\.?\s*/, 'licenciatura ').replace(/^odont\.?\s*/, 'odontología ').replace(/\s+/g, ' ');
+        const subClean = (n: string) => subNormalize(n).replace(/^(ingeniería|licenciatura|odontología)\s+/, '').trim();
+        const subStrip = (n: string) => n.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        const normA = teamA.trim().toLowerCase();
+        const normB = teamB.trim().toLowerCase();
+        const cleanA = subClean(teamA);
+        const cleanB = subClean(teamB);
+        const extraA = subNormalize(teamA);
+        const extraB = subNormalize(teamB);
+        const stripA = subStrip(teamA);
+        const stripB = subStrip(teamB);
+
+        // Ensure IDs are captured even if missing in previous matches
+        if (teamAId) {
+            if (isIndividual) teams[teamA].athleteId = String(teamAId);
+            else teams[teamA].teamId = String(teamAId);
+        } else {
+            const data = nameToIdMap[normA] || nameToIdMap[cleanA] || nameToIdMap[extraA] || nameToIdMap[stripA];
+            if (data) {
+                if (data.athleteId) teams[teamA].athleteId = data.athleteId;
+                else teams[teamA].teamId = data.teamId;
+            }
+        }
+
+        if (teamBId) {
+            if (isIndividual) teams[teamB].athleteId = String(teamBId);
+            else teams[teamB].teamId = String(teamBId);
+        } else {
+            const data = nameToIdMap[normB] || nameToIdMap[cleanB] || nameToIdMap[extraB] || nameToIdMap[stripB];
+            if (data) {
+                if (data.athleteId) teams[teamB].athleteId = data.athleteId;
+                else teams[teamB].teamId = data.teamId;
+            }
         }
 
         if (m.estado === 'finalizado') {
@@ -106,19 +160,18 @@ export function calculateStandings(matches: any[], sportName: string, fairPlayDa
                 teams[teamB].lost++;
 
                 if (sportName === 'Voleibol') {
-                    // Reglamento: W 2-0 = 4pts, W 2-1 = 3pts
                     if (scoreA === 2 && scoreB === 0) {
                         teams[teamA].points += 4;
-                        teams[teamB].points += 1;  // L 2-0 = 1pt
+                        teams[teamB].points += 1;
                     } else if (scoreA === 2 && scoreB === 1) {
-                        teams[teamA].points += 3;  // W 2-1 = 3pts
-                        teams[teamB].points += 2;  // L 2-1 = 2pts
+                        teams[teamA].points += 3;
+                        teams[teamB].points += 2;
                     }
                 } else if (sportName === 'Baloncesto') {
-                    teams[teamA].points += 2;  // W = 2pts
-                    teams[teamB].points += 1;  // L = 1pt
+                    teams[teamA].points += 2;
+                    teams[teamB].points += 1;
                 } else {
-                    teams[teamA].points += 3;  // Fútbol y otros: W = 3pts
+                    teams[teamA].points += 3;
                 }
             } else if (scoreB > scoreA) {
                 teams[teamB].won++;
@@ -139,7 +192,6 @@ export function calculateStandings(matches: any[], sportName: string, fairPlayDa
                     teams[teamB].points += 3;
                 }
             } else {
-                // Draw only for Fútbol (Baloncesto has no draws)
                 if (sportName !== 'Baloncesto') {
                     teams[teamA].drawn++;
                     teams[teamB].drawn++;

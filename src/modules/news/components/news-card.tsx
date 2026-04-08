@@ -40,6 +40,41 @@ function getRelativeTime(dateStr: string): string {
     return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 }
 
+function NewsReactionSummary({ reactions, className }: { reactions?: { emoji: string }[], className?: string }) {
+    if (!reactions || reactions.length === 0) return null;
+
+    const counts: Record<string, number> = {};
+    reactions.forEach(r => {
+        counts[r.emoji] = (counts[r.emoji] || 0) + 1;
+    });
+
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const topEmojis = sorted.slice(0, 3).map(s => s[0]);
+    const total = reactions.length;
+
+    return (
+        <div className={cn(
+            "flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group/sum hover:scale-105 transition-all duration-300",
+            className
+        )}>
+            <div className="flex items-center -space-x-2">
+                {topEmojis.map((emoji, i) => (
+                    <div 
+                        key={i} 
+                        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] sm:text-[12px] shadow-sm ring-1 ring-white/10"
+                        style={{ zIndex: 10 - i }}
+                    >
+                        {emoji}
+                    </div>
+                ))}
+            </div>
+            <span className="text-[11px] sm:text-[12px] font-black text-emerald-400 tracking-tight tabular-nums drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">
+                {total}
+            </span>
+        </div>
+    );
+}
+
 // ─── Hero Card (Featured) ───
 export function NewsHeroCard({ noticia }: { noticia: Noticia }) {
     const cat = CATEGORY_CONFIG[noticia.categoria] || CATEGORY_CONFIG.cronica;
@@ -69,6 +104,7 @@ export function NewsHeroCard({ noticia }: { noticia: Noticia }) {
                                 <GraduationCap size={12} /> {noticia.carrera}
                             </span>
                         )}
+                        <NewsReactionSummary reactions={noticia.news_reactions} className="ml-auto" />
                     </div>
                     <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-4 line-clamp-3 group-hover:text-emerald-400 transition-colors duration-300 drop-shadow-lg">
                         {noticia.titulo}
@@ -77,8 +113,6 @@ export function NewsHeroCard({ noticia }: { noticia: Noticia }) {
                         {(noticia.contenido || '').substring(0, 200).replace(/\*\*/g, '')}...
                     </p>
                     <div className="flex items-center gap-4 text-xs font-bold text-white/40 uppercase tracking-widest">
-                        <span>{noticia.autor_nombre}</span>
-                        <span className="w-1 h-1 rounded-full bg-white/20" />
                         <span className="flex items-center gap-1.5"><Clock size={12} /> {getRelativeTime(noticia.created_at)}</span>
                     </div>
                 </div>
@@ -107,6 +141,7 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
                             <Trophy size={24} className="text-white/20" />
                         </div>
                     )}
+                    <NewsReactionSummary reactions={noticia.news_reactions} className="absolute top-2 right-2 scale-75 origin-top-right sm:scale-90" />
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-center sm:py-1">
                     <div>
@@ -129,13 +164,134 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
                     </div>
                     <div className="flex items-center gap-3 text-[10px] sm:text-[11px] font-bold text-white/30 mt-3 sm:mt-4 uppercase tracking-widest">
                         <span className="flex items-center gap-1.5"><Clock size={11} /> {getRelativeTime(noticia.created_at)}</span>
-                        <span className="w-1 h-1 rounded-full bg-white/20" />
-                        <span>{getReadTime(noticia.contenido)} lec</span>
                     </div>
                 </div>
                 <div className="hidden sm:flex items-center pr-2 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
                     <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center bg-white/5">
                         <ChevronRight size={18} className="text-white/60" />
+                    </div>
+                </div>
+            </div>
+        </Link>
+    );
+}
+
+// ─── Home Page Layouts ───
+
+/**
+ * NewsCompactHero: For when there is only ONE news item.
+ * Takes full width, has a large image and a beautiful overlay.
+ */
+export function NewsCompactHero({ noticia }: { noticia: Noticia }) {
+    const cat = CATEGORY_CONFIG[noticia.categoria] || CATEGORY_CONFIG.cronica;
+
+    return (
+        <Link href={`/noticias/${noticia.id}`} className="group block w-full">
+            <div className="relative h-[300px] sm:h-[350px] lg:h-[400px] rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-xl">
+                {noticia.imagen_url ? (
+                    <Image
+                        src={noticia.imagen_url}
+                        alt={noticia.titulo}
+                        fill
+                        className="absolute inset-0 object-cover transition-transform duration-1000 group-hover:scale-105 opacity-80"
+                    />
+                ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 to-black/60" />
+                )}
+                
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0816] via-[#0a0816]/40 to-transparent opacity-90" />
+                <NewsReactionSummary reactions={noticia.news_reactions} className="absolute top-6 right-6 sm:top-10 sm:right-10 scale-125" />
+                
+                {/* Emerald/Violet Accents */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-violet-600/10 rounded-full blur-[80px] pointer-events-none" />
+
+                <div className="absolute inset-0 p-8 sm:p-12 flex flex-col justify-end">
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <span className={cn("inline-flex items-center gap-1 rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-widest border border-white/10 shadow-lg backdrop-blur-md", cat.bg, cat.color)}>
+                            {cat.label}
+                        </span>
+                        {noticia.carrera && (
+                            <span className="inline-flex items-center gap-2 text-[10px] font-black text-white/50 bg-black/40 px-4 py-1.5 rounded-full border border-white/10 uppercase tracking-widest backdrop-blur-md">
+                                <GraduationCap size={14} className="text-violet-400" /> {noticia.carrera}
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="max-w-4xl">
+                        <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white leading-tight tracking-tighter mb-4 line-clamp-2 group-hover:text-emerald-400 transition-colors drop-shadow-2xl">
+                            {noticia.titulo}
+                        </h2>
+                        
+                        <div className="flex items-center gap-6 text-[10px] sm:text-xs font-black text-white/40 uppercase tracking-[0.2em] transform translate-y-0 opacity-100 transition-all group-hover:text-white/60">
+                            <span className="flex items-center gap-2">
+                                <Clock size={14} className="text-emerald-400" /> 
+                                {getRelativeTime(noticia.created_at)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Detail Link Overlay */}
+                <div className="absolute top-8 right-8 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
+                    <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-xl">
+                        <ChevronRight size={24} className="text-white" />
+                    </div>
+                </div>
+            </div>
+        </Link>
+    );
+}
+
+/**
+ * NewsGridCard: For when there are TWO news items.
+ * Vertical layout, image on top, fits perfectly in a 2-col grid.
+ */
+export function NewsGridCard({ noticia }: { noticia: Noticia }) {
+    const cat = CATEGORY_CONFIG[noticia.categoria] || CATEGORY_CONFIG.cronica;
+
+    return (
+        <Link href={`/noticias/${noticia.id}`} className="group block h-full">
+            <div className="flex flex-col h-full bg-black/20 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-4 lg:p-6 transition-all duration-500 hover:bg-white/[0.04] hover:border-white/10 hover:-translate-y-1 shadow-2xl relative overflow-hidden">
+                
+                <div className="absolute top-0 right-0 w-48 h-48 bg-violet-600/5 rounded-full blur-[60px] pointer-events-none" />
+
+                <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden mb-5 sm:mb-6 shrink-0 bg-white/5 border border-white/5">
+                    {noticia.imagen_url ? (
+                        <Image
+                            src={noticia.imagen_url}
+                            alt={noticia.titulo}
+                            fill
+                            className="object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-violet-900/30 to-black/60 flex items-center justify-center">
+                            <Trophy size={40} className="text-white/10" />
+                        </div>
+                    )}
+                    <div className="absolute top-4 left-4">
+                        <span className={cn("inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[9px] font-black uppercase tracking-widest border border-white/10 backdrop-blur-md shadow-lg", cat.bg, cat.color)}>
+                            {cat.label}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex-1 flex flex-col min-w-0">
+                    {noticia.carrera && (
+                        <div className="flex items-center gap-2 mb-2">
+                            <GraduationCap size={12} className="text-white/30" />
+                            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-white/30 truncate">
+                                {noticia.carrera}
+                            </span>
+                        </div>
+                    )}
+                    
+                    <h3 className="text-lg sm:text-xl font-black text-white leading-tight tracking-tight mb-4 line-clamp-3 group-hover:text-emerald-400 transition-colors">
+                        {noticia.titulo}
+                    </h3>
+
+                    <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between gap-3 text-[9px] sm:text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">
+                        <span className="flex items-center gap-1.5 shrink-0"><Clock size={12} className="text-emerald-400/60" /> {getRelativeTime(noticia.created_at)}</span>
                     </div>
                 </div>
             </div>

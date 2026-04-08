@@ -202,17 +202,20 @@ export async function POST(_req: NextRequest) {
     // Build all matches to insert
     const toInsert: object[] = [];
 
-    // Push full bracket into toInsert:
-    // - ALL entries go to primera_ronda with their original bracket position.
-    // - Seeds (b=BYE) are marked estado='finalizado' immediately (seed auto-wins).
-    // - Real matches (b!=BYE) are estado='programado' and need to be played.
+    // Push full bracket into toInsert — creates ALL rounds upfront so auto-advance
+    // has pre-existing slots to fill. Rounds after octavos start as TBD.
     //
-    // Also create empty octavos slots, pre-filled where seeds already won.
-    // The auto-advance system will fill remaining octavos slots as matches complete.
+    // primera_ronda: ALL entries (seeds=finalizado, real matches=programado)
+    // octavos:       pre-filled with seed names where applicable, rest TBD
+    // cuartos:       all TBD
+    // semifinal:     all TBD
+    // final:         1 TBD slot
     function pushBracketWithOctavos(bracket: BracketEntry[], genero: string, categoria: string) {
-      const octavosCount = Math.ceil(bracket.length / 2);
+      const octavosCount  = Math.ceil(bracket.length / 2);
+      const cuartosCount  = Math.ceil(octavosCount / 2);
+      const semifinalCount = Math.ceil(cuartosCount / 2);
 
-      // Step 1: Insert all primera_ronda entries (seeds are auto-finalized)
+      // Step 1: All primera_ronda entries (seeds auto-finalized)
       bracket.forEach((entry, idx) => {
         const isSeed = entry.b.toUpperCase() === 'BYE';
         toInsert.push({
@@ -223,30 +226,56 @@ export async function POST(_req: NextRequest) {
           fase: 'primera_ronda',
           bracket_order: idx,
           marcador_detalle: isSeed
-            ? { ...buildMarcador(), sets_a: 2, sets_b: 0 }  // seed wins by default
+            ? { ...buildMarcador(), sets_a: 2, sets_b: 0 }
             : buildMarcador(),
         });
       });
 
-      // Step 2: Create octavos slots, pre-filling seeds that already advanced
+      // Step 2: Octavos — pre-fill seeds that already advanced, rest TBD
       for (let i = 0; i < octavosCount; i++) {
-        const slotA = bracket[i * 2];       // primera_ronda entry for equipo_a side
-        const slotB = bracket[i * 2 + 1];   // primera_ronda entry for equipo_b side
-
-        // If the primera_ronda entry is a seed (BYE), the seed goes directly into octavos
+        const slotA = bracket[i * 2];
+        const slotB = bracket[i * 2 + 1];
         const seedA = slotA?.b.toUpperCase() === 'BYE' ? slotA.a : 'TBD';
         const seedB = slotB?.b.toUpperCase() === 'BYE' ? slotB.a : 'TBD';
-
         toInsert.push({
           disciplina_id, genero, categoria,
-          equipo_a: seedA,
-          equipo_b: seedB || 'TBD',
+          equipo_a: seedA, equipo_b: seedB || 'TBD',
           estado: 'programado', lugar, fecha,
-          fase: 'octavos',
-          bracket_order: i,
+          fase: 'octavos', bracket_order: i,
           marcador_detalle: buildMarcador(),
         });
       }
+
+      // Step 3: Cuartos — all TBD (auto-advance fills from octavos winners)
+      for (let i = 0; i < cuartosCount; i++) {
+        toInsert.push({
+          disciplina_id, genero, categoria,
+          equipo_a: 'TBD', equipo_b: 'TBD',
+          estado: 'programado', lugar, fecha,
+          fase: 'cuartos', bracket_order: i,
+          marcador_detalle: buildMarcador(),
+        });
+      }
+
+      // Step 4: Semifinal — all TBD
+      for (let i = 0; i < semifinalCount; i++) {
+        toInsert.push({
+          disciplina_id, genero, categoria,
+          equipo_a: 'TBD', equipo_b: 'TBD',
+          estado: 'programado', lugar, fecha,
+          fase: 'semifinal', bracket_order: i,
+          marcador_detalle: buildMarcador(),
+        });
+      }
+
+      // Step 5: Final — 1 TBD slot
+      toInsert.push({
+        disciplina_id, genero, categoria,
+        equipo_a: 'TBD', equipo_b: 'TBD',
+        estado: 'programado', lugar, fecha,
+        fase: 'final', bracket_order: 0,
+        marcador_detalle: buildMarcador(),
+      });
     }
 
     // ── Intermedio Masculino (32 → 16 octavos) ─────────────────────────────
@@ -292,8 +321,8 @@ export async function POST(_req: NextRequest) {
       // Link players to matches via roster_partido + set athlete/career FKs on partidos
       if (inserted) {
         for (const partido of inserted) {
-          const skipB = partido.equipo_b?.toUpperCase() === 'BYE';
-          const skipA = partido.equipo_a?.toUpperCase() === 'BYE';
+          const skipB = partido.equipo_b?.toUpperCase() === 'BYE' || partido.equipo_b?.toUpperCase() === 'TBD';
+          const skipA = partido.equipo_a?.toUpperCase() === 'BYE' || partido.equipo_a?.toUpperCase() === 'TBD';
 
           // Resolve both players in parallel
           const [jugadorA, jugadorB] = await Promise.all([
@@ -346,28 +375,31 @@ export async function POST(_req: NextRequest) {
       }
     }
 
-    const matchCount = (b: BracketEntry[]) => b.filter(e => e.b !== 'BYE').length;
-    const seedCount = (b: BracketEntry[]) => b.filter(e => e.b === 'BYE').length;
-    const octavosCount = (b: BracketEntry[]) => Math.ceil(b.length / 2);
+    const bracketSlots = (b: BracketEntry[]) => {
+      const oct  = Math.ceil(b.length / 2);
+      const qtr  = Math.ceil(oct / 2);
+      const semi = Math.ceil(qtr / 2);
+      return {
+        primera_ronda: b.length,
+        matches_reales: b.filter(e => e.b.toUpperCase() !== 'BYE').length,
+        seeds: b.filter(e => e.b.toUpperCase() === 'BYE').length,
+        octavos: oct,
+        cuartos: qtr,
+        semifinal: semi,
+        final: 1,
+        total: b.length + oct + qtr + semi + 1,
+      };
+    };
 
     return NextResponse.json({
       created,
       rosterLinked,
       rosterErrors: rosterErrors.slice(0, 30),
-      message: '✅ Tennis bracket imported. Octavos slots are empty and will be filled by auto-advance as winners emerge.',
+      message: '✅ Tennis bracket imported with all rounds pre-created. Auto-advance fills slots as winners emerge.',
       breakdown: {
-        intermedio_m: {
-          matches: matchCount(BRACKET_INT_M),
-          octavos_slots: octavosCount(BRACKET_INT_M),
-        },
-        intermedio_f: {
-          matches: matchCount(BRACKET_INT_F),
-          octavos_slots: octavosCount(BRACKET_INT_F),
-        },
-        avanzado_m: {
-          matches: matchCount(BRACKET_AVA_M),
-          octavos_slots: octavosCount(BRACKET_AVA_M),
-        },
+        intermedio_m: bracketSlots(BRACKET_INT_M),
+        intermedio_f: bracketSlots(BRACKET_INT_F),
+        avanzado_m:   bracketSlots(BRACKET_AVA_M),
         avanzado_f_grupos: AVANZADO_FEMENINO_GRUPOS.length,
       },
     });

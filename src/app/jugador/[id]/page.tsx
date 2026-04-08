@@ -8,10 +8,11 @@ import { Avatar } from "@/components/ui-primitives";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
-import { ChevronLeft, Lock, Trophy, Calendar, ArrowUpRight, Users } from "lucide-react";
-import { SPORT_ACCENT, SPORT_COLORS } from "@/lib/constants";
-import { SportIcon } from "@/shared/components/sport-icons";
-
+import { SafeBackButton } from "@/shared/components/safe-back-button";
+import { ChevronLeft, Lock, Trophy, Calendar, ArrowUpRight, Users, Target, Activity, Share2 } from "lucide-react";
+import { SPORT_ACCENT, SPORT_COLORS, SPORT_GRADIENT } from "@/lib/constants";
+import { SportIcon } from "@/components/sport-icons";
+import { motion } from "framer-motion";
 export default function JugadorPublicPage() {
     const params = useParams();
     const router = useRouter();
@@ -106,12 +107,6 @@ export default function JugadorPublicPage() {
         fetchData();
     }, [jugadorId]);
 
-    // Handle sport selection change
-    const handleSportChange = (discId: string) => {
-        setSelectedSportId(discId);
-        // We could re-fetch context here if we want to filter matches by sport
-    };
-
     if (loading) return (
         <div className="min-h-screen bg-background flex items-center justify-center">
             <UniqueLoading size="lg" />
@@ -122,165 +117,243 @@ export default function JugadorPublicPage() {
         <div className="min-h-screen bg-background flex flex-col items-center justify-center text-white gap-4 p-8 text-center">
             <Trophy size={48} className="text-slate-700" />
             <h1 className="text-xl font-bold">Jugador no encontrado</h1>
-            <Link href="/" className="text-sm text-white/40 hover:text-white transition-colors">← Volver al inicio</Link>
+            <SafeBackButton fallback="/" label="Volver al inicio" />
         </div>
     );
 
     const currentSport = disciplinas.find(d => d.id === selectedSportId) || (Array.isArray(jugador.disciplina) ? jugador.disciplina[0] : jugador.disciplina);
     const sportName = currentSport?.name || '';
     const sportColor = SPORT_COLORS[sportName] || '#6366f1';
-    const sportAccent = SPORT_ACCENT[sportName] || 'text-violet-400';
     const initials = jugador.nombre.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
     const generoLabel = jugador.genero === 'femenino' ? 'Femenino' : jugador.genero === 'masculino' ? 'Masculino' : 'Mixto';
 
     return (
-        <div className="min-h-screen bg-background text-white transition-colors duration-1000" style={{ backgroundColor: `${sportColor}08` }}>
-            <MainNavbar user={null} profile={null} isStaff={false} />
-
-            {/* Ambient glow */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full blur-[120px] opacity-20 transition-all duration-1000"
-                    style={{ backgroundColor: sportColor }} />
+        <div className="min-h-screen bg-background text-white selection:bg-violet-500/30 overflow-x-hidden relative font-sans">
+            <div className="fixed top-0 left-0 right-0 z-50 px-4 py-4 flex justify-between items-center pointer-events-none">
+                <div className="pointer-events-auto">
+                    <SafeBackButton fallback="/medallero" />
+                </div>
+            </div>
+            {/* ━━━ AMBIENT HYBRID BACKGROUND ━━━ */}
+            <div className="fixed inset-0 z-0 pointer-events-none opacity-30 mix-blend-screen overflow-hidden">
+                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-violet-600/10 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[120px]" />
             </div>
 
-            <div className="relative z-10 max-w-2xl mx-auto px-4 pt-24 pb-20">
-                {/* Back */}
-                <button onClick={() => router.back()} className="flex items-center gap-2 text-white/40 hover:text-white text-sm font-medium mb-8 transition-colors">
-                    <ChevronLeft size={16} /> Volver
-                </button>
+            <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.07]">
+                <img 
+                    src="/elementos/07.png" 
+                    alt="" 
+                    className="w-[800px] md:w-[1200px] h-auto grayscale contrast-150 brightness-200" 
+                    aria-hidden="true"
+                />
+            </div>
 
-                {/* Profile card */}
-                <div className="rounded-3xl bg-white/[0.03] border border-white/10 overflow-hidden mb-6">
-                    {/* Top band */}
-                    <div className="h-24 relative transition-all duration-1000" style={{ background: `linear-gradient(135deg, ${sportColor}30, ${sportColor}10)` }}>
-                        <div className="absolute inset-0 opacity-5 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-                    </div>
+            <MainNavbar user={null} profile={null} isStaff={false} />
 
-                    <div className="px-6 pb-6">
-                        {/* Avatar */}
-                        <div className="-mt-12 mb-4 flex items-end gap-4">
-                            <div className="w-24 h-24 rounded-2xl border-4 border-background bg-white/10 flex items-center justify-center text-3xl font-black text-white/60 shadow-2xl transition-all duration-500">
-                                {initials}
-                            </div>
-                            {/* "No activado" badge */}
-                            <div className="mb-2 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
-                                <Lock size={12} className="text-white/40" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Perfil no activado</span>
-                            </div>
+            <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-8 pb-32 relative z-10 space-y-16">
+                
+                {/* Top Nav Actions */}
+                <div className="flex items-center justify-between">
+                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-sans">
+                        <div className="p-2 rounded-full bg-white/5 border border-white/5 group-hover:bg-white group-hover:text-black transition-all flex items-center justify-center">
+                            <ChevronLeft size={14} />
                         </div>
+                        Regresar
+                    </button>
 
-                        {/* Name + number */}
-                        <div className="mb-4">
-                            <div className="flex items-center gap-3">
-                                <h1 className="text-2xl font-black text-white">{jugador.nombre}</h1>
-                                {jugador.numero && (
-                                    <span className="px-2 py-0.5 rounded-lg bg-white/10 text-white/60 text-sm font-black">#{jugador.numero}</span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Info pills + Multi-sport Selector */}
-                        <div className="flex flex-wrap gap-2 mb-6">
-                            {(jugador.carrera as any) && (
-                                <Link href={`/carrera/${(Array.isArray(jugador.carrera) ? jugador.carrera[0] : jugador.carrera).id}`}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                                    {(Array.isArray(jugador.carrera) ? jugador.carrera[0] : jugador.carrera).escudo_url ? (
-                                        <img src={(Array.isArray(jugador.carrera) ? jugador.carrera[0] : jugador.carrera).escudo_url} className="w-4 h-4 rounded-sm object-contain" alt="" />
-                                    ) : null}
-                                    <span className="text-xs font-bold text-white/70">{(Array.isArray(jugador.carrera) ? jugador.carrera[0] : jugador.carrera).nombre}</span>
-                                    <ArrowUpRight size={12} className="text-white/30" />
-                                </Link>
-                            )}
-                            
-                            {/* Sports Selector */}
-                            <div className="flex items-center gap-1.5 p-1 bg-white/5 border border-white/10 rounded-xl">
-                                {disciplinas.map((d: any) => (
-                                    <button 
-                                        key={d.id}
-                                        onClick={() => handleSportChange(d.id)}
-                                        className={cn(
-                                            "flex items-center gap-2 px-3 py-1 rounded-lg transition-all",
-                                            selectedSportId === d.id 
-                                                ? cn("bg-white shadow-lg", (SPORT_ACCENT[d.name] || 'text-violet-600'))
-                                                : "text-white/40 hover:text-white"
-                                        )}
-                                    >
-                                        <SportIcon sport={d.name} size={14} />
-                                        <span className="text-xs font-bold uppercase tracking-wider">{d.name}</span>
-                                    </button>
-                                ))}
-                                {disciplinas.length === 0 && sportName && (
-                                    <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-xl", sportAccent)}>
-                                        <SportIcon sport={sportName} size={14} />
-                                        <span className="text-xs font-bold">{sportName}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {jugador.genero && (
-                                <div className={cn(
-                                    "px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold",
-                                    jugador.genero === 'femenino' ? 'text-pink-400' : jugador.genero === 'masculino' ? 'text-blue-400' : 'text-purple-400'
-                                )}>
-                                    {generoLabel}
-                                </div>
-                            )}
-                            {delegacion && (
-                                <Link href={`/equipo/${delegacion.id}`}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-xs font-bold text-white/70">
-                                    <Users size={12} className="text-white/40" />
-                                    {delegacion.nombre}
-                                    <ArrowUpRight size={12} className="text-white/30" />
-                                </Link>
-                            )}
-                        </div>
-
-                        {/* CTA — activate profile */}
-                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
-                            <p className="text-sm text-white/50 mb-3">
-                                ¿Eres <strong className="text-white/80">{jugador.nombre.split(' ')[0]}</strong>? Regístrate con tu correo universitario para activar tu perfil.
-                            </p>
-                            <Link href="/login"
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm text-white transition-all shadow-xl hover:scale-105"
-                                style={{ background: sportColor }}>
-                                Activar mi perfil
-                            </Link>
-                        </div>
+                    <div className="flex items-center gap-2">
+                         {/* Compartir */}
+                         <button className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/40 hover:text-white">
+                            <Share2 size={16} />
+                        </button>
                     </div>
                 </div>
 
-                {/* Match history */}
-                {partidos.length > 0 && (
-                    <div className="rounded-3xl bg-white/[0.03] border border-white/10 p-5">
-                        <h3 className="text-sm font-black uppercase tracking-widest text-white/40 mb-4 flex items-center gap-2">
-                            <Calendar size={14} /> Historial de Partidos
-                        </h3>
-                        <div className="space-y-2">
-                            {partidos.map((rp: any) => {
-                                const p = rp.partido;
-                                if (!p) return null;
-                                return (
-                                    <Link key={rp.partido_id} href={`/partido/${rp.partido_id}`}
-                                        className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
-                                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/20 group-hover:text-white transition-all">
-                                            <SportIcon sport={(p as any).disciplinas?.name} size={14} />
+                {/* ━━━ PREMIUM IDENTITY BLOCK ━━━ */}
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="relative"
+                >
+                    <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-r from-violet-600/5 via-emerald-600/5 to-transparent blur-[120px] pointer-events-none" />
+                    
+                    <div className="flex flex-col lg:flex-row items-center lg:items-end gap-8 lg:gap-12 relative z-10">
+                        <div className="relative group shrink-0">
+                            <div className="relative w-44 h-44 lg:w-64 lg:h-64 rounded-[3rem] border border-white/10 shadow-2xl bg-black/40 backdrop-blur-xl flex items-center justify-center text-5xl lg:text-7xl font-sans ring-1 ring-white/5 overflow-hidden">
+                                {initials}
+                                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent mix-blend-overlay" />
+                            </div>
+                            
+                            {/* "No activado" floating badge */}
+                            <div className="absolute -bottom-2 -right-2 p-3 bg-slate-800 rounded-2xl shadow-xl z-20 border-2 border-white/10 flex items-center gap-2">
+                                <Lock size={16} className="text-amber-500" />
+                                <span className="text-[8px] font-black uppercase tracking-widest text-amber-500/80">Pendiente de Activar</span>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left gap-6">
+                            <div className="space-y-4">
+                                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-white/40">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.2em]">Deportista Amateur</span>
+                                    </div>
+                                    {jugador.genero && (
+                                        <div className={cn(
+                                            "flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5",
+                                            jugador.genero === 'femenino' ? 'text-pink-400' : jugador.genero === 'masculino' ? 'text-blue-400' : 'text-purple-400'
+                                        )}>
+                                            <span className="text-[9px] font-black uppercase tracking-[0.2em]">{generoLabel}</span>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-white/80 truncate">{p.equipo_a} vs {p.equipo_b}</p>
-                                            <p className="text-[10px] text-white/30">{new Date(p.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} • {(p as any).disciplinas?.name}</p>
-                                        </div>
-                                        <span className={cn(
-                                            "text-[10px] font-black uppercase px-2 py-1 rounded-lg",
-                                            p.estado === 'finalizado' ? 'bg-white/10 text-white/40' : 'bg-emerald-500/20 text-emerald-400'
-                                        )}>{p.estado === 'finalizado' ? 'Final' : 'En curso'}</span>
-                                        <ArrowUpRight size={14} className="text-white/20 group-hover:text-white/60 transition-colors shrink-0" />
-                                    </Link>
-                                );
-                            })}
+                                    )}
+                                </div>
+                                <h1 className="text-5xl lg:text-8xl font-black font-sans tracking-tight leading-none text-white drop-shadow-2xl">
+                                    {jugador.nombre}
+                                    {jugador.numero && <span className="ml-4 text-white/20 font-mono text-3xl lg:text-5xl">#{jugador.numero}</span>}
+                                </h1>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1 p-1.5 bg-black/40 border border-white/10 rounded-[2rem] backdrop-blur-xl shadow-2xl">
+                                <div className="flex items-center gap-3 px-6 py-4 rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors">
+                                    <div className="p-2 bg-violet-500/15 rounded-xl text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.1)] group-hover/stat:scale-110 transition-transform">
+                                        <Target size={18} />
+                                    </div>
+                                    <div className="leading-tight">
+                                        <p className="text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md">--</p>
+                                        <p className="text-[9px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Puntos Globales</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                )}
-            </div>
+                </motion.div>
+
+                {/* ━━━ CONTENT GRID ━━━ */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {/* LEFT COLUMN: CTA / Stats Preview */}
+                    <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
+                        {/* Important CTA Box */}
+                        <div className="relative overflow-hidden rounded-[3rem] bg-gradient-to-br from-violet-600/20 to-indigo-900/40 backdrop-blur-3xl border border-violet-500/30 p-8 shadow-2xl group">
+                            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-120 transition-transform duration-700">
+                                <Lock size={120} />
+                            </div>
+                            <div className="relative z-10">
+                                <h3 className="text-2xl font-black text-white mb-4 tracking-tighter uppercase font-display">Activa tu perfil</h3>
+                                <p className="text-sm text-white/60 mb-8 leading-relaxed">
+                                    Si eres <strong className="text-white">{jugador.nombre.split(' ')[0]}</strong>, vincula tu cuenta para desbloquear estadísticas avanzadas, historial completo y ranking oficial.
+                                </p>
+                                <Link href="/login"
+                                    className="w-full bg-white text-black py-4 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-violet-400 hover:text-white transition-all shadow-xl active:scale-95">
+                                    Comenzar ahora <ArrowUpRight size={16} />
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Analytic Placeholders */}
+                        <div className="rounded-[3rem] bg-black/40 border border-white/5 p-8 backdrop-blur-xl">
+                             <div className="flex items-center justify-between mb-8">
+                                <div className="flex flex-col gap-1">
+                                    <p className="font-display text-[10px] font-bold tracking-[0.3em] text-white/20">
+                                        Performance Hub
+                                    </p>
+                                    <h3 className="text-2xl font-black text-white/40 font-display tracking-tighter">Estadísticas</h3>
+                                </div>
+                                <Activity size={24} className="text-white/10" />
+                            </div>
+                            <div className="space-y-4">
+                                <div className="h-12 bg-white/5 rounded-2xl border border-dashed border-white/10 flex items-center justify-center">
+                                    <span className="text-[10px] font-black text-white/10 tracking-widest uppercase italic">Esperando activación</span>
+                                </div>
+                                <div className="h-12 bg-white/5 rounded-2xl border border-dashed border-white/10 flex items-center justify-center">
+                                    <span className="text-[10px] font-black text-white/10 tracking-widest uppercase italic">Esperando activación</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* RIGHT COLUMN: Careers + Matches */}
+                    <div className="lg:col-span-8 space-y-8">
+                        {/* Career / Represented */}
+                        {jugador.carrera && (
+                            <Link href={`/carrera/${(Array.isArray(jugador.carrera) ? jugador.carrera[0] : jugador.carrera).id}`}
+                                className="group relative rounded-[3rem] bg-black/40 border border-white/10 p-8 lg:p-10 overflow-hidden hover:border-violet-500/30 transition-all duration-500 shadow-2xl flex flex-col sm:flex-row items-center sm:items-stretch gap-10 backdrop-blur-xl">
+                                <div className="absolute -right-20 -top-20 w-96 h-96 opacity-[0.05] blur-[100px] rounded-full bg-violet-600 pointer-events-none" />
+                                <div className="w-28 h-28 lg:w-40 lg:h-40 rounded-[2.5rem] bg-black/60 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] p-6 relative z-10 group-hover:scale-105 transition-transform duration-700">
+                                    {(Array.isArray(jugador.carrera) ? jugador.carrera[0] : jugador.carrera).escudo_url ? (
+                                        <img src={(Array.isArray(jugador.carrera) ? jugador.carrera[0] : jugador.carrera).escudo_url} alt="" className="w-full h-full object-contain filter drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]" />
+                                    ) : (
+                                        <span className="text-5xl font-black font-display text-white/10 uppercase tracking-tighter">{(Array.isArray(jugador.carrera) ? jugador.carrera[0] : jugador.carrera).nombre.substring(0, 2)}</span>
+                                    )}
+                                </div>
+                                <div className="flex flex-col relative z-10 flex-1 justify-center text-center sm:text-left">
+                                    <span className="text-[12px] font-display font-bold tracking-[0.3em] text-white/30 mb-4 block uppercase leading-none">
+                                        Representando a
+                                    </span>
+                                    <h3 className="text-4xl lg:text-5xl font-black text-white group-hover:text-violet-400 transition-colors font-sans tracking-tight leading-none mb-6">{(Array.isArray(jugador.carrera) ? jugador.carrera[0] : jugador.carrera).nombre}</h3>
+                                    <div className="flex items-center justify-center sm:justify-start gap-3 text-[10px] font-display font-black tracking-[0.2em] text-white/20 group-hover:text-white transition-all">
+                                        <span className="border-b border-white/10 pb-1">Sección de equipos de facultad</span>
+                                        <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                    </div>
+                                </div>
+                            </Link>
+                        )}
+
+                        {/* Match History */}
+                        <div className="rounded-[3rem] bg-black/40 border border-white/10 p-8 lg:p-10 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+                            <div className="relative z-10">
+                                <h3 className="text-[10px] font-display font-black text-white/40 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                                    <div className="w-8 h-[1px] bg-white/10" /> Historial de Participación
+                                </h3>
+
+                                {partidos.length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {partidos.map((rp: any) => {
+                                            const p = rp.partido;
+                                            if (!p) return null;
+                                            const sName = (p as any).disciplinas?.name;
+                                            const sColor = SPORT_COLORS[sName] || '#fff';
+                                            return (
+                                                <Link key={rp.partido_id} href={`/partido/${rp.partido_id}`}
+                                                    className="group flex flex-col sm:flex-row items-center gap-6 p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/20 hover:bg-white/[0.05] transition-all duration-300">
+                                                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-black/40 border border-white/5 group-hover:scale-110 transition-transform shadow-inner flex-shrink-0">
+                                                        <SportIcon sport={sName} size={24} className="opacity-80" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 text-center sm:text-left">
+                                                        <p className="text-lg font-black text-white/90 group-hover:text-white transition-colors truncate">
+                                                            {p.equipo_a} <span className="text-white/20 px-2 font-mono">VS</span> {p.equipo_b}
+                                                        </p>
+                                                        <div className="flex items-center justify-center sm:justify-start gap-3 mt-1">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-white/30">{new Date(p.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>
+                                                            <div className="w-1 h-1 rounded-full bg-white/10" />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: sColor }}>{sName}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 shrink-0">
+                                                        <div className={cn(
+                                                            "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-colors",
+                                                            p.estado === 'finalizado' ? 'bg-white/5 border-white/10 text-white/40 font-mono' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                                        )}>
+                                                            {p.estado === 'finalizado' ? 'FINAL' : 'EN CURSO'}
+                                                        </div>
+                                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/20 group-hover:bg-white group-hover:text-black transition-all">
+                                                            <ArrowUpRight size={18} />
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="py-20 flex flex-col items-center justify-center opacity-20">
+                                        <Trophy size={48} className="mb-4" />
+                                        <p className="text-xs font-black uppercase tracking-[0.2em]">Sin partidos registrados</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
         </div>
     );
 }

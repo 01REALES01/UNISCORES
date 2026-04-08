@@ -19,7 +19,7 @@ export function WelcomeNotice() {
         const fetchUserCount = async () => {
             const { count, error } = await supabase
                 .from('profiles')
-                .select('*', { count: 'exact', head: true });
+                .select('id', { count: 'exact', head: true });
             
             if (!error && count !== null) {
                 setUserCount(count);
@@ -146,7 +146,7 @@ export function WelcomeNotice() {
                                             <span className="text-xs font-black font-display text-white leading-none">
                                                 {userCount !== null ? `+${userCount}` : "..." }
                                             </span>
-                                            <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mt-1 font-display">Atletas Reales</span>
+                                            <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mt-1 font-display">Usuarios</span>
                                         </div>
                                     </div>
                                     <span className="text-[9px] font-black text-violet-400/40 uppercase tracking-[0.4em] text-right font-display leading-none">

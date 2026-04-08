@@ -38,13 +38,13 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
 
     const getActiveIndex = () => {
         if (pathname === '/') return 0;
-        if (pathname.startsWith('/calendario')) return 1;
-        if (pathname.startsWith('/partidos')) return 2;
-        if (pathname.startsWith('/noticias')) return 3;
-        if (pathname.startsWith('/mapa')) return 4;
-        if (pathname.startsWith('/medallero')) return 5;
-        if (pathname.startsWith('/quiniela')) return 6;
-        if (pathname.startsWith('/clasificacion')) return 7;
+        if (pathname.startsWith('/partidos')) return 1;
+        if (pathname.startsWith('/clasificacion')) return 2;
+        if (pathname.startsWith('/medallero')) return 3;
+        if (pathname.startsWith('/calendario')) return 4;
+        if (pathname.startsWith('/quiniela')) return 5;
+        if (pathname.startsWith('/noticias')) return 6;
+        if (pathname.startsWith('/mapa')) return 7;
         if (pathname.startsWith('/estadisticas') || pathname.startsWith('/lideres')) return 8;
         if (pathname.startsWith('/admin') && isStaff) return 9;
         return null;
@@ -53,13 +53,13 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
     // User's specific requested text and casing based on the reference image
     const navItems = [
         { title: "Inicio", icon: HomeIcon, href: '/' },
-        { title: "CaLendario", icon: CalendarIcon, href: '/calendario' },
-        { title: "PaRtidos", icon: Gamepad2, href: '/partidos' },
-        { title: "NoTicias", icon: Newspaper, href: '/noticias' },
-        { title: "MaPa", icon: MapPin, href: '/mapa' },
-        { title: "MeDallería", icon: Trophy, href: '/medallero' },
+        { title: "Partidos", icon: Gamepad2, href: '/partidos' },
+        { title: "Clasificación", icon: Swords, href: '/clasificacion' },
+        { title: "Equipos", icon: Trophy, href: '/medallero' },
+        { title: "Calendario", icon: CalendarIcon, href: '/calendario' },
         { title: "Acierta y Gana", icon: BarChart3, href: '/quiniela' },
-        { title: "ClAsificación", icon: Swords, href: '/clasificacion' },
+        { title: "Noticias", icon: Newspaper, href: '/noticias' },
+        { title: "Mapa", icon: MapPin, href: '/mapa' },
         { title: "Líderes", icon: TrendingUp, href: '/estadisticas' },
         ...(isStaff ? [{ title: "Admin", icon: Shield, href: '/admin' }] : []),
     ];
@@ -107,11 +107,11 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
 
                         <Link href="/" className="shrink-0">
                             <Image
-                                src="/Logo Olimpiadas NEW.png"
+                                src="/Olimpiadas elementos.png"
                                 alt="Logo"
                                 width={280}
                                 height={80}
-                                className="h-9 sm:h-14 w-auto object-contain hover:opacity-80 transition-opacity"
+                                className="h-12 sm:h-14 w-auto object-contain hover:opacity-80 transition-opacity"
                                 priority
                             />
                         </Link>
@@ -204,7 +204,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                             {/* Drawer Header */}
                             <div className="px-5 pt-10 pb-6 flex items-center justify-between relative z-10 border-b border-white/5">
                                 <Link href="/" onClick={() => setMobileMenuOpen(false)}>
-                                    <Image src="/Logo Olimpiadas NEW.png" alt="Logo" width={220} height={50} className="h-8 w-auto object-contain" />
+                                    <Image src="/Olimpiadas elementos.png" alt="Logo" width={220} height={50} className="h-14 w-auto object-contain" />
                                 </Link>
                                 <button onClick={() => setMobileMenuOpen(false)} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20 hover:text-white transition-all shadow-md active:scale-95 border border-white/10">
                                     <X size={20} />
@@ -224,7 +224,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                             href={item.href}
                                             onClick={() => setMobileMenuOpen(false)}
                                             className={cn(
-                                                "flex items-center gap-4 px-4 py-3.5 rounded-[1.2rem] transition-all duration-300 group",
+                                                "flex items-center gap-3 px-3 py-2.5 rounded-[1rem] transition-all duration-300 group",
                                                 active 
                                                     ? "bg-white/10 backdrop-blur-md border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.1)]" 
                                                     : "text-[#9d7bb0] hover:bg-white/5 border border-transparent"
@@ -232,18 +232,18 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                         >
                                             {/* Icon Container with Reference Palette */}
                                             <div className={cn(
-                                                "w-11 h-11 rounded-2xl flex items-center justify-center border transition-all duration-300",
+                                                "w-9 h-9 rounded-xl flex items-center justify-center border transition-all duration-300",
                                                 active 
                                                     ? "bg-gradient-to-br from-[#00E5FF] via-[#7B1FA2] to-[#7B1FA2] border-white/30 text-white shadow-lg" 
                                                     : "bg-[#2a0c41] border border-white/5 text-[#9d7bb0] group-hover:text-white"
                                             )}>
-                                                <item.icon size={22} strokeWidth={active ? 2.5 : 1.5} className="relative z-10" />
+                                                <item.icon size={18} strokeWidth={active ? 2.5 : 1.5} className="relative z-10" />
                                             </div>
 
                                             {/* Label match reference casing */}
                                             <div className="flex flex-col flex-1 min-w-0">
                                                 <span className={cn(
-                                                    "text-lg font-display tracking-tight transition-all duration-300 truncate",
+                                                    "text-base font-display tracking-tight transition-all duration-300 truncate",
                                                     active ? "text-white" : "text-[#9d7bb0] group-hover:text-white"
                                                 )}>
                                                     {item.title}

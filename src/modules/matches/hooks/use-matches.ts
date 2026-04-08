@@ -16,6 +16,8 @@ const MATCH_COLUMNS = [
     'disciplinas:disciplina_id(name)',
     'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
     'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
+    'delegacion_a_info:delegaciones!delegacion_a_id(escudo_url)',
+    'delegacion_b_info:delegaciones!delegacion_b_id(escudo_url)',
     'atleta_a:profiles!athlete_a_id(full_name, avatar_url)',
     'atleta_b:profiles!athlete_b_id(full_name, avatar_url)',
 ].join(', ');

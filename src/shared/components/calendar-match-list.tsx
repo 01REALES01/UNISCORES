@@ -76,7 +76,7 @@ export function CalendarMatchList({ loading, selectedDate, matches, isSameDay }:
                     return (
                         <Link key={match.id} href={`/partido/${match.id}`} className="block">
                             <div className={cn(
-                                "bg-background rounded-2xl border p-4 transition-all hover:bg-white/5 group relative overflow-hidden shadow-lg",
+                                "bg-background rounded-2xl border p-4 transition-all duration-300 hover:bg-white/5 hover:-translate-y-0.5 hover:shadow-xl group relative overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.3)] hover:border-white/20",
                                 sportBorder
                             )}>
                                 <div className={`absolute inset-0 bg-gradient-to-r ${SPORT_GRADIENT[sportName] || 'from-indigo-500/5'} to-transparent opacity-20 group-hover:opacity-40 transition-opacity pointer-events-none`} />

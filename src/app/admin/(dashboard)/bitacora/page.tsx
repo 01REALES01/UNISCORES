@@ -152,13 +152,13 @@ export default function BitacoraPage() {
             {/* ─── FILTERS ─── */}
             <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60" size={18} />
                     <input 
                         type="text"
                         placeholder="Buscar por admin, acción o entidad..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full h-14 bg-zinc-900/40 border border-white/5 rounded-2xl pl-12 pr-4 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                        className="w-full h-14 bg-white/[0.12] backdrop-blur-3xl border border-white/30 rounded-2xl pl-12 pr-4 text-sm font-bold text-white focus:outline-none focus:bg-white/[0.18] focus:ring-4 focus:ring-white/10 focus:border-white/40 transition-all shadow-[0_0_30px_rgba(255,255,255,0.05)] placeholder:text-white/40"
                     />
                 </div>
                 <div className="flex gap-2">

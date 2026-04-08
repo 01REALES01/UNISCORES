@@ -266,7 +266,9 @@ export default function PublicProfilePage() {
                 if (!statsMap[discId]) {
                     statsMap[discId] = {
                         goals: 0, pts3: 0, pts2: 0, pts1: 0,
-                        yellowCards: 0, redCards: 0, fouls: 0, totalEvents: 0
+                        yellowCards: 0, redCards: 0, fouls: 0, totalEvents: 0,
+                        puntos: 0, sets: 0, victorias: 0, empates: 0,
+                        gold: 0, silver: 0, bronze: 0,
                     };
                 }
 
@@ -280,6 +282,12 @@ export default function PublicProfilePage() {
                 if (type.includes('amarilla')) s.yellowCards++;
                 if (type.includes('roja')) s.redCards++;
                 if (type === 'falta') s.fouls++;
+                if (type === 'punto') s.puntos++;
+                if (type === 'set') s.sets++;
+                if (type === 'victoria') { if (discId) s.victorias++; else s.gold++; }
+                if (type === 'segundo') s.silver++;
+                if (type === 'tercero') s.bronze++;
+                if (type === 'empate') s.empates++;
             });
             setSportStatsMap(prev => ({ ...prev, ...statsMap }));
         } catch (err) {
@@ -388,8 +396,8 @@ export default function PublicProfilePage() {
                 return newMap;
             });
 
-            // Sort descending locally to ensure correct inter-leaving of team & individual
-            allMatches.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+            // Sort ascending locally to ensure correct inter-leaving of team & individual
+            allMatches.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
             // Deduplicate across the two calls just in case
             const uniqueMatches: any[] = [];
@@ -474,7 +482,7 @@ export default function PublicProfilePage() {
 
             <MainNavbar user={user} profile={currentUserProfile} isStaff={isStaff} />
 
-            <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-8 pb-32 relative z-10 space-y-16">
+            <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-6 sm:pt-8 pb-32 relative z-10 space-y-12 sm:space-y-16">
                 {/* Back button */}
                 <div>
                     <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-sans">
@@ -503,7 +511,7 @@ export default function PublicProfilePage() {
                             <Avatar
                                 name={profile.full_name}
                                 className={cn(
-                                    "relative w-44 h-44 lg:w-64 lg:h-64 rounded-[3rem] border border-white/10 shadow-2xl bg-black text-5xl lg:text-7xl font-sans ring-1 ring-white/5",
+                                    "relative w-32 h-32 sm:w-44 sm:h-44 lg:w-64 lg:h-64 rounded-[2.5rem] sm:rounded-[3rem] border border-white/10 shadow-2xl bg-black text-3xl sm:text-5xl lg:text-7xl font-sans ring-1 ring-white/5",
                                     isProjectCreator && "border-amber-500/40 ring-amber-500/20 shadow-amber-500/10"
                                 )}
                             />
@@ -515,9 +523,9 @@ export default function PublicProfilePage() {
                         </div>
 
                         {/* Text Content Hub */}
-                        <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left gap-6">
-                            <div className="space-y-2">
-                                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-4">
+                        <div className="flex-1 flex flex-col items-center text-center gap-6 w-full">
+                            <div className="space-y-4 w-full">
+                                <div className="flex flex-wrap items-center justify-center gap-2">
                                     {profile.roles?.map((role: string) => renderRoleCard(role))}
                                     {isProjectCreator && (
                                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
@@ -538,7 +546,7 @@ export default function PublicProfilePage() {
                                 </div>
                                 <h1
                                     className={cn(
-                                        "text-5xl lg:text-8xl font-black font-sans tracking-tight leading-none mb-2 drop-shadow-2xl",
+                                        "text-2xl sm:text-5xl lg:text-8xl font-black font-sans tracking-tighter leading-[1.1] mb-2 drop-shadow-2xl break-all sm:break-words",
                                         isProjectCreator
                                             ? "text-transparent bg-clip-text bg-gradient-to-b from-white via-amber-200 to-amber-500"
                                             : !profile.name_color ? "text-white" : undefined
@@ -547,51 +555,63 @@ export default function PublicProfilePage() {
                                 >
                                     {profile.full_name}
                                 </h1>
-                                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5 mt-2 lg:mt-4">
+                                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5 mt-2 lg:mt-4 justify-center w-fit mx-auto">
                                   <Clock size={12} className="text-white/20" />
                                   <span className="text-[10px] font-display font-black tracking-widest text-white/30 uppercase">Member Since: {memberSince}</span>
                                 </div>
                             </div>
 
-                            {/* Integrated Social Stats Bar */}
-                            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1 p-1.5 bg-black/40 border border-white/10 rounded-[2rem] backdrop-blur-xl shadow-2xl">
-                                {/* Puntos */}
-                                <div className="flex items-center gap-3 px-6 py-4 rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors">
-                                    <div className="p-2 bg-violet-500/15 rounded-xl text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.1)] group-hover/stat:scale-110 transition-transform">
-                                        <Target size={18} />
+                            {/* ━━━ SOCIAL ENGINE ━━━ */}
+                            <div className="flex flex-col gap-3 w-full sm:w-auto items-center">
+                                {/* 1. Statistical Counters (3-column grid on mobile) */}
+                                <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-stretch justify-center gap-1.5 p-1 bg-black/40 border border-white/10 rounded-[2.5rem] sm:rounded-[2rem] backdrop-blur-xl shadow-2xl w-full sm:w-auto overflow-hidden">
+                                    {/* Puntos */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-2 sm:px-6 py-4 rounded-[2rem] sm:rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors justify-center min-w-0">
+                                        <div className="p-1.5 sm:p-2 bg-violet-500/15 rounded-xl text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.1)] group-hover/stat:scale-110 transition-transform shrink-0">
+                                            <Target size={14} className="sm:w-[18px] sm:h-[18px]" />
+                                        </div>
+                                        <div className="leading-tight text-center sm:text-left min-w-0 w-full">
+                                            <p className="text-[14px] sm:text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md truncate">{points}</p>
+                                            <p className="text-[7px] sm:text-[9px] font-display font-black text-white/30 uppercase tracking-[0.1em] sm:tracking-[0.2em]">Puntos</p>
+                                        </div>
                                     </div>
-                                    <div className="leading-tight">
-                                        <p className="text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md">{points}</p>
-                                        <p className="text-[9px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Puntos Globales</p>
+                                    {/* AMIGOS */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-2 sm:px-6 py-4 rounded-[2rem] sm:rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors justify-center min-w-0">
+                                        <div className="p-1.5 sm:p-2 bg-emerald-500/15 rounded-xl text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] group-hover/stat:scale-110 transition-transform shrink-0">
+                                            <Users size={14} className="sm:w-[18px] sm:h-[18px]" />
+                                        </div>
+                                        <div className="leading-tight text-center sm:text-left min-w-0 w-full">
+                                            <p className="text-[14px] sm:text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md truncate">{friendsCount}</p>
+                                            <p className="text-[7px] sm:text-[9px] font-display font-black text-white/30 uppercase tracking-[0.1em] sm:tracking-[0.2em]">Amigos</p>
+                                        </div>
+                                    </div>
+                                    {/* SEGUIDORES (FANS) */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-2 sm:px-6 py-4 rounded-[2rem] sm:rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors justify-center min-w-0">
+                                        <div className="p-1.5 sm:p-2 bg-blue-500/15 rounded-xl text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)] group-hover/stat:scale-110 transition-transform shrink-0">
+                                            <Star size={14} className="sm:w-[18px] sm:h-[18px]" />
+                                        </div>
+                                        <div className="leading-tight text-center sm:text-left min-w-0 w-full">
+                                            <p className="text-[14px] sm:text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md truncate">{profile.followers_count || 0}</p>
+                                            <p className="text-[7px] sm:text-[9px] font-display font-black text-white/30 uppercase tracking-[0.1em] sm:tracking-[0.2em]">Fans</p>
+                                        </div>
                                     </div>
                                 </div>
-                                {/* AMIGOS */}
-                                <div className="flex items-center gap-3 px-6 py-4 rounded-[1.5rem] bg-white/[0.03] border border-white/5 group/stat hover:bg-white/5 transition-colors">
-                                    <div className="p-2 bg-emerald-500/15 rounded-xl text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] group-hover/stat:scale-110 transition-transform">
-                                        <Users size={18} />
-                                    </div>
-                                    <div className="leading-tight">
-                                        <p className="text-[18px] font-black font-mono tabular-nums text-white drop-shadow-md">{friendsCount}</p>
-                                        <p className="text-[9px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Amigos</p>
-                                    </div>
-                                </div>
-                                {/* ACTIONS */}
-                                <div className="flex items-center gap-2 pl-6 pr-3">
+
+                                {/* 2. Action Buttons (Separate row on mobile) */}
+                                <div className="flex gap-2 w-full justify-center">
                                     {profileId === user?.id ? (
                                         <Link 
                                             href="/perfil/editar" 
-                                            className="flex items-center gap-2 px-6 py-4 rounded-[1.5rem] bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20 hover:border-violet-500/40 transition-all group font-display font-black uppercase tracking-widest text-[10px] shadow-[0_0_20px_rgba(139,92,246,0.1)]"
+                                            className="flex items-center gap-2 px-6 py-4 rounded-[1.8rem] sm:rounded-[1.5rem] bg-violet-600 border border-violet-500 text-white hover:bg-violet-500 transition-all group font-display font-black uppercase tracking-widest text-[10px] shadow-[0_4px_20px_rgba(124,58,237,0.3)] w-full justify-center"
                                         >
-                                            <div className="p-1 bg-violet-400/20 rounded-lg group-hover:rotate-45 transition-transform">
-                                                <Zap size={14} className="fill-current" />
-                                            </div>
-                                            Configurar Perfil
+                                            <Zap size={14} className="fill-current group-hover:rotate-12 transition-transform" />
+                                            <span>Configuración</span>
                                         </Link>
                                     ) : (
-                                        <>
-                                            <FollowButton targetId={profileId} initialFollowersCount={profile.followers_count || 0} />
+                                        <div className="flex items-center gap-2 w-full">
+                                            <FollowButton targetId={profileId} initialFollowersCount={profile.followers_count || 0} variant="action-only" />
                                             <FriendButton currentUserId={user?.id} targetId={profileId} />
-                                        </>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -604,7 +624,7 @@ export default function PublicProfilePage() {
                                 <div className="lg:col-span-4 lg:sticky lg:top-24">
                         {isDeportista ? (
                             <div className={cn(
-                                "relative overflow-hidden rounded-[3rem] p-8 lg:p-10 shadow-[0_0_50px_rgba(0,0,0,0.5)] min-h-[500px] flex flex-col group border-2 transition-all duration-700",
+                                "relative overflow-hidden rounded-[2.5rem] sm:rounded-[3rem] p-6 sm:p-10 shadow-[0_0_50px_rgba(0,0,0,0.5)] min-h-[450px] sm:min-h-[500px] flex flex-col group border-2 transition-all duration-700",
                                 (athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Baloncesto') ? "bg-gradient-to-br from-[#1a0f05]/80 to-[#0A0705]/95 border-orange-500/30 backdrop-blur-2xl" :
                                 (athleteDisciplinas.find(d => d.id === selectedSportId)?.name === 'Fútbol') ? "bg-gradient-to-br from-[#051a0f]/80 to-[#0A0705]/95 border-emerald-500/30 backdrop-blur-2xl" :
                                 "bg-gradient-to-br from-[#111]/80 to-[#000]/95 border-white/10 backdrop-blur-2xl"
@@ -699,24 +719,94 @@ export default function PublicProfilePage() {
                                         {(() => {
                                             const s = sportStatsMap[selectedSportId || ''] || {};
                                             const currentSportName = athleteDisciplinas.find(d => d.id === selectedSportId)?.name;
-                                            
+
                                             if (currentSportName === 'Baloncesto') {
                                                 return (
                                                     <div className="grid grid-cols-3 gap-3">
                                                         {[
-                                                          { val: s.pts3 || 0, label: '3PT' },
-                                                          { val: s.pts2 || 0, label: '2PT' },
-                                                          { val: s.pts1 || 0, label: 'FT' }
-                                                        ].map((s, idx) => (
+                                                          { val: s.pts3 || 0, label: '3PT', color: 'text-amber-400' },
+                                                          { val: s.pts2 || 0, label: '2PT', color: 'text-amber-400' },
+                                                          { val: s.pts1 || 0, label: 'FT', color: 'text-amber-400' }
+                                                        ].map((st, idx) => (
                                                           <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
-                                                              <p className="text-2xl font-black font-mono text-amber-400 mb-1 drop-shadow-md">{s.val}</p>
-                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{s.label}</p>
+                                                              <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
+                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{st.label}</p>
                                                           </div>
                                                         ))}
                                                     </div>
                                                 );
                                             }
-                                            
+
+                                            if (currentSportName === 'Voleibol') {
+                                                const total = (s.wins || 0) + (s.losses || 0);
+                                                return (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {[
+                                                          { val: s.puntos || 0, label: 'Puntos', color: 'text-sky-400' },
+                                                          { val: total, label: 'Partidos', color: 'text-white/70' },
+                                                          { val: s.wins || 0, label: 'Ganados', color: 'text-emerald-400' },
+                                                        ].map((st, idx) => (
+                                                          <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
+                                                              <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
+                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{st.label}</p>
+                                                          </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (currentSportName === 'Tenis' || currentSportName === 'Tenis de Mesa') {
+                                                return (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {[
+                                                          { val: s.wins || 0, label: 'Victorias', color: 'text-emerald-400' },
+                                                          { val: s.sets || 0, label: 'Sets', color: 'text-lime-400' },
+                                                          { val: s.losses || 0, label: 'Derrotas', color: 'text-rose-400' },
+                                                        ].map((st, idx) => (
+                                                          <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
+                                                              <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
+                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{st.label}</p>
+                                                          </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (currentSportName === 'Ajedrez') {
+                                                return (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {[
+                                                          { val: s.wins || 0, label: 'Victorias', color: 'text-emerald-400' },
+                                                          { val: s.empates || 0, label: 'Empates', color: 'text-amber-400' },
+                                                          { val: s.losses || 0, label: 'Derrotas', color: 'text-rose-400' },
+                                                        ].map((st, idx) => (
+                                                          <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
+                                                              <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
+                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{st.label}</p>
+                                                          </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (currentSportName === 'Natación') {
+                                                return (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {[
+                                                          { val: s.gold || 0, label: '1er Lugar', color: 'text-amber-400' },
+                                                          { val: s.silver || 0, label: '2do Lugar', color: 'text-slate-300' },
+                                                          { val: s.bronze || 0, label: '3er Lugar', color: 'text-orange-400' },
+                                                        ].map((st, idx) => (
+                                                          <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
+                                                              <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
+                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{st.label}</p>
+                                                          </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Default: Fútbol (Goles + Tarjetas)
                                             return (
                                                 <div className="flex items-center justify-around py-5">
                                                     <div className="flex flex-col items-center group/item">
@@ -746,7 +836,7 @@ export default function PublicProfilePage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="relative overflow-hidden rounded-[3rem] bg-black/40 backdrop-blur-3xl border border-violet-500/20 p-10 shadow-2xl min-h-[400px] flex flex-col justify-between group">
+                            <div className="relative overflow-hidden rounded-[2.5rem] sm:rounded-[3rem] bg-black/40 backdrop-blur-3xl border border-violet-500/20 p-6 sm:p-10 shadow-2xl min-h-[350px] sm:min-h-[400px] flex flex-col justify-between group">
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.05] group-hover:scale-110 transition-transform duration-1000">
                                     <Target size={260} />
                                 </div>
@@ -775,7 +865,7 @@ export default function PublicProfilePage() {
                         {carreras.length > 0 ? (
                             <div className="grid grid-cols-1 gap-6">
                                 {carreras.map((c) => (
-                                    <Link key={c.id} href={`/carrera/${c.id}`} className="group relative rounded-[3rem] bg-black/40 border border-white/10 p-8 lg:p-10 overflow-hidden hover:border-violet-500/30 transition-all duration-500 shadow-2xl flex flex-col sm:flex-row items-center sm:items-stretch gap-10 backdrop-blur-xl">
+                                    <Link key={c.id} href={`/carrera/${c.id}`} className="group relative rounded-[2.5rem] sm:rounded-[3rem] bg-black/40 border border-white/10 p-6 sm:p-10 overflow-hidden hover:border-violet-500/30 transition-all duration-500 shadow-2xl flex flex-col sm:flex-row items-center sm:items-stretch gap-6 sm:gap-10 backdrop-blur-xl">
                                         {/* Large Blurry Background Escudo */}
                                         <div className="absolute -right-20 -top-20 w-96 h-96 opacity-[0.05] blur-[100px] rounded-full bg-violet-600 pointer-events-none group-hover:opacity-[0.08] transition-opacity duration-700" />
                                         
@@ -795,7 +885,7 @@ export default function PublicProfilePage() {
                                                 {c.nombre}
                                             </h3>
                                             <div className="flex items-center justify-center sm:justify-start gap-3 text-[10px] font-display font-black uppercase tracking-[0.2em] text-white/30 group-hover:text-white transition-all">
-                                                <span className="border-b border-white/10 pb-1">ACCEDER AL MEDALLERO DE FACULTAD</span>
+                                                <span className="border-b border-white/10 pb-1">ACCEDER A LA SECCIÓN DE EQUIPOS</span>
                                                 <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                             </div>
                                         </div>
@@ -883,7 +973,7 @@ export default function PublicProfilePage() {
                         )}
 
                         {/* ━━━ INSTITUTIONAL BRAND BREAK ━━━ */}
-                        <div className="-mt-12 -mb-2 relative z-0">
+                        <div className="py-4 relative z-0">
                             <InstitutionalBanner />
                         </div>
 

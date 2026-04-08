@@ -34,7 +34,17 @@ export function useNotifications() {
                 getPendingFriendRequests(user.id),
             ]);
             if (!mountedRef.current) return;
-            setNotifications(notifs);
+            // Deduplicate: same type + title + body within 10 seconds = duplicate
+            const deduped = notifs.filter((n, i, arr) => {
+                const earlier = arr.findIndex(other =>
+                    other.type === n.type &&
+                    other.title === n.title &&
+                    other.body === n.body &&
+                    Math.abs(new Date(other.created_at).getTime() - new Date(n.created_at).getTime()) < 10000
+                );
+                return earlier === i;
+            });
+            setNotifications(deduped);
             setUnreadCount(count);
             setFriendRequests(requests);
         } catch (err) {
@@ -115,7 +125,10 @@ export function useNotifications() {
                     if (!mountedRef.current) return;
                     const newNotif = payload.new as Notification;
 
-                    setNotifications(prev => [newNotif, ...prev]);
+                    setNotifications(prev => {
+                        if (prev.some(n => n.id === newNotif.id)) return prev;
+                        return [newNotif, ...prev];
+                    });
                     setUnreadCount(prev => prev + 1);
 
                     // Show toast for new notification

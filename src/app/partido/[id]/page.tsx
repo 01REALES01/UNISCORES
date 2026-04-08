@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
 import { Badge, Avatar, Button } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,7 +14,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { formatTenisPunto } from "@/modules/sports/services/tenis.service";
-import { getDisplayName, getCarreraName, getCarreraSubtitle } from "@/lib/sport-helpers";
+import { getDisplayName, getCarreraName, getCarreraSubtitle, isIndividualSport } from "@/lib/sport-helpers";
 import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_ACCENT, SPORT_COLORS, SPORT_BORDER, SPORT_GLOW, SPORT_GRADIENT } from "@/lib/constants";
 import { SportIcon } from "@/components/sport-icons";
 import { parseEventAudit } from "@/lib/audit-helpers";
@@ -21,6 +22,7 @@ import { parseEventAudit } from "@/lib/audit-helpers";
 import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
 import { MatchTimeline } from '@/modules/matches/components/match-timeline';
 import { MatchStats } from '@/modules/matches/components/match-stats';
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 
 import UniqueLoading from "@/components/ui/morph-loading";
 
@@ -52,6 +54,8 @@ export default function PublicMatchDetail() {
                 'disciplinas:disciplina_id(name)',
                 'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
                 'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
+                'delegacion_a_info:delegaciones!delegacion_a_id(escudo_url)',
+                'delegacion_b_info:delegaciones!delegacion_b_id(escudo_url)',
                 'atleta_a:profiles!athlete_a_id(full_name, avatar_url)',
                 'atleta_b:profiles!athlete_b_id(full_name, avatar_url)',
             ].join(', ');
@@ -256,24 +260,35 @@ export default function PublicMatchDetail() {
     const { labelA: tenisPuntoA, labelB: tenisPuntoB } = formatTenisPunto(tenisSetData.puntos_a || 0, tenisSetData.puntos_b || 0);
 
     return (
-        <div className="min-h-screen text-slate-200 font-sans selection:bg-white/10 transition-colors duration-1000" style={{ backgroundColor: `${sportColor}08` }}>
-            {/* Ambient Background */}
+        <div className="min-h-screen text-slate-200 font-sans selection:bg-white/10 transition-colors duration-1000" style={{ background: `linear-gradient(to bottom, ${sportColor}25, #000 90%)`, backgroundColor: '#000' }}>
+            {/* Immersive Sport Atmosphere with Vibrant Lighting */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-20%] left-[-10%] w-[1000px] h-[1000px] rounded-full blur-[150px] mix-blend-screen animate-pulse duration-[10s] transition-all"
-                    style={{ backgroundColor: `${sportColor}15` }} />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[800px] h-[800px] rounded-full blur-[130px] mix-blend-screen animate-pulse duration-[8s] transition-all"
-                    style={{ backgroundColor: `${sportColor}10` }} />
+                {/* Main Dynamic Atmosphere */}
+                <div className="absolute inset-0 opacity-100" 
+                     style={{ background: `radial-gradient(circle at 50% 0%, ${sportColor}50 0%, transparent 70%)` }} />
+                
+                {/* Intense Emissive Light Rays */}
+                <div className="absolute inset-x-0 -top-1/2 h-[150%] opacity-60 blur-[150px]"
+                    style={{ background: `conic-gradient(from 180deg at 50% 0%, transparent 40%, ${sportColor}80 50%, transparent 60%)` }} />
+                
+                {/* Elemento 08 - Subliminal Presence */}
+                <div className="absolute -right-20 top-1/4 md:w-[1000px] md:h-[1000px] w-[600px] h-[600px] opacity-[0.2] mix-blend-screen scale-125 overflow-hidden">
+                    <img src="/elementos/08.png" alt="" className="w-full h-full object-contain filter contrast-125 saturate-150 rotate-12" />
+                </div>
+
+                {/* Stardust Texture - More visible for tactile feel */}
+                <div className="absolute inset-0 opacity-[0.14] mix-blend-screen" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/stardust.png")' }} />
+                
+                {/* Corner Mesh Accents */}
+                <div className="absolute -left-1/4 -bottom-1/4 w-full h-full opacity-30 blur-[120px]"
+                    style={{ background: `radial-gradient(circle at 0% 100%, ${sportColor}40, transparent 70%)` }} />
             </div>
 
             {/* Navigation Header */}
             <div className="fixed top-0 left-0 right-0 z-50 px-4 py-4 flex justify-between items-center pointer-events-none">
-                <Link
-                    href="/"
-                    className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all text-sm font-medium text-white group"
-                >
-                    <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-                    <span className="hidden sm:inline">Volver</span>
-                </Link>
+                <div className="pointer-events-auto">
+                    <SafeBackButton fallback="/partidos" />
+                </div>
 
                 <div className="pointer-events-auto flex gap-2">
                     <button className="p-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all text-white">
@@ -282,22 +297,29 @@ export default function PublicMatchDetail() {
                 </div>
             </div>
 
-            {/* Main Content */}
+            {/* Main Content Container */}
             <div className="relative z-10 w-full max-w-2xl mx-auto px-4 pb-20 pt-24 sm:pt-32">
-
-                {/* Match Card */}
+                {/* Match Card - Crystal Clean Style */}
                 <div className={cn(
-                    "relative overflow-hidden rounded-[2.5rem] bg-background/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 mb-8 transition-all duration-700",
-                    SPORT_BORDER[sportName] || 'border-white/10',
-                    SPORT_GLOW[sportName] || ''
-                )}>
-                    {/* Header Strip */}
+                    "relative overflow-hidden rounded-[2.5rem] backdrop-blur-3xl border shadow-[0_30px_70px_rgba(0,0,0,0.6)] mb-8 transition-all duration-700"
+                )} style={{ 
+                    background: `linear-gradient(135deg, ${sportColor}20 0%, rgba(255,255,255,0.01) 100%)`,
+                    borderColor: `${sportColor}30`
+                }}>
+                    {/* Internal Inner Glow for Premium Depth */}
+                    <div className="absolute inset-0 rounded-[2.5rem] p-[1px] bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+                    {/* Minimalist Sport Accent */}
                     <div className={cn(
-                        "absolute top-0 left-0 right-0 h-32 opacity-20 pointer-events-none",
-                        `bg-gradient-to-b ${SPORT_GRADIENT[sportName] || 'from-white/10'} to-transparent`
-                    )} />
+                        "absolute top-0 left-0 right-0 h-1 mt-[-1px]", 
+                        `bg-gradient-to-r from-transparent via-${sportName.toLowerCase()}-500/40 to-transparent`
+                    )} style={{ background: `linear-gradient(to right, transparent, ${sportColor}60, transparent)` }} />
 
                     <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-center">
+                        {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
+                        <div className="absolute -right-[10%] -bottom-[15%] flex items-center justify-center pointer-events-none select-none opacity-[0.05] rotate-[-12deg] z-0">
+                            <SportIcon sport={sportName} size={380} className="text-white drop-shadow-[0_0_50px_rgba(255,255,255,0.05)]" />
+                        </div>
+
                         {/* Status Badges & Integrated Timer */}
                         <div className="flex flex-col justify-center items-center mb-8 relative z-20 px-4 w-full">
                             {/* Live Timer directly integrated above the badge */}
@@ -306,39 +328,41 @@ export default function PublicMatchDetail() {
                                     <PublicLiveTimer detalle={match.marcador_detalle || {}} deporte={match.disciplinas?.name} />
                                 </div>
                             )}
+                            <div className="flex flex-wrap justify-center items-center">
+                                <div className="inline-flex items-center gap-4 px-4 py-2 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl bg-black/60 transition-all duration-500">
+                                    {!isFinished && !isLive && (
+                                        <div className="flex items-center gap-2 text-white/90 text-[10px] sm:text-[11px] font-bold tracking-widest uppercase">
+                                            <Calendar size={14} style={{ color: sportColor }} />
+                                            <span>{new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                                        </div>
+                                    )}
 
-                            <div className="flex flex-wrap justify-center items-center gap-2">
-                                {!isFinished && !isLive && (
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background/80 border border-white/10 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase shadow-lg">
-                                        <Calendar size={14} className={cn(SPORT_ACCENT[sportName] || 'text-amber-400')} />
-                                        {new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                    {!isFinished && !isLive && (
+                                        <div className="w-[1px] h-3 bg-white/10 self-center" />
+                                    )}
+
+                                    <div className="flex items-center gap-2.5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: sportColor }}>
+                                        <div className="p-1 rounded-lg bg-black/40 flex items-center justify-center">
+                                            <SportIcon sport={sportName} size={13} />
+                                        </div>
+                                        <span>{sportName}</span>
+                                        <span className="opacity-30 mx-0.5">•</span>
+                                        <span className={cn(
+                                            "font-black",
+                                            generoMatch === 'femenino' ? 'text-pink-400' :
+                                                generoMatch === 'mixto' ? 'text-purple-400' : 'text-blue-400'
+                                        )}>{generoMatch}</span>
                                     </div>
-                                )}
 
-                                {isFinished && (
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700 text-slate-400 text-[10px] sm:text-xs font-black tracking-widest uppercase">
-                                        <Trophy size={14} /> Finalizado
-                                    </div>
-                                )}
-
-                                <div className={cn(
-                                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background/80 border border-white/10 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg transition-all",
-                                    SPORT_ACCENT[sportName] || 'text-white/70'
-                                )}>
-                                    <SportIcon sport={sportName} size={14} />
-                                    <span>{sportName}</span>
-                                    <span className="opacity-30 mx-1">•</span>
-                                    <span className={cn(
-                                        generoMatch === 'femenino' ? 'text-pink-400' :
-                                            generoMatch === 'mixto' ? 'text-purple-400' : 'text-blue-400'
-                                    )}>{generoMatch}</span>
+                                    {(sportName === 'Tenis' || sportName === 'Tenis de Mesa') && (match as any).categoria && (
+                                        <>
+                                            <div className="w-[1px] h-3 bg-white/10 self-center" />
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-lime-400">
+                                                {(match as any).categoria === 'intermedio' ? 'Intermedio' : 'Avanzado'}
+                                            </span>
+                                        </>
+                                    )}
                                 </div>
-
-                                {(sportName === 'Tenis' || sportName === 'Tenis de Mesa') && (match as any).categoria && (
-                                    <span className="px-3 py-1.5 rounded-xl bg-background/80 border border-white/10 text-[10px] font-black uppercase tracking-widest text-lime-400 shadow-lg">
-                                        {(match as any).categoria === 'intermedio' ? 'Intermedio' : 'Avanzado'}
-                                    </span>
-                                )}
                             </div>
                         </div>
 
@@ -360,37 +384,52 @@ export default function PublicMatchDetail() {
                                             if (b.posicion) return 1;
                                             return (a.tiempo || "").localeCompare(b.tiempo || "");
                                         })
-                                        .map((p: any, idx: number) => (
-                                            <div key={idx} className={cn(
-                                                "flex items-center gap-4 p-3 sm:p-4 rounded-xl border backdrop-blur-md transition-all",
-                                                p.posicion === 1 ? "bg-gradient-to-r from-yellow-500/20 to-yellow-900/5 border-[#FFC000]/30 text-yellow-100 shadow-[0_0_20px_rgba(234,179,8,0.2)] scale-[1.02] z-10" :
-                                                    p.posicion === 2 ? "bg-gradient-to-r from-slate-400/20 to-slate-800/5 border-slate-400/30 text-slate-200" :
-                                                        p.posicion === 3 ? "bg-gradient-to-r from-orange-700/20 to-orange-900/5 border-orange-600/30 text-orange-200" :
-                                                            "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10"
-                                            )}>
-                                                <div className="text-2xl sm:text-3xl font-black italic w-8 sm:w-12 text-center opacity-80 flex-shrink-0">
-                                                    {p.posicion === 1 ? '🥇' : p.posicion === 2 ? '🥈' : p.posicion === 3 ? '🥉' : (p.posicion || idx + 1)}
-                                                </div>
-
-                                                <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                    <div className="font-bold text-base sm:text-xl truncate leading-tight text-white/90">
-                                                        {p.profile_id ? (
-                                                            <Link href={`/perfil/${p.profile_id}`} className="hover:text-amber-400 transition-colors">
-                                                                {p.nombre}
-                                                            </Link>
-                                                        ) : p.nombre}
+                                        .map((p: any, idx: number) => {
+                                            const hasProfile = !!p.profile_id;
+                                            const Content = (
+                                                <div className={cn(
+                                                    "flex items-center gap-4 p-3 sm:p-4 rounded-2xl border transition-all duration-300 relative group/participant active:scale-[0.98] active:brightness-110",
+                                                    hasProfile ? "cursor-pointer bg-white/[0.03] border-white/10 hover:border-emerald-500/30 hover:bg-white/10 hover:shadow-2xl hover:shadow-emerald-500/10" : "cursor-default bg-white/5 border-white/5 text-slate-400",
+                                                    p.posicion === 1 ? "bg-gradient-to-r from-yellow-500/20 to-yellow-900/5 border-[#FFC000]/30 text-yellow-100 shadow-[0_0_20px_rgba(234,179,8,0.2)] scale-[1.02] z-10" :
+                                                        p.posicion === 2 ? "bg-gradient-to-r from-slate-400/20 to-slate-800/5 border-slate-400/30 text-slate-200" :
+                                                            p.posicion === 3 ? "bg-gradient-to-r from-orange-700/20 to-orange-900/5 border-orange-600/30 text-orange-200" :
+                                                                ""
+                                                )}>
+                                                    <div className="text-2xl sm:text-3xl font-black italic w-8 sm:w-12 text-center opacity-80 flex-shrink-0">
+                                                        {p.posicion === 1 ? '🥇' : p.posicion === 2 ? '🥈' : p.posicion === 3 ? '🥉' : (p.posicion || idx + 1)}
                                                     </div>
-                                                    <div className="text-xs sm:text-sm font-medium opacity-60 uppercase tracking-wide truncate mt-0.5 text-white/70">
-                                                        {p.equipo}
-                                                        {p.carril && <span className="ml-2 px-1.5 py-0.5 rounded bg-white/10 text-[10px]">CARRIL {p.carril}</span>}
-                                                    </div>
-                                                </div>
 
-                                                <div className="text-right font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-white drop-shadow-md">
-                                                    {p.tiempo || '--:--'}
+                                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                        <div className={cn("font-bold text-base sm:text-xl truncate leading-tight transition-colors flex items-center gap-1.5", hasProfile ? "group-hover/participant:text-emerald-400" : "text-white/90")}>
+                                                            {p.nombre}
+                                                            {hasProfile && <ExternalLink size={14} className="opacity-30 group-hover/participant:opacity-100 transition-opacity" />}
+                                                        </div>
+                                                        <div className="text-xs sm:text-sm font-medium opacity-60 uppercase tracking-wide truncate mt-0.5 text-white/70">
+                                                            {p.equipo}
+                                                            {p.carril && <span className="ml-2 px-1.5 py-0.5 rounded bg-white/10 text-[10px]">CARRIL {p.carril}</span>}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="text-right font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-white drop-shadow-md">
+                                                        {p.tiempo || '--:--'}
+                                                    </div>
+
+                                                    {hasProfile && (
+                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-30 group-hover/participant:opacity-100 transition-all translate-x-4 group-hover/participant:translate-x-0">
+                                                            <div className="px-2 py-1 rounded-lg bg-emerald-500 text-black text-[8px] font-black uppercase tracking-tighter shadow-[0_0_10px_rgba(16,185,129,0.3)]">PERFIL</div>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+
+                                            return hasProfile ? (
+                                                <Link key={idx} href={`/perfil/${p.profile_id}`}>
+                                                    {Content}
+                                                </Link>
+                                            ) : (
+                                                <div key={idx}>{Content}</div>
+                                            );
+                                        })}
 
                                     {(match.marcador_detalle?.participantes || []).length === 0 && (
                                         <div className="text-center py-12 px-4 rounded-2xl border border-dashed border-white/10 bg-white/5">
@@ -402,37 +441,60 @@ export default function PublicMatchDetail() {
                         ) : (
                             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-8 w-full relative">
                                 {/* Team A */}
-                                <div className="flex flex-col items-center gap-4 group min-w-0 w-full">
-                                    {sportName === 'Ajedrez' && isFinished && match.marcador_detalle?.resultado_final === 'victoria_a' && (
-                                        <div className="mb-[-0.5rem] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm z-30">
-                                            Ganador
+                                <div className="flex flex-col items-center group w-full min-w-0">
+                                    <Link 
+                                        href={match.athlete_a_id ? `/perfil/${match.athlete_a_id}` : (match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` : match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : '#'}
+                                        onClick={(e) => { if (!match.athlete_a_id && !(match as any).delegacion_a_id && !match.carrera_a_id) e.preventDefault(); }}
+                                        className={cn(
+                                            "relative w-full flex flex-col items-center gap-3 transition-all duration-300 active:scale-95 group/btn",
+                                            (match.athlete_a_id || (match as any).delegacion_a_id || match.carrera_a_id) ? "cursor-pointer" : "cursor-default"
+                                        )}
+                                    >
+                                        <div className="relative shrink-0 p-1">
+                                            {/* Subtle Glow Ring */}
+                                            <div className={cn(
+                                                "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
+                                                `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
+                                            )} />
+                                            
+                                        <div className="relative group/avatar">
+                                                 <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover/btn:opacity-40 transition-opacity duration-500" style={{ backgroundColor: sportColor }} />
+                                                 <Avatar name={getDisplayName(match, 'a')} src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url || match.delegacion_a_info?.escudo_url} size="lg" className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} />
+                                                 
+                                                 {/* Ver Perfil Badge - Sport-Specific & High Visibility */}
+                                                 {(match.athlete_a_id || (match as any).delegacion_a_id || match.carrera_a_id || !isIndividualSport(sportName)) && (
+                                                     <div className="absolute -bottom-2 z-30 flex justify-center w-full">
+                                                         <div className={cn(
+                                                             "py-0.5 px-2 rounded-full backdrop-blur-2xl border transition-all duration-300",
+                                                             "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
+                                                             "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95"
+                                                         )} style={{ 
+                                                             backgroundColor: sportColor,
+                                                             color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
+                                                             borderColor: `${sportColor}50`,
+                                                             boxShadow: `0 4px 12px ${sportColor}40`
+                                                         }}>
+                                                             VER PERFIL
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    )}
-                                    <div className="relative shrink-0">
-                                        <div className={cn(
-                                            "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
-                                            `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
-                                        )} />
-                                        <Avatar name={getDisplayName(match, 'a')} src={match.atleta_a?.avatar_url || match.carrera_a?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-background" />
-                                    </div>
-                                    <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        <Link
-                                            href={match.athlete_a_id ? `/perfil/${match.athlete_a_id}` : (match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` : match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : '#'}
-                                            className={cn("transition-colors underline-offset-4", (match.athlete_a_id || (match as any).delegacion_a_id || match.carrera_a_id) ? "hover:text-emerald-400 hover:underline cursor-pointer" : "cursor-default")}
-                                            onClick={(e) => { if (!match.athlete_a_id && !(match as any).delegacion_a_id && !match.carrera_a_id) e.preventDefault(); }}
-                                        >
-                                            {getDisplayName(match, 'a')}
-                                        </Link>
-                                    </h2>
-                                    {getCarreraSubtitle(match, 'a') && (
-                                        match.carrera_a_id ? (
-                                            <Link href={`/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}`} className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center hover:text-slate-300 transition-colors">
-                                                {getCarreraSubtitle(match, 'a')}
-                                            </Link>
-                                        ) : (
-                                            <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'a')}</span>
-                                        )
-                                    )}
+
+                                        <div className="flex flex-col items-center gap-1 w-full relative z-10 sm:mt-1">
+                                            <h2 className={cn(
+                                                "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm",
+                                                (match.athlete_a_id || (match as any).delegacion_a_id || match.carrera_a_id) ? "group-hover/btn:scale-105" : "text-white"
+                                            )} style={{ color: (match.athlete_a_id || (match as any).delegacion_a_id || match.carrera_a_id) ? '' : 'white' }}>
+                                                {getDisplayName(match, 'a')}
+                                            </h2>
+                                            {getCarreraSubtitle(match, 'a') && (
+                                                <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-widest opacity-80 group-hover/btn:text-slate-200 transition-colors">
+                                                    {getCarreraSubtitle(match, 'a')}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </Link>
                                 </div>
 
                                 <div className="flex flex-col items-center relative z-20 min-w-[120px] sm:min-w-[220px] shrink-0">
@@ -521,37 +583,60 @@ export default function PublicMatchDetail() {
                                 </div>
 
                                 {/* Team B */}
-                                <div className="flex flex-col items-center gap-4 group min-w-0 w-full">
-                                    {sportName === 'Ajedrez' && isFinished && match.marcador_detalle?.resultado_final === 'victoria_b' && (
-                                        <div className="mb-[-0.5rem] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm z-30">
-                                            Ganador
+                                <div className="flex flex-col items-center group w-full min-w-0">
+                                    <Link 
+                                        href={match.athlete_b_id ? `/perfil/${match.athlete_b_id}` : (match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` : match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` : '#'}
+                                        onClick={(e) => { if (!match.athlete_b_id && !(match as any).delegacion_b_id && !match.carrera_b_id) e.preventDefault(); }}
+                                        className={cn(
+                                            "relative w-full flex flex-col items-center gap-3 transition-all duration-300 active:scale-95 group/btn",
+                                            (match.athlete_b_id || (match as any).delegacion_b_id || match.carrera_b_id) ? "cursor-pointer" : "cursor-default"
+                                        )}
+                                    >
+                                        <div className="relative shrink-0 p-1">
+                                            {/* Subtle Glow Ring */}
+                                            <div className={cn(
+                                                "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
+                                                `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
+                                            )} />
+                                            
+                                        <div className="relative group/avatar">
+                                                 <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover/btn:opacity-40 transition-opacity duration-500" style={{ backgroundColor: sportColor }} />
+                                                 <Avatar name={getDisplayName(match, 'b')} src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url || match.delegacion_b_info?.escudo_url} size="lg" className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} />
+                                                
+                                                {/* Ver Perfil Badge - Sport-Specific & High Visibility */}
+                                                {(match.athlete_b_id || (match as any).delegacion_b_id || match.carrera_b_id || !isIndividualSport(sportName)) && (
+                                                    <div className="absolute -bottom-2 z-30 flex justify-center w-full">
+                                                        <div className={cn(
+                                                            "py-0.5 px-2 rounded-full backdrop-blur-2xl border transition-all duration-300",
+                                                            "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
+                                                            "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95"
+                                                        )} style={{ 
+                                                            backgroundColor: sportColor,
+                                                            color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
+                                                            borderColor: `${sportColor}50`,
+                                                            boxShadow: `0 4px 12px ${sportColor}40`
+                                                        }}>
+                                                            VER PERFIL
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    )}
-                                    <div className="relative shrink-0">
-                                        <div className={cn(
-                                            "absolute inset-0 blur-2xl rounded-full scale-125 opacity-20 group-hover:opacity-40 transition-opacity duration-500",
-                                            `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
-                                        )} />
-                                        <Avatar name={getDisplayName(match, 'b')} src={match.atleta_b?.avatar_url || match.carrera_b?.escudo_url} size="lg" className="w-16 h-16 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-4 sm:border-[6px] border-white/5 shadow-2xl bg-background" />
-                                    </div>
-                                    <h2 className="text-white font-bold text-[11px] sm:text-lg leading-tight uppercase tracking-wide line-clamp-3 text-center w-full px-1">
-                                        <Link
-                                            href={match.athlete_b_id ? `/perfil/${match.athlete_b_id}` : (match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` : match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` : '#'}
-                                            className={cn("transition-colors underline-offset-4", (match.athlete_b_id || (match as any).delegacion_b_id || match.carrera_b_id) ? "hover:text-emerald-400 hover:underline cursor-pointer" : "cursor-default")}
-                                            onClick={(e) => { if (!match.athlete_b_id && !(match as any).delegacion_b_id && !match.carrera_b_id) e.preventDefault(); }}
-                                        >
-                                            {getDisplayName(match, 'b')}
-                                        </Link>
-                                    </h2>
-                                    {getCarreraSubtitle(match, 'b') && (
-                                        match.carrera_b_id ? (
-                                            <Link href={`/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}`} className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center hover:text-slate-300 transition-colors">
-                                                {getCarreraSubtitle(match, 'b')}
-                                            </Link>
-                                        ) : (
-                                            <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate w-full text-center">{getCarreraSubtitle(match, 'b')}</span>
-                                        )
-                                    )}
+
+                                        <div className="flex flex-col items-center gap-1 w-full relative z-10 sm:mt-1">
+                                            <h2 className={cn(
+                                                "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm",
+                                                (match.athlete_b_id || (match as any).delegacion_b_id || match.carrera_b_id) ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105" : "text-white"
+                                            )}>
+                                                {getDisplayName(match, 'b')}
+                                            </h2>
+                                            {getCarreraSubtitle(match, 'b') && (
+                                                <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-widest opacity-80 group-hover/btn:text-slate-200 transition-colors">
+                                                    {getCarreraSubtitle(match, 'b')}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </Link>
                                 </div>
                             </div>
                         )}                      {/* Metadata Footer: Clean Location Label */}
@@ -567,21 +652,30 @@ export default function PublicMatchDetail() {
                 </div>
 
                 {/* Community Predictions + Voting Section */}
-                <div className="rounded-3xl bg-background/60 backdrop-blur-xl border border-white/10 p-6 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
-                    <div className="flex items-center gap-3 mb-5">
-                        <div className={cn("p-2 rounded-xl bg-white/5 border border-white/10", SPORT_ACCENT[sportName])}>
-                            <BarChart3 size={20} className="drop-shadow-[0_0_8px_currentColor]" />
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white tracking-tight">Acierta y Gana</h3>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1">
-                                <Users size={10} /> {matchPredictions.length} votos
-                            </p>
+                <div className="relative overflow-hidden rounded-[2.5rem] bg-white/[0.04] backdrop-blur-3xl border border-white/10 p-7 mb-8 shadow-2xl shadow-black/40 animate-in fade-in slide-in-from-bottom-5 duration-500">
+                    {/* Inner Mesh for depth */}
+                    <div className="absolute inset-0 p-[1px] bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+                    
+                    <div className="relative z-10 flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className={cn("p-2.5 rounded-2xl bg-white/5 border border-white/10 shadow-lg", SPORT_ACCENT[sportName])}>
+                                <BarChart3 size={22} className="drop-shadow-[0_0_10px_currentColor]" />
+                            </div>
+                            <div className="flex flex-col">
+                                <h3 className="text-xl font-black text-white tracking-tight leading-none mb-1 uppercase font-display">Acierta y Gana</h3>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1 text-[10px] text-white/40 font-black uppercase tracking-widest">
+                                        <Users size={12} className="text-white/20" />
+                                        <span className="text-white/60">{matchPredictions.length}</span> personas han votado
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         {userPrediction && (
-                            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] font-black uppercase tracking-widest shadow-lg">
-                                <CheckCircle size={10} className="mr-1" /> Votaste
-                            </Badge>
+                            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 shadow-xl">
+                                <CheckCircle size={14} className="text-emerald-400" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Votaste</span>
+                            </div>
                         )}
                     </div>
 
@@ -597,76 +691,86 @@ export default function PublicMatchDetail() {
                         const pctB = total > 0 ? 100 - pctA - pctDraw : 33;
 
                         return (
-                            <div className="space-y-3">
-                                {/* Labels */}
-                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest px-1">
-                                    <div className="flex flex-col items-start gap-1">
-                                        <span className="text-white/40">{getDisplayName(match, 'a')?.substring(0, 12)}</span>
-                                        <span className={cn("text-sm", SPORT_ACCENT[sportName] || "text-white")}>{total > 0 ? `${pctA}%` : '0%'}</span>
+                            <div className="space-y-4">
+                                {/* Labels & Percentages */}
+                                <div className="flex justify-between items-end px-2">
+                                    <div className="flex flex-col items-start">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30 mb-1">{getDisplayName(match, 'a')?.split(' ')[0]}</span>
+                                        <div className={cn("text-3xl font-black font-mono leading-none", (SPORT_ACCENT[sportName] || "text-emerald-400"))}>
+                                            {total > 0 ? `${pctA}%` : '0%'}<span className="text-[10px] ml-1 opacity-40 italic">votos</span>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col items-center gap-1">
-                                        <span className="text-white/40">Empate</span>
-                                        <span className="text-sm text-slate-400">{total > 0 ? `${pctDraw}%` : '0%'}</span>
+                                    <div className="flex flex-col items-center pb-0.5">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 mb-1">Empate</span>
+                                        <div className="text-xl font-black text-white/40 font-mono leading-none">
+                                            {total > 0 ? `${pctDraw}%` : '0%'}
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-1">
-                                        <span className="text-white/40">{getDisplayName(match, 'b')?.substring(0, 12)}</span>
-                                        <span className={cn("text-sm", SPORT_ACCENT[sportName] || "text-white")}>{total > 0 ? `${pctB}%` : '0%'}</span>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30 mb-1">{getDisplayName(match, 'b')?.split(' ')[0]}</span>
+                                        <div className={cn("text-3xl font-black font-mono leading-none", (SPORT_ACCENT[sportName] || "text-emerald-400"))}>
+                                            {total > 0 ? `${pctB}%` : '0%'}<span className="text-[10px] ml-1 opacity-40 italic">votos</span>
+                                        </div>
                                     </div>
                                 </div>
-                                {/* The single bar */}
-                                <div className="flex h-3 rounded-full overflow-hidden bg-white/5 gap-[2px] shadow-inner">
-                                    <div
-                                        className={cn("transition-all duration-1000 rounded-l-full", SPORT_ACCENT[sportName] || "bg-emerald-500")}
-                                        style={{
-                                            width: `${Math.max(pctA, 1)}%`,
-                                            backgroundColor: 'currentColor',
-                                            filter: 'brightness(0.3)'
-                                        }}
+
+                                {/* The high-contrast bar */}
+                                <div className="relative h-4 rounded-full overflow-hidden bg-black/40 border border-white/5 flex gap-[3px] p-[2px] shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.max(pctA, 1)}%` }}
+                                        className={cn("h-full rounded-l-full relative overflow-hidden", (SPORT_ACCENT[sportName] || "bg-emerald-500/80"))}
+                                        style={{ backgroundColor: 'currentColor' }}
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent" />
+                                    </motion.div>
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.max(pctDraw, 1)}%` }}
+                                        className="h-full bg-white/10 relative"
                                     />
-                                    <div
-                                        className="bg-slate-700/50 transition-all duration-1000"
-                                        style={{ width: `${Math.max(pctDraw, 1)}%` }}
-                                    />
-                                    <div
-                                        className={cn("transition-all duration-1000 rounded-r-full", SPORT_ACCENT[sportName] || "bg-emerald-500")}
-                                        style={{
-                                            width: `${Math.max(pctB, 1)}%`,
-                                            backgroundColor: 'currentColor',
-                                            filter: 'brightness(1.7)'
-                                        }}
-                                    />
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.max(pctB, 1)}%` }}
+                                        className={cn("h-full rounded-r-full relative", (SPORT_ACCENT[sportName] || "bg-emerald-500/80"))}
+                                        style={{ backgroundColor: 'currentColor', filter: 'brightness(1.5)' }}
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-l from-white/10 to-black/10" />
+                                    </motion.div>
                                 </div>
                             </div>
                         );
                     })()}
 
-                    {/* Voting Buttons */}
+                    {/* Voting Buttons - More Horizontal/Compact */}
                     {match?.estado === 'programado' && user ? (
-                        <div className="mt-5 pt-4 border-t border-white/5">
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center">
-                                {userPrediction ? 'Cambiar tu acierto' : '¿Quién ganará?'}
-                            </p>
-                            <div className="grid grid-cols-3 gap-2">
+                        <div className="mt-8 pt-6 border-t border-white/10 relative">
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900 border border-white/10 shadow-xl">
+                                <p className="text-[10px] font-black text-white uppercase tracking-[0.3em] whitespace-nowrap">
+                                    {userPrediction ? 'Cambiar predicción' : '¿Quién ganará?'}
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
                                 <button
                                     onClick={() => handleVote('A')}
                                     disabled={saving}
                                     className={cn(
-                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        "py-2.5 px-2 rounded-[1.25rem] text-[10px] font-black tracking-widest transition-all border-2 uppercase font-sans",
                                         votingPick === 'A'
-                                            ? [SPORT_ACCENT[sportName] || "bg-white/10 text-white", "border-current shadow-lg scale-[1.03] bg-white/5"]
-                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
+                                            ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105"
+                                            : "bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/20 active:scale-95"
                                     )}
                                 >
-                                    {getDisplayName(match, 'a')?.substring(0, 8)}
+                                    {getDisplayName(match, 'a')?.split(' ')[0]}
                                 </button>
                                 <button
                                     onClick={() => handleVote('DRAW')}
                                     disabled={saving}
                                     className={cn(
-                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        "py-2.5 px-2 rounded-[1.25rem] text-[10px] font-black tracking-widest transition-all border-2 uppercase font-sans",
                                         votingPick === 'DRAW'
-                                            ? "bg-white/10 border-slate-400 text-white shadow-lg scale-[1.03]"
-                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
+                                            ? "bg-slate-300 text-black border-slate-300 shadow-lg scale-105"
+                                            : "bg-white/5 border-white/5 text-white/60 hover:bg-white/10 hover:border-white/20 active:scale-95"
                                     )}
                                 >
                                     Empate
@@ -675,19 +779,19 @@ export default function PublicMatchDetail() {
                                     onClick={() => handleVote('B')}
                                     disabled={saving}
                                     className={cn(
-                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        "py-2.5 px-2 rounded-[1.25rem] text-[10px] font-black tracking-widest transition-all border-2 uppercase font-sans",
                                         votingPick === 'B'
-                                            ? [SPORT_ACCENT[sportName] || "bg-white/10 text-white", "border-current shadow-lg scale-[1.03] bg-white/5"]
-                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
+                                            ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105"
+                                            : "bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/20 active:scale-95"
                                     )}
                                 >
-                                    {getDisplayName(match, 'b')?.substring(0, 8)}
+                                    {getDisplayName(match, 'b')?.split(' ')[0]}
                                 </button>
                             </div>
                         </div>
                     ) : match?.estado === 'programado' && !user ? (
                         <div className="mt-5 pt-4 border-t border-white/5 text-center">
-                            <Link href="/login" className="text-[10px] font-bold text-violet-400 uppercase tracking-widest hover:text-violet-300 transition-colors">
+                            <Link href="/login" className="text-[10px] font-bold uppercase tracking-widest transition-colors" style={{ color: sportColor }}>
                                 Inicia sesión para predecir →
                             </Link>
                         </div>
@@ -701,7 +805,7 @@ export default function PublicMatchDetail() {
                                     const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
                                     const result = sA > sB ? 'A' : sB > sA ? 'B' : 'DRAW';
                                     return userPrediction.winner_pick === result;
-                                })() ? "bg-emerald-500/10 border border-emerald-500/15" : "bg-violet-500/10 border border-violet-500/15")
+                                })() ? "bg-emerald-500/10 border border-emerald-500/15" : "bg-white/5 border border-white/10")
                                 : "bg-white/5"
                         )}>
                             <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu acierto</p>
@@ -711,7 +815,7 @@ export default function PublicMatchDetail() {
                                     const sA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
                                     const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
                                     const result = sA > sB ? 'A' : sB > sA ? 'B' : 'DRAW';
-                                    return userPrediction.winner_pick === result ? "text-emerald-400" : "text-violet-400";
+                                    return userPrediction.winner_pick === result ? "text-emerald-400" : "text-white/60";
                                 })() : "text-white"
                             )}>
                                 {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'a')}</> :

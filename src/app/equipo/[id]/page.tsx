@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTeamProfile } from "@/modules/teams/hooks/use-team-profile";
 import { MainNavbar } from "@/components/main-navbar";
 import { SportIcon } from "@/components/sport-icons";
-import { Avatar, Badge, Button } from "@/components/ui-primitives";
+import { Avatar, Badge, Button } from "@/shared/components/ui-primitives";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
@@ -45,11 +45,11 @@ function EmptyState({
 }) {
     return (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10">
+            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10 shadow-2xl">
                 {icon}
             </div>
-            <h3 className="text-lg font-bold text-white/30 mb-2">{title}</h3>
-            <p className="text-white/20 text-sm max-w-md">{description}</p>
+            <h3 className="text-lg font-black text-white/20 uppercase tracking-widest mb-2">{title}</h3>
+            <p className="text-white/40 text-sm max-w-md font-bold italic">{description}</p>
         </div>
     );
 }
@@ -68,7 +68,6 @@ function MatchRow({ match, carreraName }: { match: any; carreraName?: string }) 
     const isFinal = estado === "finalizado";
 
     const accent = SPORT_ACCENT[disc || ""] || "text-white/60";
-    const border = SPORT_BORDER[disc || ""] || "border-white/5";
 
     // Winner calculations
     const scoreNumA = typeof scoreA === 'number' ? scoreA : parseInt(scoreA) || 0;
@@ -80,53 +79,45 @@ function MatchRow({ match, carreraName }: { match: any; carreraName?: string }) 
     return (
         <Link href={`/partido/${match.id}`} className="block group/match">
             <div className={cn(
-                "relative flex flex-col p-4 sm:p-5 rounded-[1.5rem] border transition-all duration-500 overflow-hidden hover:shadow-2xl hover:-translate-y-0.5",
-                border,
-                "bg-gradient-to-br from-white/[0.04] via-background/80 to-background/80"
+                "relative flex flex-col p-4 sm:p-5 rounded-[1.5rem] border border-white/5 transition-all duration-500 overflow-hidden hover:shadow-2xl hover:-translate-y-0.5 bg-white/[0.03] hover:bg-white/[0.05]"
             )}>
                 {/* Noise Texture */}
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.04] pointer-events-none mix-blend-overlay" />
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
                 {/* Sport Gradient Wash */}
                 <div className={cn(
-                    "absolute inset-0 opacity-[0.07] pointer-events-none bg-gradient-to-br",
+                    "absolute inset-0 opacity-[0.08] pointer-events-none bg-gradient-to-br transition-opacity group-hover/match:opacity-[0.12]",
                     SPORT_GRADIENT[disc || ""] || "from-white/10 to-transparent"
                 )} />
-                {/* Glow Blob */}
-                <div
-                    className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full blur-[80px] pointer-events-none transition-opacity duration-700 opacity-15 group-hover/match:opacity-30"
-                    style={{ backgroundColor: SPORT_COLORS[disc || ""] || '#ffffff10' }}
-                />
-                <div
-                    className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-[60px] pointer-events-none transition-opacity duration-700 opacity-5 group-hover/match:opacity-15"
-                    style={{ backgroundColor: SPORT_COLORS[disc || ""] || '#ffffff05' }}
-                />
-                {/* Bottom Accent Stripe */}
-                <div
-                    className="absolute bottom-0 left-0 right-0 h-[2px] opacity-30 group-hover/match:opacity-60 transition-opacity"
+                {/* Glow Bloom */}
+                <div 
+                    className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full blur-[80px] pointer-events-none transition-opacity duration-700 opacity-[0.08] group-hover/match:opacity-[0.15]"
                     style={{ backgroundColor: SPORT_COLORS[disc || ""] || '#ffffff10' }}
                 />
 
-                {/* Top Header Row (Asymmetrical) */}
+                {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
+                <div className="absolute -right-[10%] -bottom-[15%] flex items-center justify-center pointer-events-none select-none opacity-[0.05] group-hover/match:opacity-[0.08] transition-all duration-1000 rotate-[-12deg]">
+                    <SportIcon sport={disc || ""} size={220} className={cn("transition-all duration-[1500ms] group-hover:scale-110", accent)} />
+                </div>
+
+                {/* Top Header Row */}
                 <div className="flex items-center justify-between w-full mb-3 z-10">
-                    {/* Sport Badge (Top Left) */}
                     <div className="flex items-center gap-2">
                         <div className={cn(
                             "w-6 h-6 rounded-lg flex items-center justify-center border shadow-inner transition-colors",
-                            isLive ? "bg-red-500/10 border-red-500/20" : "bg-white/5 border-white/10"
+                            isLive ? "bg-red-500/20 border-red-500/30" : "bg-white/5 border-white/10"
                         )}>
-                            {disc ? <SportIcon sport={disc} size={12} className={isLive ? "text-red-500 animate-pulse" : accent} /> : <Swords size={12} className="text-white/30" />}
+                            {disc ? <SportIcon sport={disc} size={12} className={isLive ? "text-red-400 animate-pulse" : "text-white/40 opacity-80"} /> : <Swords size={12} className="text-white/20" />}
                         </div>
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">{disc || 'Evento'}</span>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30">{disc || 'Evento'}</span>
                     </div>
 
-                    {/* Status/Date Pill (Top Right) */}
                     <div>
                         {isLive ? (
-                            <Badge className="bg-red-500/20 text-red-500 border border-red-500/30 text-[9px] font-black px-3 py-1 animate-pulse uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(239,68,68,0.2)] rounded-full">
-                                DIRECTO
+                            <Badge className="bg-red-600 text-white border-transparent text-[9px] font-black px-3 py-1 animate-pulse uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(220,38,38,0.4)] rounded-full">
+                                EN VIVO
                             </Badge>
                         ) : (
-                            <div className="bg-white/[0.03] border border-white/10 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-white/30 shadow-inner">
+                            <div className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-white/40 shadow-inner">
                                 {new Date(match.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short" })}
                             </div>
                         )}
@@ -141,9 +132,9 @@ function MatchRow({ match, carreraName }: { match: any; carreraName?: string }) 
                             name={nameA}
                             src={match.carrera_a?.escudo_url || match.atleta_a?.avatar_url}
                             className={cn(
-                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-background",
-                                winnerA ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
-                                !winnerA && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-black/20",
+                                winnerA ? `scale-105 shadow-[0_0_20px_rgba(16,185,129,0.3)] border-emerald-500` : "border-white/5",
+                                !winnerA && isFinal && !isDraw ? "opacity-20 grayscale-[0.5]" : ""
                             )}
                         />
                         <span className={cn(
@@ -158,21 +149,21 @@ function MatchRow({ match, carreraName }: { match: any; carreraName?: string }) 
                     <div className="flex flex-col items-center justify-center shrink-0">
                         {isFinal || isLive ? (
                             <div className="flex flex-col items-center">
-                                <div className="flex items-center justify-center gap-1.5 sm:gap-2 font-black text-3xl sm:text-4xl text-white tracking-tighter tabular-nums drop-shadow-xl">
-                                    <span className={winnerB ? "opacity-30" : ""}>{scoreA ?? 0}</span>
+                                <div className="flex items-center justify-center gap-1.5 sm:gap-2 font-black text-3xl sm:text-4xl text-white tracking-tighter tabular-nums">
+                                    <span className={winnerB ? "opacity-20" : "drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"}>{scoreA ?? 0}</span>
                                     <span className="text-white/10 text-lg -mt-0.5">:</span>
-                                    <span className={winnerA ? "opacity-30" : ""}>{scoreB ?? 0}</span>
+                                    <span className={winnerA ? "opacity-20" : "drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"}>{scoreB ?? 0}</span>
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tighter drop-shadow-xl mb-1 mt-1">
+                            <div className="text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tighter mb-1 mt-1 font-mono">
                                 {new Date(match.fecha).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
                             </div>
                         )}
                         {match.genero && (
                             <div className={cn(
                                 "text-[7px] sm:text-[8px] font-black tracking-[0.2em] uppercase transition-all mt-2",
-                                match.genero === 'femenino' ? "text-pink-500/80" : match.genero === 'mixto' ? "text-purple-500/80" : "text-blue-500/80"
+                                match.genero === 'femenino' ? "text-pink-400" : match.genero === 'mixto' ? "text-purple-400" : "text-blue-400"
                             )}>
                                 {match.genero}
                             </div>
@@ -185,9 +176,9 @@ function MatchRow({ match, carreraName }: { match: any; carreraName?: string }) 
                             name={nameB}
                             src={match.carrera_b?.escudo_url || match.atleta_b?.avatar_url}
                             className={cn(
-                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-background",
-                                winnerB ? `scale-105 shadow-lg ${border.replace('border-', 'border-')}` : "border-white/5",
-                                !winnerB && isFinal && !isDraw ? "opacity-50 grayscale-[0.8]" : ""
+                                "w-11 h-11 sm:w-14 sm:h-14 border-2 transition-all duration-500 bg-black/20",
+                                winnerB ? `scale-105 shadow-[0_0_20px_rgba(16,185,129,0.3)] border-emerald-500` : "border-white/5",
+                                !winnerB && isFinal && !isDraw ? "opacity-20 grayscale-[0.5]" : ""
                             )}
                         />
                         <span className={cn(
@@ -220,8 +211,8 @@ function TabButton({
             className={cn(
                 "flex-1 flex flex-col items-center justify-center gap-1.5 py-3 sm:py-4 px-2 rounded-2xl transition-all relative overflow-hidden group min-w-[70px]",
                 active
-                    ? "text-red-400 bg-red-500/10"
-                    : "text-white/40 hover:bg-white/5 hover:text-white/80"
+                    ? "text-white bg-white/5 shadow-inner"
+                    : "text-white/40 hover:bg-white/5 hover:text-white"
             )}
         >
             <div className="relative z-10 transition-transform group-hover:scale-110">
@@ -233,7 +224,7 @@ function TabButton({
             {active && (
                 <motion.div
                     layoutId="teamTabMarker"
-                    className="absolute inset-0 bg-gradient-to-t from-red-500/20 to-transparent border-b-2 border-red-500"
+                    className="absolute inset-0 bg-gradient-to-t from-violet-600/20 to-transparent border-b-2 border-violet-500"
                     initial={false}
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
@@ -244,7 +235,7 @@ function TabButton({
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default function TeamProfilePage() {
+ export default function TeamProfilePage() {
     const params = useParams();
     const router = useRouter();
     const delegacionId = params.id ? Number(params.id) : null;
@@ -254,8 +245,7 @@ export default function TeamProfilePage() {
         useTeamProfile(delegacionId);
 
     const [activeTab, setActiveTab] = useState<"partidos" | "plantilla">("partidos");
-
-    // ─── Derived data ────────────────────────────────────────────────────────
+    const [selectedGender, setSelectedGender] = useState<string>("todos");
 
     const groupedFilteredMatches = useMemo(() => {
         const groups: Record<string, any[]> = {};
@@ -272,7 +262,7 @@ export default function TeamProfilePage() {
             groups[fecha].push(match);
         });
 
-        return Object.keys(groups).sort((a, b) => b.localeCompare(a)).map(fecha => {
+        return Object.keys(groups).sort((a, b) => a.localeCompare(b)).map(fecha => {
             const dateObj = new Date(fecha + 'T12:00:00');
             let label = dateObj.toLocaleDateString('es-ES', {
                 weekday: 'long', day: 'numeric', month: 'short',
@@ -291,7 +281,7 @@ export default function TeamProfilePage() {
                 const oA = order[(a.estado || '').toLowerCase().trim()] ?? 99;
                 const oB = order[(b.estado || '').toLowerCase().trim()] ?? 99;
                 if (oA !== oB) return oA - oB;
-                return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
+                return new Date(a.fecha).getTime() - new Date(a.fecha).getTime();
             });
 
             return { fecha, label, partidos: sorted, isToday };
@@ -315,283 +305,234 @@ export default function TeamProfilePage() {
         }
     }, [activeTab, loading, groupedFilteredMatches.length]);
 
-    // ─── Loading / Error ─────────────────────────────────────────────────────
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <UniqueLoading size="lg" />
-            </div>
-        );
-    }
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
 
     if (!delegacion || error) {
         return (
             <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-4">
-                <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
-                    <ShieldHalf className="text-red-500" size={32} />
+                <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-8 border border-white/10 shadow-2xl">
+                    <ShieldHalf className="text-white/20" size={40} />
                 </div>
-                <h1 className="text-2xl font-black mb-2 font-outfit uppercase tracking-wider text-center">
-                    Equipo no encontrado
-                </h1>
-                <p className="text-white/40 mb-8 max-w-sm text-center font-bold">
-                    La delegación o equipo deportivo que buscas no existe.
-                </p>
-                <Button
-                    onClick={() => router.back()}
-                    className="rounded-2xl px-8 h-12 bg-white text-black font-black uppercase tracking-widest hover:bg-slate-200"
-                >
-                    <ChevronLeft className="mr-2" size={18} /> Volver atrás
+                <h1 className="text-3xl font-black mb-3 font-display uppercase tracking-widest text-center text-white/90">Equipo no encontrado</h1>
+                <p className="text-white/40 mb-10 max-w-sm text-center font-bold italic text-sm">La delegación o equipo deportivo que buscas no se encuentra disponible actualmente.</p>
+                <Button onClick={() => router.back()} className="rounded-2xl px-10 h-14 bg-violet-600 text-white font-black uppercase tracking-widest hover:bg-violet-700 shadow-2xl shadow-violet-600/30">
+                    <ChevronLeft className="mr-2" size={20} /> Volver al Inicio
                 </Button>
             </div>
         );
     }
 
     const sportName = delegacion.disciplinas?.name || "Multideporte";
-    const sportAccent = SPORT_ACCENT[sportName] || "text-red-400";
-    const sportGradient = SPORT_GRADIENT[sportName] || "from-red-600 to-orange-500";
+    const sportAccent = SPORT_ACCENT[sportName] || "text-white/60";
     const winRate = stats.played > 0 ? Math.round((stats.won / stats.played) * 100) : 0;
 
-    // ─── Render ──────────────────────────────────────────────────────────────
-
     return (
-        <div className="min-h-screen bg-background text-white selection:bg-red-500/30 overflow-x-hidden">
-            {/* Ambient background */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ opacity: 0.15 }}>
-                <div className={`absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-br ${sportGradient} rounded-full blur-[150px]`} />
-                <div className={`absolute bottom-[10%] left-[-10%] w-[500px] h-[500px] bg-gradient-to-br ${sportGradient} rounded-full blur-[150px]`} />
+        <div className="min-h-screen bg-background text-white selection:bg-violet-500/30 overflow-x-hidden relative font-sans">
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute top-0 right-[-10%] w-[800px] h-[800px] bg-violet-600/10 rounded-full blur-[150px] animate-pulse-slow" />
+                <div className="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[180px]" />
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay" />
             </div>
 
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
-            <main className="max-w-4xl mx-auto px-4 pt-10 pb-20 relative z-10">
-                {/* Back button */}
-                <div className="mb-6">
-                    <button
-                        onClick={() => router.back()}
-                        className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.2em]"
-                    >
-                        <div className="p-2 rounded-xl bg-white/5 border border-white/5 group-hover:bg-red-500 group-hover:text-black transition-all">
-                            <ChevronLeft size={14} />
+            <main className="max-w-4xl mx-auto px-4 pt-10 pb-32 relative z-10">
+                <div className="mb-8 font-display">
+                    <button onClick={() => router.back()} className="group flex items-center gap-3 text-white/30 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.3em]">
+                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 group-hover:bg-violet-600 group-hover:border-transparent group-hover:text-white transition-all shadow-xl">
+                            <ChevronLeft size={16} />
                         </div>
                         Regresar
                     </button>
                 </div>
 
                 {/* ═══ HERO SECTION ═══ */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="relative mb-8 sm:mb-12"
-                >
-                    <div className={`absolute -inset-1 sm:-inset-2 bg-gradient-to-r ${sportGradient} rounded-[2.5rem] sm:rounded-[3rem] blur-xl opacity-20 sm:opacity-30 group-hover:opacity-40 transition-opacity duration-700`} />
-                    
-                    <div className="relative bg-background/95 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl p-6 sm:p-10 flex flex-col items-center text-center">
-                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
+                <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="relative mb-12 sm:mb-16">
+                    <div className="relative bg-white/[0.04] backdrop-blur-3xl border border-white/10 rounded-[4rem] overflow-hidden shadow-2xl p-8 sm:p-14 flex flex-col items-center">
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent pointer-events-none" />
                         
-                        {/* Allied Career Badges */}
-                        <div className="flex -space-x-4 mb-6 mt-4 hover:-space-x-2 transition-all duration-300">
-                            {carreras.map((c: any, i: number) => (
-                                <Link href={`/carrera/${c.id}`} key={c.id} className="relative z-10 hover:z-20 group/badge block">
-                                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-black/80 backdrop-blur-md border border-white/20 flex items-center justify-center p-2 shadow-xl ring-4 ring-background transform group-hover/badge:scale-110 group-hover/badge:-translate-y-2 transition-all duration-300">
-                                        {c.escudo_url ? (
-                                            <img src={c.escudo_url} alt={c.nombre} className="w-full h-full object-contain filter contrast-125" />
-                                        ) : (
-                                            <ShieldHalf size={24} className="text-white/20" />
-                                        )}
-                                        {/* Tooltip */}
-                                        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-white text-black text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl">
-                                            {c.nombre}
+                        {/* Team Name Header */}
+                        <div className="flex flex-col items-center text-center w-full z-10 mb-10">
+                            <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-black/40 border border-white/10 mb-8 shadow-2xl backdrop-blur-xl">
+                                <SportIcon sport={sportName} size={20} className={sportAccent} />
+                                <span className="text-[11px] font-black uppercase tracking-[0.3em] text-white/50 font-display">
+                                    {sportName} {delegacion.genero && delegacion.genero !== 'mixto' ? `• ${delegacion.genero}` : ''}
+                                </span>
+                            </div>
+
+                            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter mb-4 leading-[0.85] text-white drop-shadow-[0_15px_40px_rgba(0,0,0,0.6)] uppercase font-sans">
+                                {delegacion.nombre}
+                            </h1>
+                            
+                            <div className="h-1.5 w-32 bg-violet-600 rounded-full mb-12 shadow-[0_0_20px_rgba(139,92,246,0.5)]" />
+                        </div>
+
+                        {/* Allied Career Grid - Modernized */}
+                        <div className="w-full max-w-3xl flex flex-col items-center gap-6 z-10 mb-14">
+                            <div className="flex items-center gap-4 w-full">
+                                <div className="h-px flex-1 bg-white/10" />
+                                <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] font-display whitespace-nowrap">Composición de Delegación</span>
+                                <div className="h-px flex-1 bg-white/10" />
+                            </div>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                                {carreras.map((c: any) => (
+                                    <Link href={`/carrera/${c.id}`} key={c.id} className="group/car block">
+                                        <div className="relative p-5 rounded-[2.5rem] bg-black/40 border border-white/10 hover:border-violet-500/50 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(139,92,246,0.15)] overflow-hidden flex flex-col items-center text-center">
+                                            <div className="absolute inset-0 bg-violet-600/0 group-hover/car:bg-violet-600/5 transition-colors" />
+                                            <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 mb-4 p-4 flex items-center justify-center group-hover/car:scale-110 group-hover/car:border-violet-500/30 transition-all duration-500 shadow-inner">
+                                                {c.escudo_url ? (
+                                                    <img src={c.escudo_url} alt={c.nombre} className="w-full h-full object-contain filter brightness-110" />
+                                                ) : (
+                                                    <ShieldHalf size={32} className="text-white/10" />
+                                                )}
+                                            </div>
+                                            <h4 className="text-[12px] font-black text-white group-hover/car:text-violet-400 transition-colors uppercase tracking-widest leading-tight mb-4 px-2 line-clamp-2 h-8 flex items-center justify-center">
+                                                {c.nombre}
+                                            </h4>
+                                            <div className="w-full py-2.5 rounded-2xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-white/40 group-hover/car:bg-violet-600 group-hover/car:text-white group-hover/car:border-transparent transition-all shadow-xl flex items-center justify-center gap-2">
+                                                Ver Perfil <ArrowUpRight size={12} />
+                                            </div>
                                         </div>
-                                    </div>
-                                </Link>
-                            ))}
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* Team Name & Sport Info */}
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-4 shadow-lg">
-                            <SportIcon sport={sportName} size={16} className={sportAccent} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80">
-                                {sportName} {delegacion.genero && delegacion.genero !== 'mixto' ? `• ${delegacion.genero}` : ''}
-                            </span>
-                        </div>
-
-                        <h1 className="text-3xl sm:text-5xl lg:text-5xl font-black tracking-tighter font-outfit mb-8 leading-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 drop-shadow-sm max-w-2xl px-2">
-                            {delegacion.nombre}
-                        </h1>
-
-                        {/* Stats Row */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-3xl">
-                            {/* Record */}
-                            <div className="col-span-2 flex flex-col items-center justify-center bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-4 shadow-inner relative overflow-hidden">
-                                <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${sportGradient} opacity-10 blur-2xl rounded-full`} />
-                                <div className="flex items-center gap-4 sm:gap-6 w-full justify-center">
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-xl sm:text-2xl font-black text-emerald-400 tabular-nums">{stats.won}</span>
-                                        <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">W</span>
-                                    </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-xl sm:text-2xl font-black text-white/40 tabular-nums">{stats.draw}</span>
-                                        <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">D</span>
-                                    </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-xl sm:text-2xl font-black text-red-500 tabular-nums">{stats.lost}</span>
-                                        <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">L</span>
-                                    </div>
+                        {/* Stats Dashboard */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-2xl z-10">
+                            <div className="col-span-2 flex items-center justify-center gap-8 bg-black/60 border border-white/10 rounded-[2.5rem] py-6 px-4 shadow-2xl backdrop-blur-xl">
+                                <div className="flex flex-col items-center">
+                                    <span className="text-3xl sm:text-4xl font-black text-emerald-400 tabular-nums tracking-tighter">{stats.won}</span>
+                                    <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mt-0.5">Victories</span>
+                                </div>
+                                <div className="w-px h-10 bg-white/5" />
+                                <div className="flex flex-col items-center">
+                                    <span className="text-3xl sm:text-4xl font-black text-white/30 tabular-nums tracking-tighter">{stats.draw}</span>
+                                    <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mt-0.5">Draws</span>
+                                </div>
+                                <div className="w-px h-10 bg-white/5" />
+                                <div className="flex flex-col items-center">
+                                    <span className="text-3xl sm:text-4xl font-black text-rose-500 tabular-nums tracking-tighter">{stats.lost}</span>
+                                    <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mt-0.5">Defeats</span>
                                 </div>
                             </div>
 
-                            {/* Played */}
-                            <div className="col-span-1 flex flex-col items-center justify-center bg-white/[0.02] border border-white/5 rounded-2xl py-3 px-4 shadow-inner">
-                                <span className="text-xl sm:text-2xl font-black text-white tabular-nums tracking-tighter">{stats.played}</span>
-                                <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mt-1">Jugados</span>
+                            <div className="col-span-1 flex flex-col items-center justify-center bg-white/5 border border-white/10 rounded-[2.5rem] py-6 px-4 shadow-xl group/stats hover:bg-white/10 transition-all backdrop-blur-xl">
+                                <span className="text-3xl sm:text-4xl font-black text-white tracking-tighter group-hover:text-violet-400 transition-colors">{stats.played}</span>
+                                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mt-1">Played</span>
                             </div>
 
-                            {/* Win Rate */}
-                            <div className="col-span-1 flex flex-col items-center justify-center bg-emerald-500/5 border border-emerald-500/10 rounded-2xl py-3 px-4 shadow-[0_0_15px_rgba(16,185,129,0.05)]">
-                                <span className="text-xl sm:text-2xl font-black text-emerald-400 tabular-nums tracking-tighter">{winRate}%</span>
-                                <span className="text-[9px] font-black text-emerald-400/50 uppercase tracking-[0.2em] mt-1">Victoria</span>
+                            <div className="col-span-1 flex flex-col items-center justify-center bg-[#F5F5DC] border border-transparent rounded-[2.5rem] py-6 px-4 shadow-2xl shadow-violet-600/30">
+                                <span className="text-3xl sm:text-4xl font-black text-violet-900 tracking-tighter">{winRate}%</span>
+                                <span className="text-[10px] font-black text-violet-900/40 uppercase tracking-[0.2em] mt-1">Win Rate</span>
                             </div>
                         </div>
-
                     </div>
                 </motion.div>
 
-                {/* ═══ TABS ═══ */}
-                <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/5 rounded-3xl mb-10 overflow-x-auto no-scrollbar max-w-sm mx-auto">
-                    <TabButton
-                        active={activeTab === "partidos"}
-                        onClick={() => setActiveTab("partidos")}
-                        icon={<Swords size={18} />}
-                        label="Partidos"
-                    />
-                    <TabButton
-                        active={activeTab === "plantilla"}
-                        onClick={() => setActiveTab("plantilla")}
-                        icon={<Users2 size={18} />}
-                        label="Plantilla"
-                    />
+                {/* ═══ TABS SECTION ═══ */}
+                <div className="flex flex-col items-center gap-10 mb-14">
+                    <div className="flex w-full max-w-sm p-1.5 bg-black/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden">
+                        {[
+                            { id: "partidos", label: "Partidos", icon: Swords },
+                            { id: "plantilla", label: "Plantilla", icon: Users2 },
+                        ].map(tab => {
+                            const Icon = tab.icon;
+                            const isActive = activeTab === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id as any)}
+                                    className={cn(
+                                        "flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-500 font-display relative",
+                                        isActive ? "text-white scale-105" : "text-white/30 hover:text-white hover:bg-white/5"
+                                    )}
+                                >
+                                    {isActive && (
+                                        <motion.div layoutId="teamActiveTab" className="absolute inset-0 bg-violet-600 rounded-2xl shadow-xl shadow-violet-600/30" />
+                                    )}
+                                    <Icon size={16} className="relative z-10" />
+                                    <span className="relative z-10">{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
-                {/* ═══ TAB CONTENT ═══ */}
-                <div className="min-h-[400px]">
-                    {/* ─── PARTIDOS TAB ─── */}
+                {/* ═══ CONTENT AREA ═══ */}
+                <div className="min-h-[500px]">
                     {activeTab === "partidos" && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4 }}
-                            className="space-y-6"
-                        >
+                        <div className="space-y-16">
                             {groupedFilteredMatches.length === 0 ? (
-                                <EmptyState
-                                    icon={<Swords size={48} className="text-white/10" />}
-                                    title="Sin partidos"
-                                    description="Este equipo aún no tiene partidos programados."
-                                />
+                                <EmptyState icon={<Swords size={48} className="text-white/10" />} title="Sin partidos" description="Este equipo aún no tiene encuentros programados en el calendario." />
                             ) : (
-                                <div className="space-y-12">
-                                    {groupedFilteredMatches.map((group) => (
-                                        <section
-                                            key={group.fecha}
-                                            id={`team-date-${group.fecha}`}
-                                            className="scroll-mt-24"
-                                        >
-                                            <div className="flex items-center gap-4 mb-5">
-                                                <div className={cn(
-                                                    "h-px flex-1 bg-gradient-to-r from-transparent",
-                                                    group.isToday ? "via-red-500/50 to-red-500/80" : "via-white/5 to-white/10"
-                                                )} />
-                                                <h2 className={cn(
-                                                    "text-[10px] font-black px-5 py-2 rounded-full border backdrop-blur-md uppercase tracking-[0.25em] transition-all",
-                                                    group.isToday
-                                                        ? "text-white border-red-500/50 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.15)] scale-105"
-                                                        : "text-white/50 border-white/10 bg-white/5"
-                                                )}>
-                                                    {group.isToday && <span className="mr-2 text-red-400">●</span>}
-                                                    {group.label}
-                                                </h2>
-                                                <div className={cn(
-                                                    "h-px flex-1 bg-gradient-to-l from-transparent",
-                                                    group.isToday ? "via-red-500/50 to-red-500/80" : "via-white/5 to-white/10"
-                                                )} />
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                {group.partidos.map((m: any) => (
-                                                    <MatchRow
-                                                        key={m.id}
-                                                        match={m}
-                                                        carreraName={delegacion?.nombre}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </section>
-                                    ))}
-                                </div>
+                                groupedFilteredMatches.map((group) => (
+                                    <section key={group.fecha} id={`team-date-${group.fecha}`} className="scroll-mt-32">
+                                        <div className="flex items-center gap-6 mb-8 group/date">
+                                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-white/20" />
+                                            <h2 className={cn(
+                                                "text-[11px] font-black px-8 py-3 rounded-2xl border backdrop-blur-md uppercase tracking-[0.3em] font-display transition-all",
+                                                group.isToday ? "bg-red-600 border-red-500 text-white shadow-2xl shadow-red-600/20 scale-110" : "bg-white/5 border-white/10 text-white/50"
+                                            )}>
+                                                {group.label}
+                                            </h2>
+                                            <div className="flex-1 h-px bg-gradient-to-l from-transparent via-white/10 to-white/20" />
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {group.partidos.map((m: any) => <MatchRow key={m.id} match={m} />)}
+                                        </div>
+                                    </section>
+                                ))
                             )}
-                        </motion.div>
+                        </div>
                     )}
 
-                    {/* ─── PLANTILLA TAB ─── */}
                     {activeTab === "plantilla" && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4 }}
-                            className="space-y-6"
-                        >
-                            <div className="flex items-center justify-between px-2 mb-4">
-                                <h2 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
-                                    <Users2 size={24} className={sportAccent} />
-                                    Plantilla Consolidada
-                                </h2>
-                                <Badge className="bg-white/5 text-white/50 border-white/10 font-black uppercase">
-                                    {athletes.length} Jugadores
-                                </Badge>
+                        <div className="space-y-10">
+                            <div className="flex items-center gap-4 w-full">
+                                <div className="h-px flex-1 bg-white/10" />
+                                <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] font-display whitespace-nowrap">Roster de Atletas</span>
+                                <div className="h-px flex-1 bg-white/10" />
                             </div>
-
+                            
                             {athletes.length === 0 ? (
-                                <EmptyState
-                                    icon={<Users size={48} className="text-white/10" />}
-                                    title="Plantilla Vacía"
-                                    description={`Aún no hay deportistas asignados a ${sportName} en las carreras que componen esta delegación.`}
-                                />
+                                <EmptyState icon={<Users2 size={48} className="text-white/10" />} title="Roster Vacío" description="No hay deportistas vinculados a este equipo en este momento." />
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                     {athletes.map((a: any) => (
-                                        <Link href={`/perfil/${a.id}`} key={a.id} className="group">
-                                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-white/[0.05] transition-all duration-300 flex items-center gap-4">
-                                                <Avatar
-                                                    name={a.full_name}
-                                                    src={a.avatar_url}
-                                                    className="w-12 h-12 rounded-xl border border-white/5 shadow-inner"
-                                                />
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="text-sm font-bold tracking-tight truncate group-hover:text-red-400 transition-colors">
+                                        <Link href={a.isProfile ? `/perfil/${a.id}` : '#'} key={a.id} className={cn("group/ath block", !a.isProfile && "cursor-default")}>
+                                            <div className="p-5 rounded-[2rem] bg-black/40 border border-white/5 hover:border-violet-500/30 transition-all duration-500 flex items-center gap-4 shadow-xl relative overflow-hidden">
+                                                <div className="absolute inset-0 bg-violet-600/0 group-hover/ath:bg-violet-600/5 transition-colors" />
+                                                <Avatar name={a.full_name} src={a.avatar_url} className="w-16 h-16 rounded-[1.2rem] border border-white/10 bg-black/60 shadow-2xl transition-transform group-hover/ath:scale-105" />
+                                                <div className="flex-1 min-w-0 z-10">
+                                                    <h4 className="text-[13px] font-black tracking-tight truncate group-hover/ath:text-violet-400 transition-colors text-white uppercase font-sans">
                                                         {a.full_name}
                                                     </h4>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        {a.points > 0 && (
-                                                            <div className="flex items-center gap-1">
-                                                                <Star size={10} className="text-amber-500 fill-amber-500" />
-                                                                <span className="text-[10px] font-black text-amber-500/80 tabular-nums">{a.points} pts</span>
+                                                    <div className="flex items-center gap-2.5 mt-2">
+                                                        {a.isProfile ? (
+                                                            <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                                                                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                                                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">ACTIVO</span>
                                                             </div>
+                                                        ) : (
+                                                            <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">REGISTRADO</span>
                                                         )}
-                                                        {a.disciplina && (
-                                                            <span className="text-[9px] font-black uppercase text-white/30 truncate hidden sm:block">
-                                                                {a.disciplina.name}
-                                                            </span>
+                                                        {a.points > 0 && (
+                                                            <div className="flex items-center gap-1.5 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                                                                <Star size={8} className="text-amber-500 fill-amber-500" />
+                                                                <span className="text-[9px] font-black text-amber-500 tabular-nums">{a.points}</span>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
-                                                <ArrowUpRight size={16} className="text-white/10 group-hover:text-red-500 transition-colors shrink-0" />
+                                                {a.isProfile && <ArrowUpRight size={16} className="text-white/10 group-hover/ath:text-violet-400 group-hover/ath:translate-x-1 group-hover/ath:-translate-y-1 transition-all shrink-0" />}
                                             </div>
                                         </Link>
                                     ))}
                                 </div>
                             )}
-                        </motion.div>
+                        </div>
                     )}
                 </div>
             </main>

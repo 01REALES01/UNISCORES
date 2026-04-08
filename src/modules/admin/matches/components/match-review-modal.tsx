@@ -3,7 +3,8 @@
 import { X, CheckCircle, AlertCircle } from "lucide-react";
 import { Card, Button } from "@/components/ui-primitives";
 import { cn } from "@/lib/utils";
-import { getDisplayName, getCurrentScore } from "@/lib/sport-helpers";
+import { getDisplayName } from "@/lib/sport-helpers";
+import { getCurrentScore } from "@/lib/sport-scoring";
 
 interface MatchReviewModalProps {
   match: any;

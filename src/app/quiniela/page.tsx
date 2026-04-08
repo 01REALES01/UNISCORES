@@ -74,13 +74,18 @@ export default function QuinielaPage() {
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <div className="max-w-xl mx-auto p-4 space-y-6 relative z-10 pt-4">
-                <div className="flex flex-col items-center text-center gap-1 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="flex flex-col items-center text-center gap-1 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <p className="font-display text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-emerald-400 tracking-[0.3em]">
                         Predict & win
                     </p>
                     <h1 className="text-5xl md:text-7xl font-black tracking-tighter font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm">
                         Acierta y gana
                     </h1>
+                </div>
+
+                {/* ━━━ INSTITUTIONAL BRAND BREAK (MOVED UP) ━━━ */}
+                <div className="mb-4">
+                    <InstitutionalBanner variant={8} />
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
@@ -114,11 +119,6 @@ export default function QuinielaPage() {
                 {activeTab === 'play' && <QuinielaPlayTab matches={matches} predictions={predictions} allPredictions={allPredictions} onPredict={handlePredict} loading={loading} />}
                 {activeTab === 'history' && <QuinielaHistoryTab predictions={predictions} matches={matches} />}
                 {activeTab === 'ranking' && <QuinielaRankingTab ranking={ranking} user={user} profile={profile} userPoints={userPublicProfile?.points || 0} />}
-
-                {/* ━━━ INSTITUTIONAL BRAND BREAK ━━━ */}
-                <div className="pt-8">
-                    <InstitutionalBanner variant={8} />
-                </div>
             </div>
         </div>
     );

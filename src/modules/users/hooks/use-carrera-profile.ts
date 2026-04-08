@@ -100,7 +100,7 @@ async function fetchCarreraProfile(carreraId: number) {
     // 4. Fetch athletes that belong to this carrera
     const { data: athletesData } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, roles, athlete_disciplina_id, points, disciplina:disciplinas(name)')
+        .select('id, full_name, avatar_url, roles, athlete_disciplina_id, points, sexo, genero, disciplina:disciplinas(name)')
         .contains('carreras_ids', [carreraId]);
 
     // 5. Compute stats by ID (handles fusions via carrera_a_ids / carrera_b_ids)

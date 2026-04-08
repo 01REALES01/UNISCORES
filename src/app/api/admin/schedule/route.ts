@@ -373,15 +373,27 @@ export async function DELETE(request: NextRequest) {
     }
 
     try {
-        // Delete ALL matches. Since the user asked for a complete wipe, we delete everything.
-        // It relies on RLS or the backend having power. Wait, createRouteSupabase uses the logged-in user.
-        // If the user has update/delete rights via RLS, this will work.
-        const { error: delErr } = await supabase
-            .from('partidos')
-            .delete()
-            .neq('id', -1); // Delete all rows trick for Supabase (using -1 since id is bigint)
+        // Delete SELECTIVE matches. User requested a wipe for ONLY Voleibol, Futbol, and Baloncesto.
+        // We will fetch the IDs of these disciplines to leave Tennis alone.
+        const { data: disciplinas } = await supabase.from('disciplinas').select('id, name');
+        
+        const targetIds = disciplinas
+            ?.filter((d: { id: number; name: string }) => {
+                const name = d.name.toLowerCase();
+                return name.includes('voleibol') || 
+                       name.includes('futbol') || 
+                       name.includes('fútbol') || 
+                       name.includes('baloncesto');
+            })
+            .map((d: { id: number; name: string }) => d.id) || [];
 
-        if (delErr) throw delErr;
+        if (targetIds.length > 0) {
+            const { error: delErr } = await supabase
+                .from('partidos')
+                .delete()
+                .in('disciplina_id', targetIds);
+            if (delErr) throw delErr;
+        }
 
         // Log the action
         await supabase.from('admin_audit_logs').insert({

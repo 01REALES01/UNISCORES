@@ -45,7 +45,7 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
                         </div>
                     </div>
 
-                    <div className="relative z-10 flex flex-col gap-4">
+                    <div className="relative z-10 flex flex-col gap-4 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
                         {topCareers.map((carrera, i) => (
                             <Link key={carrera.id} href={`/carrera/${carrera.id}`}>
                                 <div className={cn(
@@ -99,7 +99,7 @@ export function PopularityRanking({ topCareers, topUsers }: PopularityRankingPro
                         </div>
                     </div>
 
-                    <div className="relative z-10 flex flex-col gap-4">
+                    <div className="relative z-10 flex flex-col gap-4 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
                         {topUsers.map((user, i) => (
                             <Link key={user.id} href={`/perfil/${user.id}`}>
                                 <div className={cn(

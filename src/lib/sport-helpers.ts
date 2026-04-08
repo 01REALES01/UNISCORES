@@ -77,6 +77,20 @@ export function getCarreraSubtitle(partido: PartidoLike, side: 'a' | 'b'): strin
     return partido.carrera_b?.nombre || partido.delegacion_b || null;
 }
 
+/**
+ * Returns a 2-letter abbreviation for a participant name.
+ * e.g. "Ingeniería de Sistemas" -> "IS" or "IN" (depending on words)
+ */
+export function getAbbr(name?: string): string {
+    if (!name) return "??";
+    // Clean and split by spaces/special chars
+    const words = name.replace(/[^\w\s]/gi, '').split(/\s+/).filter(word => word.length > 2);
+    if (words.length >= 2) {
+        return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+}
+
 // ── Race / Swimming Helpers ──────────────────────────────────────────────────
 
 import { isRaceSport as _isRaceSport } from './constants';
