@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Save, Medal, Trophy, Timer, ArrowDown01, CheckCircle2, AlertTriangle, Ban, Clock, GraduationCap, Download } from "lucide-react";
+import Link from "next/link";
+import { Plus, Trash2, Save, Medal, Trophy, Timer, ArrowDown01, CheckCircle2, AlertTriangle, Ban, Clock, GraduationCap, Download, ExternalLink } from "lucide-react";
 import { Button, Input, Badge, Card } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,8 @@ export type Participante = {
     nombre: string;
     carrera: string;       // Carrera universitaria (e.g. "Ingeniería de Sistemas")
     carrera_id?: number;
+    profile_id?: string;   // UUID — links to /perfil/{profile_id}
+    jugador_id?: number;   // links to jugadores table
     carril?: number;
     tiempo?: string;       // Display format: "mm:ss.xx" or "ss.xx"
     tiempo_ms?: number;    // Milliseconds — used for sorting
@@ -266,9 +269,9 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, prof
             // Assign medals to carreras
             const podium = finalData.filter(p => p.posicion && p.posicion <= 3 && p.estado === 'valid');
             for (const p of podium) {
-                if (p.posicion === 1) await addMedal(p.carrera, 'oro', NATACION_PUNTOS[1] || 5);
-                else if (p.posicion === 2) await addMedal(p.carrera, 'plata', NATACION_PUNTOS[2] || 3);
-                else if (p.posicion === 3) await addMedal(p.carrera, 'bronce', NATACION_PUNTOS[3] || 1);
+                if (p.posicion === 1) await addMedal(p.carrera, p.carrera_id, 'oro', NATACION_PUNTOS[1] || 5);
+                else if (p.posicion === 2) await addMedal(p.carrera, p.carrera_id, 'plata', NATACION_PUNTOS[2] || 3);
+                else if (p.posicion === 3) await addMedal(p.carrera, p.carrera_id, 'bronce', NATACION_PUNTOS[3] || 1);
             }
 
             toast.success('¡Prueba finalizada y medallas asignadas!');
@@ -280,12 +283,15 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, prof
         }
     };
 
-    const addMedal = async (equipo: string, tipo: 'oro' | 'plata' | 'bronce', puntosExtra: number) => {
-        const { data: existing } = await supabase
-            .from('medallero')
-            .select('*')
-            .ilike('equipo_nombre', equipo)
-            .maybeSingle();
+    const addMedal = async (equipo: string, carreraId: number | undefined, tipo: 'oro' | 'plata' | 'bronce', puntosExtra: number) => {
+        // Prefer carrera_id lookup (reliable), fall back to name matching
+        let query = supabase.from('medallero').select('*');
+        if (carreraId) {
+            query = query.eq('carrera_id', carreraId) as any;
+        } else {
+            query = query.ilike('equipo_nombre', equipo) as any;
+        }
+        const { data: existing } = await (query as any).maybeSingle();
 
         if (existing) {
             await supabase.from('medallero').update({
@@ -296,6 +302,7 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, prof
         } else {
             await supabase.from('medallero').insert({
                 equipo_nombre: equipo,
+                carrera_id: carreraId ?? null,
                 [tipo]: 1,
                 puntos: puntosExtra
             });
@@ -439,21 +446,44 @@ export function RaceControl({ matchId, detalle, onUpdate, isLocked = false, prof
                             {/* Athlete */}
                             <div className={cn("min-w-0", isInvalid && "line-through opacity-60")}>
                                 {isLocked ? (
-                                    <span className="font-semibold text-white text-sm truncate block">{p.nombre}</span>
+                                    p.profile_id ? (
+                                        <Link
+                                            href={`/perfil/${p.profile_id}`}
+                                            className="group/link flex items-center gap-1.5 hover:text-cyan-300 transition-colors"
+                                        >
+                                            <span className="font-semibold text-white text-sm truncate group-hover/link:text-cyan-300">{p.nombre}</span>
+                                            <ExternalLink size={10} className="text-cyan-500/50 group-hover/link:text-cyan-400 shrink-0" />
+                                        </Link>
+                                    ) : (
+                                        <span className="font-semibold text-white text-sm truncate block">{p.nombre}</span>
+                                    )
                                 ) : (
-                                    <input
-                                        value={p.nombre}
-                                        onChange={(e) => handleChange(p.id, 'nombre', e.target.value)}
-                                        className="w-full bg-transparent text-white font-semibold text-sm focus:outline-none focus:border-b border-cyan-500/50 truncate"
-                                        placeholder="Nombre"
-                                    />
+                                    <div className="flex items-center gap-1">
+                                        <input
+                                            value={p.nombre}
+                                            onChange={(e) => handleChange(p.id, 'nombre', e.target.value)}
+                                            className="w-full bg-transparent text-white font-semibold text-sm focus:outline-none focus:border-b border-cyan-500/50 truncate"
+                                            placeholder="Nombre"
+                                        />
+                                        {p.profile_id && (
+                                            <Link href={`/perfil/${p.profile_id}`} target="_blank" className="text-cyan-500/40 hover:text-cyan-400 shrink-0">
+                                                <ExternalLink size={10} />
+                                            </Link>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
                             {/* Carrera */}
                             <div className="min-w-0">
                                 {isLocked ? (
-                                    <span className="text-xs text-slate-400 truncate block">{p.carrera}</span>
+                                    p.carrera_id ? (
+                                        <Link href={`/carrera/${p.carrera_id}`} className="text-xs text-cyan-500/60 hover:text-cyan-400 truncate block transition-colors">
+                                            {p.carrera}
+                                        </Link>
+                                    ) : (
+                                        <span className="text-xs text-slate-400 truncate block">{p.carrera}</span>
+                                    )
                                 ) : (
                                     <select
                                         value={p.carrera}

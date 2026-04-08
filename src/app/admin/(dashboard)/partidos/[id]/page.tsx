@@ -171,7 +171,8 @@ export default function MatchControlPage() {
                     />
                 )}
 
-                {match.estado !== 'finalizado' && (
+                {/* Roster + Event sections — not applicable for natación */}
+                {match.marcador_detalle?.tipo !== 'carrera' && match.estado !== 'finalizado' && (
                     <AdminPlayerRoster
                         match={match}
                         jugadoresA={jugadoresA}
@@ -182,8 +183,9 @@ export default function MatchControlPage() {
                     />
                 )}
 
+                {match.marcador_detalle?.tipo !== 'carrera' && (
                 <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-8">
-                    <AdminEventCreator 
+                    <AdminEventCreator
                         match={match}
                         actions={actions}
                         jugadoresA={jugadoresA}
@@ -237,13 +239,14 @@ export default function MatchControlPage() {
                         disciplinaName={disciplinaName}
                     />
 
-                    <AdminMatchTimeline 
+                    <AdminMatchTimeline
                         eventos={eventos}
                         match={match}
                         onDeleteEvent={(e) => setConfirmingDeletion(e)}
                         disciplinaName={disciplinaName}
                     />
                 </div>
+                )}
             </div>
 
             <AdminModals

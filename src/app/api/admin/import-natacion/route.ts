@@ -316,7 +316,8 @@ export async function POST(request: NextRequest) {
                 }
             } else {
                 // Create
-                params.fecha = new Date().toISOString(); // Asignar fecha actual por defecto para la agenda
+                // Fecha base por demanda del usuario: 24 de Abril de 2026 a las 8:00 AM (Hora Colombia -05:00)
+                params.fecha = '2026-04-24T08:00:00.000-05:00'; 
                 params.marcador_detalle.participantes = finalParticipantes;
                 const { data: newMatch, error: matchErr } = await supabase
                     .from('partidos')
