@@ -52,17 +52,29 @@ function parseGenero(rama: string): 'masculino' | 'femenino' | 'mixto' | null {
     return null;
 }
 
-// "50 metros Libre" o "50m Libre" o "50 libre" o "50 mts Libre" → { distancia: "50m", estilo: "Libre" }
+// "50 metros Libre" o "50m Libre" → { distancia: "50m", estilo: "Libre" }
 function parsePrueba(raw: string): { distancia: string; estilo: string } | null {
     if (!raw || typeof raw !== 'string') return null;
-    // Regex que atrapa el número, un separador opcional de metros (m, mt, mts, metros) y luego el estilo
     const match = raw.match(/(\d+)\s*(?:m|mts?|metros?)?\s+(.+)/i);
     if (!match) return null;
-    const distancia = match[1] + 'm';
-    const estilo = match[2].trim();
-    // Capitalize first letter
+    let distancia = match[1] + 'm';
+    // Limpiar el estilo de comas o punto y comas finales sueltos
+    let estilo = match[2].trim().replace(/[;,]$/, '').trim();
     const estiloNorm = estilo.charAt(0).toUpperCase() + estilo.slice(1).toLowerCase();
     return { distancia, estilo: estiloNorm };
+}
+
+// Extraer múltiples pruebas si vienen en la misma celda, ej: "50m Libre; 25m Espalda"
+function extractPruebas(raw: string): { distancia: string; estilo: string }[] {
+    if (!raw || typeof raw !== 'string') return [];
+    // Dividir por punto y coma, coma, saltos de línea, o la palabra " y "
+    const parts = raw.split(/[;,\n]|\s+y\s+/i);
+    const results: { distancia: string; estilo: string }[] = [];
+    for (const part of parts) {
+        const parsed = parsePrueba(part.trim());
+        if (parsed) results.push(parsed);
+    }
+    return results;
 }
 
 // Genera un ID corto para los participantes de la carrera
@@ -222,44 +234,45 @@ export async function POST(request: NextRequest) {
                 const pVal = (row[ph] as string || '').trim();
                 if (!pVal) continue;
 
-                const parsed = parsePrueba(pVal);
-                if (!parsed) continue;
-
-                const pruebaKey = `${parsed.distancia} ${parsed.estilo}-${genero}`;
-                processedPruebas.add(`${parsed.distancia} ${parsed.estilo} (${genero})`);
-
-                const participante = {
-                    id: generateShortId(),
-                    nombre: nombre,
-                    carrera: carreraMatched,
-                    carrera_id: carreraId,
-                    estado: 'pending',
-                    puntos: 0,
-                    jugador_id: playerId // Interno temporal
-                };
-
-                if (!partiesMap.has(pruebaKey)) {
-                    partiesMap.set(pruebaKey, {
-                        params: {
-                            disciplina_id: disciplinaId,
-                            equipo_a: `${parsed.distancia} ${parsed.estilo}`, // "50m Libre"
-                            equipo_b: genero === 'femenino' ? 'Femenino' : genero === 'masculino' ? 'Masculino' : 'Mixto',
-                            genero: genero,
-                            estado: 'programado',
-                            lugar: 'Piscina Centro Deportivo',
-                            marcador_detalle: {
-                                tipo: 'carrera',
-                                distancia: parsed.distancia,
-                                estilo: parsed.estilo,
-                                participantes: []
-                            }
-                        },
-                        participantes: []
-                    });
-                }
+                const parsedList = extractPruebas(pVal);
                 
-                // Add to participants array
-                partiesMap.get(pruebaKey)!.participantes.push(participante);
+                for (const parsed of parsedList) {
+                    const pruebaKey = `${parsed.distancia} ${parsed.estilo}-${genero}`;
+                    processedPruebas.add(`${parsed.distancia} ${parsed.estilo} (${genero})`);
+
+                    const participante = {
+                        id: generateShortId(),
+                        nombre: nombre,
+                        carrera: carreraMatched,
+                        carrera_id: carreraId,
+                        estado: 'pending',
+                        puntos: 0,
+                        jugador_id: playerId // Interno temporal
+                    };
+
+                    if (!partiesMap.has(pruebaKey)) {
+                        partiesMap.set(pruebaKey, {
+                            params: {
+                                disciplina_id: disciplinaId,
+                                equipo_a: `${parsed.distancia} ${parsed.estilo}`, // "50m Libre"
+                                equipo_b: genero === 'femenino' ? 'Femenino' : genero === 'masculino' ? 'Masculino' : 'Mixto',
+                                genero: genero,
+                                estado: 'programado',
+                                lugar: 'Piscina Centro Deportivo',
+                                marcador_detalle: {
+                                    tipo: 'carrera',
+                                    distancia: parsed.distancia,
+                                    estilo: parsed.estilo,
+                                    participantes: []
+                                }
+                            },
+                            participantes: []
+                        });
+                    }
+                    
+                    // Add to participants array
+                    partiesMap.get(pruebaKey)!.participantes.push(participante);
+                }
             }
         }
 

@@ -47,18 +47,25 @@ async function fetchTeamProfile(delegacionId: number) {
     }
 
     // 2. Fetch the allied careers for their badges and names
-    // Fallback/Override: Use our config map to find all careers that SHOULD be in this team
-    const configCareerNames = EQUIPO_NOMBRE_TO_CARRERAS[delegacion.nombre] || [];
+    // To handle case-insensitivity and partial names safely without tricky PostgREST syntax,
+    // we fetch all careers (there are very few) and filter in JS.
+    const { data: allCarreras } = await supabase.from('carreras').select('id, nombre, escudo_url');
     const dbCareerIds = delegacion.carrera_ids || [];
+    
+    // Determine the expected career names based on the config map or the direct team name
+    const normalizedNombre = (delegacion.nombre || '').trim().toUpperCase();
+    const configNames = EQUIPO_NOMBRE_TO_CARRERAS[normalizedNombre] || EQUIPO_NOMBRE_TO_CARRERAS[delegacion.nombre];
+    const targetNames = (configNames && configNames.length > 0) 
+        ? configNames.map((n: string) => n.toLowerCase()) 
+        : [(delegacion.nombre || '').toLowerCase()];
 
-    // Query careers by either ID (from DB) or Name (from Config)
-    const { data: carreras } = await supabase
-        .from('carreras')
-        .select('id, nombre, escudo_url')
-        .or(`id.in.(${dbCareerIds.join(',') || '0'}),nombre.in.("${configCareerNames.join('","') || 'none'}")`);
+    // Filter to find the matched careers
+    const carreras = (allCarreras || []).filter((c: any) => 
+        dbCareerIds.includes(c.id) || targetNames.includes(c.nombre.toLowerCase())
+    );
 
     // Update careers in memory to ensure they reflect the full set
-    const finalCareerIds = carreras ? carreras.map((c: any) => c.id) : dbCareerIds;
+    const finalCareerIds = carreras.map((c: any) => c.id);
     delegacion.carrera_ids = Array.from(new Set([...dbCareerIds, ...finalCareerIds]));
 
     // 3. Fetch all matches where this delegacion participates
@@ -88,12 +95,20 @@ async function fetchTeamProfile(delegacionId: number) {
     let athletesData: any[] = [];
     if (delegacion.carrera_ids && delegacion.carrera_ids.length > 0) {
         
-        // 4. Fetch athletes (Plantilla) - Flexible gender matching
-        const { data: jugadores } = await supabase
+        let query = supabase
             .from('jugadores')
             .select('id, nombre, genero, sexo, disciplina_id, profile:profiles(id, full_name, avatar_url, roles, points, sexo, genero, disciplina:disciplinas(name))')
-            .in('carrera_id', delegacion.carrera_ids)
-            .or(`disciplina_id.eq.${delegacion.disciplina_id},disciplina_id.is.null`);
+            .in('carrera_id', delegacion.carrera_ids);
+
+        if (delegacion.disciplina_id) {
+            query = query.or(`disciplina_id.eq.${delegacion.disciplina_id},disciplina_id.is.null`);
+        }
+
+        const { data: jugadores, error: errorJugadores } = await query;
+        
+        if (errorJugadores) {
+            console.error("Error fetching roster: ", errorJugadores);
+        }
 
         if (jugadores) {
             // Filter in JS to be more flexible with 'm', 'f', 'masculino', 'femenino'
