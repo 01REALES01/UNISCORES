@@ -50,10 +50,12 @@ export default function PublicMatchDetail() {
                 'fase, grupo, bracket_order, delegacion_a, delegacion_b',
                 'delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
                 'disciplinas:disciplina_id(name)',
-                'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
-                'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
-                'atleta_a:profiles!athlete_a_id(full_name, avatar_url)',
-                'atleta_b:profiles!athlete_b_id(full_name, avatar_url)',
+                'carrera_a:carreras!carrera_a_id(id, nombre, escudo_url)',
+                'carrera_b:carreras!carrera_b_id(id, nombre, escudo_url)',
+                'atleta_a:profiles!athlete_a_id(id, full_name, avatar_url)',
+                'atleta_b:profiles!athlete_b_id(id, full_name, avatar_url)',
+                'delegacion_a_info:delegaciones!delegacion_a_id(id, escudo_url)',
+                'delegacion_b_info:delegaciones!delegacion_b_id(id, escudo_url)',
             ].join(', ');
 
             const matchRes = await safeQuery(
@@ -70,7 +72,7 @@ export default function PublicMatchDetail() {
                 const fallbackRes = await safeQuery(
                     supabase
                         .from('partidos')
-                        .select('id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id')
+                        .select('id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id, disciplinas:disciplina_id(name), carrera_a:carreras!carrera_a_id(id, nombre, escudo_url), carrera_b:carreras!carrera_b_id(id, nombre, escudo_url), atleta_a:profiles!athlete_a_id(id, full_name, avatar_url), atleta_b:profiles!athlete_b_id(id, full_name, avatar_url), delegacion_a_info:delegaciones!delegacion_a_id(id, escudo_url), delegacion_b_info:delegaciones!delegacion_b_id(id, escudo_url)')
                         .eq('id', matchId)
                         .single(),
                     'partido-detail-fallback'
@@ -443,8 +445,8 @@ export default function PublicMatchDetail() {
                                         <div className="relative group/avatar">
                                             {(() => {
                                                 const atletaAIds = {
-                                                    profile_id: (match as any).atleta_a_info?.profile?.id || (match as any).atleta_a?.profile_id || match.athlete_a_id || (match as any).atleta_a_info?.id_profile,
-                                                    jugador_id: (match as any).atleta_a || (match as any).atleta_a_info?.id,
+                                                    profile_id: (match as any).atleta_a?.id || match.athlete_a_id,
+                                                    jugador_id: (match as any).atleta_a?.id || match.athlete_a_id,
                                                 };
 
                                                 return (
@@ -461,7 +463,13 @@ export default function PublicMatchDetail() {
                                                         <div className="relative">
                                                             <div className={cn("absolute inset-0 rounded-full blur-2xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500", SPORT_GLOW[sportName])} />
                                                             <Avatar 
-                                                                src={(match as any).atleta_a_info?.profile?.avatar_url || (match as any).atleta_a_info?.avatar_url || (match as any).delegacion_a_info?.escudo_url}
+                                                                src={
+                                                                    (match as any).atleta_a?.avatar_url || 
+                                                                    (match as any).atleta_a?.carrera?.escudo_url ||
+                                                                    (match as any).carrera_a?.escudo_url || 
+                                                                    (match as any).delegacion_a_info?.escudo_url ||
+                                                                    '/logo_olimpiadas.png'
+                                                                }
                                                                 size="lg" 
                                                                 className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} 
                                                             />
@@ -493,11 +501,9 @@ export default function PublicMatchDetail() {
                                             {getDisplayName(match, 'a')}
                                         </h2>
                                         {/* Career Link */}
-                                        {isIndividualSport(sportName) && getDisplayName(match, 'a') !== 'TBD' && getDisplayName(match, 'a') !== 'BYE' && !!((match as any).atleta_a_info?.carrera?.nombre || (match as any).atleta_a?.carrera?.nombre || (match as any).carrera_a?.nombre || match.carrera_a?.nombre || getCarreraSubtitle(match, 'a')) && (
+                                        {isIndividualSport(sportName) && getDisplayName(match, 'a') !== 'TBD' && getDisplayName(match, 'a') !== 'BYE' && !!((match as any).carrera_a?.nombre || match.carrera_a?.nombre || getCarreraSubtitle(match, 'a')) && (
                                             <Link
                                                 href={
-                                                    (match as any).atleta_a_info?.carrera?.id ? `/carrera/${(match as any).atleta_a_info.carrera.id}?sport=${encodeURIComponent(sportName)}` :
-                                                    (match as any).atleta_a?.carrera?.id ? `/carrera/${(match as any).atleta_a.carrera.id}?sport=${encodeURIComponent(sportName)}` :
                                                     (match as any).carrera_a?.id ? `/carrera/${(match as any).carrera_a.id}?sport=${encodeURIComponent(sportName)}` :
                                                     match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` :
                                                     (match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` : '#'
@@ -505,13 +511,18 @@ export default function PublicMatchDetail() {
                                                 className="mt-2 group/carrera flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all active:scale-95"
                                             >
                                                 <img
-                                                    src={(match as any).atleta_a_info?.carrera?.escudo_url || (match as any).atleta_a?.carrera?.escudo_url || (match as any).carrera_a?.escudo_url || match.carrera_a?.escudo_url || '/logo_olimpiadas.png'}
+                                                    src={
+                                                        (match as any).carrera_a?.escudo_url || 
+                                                        (match as any).atleta_a?.carrera?.escudo_url ||
+                                                        (match as any).delegacion_a_info?.escudo_url ||
+                                                        '/logo_olimpiadas.png'
+                                                    }
                                                     alt=""
                                                     className="w-3 h-3 sm:w-4 sm:h-4 object-contain opacity-70 group-hover/carrera:opacity-100 transition-opacity"
                                                     onError={(e) => { (e.target as HTMLImageElement).src = '/logo_olimpiadas.png' }}
                                                 />
                                                 <span className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest group-hover/carrera:text-white transition-colors">
-                                                    {(match as any).atleta_a_info?.carrera?.nombre || (match as any).atleta_a?.carrera?.nombre || (match as any).carrera_a?.nombre || match.carrera_a?.nombre || getCarreraSubtitle(match, 'a') || ''}
+                                                    {(match as any).carrera_a?.nombre || (match as any).atleta_a?.carrera?.nombre || (match as any).delegacion_a || getCarreraSubtitle(match, 'a') || ''}
                                                 </span>
                                             </Link>
                                         )}
@@ -566,16 +577,14 @@ export default function PublicMatchDetail() {
                                         <div className="relative group/avatar">
                                             {(() => {
                                                 const atletaBIds = {
-                                                    profile_id: (match as any).atleta_b_info?.profile?.id || (match as any).atleta_b?.profile_id || match.athlete_b_id || (match as any).atleta_b_info?.id_profile,
-                                                    jugador_id: (match as any).atleta_b || (match as any).atleta_b_info?.id,
+                                                    profile_id: (match as any).atleta_b?.id || match.athlete_b_id,
+                                                    jugador_id: (match as any).atleta_b?.id || match.athlete_b_id,
                                                 };
 
                                                 return (
                                                     <Link 
                                                         href={
                                                             atletaBIds.profile_id ? `/perfil/${atletaBIds.profile_id}` :
-                                                            (match as any).atleta_b_info?.id ? `/jugador/${(match as any).atleta_b_info.id}` :
-                                                            atletaBIds.jugador_id ? `/jugador/${atletaBIds.jugador_id}` :
                                                             (match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` :
                                                             '/perfil/no-encontrado'
                                                         }
@@ -584,7 +593,13 @@ export default function PublicMatchDetail() {
                                                         <div className="relative">
                                                             <div className={cn("absolute inset-0 rounded-full blur-2xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500", SPORT_GLOW[sportName])} />
                                                             <Avatar 
-                                                                src={(match as any).atleta_b_info?.profile?.avatar_url || (match as any).atleta_b_info?.avatar_url || (match as any).delegacion_b_info?.escudo_url}
+                                                                src={
+                                                                    (match as any).atleta_b?.avatar_url || 
+                                                                    (match as any).atleta_b?.carrera?.escudo_url ||
+                                                                    (match as any).carrera_b?.escudo_url || 
+                                                                    (match as any).delegacion_b_info?.escudo_url ||
+                                                                    '/logo_olimpiadas.png'
+                                                                }
                                                                 size="lg" 
                                                                 className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} 
                                                             />
@@ -614,11 +629,9 @@ export default function PublicMatchDetail() {
                                             (match.athlete_b_id || (match as any).delegacion_b_id || match.carrera_b_id) ? "group-hover/btn:scale-105" : "text-white"
                                         )}>{getDisplayName(match, 'b')}</h2>
                                         {/* Career Link */}
-                                        {isIndividualSport(sportName) && getDisplayName(match, 'b') !== 'TBD' && getDisplayName(match, 'b') !== 'BYE' && !!((match as any).atleta_b_info?.carrera?.nombre || (match as any).atleta_b?.carrera?.nombre || (match as any).carrera_b?.nombre || match.carrera_b?.nombre || getCarreraSubtitle(match, 'b')) && (
+                                        {isIndividualSport(sportName) && getDisplayName(match, 'b') !== 'TBD' && getDisplayName(match, 'b') !== 'BYE' && !!((match as any).carrera_b?.nombre || match.carrera_b?.nombre || getCarreraSubtitle(match, 'b')) && (
                                             <Link
                                                 href={
-                                                    (match as any).atleta_b_info?.carrera?.id ? `/carrera/${(match as any).atleta_b_info.carrera.id}?sport=${encodeURIComponent(sportName)}` :
-                                                    (match as any).atleta_a?.carrera?.id ? `/carrera/${(match as any).atleta_a.carrera.id}?sport=${encodeURIComponent(sportName)}` :
                                                     (match as any).carrera_b?.id ? `/carrera/${(match as any).carrera_b.id}?sport=${encodeURIComponent(sportName)}` :
                                                     match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` :
                                                     (match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` : '#'
@@ -626,13 +639,18 @@ export default function PublicMatchDetail() {
                                                 className="mt-2 group/carrera flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all active:scale-95"
                                             >
                                                 <img
-                                                    src={(match as any).atleta_b_info?.carrera?.escudo_url || (match as any).atleta_b?.carrera?.escudo_url || (match as any).carrera_b?.escudo_url || match.carrera_b?.escudo_url || '/logo_olimpiadas.png'}
+                                                    src={
+                                                        (match as any).carrera_b?.escudo_url || 
+                                                        (match as any).atleta_b?.carrera?.escudo_url ||
+                                                        (match as any).delegacion_b_info?.escudo_url ||
+                                                        '/logo_olimpiadas.png'
+                                                    }
                                                     alt=""
                                                     className="w-3 h-3 sm:w-4 sm:h-4 object-contain opacity-70 group-hover/carrera:opacity-100 transition-opacity"
                                                     onError={(e) => { (e.target as HTMLImageElement).src = '/logo_olimpiadas.png' }}
                                                 />
                                                 <span className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest group-hover/carrera:text-white transition-colors">
-                                                    {(match as any).atleta_b_info?.carrera?.nombre || (match as any).atleta_b?.carrera?.nombre || (match as any).carrera_b?.nombre || match.carrera_b?.nombre || getCarreraSubtitle(match, 'b') || ''}
+                                                    {(match as any).carrera_b?.nombre || (match as any).atleta_b?.carrera?.nombre || (match as any).delegacion_b || getCarreraSubtitle(match, 'b') || ''}
                                                 </span>
                                             </Link>
                                         )}

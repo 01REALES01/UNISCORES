@@ -398,6 +398,9 @@ function UnifiedCard({
     const sideAAbbr = getAbbr(displayNameA);
     const sideBAbbr = getAbbr(displayNameB);
 
+    const sideAIcon = (partido as any).carrera_a?.escudo_url || (partido as any).delegacion_a_info?.escudo_url || (partido as any).atleta_a?.avatar_url;
+    const sideBIcon = (partido as any).carrera_b?.escudo_url || (partido as any).delegacion_b_info?.escudo_url || (partido as any).atleta_b?.avatar_url;
+
     const winnerA = highlightWinner && (
         (sportName !== 'Ajedrez' && Number(scoreDisplay?.a) > Number(scoreDisplay?.b)) ||
         (sportName === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'victoria_a')
@@ -501,10 +504,17 @@ function UnifiedCard({
                         {/* Team A */}
                         <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
                              <div className={cn(
-                                "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-500 shadow-xl",
+                                "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-500 shadow-xl overflow-hidden",
                                 winnerA ? "border-emerald-500/50 text-white shadow-emerald-500/10 scale-105" : "border-white/10 text-white"
                             )}>
-                                {sideAAbbr}
+                                {sideAIcon ? (
+                                    <img 
+                                        src={sideAIcon} 
+                                        alt="" 
+                                        className="w-full h-full object-cover p-2" 
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                    />
+                                ) : sideAAbbr}
                             </div>
                             <span className={cn(
                                 "text-[9px] font-bold uppercase tracking-widest leading-tight line-clamp-2 max-w-[85px] transition-all",
@@ -555,10 +565,17 @@ function UnifiedCard({
                         {/* Team B */}
                         <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
                              <div className={cn(
-                                "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-500 shadow-xl",
+                                "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-500 shadow-xl overflow-hidden",
                                 winnerB ? "border-emerald-500/50 text-white shadow-emerald-500/10 scale-105" : "border-white/10 text-white"
                             )}>
-                                {sideBAbbr}
+                                {sideBIcon ? (
+                                    <img 
+                                        src={sideBIcon} 
+                                        alt="" 
+                                        className="w-full h-full object-cover p-2"
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                    />
+                                ) : sideBAbbr}
                             </div>
                             <span className={cn(
                                 "text-[9px] font-bold uppercase tracking-widest leading-tight line-clamp-2 max-w-[85px] transition-all",
