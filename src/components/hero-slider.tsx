@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { m, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Calendar, MapPin, Zap, Users, Clock } from "lucide-react";
 import { Badge, Button } from "@/components/ui-primitives";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_GLOW, SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
@@ -25,6 +26,7 @@ const getMatchIcon = (match: any, side: 'a' | 'b') => {
 };
 
 export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[], activeFilter?: string }) {
+    const router = useRouter();
     const [currentIndex, setCurrentIndex] = useState(0);
 
     // Reset index when filter changes
@@ -394,9 +396,13 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                 </div>
                             </div>
 
-                            <Link href={`/partido/${currentMatch.id}`}>
+                            <Link href={`/partido/${currentMatch.id}`} className="relative z-30">
                                 <Button
                                     variant="outline"
+                                    onClick={(e) => {
+                                        // Fallback programmatic navigation
+                                        router.push(`/partido/${currentMatch.id}`);
+                                    }}
                                     className={cn(
                                         "rounded-full px-10 h-10 md:h-12 text-[10px] md:text-xs font-black uppercase tracking-[0.25em] bg-white/5 hover:bg-white/10 backdrop-blur-md transition-all duration-300 shadow-none hover:shadow-none whitespace-nowrap",
                                         SPORT_ACCENT[currentMatch.disciplinas?.name] || 'text-white/80',

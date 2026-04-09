@@ -19,11 +19,20 @@ export default function UniqueLoading({
     showFallback = true,
 }: UniqueLoadingProps) {
     const [isSlow, setIsSlow] = useState(false)
+    const [showComfortMessage, setShowComfortMessage] = useState(false)
 
     useEffect(() => {
-        if (!showFallback) return;
-        const timer = setTimeout(() => setIsSlow(true), 6000)
-        return () => clearTimeout(timer)
+        const comfortTimer = setTimeout(() => setShowComfortMessage(true), 2000)
+        
+        let slowTimer: NodeJS.Timeout | null = null;
+        if (showFallback) {
+            slowTimer = setTimeout(() => setIsSlow(true), 6000)
+        }
+        
+        return () => {
+            clearTimeout(comfortTimer)
+            if (slowTimer) clearTimeout(slowTimer)
+        }
     }, [showFallback])
 
     const containerSizes = {
@@ -49,6 +58,14 @@ export default function UniqueLoading({
                         ))}
                     </div>
                 </div>
+
+                {showComfortMessage && !isSlow && (
+                    <div className="text-center px-8 max-w-sm animate-in fade-in slide-in-from-bottom-2 duration-1000">
+                         <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.25em] leading-relaxed">
+                            No te preocupes, estás a punto de ver la información...
+                        </p>
+                    </div>
+                )}
 
                 {isSlow && (
                     <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-700">

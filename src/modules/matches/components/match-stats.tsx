@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
 import { cn } from '@/lib/utils';
 import { Avatar, Badge } from '@/components/ui-primitives';
-import { Trophy, Star, Activity, Flame, Target, Crosshair, Users } from 'lucide-react';
+import { Trophy, Star, Activity, Flame, Target, Users, Crown } from 'lucide-react';
 import { SPORT_COLORS, SPORT_GRADIENT } from '@/lib/constants';
 
 interface MatchStatsProps {
@@ -16,18 +16,32 @@ interface MatchStatsProps {
 const StatRow = ({ label, valueA, valueB, colorA, colorB }: { label: string, valueA: number, valueB: number, colorA: string, colorB: string }) => {
     const total = valueA + valueB || 1;
     return (
-        <div className="flex items-center gap-3 sm:gap-4 py-3 border-b border-white/[0.05] last:border-0">
-            <span className="text-xl sm:text-2xl font-black tabular-nums w-10 text-right drop-shadow-[0_0_10px_currentColor]" style={{ color: colorA }}>{valueA}</span>
-            <div className="flex-1 h-3 bg-black/40 rounded-full overflow-hidden flex p-[2px] border border-white/5 shadow-inner">
-                <div className="h-full rounded-l-full transition-all duration-1000 relative" style={{ width: `${(valueA / total) * 100}%`, backgroundColor: colorA }}>
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+        <div className="flex flex-col gap-2 py-4 border-b border-white/[0.05] last:border-0 relative group">
+            <div className="flex justify-between items-end px-1 mb-1">
+                <div className="flex flex-col">
+                    <span className="text-2xl font-black tabular-nums drop-shadow-[0_0_12px_currentColor]" style={{ color: colorA }}>{valueA}</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-white/30">Local</span>
                 </div>
-                <div className="h-full rounded-r-full transition-all duration-1000 relative" style={{ width: `${(valueB / total) * 100}%`, backgroundColor: colorB }}>
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
+                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-white/90 drop-shadow-sm font-display mb-1">{label}</span>
+                <div className="flex flex-col items-end">
+                    <span className="text-2xl font-black tabular-nums drop-shadow-[0_0_12px_currentColor]" style={{ color: colorB }}>{valueB}</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-white/30">Visitante</span>
                 </div>
             </div>
-            <span className="text-xl sm:text-2xl font-black tabular-nums w-10 text-left drop-shadow-[0_0_10px_currentColor]" style={{ color: colorB }}>{valueB}</span>
-            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-white/50 w-24 sm:w-28 text-right font-display">{label}</span>
+            <div className="relative h-4 bg-black/40 rounded-full overflow-hidden flex p-[3px] border border-white/10 shadow-inner group-hover:border-white/20 transition-all duration-300">
+                <div 
+                    className="h-full rounded-l-full transition-all duration-1000 relative shadow-[0_0_15px_currentColor]" 
+                    style={{ width: `${(valueA / total) * 100}%`, backgroundColor: colorA, color: colorA }}
+                >
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent" />
+                </div>
+                <div 
+                    className="h-full rounded-r-full transition-all duration-1000 relative shadow-[0_0_15px_currentColor]" 
+                    style={{ width: `${(valueB / total) * 100}%`, backgroundColor: colorB, color: colorB }}
+                >
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+                </div>
+            </div>
         </div>
     );
 };
@@ -45,29 +59,31 @@ const LeaderCard = ({ label, player, count, color }: { label: string, player: an
             </div>
         </div>
     );
+    const targetUrl = player.profile.profile_id ? `/perfil/${player.profile.profile_id}` : `/jugador/${player.profile.id}`;
     const cardContent = (
         <div className={cn(
-            "flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.03] border border-white/5 transition-all duration-200",
-            player.profile.profile_id ? "hover:bg-white/[0.08] hover:border-white/10 hover:scale-[1.02] active:scale-[0.98] cursor-pointer" : ""
+            "flex items-center gap-3 py-3 px-4 rounded-xl bg-white/[0.04] border border-white/10 transition-all duration-300 group",
+            "hover:bg-white/[0.08] hover:border-white/20 hover:scale-[1.02] active:scale-[0.98] cursor-pointer shadow-lg"
         )}>
-            <Avatar name={player.profile.nombre} className="w-8 h-8 text-[10px] border border-white/10 shrink-0" />
-            <div className="flex-1 min-w-0">
-                <p className="text-[8px] font-black uppercase tracking-widest text-white/30">{label}</p>
-                <p className="text-[10px] sm:text-xs font-black text-white/80 truncate">{player.profile.nombre}</p>
+            <div className="relative">
+                <Avatar name={player.profile.nombre} className="w-10 h-10 text-[12px] border-2 border-white/20 shrink-0 group-hover:border-white/40 transition-colors" />
+                <div className="absolute -bottom-1 -right-1 bg-black rounded-full p-1 border border-white/20">
+                    <Users size={8} className="text-white/60" />
+                </div>
             </div>
-            <span className="text-sm font-black tabular-nums shrink-0 px-2 py-0.5 rounded-lg border border-white/5 bg-black/40" style={{ color }}>{count}</span>
+            <div className="flex-1 min-w-0">
+                <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-0.5">{label}</p>
+                <p className="text-xs sm:text-sm font-black text-white group-hover:text-emerald-400 transition-colors uppercase tracking-tight leading-tight">{player.profile.nombre}</p>
+            </div>
+            <span className="text-base font-black tabular-nums shrink-0 px-3 py-1 rounded-xl border border-white/10 bg-black/60 shadow-inner group-hover:scale-110 transition-transform" style={{ color }}>{count}</span>
         </div>
     );
 
-    if (player.profile.profile_id) {
-        return (
-            <Link href={`/perfil/${player.profile.profile_id}`}>
-                {cardContent}
-            </Link>
-        );
-    }
-
-    return cardContent;
+    return (
+        <Link href={targetUrl}>
+            {cardContent}
+        </Link>
+    );
 };
 
 export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
@@ -177,14 +193,17 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] blur-[150px] rounded-full pointer-events-none opacity-20" style={{ backgroundColor: sportColorVoli }} />
 
                 {/* Header-like Title */}
-                <div className="flex items-center justify-between relative z-10 w-full border-b border-white/5 pb-6">
-                    <div className="flex items-center gap-4">
-                        <div className={cn("p-2.5 rounded-2xl bg-white/5 border border-white/10 shadow-lg", `text-${sportColorVoli}`)}>
-                            <Activity size={22} className="animate-pulse" style={{ color: sportColorVoli }} />
+                <div className="flex items-center justify-between relative z-10 w-full border-b border-white/10 pb-8">
+                    <div className="flex items-center gap-5">
+                        <div className={cn("p-4 rounded-2xl bg-white/5 border border-white/10 shadow-2xl relative group")}>
+                            <div className="absolute inset-0 bg-emerald-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <Activity size={24} className="animate-pulse relative z-10 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black text-white tracking-tight uppercase">Estadísticas</h3>
-                            <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.2em] mt-0.5">Rendimiento por set</p>
+                            <h3 className="text-3xl font-black text-white tracking-widest uppercase leading-none">Estadísticas</h3>
+                            <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+                                <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> RENDIMIENTO POR SET
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -214,10 +233,28 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                     </div>
                 </div>
 
-                {/* Per-set detail — best of 3 */}
+                {/* Per-set detail — Dynamic list */}
                 <div className="relative z-10 grid grid-cols-1 gap-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 mb-2 px-1">Desglose Técnico</p>
-                    {[1, 2, 3].map((setNum) => {
+                    {(() => {
+                        const existingSets = Object.keys(detalle.sets || {}).map(Number);
+                        const currentSet = detalle.set_actual || 1;
+                        
+                        // Show sets that have scores OR are the current active set
+                        const setsToShow = existingSets.filter(s => {
+                            const scores = (detalle.sets as Record<string, { puntos_a: number; puntos_b: number }>)?.[s];
+                            const hasScore = (scores?.puntos_a ?? 0) > 0 || (scores?.puntos_b ?? 0) > 0;
+                            const isCurrent = s === currentSet;
+                            return hasScore || isCurrent;
+                        });
+
+                        // Always include the current set even if it has no score
+                        if (!setsToShow.includes(currentSet) && match.estado === 'en_curso') {
+                            setsToShow.push(currentSet);
+                        }
+
+                        return setsToShow.sort((a, b) => a - b);
+                    })().map((setNum) => {
                         const scores = (detalle.sets as Record<string, { puntos_a: number; puntos_b: number }>)?.[setNum];
                         const played = scores !== undefined;
                         const isCurrent = setNum === (detalle.set_actual ?? 1) && match.estado === 'en_curso';
@@ -264,18 +301,22 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
             <div className="absolute bottom-0 left-0 w-[250px] h-[250px] blur-[100px] rounded-full pointer-events-none opacity-5" style={{ backgroundColor: teamBColor }} />
 
             {/* Header-like Title */}
-            <div className="flex items-center justify-between relative z-10 w-full border-b border-white/10 pb-6">
-                <div className="flex items-center gap-4">
-                    <div className={cn("p-2.5 rounded-xl bg-white/5 border border-white/10")}>
-                        <Activity size={20} className="animate-pulse" style={{ color: sportColor }} />
+            <div className="flex items-center justify-between relative z-10 w-full border-b border-white/10 pb-8">
+                <div className="flex items-center gap-5">
+                    <div className={cn("p-4 rounded-2xl bg-white/5 border border-white/10 shadow-2xl relative group")}>
+                        <div className="absolute inset-0 bg-emerald-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Activity size={24} className="animate-pulse relative z-10 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
                     </div>
                     <div>
-                        <h3 className="text-2xl font-black text-white tracking-tighter uppercase font-sans leading-none">Estadísticas</h3>
+                        <h3 className="text-3xl font-black text-white tracking-widest uppercase leading-none">Estadísticas</h3>
+                        <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+                             <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> RENDIMIENTO EN TIEMPO REAL
+                        </p>
                     </div>
                 </div>
                 {isProgrammed && (
-                    <div className="bg-white/10 text-white font-black text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-lg border border-white/10">
-                        Próximo Encuentro
+                    <div className="bg-emerald-500/10 text-emerald-400 font-black text-[10px] uppercase tracking-[0.2em] px-4 py-2 rounded-xl border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                        PRÓXIMO ENCUENTRO
                     </div>
                 )}
             </div>
@@ -347,41 +388,46 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                 </div>
             )}
 
-            {/* ═══ MVP & SCORERS ═══ */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 w-full pt-8 border-t border-white/5">
+            {/* ═══ PERFORMANCE SECTION ═══ */}
+            <div className="flex flex-col gap-10 relative z-10 w-full pt-8 border-t border-white/5">
                 
-                {/* MVP Player Card */}
+                {/* MVP Player Card - Hero Position */}
                 {mvp ? (
-                    <div className="relative group overflow-hidden p-[1px] rounded-[2.5rem] bg-gradient-to-br from-amber-300 via-amber-500 to-amber-900 shadow-2xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1">
-                        <Link href={mvp.profile_id ? `/perfil/${mvp.profile_id}` : '#'} className={cn("block h-full relative z-10", !mvp.profile_id && "pointer-events-none")}>
-                            <div className="absolute inset-0 bg-gradient-to-b from-[#201504] to-[#0A0705] rounded-[2.4rem] p-7 sm:p-8 flex flex-col justify-between h-full min-h-[220px]">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl rounded-full" />
-                                <div className="absolute bottom-4 right-4 opacity-5 text-amber-500">
-                                    <Flame size={120} />
-                                </div>
-                                
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="px-3 py-1 rounded-full bg-amber-500 text-black text-[8px] font-black uppercase tracking-[0.2em] shadow-[0_4px_15px_rgba(245,158,11,0.5)]">
-                                        MOST VALUABLE PLAYER
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-5 px-4 flex items-center gap-3">
+                             <Trophy size={14} className="text-amber-500" /> RECONOCIMIENTO INDIVIDUAL
+                        </p>
+                        <div className="relative group overflow-hidden p-[1.5px] rounded-[2.5rem] bg-gradient-to-br from-amber-200 via-amber-500 to-amber-900 shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:-translate-y-1">
+                            <Link href={mvp.profile_id ? `/perfil/${mvp.profile_id}` : `/jugador/${mvp.id}`} className="block h-full relative z-10">
+                                <div className="relative bg-gradient-to-br from-[#1a1409] via-[#0D0A05] to-black rounded-[2.4rem] p-7 sm:p-10 flex flex-col justify-between h-full min-h-[240px] overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                                    
+                                    <div className="flex items-center justify-between mb-8 relative z-10">
+                                        <div className="px-5 py-2 rounded-2xl bg-amber-500 text-black text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_25px_rgba(245,158,11,0.4)] flex items-center gap-2">
+                                            <Crown size={14} /> JUGADOR MÁS VALIOSO
+                                        </div>
+                                        <Trophy size={32} className="text-amber-500/20 group-hover:scale-125 group-hover:text-amber-500/40 transition-all duration-500" />
                                     </div>
-                                    <Trophy size={24} className="text-amber-500/50" />
-                                </div>
-                                
-                                <div className="flex items-center gap-6 relative z-10">
-                                    <div className="relative shrink-0">
-                                        <div className="absolute -inset-2 bg-amber-500/20 rounded-full blur-xl" />
-                                        <Avatar name={mvp.nombre} className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-amber-500 shadow-2xl bg-black" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-xl sm:text-2xl font-black text-white leading-tight mb-2 drop-shadow-md truncate">{mvp.nombre}</p>
-                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                                            <Star size={14} className="fill-amber-500 text-amber-500" />
-                                            <span className="text-lg font-black tabular-nums text-amber-500 leading-none">{mvpPoints} PTS</span>
+                                    
+                                    <div className="flex items-center gap-8 relative z-10">
+                                        <div className="relative shrink-0">
+                                            <div className="absolute -inset-4 bg-amber-500/20 rounded-full blur-2xl animate-pulse" />
+                                            <Avatar name={mvp.nombre} className="w-20 h-20 sm:w-28 sm:h-28 border-[6px] border-amber-500/40 shadow-2xl bg-black ring-2 ring-amber-500/20" />
+                                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg border-4 border-black">
+                                                <Star className="fill-black text-black" size={16} />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-3xl sm:text-5xl font-black text-white leading-tight mb-3 drop-shadow-2xl uppercase tracking-tighter">{mvp.nombre}</p>
+                                            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md">
+                                                <span className="text-2xl font-black tabular-nums text-amber-500 leading-none">{mvpPoints}</span>
+                                                <span className="text-[10px] font-black text-amber-500/60 uppercase tracking-widest">{isBasketball ? 'PUNTOS TOTALES' : (isFootball ? 'GOLES MARCADOS' : 'IMPACTO')}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </Link>
+                            </Link>
+                        </div>
                     </div>
                 ) : (
                     <div className="relative group overflow-hidden rounded-[2.5rem] bg-white/[0.02] border border-white/5 min-h-[220px] flex flex-col items-center justify-center text-center p-8 grayscale opacity-20">
@@ -391,69 +437,114 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                     </div>
                 )}
 
-                {/* Team Scorers – Side by Side */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {/* Team A */}
-                    <div className="bg-white/5 border border-white/10 rounded-3xl p-5 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.08]">
-                        <div className="flex items-center gap-2 mb-4 px-1">
-                            <div className="w-1 h-3 rounded-full" style={{ backgroundColor: sportColor }} />
-                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/80 font-sans">
-                                {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Participantes')}
-                            </p>
+                    <div className="bg-white/[0.02] border border-white/10 rounded-[2rem] p-6 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.05] shadow-xl">
+                        <div className="flex items-center justify-between mb-6 px-1">
+                            <div className="flex items-center gap-3">
+                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sportColor }} />
+                                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/90 font-sans">
+                                    {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Participantes')}
+                                </p>
+                            </div>
+                            <Users size={14} className="text-white/20" />
                         </div>
-                        <div className="space-y-2 flex-1 relative z-10">
+                        <div className="space-y-3 flex-1 relative z-10">
                             {topScorersA.length > 0 ? topScorersA.slice(0, 4).map((player, idx) => {
                                 const row = (
                                     <div key={idx} className={cn(
-                                        "flex items-center gap-3 p-1.5 rounded-xl transition-all",
-                                        player.profile.profile_id ? "hover:bg-white/10 cursor-pointer active:scale-95" : ""
+                                        "flex items-center gap-4 p-2.5 rounded-2xl transition-all relative group/item",
+                                        "hover:bg-white/5 active:scale-[0.98] border border-transparent hover:border-white/10"
                                     )}>
-                                        <Avatar name={player.profile.nombre} className="w-8 h-8 text-[10px] border border-white/10 shrink-0 shadow-lg" />
-                                        <div className="flex-1 min-w-0">
-                                            <span className="text-[11px] font-black text-white/90 truncate block uppercase tracking-tight">{player.profile.nombre}</span>
-                                            {isBasketball && <span className="text-[8px] font-black text-white/30 uppercase tracking-tighter">{player.pts3}T · {player.pts2}D · {player.pts1}L</span>}
+                                        <div className="relative">
+                                            <Avatar name={player.profile.nombre} className="w-10 h-10 text-[12px] border border-white/20 shrink-0 shadow-2xl" />
+                                            <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-black border border-white/10 flex items-center justify-center text-[8px] font-black text-white/60">
+                                                {idx + 1}
+                                            </div>
                                         </div>
-                                        <span className="text-lg font-black tabular-nums text-white/90 shrink-0 drop-shadow-md" style={{ color: sportColor }}>{isFootball ? player.goals : player.points}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-[13px] font-black text-white group-hover/item:text-emerald-400 transition-colors block uppercase tracking-tight leading-snug">
+                                                {player.profile.nombre}
+                                            </span>
+                                            {isBasketball && (
+                                                <span className="text-[9px] font-black text-white/30 uppercase tracking-tighter mt-1 block">
+                                                    {player.pts3}T · {player.pts2}D · {player.pts1}L
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl font-black tabular-nums text-white shrink-0 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" style={{ color: sportColor }}>
+                                                {isFootball ? player.goals : player.points}
+                                            </span>
+                                            {isFootball && <Target size={12} className="text-white/20" />}
+                                        </div>
                                     </div>
                                 );
-                                return player.profile.profile_id ? <Link key={idx} href={`/perfil/${player.profile.profile_id}`}>{row}</Link> : row;
+                                return (
+                                    <Link key={idx} href={player.profile.profile_id ? `/perfil/${player.profile.profile_id}` : `/jugador/${player.profile.id}`}>
+                                        {row}
+                                    </Link>
+                                );
                             }) : (
-                                <div className="flex flex-col items-center justify-center py-6 bg-black/10 rounded-2xl border border-dashed border-white/5">
-                                    <Users size={20} className="mb-2 text-white/5" />
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-white/10">Sin registros</span>
+                                <div className="flex flex-col items-center justify-center py-10 bg-black/20 rounded-[1.5rem] border border-dashed border-white/5 opacity-40">
+                                    <Users size={24} className="mb-3 text-white/10" />
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Sin registros oficiales</span>
                                 </div>
                             )}
                         </div>
                     </div>
 
                     {/* Team B */}
-                    <div className="bg-white/5 border border-white/10 rounded-3xl p-5 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.08]">
-                        <div className="flex items-center gap-2 mb-4 px-1">
-                            <div className="w-1 h-3 rounded-full" style={{ backgroundColor: teamBColor }} />
-                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/80 font-sans">
-                                {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Participantes')}
-                            </p>
+                    <div className="bg-white/[0.02] border border-white/10 rounded-[2rem] p-6 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.05] shadow-xl">
+                        <div className="flex items-center justify-between mb-6 px-1">
+                            <div className="flex items-center gap-3">
+                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teamBColor }} />
+                                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/90 font-sans">
+                                    {isBasketball ? 'Anotadores' : (isFootball ? 'Goleadores' : 'Participantes')}
+                                </p>
+                            </div>
+                            <Users size={14} className="text-white/20" />
                         </div>
-                        <div className="space-y-2 flex-1 relative z-10">
+                        <div className="space-y-3 flex-1 relative z-10">
                             {topScorersB.length > 0 ? topScorersB.slice(0, 4).map((player, idx) => {
                                 const row = (
                                     <div key={idx} className={cn(
-                                        "flex items-center gap-3 p-1.5 rounded-xl transition-all",
-                                        player.profile.profile_id ? "hover:bg-white/10 cursor-pointer active:scale-95" : ""
+                                        "flex items-center gap-4 p-2.5 rounded-2xl transition-all relative group/item",
+                                        "hover:bg-white/5 active:scale-[0.98] border border-transparent hover:border-white/10"
                                     )}>
-                                        <Avatar name={player.profile.nombre} className="w-8 h-8 text-[10px] border border-white/10 shrink-0 shadow-lg" />
-                                        <div className="flex-1 min-w-0">
-                                            <span className="text-[11px] font-black text-white/90 truncate block uppercase tracking-tight">{player.profile.nombre}</span>
-                                            {isBasketball && <span className="text-[8px] font-black text-white/30 uppercase tracking-tighter">{player.pts3}T · {player.pts2}D · {player.pts1}L</span>}
+                                        <div className="relative">
+                                            <Avatar name={player.profile.nombre} className="w-10 h-10 text-[12px] border border-white/20 shrink-0 shadow-2xl" />
+                                            <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-black border border-white/10 flex items-center justify-center text-[8px] font-black text-white/60">
+                                                {idx + 1}
+                                            </div>
                                         </div>
-                                        <span className="text-lg font-black tabular-nums text-white/90 shrink-0 drop-shadow-md">{isFootball ? player.goals : player.points}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-[13px] font-black text-white group-hover/item:text-emerald-400 transition-colors block uppercase tracking-tight leading-snug">
+                                                {player.profile.nombre}
+                                            </span>
+                                            {isBasketball && (
+                                                <span className="text-[9px] font-black text-white/30 uppercase tracking-tighter mt-1 block">
+                                                    {player.pts3}T · {player.pts2}D · {player.pts1}L
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl font-black tabular-nums text-white shrink-0 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                                                {isFootball ? player.goals : player.points}
+                                            </span>
+                                            {isFootball && <Target size={12} className="text-white/20" />}
+                                        </div>
                                     </div>
                                 );
-                                return player.profile.profile_id ? <Link key={idx} href={`/perfil/${player.profile.profile_id}`}>{row}</Link> : row;
+                                return (
+                                    <Link key={idx} href={player.profile.profile_id ? `/perfil/${player.profile.profile_id}` : `/jugador/${player.profile.id}`}>
+                                        {row}
+                                    </Link>
+                                );
                             }) : (
-                                <div className="flex flex-col items-center justify-center py-6 bg-black/10 rounded-2xl border border-dashed border-white/5">
-                                    <Users size={20} className="mb-2 text-white/5" />
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-white/10">Sin registros</span>
+                                <div className="flex flex-col items-center justify-center py-10 bg-black/20 rounded-[1.5rem] border border-dashed border-white/5 opacity-40">
+                                    <Users size={24} className="mb-3 text-white/10" />
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Sin registros oficiales</span>
                                 </div>
                             )}
                         </div>

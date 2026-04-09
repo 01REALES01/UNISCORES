@@ -39,15 +39,14 @@ export const AdminScoreboard = ({
 
   const handleSetClick = (s: number) => {
     if (s === currentSet) return;
+    
+    // Allow jumping around but with a toast reminder
     if (s < currentSet) {
-      toast.error('No se puede volver a un set anterior.');
-      return;
+      toast.info(`Regresando al Set ${s}. Los puntos registrados aquí se sumarán al total.`);
+    } else if (s > currentSet + 1) {
+      toast.warning(`Saltando al Set ${s}. Asegúrate de haber completado los anteriores.`);
     }
-    if (s > currentSet + 1) {
-      toast.error(`Debes completar el Set ${currentSet} antes de avanzar al Set ${s}.`);
-      return;
-    }
-    // Valid next set — pre-fill scores and ask for confirmation
+
     setEditPuntosA(detalle.sets?.[currentSet]?.puntos_a ?? 0);
     setEditPuntosB(detalle.sets?.[currentSet]?.puntos_b ?? 0);
     setPendingSet(s);
@@ -116,71 +115,50 @@ export const AdminScoreboard = ({
 
               <div className="flex flex-col gap-2 w-full">
                 {!isFinal && (
-                  <div className="flex items-center gap-2 p-1.5 rounded-2xl border w-full" style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}>
+                    <div className="flex items-center gap-2 p-1.5 rounded-2xl border w-full shrink-0" style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}>
                     {match.estado === 'programado' ? (
                       <button onClick={() => setShowModeModal(true)}
                         className="flex-1 h-12 rounded-[0.875rem] flex items-center justify-center gap-2.5 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 text-white shadow-lg"
                         style={{ background: sportColor, boxShadow: `0 4px 15px ${sportColor}40` }}
                       >
                         <Play size={16} />
-                        Iniciar
+                        Iniciar Partido
                       </button>
                     ) : (
-                      <div className="flex-1 h-12 rounded-[0.875rem] flex items-center justify-center gap-2.5 font-black text-[10px] uppercase tracking-widest border"
-                        style={{ background: `${sportColor}10`, color: sportColor, borderColor: `${sportColor}25` }}
-                      >
-                        EN CURSO
-                      </div>
-                    )}
-                    {isLive && disciplinaName === 'Voleibol' && currentSet <= 2 ? (
-                      <button
-                        onClick={() => handleSetClick(currentSet + 1)}
-                        className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center transition-all active:scale-95"
-                        style={{ borderColor: `${sportColor}25`, background: `${sportColor}10`, color: sportColor }}
-                        title={`Avanzar al Set ${currentSet + 1}`}
-                      >
-                        <ArrowRight size={16} />
-                      </button>
-                    ) : isLive && disciplinaName === 'Voleibol' && currentSet === 3 ? (
-                      <button
-                        onClick={() => handleSetClick(4)}
-                        className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center text-white/25 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all active:scale-95"
-                        style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}
-                        title="Finalizar Partido"
-                      >
-                        <Square size={16} />
-                      </button>
-                    ) : (
-                      <button onClick={onFinalizar}
-                        className="w-12 h-12 rounded-[0.875rem] border flex items-center justify-center text-white/25 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all active:scale-95"
-                        style={{ borderColor: `${sportColor}10`, background: `${sportColor}04` }}
-                        title="Finalizar"
-                      >
-                        <Square size={16} />
-                      </button>
+                      <>
+                        <div className="flex-1 h-12 rounded-[0.875rem] flex items-center justify-center gap-2.5 font-black text-[10px] uppercase tracking-widest border"
+                          style={{ background: `${sportColor}10`, color: sportColor, borderColor: `${sportColor}25` }}
+                        >
+                          EN CURSO
+                        </div>
+                        {isLive && (
+                          <button onClick={onFinalizar}
+                            className="px-6 h-12 rounded-[0.875rem] border flex items-center justify-center gap-2 text-rose-500 border-rose-500/30 bg-rose-500/5 hover:bg-rose-500 hover:text-white transition-all active:scale-95 font-black text-[10px] uppercase tracking-widest"
+                            title="Finalizar Partido"
+                          >
+                            <Square size={14} fill="currentColor" />
+                            Finalizar
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
-                {isLive && disciplinaName === 'Voleibol' && (
+                 {isLive && (disciplinaName === 'Voleibol' || disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa') && (
                   <div className="flex items-center gap-2 px-1">
-                    {[1, 2, 3].map(s => {
+                    {[1, 2, 3, 4, 5].map(s => {
                       const isActive = currentSet === s;
-                      const isPast = s < currentSet;
-                      const isFutureFar = s > currentSet + 1;
-                      const isDisabled = isPast || isFutureFar;
                       return (
                         <button
                           key={s}
                           onClick={() => handleSetClick(s)}
-                          className="flex-1 h-9 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95"
+                          className="flex-1 h-9 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 border"
                           style={isActive
-                            ? { background: sportColor, color: '#000', boxShadow: `0 2px 10px ${sportColor}40` }
-                            : isDisabled
-                              ? { background: `${sportColor}05`, color: `${sportColor}30`, border: `1px solid ${sportColor}10`, cursor: 'not-allowed' }
-                              : { background: `${sportColor}10`, color: `${sportColor}80`, border: `1px solid ${sportColor}20` }
+                            ? { background: sportColor, color: '#000', borderColor: 'transparent', boxShadow: `0 2px 10px ${sportColor}40` }
+                            : { background: `${sportColor}05`, color: `${sportColor}60`, borderColor: `${sportColor}20` }
                           }
                         >
-                          Set {s}
+                          S{s}
                         </button>
                       );
                     })}

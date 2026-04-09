@@ -10,41 +10,17 @@ import type { PartidoWithRelations } from "@/modules/matches/types";
 // partidos.carrera_a_id / carrera_b_id → carreras
 // partidos.athlete_a_id / athlete_b_id → profiles
 const MATCH_COLUMNS = [
-    'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle',
-    'fase, grupo, bracket_order, delegacion_a, delegacion_b',
-    'carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
-    'disciplinas:disciplina_id(name)',
-    'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
-    'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
-    'atleta_a:profiles!athlete_a_id(full_name, avatar_url)',
-    'atleta_b:profiles!athlete_b_id(full_name, avatar_url)',
+    'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
+    'disciplinas:disciplina_id(id, name)',
+    'carrera_a:carreras!carrera_a_id(id, nombre, escudo_url)',
+    'carrera_b:carreras!carrera_b_id(id, nombre, escudo_url)',
+    'atleta_a:profiles!athlete_a_id(id, full_name, avatar_url, carrera:carrera_id(id, nombre, escudo_url))',
+    'atleta_b:profiles!athlete_b_id(id, full_name, avatar_url, carrera:carrera_id(id, nombre, escudo_url))',
+    'delegacion_a_info:delegaciones!delegacion_a_id(id, escudo_url)',
+    'delegacion_b_info:delegaciones!delegacion_b_id(id, escudo_url)'
 ].join(', ');
 
-const activeMatchChannels = new Set<number>();
-
-function subscribeToMatch(id: number) {
-    if (typeof window === 'undefined') return;
-    if (activeMatchChannels.has(id)) return;
-    activeMatchChannels.add(id);
-
-    let debounce: ReturnType<typeof setTimeout> | null = null;
-
-    supabase
-        .channel(`match:${id}:changes`)
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'partidos', filter: `id=eq.${id}` },
-            () => {
-                if (debounce) clearTimeout(debounce);
-                debounce = setTimeout(() => {
-                    globalMutate(`match:${id}`);
-                }, 300);
-            }
-        )
-        .subscribe();
-}
-
-export function useMatch(id: number | null | undefined) {
+export function useMatch(id: number | string | null | undefined) {
     const { data, error, isLoading, mutate } = useSWR(
         id ? `match:${id}` : null,
         async () => {
@@ -59,14 +35,48 @@ export function useMatch(id: number | null | undefined) {
             return data as unknown as PartidoWithRelations;
         },
         {
-            revalidateOnFocus: false,
+            revalidateOnFocus: true,
+            revalidateOnReconnect: true,
             dedupingInterval: 5000,
         }
     );
 
     useEffect(() => {
-        if (id) subscribeToMatch(id);
-    }, [id]);
+        if (!id || typeof window === 'undefined') return;
+
+        let activeChannel: any = null;
+
+        const setupSubscription = () => {
+            if (activeChannel?.state === 'joined') return;
+            if (activeChannel) supabase.removeChannel(activeChannel);
+
+            activeChannel = supabase
+                .channel(`match:${id}:changes`)
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'partidos', filter: `id=eq.${id}` },
+                    () => {
+                        console.log(`[useMatch:${id}] Postgres change detected, mutating...`);
+                        mutate();
+                    }
+                )
+                .subscribe();
+        };
+
+        setupSubscription();
+
+        const handleRevalidate = () => {
+            mutate();
+            setupSubscription();
+        };
+
+        window.addEventListener('app:revalidate', handleRevalidate);
+
+        return () => {
+            window.removeEventListener('app:revalidate', handleRevalidate);
+            if (activeChannel) supabase.removeChannel(activeChannel);
+        };
+    }, [id, mutate]);
 
     return {
         match: data ?? null,

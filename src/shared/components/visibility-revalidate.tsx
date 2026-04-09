@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import { mutate } from "swr";
 import { supabase } from "@/lib/supabase";
 
-// Only revalidate if user was away for 15+ seconds — prevents reload on quick tab switches
-const MIN_HIDDEN_MS = 15_000;
+// Only revalidate if user was away for 2+ seconds — prevents reload on quick glitches
+const MIN_HIDDEN_MS = 2_000;
 
 /**
  * Revalidates all SWR data when the user returns after being away for 15+ seconds.

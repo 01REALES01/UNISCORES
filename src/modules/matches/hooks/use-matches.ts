@@ -61,28 +61,9 @@ const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
     }
 };
 
-// ─── Global Realtime Subscription (singleton) ─────────────────────────────────
-let isMatchesSubscribed = false;
+// ─── Managed Realtime Hook ───────────────────────────────────────────────────
+let globalChannel: any = null;
 
-function subscribeToMatches() {
-    if (typeof window === 'undefined') return;
-    if (isMatchesSubscribed) return;
-    isMatchesSubscribed = true;
-
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-    supabase
-        .channel('global:partidos:changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
-            if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                globalMutate('global:partidos');
-            }, 800);
-        })
-        .subscribe();
-}
-
-// ─── Hook ────────────────────────────────────────────────────────────────────
 export function useMatches() {
     const { data, error, isLoading, mutate } = useSWR(
         'global:partidos',
@@ -90,14 +71,59 @@ export function useMatches() {
         {
             revalidateOnReconnect: true,
             revalidateOnMount: true,
-            dedupingInterval: 10000,
+            revalidateOnFocus: true,
+            dedupingInterval: 5000,
             keepPreviousData: true,
         }
     );
 
     useEffect(() => {
-        subscribeToMatches();
-    }, []);
+        if (typeof window === 'undefined') return;
+
+        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+        const setupSubscription = () => {
+            // If already subscribed and healthy, skip
+            if (globalChannel?.state === 'joined') return;
+            
+            // Clean up old channel if present
+            if (globalChannel) {
+                supabase.removeChannel(globalChannel);
+            }
+
+            console.log('[useMatches] Initializing realtime subscription...');
+            globalChannel = supabase
+                .channel('global:partidos:changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
+                    if (debounceTimer) clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        console.log('[useMatches] Realtime change detected, mutating...');
+                        mutate();
+                    }, 500);
+                })
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') console.log('[useMatches] Realtime connected');
+                    if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                        console.warn('[useMatches] Realtime disconnected, state:', status);
+                    }
+                });
+        };
+
+        setupSubscription();
+
+        const handleRevalidate = () => {
+            console.log('[useMatches] Global revalidate: refreshing data & verifying realtime');
+            mutate();
+            setupSubscription(); // Re-verify/re-connect if channel died
+        };
+
+        window.addEventListener('app:revalidate', handleRevalidate);
+        
+        return () => {
+            window.removeEventListener('app:revalidate', handleRevalidate);
+            if (debounceTimer) clearTimeout(debounceTimer);
+        };
+    }, [mutate]);
 
     return {
         matches: data || [],

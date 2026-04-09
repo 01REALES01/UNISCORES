@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button, Input, Badge, Avatar } from "@/components/ui-primitives";
-import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle, Minus, Edit2, Check } from "lucide-react";
+import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle, Minus, Edit2, Check, Activity } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { addPoints, removePoints, setPoints, getCurrentScore, ScoreDetail, recalculateTotals, getCurrentPeriodNumber, getPeriodDuration } from "@/lib/sport-scoring";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,11 +62,24 @@ type Evento = {
     jugadores?: Jugador;
 };
 
-const EVENTOS_TIPOS = [
-    { value: 'gol', label: '⚽ Gol', color: 'success' },
-    { value: 'tarjeta_amarilla', label: '🟨 Tarjeta Amarilla', color: 'warning' },
-    { value: 'tarjeta_roja', label: '🟥 Tarjeta Roja', color: 'danger' },
-];
+const getEventosTipos = (sport: string) => {
+    if (sport === 'Baloncesto') return [
+        { value: 'punto_1', label: '1️⃣ +1 Punto', color: 'success' },
+        { value: 'punto_2', label: '2️⃣ +2 Puntos', color: 'success' },
+        { value: 'punto_3', label: '3️⃣ +3 Puntos', color: 'warning' },
+        { value: 'falta', label: '⛔ Falta', color: 'danger' },
+    ];
+    if (sport === 'Voleibol') return [
+        { value: 'punto', label: '🏐 Punto', color: 'success' },
+        { value: 'cambio', label: '🔄 Cambio', color: 'warning' },
+    ];
+    // Fútbol y otros
+    return [
+        { value: 'gol', label: '⚽ Gol', color: 'success' },
+        { value: 'tarjeta_amarilla', label: '🟨 Tarjeta Amarilla', color: 'warning' },
+        { value: 'tarjeta_roja', label: '🟥 Tarjeta Roja', color: 'danger' },
+    ];
+};
 
 export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchModalProps) {
     const [loading, setLoading] = useState(false);
@@ -116,17 +129,25 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
     const openAdvancedEdit = () => {
         const d = localDetalle || {};
         const sport = match.disciplinas?.name || '';
-        
+
         setManualScoreA((d.total_a ?? d.goles_a ?? d.puntos_a ?? 0).toString());
         setManualScoreB((d.total_b ?? d.goles_b ?? d.puntos_b ?? 0).toString());
         setManualMinute(minutoActual);
-        
-        if (sport === 'Baloncesto') setManualPeriod(d.cuarto_actual || 1);
-        else if (sport === 'Fútbol') setManualPeriod(d.tiempo_actual || 1);
-        else setManualPeriod(d.set_actual || 1);
-        
-        setAdvancedSets(JSON.parse(JSON.stringify(d.sets || {})));
-        setAdvancedSetActual(d.set_actual || 1);
+
+        if (sport === 'Baloncesto') {
+            setManualPeriod(d.cuarto_actual || 1);
+            setAdvancedSets(JSON.parse(JSON.stringify(d.cuartos || {})));
+            setAdvancedSetActual(d.cuarto_actual || 1);
+        } else if (sport === 'Fútbol') {
+            setManualPeriod(d.tiempo_actual || 1);
+            setAdvancedSets({});
+            setAdvancedSetActual(1);
+        } else {
+            setManualPeriod(d.set_actual || 1);
+            setAdvancedSets(JSON.parse(JSON.stringify(d.sets || {})));
+            setAdvancedSetActual(d.set_actual || 1);
+        }
+
         setShowAdvancedEdit(true);
     };
 
@@ -140,6 +161,22 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                 [field]: typeof val === 'number' ? Math.max(0, val) : 0
             }
         }));
+    };
+
+    const handleDeleteSet = (setNum: number) => {
+        const nextSets = { ...advancedSets };
+        delete nextSets[setNum];
+        setAdvancedSets(nextSets);
+        
+        // Si borramos el periodo actual, retroceder al anterior disponible o al 1
+        if (manualPeriod === setNum) {
+            const remainingSets = Object.keys(nextSets).map(Number).sort((a,b) => b-a);
+            const fallback = remainingSets.find(s => s < setNum) || remainingSets[0] || 1;
+            setManualPeriod(fallback);
+            setAdvancedSetActual(fallback);
+        }
+        
+        toast.success(`Set ${setNum} eliminado. Recuerda Confirmar para actualizar el marcador global.`);
     };
 
     const saveAdvancedEdit = async () => {
@@ -737,22 +774,24 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                 <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 sm:space-y-10 relative z-10 custom-scrollbar">
                     {/* Period Selector - Intuitive Navigation */}
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-2 px-2 no-scrollbar">
-                        {[1, 2, 3, 4, 5].map(p => {
+                        {(match.disciplinas?.name === 'Baloncesto' ? [1, 2, 3, 4] : match.disciplinas?.name === 'Fútbol' ? [1, 2] : [1, 2, 3, 4, 5]).map(p => {
                             const sport = match.disciplinas?.name || '';
                             const isActive = manualPeriod === p;
                             const label = sport === 'Baloncesto' ? `${p}º cuarto` : sport === 'Fútbol' ? `${p}º tiempo` : `Set ${p}`;
                             return (
-                                <button 
-                                    key={p} 
+                                <button
+                                    key={p}
                                     onClick={() => {
                                         setManualPeriod(p);
                                         if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
                                             setAdvancedSetActual(p);
+                                        } else if (sport === 'Baloncesto') {
+                                            setAdvancedSetActual(p);
                                         }
                                     }}
                                     className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
-                                        isActive 
-                                        ? 'bg-indigo-500 border-indigo-400 text-black shadow-lg shadow-indigo-500/20' 
+                                        isActive
+                                        ? 'bg-indigo-500 border-indigo-400 text-black shadow-lg shadow-indigo-500/20'
                                         : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:bg-white/10'
                                     }`}
                                 >
@@ -957,8 +996,9 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                                             value={manualPeriod} 
                                             onChange={setManualPeriod}
                                             color="amber"
-                                            sublabel="Etapa Actual"
+                                            sublabel="Set en Vivo"
                                         />
+                                        <p className="text-[8px] font-black text-amber-500/60 uppercase absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap tracking-widest">Este set se proyecta al público</p>
                                     </div>
                                 </div>
 
@@ -967,20 +1007,89 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                                     <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 space-y-6">
                                         <div className="flex items-center justify-between">
                                             <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Desglose por Períodos</h5>
-                                            <Badge variant="outline" className="text-[8px] border-white/10 text-slate-500">OPCIONAL</Badge>
                                         </div>
                                         
-                                        {(match.disciplinas?.name === 'Voleibol' || match.disciplinas?.name === 'Tenis' || match.disciplinas?.name === 'Tenis de Mesa') ? (
+                                        {match.disciplinas?.name === 'Baloncesto' ? (
+                                            /* ── Baloncesto: 4 cuartos + prórrogas ── */
+                                            <div className="space-y-6">
+                                                {[1, 2, 3, 4].map(qNum => (
+                                                    <div key={qNum} className={`p-4 rounded-2xl border transition-colors ${manualPeriod === qNum ? 'bg-orange-500/10 border-orange-500/20' : 'bg-black/20 border-white/5'}`}>
+                                                        <p 
+                                                            className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2 cursor-pointer group/header"
+                                                            onClick={() => setManualPeriod(qNum)}
+                                                        >
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${manualPeriod === qNum ? 'bg-orange-500 animate-pulse' : 'bg-slate-700'}`} />
+                                                            {qNum}º CUARTO {manualPeriod === qNum && <span className="text-orange-400 font-bold ml-auto">(EN VIVO)</span>}
+                                                            {advancedSets[qNum] && (
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); handleDeleteSet(qNum); }}
+                                                                    className="ml-2 p-1.5 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                                                                    title="Eliminar este cuarto"
+                                                                >
+                                                                    <X size={12} />
+                                                                </button>
+                                                            )}
+                                                        </p>
+                                                        <div className="flex items-center justify-between gap-8 mb-4">
+                                                            <div className="flex-1 flex flex-col gap-1">
+                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">{match.carrera_a?.nombre || match.equipo_a}</span>
+                                                                <div className="flex items-center gap-3">
+                                                                    <button onClick={() => handleAdvChange(qNum, 'puntos_a', ((advancedSets[qNum]?.puntos_a || 0) - 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500">-</button>
+                                                                    <span className="text-xl font-black text-white font-mono w-6 text-center">{advancedSets[qNum]?.puntos_a || 0}</span>
+                                                                    <button onClick={() => handleAdvChange(qNum, 'puntos_a', ((advancedSets[qNum]?.puntos_a || 0) + 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-orange-400">+</button>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex-1 flex flex-col gap-1 items-end">
+                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">{match.carrera_b?.nombre || match.equipo_b}</span>
+                                                                <div className="flex items-center gap-3">
+                                                                    <button onClick={() => handleAdvChange(qNum, 'puntos_b', ((advancedSets[qNum]?.puntos_b || 0) - 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500">-</button>
+                                                                    <span className="text-xl font-black text-white font-mono w-6 text-center">{advancedSets[qNum]?.puntos_b || 0}</span>
+                                                                    <button onClick={() => handleAdvChange(qNum, 'puntos_b', ((advancedSets[qNum]?.puntos_b || 0) + 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-purple-400">+</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {manualPeriod !== qNum && (
+                                                            <button 
+                                                                onClick={() => setManualPeriod(qNum)}
+                                                                className="w-full py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[9px] font-black uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-all"
+                                                            >
+                                                                Proyectar este Cuarto (EN VIVO)
+                                                            </button>
+                                                        )}
+                                                        {manualPeriod === qNum && (
+                                                            <div className="w-full py-2 rounded-xl bg-orange-500/20 border border-orange-500/40 text-orange-400 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                                                                <Activity size={12} className="animate-pulse" />
+                                                                Proyectado actualmente (EN VIVO)
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (match.disciplinas?.name === 'Voleibol' || match.disciplinas?.name === 'Tenis' || match.disciplinas?.name === 'Tenis de Mesa') ? (
+                                            /* ── Voleibol / Tenis: sets ── */
                                             <div className="space-y-6">
                                                 {[1, 2, 3, 4, 5].map(setNum => (
                                                     <div key={setNum} className={`p-4 rounded-2xl border transition-colors ${manualPeriod === setNum ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-black/20 border-white/5'}`}>
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2">
+                                                        <p 
+                                                            className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2 cursor-pointer group/header"
+                                                            onClick={() => setManualPeriod(setNum)}
+                                                        >
                                                             <span className={`w-1.5 h-1.5 rounded-full ${manualPeriod === setNum ? 'bg-indigo-500 animate-pulse' : 'bg-slate-700'}`} />
-                                                            SET {setNum} {manualPeriod === setNum && <span className="text-indigo-400 font-bold ml-auto">(ACTUAL)</span>}
+                                                            SET {setNum} {manualPeriod === setNum && <span className="text-indigo-400 font-bold ml-auto">(EN VIVO)</span>}
+                                                            {advancedSets[setNum] && (
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); handleDeleteSet(setNum); }}
+                                                                    className="ml-2 p-1.5 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                                                                    title="Eliminar este set"
+                                                                >
+                                                                    <X size={12} />
+                                                                </button>
+                                                            )}
                                                         </p>
-                                                        <div className="flex items-center justify-between gap-8">
+                                                        <div className="flex items-center justify-between gap-8 mb-4">
                                                             <div className="flex-1 flex flex-col gap-1">
-                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">Equipo A</span>
+                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">{match.carrera_a?.nombre || match.equipo_a}</span>
                                                                 <div className="flex items-center gap-3">
                                                                     <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a'] || 0) - 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500">-</button>
                                                                     <span className="text-xl font-black text-white font-mono w-6 text-center">{advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a'] || 0}</span>
@@ -988,16 +1097,39 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                                                                 </div>
                                                             </div>
                                                             <div className="flex-1 flex flex-col gap-1 items-end">
-                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">Equipo B</span>
+                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">{match.carrera_b?.nombre || match.equipo_b}</span>
                                                                 <div className="flex items-center gap-3">
                                                                     <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] || 0) - 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500">-</button>
                                                                     <span className="text-xl font-black text-white font-mono w-6 text-center">{advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] || 0}</span>
-                                                                    <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] || 0) + 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-purple-400">+</button>
+                                                                    <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] || 0) + 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-indigo-400">+</button>
                                                                 </div>
                                                             </div>
                                                         </div>
+
+                                                        {manualPeriod !== setNum && (
+                                                            <button 
+                                                                onClick={() => setManualPeriod(setNum)}
+                                                                className="w-full py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 text-[9px] font-black uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all shadow-sm"
+                                                            >
+                                                                Proyectar este Set (EN VIVO)
+                                                            </button>
+                                                        )}
+                                                        {manualPeriod === setNum && (
+                                                            <div className="w-full py-2 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                                                                <Activity size={12} className="animate-pulse" />
+                                                                Proyectado actualmente (EN VIVO)
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
+                                            </div>
+                                        ) : match.disciplinas?.name === 'Fútbol' ? (
+                                            /* ── Fútbol: 2 tiempos con goles ── */
+                                            <div className="py-8 text-center bg-black/20 rounded-2xl border border-dashed border-emerald-500/10 space-y-4">
+                                                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-2xl">⚽</div>
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-[260px] mx-auto">
+                                                    Ajusta goles y minuto arriba. Los goles se registran a nivel total del partido.
+                                                </p>
                                             </div>
                                         ) : (
                                             <div className="py-12 text-center bg-black/20 rounded-2xl border border-dashed border-white/5">
@@ -1044,7 +1176,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                                     <div className="space-y-3">
                                         <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Categoría de Evento</label>
                                         <div className="flex gap-2">
-                                            {EVENTOS_TIPOS.map(tipo => (
+                                            {getEventosTipos(match.disciplinas?.name || '').map((tipo: { value: string; label: string; color: string }) => (
                                                 <button
                                                     key={tipo.value}
                                                     onClick={() => setNuevoEvento({ ...nuevoEvento, tipo: tipo.value })}

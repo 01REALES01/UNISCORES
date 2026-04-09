@@ -126,17 +126,32 @@ export default function MatchControlPage() {
     const bgGradient = DISCIPLINES_COLORS[disciplinaName] || 'from-slate-700 to-slate-900';
     const actions = GET_SPORT_ACTIONS(disciplinaName);
     const { scoreA, scoreB, labelA, labelB, extra: scoreExtra } = getCurrentScore(disciplinaName, match.marcador_detalle || {});
+    const TEAM_SPORTS = ['Fútbol', 'Voleibol', 'Baloncesto'];
+    const isTeamSport = TEAM_SPORTS.includes(disciplinaName);
 
     return (
         <div className="min-h-screen bg-background pb-24 text-white">
-            <AdminMatchHeader 
-                match={match} 
-                disciplinaName={disciplinaName} 
-                bgGradient={bgGradient} 
-                activeEditors={activeEditors} 
+            <AdminMatchHeader
+                match={match}
+                disciplinaName={disciplinaName}
+                bgGradient={bgGradient}
+                activeEditors={activeEditors}
             />
 
             <div className="relative z-10 max-w-7xl mx-auto px-6">
+                {/* Edición Completa — solo deportes de equipo */}
+                {isTeamSport && (
+                    <div className="flex items-center justify-end mb-6 -mt-4">
+                        <button
+                            onClick={() => setShowFullEditor(true)}
+                            className="group relative flex items-center gap-3 px-8 py-4 rounded-[1.5rem] bg-indigo-600 border border-indigo-400/50 text-white hover:bg-indigo-500 active:scale-95 transition-all text-xs font-black uppercase tracking-[0.2em] shadow-[0_4px_20px_rgba(79,70,229,0.4)] overflow-hidden"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                            <Edit3 size={18} className="relative z-10 group-hover:rotate-12 transition-transform" />
+                            <span className="relative z-10">Edición Completa</span>
+                        </button>
+                    </div>
+                )}
                 {match.marcador_detalle?.tipo === 'carrera' ? (
                     <Card className="p-8 mb-12">
                         <RaceControl

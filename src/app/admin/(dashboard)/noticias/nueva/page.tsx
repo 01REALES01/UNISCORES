@@ -41,7 +41,7 @@ export default function NuevaNoticiaPage() {
         const fetchData = async () => {
             const [partidosRes, carrerasRes] = await Promise.all([
                 safeQuery(
-                    supabase.from('partidos').select('id, equipo_a, equipo_b, disciplinas(name)').order('fecha', { ascending: false }),
+                    supabase.from('partidos').select('id, equipo_a, equipo_b, disciplinas(name)').order('fecha', { ascending: true }),
                     'editor-partidos'
                 ),
                 safeQuery(

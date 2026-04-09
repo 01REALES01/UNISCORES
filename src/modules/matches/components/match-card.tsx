@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui-primitives";
 import { MoveRight, Zap, Star, Trophy, Calendar, Users } from "lucide-react";
@@ -28,6 +29,7 @@ export function getRelativeDate(fecha: string, includeTime = true) {
 }
 
 export function LiveMatchCard({ partido }: { partido: Partido }) {
+  const router = useRouter();
   const sportName = partido.disciplinas?.name || 'Deporte';
   const { scoreA, scoreB, extra, subScoreA, subScoreB, labelA, labelB } = getCurrentScore(sportName, partido.marcador_detalle || {});
   const genero = (partido.genero || 'masculino').toLowerCase();
@@ -35,12 +37,15 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
   const isSetSport = ['Tenis', 'Tenis de Mesa', 'V\u00f3leibol', 'Voleibol', 'B\u00e1dminton', 'Badminton'].includes(sportName);
 
   return (
-    <Link href={`/partido/${partido.id}`} className="group block h-full">
-      <div className={cn(
-        "relative h-full overflow-hidden rounded-[2rem] border bg-black/20 backdrop-blur-xl transition-all duration-500 shadow-[0_4px_24px_rgba(0,0,0,0.4)] hover:shadow-2xl hover:-translate-y-1 cursor-pointer",
-        SPORT_BORDER[sportName] || 'border-white/10',
-        SPORT_GLOW[sportName] || 'hover:shadow-indigo-500/10'
-      )}>
+    <Link href={`/partido/${partido.id}`} className="group block h-full relative z-10">
+      <div 
+        onClick={() => router.push(`/partido/${partido.id}`)}
+        className={cn(
+          "relative h-full overflow-hidden rounded-[2rem] border bg-black/20 backdrop-blur-xl transition-all duration-500 shadow-[0_4px_24px_rgba(0,0,0,0.4)] hover:shadow-2xl hover:-translate-y-1 cursor-pointer",
+          SPORT_BORDER[sportName] || 'border-white/10',
+          SPORT_GLOW[sportName] || 'hover:shadow-indigo-500/10'
+        )}
+      >
         <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-50 group-hover:opacity-70 transition-opacity`} />
         {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
         <div className="absolute -right-[10%] -bottom-[10%] flex items-center justify-center pointer-events-none select-none opacity-[0.15] group-hover:opacity-[0.25] transition-all duration-1000 rotate-[-12deg] z-0">
@@ -113,7 +118,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
           ) : (
             <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
               <div className="flex flex-col items-center gap-1.5 md:gap-2 text-center min-w-0">
-                <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-black/40 shrink-0" />
+                <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url || partido.delegacion_a_info?.escudo_url} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-black/40 shrink-0" />
                 <div className="flex flex-col items-center gap-0.5 w-full min-w-0">
                   <span className="text-sm md:text-lg font-bold text-white leading-tight line-clamp-2 px-1 break-words">{getDisplayName(partido, 'a')}</span>
                   {getCarreraSubtitle(partido, 'a') && (
@@ -210,7 +215,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
               </div>
 
               <div className="flex flex-col items-center gap-1.5 md:gap-2 text-center min-w-0">
-                <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-black/40 shrink-0" />
+                <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url || partido.delegacion_b_info?.escudo_url} size="lg" className="w-10 h-10 md:w-14 md:h-14 text-lg md:text-xl border-2 border-white/10 shadow-lg bg-black/40 shrink-0" />
                 <div className="flex flex-col items-center gap-0.5 w-full min-w-0">
                   <span className="text-sm md:text-lg font-bold text-white leading-tight line-clamp-2 px-1 break-words">{getDisplayName(partido, 'b')}</span>
                   {getCarreraSubtitle(partido, 'b') && (
@@ -235,12 +240,15 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
 }
 
 export function UpcomingMatchCard({ partido }: { partido: Partido }) {
+  const router = useRouter();
   const sportName = partido.disciplinas?.name || 'Deporte';
   const genero = (partido.genero || 'masculino').toLowerCase();
 
   return (
-    <Link href={`/partido/${partido.id}`} className="group block">
-      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 hover:bg-black/30 shadow-[0_4px_20px_rgba(0,0,0,0.35)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:border-white/20 transition-all duration-300 p-3 sm:p-4 hover:-translate-y-1 cursor-pointer">
+    <Link href={`/partido/${partido.id}`} className="group block relative z-10">
+      <div 
+        onClick={() => router.push(`/partido/${partido.id}`)}
+        className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 hover:bg-black/30 shadow-[0_4px_20px_rgba(0,0,0,0.35)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:border-white/20 transition-all duration-300 p-3 sm:p-4 hover:-translate-y-1 cursor-pointer">
         <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-30 group-hover:opacity-50 transition-opacity`} />
         {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
         <div className="absolute -right-[12%] -bottom-[12%] flex items-center justify-center pointer-events-none select-none opacity-[0.1] group-hover:opacity-[0.2] transition-all duration-1000 rotate-[-12deg] z-0 text-white">
@@ -282,7 +290,7 @@ export function UpcomingMatchCard({ partido }: { partido: Partido }) {
         ) : (
           <div className="relative z-10 space-y-3 my-2">
             <div className="flex items-center gap-3">
-              <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-black/40" />
+              <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url || partido.delegacion_a_info?.escudo_url} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-black/40" />
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-bold text-white truncate">{getDisplayName(partido, 'a')}</span>
                 {getCarreraSubtitle(partido, 'a') && (
@@ -292,7 +300,7 @@ export function UpcomingMatchCard({ partido }: { partido: Partido }) {
             </div>
 
             <div className="flex items-center gap-3">
-              <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-black/40" />
+              <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url || partido.delegacion_b_info?.escudo_url} size="sm" className="w-7 h-7 text-[10px] border border-white/5 bg-black/40" />
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-bold text-white truncate">{getDisplayName(partido, 'b')}</span>
                 {getCarreraSubtitle(partido, 'b') && (
@@ -316,6 +324,7 @@ export function UpcomingMatchCard({ partido }: { partido: Partido }) {
 }
 
 export function ResultCard({ partido }: { partido: Partido }) {
+  const router = useRouter();
   const sportName = partido.disciplinas?.name || 'Deporte';
   const { scoreA, scoreB, subScoreA, subScoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
   const winnerA = scoreA > scoreB;
@@ -330,8 +339,10 @@ export function ResultCard({ partido }: { partido: Partido }) {
   const setWinnerB = isSetSport ? sB > sA : !winnerA && scoreB > scoreA;
 
   return (
-    <Link href={`/partido/${partido.id}`} className="group block">
-      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 hover:bg-black/30 shadow-[0_4px_20px_rgba(0,0,0,0.35)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:border-white/20 transition-all duration-300 p-3 sm:p-4 hover:-translate-y-1 cursor-pointer">
+    <Link href={`/partido/${partido.id}`} className="group block relative z-10">
+      <div 
+        onClick={() => router.push(`/partido/${partido.id}`)}
+        className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 hover:bg-black/30 shadow-[0_4px_20px_rgba(0,0,0,0.35)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:border-white/20 transition-all duration-300 p-3 sm:p-4 hover:-translate-y-1 cursor-pointer">
         <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName]} opacity-30 group-hover:opacity-50 transition-opacity`} />
         {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
         <div className="absolute -right-[12%] -bottom-[12%] flex items-center justify-center pointer-events-none select-none opacity-[0.1] group-hover:opacity-[0.2] transition-all duration-1000 rotate-[-12deg] z-0 text-white">
@@ -401,7 +412,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
             )}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-black/40" />
+                <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url || partido.delegacion_a_info?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-black/40" />
                 <div className="flex flex-col min-w-0">
                   <span className={cn("text-[13px] font-bold truncate", partido.marcador_detalle?.resultado_final === 'victoria_a' || partido.marcador_detalle?.resultado_final === 'empate' ? "text-white" : "text-slate-500")}>
                     {getDisplayName(partido, 'a')}
@@ -420,7 +431,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-black/40" />
+                <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url || partido.delegacion_b_info?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-black/40" />
                 <div className="flex flex-col min-w-0">
                   <span className={cn("text-[13px] font-bold truncate", partido.marcador_detalle?.resultado_final === 'victoria_b' || partido.marcador_detalle?.resultado_final === 'empate' ? "text-white" : "text-slate-500")}>
                     {getDisplayName(partido, 'b')}
@@ -441,7 +452,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-black/40" />
+                <Avatar name={getDisplayName(partido, 'a')} src={partido.atleta_a?.avatar_url || partido.carrera_a?.escudo_url || partido.delegacion_a_info?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-black/40" />
                 <div className="flex flex-col min-w-0">
                   <span className={cn("text-[13px] font-bold truncate", setWinnerA || isDraw ? "text-white" : "text-slate-500")}>
                     {getDisplayName(partido, 'a')}
@@ -466,7 +477,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-black/40" />
+                <Avatar name={getDisplayName(partido, 'b')} src={partido.atleta_b?.avatar_url || partido.carrera_b?.escudo_url || partido.delegacion_b_info?.escudo_url} size="sm" className="w-6 h-6 text-[9px] border border-white/5 bg-black/40" />
                 <div className="flex flex-col min-w-0">
                   <span className={cn("text-[13px] font-bold truncate", setWinnerB || isDraw ? "text-white" : "text-slate-500")}>
                     {getDisplayName(partido, 'b')}
@@ -519,12 +530,14 @@ export function JornadaCard({ jornada }: { jornada: JornadaWithResults }) {
   const generoLabel = jornada.genero === 'femenino' ? 'F' : 'M';
 
   return (
-    <Link href={`/jornadas/${jornada.id}`} className="group block h-full">
-      <div className={cn(
-        "relative h-full overflow-hidden rounded-[2rem] border bg-black/20 backdrop-blur-xl transition-all duration-500 shadow-[0_4px_24px_rgba(0,0,0,0.4)] hover:shadow-2xl hover:-translate-y-1 cursor-pointer",
-        SPORT_BORDER[sportName] || 'border-white/10',
-        SPORT_GLOW[sportName] || 'hover:shadow-indigo-500/10'
-      )}>
+    <Link href={`/jornadas/${jornada.id}`} className="group block h-full relative z-10">
+      <div 
+        onClick={() => router.push(`/jornadas/${jornada.id}`)}
+        className={cn(
+          "relative h-full overflow-hidden rounded-[2rem] border bg-black/20 backdrop-blur-xl transition-all duration-500 shadow-[0_4px_24px_rgba(0,0,0,0.4)] hover:shadow-2xl hover:-translate-y-1 cursor-pointer",
+          SPORT_BORDER[sportName] || 'border-white/10',
+          SPORT_GLOW[sportName] || 'hover:shadow-indigo-500/10'
+        )}>
         {/* Sport gradient background */}
         <div className={`absolute inset-0 bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/5 to-transparent'} opacity-50 group-hover:opacity-70 transition-opacity`} />
 

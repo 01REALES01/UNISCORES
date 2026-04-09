@@ -4,6 +4,7 @@ import { getDisplayName } from "@/lib/sport-helpers";
 import { SportIcon } from "@/components/sport-icons";
 import { Avatar } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { MoveRight } from "lucide-react";
@@ -25,6 +26,7 @@ export function UnifiedCard({
     timeDisplay?: string,
     highlightWinner?: boolean
 }) {
+    const router = useRouter();
     const sportName = partido.disciplinas?.name || 'Deporte';
     const genero = (partido.genero || 'masculino').toLowerCase();
 
@@ -51,8 +53,11 @@ export function UnifiedCard({
     const isChessDraw = sportName === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'empate';
 
     return (
-        <Link href={`/partido/${partido.id}`} className="group block h-full">
-            <div className={cn(
+    return (
+        <Link href={`/partido/${partido.id}`} className="group block h-full relative z-10">
+            <div 
+                onClick={() => router.push(`/partido/${partido.id}`)}
+                className={cn(
                 "relative h-full overflow-hidden rounded-[2.2rem] border transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-1 backdrop-blur-xl shadow-2xl",
                 SPORT_BORDER[sportName] || 'border-white/10',
             )} style={{ 

@@ -67,7 +67,7 @@ export default function PartidosPage() {
 
     const fetchPartidos = useCallback(async () => {
         const { data } = await safeQuery(
-            supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)`).order('created_at', { ascending: false }),
+            supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)`).order('fecha', { ascending: true }),
             'admin-partidos'
         );
         if (data) setPartidos(data);
@@ -355,42 +355,32 @@ export default function PartidosPage() {
                             </p>
                         </div>
                     </div>
-
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <Button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-primary via-primary to-orange-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(239,68,68,0.4)] border-0 relative overflow-hidden group/btn"
-                        >
-                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
-                            <div className="relative flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-white/20">
-                                    <Plus size={20} strokeWidth={3} />
-                                </div>
-                                Lanzar Nuevo Partido
-                            </div>
-                        </Button>
-                    </motion.div>
                 </div>
 
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
+                {/* ─── ACTION CONTROL GRID "Command Center" ─── */}
+                <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="w-full h-20 rounded-[1.5rem] bg-gradient-to-br from-primary via-primary to-orange-700 text-white text-xs font-black uppercase tracking-widest shadow-xl border-0 flex items-center gap-4 px-6 group/btn transition-all hover:shadow-primary/20"
+                        >
+                            <div className="p-2.5 rounded-xl bg-white/20">
+                                <Plus size={22} strokeWidth={3} />
+                            </div>
+                            <span className="text-left leading-tight">Lanzar Nuevo<br/>Partido</span>
+                        </Button>
+                    </motion.div>
+
+                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                         <Button
                             onClick={importTennisBrackets}
                             disabled={importingTennis}
-                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-lime-600 via-lime-500 to-green-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(132,204,22,0.4)] border-0 relative overflow-hidden group/btn disabled:opacity-60"
+                            className="w-full h-20 rounded-[1.5rem] bg-gradient-to-br from-lime-600 via-lime-500 to-green-700 text-white text-xs font-black uppercase tracking-widest shadow-xl border-0 flex items-center gap-4 px-6 group/btn disabled:opacity-60"
                         >
-                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
-                            <div className="relative flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-white/20">
-                                    {importingTennis ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} strokeWidth={3} />}
-                                </div>
-                                {importingTennis ? 'Importando...' : 'Brackets Tenis'}
+                            <div className="p-2.5 rounded-xl bg-white/20">
+                                {importingTennis ? <Loader2 size={22} className="animate-spin" /> : <Plus size={22} strokeWidth={3} />}
                             </div>
+                            <span className="text-left leading-tight">{importingTennis ? 'Importando...' : 'Importar Brackets\nTenis'}</span>
                         </Button>
                     </motion.div>
 
@@ -401,81 +391,58 @@ export default function PartidosPage() {
                         ref={natacionFileRef}
                         onChange={handleImportNatacion} 
                     />
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
+                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                         <Button
                             onClick={() => natacionFileRef.current?.click()}
                             disabled={importingNatacion}
-                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-cyan-600 via-cyan-500 to-blue-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(6,182,212,0.4)] border-0 relative overflow-hidden group/btn disabled:opacity-60"
+                            className="w-full h-20 rounded-[1.5rem] bg-gradient-to-br from-cyan-600 via-cyan-500 to-blue-700 text-white text-xs font-black uppercase tracking-widest shadow-xl border-0 flex items-center gap-4 px-6 group/btn disabled:opacity-60"
                         >
-                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
-                            <div className="relative flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-white/20">
-                                    {importingNatacion ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} strokeWidth={3} />}
-                                </div>
-                                {importingNatacion ? 'Importando...' : 'Importar Natación'}
+                            <div className="p-2.5 rounded-xl bg-white/20">
+                                {importingNatacion ? <Loader2 size={22} className="animate-spin" /> : <Plus size={22} strokeWidth={3} />}
                             </div>
+                            <span className="text-left leading-tight">{importingNatacion ? 'Importando...' : 'Importar Datos\nNatación'}</span>
                         </Button>
                     </motion.div>
 
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <Button
-                            onClick={deleteNatacionData}
-                            disabled={deletingTennis}
-                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(79,70,229,0.4)] border-0 relative overflow-hidden group/btn disabled:opacity-60"
-                        >
-                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
-                            <div className="relative flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-white/20">
-                                    {deletingTennis ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} strokeWidth={3} />}
-                                </div>
-                                {deletingTennis ? 'Eliminando...' : 'Borrar Natación'}
-                            </div>
-                        </Button>
-                    </motion.div>
-
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
+                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                         <Button
                             onClick={handleBackfillNatacion}
                             disabled={backfillingNatacion}
-                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(16,185,129,0.4)] border-0 relative overflow-hidden group/btn disabled:opacity-60"
+                            className="w-full h-20 rounded-[1.5rem] bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-700 text-white text-xs font-black uppercase tracking-widest shadow-xl border-0 flex items-center gap-4 px-6 group/btn disabled:opacity-60"
                         >
-                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
-                            <div className="relative flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-white/20">
-                                    {backfillingNatacion ? <Loader2 size={20} className="animate-spin" /> : <Users size={20} strokeWidth={3} />}
-                                </div>
-                                {backfillingNatacion ? 'Vinculando...' : 'Vincular Perfiles'}
+                            <div className="p-2.5 rounded-xl bg-white/20">
+                                {backfillingNatacion ? <Loader2 size={22} className="animate-spin" /> : <Users size={22} strokeWidth={3} />}
                             </div>
+                            <span className="text-left leading-tight">{backfillingNatacion ? 'Vinculando...' : 'Vincular Perfiles\nGlobales'}</span>
                         </Button>
                     </motion.div>
 
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
+                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                            onClick={deleteNatacionData}
+                            disabled={deletingTennis}
+                            className="w-full h-20 rounded-[1.5rem] bg-white/5 border border-white/10 text-white/40 text-xs font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all flex items-center gap-4 px-6 group/btn disabled:opacity-60"
+                        >
+                            <div className="p-2.5 rounded-xl bg-white/10 group-hover/btn:bg-red-500/20">
+                                {deletingTennis ? <Loader2 size={22} className="animate-spin" /> : <Trash2 size={22} strokeWidth={3} />}
+                            </div>
+                            <span className="text-left leading-tight">Limpiar Datos<br/>Natación</span>
+                        </Button>
+                    </motion.div>
+
+                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                         <Button
                             onClick={deleteTennisBrackets}
                             disabled={deletingTennis}
-                            className="h-16 px-8 rounded-[1.5rem] bg-gradient-to-br from-red-600 via-red-500 to-rose-700 text-white text-sm font-black uppercase tracking-widest shadow-[0_20px_40px_-15px_rgba(220,38,38,0.4)] border-0 relative overflow-hidden group/btn disabled:opacity-60"
+                            className="w-full h-20 rounded-[1.5rem] bg-white/5 border border-white/10 text-white/40 text-xs font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all flex items-center gap-4 px-6 group/btn disabled:opacity-60"
                         >
-                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
-                            <div className="relative flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-white/20">
-                                    {deletingTennis ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} strokeWidth={3} />}
-                                </div>
-                                {deletingTennis ? 'Eliminando...' : 'Limpiar Brackets'}
+                            <div className="p-2.5 rounded-xl bg-white/10 group-hover/btn:bg-red-500/20">
+                                {deletingTennis ? <Loader2 size={22} className="animate-spin" /> : <Trash2 size={22} strokeWidth={3} />}
                             </div>
+                            <span className="text-left leading-tight">Limpiar Brackets<br/>Tenis</span>
                         </Button>
                     </motion.div>
+                </div>
             </motion.div>
              {/* ─── STATS CARDS "Tech Pods" ─── */}
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
@@ -540,97 +507,125 @@ export default function PartidosPage() {
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.8 }}
-                className="relative overflow-hidden rounded-[2rem] bg-zinc-950/40 backdrop-blur-xl border border-white/5 p-6 space-y-5"
+                className="relative overflow-hidden rounded-[2rem] bg-zinc-950/40 backdrop-blur-xl border border-white/5 p-6"
             >
-                <div className="flex flex-col lg:flex-row gap-4 items-center">
-                    {/* Search Premium */}
-                    <div className="relative w-full lg:flex-1">
-                        <SuggestiveSearch
-                            value={searchQuery}
-                            onChange={setSearchQuery}
-                            suggestions={["Buscar por equipo...", "Buscar por jugador...", "Filtra por universidad..."]}
-                            className="h-14 rounded-2xl bg-black/40 border border-white/10 focus-within:border-primary/50 focus-within:bg-black/60 focus-within:ring-4 focus-within:ring-primary/10 transition-all w-full text-sm font-bold placeholder:text-zinc-600"
-                        />
+                <div className="flex flex-col gap-10 w-full">
+                    {/* Search Group */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/30 ml-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                            Buscar Partido
+                        </div>
+                        <div className="relative w-full">
+                            <SuggestiveSearch
+                                value={searchQuery}
+                                onChange={setSearchQuery}
+                                suggestions={["Buscar por equipo...", "Buscar por jugador...", "Filtra por universidad..."]}
+                                className="h-20 rounded-[1.5rem] bg-black/40 border-2 border-white/5 focus-within:border-primary/50 focus-within:bg-black/60 focus-within:ring-8 focus-within:ring-primary/5 transition-all w-full text-lg font-bold placeholder:text-zinc-700 px-8"
+                            />
+                        </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-3 w-full lg:w-auto">
-                        {/* Sport Filter Scrollable */}
-                        <div className="flex gap-2 p-1.5 rounded-[1.25rem] bg-black/40 border border-white/5 overflow-x-auto no-scrollbar max-w-full">
-                            <button
-                                onClick={() => setSportFilter('todos')}
-                                className={cn(
-                                    "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-500",
-                                    sportFilter === 'todos'
-                                        ? "bg-primary text-white shadow-lg shadow-primary/20"
-                                        : "text-zinc-500 hover:text-white hover:bg-white/5"
-                                )}
-                            >
-                                All
-                            </button>
-                            {uniqueSports.map(sport => (
+                    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8 w-full">
+                        {/* Sport Filter Group */}
+                        <div className="lg:col-span-8 space-y-3">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/30 ml-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500/40" />
+                                Disciplina
+                            </div>
+                            <div className="flex gap-2.5 p-2.5 rounded-[1.75rem] bg-black/40 border-2 border-white/5 overflow-x-auto no-scrollbar">
                                 <button
-                                    key={sport}
-                                    onClick={() => { setSportFilter(sportFilter === sport ? 'todos' : sport); setCategoriaFilter('todos'); }}
+                                    onClick={() => setSportFilter('todos')}
                                     className={cn(
-                                        "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-500 whitespace-nowrap flex items-center gap-2",
-                                        sportFilter === sport
-                                            ? "bg-primary text-white shadow-lg shadow-primary/20"
-                                            : "text-zinc-500 hover:text-white hover:bg-white/5"
+                                        "px-8 py-4 rounded-2xl text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 min-w-[100px] border border-transparent",
+                                        sportFilter === 'todos'
+                                            ? "bg-primary text-white shadow-xl shadow-primary/20 border-white/20"
+                                            : "bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10 hover:border-white/10"
                                     )}
                                 >
-                                    <span>{SPORT_EMOJI[sport]}</span>
-                                    <span>{sport}</span>
+                                    Todos
                                 </button>
-                            ))}
+                                {uniqueSports.map(sport => (
+                                    <button
+                                        key={sport}
+                                        onClick={() => { setSportFilter(sportFilter === sport ? 'todos' : sport); setCategoriaFilter('todos'); }}
+                                        className={cn(
+                                            "px-8 py-4 rounded-2xl text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 whitespace-nowrap flex items-center gap-3 min-w-fit border border-transparent",
+                                            sportFilter === sport
+                                                ? "bg-primary text-white shadow-xl shadow-primary/20 border-white/20"
+                                                : "bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10 hover:border-white/10"
+                                        )}
+                                    >
+                                        <span className="text-xl">{SPORT_EMOJI[sport]}</span>
+                                        <span>{sport}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* Gender Filter Buttons */}
-                        <div className="flex gap-1.5 p-1.5 rounded-[1.25rem] bg-black/40 border border-white/5 shrink-0">
-                            {[
-                                { value: 'masculino', label: '♂', color: 'bg-primary' },
-                                { value: 'femenino', label: '♀', color: 'bg-pink-600' },
-                                { value: 'mixto', label: '⚤', color: 'bg-purple-600' },
-                            ].map(g => (
-                                <button
-                                    key={g.value}
-                                    onClick={() => setGenderFilter(genderFilter === g.value ? 'todos' : g.value)}
-                                    className={cn(
-                                        "w-10 h-10 rounded-xl text-lg font-black transition-all duration-500 flex items-center justify-center",
-                                        genderFilter === g.value
-                                            ? `${g.color} text-white shadow-lg scale-110`
-                                            : "text-zinc-600 hover:text-zinc-400 hover:bg-white/5"
-                                    )}
-                                >
-                                    {g.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Categoria Filter — solo visible para Tenis, T. Mesa y Natación */}
-                        {showCategoriaFilter && (
-                            <div className="flex gap-1.5 p-1.5 rounded-[1.25rem] bg-black/40 border border-lime-500/20 shrink-0">
+                        {/* Gender Filter Group */}
+                        <div className="lg:col-span-4 space-y-3">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/30 ml-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-pink-500/40" />
+                                Género
+                            </div>
+                            <div className="flex gap-3 p-2.5 rounded-[1.75rem] bg-black/40 border-2 border-white/5">
                                 {[
-                                    { value: 'todos', label: 'Todos' },
-                                    { value: 'principiante', label: 'Prim.' },
-                                    { value: 'intermedio', label: 'Inter.' },
-                                    { value: 'avanzado', label: 'Avanz.' },
+                                    { value: 'masculino', label: '♂', color: 'bg-primary', hover: 'hover:text-primary' },
+                                    { value: 'femenino', label: '♀', color: 'bg-pink-600', hover: 'hover:text-pink-500' },
+                                    { value: 'mixto', label: '⚤', color: 'bg-purple-600', hover: 'hover:text-purple-500' },
+                                ].map(g => (
+                                    <button
+                                        key={g.value}
+                                        onClick={() => setGenderFilter(genderFilter === g.value ? 'todos' : g.value)}
+                                        className={cn(
+                                            "flex-1 h-14 rounded-2xl text-2xl font-black transition-all duration-500 flex items-center justify-center border border-transparent",
+                                            genderFilter === g.value
+                                                ? `${g.color} text-white shadow-xl scale-105 border-white/20`
+                                                : `bg-white/5 text-zinc-600 ${g.hover} hover:bg-white/10 hover:border-white/10`
+                                        )}
+                                    >
+                                        {g.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Category Filter Group (Conditional) */}
+                    {showCategoriaFilter && (
+                        <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            className="space-y-3"
+                        >
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/30 ml-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-lime-500/40" />
+                                Nivel de Categoría
+                            </div>
+                            <div className="flex flex-wrap gap-2.5 p-3 rounded-[1.75rem] bg-black/40 border-2 border-lime-500/20">
+                                {[
+                                    { value: 'todos', label: 'Todos los Niveles' },
+                                    { value: 'principiante', label: 'Principiante' },
+                                    { value: 'intermedio', label: 'Intermedio' },
+                                    { value: 'avanzado', label: 'Avanzado' },
                                 ].map(c => (
                                     <button
                                         key={c.value}
                                         onClick={() => setCategoriaFilter(c.value)}
                                         className={cn(
-                                            "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap",
+                                            "flex-1 min-w-[140px] py-4 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 border border-transparent",
                                             categoriaFilter === c.value
-                                                ? "bg-lime-600 text-white shadow-lg shadow-lime-500/20"
-                                                : "text-zinc-500 hover:text-white hover:bg-white/5"
+                                                ? "bg-lime-600 text-white shadow-xl shadow-lime-500/20 border-white/20"
+                                                : "bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10 hover:border-white/10"
                                         )}
                                     >
                                         {c.label}
                                     </button>
                                 ))}
                             </div>
-                        )}
-                    </div>
+                        </motion.div>
+                    )}
                 </div>
             </motion.div>
 

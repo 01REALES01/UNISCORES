@@ -13,7 +13,7 @@ export function Providers({ children }: { children: ReactNode }) {
     return (
         <AuthProvider>
             <SWRConfig value={{
-                revalidateOnFocus: false,
+                revalidateOnFocus: true,
                 revalidateOnReconnect: true,
                 errorRetryCount: 3,
                 keepPreviousData: true,

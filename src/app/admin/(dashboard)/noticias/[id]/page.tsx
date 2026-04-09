@@ -44,7 +44,7 @@ export default function EditNoticiaPage() {
         const fetchAll = async () => {
             const [noticiaRes, partidosRes, carrerasRes] = await Promise.all([
                 safeQuery<any>(supabase.from('noticias').select('*').eq('id', id).single(), 'edit-noticia'),
-                safeQuery(supabase.from('partidos').select('id, equipo_a, equipo_b, disciplinas(name)').order('fecha', { ascending: false }), 'edit-partidos'),
+                safeQuery(supabase.from('partidos').select('id, equipo_a, equipo_b, disciplinas(name)').order('fecha', { ascending: true }), 'edit-partidos'),
                 safeQuery(supabase.from('medallero').select('equipo_nombre').order('equipo_nombre'), 'edit-carreras'),
             ]);
 
