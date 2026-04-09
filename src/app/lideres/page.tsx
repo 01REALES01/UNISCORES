@@ -132,17 +132,14 @@ export default function LideresPage() {
     useEffect(() => {
         fetchScorers();
 
-        const channel = supabase
-            .channel('realtime-lideres')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'olympics_eventos' }, () => {
-                if (debounceRef.current) clearTimeout(debounceRef.current);
-                debounceRef.current = setTimeout(() => fetchScorers(), 2000);
-            })
-            .subscribe();
+        // Polling cada 30s — evita saturar conexiones WebSocket de Supabase bajo tráfico alto
+        const pollInterval = setInterval(() => {
+            if (!document.hidden) fetchScorers();
+        }, 30_000);
 
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
-            supabase.removeChannel(channel);
+            clearInterval(pollInterval);
         };
     }, []);
 

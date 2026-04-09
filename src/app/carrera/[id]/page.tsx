@@ -538,25 +538,104 @@ export default function CarreraProfilePage() {
 
                     {activeTab === "deportes" && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {disciplineEntries.map(d => {
-                                const winRate = d.played > 0 ? Math.round((d.won / d.played) * 100) : 0;
+                            {/* Primero mostramos los deportes donde está inscrito (con o sin partidos) */}
+                            {deportesInscritos.map(insc => {
+                                const statsEntry = disciplineEntries.find(d => d.name === insc.disciplina_name);
+                                const winRate = statsEntry && statsEntry.played > 0 ? Math.round((statsEntry.won / statsEntry.played) * 100) : 0;
+                                const isCombined = insc.isCombined;
+
                                 return (
-                                    <div key={d.name} className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-8 group transition-all duration-500 hover:bg-white/[0.05]">
-                                        <div className="absolute top-6 right-6 opacity-5 group-hover:opacity-10 transition-opacity"><SportIcon sport={d.name} size={64} /></div>
+                                    <Link 
+                                        key={`${insc.disciplina_name}_${insc.genero}`} 
+                                        href={`/equipo/${insc.delegacion_id}?sport=${encodeURIComponent(insc.disciplina_name)}`}
+                                        className="group block relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-8 transition-all duration-500 hover:bg-white/[0.05] hover:border-violet-500/30 hover:shadow-2xl hover:shadow-violet-500/10 active:scale-[0.98]"
+                                    >
+                                        <div className="absolute top-6 right-6 opacity-5 group-hover:opacity-10 transition-opacity"><SportIcon sport={insc.disciplina_name} size={64} /></div>
                                         <div className="relative z-10 space-y-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-3 rounded-2xl bg-black/40 border border-white/10 shadow-xl"><SportIcon sport={d.name} size={28} /></div>
-                                                <div><h3 className="text-sm font-black uppercase tracking-widest">{d.name}</h3><p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{d.played} Partidos</p></div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-3 rounded-2xl bg-black/40 border border-white/10 shadow-xl group-hover:border-violet-500/40 transition-colors"><SportIcon sport={insc.disciplina_name} size={28} /></div>
+                                                    <div>
+                                                        <h3 className="text-sm font-black uppercase tracking-widest group-hover:text-violet-400 transition-colors">{insc.disciplina_name}</h3>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className={cn(
+                                                                "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md",
+                                                                insc.genero === 'femenino' ? "bg-pink-500/10 text-pink-400" : "bg-blue-500/10 text-blue-400"
+                                                            )}>
+                                                                {insc.genero}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {isCombined && (
+                                                    <Badge variant="outline" className="bg-amber-500/10 border-amber-500/20 text-amber-500 text-[8px] font-black uppercase tracking-tighter shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+                                                        Equipo Combinado
+                                                    </Badge>
+                                                )}
                                             </div>
-                                            <div className="grid grid-cols-3 gap-3">
-                                                <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5"><p className="text-[8px] font-black text-white/20 uppercase mb-2">V / E / D</p><p className="text-xs font-black tabular-nums tracking-tighter"><span className="text-emerald-400">{d.won}</span><span className="mx-1 text-white/10">/</span><span className="text-white/40">{d.draw}</span><span className="mx-1 text-white/10">/</span><span className="text-rose-400">{d.lost}</span></p></div>
-                                                <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5"><p className="text-[8px] font-black text-white/20 uppercase mb-2">Efectividad</p><p className="text-xl font-black text-violet-400 tabular-nums">{winRate}%</p></div>
-                                                <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5"><p className="text-[8px] font-black text-white/20 uppercase mb-2">Medallas</p><div className="flex justify-center gap-1.5 text-xs"><span>🥇{d.oro}</span><span>🥈{d.plata}</span><span>🥉{d.bronce}</span></div></div>
+
+                                            {/* Info de Delegación / Nombre de Equipo */}
+                                            {insc.equipo_nombre && insc.equipo_nombre !== carrera.nombre && (
+                                                <div className="bg-white/5 border border-white/5 rounded-2xl px-4 py-3 group-hover:bg-white/10 transition-colors">
+                                                    <p className="text-[8px] font-black text-white/20 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                                        <Users size={10} className="text-violet-400" /> Delegación Asociada
+                                                    </p>
+                                                    <p className="text-[11px] font-black text-white uppercase tracking-wider">{insc.equipo_nombre}</p>
+                                                </div>
+                                            )}
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5">
+                                                    <p className="text-[8px] font-black text-white/20 uppercase mb-2">V / E / D</p>
+                                                    <p className="text-xs font-black tabular-nums tracking-tighter">
+                                                        <span className="text-emerald-400">{statsEntry?.won || 0}</span>
+                                                        <span className="mx-1 text-white/10">/</span>
+                                                        <span className="text-white/40">{statsEntry?.draw || 0}</span>
+                                                        <span className="mx-1 text-white/10">/</span>
+                                                        <span className="text-rose-400">{statsEntry?.lost || 0}</span>
+                                                    </p>
+                                                </div>
+                                                <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5">
+                                                    <p className="text-[8px] font-black text-white/20 uppercase mb-2">Efectividad</p>
+                                                    <p className="text-xl font-black text-violet-400 tabular-nums">{winRate}%</p>
+                                                </div>
                                             </div>
+
+                                            {(!statsEntry || statsEntry.played === 0) ? (
+                                                <div className="pt-2">
+                                                    <div className="bg-white/5 border border-white/5 rounded-xl py-2 px-3 flex items-center gap-3">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.6)]" />
+                                                        <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Aún sin competencias</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="pt-2 flex justify-end">
+                                                    <div className="text-[8px] font-black text-violet-400 uppercase tracking-widest flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                                                        Ver Detalles <MoveRight size={10} />
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
+                                    </Link>
                                 );
                             })}
+                            
+                            {/* Cualquier otro deporte que tenga stats pero no esté en inscritos (fallback) */}
+                            {disciplineEntries.filter(d => !deportesInscritos.some(i => i.disciplina_name === d.name)).map(d => (
+                                <div key={`fallback-${d.name}`} className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-8 group transition-all duration-500 hover:bg-white/[0.05]">
+                                    <div className="absolute top-6 right-6 opacity-5"><SportIcon sport={d.name} size={64} /></div>
+                                    <div className="relative z-10 space-y-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 rounded-2xl bg-black/40 border border-white/10 shadow-xl"><SportIcon sport={d.name} size={28} /></div>
+                                            <div><h3 className="text-sm font-black uppercase tracking-widest">{d.name}</h3><p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{d.played} Partidos</p></div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5"><p className="text-[8px] font-black text-white/20 uppercase mb-2">V / E / D</p><p className="text-xs font-black tabular-nums tracking-tighter"><span className="text-emerald-400">{d.won}</span><span className="mx-1 text-white/10">/</span><span className="text-white/40">{d.draw}</span><span className="mx-1 text-white/10">/</span><span className="text-rose-400">{d.lost}</span></p></div>
+                                            <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5"><p className="text-[8px] font-black text-white/20 uppercase mb-2">Efectividad</p><p className="text-xl font-black text-violet-400 tabular-nums">{d.played > 0 ? Math.round((d.won / d.played) * 100) : 0}%</p></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </motion.div>
                     )}
 

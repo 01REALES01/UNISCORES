@@ -160,7 +160,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                             initial={{ y: -20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.2 }}
-                            className="mb-4 md:mb-8"
+                            className="mb-2 md:mb-4"
                         >
                             {currentMatch.estado === 'en_vivo' ? (
                                 <div className="flex items-center justify-center gap-2.5 text-rose-500 text-[10px] md:text-xs font-black tracking-[0.3em] uppercase transition-all duration-500">
@@ -200,7 +200,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             initial={{ scale: 0.9, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
                                             transition={{ delay: 0.3 }}
-                                            className="flex flex-col items-center gap-6 w-full"
+                                            className="flex flex-col items-center gap-3 w-full"
                                         >
                                             {/* Event Title */}
                                             <div className="flex flex-col items-center gap-2">
@@ -215,7 +215,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             </div>
 
                                             {/* Status info */}
-                                            <div className="flex flex-col items-center gap-4">
+                                            <div className="flex flex-col items-center gap-2">
                                                 <div className="flex items-center gap-4 text-slate-300">
                                                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
                                                         <Users size={16} className="text-cyan-400" />
@@ -271,7 +271,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             transition={{ delay: 0.3 }}
                                             className="flex flex-col items-center gap-2 md:gap-3 flex-1 text-center"
                                         >
-                                            <div className="w-16 h-16 md:w-28 md:h-28 rounded-2xl md:rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-md shrink-0 overflow-hidden p-3 group-hover:border-white/20 transition-colors">
+                                            <div className="w-14 h-14 md:w-24 md:h-24 rounded-2xl md:rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-md shrink-0 overflow-hidden p-3 group-hover:border-white/20 transition-colors">
                                                 {getMatchIcon(currentMatch, 'a') ? (
                                                     <img 
                                                         src={getMatchIcon(currentMatch, 'a')} 
@@ -282,7 +282,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                     <span className="text-xl md:text-5xl font-black text-white/10">{getInitials(getDisplayName(currentMatch, 'a'))}</span>
                                                 )}
                                             </div>
-                                            <h3 className="text-sm md:text-2xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
+                                            <h3 className="text-[11px] md:text-xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'a')}
                                             </h3>
                                             {getCarreraSubtitle(currentMatch, 'a') && (
@@ -352,7 +352,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                             transition={{ delay: 0.3 }}
                                             className="flex flex-col items-center gap-2 md:gap-3 flex-1 text-center"
                                         >
-                                            <div className="w-16 h-16 md:w-28 md:h-28 rounded-2xl md:rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-md shrink-0 overflow-hidden p-3 group-hover:border-white/20 transition-colors">
+                                            <div className="w-14 h-14 md:w-24 md:h-24 rounded-2xl md:rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-md shrink-0 overflow-hidden p-3 group-hover:border-white/20 transition-colors">
                                                 {getMatchIcon(currentMatch, 'b') ? (
                                                     <img 
                                                         src={getMatchIcon(currentMatch, 'b')} 
@@ -363,7 +363,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                     <span className="text-xl md:text-5xl font-black text-white/10">{getInitials(getDisplayName(currentMatch, 'b'))}</span>
                                                 )}
                                             </div>
-                                            <h3 className="text-sm md:text-2xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
+                                            <h3 className="text-[11px] md:text-xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 line-clamp-2 md:line-clamp-none px-1">
                                                 {getDisplayName(currentMatch, 'b')}
                                             </h3>
                                             {getCarreraSubtitle(currentMatch, 'b') && (
@@ -380,7 +380,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.5 }}
-                            className="mt-6 flex flex-col items-center gap-5"
+                            className="mt-1 sm:mt-2 flex flex-col items-center gap-4"
                         >
                             <div className="flex items-center gap-6 text-[10px] md:text-sm font-bold tracking-[0.1em] uppercase">
                                 <div className="flex items-center gap-2 text-white/60">

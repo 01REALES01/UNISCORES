@@ -177,9 +177,10 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
                     )}
                 </div>
 
-                <div className="relative p-2 sm:p-3 bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[2.5rem] shadow-2xl flex items-center justify-center gap-1.5 sm:gap-3 transition-all duration-500 hover:bg-white/[0.05] hover:border-white/20">
-                    {/* Inner Glow Overlay */}
-                    <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+                <div className="relative w-full max-w-full overflow-x-auto scrollbar-hide py-4 px-4 sm:px-6">
+                    <div className="flex items-stretch justify-start sm:justify-center gap-2 sm:gap-4 min-w-max mx-auto p-2 sm:p-3 bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[2.5rem] shadow-2xl transition-all duration-500 hover:bg-white/[0.05] hover:border-white/20 relative">
+                        {/* Inner Glow Overlay */}
+                        <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
 
                     {sortedEmojis.map((emoji) => {
                         const isActive = userReaction === emoji;
@@ -286,6 +287,7 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
                                 </div>
                             </div>
                         )}
+                    </div>
                     </div>
                 </div>
             </div>

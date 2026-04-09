@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -l \"olympics_eventos\" \"/c/Users/H.P VICTUS/OneDrive/Escritorio/Uniscore/project_olympics\"/supabase/*.sql)"
+      "Bash(grep -l \"olympics_eventos\" \"/c/Users/H.P VICTUS/OneDrive/Escritorio/Uniscore/project_olympics\"/supabase/*.sql)",
+      "Bash(grep -n \"use client\\\\|useEffect\\\\|supabase\\\\.\\\\|safeQuery\\\\|realtime\\\\|subscribe\" /Users/reales/Desktop/project_olympics/src/app/partido/[id]/page.tsx)"
     ]
   }
 }

@@ -256,7 +256,7 @@ export default function MedalleroPage() {
                         </div>
 
                         {/* Gender Filters - High Fidelity Buttons */}
-                        <div className="flex gap-3 p-1.5 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-full shadow-2xl shrink-0 overflow-hidden relative group/gender">
+                        <div className="flex gap-2 sm:gap-3 p-1.5 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-full shadow-2xl shrink-0 max-w-full overflow-x-auto no-scrollbar scroll-smooth relative group/gender">
                             {[
                                 { id: 'todos', label: 'Todos', icon: '⚥' },
                                 { id: 'masculino', label: 'Masculino', icon: '♂' },
@@ -266,7 +266,7 @@ export default function MedalleroPage() {
                                     key={g.id}
                                     onClick={() => setGenderFilter(g.id)}
                                     className={cn(
-                                        "relative flex items-center justify-center gap-3 px-8 sm:px-12 py-3.5 rounded-full text-[10px] font-display font-black tracking-[0.2em] transition-all duration-500 overflow-hidden border whitespace-nowrap z-10",
+                                        "relative flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-12 py-3.5 rounded-full text-[10px] font-display font-black tracking-[0.2em] transition-all duration-500 overflow-hidden border whitespace-nowrap shrink-0 z-10",
                                         genderFilter === g.id
                                             ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-[0_0_30px_rgba(245,245,220,0.4)] scale-105"
                                             : "bg-white/5 text-white/30 border-white/5 hover:bg-white/10 hover:text-white/60 hover:border-white/20"

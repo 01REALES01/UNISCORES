@@ -185,7 +185,7 @@ export default function CalendarioPage() {
                         </div>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
-                            <div className="flex gap-2 p-1.5 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl">
+                            <div className="flex gap-2 p-1.5 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl max-w-full overflow-x-auto no-scrollbar scroll-smooth">
                                 {[
                                     { label: 'Todos', value: 'todos', icon: '⚥' },
                                     { label: 'Masculino', value: 'masculino', icon: '♂' },
@@ -197,7 +197,7 @@ export default function CalendarioPage() {
                                             key={g.value}
                                             onClick={() => setSelectedGender(g.value)}
                                             className={cn(
-                                                "relative flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-full text-[10px] font-display font-black tracking-widest transition-all overflow-hidden border whitespace-nowrap",
+                                                "relative flex items-center justify-center gap-1.5 sm:gap-2.5 px-3 sm:px-6 py-2.5 rounded-full text-[10px] font-display font-black tracking-widest transition-all overflow-hidden border whitespace-nowrap shrink-0",
                                                 isSelected ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105" : "bg-transparent border-transparent text-white/30 hover:text-white/60"
                                             )}
                                         >
