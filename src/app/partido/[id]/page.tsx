@@ -142,7 +142,7 @@ export default function PublicMatchDetail() {
 
     // From here onwards, match is guaranteed to be non-null. 
     // We use a local constant with an explicit type assertion to satisfy the compiler in all environments.
-    const m = match as PartidoWithRelations;
+    const m = match as Partido;
 
     const isLive = m.estado === 'en_curso';
     const isFinished = m.estado === 'finalizado';
