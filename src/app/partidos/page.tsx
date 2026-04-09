@@ -31,7 +31,7 @@ export default function PartidosPage() {
     const { matches: rawMatches, loading } = useMatches();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSport, setSelectedSport] = useState("Todos");
-    const [selectedGender, setSelectedGender] = useState<string>("masculino");
+    const [selectedGender, setSelectedGender] = useState<string>("todos");
 
     // Derive unique sport names from all matches
     const availableSports = useMemo(() => {

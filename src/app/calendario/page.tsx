@@ -53,7 +53,7 @@ export default function CalendarioPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [activeFilter, setActiveFilter] = useState('all');
-    const [selectedGender, setSelectedGender] = useState<string>("masculino");
+    const [selectedGender, setSelectedGender] = useState<string>("todos");
 
     // Calendar logic
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
