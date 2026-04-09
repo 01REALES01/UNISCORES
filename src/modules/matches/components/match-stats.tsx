@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
 import { cn } from '@/lib/utils';
 import { Avatar, Badge } from '@/components/ui-primitives';
@@ -86,7 +87,8 @@ const LeaderCard = ({ label, player, count, color }: { label: string, player: an
     );
 };
 
-export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
+export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
+    const router = useRouter();
     const isBasketball = sportName?.toLowerCase().includes('baloncesto') || sportName?.toLowerCase().includes('basket');
     const isFootball = sportName?.toLowerCase().includes('futbol') || sportName?.toLowerCase().includes('fútbol') || sportName?.toLowerCase().includes('micro') || sportName?.toLowerCase().includes('sala');
     const isVolleyball = sportName === 'Voleibol';
@@ -211,13 +213,51 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
                 {/* Sets Bar - Institutional Style */}
                 <div className="relative z-10 w-full bg-black/20 rounded-3xl p-6 border border-white/5 shadow-inner">
                     <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-[0.25em] text-white/40 mb-5 px-2">
-                        <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{nameA}</span>
+                        {(() => {
+                            const dId = (match as any).delegacion_a_id;
+                            const cId = match.carrera_a_id || (match.carrera_a as any)?.id;
+                            const finalTarget = dId ? `/equipo/${dId}` : cId ? `/carrera/${cId}` : null;
+                            
+                            return finalTarget ? (
+                                <Link 
+                                    href={finalTarget} 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        router.push(finalTarget);
+                                    }} 
+                                    className="truncate max-w-[120px] sm:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
+                                >
+                                    {nameA}
+                                </Link>
+                            ) : (
+                                <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{nameA}</span>
+                            );
+                        })()}
                         <div className="flex items-center gap-3">
                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sportColorVoli }} />
                             <span style={{ color: sportColorVoli }}>PUNTUACIÓN GLOBAL</span>
                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sportColorVoli }} />
                         </div>
-                        <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{nameB}</span>
+                        {(() => {
+                            const dId = (match as any).delegacion_b_id;
+                            const cId = match.carrera_b_id || (match.carrera_b as any)?.id;
+                            const finalTarget = dId ? `/equipo/${dId}` : cId ? `/carrera/${cId}` : null;
+                            
+                            return finalTarget ? (
+                                <Link 
+                                    href={finalTarget} 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        router.push(finalTarget);
+                                    }} 
+                                    className="truncate max-w-[120px] sm:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
+                                >
+                                    {nameB}
+                                </Link>
+                            ) : (
+                                <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{nameB}</span>
+                            );
+                        })()}
                     </div>
                     <div className="flex items-center gap-6 sm:gap-10">
                         <span className="text-5xl sm:text-7xl font-black tabular-nums text-white drop-shadow-2xl">{setsA}</span>
@@ -324,13 +364,51 @@ export function MatchStats({ match, eventos, sportName }: MatchStatsProps) {
             {/* Score Bar - Institutional Style */}
             <div className="relative z-10 w-full bg-black/20 rounded-3xl p-6 border border-white/5 shadow-inner">
                 <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-[0.25em] text-white/40 mb-5 px-2">
-                    <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{match.equipo_a}</span>
+                    {(() => {
+                        const dId = (match as any).delegacion_a_id;
+                        const cId = match.carrera_a_id || (match.carrera_a as any)?.id;
+                        const finalTarget = dId ? `/equipo/${dId}` : cId ? `/carrera/${cId}` : null;
+                        
+                        return finalTarget ? (
+                            <Link 
+                                href={finalTarget} 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(finalTarget);
+                                }} 
+                                className="truncate max-w-[120px] sm:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
+                            >
+                                {match.equipo_a}
+                            </Link>
+                        ) : (
+                            <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{match.equipo_a}</span>
+                        );
+                    })()}
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sportColor }} />
                         <span style={{ color: sportColor }}>{isBasketball ? 'PUNTOS' : 'GOLES'}</span>
                         <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sportColor }} />
                     </div>
-                    <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{match.equipo_b}</span>
+                    {(() => {
+                        const dId = (match as any).delegacion_b_id;
+                        const cId = match.carrera_b_id || (match.carrera_b as any)?.id;
+                        const finalTarget = dId ? `/equipo/${dId}` : cId ? `/carrera/${cId}` : null;
+                        
+                        return finalTarget ? (
+                            <Link 
+                                href={finalTarget} 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(finalTarget);
+                                }} 
+                                className="truncate max-w-[120px] sm:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
+                            >
+                                {match.equipo_b}
+                            </Link>
+                        ) : (
+                            <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{match.equipo_b}</span>
+                        );
+                    })()}
                 </div>
                 <div className="flex items-center gap-6 sm:gap-10">
                     <span className="text-5xl sm:text-7xl font-black tabular-nums text-white drop-shadow-2xl">{teamA.goals}</span>
