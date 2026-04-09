@@ -53,7 +53,8 @@ export async function GET(request: NextRequest) {
 
         if (error || !data.session) {
             console.error('[Auth Callback] exchangeCodeForSession failed:', error?.message)
-            return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
+            const errorType = error?.message?.includes('uninorte') ? 'domain_not_allowed' : 'auth_callback_failed'
+            return NextResponse.redirect(`${origin}/login?error=${errorType}`)
         }
 
         // ── Domain Restriction Check ──────────────────────────────────────────
@@ -211,7 +212,7 @@ export async function GET(request: NextRequest) {
 
     // ── Handle Magic Link callback (email OTP) ──────────────────────────────
     if (token_hash && type) {
-        const { error } = await supabase.auth.verifyOtp({
+        const { data: otpData, error } = await supabase.auth.verifyOtp({
             token_hash,
             type: type as 'magiclink' | 'email',
         })
@@ -219,6 +220,14 @@ export async function GET(request: NextRequest) {
         if (error) {
             console.error('[Auth Callback] verifyOtp failed:', error.message)
             return NextResponse.redirect(`${origin}/login?error=otp_failed`)
+        }
+
+        // ── Domain Restriction Check for OTP ────────────────────────────────
+        const otpEmail = otpData?.user?.email || ''
+        if (!otpEmail.endsWith('@uninorte.edu.co')) {
+            console.warn('[Auth Callback] Forbidden domain (OTP):', otpEmail)
+            await supabase.auth.signOut()
+            return NextResponse.redirect(`${origin}/login?error=domain_not_allowed`)
         }
     }
 

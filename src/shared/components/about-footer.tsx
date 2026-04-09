@@ -53,6 +53,7 @@ const TEAM = [
 
 export function AboutFooter() {
   const [isOpen, setIsOpen] = useState(false);
+  const [shuffledTeam] = useState(() => [...TEAM].sort(() => Math.random() - 0.5));
 
   return (
     <>
@@ -114,7 +115,7 @@ export function AboutFooter() {
 
               {/* Team grid — 2 cols on mobile, stacked cards on desktop */}
               <div className="grid grid-cols-2 sm:grid-cols-1 gap-2.5 sm:gap-3">
-                {TEAM.map((member, idx) => (
+                {shuffledTeam.map((member, idx) => (
                   <div
                     key={idx}
                     className={cn(
