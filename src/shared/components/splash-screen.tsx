@@ -132,10 +132,26 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
     }, [onComplete, config]);
 
     useEffect(() => {
+        if (!isVisible || !isClient) return;
+
+        // Safety timeout — if frames take too long, just hide splash and show app
+        const safetyTimeout = setTimeout(() => {
+            if (isVisible && !isFadingOut) {
+                console.warn('[SplashScreen] Safety timeout — forcing skip');
+                setIsFadingOut(true);
+                setTimeout(() => {
+                    setIsVisible(false);
+                    onComplete?.();
+                }, 500);
+            }
+        }, 3500);
+
         if (isReady) {
             startAnimation();
         }
-    }, [isReady, startAnimation]);
+
+        return () => clearTimeout(safetyTimeout);
+    }, [isReady, startAnimation, isVisible, isClient, isFadingOut, onComplete]);
 
     if (!isClient || !isVisible) return null;
 

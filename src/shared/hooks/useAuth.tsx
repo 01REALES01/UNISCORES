@@ -83,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [profileLoading, setProfileLoading] = useState(false);
     const mountedRef = useRef(true);
     const profileFetchInFlightRef = useRef(false);
+    const lastRefreshRef = useRef<number>(0);
 
     const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
         if (profileFetchInFlightRef.current) return null;
@@ -154,6 +155,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const handleVisibilityChange = async () => {
             if (document.hidden || !mountedRef.current) return;
             
+            // Throttle: Don't refresh if it was done less than 60s ago
+            const now = Date.now();
+            if (now - lastRefreshRef.current < 60_000) return;
+            lastRefreshRef.current = now;
+
             console.log('[useAuth] App foregrounded — refreshing session...');
             try {
                 const { data: { session } } = await supabase.auth.getSession();

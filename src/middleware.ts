@@ -43,7 +43,11 @@ export async function middleware(request: NextRequest) {
     // IMPORTANT: Do NOT use getSession() here — it doesn't refresh the token.
     // getUser() validates and refreshes the token if needed, writing fresh
     // cookies back via setAll above.
-    await supabase.auth.getUser()
+    try {
+        await supabase.auth.getUser()
+    } catch (e) {
+        console.error('[Middleware] Auth verify failed:', e)
+    }
 
     return supabaseResponse
 }

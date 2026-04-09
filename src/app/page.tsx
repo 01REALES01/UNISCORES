@@ -371,7 +371,17 @@ export default function Home() {
 
       <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
-      <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-8 pb-24 space-y-10">
+      <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-24 space-y-10">
+
+        {/* Super Friendly Status Notice */}
+        <div className="flex items-center justify-center -mt-4 mb-4 animate-in fade-in slide-in-from-top-6 duration-1000">
+          <div className="bg-amber-500/10 border border-amber-500/20 backdrop-blur-xl px-6 py-3 rounded-2xl flex items-center gap-3 shadow-lg">
+            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <p className="text-[11px] md:text-xs font-semibold text-amber-100/90 tracking-wide">
+              ¡Hola! Estamos ajustando unos detalles para que todos puedan entrar. Si no logras iniciar sesión ahora, ¡intenta de nuevo en un ratito!
+            </p>
+          </div>
+        </div>
 
         <div className="flex flex-col gap-6">
           <WelcomeHero />
