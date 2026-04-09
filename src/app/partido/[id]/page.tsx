@@ -108,6 +108,8 @@ export default function PublicMatchDetail() {
         return map[name] || '🏅';
     };
 
+    const fetchError = matchError?.message;
+
     if (matchLoading && !match) return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white">
             <UniqueLoading size="lg" />
