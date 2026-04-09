@@ -138,16 +138,20 @@ export default function PublicMatchDetail() {
         </div>
     );
 
-    const isLive = match.estado === 'en_curso';
-    const isFinished = match.estado === 'finalizado';
-    const sportName = match.disciplinas?.name || 'Deporte';
+    // From here onwards, match is guaranteed to be non-null. 
+    // We use a local constant with an explicit type assertion to satisfy the compiler in all environments.
+    const m = match as PartidoWithRelations;
+
+    const isLive = m.estado === 'en_curso';
+    const isFinished = m.estado === 'finalizado';
+    const sportName = m.disciplinas?.name || 'Deporte';
     const sportEmoji = getSportEmoji(sportName);
-    const { scoreA, scoreB, subScoreA, subScoreB, extra, subLabel } = getCurrentScore(sportName, match.marcador_detalle || {});
-    const generoMatch = match.genero || 'masculino';
+    const { scoreA, scoreB, subScoreA, subScoreB, extra, subLabel } = getCurrentScore(sportName, m.marcador_detalle || {});
+    const generoMatch = m.genero || 'masculino';
     const hasTimer = ['Fútbol', 'Baloncesto', 'Futsal', 'Fútbol Sala'].includes(sportName);
     const sportColor = SPORT_COLORS[sportName] || '#10b981';
 
-    const tenisDetalle = match.marcador_detalle || {};
+    const tenisDetalle = m.marcador_detalle || {};
     const tenisSet = tenisDetalle.set_actual || 1;
     const tenisSetData = tenisDetalle.sets?.[tenisSet] || {};
     const { labelA: tenisPuntoA, labelB: tenisPuntoB } = formatTenisPunto(tenisSetData.puntos_a || 0, tenisSetData.puntos_b || 0);
@@ -200,7 +204,7 @@ export default function PublicMatchDetail() {
                         <div className="flex flex-col justify-center items-center mb-8 relative z-20 px-4 w-full">
                             {isLive && hasTimer && (
                                 <div className="z-30 flex items-center justify-center scale-90 sm:scale-100 transition-all mb-4 drop-shadow-md">
-                                    <PublicLiveTimer detalle={match.marcador_detalle || {}} deporte={match.disciplinas?.name} />
+                                    <PublicLiveTimer detalle={m.marcador_detalle || {}} deporte={m.disciplinas?.name} />
                                 </div>
                             )}
 
@@ -211,7 +215,7 @@ export default function PublicMatchDetail() {
                                             <div className="flex items-center gap-2 text-white/90">
                                                 <Calendar size={14} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
                                                 <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.15em]">
-                                                    {new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                                    {new Date(m.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
                                                 </span>
                                             </div>
                                             <div className="w-px h-3 bg-white/20 mx-1" />
@@ -240,22 +244,16 @@ export default function PublicMatchDetail() {
                                                 generoMatch === 'femenino' ? 'text-pink-400' :
                                                 generoMatch === 'mixto' ? 'text-purple-400' : 'text-cyan-400'
                                             )}>{generoMatch}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {match.marcador_detalle?.tipo === 'carrera' ? (
+                                        </div>                        {m.marcador_detalle?.tipo === 'carrera' ? (
                             <div className="w-full max-w-3xl mx-auto animate-in fade-in zoom-in-95 duration-500 my-4">
                                 <div className="text-center mb-8 mt-4 sm:mt-0">
                                     <h1 className="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 uppercase tracking-tighter drop-shadow-sm leading-tight mb-2">
-                                        {match.carrera_a?.nombre || match.equipo_a}
+                                        {m.carrera_a?.nombre || m.equipo_a}
                                     </h1>
                                 </div>
 
                                 <div className="flex flex-col gap-2 relative">
-                                    {(match.marcador_detalle?.participantes || [])
+                                    {(m.marcador_detalle?.participantes || [])
                                         .sort((a: any, b: any) => {
                                             if (a.posicion && b.posicion) return a.posicion - b.posicion;
                                             if (a.posicion) return -1;
@@ -309,7 +307,7 @@ export default function PublicMatchDetail() {
                                             );
                                         })}
 
-                                    {(match.marcador_detalle?.participantes || []).length === 0 && (
+                                    {(m.marcador_detalle?.participantes || []).length === 0 && (
                                         <div className="text-center py-12 px-4 rounded-2xl border border-dashed border-white/10 bg-white/5">
                                             <p className="text-slate-500 italic text-sm">Esperando lista de participantes...</p>
                                         </div>
@@ -328,8 +326,8 @@ export default function PublicMatchDetail() {
                                         
                                         <div className="relative group/avatar">
                                             {(() => {
-                                                const profile = (match as any).atleta_a;
-                                                const profileId = profile?.id || match.athlete_a_id;
+                                                const profile = (m as any).atleta_a;
+                                                const profileId = profile?.id || m.athlete_a_id;
                                                 
                                                 const Content = (
                                                     <div className="relative group/btn cursor-pointer block">
@@ -339,8 +337,8 @@ export default function PublicMatchDetail() {
                                                                 src={
                                                                     profile?.avatar_url || 
                                                                     profile?.carrera?.escudo_url ||
-                                                                    (match as any).carrera_a?.escudo_url || 
-                                                                    (match as any).delegacion_a_info?.escudo_url ||
+                                                                    (m as any).carrera_a?.escudo_url || 
+                                                                    (m as any).delegacion_a_info?.escudo_url ||
                                                                     '/logo_olimpiadas.png'
                                                                 }
                                                                 size="lg" 
@@ -376,18 +374,18 @@ export default function PublicMatchDetail() {
                                     <div className="flex flex-col items-center gap-1 w-full relative z-10 sm:mt-1">
                                         <h2 className={cn(
                                             "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm",
-                                            (match.athlete_a_id || (match as any).delegacion_a_id || match.carrera_a_id) ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105" : "text-white"
+                                            (m.athlete_a_id || (m as any).delegacion_a_id || m.carrera_a_id) ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105" : "text-white"
                                         )}>
-                                            {getDisplayName(match, 'a')}
+                                            {getDisplayName(m, 'a')}
                                         </h2>
                                         
-                                        {isIndividualSport(sportName) && getDisplayName(match, 'a') !== 'TBD' && getDisplayName(match, 'a') !== 'BYE' && (
+                                        {isIndividualSport(sportName) && getDisplayName(m, 'a') !== 'TBD' && getDisplayName(m, 'a') !== 'BYE' && (
                                             <div className="mt-2 group/carrera flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
                                                 <img
                                                     src={
-                                                        (match as any).atleta_a?.carrera?.escudo_url ||
-                                                        (match as any).carrera_a?.escudo_url || 
-                                                        (match as any).delegacion_a_info?.escudo_url ||
+                                                        (m as any).atleta_a?.carrera?.escudo_url ||
+                                                        (m as any).carrera_a?.escudo_url || 
+                                                        (m as any).delegacion_a_info?.escudo_url ||
                                                         '/logo_olimpiadas.png'
                                                     }
                                                     alt=""
@@ -395,7 +393,7 @@ export default function PublicMatchDetail() {
                                                     onError={(e) => { (e.target as HTMLImageElement).src = '/logo_olimpiadas.png' }}
                                                 />
                                                 <span className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest group-hover/carrera:text-white transition-colors">
-                                                    {(match as any).atleta_a?.carrera?.nombre || (match as any).carrera_a?.nombre || (match as any).delegacion_a || getCarreraSubtitle(match, 'a') || ''}
+                                                    {(m as any).atleta_a?.carrera?.nombre || (m as any).carrera_a?.nombre || (m as any).delegacion_a || getCarreraSubtitle(m, 'a') || ''}
                                                 </span>
                                             </div>
                                         )}
@@ -405,7 +403,7 @@ export default function PublicMatchDetail() {
                                 <div className="flex flex-col items-center relative z-20 min-w-[120px] sm:min-w-[180px] shrink-0">
                                     {sportName === 'Ajedrez' ? (
                                         <div className="flex flex-col items-center justify-center w-full min-h-[100px] sm:min-h-[140px]">
-                                            {isFinished && match.marcador_detalle?.resultado_final === 'empate' ? (
+                                            {isFinished && m.marcador_detalle?.resultado_final === 'empate' ? (
                                                 <div className="bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex flex-col items-center shadow-lg">
                                                     <span className="text-sm sm:text-base uppercase font-black text-slate-300 tracking-[0.2em]">Empate</span>
                                                 </div>
@@ -448,13 +446,13 @@ export default function PublicMatchDetail() {
                                     <div className="flex flex-col items-center mt-3 sm:mt-4 w-full">
                                         <div className={cn(
                                             "flex items-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-2 sm:mb-3",
-                                            isLive ? (SPORT_LIVE_TEXT[match.disciplinas?.name ?? ''] || SPORT_LIVE_TEXT.default) : "text-white/40"
+                                            isLive ? (SPORT_LIVE_TEXT[m.disciplinas?.name ?? ''] || SPORT_LIVE_TEXT.default) : "text-white/40"
                                         )}>
                                             {extra ? (
                                                 <div className="flex items-center gap-2">
                                                     <span className={cn(
                                                         "brightness-125 drop-shadow-[0_0_8px_currentColor]",
-                                                        isLive ? (SPORT_ACCENT[match.disciplinas?.name ?? ''] || 'text-white') : 'text-white/40'
+                                                        isLive ? (SPORT_ACCENT[m.disciplinas?.name ?? ''] || 'text-white') : 'text-white/40'
                                                     )}>
                                                         {extra}
                                                     </span>
@@ -471,10 +469,10 @@ export default function PublicMatchDetail() {
 
                                         <div className={cn(
                                             "w-full h-1 sm:h-[6px] rounded-full overflow-hidden relative",
-                                            isLive ? (SPORT_LIVE_BG_WRAPPER[match.disciplinas?.name ?? ''] || SPORT_LIVE_BG_WRAPPER.default) : "bg-white/10"
+                                            isLive ? (SPORT_LIVE_BG_WRAPPER[m.disciplinas?.name ?? ''] || SPORT_LIVE_BG_WRAPPER.default) : "bg-white/10"
                                         )}>
                                             {isLive ? (
-                                                <div className={cn("h-full rounded-full w-[100%] absolute top-0 left-0 animate-pulse", SPORT_LIVE_BAR[match.disciplinas?.name ?? ''] || SPORT_LIVE_BAR.default)} />
+                                                <div className={cn("h-full rounded-full w-[100%] absolute top-0 left-0 animate-pulse", SPORT_LIVE_BAR[m.disciplinas?.name ?? ''] || SPORT_LIVE_BAR.default)} />
                                             ) : isFinished ? (
                                                 <div className="h-full bg-white/40 rounded-full w-[100%] absolute top-0 left-0" />
                                             ) : null}
@@ -492,8 +490,8 @@ export default function PublicMatchDetail() {
                                         
                                         <div className="relative group/avatar">
                                             {(() => {
-                                                const profile = (match as any).atleta_b;
-                                                const profileId = profile?.id || match.athlete_b_id;
+                                                const profile = (m as any).atleta_b;
+                                                const profileId = profile?.id || m.athlete_b_id;
                                                 
                                                 const Content = (
                                                     <div className="relative group/btn cursor-pointer block">
@@ -503,8 +501,8 @@ export default function PublicMatchDetail() {
                                                                 src={
                                                                     profile?.avatar_url || 
                                                                     profile?.carrera?.escudo_url ||
-                                                                    (match as any).carrera_b?.escudo_url || 
-                                                                    (match as any).delegacion_b_info?.escudo_url ||
+                                                                    (m as any).carrera_b?.escudo_url || 
+                                                                    (m as any).delegacion_b_info?.escudo_url ||
                                                                     '/logo_olimpiadas.png'
                                                                 }
                                                                 size="lg" 
@@ -540,18 +538,18 @@ export default function PublicMatchDetail() {
                                     <div className="flex flex-col items-center gap-1 w-full relative z-10 sm:mt-1">
                                         <h2 className={cn(
                                             "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm",
-                                            (match.athlete_b_id || (match as any).delegacion_b_id || match.carrera_b_id) ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105" : "text-white"
+                                            (m.athlete_b_id || (m as any).delegacion_b_id || m.carrera_b_id) ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105" : "text-white"
                                         )}>
-                                            {getDisplayName(match, 'b')}
+                                            {getDisplayName(m, 'b')}
                                         </h2>
                                         
-                                        {isIndividualSport(sportName) && getDisplayName(match, 'b') !== 'TBD' && getDisplayName(match, 'b') !== 'BYE' && (
+                                        {isIndividualSport(sportName) && getDisplayName(m, 'b') !== 'TBD' && getDisplayName(m, 'b') !== 'BYE' && (
                                             <div className="mt-2 group/carrera flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
                                                 <img
                                                     src={
-                                                        (match as any).atleta_b?.carrera?.escudo_url ||
-                                                        (match as any).carrera_b?.escudo_url || 
-                                                        (match as any).delegacion_b_info?.escudo_url ||
+                                                        (m as any).atleta_b?.carrera?.escudo_url ||
+                                                        (m as any).carrera_b?.escudo_url || 
+                                                        (m as any).delegacion_b_info?.escudo_url ||
                                                         '/logo_olimpiadas.png'
                                                     }
                                                     alt=""
@@ -559,7 +557,7 @@ export default function PublicMatchDetail() {
                                                     onError={(e) => { (e.target as HTMLImageElement).src = '/logo_olimpiadas.png' }}
                                                 />
                                                 <span className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest group-hover/carrera:text-white transition-colors">
-                                                    {(match as any).atleta_b?.carrera?.nombre || (match as any).carrera_b?.nombre || (match as any).delegacion_b || getCarreraSubtitle(match, 'b') || ''}
+                                                    {(m as any).atleta_b?.carrera?.nombre || (m as any).carrera_b?.nombre || (m as any).delegacion_b || getCarreraSubtitle(m, 'b') || ''}
                                                 </span>
                                             </div>
                                         )}
@@ -573,7 +571,7 @@ export default function PublicMatchDetail() {
                                 <div className={cn("p-1.5 rounded-lg bg-black/20", SPORT_ACCENT[sportName])}>
                                     <MapPin size={16} className="drop-shadow-[0_0_5px_currentColor]" />
                                 </div>
-                                <span className="text-xs sm:text-sm font-bold text-white/80 tracking-wide">{match.lugar || 'Coliseo Central'}</span>
+                                <span className="text-xs sm:text-sm font-bold text-white/80 tracking-wide">{m.lugar || 'Coliseo Central'}</span>
                             </div>
                         </div>
                     </div>
@@ -619,7 +617,7 @@ export default function PublicMatchDetail() {
                             <div className="space-y-6">
                                 <div className="grid grid-cols-3 gap-4 text-center">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-white/80 uppercase tracking-widest truncate">{getDisplayName(match, 'a')}</p>
+                                        <p className="text-[10px] font-black text-white/80 uppercase tracking-widest truncate">{getDisplayName(m, 'a')}</p>
                                         <p className={cn("text-2xl font-black transition-colors duration-500", SPORT_ACCENT[sportName] || 'text-white')} style={{ filter: `drop-shadow(0 0 10px ${sportColor}50)` }}>
                                             {pctA}% <span className="text-[10px] font-medium opacity-40 ml-0.5">votos</span>
                                         </p>
@@ -629,7 +627,7 @@ export default function PublicMatchDetail() {
                                         <p className="text-2xl font-black text-white transition-opacity duration-500 opacity-90">{pctDraw}%</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-white/80 uppercase tracking-widest truncate">{getDisplayName(match, 'b')}</p>
+                                        <p className="text-[10px] font-black text-white/80 uppercase tracking-widest truncate">{getDisplayName(m, 'b')}</p>
                                         <p className={cn("text-2xl font-black transition-colors duration-500", SPORT_ACCENT[sportName] || 'text-white')} style={{ filter: `drop-shadow(0 0 10px ${sportColor}50)` }}>
                                             {pctB}% <span className="text-[10px] font-medium opacity-40 ml-0.5">votos</span>
                                         </p>
@@ -663,7 +661,7 @@ export default function PublicMatchDetail() {
                         );
                     })()}
 
-                    {match?.estado === 'programado' && user ? (
+                    {m?.estado === 'programado' && user ? (
                         <div className="mt-8 pt-6 border-t border-white/5">
                             <div className="flex justify-center mb-6">
                                 <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-white/60 uppercase tracking-[0.3em] shadow-xl backdrop-blur-md">
@@ -682,7 +680,7 @@ export default function PublicMatchDetail() {
                                             : "bg-white/5 hover:bg-white/10 text-white/40 hover:text-white border border-white/5"
                                     )}
                                 >
-                                    <span className="relative z-10">{getDisplayName(match, 'a')?.substring(0, 10)}</span>
+                                    <span className="relative z-10">{getDisplayName(m, 'a')?.substring(0, 10)}</span>
                                 </button>
                                 <button
                                     onClick={() => handleVote('DRAW')}
@@ -706,22 +704,22 @@ export default function PublicMatchDetail() {
                                             : "bg-white/5 hover:bg-white/10 text-white/40 hover:text-white border border-white/5"
                                     )}
                                 >
-                                    <span className="relative z-10">{getDisplayName(match, 'b')?.substring(0, 10)}</span>
+                                    <span className="relative z-10">{getDisplayName(m, 'b')?.substring(0, 10)}</span>
                                 </button>
                             </div>
                         </div>
-                    ) : match?.estado === 'programado' && !user ? (
+                    ) : m?.estado === 'programado' && !user ? (
                         <div className="mt-5 pt-4 border-t border-white/5 text-center">
                             <Link href="/login" className="text-[10px] font-bold uppercase tracking-widest transition-colors" style={{ color: sportColor }}>
                                 Inicia sesión para predecir →
                             </Link>
                         </div>
-                    ) : match?.estado !== 'programado' && userPrediction ? (
+                    ) : m?.estado !== 'programado' && userPrediction ? (
                         <div className={cn(
                             "mt-5 pt-4 border-t border-white/5 text-center p-3 rounded-xl",
-                            match?.estado === 'finalizado'
+                            m?.estado === 'finalizado'
                                 ? ((() => {
-                                    const md = match?.marcador_detalle || {};
+                                    const md = m?.marcador_detalle || {};
                                     const sA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
                                     const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
                                     const result = sA > sB ? 'A' : sB > sA ? 'B' : 'DRAW';
@@ -731,16 +729,16 @@ export default function PublicMatchDetail() {
                         )}>
                             <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu acierto</p>
                             <p className={cn("text-sm font-black",
-                                match?.estado === 'finalizado' ? (() => {
-                                    const md = match?.marcador_detalle || {};
+                                m?.estado === 'finalizado' ? (() => {
+                                    const md = m?.marcador_detalle || {};
                                     const sA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
                                     const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
                                     const result = sA > sB ? 'A' : sB > sA ? 'B' : 'DRAW';
                                     return userPrediction.winner_pick === result ? "text-emerald-400" : "text-white/60";
                                 })() : "text-white"
                             )}>
-                                {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'a')}</> :
-                                    userPrediction.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'b')}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
+                                {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(m, 'a')}</> :
+                                    userPrediction.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(m, 'b')}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
                             </p>
                         </div>
                     ) : null}
@@ -748,7 +746,7 @@ export default function PublicMatchDetail() {
 
                 {sportName !== 'Voleibol' && (
                     <MatchTimeline
-                        match={match}
+                        match={m}
                         eventos={eventos}
                         sportName={sportName}
                     />
@@ -756,7 +754,7 @@ export default function PublicMatchDetail() {
 
                 <div className="mt-8">
                     <MatchStats
-                        match={match}
+                        match={m}
                         eventos={eventos}
                         sportName={sportName}
                     />
