@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatches } from "@/hooks/use-matches";
@@ -35,6 +35,8 @@ export default function PartidosPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSport, setSelectedSport] = useState("Todos");
     const [selectedGender, setSelectedGender] = useState<string>("masculino");
+    const [filterVisible, setFilterVisible] = useState(true);
+    const lastScrollY = useRef(0);
     // Derive unique sport names from all matches + jornadas
 
     const availableSports = useMemo(() => {
@@ -118,7 +120,24 @@ export default function PartidosPage() {
         });
     }, [filteredMatches, filteredJornadas]);
 
-    // 4. Auto-scroll to today
+    // 4. Hide filter on scroll down, show on scroll up
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentY = window.scrollY;
+            if (currentY < 80) {
+                setFilterVisible(true);
+            } else if (currentY > lastScrollY.current + 8) {
+                setFilterVisible(false);
+            } else if (currentY < lastScrollY.current - 8) {
+                setFilterVisible(true);
+            }
+            lastScrollY.current = currentY;
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // 5. Auto-scroll to today
     useEffect(() => {
         if (!loading && groupedMatches.length > 0) {
             const todayStr = new Date().toISOString().split('T')[0];
@@ -129,7 +148,7 @@ export default function PartidosPage() {
                     const element = document.getElementById(`date-${targetDate}`);
                     if (element) {
                         const isMobile = window.innerWidth < 768;
-                        const offset = isMobile ? 220 : 250; 
+                        const offset = isMobile ? 160 : 250;
                         const bodyRect = document.body.getBoundingClientRect().top;
                         const elementRect = element.getBoundingClientRect().top;
                         const elementPosition = elementRect - bodyRect;
@@ -186,28 +205,31 @@ export default function PartidosPage() {
                 </header>
 
                 {/* ── Filter Area (Sticky) ── */}
-                <div className="sticky top-[64px] sm:top-[72px] z-50 px-4 py-4 mb-4 transition-all duration-300">
+                <div className={cn(
+                    "sticky top-[64px] sm:top-[72px] z-50 px-4 py-4 mb-4 transition-all duration-300",
+                    filterVisible ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
+                )}>
                     <div className="flex flex-col gap-4 sm:gap-6 max-w-6xl mx-auto">
                         <div className="flex justify-center w-full">
                             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 w-full max-w-4xl justify-start sm:justify-center">
                                 <button
                                     onClick={() => setSelectedSport("Todos")}
                                     className={cn(
-                                        "relative min-w-[105px] sm:min-w-[110px] h-24 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
+                                        "relative min-w-[80px] sm:min-w-[110px] h-16 sm:h-28 rounded-[1.2rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
                                         selectedSport === "Todos"
                                             ? "bg-violet-600/30 border-violet-500/50 scale-105"
                                             : "bg-background/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
                                     )}
                                 >
-                                    <div className="z-10 flex flex-col items-center gap-3">
+                                    <div className="z-10 flex flex-col items-center gap-1.5 sm:gap-3">
                                         <div className={cn(
-                                            "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500",
+                                            "w-8 h-8 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500",
                                             selectedSport === "Todos" ? "bg-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)]" : "bg-white/5 border border-white/10"
                                         )}>
-                                            <LayoutGrid size={24} className={selectedSport === "Todos" ? "text-white" : "text-white/40"} />
+                                            <LayoutGrid size={18} className={selectedSport === "Todos" ? "text-white" : "text-white/40"} />
                                         </div>
                                         <span className={cn(
-                                            "text-[11px] font-black uppercase tracking-[0.2em] transition-colors",
+                                            "text-[9px] sm:text-[11px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-colors",
                                             selectedSport === "Todos" ? "text-white" : "text-white/30"
                                         )}>
                                             Todos
@@ -221,21 +243,22 @@ export default function PartidosPage() {
                                             key={sport}
                                             onClick={() => setSelectedSport(sport)}
                                             className={cn(
-                                                "group/btn relative min-w-[105px] sm:min-w-[110px] h-24 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
+                                                "group/btn relative min-w-[80px] sm:min-w-[110px] h-16 sm:h-28 rounded-[1.2rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
                                                 isActive
                                                     ? "bg-violet-600/30 border-violet-500/50 scale-105"
                                                     : "bg-[#1a0b38]/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
                                             )}
                                         >
-                                            <div className="z-10 flex flex-col items-center gap-3">
+                                            <div className="z-10 flex flex-col items-center gap-1.5 sm:gap-3">
                                                 <div className={cn(
-                                                    "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500 overflow-hidden",
+                                                    "w-8 h-8 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500 overflow-hidden",
                                                     isActive ? "shadow-[0_0_20px_rgba(139,92,246,0.3)] border-transparent" : "bg-white/5 border border-white/10"
                                                 )}>
-                                                    <SportIcon sport={sport} size={32} />
+                                                    <SportIcon sport={sport} size={22} className="sm:hidden" />
+                                                    <SportIcon sport={sport} size={32} className="hidden sm:block" />
                                                 </div>
                                                 <span className={cn(
-                                                    "text-[11px] font-black uppercase tracking-[0.2em] transition-colors",
+                                                    "text-[9px] sm:text-[11px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-colors",
                                                     isActive ? "text-white" : "text-white/30 group-hover/btn:text-white/60"
                                                 )}>
                                                     {sport}
@@ -287,9 +310,9 @@ export default function PartidosPage() {
                             <section
                                 key={group.fecha}
                                 id={`date-${group.fecha}`}
-                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-[350px] sm:scroll-mt-[450px] bg-transparent pb-16"
+                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-[220px] sm:scroll-mt-[320px] bg-transparent pb-16"
                             >
-                                <div className="flex items-center justify-center gap-4 mb-6 sm:mb-10 sticky top-[275px] sm:top-[320px] z-40 py-4 pointer-events-none">
+                                <div className="flex items-center justify-center gap-4 mb-6 sm:mb-10 py-4">
                                     <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/20 to-white/10 max-w-[100px] sm:max-w-xs" />
                                     <h2 className={cn(
                                         "flex items-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-2xl",

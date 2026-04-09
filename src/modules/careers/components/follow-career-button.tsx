@@ -24,20 +24,15 @@ export function FollowCareerButton({ careerId, initialFollowersCount }: FollowCa
         }
 
         const checkFollowStatus = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('career_followers')
-                    .select('follower_id')
-                    .eq('follower_id', user.id)
-                    .eq('career_id', careerId)
-                    .single();
-                
-                if (data) setIsFollowing(true);
-            } catch (err) {
-                // Not following or error
-            } finally {
-                setIsLoading(false);
-            }
+            const { data } = await supabase
+                .from('career_followers')
+                .select('follower_id')
+                .eq('follower_id', user.id)
+                .eq('career_id', careerId)
+                .maybeSingle();
+
+            setIsFollowing(!!data);
+            setIsLoading(false);
         };
 
         checkFollowStatus();
@@ -50,36 +45,34 @@ export function FollowCareerButton({ careerId, initialFollowersCount }: FollowCa
         }
 
         setIsLoading(true);
-        // Optimistic update
         const previouslyFollowing = isFollowing;
+        const previousCount = followersCount;
+
+        // Optimistic update
         setIsFollowing(!previouslyFollowing);
         setFollowersCount(c => previouslyFollowing ? c - 1 : c + 1);
 
-        try {
-            if (previouslyFollowing) {
-                // Unfollow
-                const { error } = await supabase
-                    .from('career_followers')
-                    .delete()
-                    .match({ follower_id: user.id, career_id: careerId });
-                
-                if (error) throw error;
-            } else {
-                // Follow
-                const { error } = await supabase
-                    .from('career_followers')
-                    .insert({ follower_id: user.id, career_id: careerId });
-                
-                if (error) throw error;
-            }
-        } catch (error) {
-            console.error("Error toggling career follow:", error);
+        let error: any = null;
+
+        if (previouslyFollowing) {
+            ({ error } = await supabase
+                .from('career_followers')
+                .delete()
+                .match({ follower_id: user.id, career_id: careerId }));
+        } else {
+            ({ error } = await supabase
+                .from('career_followers')
+                .insert({ follower_id: user.id, career_id: careerId }));
+        }
+
+        if (error) {
+            console.error('[FollowCareerButton] error:', error.code, error.message);
             // Revert optimistic update
             setIsFollowing(previouslyFollowing);
-            setFollowersCount(initialFollowersCount);
-        } finally {
-            setIsLoading(false);
+            setFollowersCount(previousCount);
         }
+
+        setIsLoading(false);
     };
 
     return (
