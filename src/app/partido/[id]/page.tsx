@@ -16,7 +16,7 @@ import { useMatch } from "@/modules/matches/hooks/use-match";
 import { useMatchEvents } from "@/modules/matches/hooks/use-match-events";
 import { formatTenisPunto } from "@/modules/sports/services/tenis.service";
 import { getDisplayName, getCarreraName, getCarreraSubtitle, isIndividualSport } from "@/lib/sport-helpers";
-import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_ACCENT, SPORT_COLORS, SPORT_BORDER, SPORT_GLOW, SPORT_GRADIENT } from "@/lib/constants";
+import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_ACCENT, SPORT_COLORS, SPORT_BORDER, SPORT_GLOW, SPORT_GRADIENT, SPORT_SOFT_BG } from "@/lib/constants";
 import { SportIcon } from "@/components/sport-icons";
 import { parseEventAudit } from "@/lib/audit-helpers";
 
@@ -49,43 +49,56 @@ export default function PublicMatchDetail() {
     const { data: userPrediction = null, mutate: mutateUserPrediction } = useSWR(
         (matchId && user) ? `match:${matchId}:userPrediction:${user.id}` : null,
         async () => {
-            const { data, error } = await supabase.from('pronosticos').select('*').eq('match_id', matchId).eq('user_id', user!.id).single();
-            if (error && error.code !== 'PGRST116') throw error; // PGRST116 is 'not found'
+            const { data, error } = await supabase.from('pronosticos').select('*').eq('match_id', matchId).eq('user_id', user!.id).maybeSingle();
+            if (error) throw error;
             return data;
         }
     );
 
-    const [votingPick, setVotingPick] = useState<string | null>(null);
+    // ─── Voting Logic ───────────────────────────────────────────────────────────
     const [saving, setSaving] = useState(false);
+    const [votingPick, setVotingPick] = useState<string | null>(null);
 
     // Sync votingPick with userPrediction
     useEffect(() => {
-        if (userPrediction) setVotingPick(userPrediction.winner_pick);
+        if (userPrediction?.winner_pick) setVotingPick(userPrediction.winner_pick);
     }, [userPrediction]);
 
     // Handle voting
     const handleVote = async (pick: string) => {
-        if (!user || !match) return;
-        if (match.estado !== 'programado') return;
+        if (!user) {
+            toast.error("Debes iniciar sesión para participar");
+            return;
+        }
+        if (!m) return;
+        if (m.estado !== 'programado') {
+            toast.error("Este partido ya no acepta predicciones");
+            return;
+        }
 
         setVotingPick(pick);
         setSaving(true);
 
         try {
-            // Optimistic Update can be added here if needed, but for now we re-mutate after
+            // Ensure profile exists
+            await supabase.from('profiles').upsert(
+                { id: user.id, email: user.email },
+                { onConflict: 'id' }
+            );
+
             const payload = {
                 user_id: user.id,
                 match_id: parseInt(matchId),
                 prediction_type: 'winner',
-                goles_a: null,
-                goles_b: null,
                 winner_pick: pick
             };
 
             if (userPrediction) {
-                await supabase.from('pronosticos').update(payload).eq('id', userPrediction.id);
+                const { error } = await supabase.from('pronosticos').update(payload).eq('id', userPrediction.id);
+                if (error) throw error;
             } else {
-                await supabase.from('pronosticos').insert(payload);
+                const { error } = await supabase.from('pronosticos').insert(payload);
+                if (error) throw error;
             }
 
             // Refresh SWR data
@@ -95,6 +108,8 @@ export default function PublicMatchDetail() {
             toast.success('¡Acierto guardado!');
         } catch (err: any) {
             toast.error('Error al guardar: ' + err.message);
+            // Revert pick on error
+            setVotingPick(userPrediction?.winner_pick || null);
         } finally {
             setSaving(false);
         }
