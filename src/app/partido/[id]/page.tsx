@@ -540,7 +540,7 @@ export default function PublicMatchDetail() {
                                                     )}>
                                                         {extra}
                                                     </span>
-                                                    {subScoreA !== undefined && (
+                                                    {subScoreA !== undefined && sportName !== 'Voleibol' && (
                                                         <span className="text-white/30 font-mono text-[9px] tracking-normal brightness-75">
                                                             ({subScoreA} - {subScoreB})
                                                         </span>

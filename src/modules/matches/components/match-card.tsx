@@ -138,7 +138,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                       EN CURSO
                     </span>
                   </div>
-                ) : sportName === 'Voleibol' ? null : (
+                ) : (
                   <div className={cn(
                     "flex items-center justify-center gap-1 md:gap-2 font-black tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] text-white",
                     (labelA === 'DEUCE' || labelB === 'DEUCE' || labelA === 'AD' || labelB === 'AD')

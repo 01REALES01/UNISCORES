@@ -25,12 +25,12 @@ export class VoleibolService extends BaseSportService {
     const pB = s.puntos_b ?? d.puntos_b ?? d.total_b ?? d.goles_b ?? 0;
 
     return {
-      scoreA: pA,
-      scoreB: pB,
-      subScoreA: setsA,
-      subScoreB: setsB,
-      extra: `${setsA}–${setsB} · Set ${set}`,
-      subLabel: 'Sets',
+      scoreA: setsA,
+      scoreB: setsB,
+      subScoreA: pA,
+      subScoreB: pB,
+      extra: `Set ${set} · ${pA}–${pB}`,
+      subLabel: 'PTS',
     };
   }
 
