@@ -518,6 +518,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function JornadaCard({ jornada }: { jornada: JornadaWithResults }) {
+  const router = useRouter();
   const sportName = (jornada.disciplinas as any)?.name ?? 'Deporte';
   const isFinalized = jornada.estado === 'finalizado';
   const isLive = jornada.estado === 'en_curso';
