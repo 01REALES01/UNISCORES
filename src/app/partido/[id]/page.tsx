@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
 import { Badge, Avatar, Button } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink, Target, ChevronDown, Minus, Plus } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,16 +19,8 @@ import { SportIcon } from "@/components/sport-icons";
 import { parseEventAudit } from "@/lib/audit-helpers";
 
 import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
-
-type ExtendedPartido = Partido & {
-    atleta_a?: any;
-    atleta_b?: any;
-    atleta_a_info?: any;
-    atleta_b_info?: any;
-}
 import { MatchTimeline } from '@/modules/matches/components/match-timeline';
 import { MatchStats } from '@/modules/matches/components/match-stats';
-import { SafeBackButton } from "@/shared/components/safe-back-button";
 
 import UniqueLoading from "@/components/ui/morph-loading";
 
@@ -40,23 +31,14 @@ export default function PublicMatchDetail() {
 
     const { user } = useAuth();
 
-    const [match, setMatch] = useState<ExtendedPartido | null>(null);
+    const [match, setMatch] = useState<Partido | null>(null);
     const [eventos, setEventos] = useState<Evento[]>([]);
     const [matchPredictions, setMatchPredictions] = useState<any[]>([]);
     const [userPrediction, setUserPrediction] = useState<any>(null);
     const [votingPick, setVotingPick] = useState<string | null>(null);
-    const [showBonus, setShowBonus] = useState(false);
-    const [bonusGolesA, setBonusGolesA] = useState<number | null>(null);
-    const [bonusGolesB, setBonusGolesB] = useState<number | null>(null);
-    const [marginPick, setMarginPick] = useState<'CLOSE' | 'WIDE' | null>(null);
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState<string | null>(null);
-    const [carrerasMap, setCarrerasMap] = useState<Record<number, { nombre: string; escudo_url?: string | null }>>({});
-    const [atletaACarrera, setAtletaACarrera] = useState<{ id: number; nombre: string; escudo_url?: string | null } | null>(null);
-    const [atletaBCarrera, setAtletaBCarrera] = useState<{ id: number; nombre: string; escudo_url?: string | null } | null>(null);
-    const [atletaAIds, setAtletaAIds] = useState<{ profile_id: string | null; jugador_id: number | null }>({ profile_id: null, jugador_id: null });
-    const [atletaBIds, setAtletaBIds] = useState<{ profile_id: string | null; jugador_id: number | null }>({ profile_id: null, jugador_id: null });
 
     // Cargar datos
     const fetchData = async (signal?: AbortSignal) => {
@@ -66,16 +48,12 @@ export default function PublicMatchDetail() {
             const PARTIDO_SELECT = [
                 'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria',
                 'fase, grupo, bracket_order, delegacion_a, delegacion_b',
-                'delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id, jugador_a_id, jugador_b_id',
+                'delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
                 'disciplinas:disciplina_id(name)',
                 'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
                 'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
-                'delegacion_a_info:delegaciones!delegacion_a_id(escudo_url)',
-                'delegacion_b_info:delegaciones!delegacion_b_id(escudo_url)',
-                'atleta_a:profiles!athlete_a_id(id, full_name, avatar_url, carrera_id, carrera:carreras!carrera_id(id, nombre, escudo_url))',
-                'atleta_b:profiles!athlete_b_id(id, full_name, avatar_url, carrera_id, carrera:carreras!carrera_id(id, nombre, escudo_url))',
-                'atleta_a_info:jugadores!jugador_a_id(id, nombre, carrera:carreras!carrera_id(id, nombre, escudo_url), profile:profiles!profile_id(id, full_name, avatar_url))',
-                'atleta_b_info:jugadores!jugador_b_id(id, nombre, carrera:carreras!carrera_id(id, nombre, escudo_url), profile:profiles!profile_id(id, full_name, avatar_url))',
+                'atleta_a:profiles!athlete_a_id(full_name, avatar_url)',
+                'atleta_b:profiles!athlete_b_id(full_name, avatar_url)',
             ].join(', ');
 
             const matchRes = await safeQuery(
@@ -87,14 +65,12 @@ export default function PublicMatchDetail() {
                 'partido-detail'
             );
 
-            let finalMatch = matchRes.data;
-
             if (matchRes.error && !matchRes.data) {
                 console.warn('[fetchData] Full query failed, trying fallback:', matchRes.error.message);
                 const fallbackRes = await safeQuery(
                     supabase
                         .from('partidos')
-                        .select('id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id, disciplinas:disciplina_id(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url), delegacion_a_info:delegaciones!delegacion_a_id(escudo_url), delegacion_b_info:delegaciones!delegacion_b_id(escudo_url), atleta_a:profiles!athlete_a_id(id, full_name, avatar_url, carrera_id, carrera:carreras!carrera_id(id, nombre, escudo_url)), atleta_b:profiles!athlete_b_id(id, full_name, avatar_url, carrera_id, carrera:carreras!carrera_id(id, nombre, escudo_url))')
+                        .select('id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id')
                         .eq('id', matchId)
                         .single(),
                     'partido-detail-fallback'
@@ -104,68 +80,9 @@ export default function PublicMatchDetail() {
                     setFetchError(fallbackRes.error.message || matchRes.error.message || 'Error al cargar el partido');
                     return;
                 }
-                if (fallbackRes.data) {
-                    finalMatch = fallbackRes.data as any;
-                    setMatch(finalMatch);
-                }
+                if (fallbackRes.data) setMatch(fallbackRes.data as unknown as Partido);
             } else if (matchRes.data) {
-                setMatch(matchRes.data as ExtendedPartido);
-            }
-
-            const finalMatchAny = finalMatch as any;
-
-            // Para deportes individuales: lookup secundario de carrera por nombre del atleta
-            const INDIVIDUAL_SPORTS = ['Tenis', 'Tenis de Mesa', 'Ajedrez'];
-            const sportNameForLookup = finalMatchAny?.disciplinas?.name || '';
-            if (INDIVIDUAL_SPORTS.includes(sportNameForLookup)) {
-                const lookups: Promise<void>[] = [];
-                if (finalMatchAny?.equipo_a) {
-                    lookups.push(
-                        (async () => {
-                            const { data } = await supabase.from('jugadores')
-                                .select('id, profile_id, carrera:carreras!carrera_id(id, nombre, escudo_url)')
-                                .ilike('nombre', finalMatchAny.equipo_a)
-                                .limit(1).maybeSingle();
-                            if (!data) return;
-                            const c = Array.isArray(data.carrera) ? data.carrera[0] : data.carrera;
-                            if (c) setAtletaACarrera(c as any);
-                            setAtletaAIds({ profile_id: data.profile_id ?? null, jugador_id: data.id ?? null });
-                        })()
-                    );
-                }
-                if (finalMatchAny?.equipo_b) {
-                    lookups.push(
-                        (async () => {
-                            const { data } = await supabase.from('jugadores')
-                                .select('id, profile_id, carrera:carreras!carrera_id(id, nombre, escudo_url)')
-                                .ilike('nombre', finalMatchAny.equipo_b)
-                                .limit(1).maybeSingle();
-                            if (!data) return;
-                            const c = Array.isArray(data.carrera) ? data.carrera[0] : data.carrera;
-                            if (c) setAtletaBCarrera(c as any);
-                            setAtletaBIds({ profile_id: data.profile_id ?? null, jugador_id: data.id ?? null });
-                        })()
-                    );
-                }
-                if (lookups.length) await Promise.all(lookups);
-            }
-
-            if (finalMatchAny?.marcador_detalle?.tipo === 'carrera') {
-                const ids: number[] = (finalMatchAny.marcador_detalle.participantes || [])
-                    .map((p: any) => p.carrera_id)
-                    .filter((id: any): id is number => typeof id === 'number');
-                const uniqueIds = [...new Set(ids)];
-                if (uniqueIds.length > 0) {
-                    const { data: carrerasData } = await supabase
-                        .from('carreras')
-                        .select('id, nombre, escudo_url')
-                        .in('id', uniqueIds);
-                    if (carrerasData) {
-                        const map: Record<number, { nombre: string; escudo_url?: string | null }> = {};
-                        carrerasData.forEach((c: any) => { map[c.id] = c; });
-                        setCarrerasMap(map);
-                    }
-                }
+                setMatch(matchRes.data);
             }
 
             const [eventosRes, predsRes] = await Promise.all([
@@ -193,16 +110,6 @@ export default function PublicMatchDetail() {
                 if (userPred) {
                     setUserPrediction(userPred);
                     setVotingPick(userPred.winner_pick);
-                    if (userPred.prediction_type === 'score') {
-                        setShowBonus(true);
-                        const sport = (matchRes?.data as any)?.disciplinas?.name;
-                        if (sport === 'Baloncesto') {
-                            setMarginPick(userPred.goles_a === 0 ? 'CLOSE' : 'WIDE');
-                        } else {
-                            setBonusGolesA(userPred.goles_a);
-                            setBonusGolesB(userPred.goles_b);
-                        }
-                    }
                 }
             }
         } catch (err: any) {
@@ -221,14 +128,6 @@ export default function PublicMatchDetail() {
         setVotingPick(pick);
         setSaving(true);
 
-        const sportN = (match as any).disciplinas?.name;
-        const BONUS_SPORTS = ['Fútbol', 'Voleibol', 'Baloncesto'];
-        const hasBonusBet = showBonus && BONUS_SPORTS.includes(sportN) && (
-            (sportN === 'Fútbol' && bonusGolesA !== null && bonusGolesB !== null) ||
-            (sportN === 'Voleibol' && bonusGolesA !== null && bonusGolesB !== null) ||
-            (sportN === 'Baloncesto' && marginPick !== null)
-        );
-
         try {
             // Ensure profile exists
             await supabase.from('profiles').upsert(
@@ -239,14 +138,10 @@ export default function PublicMatchDetail() {
             const payload = {
                 user_id: user.id,
                 match_id: parseInt(matchId),
-                prediction_type: hasBonusBet ? 'score' : 'winner',
-                winner_pick: pick,
-                goles_a: hasBonusBet
-                    ? (sportN === 'Baloncesto' ? (marginPick === 'CLOSE' ? 0 : 1) : bonusGolesA)
-                    : null,
-                goles_b: hasBonusBet
-                    ? (sportN === 'Baloncesto' ? null : bonusGolesB)
-                    : null,
+                prediction_type: 'winner',
+                goles_a: null,
+                goles_b: null,
+                winner_pick: pick
             };
 
             if (userPrediction) {
@@ -278,39 +173,32 @@ export default function PublicMatchDetail() {
         }
     };
 
-    // Handle winner change (auto-open bonus, reset volley)
-    const handleWinnerChange = (pick: string) => {
-        setVotingPick(pick);
-        const sportN = (match as any)?.disciplinas?.name;
-        const BONUS_SPORTS = ['Fútbol', 'Voleibol', 'Baloncesto'];
-        if (BONUS_SPORTS.includes(sportN) && (pick !== 'DRAW' || sportN === 'Fútbol')) {
-            setShowBonus(true);
-        }
-        if (sportN === 'Voleibol') {
-            setBonusGolesA(null);
-            setBonusGolesB(null);
-        }
-    };
-
     useEffect(() => {
         const controller = new AbortController();
         fetchData(controller.signal);
 
         // Global revalidate listener (triggered by VisibilityRevalidate)
         const handleRevalidate = () => {
+            console.log('[MatchPage] Global revalidate triggered');
             fetchData(controller.signal);
         };
+
         window.addEventListener('app:revalidate', handleRevalidate);
 
-        // Polling cada 20s en lugar de Realtime para no saturar conexiones WebSocket
-        // (Supabase Free = 200 conexiones simultáneas máximo)
-        const pollInterval = setInterval(() => {
-            if (!document.hidden) fetchData(controller.signal);
-        }, 20_000);
+        // Suscripción Realtime
+        const channel = supabase
+            .channel(`match:${matchId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos', filter: `id=eq.${matchId}` }, (payload) => {
+                setMatch(prev => prev ? { ...prev, ...payload.new, disciplinas: prev.disciplinas } as Partido : prev);
+            })
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'olympics_eventos', filter: `partido_id=eq.${matchId}` }, () => {
+                fetchData(controller.signal);
+            })
+            .subscribe();
 
         return () => {
             controller.abort();
-            clearInterval(pollInterval);
+            supabase.removeChannel(channel);
             window.removeEventListener('app:revalidate', handleRevalidate);
         };
     }, [matchId, user]);
@@ -355,10 +243,7 @@ export default function PublicMatchDetail() {
 
     const isLive = match.estado === 'en_curso';
     const isFinished = match.estado === 'finalizado';
-    
-    // Robust sport name extraction (handles object or array)
-    const rawDisc: any = match.disciplinas;
-    const sportName = (Array.isArray(rawDisc) ? rawDisc[0]?.name : rawDisc?.name) || 'Deporte';
+    const sportName = match.disciplinas?.name || 'Deporte';
     const sportEmoji = getSportEmoji(sportName);
     const { scoreA, scoreB, subScoreA, subScoreB, extra, subLabel } = getCurrentScore(sportName, match.marcador_detalle || {});
     const generoMatch = match.genero || 'masculino';
@@ -397,9 +282,13 @@ export default function PublicMatchDetail() {
 
             {/* Navigation Header */}
             <div className="fixed top-0 left-0 right-0 z-50 px-4 py-4 flex justify-between items-center pointer-events-none">
-                <div className="pointer-events-auto">
-                    <SafeBackButton fallback="/partidos" />
-                </div>
+                <Link
+                    href="/"
+                    className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all text-sm font-medium text-white group"
+                >
+                    <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                    <span className="hidden sm:inline">Volver</span>
+                </Link>
 
                 <div className="pointer-events-auto flex gap-2">
                     <button className="p-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all text-white">
@@ -426,11 +315,6 @@ export default function PublicMatchDetail() {
                     )} style={{ background: `linear-gradient(to right, transparent, ${sportColor}60, transparent)` }} />
 
                     <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-center">
-                        {/* Ambient Background - Large Sport Watermark (DEEP ZOOM) */}
-                        <div className="absolute -right-[10%] -bottom-[15%] flex items-center justify-center pointer-events-none select-none opacity-[0.05] rotate-[-12deg] z-0">
-                            <SportIcon sport={sportName} size={380} className="text-white drop-shadow-[0_0_50px_rgba(255,255,255,0.05)]" />
-                        </div>
-
                         {/* Status Badges & Integrated Timer */}
                         <div className="flex flex-col justify-center items-center mb-8 relative z-20 px-4 w-full">
                             {/* Live Timer directly integrated above the badge */}
@@ -439,41 +323,38 @@ export default function PublicMatchDetail() {
                                     <PublicLiveTimer detalle={match.marcador_detalle || {}} deporte={match.disciplinas?.name} />
                                 </div>
                             )}
-                            <div className="flex flex-wrap justify-center items-center">
-                                <div className="inline-flex items-center gap-4 px-4 py-2 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl bg-black/60 transition-all duration-500">
-                                    {!isFinished && !isLive && (
-                                        <div className="flex items-center gap-2 text-white/90 text-[10px] sm:text-[11px] font-bold tracking-widest uppercase">
-                                            <Calendar size={14} style={{ color: sportColor }} />
-                                            <span>{new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                                        </div>
-                                    )}
 
-                                    {!isFinished && !isLive && (
-                                        <div className="w-[1px] h-3 bg-white/10 self-center" />
-                                    )}
-
-                                    <div className="flex items-center gap-2.5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: sportColor }}>
-                                        <div className="p-1 rounded-lg bg-black/40 flex items-center justify-center">
-                                            <SportIcon sport={sportName} size={13} />
-                                        </div>
-                                        <span>{sportName}</span>
-                                        <span className="opacity-30 mx-0.5">•</span>
-                                        <span className={cn(
-                                            "font-black",
-                                            generoMatch === 'femenino' ? 'text-pink-400' :
-                                                generoMatch === 'mixto' ? 'text-purple-400' : 'text-blue-400'
-                                        )}>{generoMatch}</span>
+                            <div className="flex flex-wrap justify-center items-center gap-2">
+                                {!isFinished && !isLive && (
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase shadow-lg" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+                                        <Calendar size={14} style={{ color: sportColor }} />
+                                        {new Date(match.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
                                     </div>
+                                )}
 
-                                    {(sportName === 'Tenis' || sportName === 'Tenis de Mesa') && (match as any).categoria && (
-                                        <>
-                                            <div className="w-[1px] h-3 bg-white/10 self-center" />
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-lime-400">
-                                                {(match as any).categoria === 'intermedio' ? 'Intermedio' : 'Avanzado'}
-                                            </span>
-                                        </>
-                                    )}
+                                {isFinished && (
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 text-slate-400 text-[10px] sm:text-xs font-black tracking-widest uppercase" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+                                        <Trophy size={14} /> Finalizado
+                                    </div>
+                                )}
+
+                                <div className={cn(
+                                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg transition-all"
+                                )} style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: sportColor }}>
+                                    <SportIcon sport={sportName} size={14} />
+                                    <span>{sportName}</span>
+                                    <span className="opacity-30 mx-1">•</span>
+                                    <span className={cn(
+                                        generoMatch === 'femenino' ? 'text-pink-400' :
+                                            generoMatch === 'mixto' ? 'text-purple-400' : 'text-blue-400'
+                                    )}>{generoMatch}</span>
                                 </div>
+
+                                {(sportName === 'Tenis' || sportName === 'Tenis de Mesa') && (match as any).categoria && (
+                                    <span className="px-3 py-1.5 rounded-xl bg-background/80 border border-white/10 text-[10px] font-black uppercase tracking-widest text-lime-400 shadow-lg">
+                                        {(match as any).categoria === 'intermedio' ? 'Intermedio' : 'Avanzado'}
+                                    </span>
+                                )}
                             </div>
                         </div>
 
@@ -497,78 +378,48 @@ export default function PublicMatchDetail() {
                                         })
                                         .map((p: any, idx: number) => {
                                             const hasProfile = !!p.profile_id;
-                                            const carreraInfo = p.carrera_id ? carrerasMap[p.carrera_id] : null;
-                                            const carreraName = carreraInfo?.nombre || p.carrera || p.equipo;
-                                            const carreraEscudo = carreraInfo?.escudo_url;
-
-                                            return (
-                                                <div key={idx} className={cn(
-                                                    "flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border transition-all duration-300 relative group/participant",
-                                                    "bg-white/5 border-white/5",
+                                            const Content = (
+                                                <div className={cn(
+                                                    "flex items-center gap-4 p-3 sm:p-4 rounded-2xl border transition-all duration-300 relative group/participant active:scale-[0.98] active:brightness-110",
+                                                    hasProfile ? "cursor-pointer bg-white/[0.03] border-white/10 hover:border-emerald-500/30 hover:bg-white/10 hover:shadow-2xl hover:shadow-emerald-500/10" : "cursor-default bg-white/5 border-white/5 text-slate-400",
                                                     p.posicion === 1 ? "bg-gradient-to-r from-yellow-500/20 to-yellow-900/5 border-[#FFC000]/30 text-yellow-100 shadow-[0_0_20px_rgba(234,179,8,0.2)] scale-[1.02] z-10" :
                                                         p.posicion === 2 ? "bg-gradient-to-r from-slate-400/20 to-slate-800/5 border-slate-400/30 text-slate-200" :
                                                             p.posicion === 3 ? "bg-gradient-to-r from-orange-700/20 to-orange-900/5 border-orange-600/30 text-orange-200" :
                                                                 ""
                                                 )}>
-                                                    {/* Position */}
-                                                    <div className="text-2xl sm:text-3xl font-black italic w-8 sm:w-10 text-center opacity-80 flex-shrink-0">
+                                                    <div className="text-2xl sm:text-3xl font-black italic w-8 sm:w-12 text-center opacity-80 flex-shrink-0">
                                                         {p.posicion === 1 ? '🥇' : p.posicion === 2 ? '🥈' : p.posicion === 3 ? '🥉' : (p.posicion || idx + 1)}
                                                     </div>
 
-                                                    {/* Info */}
-                                                    <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
-                                                        {/* Athlete name */}
-                                                        {hasProfile || p.jugador_id ? (
-                                                            <Link 
-                                                                href={hasProfile ? `/perfil/${p.profile_id}` : `/jugador/${p.jugador_id}`}
-                                                                className="font-bold text-sm sm:text-lg truncate leading-tight transition-colors flex items-center gap-1.5 text-white underline decoration-white/0 hover:decoration-cyan-500/50 hover:text-cyan-400 group/name"
-                                                            >
-                                                                {p.nombre}
-                                                                <ExternalLink size={12} className="opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" />
-                                                            </Link>
-                                                        ) : (
-                                                            <div className="font-bold text-sm sm:text-lg truncate leading-tight text-white/90">
-                                                                {p.nombre}
-                                                            </div>
-                                                        )}
-
-                                                        {/* Carrera badge */}
-                                                        {carreraName && (
-                                                            p.carrera_id ? (
-                                                                <Link
-                                                                    href={`/carrera/${p.carrera_id}`}
-                                                                    className="inline-flex items-center gap-1.5 w-fit max-w-full group/carrera hover:brightness-125 transition-all"
-                                                                >
-                                                                    {carreraEscudo ? (
-                                                                        <img src={carreraEscudo} alt="" className="w-4 h-4 rounded-sm object-contain shrink-0 opacity-80 group-hover/carrera:opacity-100" />
-                                                                    ) : (
-                                                                        <div className="w-4 h-4 rounded-sm bg-white/10 shrink-0" />
-                                                                    )}
-                                                                    <span className="text-[11px] font-medium text-white/50 uppercase tracking-wide truncate group-hover/carrera:text-cyan-400 transition-colors">
-                                                                        {carreraName}
-                                                                    </span>
-                                                                </Link>
-                                                            ) : (
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <div className="w-4 h-4 rounded-sm bg-white/10 shrink-0" />
-                                                                    <span className="text-[11px] font-medium text-white/40 uppercase tracking-wide truncate">{carreraName}</span>
-                                                                </div>
-                                                            )
-                                                        )}
-                                                    </div>
-
-                                                    {/* Carril + Tiempo */}
-                                                    <div className="flex flex-col items-end gap-1 shrink-0">
-                                                        <div className="font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-white drop-shadow-md">
-                                                            {p.tiempo || '--:--'}
+                                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                        <div className={cn("font-bold text-base sm:text-xl truncate leading-tight transition-colors flex items-center gap-1.5", hasProfile ? "group-hover/participant:text-emerald-400" : "text-white/90")}>
+                                                            {p.nombre}
+                                                            {hasProfile && <ExternalLink size={14} className="opacity-30 group-hover/participant:opacity-100 transition-opacity" />}
                                                         </div>
-                                                        {p.carril && (
-                                                            <span className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-bold text-white/50 uppercase tracking-wider">
-                                                                C{p.carril}
-                                                            </span>
-                                                        )}
+                                                        <div className="text-xs sm:text-sm font-medium opacity-60 uppercase tracking-wide truncate mt-0.5 text-white/70">
+                                                            {p.equipo}
+                                                            {p.carril && <span className="ml-2 px-1.5 py-0.5 rounded bg-white/10 text-[10px]">CARRIL {p.carril}</span>}
+                                                        </div>
                                                     </div>
+
+                                                    <div className="text-right font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-white drop-shadow-md">
+                                                        {p.tiempo || '--:--'}
+                                                    </div>
+
+                                                    {hasProfile && (
+                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-30 group-hover/participant:opacity-100 transition-all translate-x-4 group-hover/participant:translate-x-0">
+                                                            <div className="px-2 py-1 rounded-lg bg-emerald-500 text-black text-[8px] font-black uppercase tracking-tighter shadow-[0_0_10px_rgba(16,185,129,0.3)]">PERFIL</div>
+                                                        </div>
+                                                    )}
                                                 </div>
+                                            );
+
+                                            return hasProfile ? (
+                                                <Link key={idx} href={`/perfil/${p.profile_id}`}>
+                                                    {Content}
+                                                </Link>
+                                            ) : (
+                                                <div key={idx}>{Content}</div>
                                             );
                                         })}
 
@@ -583,75 +434,87 @@ export default function PublicMatchDetail() {
                             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-8 w-full relative">
                                 {/* Team A */}
                                 <div className="flex flex-col items-center group w-full min-w-0">
-                                    <div className="w-full flex flex-col items-center">
-                                        {getDisplayName(match, 'a') !== 'TBD' && getDisplayName(match, 'a') !== 'BYE' && (
-                                            <Link
-                                                href={
-                                                    match.atleta_a ? `/perfil/${match.atleta_a.id}` :
-                                                    match.atleta_a_info?.profile ? `/perfil/${match.atleta_a_info.profile.id}` :
-                                                    match.athlete_a_id ? `/perfil/${match.athlete_a_id}` :
-                                                    atletaAIds.profile_id ? `/perfil/${atletaAIds.profile_id}` :
-                                                    match.atleta_a_info?.id ? `/jugador/${match.atleta_a_info.id}` :
-                                                    atletaAIds.jugador_id ? `/jugador/${atletaAIds.jugador_id}` :
-                                                    (match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` :
-                                                    '/perfil/no-encontrado'
-                                                }
-                                                className={cn(
-                                                    "relative w-full flex flex-col items-center gap-2.5 transition-all duration-300 active:scale-95 group/btn cursor-pointer"
-                                                )}
-                                            >
-                                                <div className="relative shrink-0 p-1">
-                                                    <div className={cn(
-                                                        "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
-                                                        `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
-                                                    )} />
-                                                    
-                                                    <div className="relative group/avatar">
-                                                        <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover/btn:opacity-40 transition-opacity duration-500" style={{ backgroundColor: sportColor }} />
-                                                        <Avatar
-                                                            name={getDisplayName(match, 'a')}
-                                                            src={
-                                                                match.atleta_a?.avatar_url ||
-                                                                match.atleta_a_info?.profile?.avatar_url ||
-                                                                match.atleta_a?.carrera?.escudo_url ||
-                                                                match.atleta_a_info?.carrera?.escudo_url ||
-                                                                atletaACarrera?.escudo_url ||
-                                                                match.carrera_a?.escudo_url ||
-                                                                match.delegacion_a_info?.escudo_url
-                                                            }
-                                                            size="lg" 
-                                                            className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} 
-                                                        />
-                                                        
-                                                        <div className="absolute -bottom-2 z-30 flex justify-center w-full">
-                                                            <div className={cn(
-                                                                "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
-                                                                "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
-                                                                "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95"
-                                                            )} style={{ 
-                                                                backgroundColor: sportColor,
-                                                                color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
-                                                                boxShadow: `0 4px 12px ${sportColor}40`
-                                                            }}>
-                                                                VER PERFIL
+                                    <Link 
+                                        href={match.athlete_a_id ? `/perfil/${match.athlete_a_id}` : (match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` : match.carrera_a_id ? `/carrera/${match.carrera_a_id}?sport=${encodeURIComponent(sportName)}` : '#'}
+                                        onClick={(e) => { if (!match.athlete_a_id && !(match as any).delegacion_a_id && !match.carrera_a_id) e.preventDefault(); }}
+                                        className={cn(
+                                            "relative w-full flex flex-col items-center gap-3 transition-all duration-300 active:scale-95 group/btn",
+                                            (match.athlete_a_id || (match as any).delegacion_a_id || match.carrera_a_id) ? "cursor-pointer" : "cursor-default"
+                                        )}
+                                    >
+                                        <div className="relative shrink-0 p-1">
+                                            {/* Subtle Glow Ring */}
+                                            <div className={cn(
+                                    <div className="relative shrink-0 p-1">
+                                        {/* Subtle Glow Ring */}
+                                        <div className={cn(
+                                            "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
+                                            `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
+                                        )} />
+                                        
+                                        <div className="relative group/avatar">
+                                            {/* Athlete profile resolution hierarchy */}
+                                            {(() => {
+                                                const atletaAIds = {
+                                                    profile_id: match.atleta_a_info?.profile?.id || match.atleta_a?.profile_id || match.athlete_a_id || match.atleta_a_info?.id_profile,
+                                                    jugador_id: match.atleta_a || match.atleta_a_info?.id,
+                                                };
+
+                                                return (
+                                                    <Link 
+                                                        href={
+                                                            atletaAIds.profile_id ? `/perfil/${atletaAIds.profile_id}` :
+                                                            match.atleta_a_info?.id ? `/jugador/${match.atleta_a_info.id}` :
+                                                            atletaAIds.jugador_id ? `/jugador/${atletaAIds.jugador_id}` :
+                                                            (match as any).delegacion_a_id ? `/equipo/${(match as any).delegacion_a_id}` :
+                                                            '/perfil/no-encontrado'
+                                                        }
+                                                        className="relative group/btn cursor-pointer block"
+                                                    >
+                                                        <div className="relative">
+                                                            {/* Glow Effect */}
+                                                            <div className={cn("absolute inset-0 rounded-full blur-2xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500", SPORT_GLOW[sportName])} />
+                                                            
+                                                            <Avatar 
+                                                                src={
+                                                                    match.atleta_a_info?.profile?.avatar_url || 
+                                                                    match.atleta_a_info?.avatar_url || 
+                                                                    match.delegacion_a_info?.escudo_url
+                                                                }
+                                                                size="lg" 
+                                                                className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} 
+                                                            />
+                                                            
+                                                            <div className="absolute -bottom-2 z-30 flex justify-center w-full">
+                                                                <div className={cn(
+                                                                    "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
+                                                                    "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
+                                                                    "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95"
+                                                                )} style={{ 
+                                                                    backgroundColor: sportColor,
+                                                                    color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
+                                                                    boxShadow: `0 4px 12px ${sportColor}40`
+                                                                }}>
+                                                                    VER PERFIL
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </div>
+                                                    </Link>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
 
-                                                <div className="flex flex-col items-center gap-0.5 w-full relative z-10">
-                                                    <h2 className={cn(
-                                                        "font-black text-[11px] sm:text-[15px] leading-[1.1] uppercase tracking-tight text-center w-full px-2 transition-all duration-300 drop-shadow-sm text-white group-hover/btn:text-white/100 line-clamp-2"
-                                                    )}>
-                                                        {getDisplayName(match, 'a')}
-                                                    </h2>
-                                                </div>
-                                            </Link>
-                                        )}
-
+                                    <div className="flex flex-col items-center gap-1 w-full relative z-10 sm:mt-1">
+                                        <h2 className={cn(
+                                            "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm",
+                                            (match.athlete_a_id || (match as any).delegacion_a_id || match.carrera_a_id) ? "group-hover/btn:scale-105" : "text-white"
+                                        )} style={{ color: (match.athlete_a_id || (match as any).delegacion_a_id || match.carrera_a_id) ? '' : 'white' }}>
+                                            {getDisplayName(match, 'a')}
+                                        </h2>
                                         {/* Career Link (Bottom Part) - With Fallback if Null */}
                                         {isIndividualSport(sportName) && getDisplayName(match, 'a') !== 'TBD' && getDisplayName(match, 'a') !== 'BYE' && !!(match.atleta_a_info?.carrera?.nombre || match.atleta_a?.carrera?.nombre || atletaACarrera?.nombre || match.carrera_a?.nombre || getCarreraSubtitle(match, 'a')) && (
-                                            <Link 
+                                            <Link
                                                 href={
                                                     match.atleta_a_info?.carrera?.id ? `/carrera/${match.atleta_a_info.carrera.id}?sport=${encodeURIComponent(sportName)}` :
                                                     match.atleta_a?.carrera?.id ? `/carrera/${match.atleta_a.carrera.id}?sport=${encodeURIComponent(sportName)}` :
@@ -680,6 +543,7 @@ export default function PublicMatchDetail() {
                                 </div>
 
                                 <div className="flex flex-col items-center relative z-20 min-w-[120px] sm:min-w-[220px] shrink-0">
+
                                     {sportName === 'Ajedrez' ? (
                                         <div className="flex flex-col items-center justify-center w-full min-h-[100px] sm:min-h-[140px]">
                                             {isFinished && match.marcador_detalle?.resultado_final === 'empate' ? (
@@ -728,6 +592,7 @@ export default function PublicMatchDetail() {
                                             "flex items-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-2 sm:mb-3",
                                             isLive ? (SPORT_LIVE_TEXT[match.disciplinas?.name ?? ''] || SPORT_LIVE_TEXT.default) : "text-white/40"
                                         )}>
+                                            {/* Quarter or 'Finalizado' / 'Programado' */}
                                             {extra ? (
                                                 <div className="flex items-center gap-2">
                                                     <span className={cn(
@@ -745,6 +610,7 @@ export default function PublicMatchDetail() {
                                             ) : (
                                                 <span>{isLive ? 'EN CURSO' : isFinished ? 'FINAL' : 'PROGRAMADO'}</span>
                                             )}
+                                            {/* Timer moved to top-left area */}
                                         </div>
 
                                         {/* Glowing Progress Status Bar */}
@@ -763,78 +629,79 @@ export default function PublicMatchDetail() {
 
                                 {/* Team B */}
                                 <div className="flex flex-col items-center group w-full min-w-0">
-                                    <div className="w-full flex flex-col items-center">
-                                        {getDisplayName(match, 'b') !== 'TBD' && getDisplayName(match, 'b') !== 'BYE' && (
-                                            <Link
-                                                href={
-                                                    match.atleta_b ? `/perfil/${match.atleta_b.id}` :
-                                                    match.atleta_b_info?.profile ? `/perfil/${match.atleta_b_info.profile.id}` :
-                                                    match.athlete_b_id ? `/perfil/${match.athlete_b_id}` :
-                                                    atletaBIds.profile_id ? `/perfil/${atletaBIds.profile_id}` :
-                                                    match.atleta_b_info?.id ? `/jugador/${match.atleta_b_info.id}` :
-                                                    atletaBIds.jugador_id ? `/jugador/${atletaBIds.jugador_id}` :
-                                                    (match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` :
-                                                    '/perfil/no-encontrado'
-                                                }
-                                                className={cn(
-                                                    "relative w-full flex flex-col items-center gap-2.5 transition-all duration-300 active:scale-95 group/btn cursor-pointer"
-                                                )}
-                                            >
-                                                <div className="relative shrink-0 p-1">
-                                                    <div className={cn(
-                                                        "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
-                                                        `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
-                                                    )} />
-                                                    
-                                                    <div className="relative group/avatar">
-                                                        <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover/btn:opacity-40 transition-opacity duration-500" style={{ backgroundColor: sportColor }} />
-                                                        <Avatar
-                                                            name={getDisplayName(match, 'b')}
-                                                            src={
-                                                                match.atleta_b?.avatar_url ||
-                                                                match.atleta_b_info?.profile?.avatar_url ||
-                                                                match.atleta_b?.carrera?.escudo_url ||
-                                                                match.atleta_b_info?.carrera?.escudo_url ||
-                                                                atletaBCarrera?.escudo_url ||
-                                                                match.carrera_b?.escudo_url ||
-                                                                match.delegacion_b_info?.escudo_url
-                                                            }
-                                                            size="lg" 
-                                                            className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} 
-                                                        />
-                                                        
-                                                        <div className="absolute -bottom-2 z-30 flex justify-center w-full">
-                                                            <div className={cn(
-                                                                "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
-                                                                "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
-                                                                "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95"
-                                                            )} style={{ 
-                                                                backgroundColor: sportColor,
-                                                                color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
-                                                                boxShadow: `0 4px 12px ${sportColor}40`
-                                                            }}>
-                                                                VER PERFIL
+                                    <div className="relative shrink-0 p-1">
+                                        {/* Subtle Glow Ring */}
+                                        <div className={cn(
+                                            "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
+                                            `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
+                                        )} />
+                                        
+                                        <div className="relative group/avatar">
+                                            {/* Athlete profile resolution hierarchy */}
+                                            {(() => {
+                                                const atletaBIds = {
+                                                    profile_id: match.atleta_b_info?.profile?.id || match.atleta_b?.profile_id || match.athlete_b_id || match.atleta_b_info?.id_profile,
+                                                    jugador_id: match.atleta_b || match.atleta_b_info?.id,
+                                                };
+
+                                                return (
+                                                    <Link 
+                                                        href={
+                                                            atletaBIds.profile_id ? `/perfil/${atletaBIds.profile_id}` :
+                                                            match.atleta_b_info?.id ? `/jugador/${match.atleta_b_info.id}` :
+                                                            atletaBIds.jugador_id ? `/jugador/${atletaBIds.jugador_id}` :
+                                                            (match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` :
+                                                            '/perfil/no-encontrado'
+                                                        }
+                                                        className="relative group/btn cursor-pointer block"
+                                                    >
+                                                        <div className="relative">
+                                                            {/* Glow Effect */}
+                                                            <div className={cn("absolute inset-0 rounded-full blur-2xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500", SPORT_GLOW[sportName])} />
+                                                            
+                                                            <Avatar 
+                                                                src={
+                                                                    match.atleta_b_info?.profile?.avatar_url || 
+                                                                    match.atleta_b_info?.avatar_url || 
+                                                                    match.delegacion_b_info?.escudo_url
+                                                                }
+                                                                size="lg" 
+                                                                className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} 
+                                                            />
+                                                            
+                                                            <div className="absolute -bottom-2 z-30 flex justify-center w-full">
+                                                                <div className={cn(
+                                                                    "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
+                                                                    "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
+                                                                    "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95"
+                                                                )} style={{ 
+                                                                    backgroundColor: sportColor,
+                                                                    color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
+                                                                    boxShadow: `0 4px 12px ${sportColor}40`
+                                                                }}>
+                                                                    VER PERFIL
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </div>
+                                                    </Link>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
 
-                                                <div className="flex flex-col items-center gap-0.5 w-full relative z-10">
-                                                    <h2 className={cn(
-                                                        "font-black text-[11px] sm:text-[15px] leading-[1.1] uppercase tracking-tight text-center w-full px-2 transition-all duration-300 drop-shadow-sm text-white group-hover/btn:text-white/100 line-clamp-2"
-                                                    )}>
-                                                        {getDisplayName(match, 'b')}
-                                                    </h2>
-                                                </div>
-                                            </Link>
-                                        )}
-
+                                    <div className="flex flex-col items-center gap-1 w-full relative z-10 sm:mt-1">
+                                        <h2 className={cn(
+                                            "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm",
+                                            (match.athlete_b_id || (match as any).delegacion_b_id || match.carrera_b_id) ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105" : "text-white"
+                                        )}>
+                                            {getDisplayName(match, 'b')}
+                                        </h2>
                                         {/* Career Link (Bottom Part) - With Fallback if Null */}
                                         {isIndividualSport(sportName) && getDisplayName(match, 'b') !== 'TBD' && getDisplayName(match, 'b') !== 'BYE' && !!(match.atleta_b_info?.carrera?.nombre || match.atleta_b?.carrera?.nombre || atletaBCarrera?.nombre || match.carrera_b?.nombre || getCarreraSubtitle(match, 'b')) && (
                                             <Link
                                                 href={
                                                     match.atleta_b_info?.carrera?.id ? `/carrera/${match.atleta_b_info.carrera.id}?sport=${encodeURIComponent(sportName)}` :
-                                                    match.atleta_b?.carrera?.id ? `/carrera/${match.atleta_b.carrera.id}?sport=${encodeURIComponent(sportName)}` :
+                                                    match.atleta_a?.carrera?.id ? `/carrera/${match.atleta_a.carrera.id}?sport=${encodeURIComponent(sportName)}` :
                                                     atletaBCarrera?.id ? `/carrera/${atletaBCarrera.id}?sport=${encodeURIComponent(sportName)}` :
                                                     match.carrera_b_id ? `/carrera/${match.carrera_b_id}?sport=${encodeURIComponent(sportName)}` :
                                                     (match as any).delegacion_b_id ? `/equipo/${(match as any).delegacion_b_id}` : '#'
@@ -859,8 +726,7 @@ export default function PublicMatchDetail() {
                                     </div>
                                 </div>
                             </div>
-                        )}
-
+                        )}                      {/* Metadata Footer: Clean Location Label */}
                         <div className="mt-6 sm:mt-8 flex justify-center px-4">
                             <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/5 border border-white/5 shadow-inner backdrop-blur-md group hover:bg-white/10 transition-all">
                                 <div className={cn("p-1.5 rounded-lg bg-black/20", SPORT_ACCENT[sportName])}>
@@ -877,93 +743,27 @@ export default function PublicMatchDetail() {
                     {/* Inner Mesh for depth */}
                     <div className="absolute inset-0 p-[1px] bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
                     
-                    <div className="relative z-10 flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-4">
-                            <div className={cn("p-2.5 rounded-2xl bg-white/5 border border-white/10 shadow-lg", SPORT_ACCENT[sportName])}>
-                                <BarChart3 size={22} className="drop-shadow-[0_0_10px_currentColor]" />
-                            </div>
-                            <div className="flex flex-col">
-                                <h3 className="text-xl font-black text-white tracking-tight leading-none mb-1 uppercase font-display">Acierta y Gana</h3>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-1 text-[10px] text-white/40 font-black uppercase tracking-widest">
-                                        <Users size={12} className="text-white/20" />
-                                        <span className="text-white/60">{matchPredictions.length}</span> personas han votado
-                                    </div>
-                                </div>
-                            </div>
+                    <div className="relative z-10 flex items-center gap-4 mb-6">
+                        <div className={cn("p-2 rounded-xl bg-white/5 border border-white/10", SPORT_ACCENT[sportName])}>
+                            <BarChart3 size={20} className="drop-shadow-[0_0_8px_currentColor]" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-lg font-bold text-white tracking-tight">Acierta y Gana</h3>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                                <Users size={10} /> {matchPredictions.length} votos
+                            </p>
                         </div>
                         {userPrediction && (
-                            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 shadow-xl">
-                                <CheckCircle size={14} className="text-emerald-400" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Votaste</span>
-                            </div>
+                            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] font-black uppercase tracking-widest shadow-lg">
+                                <CheckCircle size={10} className="mr-1" /> Votaste
+                            </Badge>
                         )}
                     </div>
 
-                    {/* Predictions Visualization */}
+                    {/* Single Horizontal Percentage Bar */}
                     {(() => {
-                        const isCarrera = match.marcador_detalle?.tipo === 'carrera';
                         const winnerPreds = matchPredictions.filter(p => p.winner_pick);
                         const total = winnerPreds.length;
-
-                        if (isCarrera) {
-                            // Race visualization: List top favorites
-                            const participants = match.marcador_detalle?.participantes || [];
-                            const counts = winnerPreds.reduce((acc, p) => {
-                                acc[p.winner_pick] = (acc[p.winner_pick] || 0) + 1;
-                                return acc;
-                            }, {} as Record<string, number>);
-
-                            const sortedParticipants = [...participants]
-                                .map(p => ({
-                                    ...p,
-                                    votes: counts[p.nombre] || 0,
-                                    pct: total > 0 ? Math.round(((counts[p.nombre] || 0) / total) * 100) : 0
-                                }))
-                                .sort((a, b) => b.votes - a.votes)
-                                .slice(0, 4);
-
-                            return (
-                                <div className="space-y-3">
-                                    <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-4">Favoritos de la comunidad</p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {sortedParticipants.map((p, idx) => {
-                                            const Inner = (
-                                                <div className="flex flex-col min-w-0">
-                                                    <span className={cn("text-xs font-black truncate transition-colors", p.profile_id ? "text-cyan-400 group-hover:text-cyan-300" : "text-white")}>
-                                                        {p.nombre}
-                                                    </span>
-                                                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">{p.votes} votos</span>
-                                                </div>
-                                            );
-
-                                            return (
-                                                <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center justify-between group">
-                                                    {p.profile_id ? (
-                                                        <Link href={`/perfil/${p.profile_id}`} className="min-w-0 flex-1 hover:opacity-80 transition-opacity">
-                                                            {Inner}
-                                                        </Link>
-                                                    ) : Inner}
-                                                    <div className="flex items-center gap-3 shrink-0 ml-2">
-                                                        <div className="text-xl font-black font-mono" style={{ color: sportColor }}>{p.pct}%</div>
-                                                        <div className="w-1.5 h-8 bg-white/5 rounded-full overflow-hidden">
-                                                            <div className="w-full bg-current rounded-full transition-all duration-1000" style={{ height: `${p.pct}%`, color: sportColor }} />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                        {participants.length === 0 && (
-                                            <div className="col-span-full py-8 text-center bg-white/5 border border-dashed border-white/10 rounded-2xl">
-                                                <p className="text-white/20 text-xs italic">No hay votos aún</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        }
-
-                        // Team visualization: Classic 3-way bar
                         const countA = total > 0 ? winnerPreds.filter(p => p.winner_pick === 'A').length : 0;
                         const countDraw = total > 0 ? winnerPreds.filter(p => p.winner_pick === 'DRAW').length : 0;
                         const countB = total > 0 ? winnerPreds.filter(p => p.winner_pick === 'B').length : 0;
@@ -972,213 +772,93 @@ export default function PublicMatchDetail() {
                         const pctB = total > 0 ? 100 - pctA - pctDraw : 33;
 
                         return (
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-end px-2">
-                                    <div className="flex flex-col items-start">
-                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30 mb-1">{getDisplayName(match, 'a')?.split(' ')[0]}</span>
-                                        <div className={cn("text-3xl font-black font-mono leading-none", (SPORT_ACCENT[sportName] || "text-emerald-400"))}>
-                                            {total > 0 ? `${pctA}%` : '0%'}<span className="text-[10px] ml-1 opacity-40 italic">votos</span>
-                                        </div>
+                            <div className="space-y-3">
+                                {/* Labels */}
+                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest px-1">
+                                    <div className="flex flex-col items-start gap-1">
+                                        <span className="text-white/40">{getDisplayName(match, 'a')?.substring(0, 12)}</span>
+                                        <span className={cn("text-sm", SPORT_ACCENT[sportName] || "text-white")}>{total > 0 ? `${pctA}%` : '0%'}</span>
                                     </div>
-                                    <div className="flex flex-col items-center pb-0.5">
-                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 mb-1">Empate</span>
-                                        <div className="text-xl font-black text-white/40 font-mono leading-none">
-                                            {total > 0 ? `${pctDraw}%` : '0%'}
-                                        </div>
+                                    <div className="flex flex-col items-center gap-1">
+                                        <span className="text-white/40">Empate</span>
+                                        <span className="text-sm text-slate-400">{total > 0 ? `${pctDraw}%` : '0%'}</span>
                                     </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30 mb-1">{getDisplayName(match, 'b')?.split(' ')[0]}</span>
-                                        <div className={cn("text-3xl font-black font-mono leading-none", (SPORT_ACCENT[sportName] || "text-emerald-400"))}>
-                                            {total > 0 ? `${pctB}%` : '0%'}<span className="text-[10px] ml-1 opacity-40 italic">votos</span>
-                                        </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <span className="text-white/40">{getDisplayName(match, 'b')?.substring(0, 12)}</span>
+                                        <span className={cn("text-sm", SPORT_ACCENT[sportName] || "text-white")}>{total > 0 ? `${pctB}%` : '0%'}</span>
                                     </div>
                                 </div>
-
-                                <div className="relative h-4 rounded-full overflow-hidden bg-black/40 border border-white/5 flex gap-[3px] p-[2px] shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.max(pctA, 1)}%` }}
-                                        className={cn("h-full rounded-l-full relative overflow-hidden", (SPORT_ACCENT[sportName] || "bg-emerald-500/80"))}
-                                        style={{ backgroundColor: 'currentColor' }}
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent" />
-                                    </motion.div>
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.max(pctDraw, 1)}%` }}
-                                        className="h-full bg-white/10 relative"
+                                {/* The single bar */}
+                                <div className="flex h-3 rounded-full overflow-hidden bg-white/5 gap-[2px] shadow-inner">
+                                    <div
+                                        className={cn("transition-all duration-1000 rounded-l-full", SPORT_ACCENT[sportName] || "bg-emerald-500")}
+                                        style={{
+                                            width: `${Math.max(pctA, 1)}%`,
+                                            backgroundColor: 'currentColor',
+                                            filter: 'brightness(0.3)'
+                                        }}
                                     />
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.max(pctB, 1)}%` }}
-                                        className={cn("h-full rounded-r-full relative", (SPORT_ACCENT[sportName] || "bg-emerald-500/80"))}
-                                        style={{ backgroundColor: 'currentColor', filter: 'brightness(1.5)' }}
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-l from-white/10 to-black/10" />
-                                    </motion.div>
+                                    <div
+                                        className="bg-slate-700/50 transition-all duration-1000"
+                                        style={{ width: `${Math.max(pctDraw, 1)}%` }}
+                                    />
+                                    <div
+                                        className={cn("transition-all duration-1000 rounded-r-full", SPORT_ACCENT[sportName] || "bg-emerald-500")}
+                                        style={{
+                                            width: `${Math.max(pctB, 1)}%`,
+                                            backgroundColor: 'currentColor',
+                                            filter: 'brightness(1.7)'
+                                        }}
+                                    />
                                 </div>
                             </div>
                         );
                     })()}
 
-                    {/* Voting Zone */}
+                    {/* Voting Buttons */}
                     {match?.estado === 'programado' && user ? (
-                        <div className="mt-8 pt-6 border-t border-white/10 relative">
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900 border border-white/10 shadow-xl">
-                                <p className="text-[10px] font-black text-white uppercase tracking-[0.3em] whitespace-nowrap">
-                                    {userPrediction ? (match.marcador_detalle?.tipo === 'carrera' ? 'Cambiar ganador' : 'Cambiar predicción') : (match.marcador_detalle?.tipo === 'carrera' ? '¿Quién ganará la prueba?' : '¿Quién ganará?')}
-                                </p>
+                        <div className="mt-5 pt-4 border-t border-white/5">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center">
+                                {userPrediction ? 'Cambiar tu acierto' : '¿Quién ganará?'}
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                                <button
+                                    onClick={() => handleVote('A')}
+                                    disabled={saving}
+                                    className={cn(
+                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        votingPick === 'A'
+                                            ? [SPORT_ACCENT[sportName] || "bg-white/10 text-white", "border-current shadow-lg scale-[1.03] bg-white/5"]
+                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    {getDisplayName(match, 'a')?.substring(0, 8)}
+                                </button>
+                                <button
+                                    onClick={() => handleVote('DRAW')}
+                                    disabled={saving}
+                                    className={cn(
+                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        votingPick === 'DRAW'
+                                            ? "bg-white/10 border-slate-400 text-white shadow-lg scale-[1.03]"
+                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    Empate
+                                </button>
+                                <button
+                                    onClick={() => handleVote('B')}
+                                    disabled={saving}
+                                    className={cn(
+                                        "py-3 px-2 rounded-xl text-[10px] font-black tracking-wide transition-all border-2 uppercase",
+                                        votingPick === 'B'
+                                            ? [SPORT_ACCENT[sportName] || "bg-white/10 text-white", "border-current shadow-lg scale-[1.03] bg-white/5"]
+                                            : "bg-white/5 border-transparent text-white/40 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    {getDisplayName(match, 'b')?.substring(0, 8)}
+                                </button>
                             </div>
-
-                            {(() => {
-                                const isCarrera = match.marcador_detalle?.tipo === 'carrera';
-                                const sName = (match as any).disciplinas?.name;
-
-                                if (isCarrera) {
-                                    const participants = match.marcador_detalle?.participantes || [];
-                                    return (
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                                {participants.map((p: any, idx: number) => {
-                                                    const isSelected = votingPick === p.nombre;
-                                                    return (
-                                                        <button
-                                                            key={idx}
-                                                            onClick={() => handleWinnerChange(p.nombre)}
-                                                            disabled={saving}
-                                                            className={cn(
-                                                                "flex items-center gap-3 p-3 rounded-2xl border-2 transition-all text-left group",
-                                                                isSelected 
-                                                                    ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-                                                                    : "bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/20"
-                                                            )}
-                                                        >
-                                                            <div className={cn(
-                                                                "w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 transition-colors",
-                                                                isSelected ? "bg-black text-white" : "bg-white/10 text-white/40"
-                                                            )}>
-                                                                {idx + 1}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="font-bold text-xs truncate uppercase tracking-tight">{p.nombre}</p>
-                                                                <p className={cn("text-[9px] font-bold uppercase tracking-widest truncate", isSelected ? "text-black/40" : "text-white/20")}>
-                                                                    {p.equipo || p.carrera || 'Competidor'}
-                                                                </p>
-                                                            </div>
-                                                            {isSelected && <CheckCircle size={14} className="text-black shrink-0" />}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-
-                                            {votingPick && (
-                                                <button
-                                                    onClick={() => handleVote(votingPick)}
-                                                    disabled={saving}
-                                                    className="w-full py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest bg-white text-black shadow-2xl hover:bg-emerald-400 transition-all active:scale-95 disabled:opacity-50"
-                                                >
-                                                    {saving ? 'Guardando...' : userPrediction ? 'Confirmar nuevo ganador' : 'Confirmar ganador'}
-                                                </button>
-                                            )}
-                                        </div>
-                                    );
-                                }
-
-                                const supportsDraws = ['Fútbol', 'Ajedrez'].includes(sName);
-                                const BONUS_SPORTS = ['Fútbol', 'Voleibol', 'Baloncesto'];
-                                const hasBonus = BONUS_SPORTS.includes(sName);
-
-                                const winnerOpts = supportsDraws
-                                    ? [
-                                        { key: 'A', name: getDisplayName(match, 'a')?.split(' ')[0] || 'A' },
-                                        { key: 'DRAW', name: 'Empate' },
-                                        { key: 'B', name: getDisplayName(match, 'b')?.split(' ')[0] || 'B' }
-                                    ]
-                                    : [
-                                        { key: 'A', name: getDisplayName(match, 'a')?.split(' ')[0] || 'A' },
-                                        { key: 'B', name: getDisplayName(match, 'b')?.split(' ')[0] || 'B' }
-                                    ];
-
-                                const volleyOpts = votingPick === 'A'
-                                    ? [{ a: 2, b: 0 }, { a: 2, b: 1 }]
-                                    : votingPick === 'B'
-                                        ? [{ a: 0, b: 2 }, { a: 1, b: 2 }]
-                                        : [];
-
-                                return (
-                                    <div className="space-y-4">
-                                        <div className={cn("grid gap-3", supportsDraws ? "grid-cols-3" : "grid-cols-2")}>
-                                            {winnerOpts.map(opt => (
-                                                <button
-                                                    key={opt.key}
-                                                    onClick={() => handleWinnerChange(opt.key)}
-                                                    disabled={saving}
-                                                    className={cn(
-                                                        "py-2.5 px-2 rounded-[1.25rem] text-[10px] font-black tracking-widest transition-all border-2 uppercase font-sans",
-                                                        votingPick === opt.key
-                                                            ? opt.key === 'DRAW'
-                                                                ? "bg-slate-300 text-black border-slate-300 shadow-lg scale-105"
-                                                                : "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105"
-                                                            : "bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/20 active:scale-95"
-                                                    )}
-                                                >
-                                                    {opt.name}
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        {hasBonus && votingPick && (votingPick !== 'DRAW' || sName === 'Fútbol') && showBonus && (
-                                            <div className="bg-black/30 rounded-2xl border border-white/5 p-4 space-y-4 animate-in slide-in-from-top-2 fade-in duration-300">
-                                                {/* (Omitted score bonus logic for brevity, matches user's original if they want it) */}
-                                                {sName === 'Fútbol' && (
-                                                    <div className="flex items-center justify-center gap-6">
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <span className="text-[9px] font-black text-white/40 uppercase tracking-wider">{getDisplayName(match, 'a')?.split(' ')[0]}</span>
-                                                            <div className="flex items-center gap-2">
-                                                                <button onClick={() => setBonusGolesA(Math.max(0, (bonusGolesA ?? 0) - 1))} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"><Minus size={12} /></button>
-                                                                <span className="text-2xl font-black font-mono tabular-nums text-white w-8 text-center">{bonusGolesA ?? 0}</span>
-                                                                <button onClick={() => setBonusGolesA((bonusGolesA ?? 0) + 1)} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"><Plus size={12} /></button>
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-white/20 text-xl font-black">-</span>
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <span className="text-[9px] font-black text-white/40 uppercase tracking-wider">{getDisplayName(match, 'b')?.split(' ')[0]}</span>
-                                                            <div className="flex items-center gap-2">
-                                                                <button onClick={() => setBonusGolesB(Math.max(0, (bonusGolesB ?? 0) - 1))} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"><Minus size={12} /></button>
-                                                                <span className="text-2xl font-black font-mono tabular-nums text-white w-8 text-center">{bonusGolesB ?? 0}</span>
-                                                                <button onClick={() => setBonusGolesB((bonusGolesB ?? 0) + 1)} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:bg-white/10 transition-all"><Plus size={12} /></button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {sName === 'Voleibol' && (
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        {volleyOpts.map((opt) => (
-                                                            <button key={`${opt.a}-${opt.b}`} onClick={() => { setBonusGolesA(opt.a); setBonusGolesB(opt.b); }} className={cn("py-3 px-4 rounded-xl font-display font-black text-lg border-2 transition-all", bonusGolesA === opt.a && bonusGolesB === opt.b ? "bg-violet-500/15 border-violet-500 text-violet-300" : "bg-black/30 border-white/10 text-white/50")}>{opt.a} - {opt.b}</button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {sName === 'Baloncesto' && (
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <button onClick={() => setMarginPick('CLOSE')} className={cn("py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5", marginPick === 'CLOSE' ? "bg-violet-500/15 border-violet-500 text-violet-300" : "bg-black/30 border-white/10 text-white/50")}> <span className="text-xs font-display font-black uppercase tracking-wider">Cerrado</span> <span className="text-[9px] text-white/30 font-bold">{"≤"}10 pts</span> </button>
-                                                        <button onClick={() => setMarginPick('WIDE')} className={cn("py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5", marginPick === 'WIDE' ? "bg-violet-500/15 border-violet-500 text-violet-300" : "bg-black/30 border-white/10 text-white/50")}> <span className="text-xs font-display font-black uppercase tracking-wider">Amplio</span> <span className="text-[9px] text-white/30 font-bold">{">"}10 pts</span> </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {votingPick && (
-                                            <button
-                                                onClick={() => handleVote(votingPick)}
-                                                disabled={saving}
-                                                className={cn("w-full py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all border-2", userPrediction ? "bg-emerald-500 text-black border-emerald-500" : "bg-white/10 text-white border-white/10 hover:bg-white hover:text-black")}
-                                            >
-                                                {saving ? 'Guardando...' : userPrediction ? 'Actualizar Acierto' : 'Confirmar Acierto'}
-                                            </button>
-                                        )}
-                                    </div>
-                                );
-                            })()}
                         </div>
                     ) : match?.estado === 'programado' && !user ? (
                         <div className="mt-5 pt-4 border-t border-white/5 text-center">
@@ -1188,14 +868,9 @@ export default function PublicMatchDetail() {
                         </div>
                     ) : match?.estado !== 'programado' && userPrediction ? (
                         <div className={cn(
-                            "mt-5 pt-4 border-t border-white/5 text-center p-3 rounded-xl space-y-2",
+                            "mt-5 pt-4 border-t border-white/5 text-center p-3 rounded-xl",
                             match?.estado === 'finalizado'
                                 ? ((() => {
-                                    const isCarrera = match.marcador_detalle?.tipo === 'carrera';
-                                    if (isCarrera) {
-                                        const winner = (match.marcador_detalle?.participantes || []).find((p: any) => p.posicion === 1);
-                                        return userPrediction.winner_pick === winner?.nombre;
-                                    }
                                     const md = match?.marcador_detalle || {};
                                     const sA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
                                     const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
@@ -1205,13 +880,8 @@ export default function PublicMatchDetail() {
                                 : "bg-white/5"
                         )}>
                             <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tu acierto</p>
-                            <div className={cn("text-sm font-black",
+                            <p className={cn("text-sm font-black",
                                 match?.estado === 'finalizado' ? (() => {
-                                    const isCarrera = match.marcador_detalle?.tipo === 'carrera';
-                                    if (isCarrera) {
-                                        const winner = (match.marcador_detalle?.participantes || []).find((p: any) => p.posicion === 1);
-                                        return userPrediction.winner_pick === winner?.nombre ? "text-emerald-400" : "text-white/60";
-                                    }
                                     const md = match?.marcador_detalle || {};
                                     const sA = md.goles_a ?? md.total_a ?? md.sets_a ?? 0;
                                     const sB = md.goles_b ?? md.total_b ?? md.sets_b ?? 0;
@@ -1219,46 +889,14 @@ export default function PublicMatchDetail() {
                                     return userPrediction.winner_pick === result ? "text-emerald-400" : "text-white/60";
                                 })() : "text-white"
                             )}>
-                                {match.marcador_detalle?.tipo === 'carrera' ? (
-                                    <div className="flex items-center justify-center gap-2">
-                                        <Trophy size={14} style={{ color: sportColor }} />
-                                        <span>Gana {userPrediction.winner_pick}</span>
-                                    </div>
-                                ) : (
-                                    userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'a')}</> :
-                                    userPrediction.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'b')}</> : <><Handshake size={12} className="inline mr-1" />Empate</>
-                                )}
-                            </div>
-                            {/* Bonus Info (Fútbol/Volley/Basket) */}
-                            {userPrediction.prediction_type === 'score' && (
-                                <div className="flex items-center justify-center mt-1">
-                                    <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-300 text-[10px] font-black uppercase tracking-wider">
-                                        <Target size={12} />
-                                        <span>
-                                            {(match as any).disciplinas?.name === 'Baloncesto' 
-                                                ? (userPrediction.goles_a === 0 ? 'Cerrado' : 'Amplio')
-                                                : `Resultado: ${userPrediction.goles_a}-${userPrediction.goles_b}`}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                            {/* Points earned */}
-                            {match?.estado === 'finalizado' && userPrediction.puntos_ganados !== null && userPrediction.puntos_ganados !== undefined && (
-                                <div className="flex items-center justify-center mt-2">
-                                    <div className={cn(
-                                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black shadow-lg",
-                                        userPrediction.puntos_ganados > 0 ? "bg-emerald-500 text-black shadow-emerald-500/20" : "bg-white/5 text-white/30"
-                                    )}>
-                                        {userPrediction.puntos_ganados > 0 ? <Crown size={12} /> : null}
-                                        <span>+{userPrediction.puntos_ganados} pts</span>
-                                    </div>
-                                </div>
-                            )}
+                                {userPrediction.winner_pick === 'A' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'a')}</> :
+                                    userPrediction.winner_pick === 'B' ? <><Trophy size={12} className="inline mr-1" />Gana {getDisplayName(match, 'b')}</> : <><Handshake size={12} className="inline mr-1" />Empate</>}
+                            </p>
                         </div>
                     ) : null}
                 </div>
 
-                {sportName !== 'Voleibol' && match.marcador_detalle?.tipo !== 'carrera' && (
+                {sportName !== 'Voleibol' && (
                     <MatchTimeline
                         match={match}
                         eventos={eventos}
@@ -1266,15 +904,14 @@ export default function PublicMatchDetail() {
                     />
                 )}
 
-                {match.marcador_detalle?.tipo !== 'carrera' && (
-                    <div className="mt-8">
-                        <MatchStats
-                            match={match}
-                            eventos={eventos}
-                            sportName={sportName}
-                        />
-                    </div>
-                )}
+                {/* Match Statistics */}
+                <div className="mt-8">
+                    <MatchStats
+                        match={match}
+                        eventos={eventos}
+                        sportName={sportName}
+                    />
+                </div>
 
                 {/* Footer */}
                 <div className="mt-20 text-center">
