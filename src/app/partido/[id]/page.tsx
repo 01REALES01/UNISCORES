@@ -244,7 +244,13 @@ export default function PublicMatchDetail() {
                                                 generoMatch === 'femenino' ? 'text-pink-400' :
                                                 generoMatch === 'mixto' ? 'text-purple-400' : 'text-cyan-400'
                                             )}>{generoMatch}</span>
-                                        </div>                        {m.marcador_detalle?.tipo === 'carrera' ? (
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {m.marcador_detalle?.tipo === 'carrera' ? (
                             <div className="w-full max-w-3xl mx-auto animate-in fade-in zoom-in-95 duration-500 my-4">
                                 <div className="text-center mb-8 mt-4 sm:mt-0">
                                     <h1 className="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 uppercase tracking-tighter drop-shadow-sm leading-tight mb-2">
