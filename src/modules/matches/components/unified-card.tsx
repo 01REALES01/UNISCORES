@@ -53,7 +53,6 @@ export function UnifiedCard({
     const isChessDraw = sportName === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'empate';
 
     return (
-    return (
         <Link href={`/partido/${partido.id}`} className="group block h-full relative z-10">
             <div 
                 onClick={() => router.push(`/partido/${partido.id}`)}
