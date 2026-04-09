@@ -100,16 +100,21 @@ export default function PublicMatchDetail() {
         }
     };
 
-    const isLoading = matchLoading && !match;
-    const fetchError = matchError?.message;
+    const getSportEmoji = (name: string) => {
+        const map: Record<string, string> = {
+            'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
+            'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',
+        };
+        return map[name] || '🏅';
+    };
 
-    if (isLoading) return (
+    if (matchLoading && !match) return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white">
             <UniqueLoading size="lg" />
         </div>
     );
 
-    if (!match && !matchLoading) return (
+    if (!match) return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white p-8 text-center gap-4">
             <Trophy size={48} className="text-slate-700 mb-2" />
             <h1 className="text-2xl font-bold">Partido no encontrado</h1>
