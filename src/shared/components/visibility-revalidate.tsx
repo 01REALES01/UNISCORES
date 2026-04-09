@@ -29,8 +29,8 @@ export function VisibilityRevalidate() {
             // Refresh auth session first — ensures fetchers run with a valid token
             await supabase.auth.getSession().catch(() => {});
 
-            // Revalidate all SWR data
-            mutate(() => true, undefined, { revalidate: true });
+            // Revalidate all SWR data — sin borrar caché (evita spinner infinito en móvil)
+            mutate(() => true);
 
             // Notify non-SWR components (direct Supabase fetchers) to also refresh
             window.dispatchEvent(new CustomEvent('app:revalidate'));

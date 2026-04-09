@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { Noticia, NewsListCard } from "@/components/news-card";
 import { Avatar, Button } from "@/components/ui-primitives";
-import { ArrowLeft, Clock, GraduationCap, MapPin, Share2, ChevronRight, Calendar, Zap } from "lucide-react";
+import { ArrowLeft, Clock, GraduationCap, MapPin, Share2, ChevronRight, Calendar, Zap, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
@@ -26,6 +26,8 @@ export default function NoticiaDetailPage() {
     const id = params.id as string;
 
     const [noticia, setNoticia] = useState<Noticia | null>(null);
+    const [extraImages, setExtraImages] = useState<string[]>([]);
+    const [activeImage, setActiveImage] = useState<string | null>(null);
     const [related, setRelated] = useState<Noticia[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -49,9 +51,25 @@ export default function NoticiaDetailPage() {
             }
 
             if (data) {
-                setNoticia(data as Noticia);
+                let cleanContent = data.contenido || '';
+                let extras: string[] = [];
 
-                // Fetch related news (same carrera or same partido)
+                const galleryMatch = cleanContent.match(/<!-- GALLERY:(.*?) -->/);
+                if (galleryMatch) {
+                    try {
+                        extras = JSON.parse(galleryMatch[1]);
+                        cleanContent = cleanContent.replace(/<!-- GALLERY:(.*?) -->\n\n?/, '');
+                    } catch (e) {
+                        console.error("Gallery parse error:", e);
+                    }
+                }
+
+                const updatedNoticia = { ...data, contenido: cleanContent } as Noticia;
+                setNoticia(updatedNoticia);
+                setExtraImages(extras);
+                setActiveImage(updatedNoticia.imagen_url);
+
+                // Fetch related news
                 const { data: relatedData } = await safeQuery(
                     supabase.from('noticias')
                         .select('id, titulo, contenido, imagen_url, categoria, created_at, published, partidos(equipo_a, equipo_b, disciplinas(name))')
@@ -207,18 +225,51 @@ export default function NoticiaDetailPage() {
                         </div>
                     </div>
 
-                    {/* Hero Image - High Impact */}
-                    {noticia.imagen_url && (
-                        <div className="relative aspect-[16/10] sm:aspect-[21/9] rounded-[2.5rem] overflow-hidden mb-16 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-white/5 group">
-                            <img
-                                src={noticia.imagen_url}
-                                alt={noticia.titulo}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-60" />
-                            
-                            {/* Decorative corner glow */}
-                            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-red-600/20 blur-3xl rounded-full" />
+                    {/* Hero Image / Gallery - High Impact */}
+                    {(noticia.imagen_url || extraImages.length > 0) && (
+                        <div className="mb-16 space-y-4">
+                            <div className="relative aspect-[16/10] sm:aspect-[21/9] rounded-[2.5rem] overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-white/5 group">
+                                <img
+                                    src={activeImage || noticia.imagen_url || ''}
+                                    alt={noticia.titulo}
+                                    className="w-full h-full object-cover transition-all duration-700 animate-in fade-in"
+                                    key={activeImage}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-60 pointer-events-none" />
+                                
+                                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-red-600/20 blur-3xl rounded-full pointer-events-none" />
+
+                                {extraImages.length > 0 && (
+                                    <div className="absolute inset-x-0 bottom-6 flex justify-center gap-2 pointer-events-none">
+                                        {[noticia.imagen_url, ...extraImages].filter(Boolean).map((img, i) => (
+                                            <div 
+                                                key={i} 
+                                                className={cn(
+                                                    "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                                                    activeImage === img ? "bg-white w-4" : "bg-white/20"
+                                                )}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {extraImages.length > 0 && (
+                                <div className="grid grid-cols-4 gap-4 px-2">
+                                    {[noticia.imagen_url, ...extraImages].filter(Boolean).map((img, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setActiveImage(img as string)}
+                                            className={cn(
+                                                "relative aspect-video rounded-2xl overflow-hidden border-2 transition-all duration-300 hover:scale-105",
+                                                activeImage === img ? "border-violet-500 shadow-[0_0_15px_rgba(124,58,237,0.4)]" : "border-white/5 opacity-40 hover:opacity-100"
+                                            )}
+                                        >
+                                            <img src={img as string} className="w-full h-full object-cover" alt="" />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -322,50 +373,60 @@ export default function NoticiaDetailPage() {
                         {/* Decorative Vertical Line */}
                         <div className="absolute left-[-30px] top-0 bottom-0 w-[1px] bg-gradient-to-b from-violet-500/20 via-white/5 to-transparent hidden md:block" />
 
-                        <div className="prose prose-invert prose-p:text-white/70 prose-p:leading-relaxed prose-p:text-lg sm:prose-p:text-xl prose-p:font-medium prose-p:mb-8 sm:prose-p:mb-10 prose-headings:font-black prose-headings:tracking-tighter prose-strong:text-white prose-strong:font-black max-w-none">
+                        <div className="prose prose-invert max-w-none">
                             {paragraphs.map((p, i) => {
-                                // Formatting helpers
-                                const formatted = p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                                // Formatting helpers (bold, italic, underline, handles)
+                                let formatted = p
+                                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                                    .replace(/<u>(.*?)<\/u>/g, '<span class="underline decoration-violet-500/50 decoration-2 underline-offset-4">$1</span>')
+                                    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-violet-400 hover:text-emerald-400 underline transition-colors">$1</a>');
                                 
-                                // Editorial Headers
+                                // Editorial Headers (## and ###)
                                 if (p.startsWith('### ')) {
                                     return <h3 key={i} className="text-2xl sm:text-3xl font-black text-white mt-12 mb-6 group flex items-center gap-4">
-                                        <div className="w-8 h-1 bg-violet-600 rounded-full group-hover:w-12 transition-all" />
+                                        <div className="w-8 h-1.5 bg-violet-600 rounded-full group-hover:w-16 transition-all duration-500" />
                                         {p.replace('### ', '')}
                                     </h3>;
                                 }
                                 if (p.startsWith('## ')) {
-                                    return <h2 key={i} className="text-3xl sm:text-4xl font-black text-white mt-16 mb-8 border-l-4 border-red-500 pl-6 drop-shadow-lg">
+                                    return <h2 key={i} className="text-3xl sm:text-5xl font-black text-white mt-20 mb-10 border-l-[6px] border-red-500 pl-8 drop-shadow-2xl">
                                         {p.replace('## ', '')}
                                     </h2>;
                                 }
 
-                                // Special Blockquote styling if a paragraph is short and starts with "
-                                if (p.length < 200 && p.startsWith('"')) {
-                                   return (
-                                        <div key={i} className="my-12 sm:my-16 px-8 sm:px-12 py-10 rounded-[2rem] bg-gradient-to-br from-white/[0.05] to-transparent border-l-8 border-violet-600 relative overflow-hidden group">
+                                // Blockquotes (> )
+                                if (p.startsWith('> ')) {
+                                    return (
+                                        <blockquote key={i} className="my-12 sm:my-16 px-8 sm:px-12 py-10 rounded-[2.5rem] bg-gradient-to-br from-white/[0.05] to-transparent border-l-8 border-violet-600 relative overflow-hidden group">
                                             <div className="absolute top-0 right-0 p-8 text-8xl font-black font-serif text-white/5 select-none transition-transform group-hover:scale-110">”</div>
                                             <p className="text-2xl sm:text-3xl italic font-black text-white/90 leading-tight relative z-10">
-                                                {p.replace(/^"|"$/g, '')}
+                                                {p.replace('> ', '').replace(/^"|"$/g, '')}
                                             </p>
-                                        </div>
-                                   );
-                                }
-
-                                // Drop Cap for the first paragraph
-                                if (i === 0) {
-                                    return (
-                                        <p
-                                            key={i}
-                                            className="first-letter:text-7xl first-letter:font-black first-letter:mr-4 first-letter:float-left first-letter:text-violet-500 first-letter:font-sans first-line:uppercase first-line:tracking-widest first-line:text-sm first-line:font-black first-line:text-white/40"
-                                            dangerouslySetInnerHTML={{ __html: formatted }}
-                                        />
+                                        </blockquote>
                                     );
                                 }
 
+                                // Lists (- )
+                                if (p.startsWith('- ')) {
+                                    const items = p.split('\n').filter(Boolean);
+                                    return (
+                                        <ul key={i} className="space-y-4 mb-10 sm:mb-12 list-none">
+                                            {items.map((item, idx) => (
+                                                <li key={idx} className="flex gap-5 text-white/80 text-lg sm:text-xl leading-relaxed">
+                                                    <div className="w-2.5 h-2.5 rounded-full bg-violet-500 mt-2.5 shrink-0 shadow-[0_0_10px_rgba(139,92,246,0.5)]" />
+                                                    <span dangerouslySetInnerHTML={{ __html: item.replace('- ', '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>') }} />
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    );
+                                }
+
+                                // ─── PARAGRAPH RENDERING (1:1 with Editor Preview) ───
                                 return (
                                     <p
                                         key={i}
+                                        className="text-white/80 text-lg sm:text-xl leading-relaxed font-medium mb-8"
                                         dangerouslySetInnerHTML={{ __html: formatted }}
                                     />
                                 );

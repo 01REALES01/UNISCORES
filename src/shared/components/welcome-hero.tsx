@@ -61,7 +61,7 @@ export function WelcomeHero() {
                 >
                     <div className="inline-flex items-center gap-2 mb-8 px-4 py-1.5 rounded-full border border-violet-500/20 bg-white/5 backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 duration-1000 shadow-[0_0_15px_rgba(124,58,237,0.1)]">
                         <Zap size={14} className="text-emerald-400 fill-emerald-400/20" />
-                        <span className="text-[10px] md:text-xs font-black text-white/80 uppercase tracking-[0.2em]">50 Años de Experiencia</span>
+                        <span className="text-[10px] md:text-xs font-black text-white/80 uppercase tracking-[0.2em]">60 Años de Legado</span>
                     </div>
 
                     {/* eslint-disable-next-line @next/next/no-img-element */}

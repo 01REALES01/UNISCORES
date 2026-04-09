@@ -15,19 +15,26 @@ export function useMatchEvents(partidoId: number | string | null | undefined) {
         partidoId ? `match:${partidoId}:events` : null,
         async () => {
             if (!partidoId) return [];
-            const { data, error } = await supabase
-                .from('olympics_eventos')
-                .select(EVENT_COLUMNS)
-                .eq('partido_id', partidoId)
-                .order('minuto', { ascending: false }); // Detail page expects descending
-
-            if (error) throw error;
-            return (data || []) as unknown as Evento[];
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10_000);
+            try {
+                const { data, error } = await supabase
+                    .from('olympics_eventos')
+                    .select(EVENT_COLUMNS)
+                    .eq('partido_id', partidoId)
+                    .abortSignal(controller.signal)
+                    .order('minuto', { ascending: false });
+                if (error) throw error;
+                return (data || []) as unknown as Evento[];
+            } finally {
+                clearTimeout(timeout);
+            }
         },
         {
             revalidateOnFocus: true,
             revalidateOnReconnect: true,
             dedupingInterval: 3000,
+            keepPreviousData: true,
         }
     );
 
@@ -57,6 +64,11 @@ export function useMatchEvents(partidoId: number | string | null | undefined) {
 
         const handleRevalidate = () => {
             mutate();
+            // Forzar recreación — en móvil el canal puede estar muerto aunque reporte 'joined'
+            if (activeChannel) {
+                supabase.removeChannel(activeChannel);
+                activeChannel = null;
+            }
             setupSubscription();
         };
 

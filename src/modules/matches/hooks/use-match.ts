@@ -21,23 +21,30 @@ const MATCH_COLUMNS = [
 ].join(', ');
 
 export function useMatch(id: number | string | null | undefined) {
-    const { data, error, isLoading, mutate } = useSWR(
+    const { data, error, isLoading, isValidating, mutate } = useSWR(
         id ? `match:${id}` : null,
         async () => {
             if (!id) return null;
-            const { data, error } = await supabase
-                .from('partidos')
-                .select(MATCH_COLUMNS)
-                .eq('id', id)
-                .single();
-
-            if (error) throw error;
-            return data as unknown as PartidoWithRelations;
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10_000);
+            try {
+                const { data, error } = await supabase
+                    .from('partidos')
+                    .select(MATCH_COLUMNS)
+                    .eq('id', id)
+                    .abortSignal(controller.signal)
+                    .single();
+                if (error) throw error;
+                return data as unknown as PartidoWithRelations;
+            } finally {
+                clearTimeout(timeout);
+            }
         },
         {
             revalidateOnFocus: true,
             revalidateOnReconnect: true,
             dedupingInterval: 5000,
+            keepPreviousData: true,
         }
     );
 
@@ -67,6 +74,11 @@ export function useMatch(id: number | string | null | undefined) {
 
         const handleRevalidate = () => {
             mutate();
+            // Forzar recreación — en móvil el canal puede estar muerto aunque reporte 'joined'
+            if (activeChannel) {
+                supabase.removeChannel(activeChannel);
+                activeChannel = null;
+            }
             setupSubscription();
         };
 
@@ -81,6 +93,7 @@ export function useMatch(id: number | string | null | undefined) {
     return {
         match: data ?? null,
         loading: isLoading,
+        refreshing: isValidating && !!data,
         error,
         mutate,
     };

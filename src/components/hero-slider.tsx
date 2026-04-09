@@ -40,10 +40,10 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
         : matches.filter(m => m.disciplinas?.name === activeFilter);
 
     const featuredMatches = filteredBySport
-        .filter(m => m.estado === 'en_vivo' || m.estado === 'programado')
+        .filter(m => m.estado === 'en_curso' || m.estado === 'programado')
         .sort((a, b) => {
-            if (a.estado === 'en_vivo' && b.estado !== 'en_vivo') return -1;
-            if (b.estado === 'en_vivo' && a.estado !== 'en_vivo') return 1;
+            if (a.estado === 'en_curso' && b.estado !== 'en_curso') return -1;
+            if (b.estado === 'en_curso' && a.estado !== 'en_curso') return 1;
 
             // Programmed matches: Show the ones closest to NOW first (Ascending)
             const now = new Date().getTime();
@@ -135,7 +135,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                 >
                     {/* Background Abstracto / Deportes */}
                     <div className="absolute inset-0 opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay z-10" />
-                    <div className={cn("absolute inset-0 bg-gradient-to-br opacity-60 transition-colors duration-1000", SPORT_GRADIENT[currentMatch.disciplinas?.name] || (currentMatch.estado === 'en_vivo' ? 'from-rose-900/40 via-black to-black' : 'from-orange-900/40 via-black to-black'))} />
+                    <div className={cn("absolute inset-0 bg-gradient-to-br opacity-60 transition-colors duration-1000", SPORT_GRADIENT[currentMatch.disciplinas?.name] || (currentMatch.estado === 'en_curso' ? 'from-rose-900/40 via-black to-black' : 'from-orange-900/40 via-black to-black'))} />
 
                     {/* Glowing Sport Watermark */}
                     <div className="absolute -bottom-20 -right-10 pointer-events-none select-none z-0 scale-150 opacity-10 blur-[2px] md:opacity-20 md:blur-0">
@@ -143,7 +143,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                     </div>
 
                     {/* Top-Left Absolute Timer */}
-                    {currentMatch.estado === 'en_vivo' && currentMatch.marcador_detalle?.timer && (
+                    {currentMatch.estado === 'en_curso' && currentMatch.marcador_detalle?.timer && (
                         <m.div 
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
@@ -164,7 +164,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                             transition={{ delay: 0.2 }}
                             className="mb-2 md:mb-4"
                         >
-                            {currentMatch.estado === 'en_vivo' ? (
+                            {currentMatch.estado === 'en_curso' ? (
                                 <div className="flex items-center justify-center gap-2.5 text-rose-500 text-[10px] md:text-xs font-black tracking-[0.3em] uppercase transition-all duration-500">
                                     <div className="relative flex h-2 w-2">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
@@ -240,7 +240,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                 </div>
 
                                                 {/* Live indicator specific for swimming */}
-                                                {currentMatch.estado === 'en_vivo' && (
+                                                {currentMatch.estado === 'en_curso' && (
                                                     <div className="flex flex-col items-center gap-3">
                                                         <div className="flex items-center gap-2 text-cyan-400 text-sm md:text-md font-black tracking-[0.3em] uppercase animate-pulse">
                                                             <div className="relative flex h-3 w-3">
@@ -295,7 +295,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                         {/* VS / Score */}
                                         <div className="flex flex-col items-center gap-1 z-20 mx-1 md:mx-4 relative min-w-[70px] md:min-w-[180px]">
                                             {sName === 'Ajedrez' ? (
-                                                currentMatch.estado === 'en_vivo' ? (
+                                                currentMatch.estado === 'en_curso' ? (
                                                     <div className="flex flex-col items-center justify-center w-full min-h-[80px] md:min-h-[100px]">
                                                         <div className="flex items-center gap-3">
                                                             <span className="relative flex h-3 w-3 md:h-4 md:w-4">
@@ -310,7 +310,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                 ) : (
                                                     <div className="text-3xl md:text-6xl font-black text-white/10 italic">VS</div>
                                                 )
-                                            ) : currentMatch.estado === 'en_vivo' ? (
+                                            ) : currentMatch.estado === 'en_curso' ? (
                                                 <div className="flex flex-col items-center w-full">
                                                     <div className="text-[2rem] md:text-[5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-1.5 md:gap-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                                                         <span className="text-white text-right w-8 md:w-20">{scoreInfo.scoreA}</span>
