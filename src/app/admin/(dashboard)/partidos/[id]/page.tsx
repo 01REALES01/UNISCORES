@@ -15,6 +15,8 @@ import { AdminMatchTimeline } from "@/modules/admin/matches/components/admin-mat
 import { AdminModals } from "@/modules/admin/matches/components/admin-modals";
 import { AdminPlayerRoster } from "@/modules/admin/matches/components/admin-player-roster";
 import { AjedrezControl } from "@/modules/admin/matches/components/ajedrez-control";
+import { ScoreBreakdownEditor } from "@/modules/admin/matches/components/score-breakdown-editor";
+import { FutbolEditor } from "@/modules/admin/matches/components/futbol-score-editor";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Evento } from "@/modules/matches/types";
@@ -105,6 +107,7 @@ export default function MatchControlPage() {
     const [isEditingScore, setIsEditingScore] = useState(false);
     const [confirmingDeletion, setConfirmingDeletion] = useState<Evento | null>(null);
     const [showFullEditor, setShowFullEditor] = useState(false);
+    const [fullEditorTab, setFullEditorTab] = useState<'marcador' | 'eventos' | 'jugadores'>('marcador');
 
     if (loading) return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
@@ -297,14 +300,29 @@ export default function MatchControlPage() {
                 }}
             />
 
-            {/* Edición Completa — modal con registro de eventos sin restricción de estado */}
-            {showFullEditor && (
-                <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 backdrop-blur-sm overflow-y-auto py-8 px-4">
-                    <div className="relative w-full max-w-7xl bg-[#0d0d12] border border-white/10 rounded-[2rem] shadow-2xl p-6 sm:p-8">
-                        <div className="flex items-center justify-between mb-6">
+            {/* Edición Completa — modal tabbed mobile-first */}
+            {showFullEditor && (() => {
+                const hasScoreBreakdown = ['Voleibol', 'Baloncesto'].includes(disciplinaName);
+                const tabLabel = disciplinaName === 'Baloncesto' ? 'Cuartos' : disciplinaName === 'Fútbol' ? 'Tiempos' : 'Sets';
+                const tabs: { id: 'marcador' | 'eventos' | 'jugadores'; label: string }[] = [
+                    { id: 'marcador' as const, label: tabLabel },
+                    { id: 'eventos' as const, label: 'Eventos' },
+                    { id: 'jugadores' as const, label: 'Jugadores' },
+                ];
+                const activeTab = fullEditorTab;
+
+                return (
+                    <div className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-sm">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
                             <div className="flex items-center gap-3">
-                                <Edit3 size={20} className="text-indigo-400" />
-                                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-white">Edición Completa</h2>
+                                <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+                                    <Edit3 size={16} className="text-indigo-400" />
+                                </div>
+                                <div>
+                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Edición Completa</h2>
+                                    <p className="text-[9px] text-white/30 font-bold uppercase tracking-widest">{disciplinaName}</p>
+                                </div>
                             </div>
                             <button
                                 onClick={() => setShowFullEditor(false)}
@@ -314,78 +332,131 @@ export default function MatchControlPage() {
                             </button>
                         </div>
 
-                        <AdminPlayerRoster
-                            match={match}
-                            jugadoresA={jugadoresA}
-                            jugadoresB={jugadoresB}
-                            matchId={matchId}
-                            onPlayersUpdated={fetchJugadores}
-                            disciplinaName={disciplinaName}
-                        />
-
-                        <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-8">
-                            <AdminEventCreator
-                                match={match}
-                                actions={actions}
-                                jugadoresA={jugadoresA}
-                                jugadoresB={jugadoresB}
-                                eventos={eventos}
-                                onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id, true)}
-                                onAddPlayer={async (team, data) => {
-                                    try {
-                                        let jId: number | null = null;
-                                        const { data: existing } = await supabase
-                                            .from('jugadores')
-                                            .select('id')
-                                            .eq('profile_id', data.profile_id)
-                                            .maybeSingle();
-
-                                        if (existing && data.profile_id) {
-                                            jId = existing.id;
-                                        } else {
-                                            const { data: created, error: cErr } = await supabase
-                                                .from('jugadores')
-                                                .insert({
-                                                    nombre: data.nombre,
-                                                    numero: data.numero ? parseInt(data.numero) : null,
-                                                    profile_id: data.profile_id || null,
-                                                    carrera_id: team === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
-                                                })
-                                                .select()
-                                                .single();
-                                            if (cErr) throw cErr;
-                                            jId = created.id;
-                                        }
-
-                                        const { error: rErr } = await supabase.from('roster_partido').insert({
-                                            partido_id: parseInt(matchId),
-                                            jugador_id: jId,
-                                            equipo_a_or_b: team
-                                        });
-                                        if (rErr) throw rErr;
-
-                                        fetchJugadores();
-                                        toast.success("Jugador añadido");
-                                        return jId;
-                                    } catch (error: any) {
-                                        console.error("Error adding player:", error);
-                                        toast.error(`Error: ${error.message}`);
-                                        return null;
+                        {/* Tabs */}
+                        <div className="flex gap-1 px-5 pb-3 shrink-0">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setFullEditorTab(tab.id)}
+                                    className="flex-1 h-9 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 border"
+                                    style={activeTab === tab.id
+                                        ? { background: '#6366f1', color: '#fff', borderColor: 'transparent', boxShadow: '0 2px 12px rgba(99,102,241,0.4)' }
+                                        : { background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.35)', borderColor: 'rgba(255,255,255,0.06)' }
                                     }
-                                }}
-                                disciplinaName={disciplinaName}
-                            />
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
 
-                            <AdminMatchTimeline
-                                eventos={eventos}
-                                match={match}
-                                onDeleteEvent={(e) => setConfirmingDeletion(e)}
-                                disciplinaName={disciplinaName}
-                            />
+                        {/* Tab content */}
+                        <div className="flex-1 overflow-y-auto px-5 pb-8">
+                            {/* MARCADOR TAB — Sets (Voleibol) / Cuartos (Baloncesto) / Fútbol */}
+                            {activeTab === 'marcador' && (
+                                <div className="max-w-lg mx-auto pt-2">
+                                    {hasScoreBreakdown ? (
+                                        <ScoreBreakdownEditor
+                                            match={match}
+                                            profile={profile}
+                                            onSaved={fetchMatchDetails}
+                                        />
+                                    ) : disciplinaName === 'Fútbol' ? (
+                                        <FutbolEditor
+                                            match={match}
+                                            eventos={eventos}
+                                            jugadoresA={jugadoresA}
+                                            jugadoresB={jugadoresB}
+                                            onAddEvent={(tipo, equipo, jugadorId, bypass, overrides) =>
+                                                handleNuevoEvento(tipo, equipo, jugadorId, bypass, overrides)
+                                            }
+                                            onDeleteEvent={(e) => setConfirmingDeletion(e)}
+                                        />
+                                    ) : null}
+                                </div>
+                            )}
+
+                            {/* EVENTOS TAB */}
+                            {activeTab === 'eventos' && (
+                                <div className="max-w-7xl mx-auto pt-2">
+                                    <div className="grid lg:grid-cols-[1.5fr_1fr] gap-6">
+                                        <AdminEventCreator
+                                            match={match}
+                                            actions={actions}
+                                            jugadoresA={jugadoresA}
+                                            jugadoresB={jugadoresB}
+                                            eventos={eventos}
+                                            onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id, true)}
+                                            onAddPlayer={async (team, data) => {
+                                                try {
+                                                    let jId: number | null = null;
+                                                    const { data: existing } = await supabase
+                                                        .from('jugadores')
+                                                        .select('id')
+                                                        .eq('profile_id', data.profile_id)
+                                                        .maybeSingle();
+
+                                                    if (existing && data.profile_id) {
+                                                        jId = existing.id;
+                                                    } else {
+                                                        const { data: created, error: cErr } = await supabase
+                                                            .from('jugadores')
+                                                            .insert({
+                                                                nombre: data.nombre,
+                                                                numero: data.numero ? parseInt(data.numero) : null,
+                                                                profile_id: data.profile_id || null,
+                                                                carrera_id: team === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
+                                                            })
+                                                            .select()
+                                                            .single();
+                                                        if (cErr) throw cErr;
+                                                        jId = created.id;
+                                                    }
+
+                                                    const { error: rErr } = await supabase.from('roster_partido').insert({
+                                                        partido_id: parseInt(matchId),
+                                                        jugador_id: jId,
+                                                        equipo_a_or_b: team
+                                                    });
+                                                    if (rErr) throw rErr;
+
+                                                    fetchJugadores();
+                                                    toast.success("Jugador añadido");
+                                                    return jId;
+                                                } catch (error: any) {
+                                                    console.error("Error adding player:", error);
+                                                    toast.error(`Error: ${error.message}`);
+                                                    return null;
+                                                }
+                                            }}
+                                            disciplinaName={disciplinaName}
+                                        />
+                                        <AdminMatchTimeline
+                                            eventos={eventos}
+                                            match={match}
+                                            onDeleteEvent={(e) => setConfirmingDeletion(e)}
+                                            disciplinaName={disciplinaName}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* JUGADORES TAB */}
+                            {activeTab === 'jugadores' && (
+                                <div className="max-w-7xl mx-auto pt-2">
+                                    <AdminPlayerRoster
+                                        match={match}
+                                        jugadoresA={jugadoresA}
+                                        jugadoresB={jugadoresB}
+                                        matchId={matchId}
+                                        onPlayersUpdated={fetchJugadores}
+                                        disciplinaName={disciplinaName}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
         </div>
     );
 }

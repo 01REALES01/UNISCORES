@@ -286,7 +286,7 @@ export function useMatchControl(matchId: string) {
         }
     };
 
-    const handleNuevoEvento = async (tipo: string, equipo: string, jugador_id: number | null, bypassFinalized = false) => {
+    const handleNuevoEvento = async (tipo: string, equipo: string, jugador_id: number | null, bypassFinalized = false, overrides?: { minuto?: number; periodo?: number }) => {
         if (!match || !profile) return;
         const disciplinaName = match.disciplinas?.name || 'Deporte';
 
@@ -315,12 +315,13 @@ export function useMatchControl(matchId: string) {
             }
         }
 
-        const periodo = getCurrentPeriodNumber(disciplinaName, match.marcador_detalle || {});
+        const periodo = overrides?.periodo ?? getCurrentPeriodNumber(disciplinaName, match.marcador_detalle || {});
+        const minutoEvento = overrides?.minuto ?? minutoActual;
 
         const { error } = await supabase.from('olympics_eventos').insert({
             partido_id: matchId,
             tipo_evento: tipo,
-            minuto: minutoActual,
+            minuto: minutoEvento,
             equipo: equipo || 'sistema',
             jugador_id_normalized: jugador_id,
             periodo: periodo,
