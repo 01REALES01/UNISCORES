@@ -117,7 +117,11 @@ export default function EstadisticasPage() {
                     // Try to find a profile by name if profile_id is missing
                     const fallbackProfile = !j.profile_id ? profileByName.get(j.nombre?.toLowerCase()) : null;
                     const finalProfileId = j.profile_id || fallbackProfile?.id;
-                    const finalAvatar = j.profiles?.avatar_url || fallbackProfile?.avatar_url;
+                    
+                    // Handle profiles join being an array or object
+                    const profilesData = (j as any).profiles;
+                    const joinedAvatar = Array.isArray(profilesData) ? profilesData[0]?.avatar_url : profilesData?.avatar_url;
+                    const finalAvatar = joinedAvatar || fallbackProfile?.avatar_url;
 
                     // Career Logic: Priority 1: Player's official career, Priority 2: Team in match
                     const careerId = j.carrera_id || matchCareerId;
