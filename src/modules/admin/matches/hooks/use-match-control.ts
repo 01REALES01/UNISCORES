@@ -78,9 +78,11 @@ export function useMatchControl(matchId: string) {
             let idsA = m.carrera_a_id ? [m.carrera_a_id] : [];
             let idsB = m.carrera_b_id ? [m.carrera_b_id] : [];
 
-            // Consultar tabla delegaciones por si son equipos fusionados
-            const { data: delegA } = await supabase.from('delegaciones').select('carrera_ids').eq('nombre', m.equipo_a).maybeSingle();
-            const { data: delegB } = await supabase.from('delegaciones').select('carrera_ids').eq('nombre', m.equipo_b).maybeSingle();
+            // Consultar tabla delegaciones (ilike para tolerar diferencias de capitalización como 'Geología' vs 'GEOLOGÍA')
+            const { data: delegARows } = await supabase.from('delegaciones').select('carrera_ids').ilike('nombre', m.equipo_a ?? '').limit(1);
+            const { data: delegBRows } = await supabase.from('delegaciones').select('carrera_ids').ilike('nombre', m.equipo_b ?? '').limit(1);
+            const delegA = delegARows?.[0];
+            const delegB = delegBRows?.[0];
 
             if (delegA?.carrera_ids?.length) idsA = delegA.carrera_ids;
             if (delegB?.carrera_ids?.length) idsB = delegB.carrera_ids;
@@ -91,12 +93,13 @@ export function useMatchControl(matchId: string) {
                 setJugadoresA([]); setJugadoresB([]); return;
             }
 
-            const { data: jugadores } = await supabase
+            let jugadoresQuery = supabase
                 .from('jugadores')
                 .select('*')
                 .eq('disciplina_id', m.disciplina_id)
-                .eq('genero', m.genero)
                 .in('carrera_id', allCarreraIds);
+            if (m.genero) jugadoresQuery = jugadoresQuery.eq('genero', m.genero);
+            const { data: jugadores } = await jugadoresQuery;
 
             if (jugadores) {
                 // Ordenar por nombre para un Roster más organizado

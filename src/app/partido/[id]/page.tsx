@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import { Badge, Avatar, Button } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink, Edit3 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -30,7 +30,7 @@ export default function PublicMatchDetail() {
     const params = useParams();
     const router = useRouter();
     const matchId = params.id as string;
-    const { user } = useAuth();
+    const { user, isStaff } = useAuth();
 
     // ─── SWR Data Fetching ──────────────────────────────────────────────────────
     const { match, loading: matchLoading, error: matchError, mutate: mutateMatch } = useMatch(matchId);
@@ -913,6 +913,17 @@ export default function PublicMatchDetail() {
                     </p>
                 </div>
             </div>
+
+            {/* Botón flotante de admin — solo visible para staff */}
+            {isStaff && (
+                <Link
+                    href={`/admin/partidos/${matchId}`}
+                    className="fixed bottom-24 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-[11px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/30 transition-all"
+                >
+                    <Edit3 size={16} />
+                    <span className="hidden sm:inline">Admin</span>
+                </Link>
+            )}
         </div>
     );
 }
