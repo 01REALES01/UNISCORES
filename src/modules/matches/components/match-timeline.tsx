@@ -42,9 +42,17 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
           <div className="py-16 text-center text-slate-500 bg-white/[0.02] rounded-[2rem] border border-white/5 border-dashed relative z-10">
             <p className="text-sm font-medium italic opacity-60">El partido está por comenzar...</p>
           </div>
-        ) : (
+        ) : (() => {
+          // Separate 'fin' system events (match-end markers) from everything else.
+          // This ensures: 1) post-match events appear BEFORE the finalization banner,
+          // 2) there is only ONE finalization banner even if the admin re-finalized.
+          const finEvent = eventos.find(e => e.equipo === 'sistema' && e.tipo_evento === 'fin');
+          const otherEvents = eventos.filter(e => !(e.equipo === 'sistema' && e.tipo_evento === 'fin'));
+          const orderedEvents = finEvent ? [...otherEvents, finEvent] : otherEvents;
+
+          return (
           <div className="space-y-6 relative z-10">
-            {eventos.map((e, idx) => {
+            {orderedEvents.map((e, idx) => {
               const isTeamA = e.equipo === 'equipo_a';
               const isTeamB = e.equipo === 'equipo_b';
               const isSystem = e.equipo === 'sistema';
@@ -129,7 +137,8 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
               );
             })}
           </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );
