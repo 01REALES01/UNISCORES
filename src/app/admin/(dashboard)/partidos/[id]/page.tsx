@@ -17,6 +17,7 @@ import { AdminPlayerRoster } from "@/modules/admin/matches/components/admin-play
 import { AjedrezControl } from "@/modules/admin/matches/components/ajedrez-control";
 import { ScoreBreakdownEditor } from "@/modules/admin/matches/components/score-breakdown-editor";
 import { FutbolEditor } from "@/modules/admin/matches/components/futbol-score-editor";
+import { BasquetEditor } from "@/modules/admin/matches/components/basquet-score-editor";
 import { MatchMetaEditor } from "@/modules/admin/matches/components/match-meta-editor";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -89,7 +90,6 @@ export default function MatchControlPage() {
         jugadoresA,
         jugadoresB,
         eventos,
-        cronometroActivo,
         activeEditors,
         toggleCronometro,
         handleNuevoEvento,
@@ -167,16 +167,15 @@ export default function MatchControlPage() {
                     />
                 )}
 
-                {/* Edición Completa — solo deportes de equipo finalizados */}
-                {isTeamSport && match.estado === 'finalizado' && (
-                    <div className="flex items-center justify-end mb-6 -mt-4">
+                {/* Edición Completa — deportes de equipo (siempre visible) */}
+                {isTeamSport && (
+                    <div className="flex items-center justify-end mb-4 -mt-2">
                         <button
                             onClick={() => setShowFullEditor(true)}
-                            className="group relative flex items-center gap-3 px-8 py-4 rounded-[1.5rem] bg-indigo-600 border border-indigo-400/50 text-white hover:bg-indigo-500 active:scale-95 transition-all text-xs font-black uppercase tracking-[0.2em] shadow-[0_4px_20px_rgba(79,70,229,0.4)] overflow-hidden"
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-colors text-xs font-black uppercase tracking-[0.2em] text-white border border-indigo-400/40"
                         >
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                            <Edit3 size={18} className="relative z-10 group-hover:rotate-12 transition-transform" />
-                            <span className="relative z-10">Edición Completa</span>
+                            <Edit3 size={15} />
+                            Edición Completa
                         </button>
                     </div>
                 )}
@@ -328,7 +327,6 @@ export default function MatchControlPage() {
 
             {/* Edición Completa — modal tabbed mobile-first */}
             {showFullEditor && (() => {
-                const hasScoreBreakdown = ['Voleibol', 'Baloncesto'].includes(disciplinaName);
                 const tabLabel = disciplinaName === 'Baloncesto' ? 'Cuartos' : disciplinaName === 'Fútbol' ? 'Tiempos' : 'Sets';
                 const tabs: { id: 'marcador' | 'eventos' | 'jugadores'; label: string }[] = [
                     { id: 'marcador' as const, label: tabLabel },
@@ -379,7 +377,18 @@ export default function MatchControlPage() {
                             {/* MARCADOR TAB — Sets (Voleibol) / Cuartos (Baloncesto) / Fútbol */}
                             {activeTab === 'marcador' && (
                                 <div className="max-w-lg mx-auto pt-2">
-                                    {hasScoreBreakdown ? (
+                                    {disciplinaName === 'Baloncesto' ? (
+                                        <BasquetEditor
+                                            match={match}
+                                            eventos={eventos}
+                                            jugadoresA={jugadoresA}
+                                            jugadoresB={jugadoresB}
+                                            onAddEvent={(tipo, equipo, jugadorId, bypass, overrides) =>
+                                                handleNuevoEvento(tipo, equipo, jugadorId, bypass, overrides)
+                                            }
+                                            onDeleteEvent={(e) => setConfirmingDeletion(e)}
+                                        />
+                                    ) : disciplinaName === 'Voleibol' ? (
                                         <ScoreBreakdownEditor
                                             match={match}
                                             profile={profile}
