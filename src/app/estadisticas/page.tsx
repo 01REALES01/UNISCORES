@@ -145,18 +145,21 @@ export default function EstadisticasPage() {
                 return sport.includes('Baloncesto') && (type.startsWith('punto') || type === 'puntos');
             }).forEach(e => {
                 const j = e.jugadores;
-                if (!j) return;
-                const careerId = e.equipo === 'equipo_a' ? e.partidos.carrera_a_id : e.partidos.carrera_b_id;
-                const c = careerMap.get(careerId);
+                if (!j || !e.partidos) return;
+
+                const currentMatch = e.partidos;
+                const matchCareerId = e.equipo === 'equipo_a' ? currentMatch.carrera_a_id : currentMatch.carrera_b_id;
 
                 if (!basketMap.has(j.id)) {
-                    // Same Smart Linking + Career Logic
                     const fallbackProfile = !j.profile_id ? profileByName.get(j.nombre?.toLowerCase()) : null;
                     const finalProfileId = j.profile_id || fallbackProfile?.id;
-                    const finalAvatar = j.profiles?.avatar_url || fallbackProfile?.avatar_url;
+                    
+                    const profilesData = (j as any).profiles;
+                    const joinedAvatar = Array.isArray(profilesData) ? profilesData[0]?.avatar_url : profilesData?.avatar_url;
+                    const finalAvatar = joinedAvatar || fallbackProfile?.avatar_url;
 
-                    const careerId = j.carrera_id || (e.equipo === 'equipo_a' ? e.partidos.carrera_a_id : e.partidos.carrera_b_id);
-                    const c = careerMap.get(careerId);
+                    const careerId = j.carrera_id || matchCareerId;
+                    const c = careerMap.get(careerId || 0);
 
                     basketMap.set(j.id, {
                         id: j.id, rank: 0, nombre: j.nombre, avatar_url: finalAvatar,
@@ -176,17 +179,21 @@ export default function EstadisticasPage() {
                 return (sport.includes('Fútbol') || sport.includes('Futsal')) && type.startsWith('tarjeta');
             }).forEach(e => {
                 const j = e.jugadores;
-                if (!j) return;
-                const careerId = e.equipo === 'equipo_a' ? e.partidos.carrera_a_id : e.partidos.carrera_b_id;
-                const c = careerMap.get(careerId);
+                if (!j || !e.partidos) return;
+
+                const currentMatch = e.partidos;
+                const matchCareerId = e.equipo === 'equipo_a' ? currentMatch.carrera_a_id : currentMatch.carrera_b_id;
 
                 if (!cardMap.has(j.id)) {
                     const fallbackProfile = !j.profile_id ? profileByName.get(j.nombre?.toLowerCase()) : null;
                     const finalProfileId = j.profile_id || fallbackProfile?.id;
-                    const finalAvatar = j.profiles?.avatar_url || fallbackProfile?.avatar_url;
+                    
+                    const profilesData = (j as any).profiles;
+                    const joinedAvatar = Array.isArray(profilesData) ? profilesData[0]?.avatar_url : profilesData?.avatar_url;
+                    const finalAvatar = joinedAvatar || fallbackProfile?.avatar_url;
 
-                    const careerId = j.carrera_id || (e.equipo === 'equipo_a' ? e.partidos.carrera_a_id : e.partidos.carrera_b_id);
-                    const c = careerMap.get(careerId);
+                    const careerId = j.carrera_id || matchCareerId;
+                    const c = careerMap.get(careerId || 0);
 
                     cardMap.set(j.id, {
                         id: j.id, rank: 0, nombre: j.nombre, avatar_url: finalAvatar,
