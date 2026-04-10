@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
 export function WelcomeNotice() {
+    return null; // Disabled by user request
     const router = useRouter();
     const { user } = useAuth();
     const [isVisible, setIsVisible] = useState(false);

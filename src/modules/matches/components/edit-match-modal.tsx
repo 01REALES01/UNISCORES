@@ -154,13 +154,16 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
     const handleAdvChange = (setNum: number, field: string, value: string) => {
         // Permitir vacío temporalmente mientras se borra/escribe, o parseInt
         const val = value === '' ? '' : parseInt(value);
-        setAdvancedSets((prev: any) => ({
-            ...prev,
-            [setNum]: {
-                ...(prev[setNum] || {}),
-                [field]: typeof val === 'number' ? Math.max(0, val) : 0
-            }
-        }));
+        setAdvancedSets((prev: any) => {
+            const next = {
+                ...prev,
+                [setNum]: {
+                    ...(prev[setNum] || {}),
+                    [field]: typeof val === 'number' ? Math.max(0, val) : 0
+                }
+            };
+            return next;
+        });
     };
 
     const handleDeleteSet = (setNum: number) => {
@@ -247,15 +250,14 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
             if (detalle.minuto_actual) {
                 setMinutoActual(detalle.minuto_actual);
             }
+
+            // Inicializar periodo manual basado en el estado actual del partido
+            const sport = match.disciplinas?.name || '';
+            if (sport === 'Baloncesto') setManualPeriod(detalle.cuarto_actual || 1);
+            else if (sport === 'Fútbol') setManualPeriod(detalle.tiempo_actual || 1);
+            else setManualPeriod(detalle.set_actual || 1);
+
             if (detalle.estado_cronometro === 'corriendo') {
-                const tiempoInicio = new Date(detalle.tiempo_inicio).getTime();
-                const ahora = new Date().getTime();
-                const minutosTranscurridos = Math.floor((ahora - tiempoInicio) / 60000); // Calcular minutos reales transcurridos desde inicio/resume
-
-                // Ajustar lógica si es necesario para manejar pausas, por ahora simple:
-                // Si quieres que sea exacto considerando pausas, deberías guardar "minutos_acumulados" + (ahora - ultimo_inicio)
-                // Por simplicidad, usaremos el guardado + intervalo
-
                 setCronometroActivo(true);
             }
         }
@@ -336,8 +338,26 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
         const deporte = match.disciplinas?.name || 'Genérico';
         const detalleActual = localDetalle || {};
         
+        // --- TARGET SELECTION ---
+        // Si el usuario seleccionó un periodo en la barra superior (manualPeriod), 
+        // forzamos ese periodo temporalmente para que la mutación ocurra allí.
+        const detailToMutate = { ...detalleActual };
+        const officialQuarter = detailToMutate.cuarto_actual;
+        const officialTime = detailToMutate.tiempo_actual;
+        const officialSet = detailToMutate.set_actual;
+
+        if (deporte === 'Baloncesto') detailToMutate.cuarto_actual = manualPeriod;
+        else if (deporte === 'Fútbol') detailToMutate.tiempo_actual = manualPeriod;
+        else detailToMutate.set_actual = manualPeriod;
+
         // Optimistic local update
-        const nuevoDetalle = addPoints(deporte, detalleActual, equipo, puntos);
+        const nuevoDetalle = addPoints(deporte, detailToMutate, equipo, puntos);
+
+        // RESTORE official session period to avoid flickering labels in public view
+        nuevoDetalle.cuarto_actual = officialQuarter;
+        nuevoDetalle.tiempo_actual = officialTime;
+        nuevoDetalle.set_actual = officialSet;
+
         setLocalDetalle(nuevoDetalle);
 
         const { error } = await supabase
@@ -356,7 +376,23 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
         const deporte = match.disciplinas?.name || 'Genérico';
         const detalleActual = localDetalle || {};
         
-        const nuevoDetalle = removePoints(deporte, detalleActual, equipo, puntos);
+        // --- TARGET SELECTION ---
+        const detailToMutate = { ...detalleActual };
+        const officialQuarter = detailToMutate.cuarto_actual;
+        const officialTime = detailToMutate.tiempo_actual;
+        const officialSet = detailToMutate.set_actual;
+
+        if (deporte === 'Baloncesto') detailToMutate.cuarto_actual = manualPeriod;
+        else if (deporte === 'Fútbol') detailToMutate.tiempo_actual = manualPeriod;
+        else detailToMutate.set_actual = manualPeriod;
+
+        const nuevoDetalle = removePoints(deporte, detailToMutate, equipo, puntos);
+
+        // RESTORE official session period
+        nuevoDetalle.cuarto_actual = officialQuarter;
+        nuevoDetalle.tiempo_actual = officialTime;
+        nuevoDetalle.set_actual = officialSet;
+
         setLocalDetalle(nuevoDetalle);
 
         const { error } = await supabase
@@ -375,12 +411,28 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
         const deporte = match.disciplinas?.name || 'Genérico';
         const detalleActual = localDetalle || {};
 
-        const nuevoDetalle = setPoints(deporte, detalleActual, equipo, valorNuevo);
-        setLocalDetalle(nuevoDetalle);
+        // --- TARGET SELECTION ---
+        const detailToMutate = { ...detalleActual };
+        const officialQuarter = detailToMutate.cuarto_actual;
+        const officialTime = detailToMutate.tiempo_actual;
+        const officialSet = detailToMutate.set_actual;
+
+        if (deporte === 'Baloncesto') detailToMutate.cuarto_actual = manualPeriod;
+        else if (deporte === 'Fútbol') detailToMutate.tiempo_actual = manualPeriod;
+        else detailToMutate.set_actual = manualPeriod;
+
+        const nuevoDetalle = setPoints(deporte, detailToMutate, equipo, valorNuevo);
         
+        // RESTORE official session period
+        nuevoDetalle.cuarto_actual = officialQuarter;
+        nuevoDetalle.tiempo_actual = officialTime;
+        nuevoDetalle.set_actual = officialSet;
+
         // Explicitly set the minute at the time of manual override
         nuevoDetalle.minuto_actual = minutoActual;
 
+        setLocalDetalle(nuevoDetalle);
+        
         const { error } = await supabase
             .from('partidos')
             .update({ marcador_detalle: stampAudit(nuevoDetalle, profile) })
@@ -736,7 +788,14 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
     if (!isOpen || !match) return null;
 
     // Calcular score visual usando la librería y el estado local (MUY IMPORTANTE)
-    const currentScore = getCurrentScore(match.disciplinas?.name, localDetalle || {});
+    // Forzamos el uso de manualPeriod para que el modal muestre los puntos del cuarto/set seleccionado
+    const displayDetalle = { 
+        ...localDetalle, 
+        cuarto_actual: manualPeriod,
+        set_actual: manualPeriod,
+        tiempo_actual: manualPeriod
+    };
+    const currentScore = getCurrentScore(match.disciplinas?.name, displayDetalle);
     const scoreA = currentScore.scoreA;
     const scoreB = currentScore.scoreB;
     const subScoreA = currentScore.subScoreA;

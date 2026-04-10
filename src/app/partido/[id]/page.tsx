@@ -233,6 +233,15 @@ export default function PublicMatchDetail() {
                                 </div>
                             )}
 
+                            {isLive && m.marcador_detalle?.modo_registro === 'asincronico' && (
+                                <div className="z-30 max-w-md mx-auto mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-[10px] sm:text-xs font-bold leading-relaxed animate-pulse flex items-center gap-3">
+                                    <AlignLeft size={20} className="shrink-0 text-amber-400 opacity-80" />
+                                    <p className="text-left">
+                                        La información del partido puede no ser fiel a la realidad del momento porque el partido no está siendo cubierto en vivo. Vuelva al finalizar el encuentro.
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="flex justify-center items-center">
                                 <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-500 hover:border-white/20 group/header">
                                     {!isFinished && !isLive && (
