@@ -108,9 +108,10 @@ export default function EstadisticasPage() {
                 return (type === 'gol') && (sport.includes('Fútbol') || sport.includes('Futsal'));
             }).forEach(e => {
                 const j = e.jugadores;
-                if (!j) return;
-                const careerId = e.equipo === 'equipo_a' ? e.partidos.carrera_a_id : e.partidos.carrera_b_id;
-                const c = careerMap.get(careerId);
+                if (!j || !e.partidos) return; // Fix: Safety check for e.partidos
+
+                const currentMatch = e.partidos;
+                const matchCareerId = e.equipo === 'equipo_a' ? currentMatch.carrera_a_id : currentMatch.carrera_b_id;
                 
                 if (!soccerMap.has(j.id)) {
                     // Try to find a profile by name if profile_id is missing
@@ -119,8 +120,8 @@ export default function EstadisticasPage() {
                     const finalAvatar = j.profiles?.avatar_url || fallbackProfile?.avatar_url;
 
                     // Career Logic: Priority 1: Player's official career, Priority 2: Team in match
-                    const careerId = j.carrera_id || (e.equipo === 'equipo_a' ? e.partidos.carrera_a_id : e.partidos.carrera_b_id);
-                    const c = careerMap.get(careerId);
+                    const careerId = j.carrera_id || matchCareerId;
+                    const c = careerMap.get(careerId || 0);
 
                     soccerMap.set(j.id, {
                         id: j.id, rank: 0, nombre: j.nombre, avatar_url: finalAvatar,
