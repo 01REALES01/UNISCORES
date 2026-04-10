@@ -312,28 +312,27 @@ export default function MatchControlPage() {
                 const activeTab = fullEditorTab;
 
                 return (
-                    <div className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-sm">
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
-                            <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
-                                    <Edit3 size={16} className="text-indigo-400" />
-                                </div>
-                                <div>
-                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Edición Completa</h2>
-                                    <p className="text-[9px] text-white/30 font-bold uppercase tracking-widest">{disciplinaName}</p>
-                                </div>
+                    <div className="fixed inset-0 z-50 flex flex-col bg-[#080810]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+                        {/* Header — sticky, always visible */}
+                        <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] shrink-0 bg-[#080810]">
+                            <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                                <Edit3 size={14} className="text-indigo-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-white truncate">Edición Completa</h2>
+                                <p className="text-[8px] text-white/30 font-bold uppercase tracking-widest">{disciplinaName}</p>
                             </div>
                             <button
                                 onClick={() => setShowFullEditor(false)}
-                                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                                className="flex items-center gap-1.5 px-3 h-9 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/10 shrink-0"
                             >
-                                <X size={20} />
+                                <X size={14} className="text-white/70" />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-white/70">Cerrar</span>
                             </button>
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex gap-1 px-5 pb-3 shrink-0">
+                        <div className="flex gap-1 px-4 py-2 shrink-0 bg-[#080810] border-b border-white/[0.04]">
                             {tabs.map(tab => (
                                 <button
                                     key={tab.id}
@@ -350,7 +349,7 @@ export default function MatchControlPage() {
                         </div>
 
                         {/* Tab content */}
-                        <div className="flex-1 overflow-y-auto px-5 pb-8">
+                        <div className="flex-1 overflow-y-auto px-4 pb-24">
                             {/* MARCADOR TAB — Sets (Voleibol) / Cuartos (Baloncesto) / Fútbol */}
                             {activeTab === 'marcador' && (
                                 <div className="max-w-lg mx-auto pt-2">
@@ -453,6 +452,17 @@ export default function MatchControlPage() {
                                     />
                                 </div>
                             )}
+                        </div>
+
+                        {/* Bottom close bar — always reachable on mobile */}
+                        <div className="shrink-0 px-4 py-3 border-t border-white/[0.06] bg-[#080810]" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+                            <button
+                                onClick={() => setShowFullEditor(false)}
+                                className="w-full h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.2em] text-white/60"
+                            >
+                                <X size={14} />
+                                Cerrar Editor
+                            </button>
                         </div>
                     </div>
                 );
