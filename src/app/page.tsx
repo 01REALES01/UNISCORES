@@ -55,6 +55,7 @@ import { LiveMatchCard, UpcomingMatchCard, ResultCard, JornadaCard } from '@/mod
 import { MatchFilters } from '@/modules/matches/components/match-filters';
 import { useJornadas } from '@/hooks/use-jornadas';
 import { LiveMatchesSection } from '@/modules/matches/components/live-matches-section';
+import { MatchesTodaySection } from '@/modules/matches/components/matches-today-section';
 import { AboutFooter } from '@/shared/components/about-footer';
 import { InstitutionalBanner } from '@/shared/components/institutional-banner';
 
@@ -526,8 +527,8 @@ export default function Home() {
           </div>
         )}
 
-        {!hideMatches && liveMatches.length > 0 && (
-          <LiveMatchesSection matches={liveMatches} />
+        {!hideMatches && (
+          <MatchesTodaySection matches={displayPartidos} />
         )}
 
         {/* ━━━ JORNADAS (Ajedrez / Tenis de Mesa) ━━━ */}
