@@ -17,6 +17,7 @@ import { AdminPlayerRoster } from "@/modules/admin/matches/components/admin-play
 import { AjedrezControl } from "@/modules/admin/matches/components/ajedrez-control";
 import { ScoreBreakdownEditor } from "@/modules/admin/matches/components/score-breakdown-editor";
 import { FutbolEditor } from "@/modules/admin/matches/components/futbol-score-editor";
+import { MatchMetaEditor } from "@/modules/admin/matches/components/match-meta-editor";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Evento } from "@/modules/matches/types";
@@ -108,6 +109,7 @@ export default function MatchControlPage() {
     const [confirmingDeletion, setConfirmingDeletion] = useState<Evento | null>(null);
     const [showFullEditor, setShowFullEditor] = useState(false);
     const [fullEditorTab, setFullEditorTab] = useState<'marcador' | 'eventos' | 'jugadores'>('marcador');
+    const [showMetaEditor, setShowMetaEditor] = useState(false);
 
     if (loading) return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
@@ -129,7 +131,7 @@ export default function MatchControlPage() {
     const isTeamSport = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
     const bgGradient = DISCIPLINES_COLORS[disciplinaName] || 'from-slate-700 to-slate-900';
     const actions = GET_SPORT_ACTIONS(disciplinaName);
-    const { scoreA, scoreB, labelA, labelB, extra: scoreExtra } = getCurrentScore(disciplinaName, match.marcador_detalle || {});
+    const { scoreA, scoreB } = getCurrentScore(disciplinaName, match.marcador_detalle || {});
 
     return (
         <div className="min-h-screen bg-background pb-24 text-white">
@@ -141,6 +143,30 @@ export default function MatchControlPage() {
             />
 
             <div className="relative z-10 max-w-7xl mx-auto px-6">
+                {/* Fecha / Lugar — editable */}
+                <div className="flex items-center justify-between gap-3 py-3 mb-2">
+                    <div className="flex items-center gap-3 text-[10px] text-white/30 font-bold flex-wrap">
+                        <span>📅 {match.fecha ? new Date(match.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : 'Sin fecha'}</span>
+                        <span>📍 {match.lugar || 'Sin lugar'}</span>
+                    </div>
+                    <button
+                        onClick={() => setShowMetaEditor(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all active:scale-95 shrink-0"
+                    >
+                        <Edit3 size={11} />
+                        Editar
+                    </button>
+                </div>
+
+                {showMetaEditor && (
+                    <MatchMetaEditor
+                        match={match}
+                        profile={profile}
+                        onClose={() => setShowMetaEditor(false)}
+                        onSaved={fetchMatchDetails}
+                    />
+                )}
+
                 {/* Edición Completa — solo deportes de equipo finalizados */}
                 {isTeamSport && match.estado === 'finalizado' && (
                     <div className="flex items-center justify-end mb-6 -mt-4">

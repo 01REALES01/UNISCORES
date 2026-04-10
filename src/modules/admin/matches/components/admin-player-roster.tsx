@@ -37,56 +37,101 @@ export const AdminPlayerRoster = ({
     const sportColor = SPORT_COLORS[disciplinaName] || '#6366f1';
     const isColectivo = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
 
-    // Debounced search - same pattern as friends-list
+    // Debounced dual-source search
     useEffect(() => {
         const q = searchQuery.trim();
         if (q.length < 2) { setSearchResults([]); return; }
 
         setSearching(true);
         const timer = setTimeout(async () => {
-            const { data } = await supabase
-                .from('profiles')
-                .select('id, full_name, avatar_url, points')
-                .ilike('full_name', `%${q}%`)
-                .limit(8);
-            setSearchResults(data ?? []);
-            setSearching(false);
+            try {
+                // Parallel search in profiles and jugadores base table
+                const [profilesRes, jugadoresRes] = await Promise.all([
+                    supabase.from('profiles').select('id, full_name, avatar_url').ilike('full_name', `%${q}%`).limit(10),
+                    supabase.from('jugadores').select('id, nombre, profile_id').ilike('nombre', `%${q}%`).limit(10)
+                ]);
+
+                const profiles = profilesRes.data || [];
+                const players = jugadoresRes.data || [];
+
+                // Unified results format
+                const unified: any[] = [];
+                const seenProfileIds = new Set();
+                const seenPlayerIds = new Set();
+
+                // 1. Add Profiles (Registered Users)
+                profiles.forEach(p => {
+                    unified.push({
+                        id: p.id, // profile UUID
+                        name: p.full_name,
+                        avatar: p.avatar_url,
+                        source: 'profile',
+                        badge: 'Cuenta Activa'
+                    });
+                    seenProfileIds.add(p.id);
+                });
+
+                // 2. Add Players who DON'T have a profile among the ones we already found
+                players.forEach(j => {
+                    if (j.profile_id && seenProfileIds.has(j.profile_id)) return;
+                    
+                    unified.push({
+                        id: j.id, // numeric player ID
+                        name: j.nombre,
+                        avatar: null,
+                        source: 'jugador',
+                        badge: 'Solo Acta',
+                        profile_id: j.profile_id
+                    });
+                    seenPlayerIds.add(j.id);
+                });
+
+                setSearchResults(unified);
+            } catch (err) {
+                console.error("Search error:", err);
+            } finally {
+                setSearching(false);
+            }
         }, 350);
 
         return () => { clearTimeout(timer); setSearching(false); };
     }, [searchQuery]);
 
-    const handleAddFromProfile = async () => {
-        if (!addingTeam || !selectedProfile) return;
+    const handleAddFromUnified = async (item: any) => {
+        if (!addingTeam) return;
 
         try {
-            // 1. Find or Create player in 'jugadores'
-            let jugador_id;
-            const { data: existing } = await supabase
-                .from('jugadores')
-                .select('id')
-                .eq('profile_id', selectedProfile.id)
-                .maybeSingle();
+            let jugador_id: number;
 
-            if (existing) {
-                jugador_id = existing.id;
-            } else {
-                const { data: created, error: createError } = await supabase
+            if (item.source === 'profile') {
+                // Check if already in 'jugadores'
+                const { data: existing } = await supabase
                     .from('jugadores')
-                    .insert({
-                        nombre: selectedProfile.full_name,
-                        numero: profileNumero ? parseInt(profileNumero) : null,
-                        profile_id: selectedProfile.id,
-                        carrera_id: addingTeam === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
-                    })
-                    .select()
-                    .single();
-                
-                if (createError) throw createError;
-                jugador_id = created.id;
+                    .select('id')
+                    .eq('profile_id', item.id)
+                    .maybeSingle();
+
+                if (existing) {
+                    jugador_id = existing.id;
+                } else {
+                    const { data: created, error: createError } = await supabase
+                        .from('jugadores')
+                        .insert({
+                            nombre: item.name,
+                            profile_id: item.id,
+                            carrera_id: addingTeam === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
+                        })
+                        .select()
+                        .single();
+                    if (createError) throw createError;
+                    jugador_id = created.id;
+                }
+            } else {
+                // Already a jugador record
+                jugador_id = item.id;
             }
 
-            // 2. Link to match in 'roster_partido'
+            // Link to match
             const { error: rosterError } = await supabase.from('roster_partido').insert({
                 partido_id: parseInt(matchId),
                 jugador_id: jugador_id,
@@ -95,10 +140,10 @@ export const AdminPlayerRoster = ({
 
             if (rosterError) throw rosterError;
 
-            toast.success(`${selectedProfile.full_name} añadido`);
+            toast.success(`${item.name} añadido`);
             onPlayersUpdated();
         } catch (error: any) {
-            console.error("Error al añadir jugador (perfil):", error);
+            console.error("Error adding athlete:", error);
             toast.error(`Error: ${error.message}`);
         }
         resetAddForm();
@@ -254,10 +299,10 @@ export const AdminPlayerRoster = ({
                                             /* Profile selected → show confirm + jersey number */
                                             <div className="space-y-2 animate-in fade-in duration-200">
                                                 <div className="flex items-center gap-2 p-2 rounded-lg border" style={{ borderColor: `${sportColor}30`, background: `${sportColor}08` }}>
-                                                    <Avatar name={selectedProfile.full_name} src={selectedProfile.avatar_url} className="w-8 h-8 shrink-0 border border-white/20" />
+                                                    <Avatar name={selectedProfile.name} src={selectedProfile.avatar} className="w-8 h-8 shrink-0 border border-white/20" />
                                                     <div className="flex-1 min-w-0">
-                                                        <span className="text-[10px] font-bold text-white/80 block truncate">{selectedProfile.full_name}</span>
-                                                        <span className="text-[8px] font-bold" style={{ color: `${sportColor}80` }}>Perfil encontrado ✓</span>
+                                                        <span className="text-[10px] font-bold text-white/80 block truncate">{selectedProfile.name}</span>
+                                                        <span className="text-[8px] font-bold" style={{ color: `${sportColor}80` }}>{selectedProfile.badge} ✓</span>
                                                     </div>
                                                     <button onClick={() => setSelectedProfile(null)} className="text-[9px] text-white/25 hover:text-white/50">✕</button>
                                                 </div>
@@ -269,9 +314,9 @@ export const AdminPlayerRoster = ({
                                                         value={profileNumero}
                                                         onChange={e => setProfileNumero(e.target.value)}
                                                         autoFocus
-                                                        onKeyDown={e => e.key === 'Enter' && handleAddFromProfile()}
+                                                        onKeyDown={e => e.key === 'Enter' && handleAddFromUnified(selectedProfile)}
                                                     />
-                                                    <Button size="sm" onClick={handleAddFromProfile}
+                                                    <Button size="sm" onClick={() => handleAddFromUnified(selectedProfile)}
                                                         className="flex-1 h-8 text-black font-black text-[9px] uppercase tracking-widest rounded-lg"
                                                         style={{ background: sportColor }}>
                                                         Registrar
@@ -299,16 +344,19 @@ export const AdminPlayerRoster = ({
                                                 <div className="max-h-[160px] overflow-y-auto space-y-1">
                                                     {searchResults.map(p => (
                                                         <button
-                                                            key={p.id}
+                                                            key={p.source === 'profile' ? p.id : `j-${p.id}`}
                                                             onClick={() => { setSelectedProfile(p); setSearchQuery(''); setSearchResults([]); }}
-                                                            className="w-full flex items-center gap-2.5 p-2 rounded-lg border hover:border-opacity-50 transition-all text-left"
+                                                            className="w-full flex items-center gap-2.5 p-2 rounded-lg border hover:border-opacity-50 transition-all text-left group/res"
                                                             style={{ borderColor: `${sportColor}10`, background: `${sportColor}03` }}
                                                         >
-                                                            <Avatar name={p.full_name} src={p.avatar_url} className="w-7 h-7 shrink-0 border border-white/10" />
+                                                            <Avatar name={p.name} src={p.avatar} className="w-7 h-7 shrink-0 border border-white/10" />
                                                             <div className="flex-1 min-w-0">
-                                                                <span className="text-[10px] font-bold text-white/80 truncate block">{p.full_name}</span>
+                                                                <span className="text-[10px] font-bold text-white/80 truncate block">{p.name}</span>
+                                                                <span className="text-[7px] font-black uppercase tracking-widest text-white/20">{p.badge}</span>
                                                             </div>
-                                                            <Plus size={12} className="shrink-0" style={{ color: `${sportColor}60` }} />
+                                                            <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center opacity-40 group-hover/res:opacity-100 transition-opacity">
+                                                                <Plus size={12} style={{ color: sportColor }} />
+                                                            </div>
                                                         </button>
                                                     ))}
                                                     {searchQuery.trim().length >= 2 && !searching && searchResults.length === 0 && (
