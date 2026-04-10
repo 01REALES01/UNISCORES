@@ -140,9 +140,18 @@ export default function ClasificacionPage() {
             const matchIds = filteredMatches.map(m => m.id);
             if (matchIds.length === 0) return;
 
+            // Build lookup: matchId + '_equipo_a' → real team name
+            const teamNameByMatchAndSide: Record<string, string> = {};
+            filteredMatches.forEach(m => {
+                const a = m.delegacion_a || m.equipo_a;
+                const b = m.delegacion_b || m.equipo_b;
+                if (a) teamNameByMatchAndSide[`${m.id}_equipo_a`] = a;
+                if (b) teamNameByMatchAndSide[`${m.id}_equipo_b`] = b;
+            });
+
             const { data } = await supabase
                 .from('olympics_eventos')
-                .select('tipo_evento, equipo, descripcion')
+                .select('tipo_evento, equipo, descripcion, partido_id')
                 .in('partido_id', matchIds)
                 .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play']);
 
@@ -155,15 +164,17 @@ export default function ClasificacionPage() {
                     if (a && !(a in counts)) counts[a] = 2000;
                     if (b && !(b in counts)) counts[b] = 2000;
                 });
-                data.forEach(e => {
+                data.forEach((e: any) => {
                     const team = e.equipo;
                     if (!team) return;
-                    if (!(team in counts)) counts[team] = 2000;
-                    if (e.tipo_evento === 'tarjeta_amarilla') counts[team] -= 50;
-                    if (e.tipo_evento === 'tarjeta_roja') counts[team] -= 100;
-                    if (e.tipo_evento === 'expulsion_delegado') counts[team] -= 100;
-                    if (e.tipo_evento === 'mal_comportamiento') counts[team] -= 100;
-                    if (e.tipo_evento === 'ajuste_fair_play') counts[team] += Number(e.descripcion ?? 0);
+                    // Resolve 'equipo_a'/'equipo_b' to real team name
+                    const resolvedTeam = teamNameByMatchAndSide[`${e.partido_id}_${team}`] || team;
+                    if (!(resolvedTeam in counts)) counts[resolvedTeam] = 2000;
+                    if (e.tipo_evento === 'tarjeta_amarilla') counts[resolvedTeam] -= 50;
+                    if (e.tipo_evento === 'tarjeta_roja') counts[resolvedTeam] -= 100;
+                    if (e.tipo_evento === 'expulsion_delegado') counts[resolvedTeam] -= 100;
+                    if (e.tipo_evento === 'mal_comportamiento') counts[resolvedTeam] -= 100;
+                    if (e.tipo_evento === 'ajuste_fair_play') counts[resolvedTeam] += Number(e.descripcion ?? 0);
                 });
                 setFairPlayData(counts);
             }

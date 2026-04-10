@@ -1,25 +1,27 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatches } from "@/hooks/use-matches";
+import { useJornadas } from "@/hooks/use-jornadas";
 import { SPORT_ACCENT, SPORT_BORDER, SPORT_GRADIENT, SPORT_GLOW, SPORT_EMOJI, SPORT_COLORS } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { SportIcon } from "@/components/sport-icons";
+
 import { cn } from "@/lib/utils";
 import {
-    Calendar as CalendarIcon, Trophy, Zap, Search, Activity,
-    MapPin, LayoutGrid, Clock, ChevronRight, MoveRight, Filter
+    Calendar as CalendarIcon, Search, Activity,
+    LayoutGrid
 } from "lucide-react";
+import { UnifiedCard } from "@/modules/matches/components/unified-card";
 import { Avatar, Badge, Button } from "@/components/ui-primitives";
 import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import { PublicLiveTimer } from "@/components/public-live-timer";
+import { JornadaCard } from "@/modules/matches/components/match-card";
+
 
 // --- Types ---
-type MatchStatus = 'FINALIZADO' | 'EN_JUEGO' | 'PROGRAMADO';
-
 const GENDERS = [
     { label: 'Todos', value: 'todos', icon: '⚥' },
     { label: 'Masculino', value: 'masculino', icon: '♂' },
@@ -29,29 +31,28 @@ const GENDERS = [
 export default function PartidosPage() {
     const { user, profile, isStaff } = useAuth();
     const { matches: rawMatches, loading } = useMatches();
+    const { jornadas, loading: jornadasLoading } = useJornadas();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSport, setSelectedSport] = useState("Todos");
-    const [selectedGender, setSelectedGender] = useState<string>("todos");
+    const [selectedGender, setSelectedGender] = useState<string>("masculino");
+    const [filterVisible, setFilterVisible] = useState(true);
+    const lastScrollY = useRef(0);
+    // Derive unique sport names from all matches + jornadas
 
-    // Derive unique sport names from all matches
     const availableSports = useMemo(() => {
         const sports = new Set<string>();
-        rawMatches.forEach(m => {
-            const name = m.disciplinas?.name;
-            if (name) sports.add(name);
-        });
+        rawMatches.forEach(m => { if (m.disciplinas?.name) sports.add(m.disciplinas.name); });
+        jornadas.forEach(j => { if (j.disciplinas?.name) sports.add(j.disciplinas.name); });
         return Array.from(sports).sort();
-    }, [rawMatches]);
+    }, [rawMatches, jornadas]);
 
-    // 1. Filter by search + sport + gender
+    // 1. Filter matches by search + sport + gender
     const filteredMatches = useMemo(() => {
         const q = searchQuery.toLowerCase();
         return rawMatches.filter(m => {
-            // Sport filter
             if (selectedSport !== "Todos" && m.disciplinas?.name !== selectedSport) return false;
-            // Gender filter
-            if (selectedGender !== 'todos' && (m.genero || 'masculino').toLowerCase() !== selectedGender.toLowerCase()) return false;
-            // Text search filter
+            const matchGender = (m.genero || 'masculino').toLowerCase();
+            if (selectedGender !== 'todos' && matchGender !== selectedGender.toLowerCase() && matchGender !== 'mixto') return false;
             const teamA = (m.carrera_a?.nombre || m.equipo_a || "").toLowerCase();
             const teamB = (m.carrera_b?.nombre || m.equipo_b || "").toLowerCase();
             const sport = (m.disciplinas?.name || "").toLowerCase();
@@ -59,9 +60,21 @@ export default function PartidosPage() {
         });
     }, [rawMatches, searchQuery, selectedSport, selectedGender]);
 
-    // 2. Grouping Function
+    // 2. Filter jornadas
+    const filteredJornadas = useMemo(() => {
+        const q = searchQuery.toLowerCase();
+        return jornadas.filter(j => {
+            if (selectedSport !== "Todos" && j.disciplinas?.name !== selectedSport) return false;
+            if (selectedGender !== 'todos' && j.genero !== selectedGender && j.genero !== 'mixto') return false;
+            const sport = (j.disciplinas?.name || '').toLowerCase();
+            const nombre = (j.nombre || '').toLowerCase();
+            return sport.includes(q) || nombre.includes(q);
+        });
+    }, [jornadas, searchQuery, selectedSport, selectedGender]);
+
+    // 3. Unified date-grouped feed (partidos + jornadas)
     const groupedMatches = useMemo(() => {
-        const groups: Record<string, any[]> = {};
+        const groups: Record<string, { partidos: any[], jornadas: any[] }> = {};
         const todayStr = new Date().toISOString().split('T')[0];
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -70,8 +83,14 @@ export default function PartidosPage() {
 
         filteredMatches.forEach(match => {
             const fecha = match.fecha.split('T')[0];
-            if (!groups[fecha]) groups[fecha] = [];
-            groups[fecha].push(match);
+            if (!groups[fecha]) groups[fecha] = { partidos: [], jornadas: [] };
+            groups[fecha].partidos.push(match);
+        });
+
+        filteredJornadas.forEach(j => {
+            const fecha = j.scheduled_at.split('T')[0];
+            if (!groups[fecha]) groups[fecha] = { partidos: [], jornadas: [] };
+            groups[fecha].jornadas.push(j);
         });
 
         return Object.keys(groups).sort().map(fecha => {
@@ -88,25 +107,40 @@ export default function PartidosPage() {
             else if (isYesterday) label = `Ayer — ${label}`;
             else if (isTomorrow) label = `Mañana — ${label}`;
 
-            // Internal sorting: en_curso (0), programado (1), finalizado (2)
-            const sorted = groups[fecha].sort((a, b) => {
-                const stateOrder = { "en_curso": 0, "programado": 1, "finalizado": 2 };
+            const stateOrder = { "en_curso": 0, "programado": 1, "finalizado": 2 };
+            const sorted = groups[fecha].partidos.sort((a, b) => {
+
                 const orderA = stateOrder[a.estado as keyof typeof stateOrder] ?? 99;
                 const orderB = stateOrder[b.estado as keyof typeof stateOrder] ?? 99;
-
                 if (orderA !== orderB) return orderA - orderB;
                 return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
             });
 
-            return { fecha, label, partidos: sorted, isToday };
+            return { fecha, label, partidos: sorted, jornadas: groups[fecha].jornadas, isToday };
         });
-    }, [filteredMatches]);
+    }, [filteredMatches, filteredJornadas]);
 
-    // 3. Auto-scroll to today
+    // 4. Hide filter on scroll down, show on scroll up
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentY = window.scrollY;
+            if (currentY < 80) {
+                setFilterVisible(true);
+            } else if (currentY > lastScrollY.current + 8) {
+                setFilterVisible(false);
+            } else if (currentY < lastScrollY.current - 8) {
+                setFilterVisible(true);
+            }
+            lastScrollY.current = currentY;
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // 5. Auto-scroll to today
     useEffect(() => {
         if (!loading && groupedMatches.length > 0) {
             const todayStr = new Date().toISOString().split('T')[0];
-            // Find today or the first date after today
             const targetDate = groupedMatches.find(g => g.fecha >= todayStr)?.fecha;
 
             if (targetDate) {
@@ -114,7 +148,7 @@ export default function PartidosPage() {
                     const element = document.getElementById(`date-${targetDate}`);
                     if (element) {
                         const isMobile = window.innerWidth < 768;
-                        const offset = isMobile ? 140 : 180; // Adjusted offsets for sticky filter bar
+                        const offset = isMobile ? 160 : 250;
                         const bodyRect = document.body.getBoundingClientRect().top;
                         const elementRect = element.getBoundingClientRect().top;
                         const elementPosition = elementRect - bodyRect;
@@ -122,10 +156,10 @@ export default function PartidosPage() {
 
                         window.scrollTo({
                             top: offsetPosition,
-                            behavior: 'auto' // Instant jump instead of smooth
+                            behavior: 'auto'
                         });
                     }
-                }, 100); // Shorter timeout for faster appearance
+                }, 100);
             }
         }
     }, [loading, groupedMatches.length]);
@@ -133,7 +167,7 @@ export default function PartidosPage() {
     return (
         <div className="min-h-screen bg-background text-white selection:bg-white/10 font-sans pb-20 relative">
 
-        {/* Background Element Watermark - MORE VISIBLE */}
+        {/* Background Element Watermark */}
         <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-end overflow-hidden opacity-[0.25]">
             <img 
                 src="/elementos/08.png" 
@@ -170,41 +204,38 @@ export default function PartidosPage() {
                     </div>
                 </header>
 
-                {/* ── Center Area: Large Sport & Gender Filters (Sticky & Responsive) ── */}
-                <div className="sticky top-[64px] sm:top-[72px] z-50 px-4 py-4 mb-4 bg-background/40 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
+                {/* ── Filter Area (Sticky) ── */}
+                <div className={cn(
+                    "sticky top-[64px] sm:top-[72px] z-50 px-4 py-4 mb-4 transition-all duration-300",
+                    filterVisible ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
+                )}>
                     <div className="flex flex-col gap-4 sm:gap-6 max-w-6xl mx-auto">
-                        {/* 1. Sport Selector Tiles */}
                         <div className="flex justify-center w-full">
-                            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 w-full max-w-4xl justify-start sm:justify-center group">
-                                {/* "Todos" card */}
+                            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 w-full max-w-4xl justify-start sm:justify-center">
                                 <button
                                     onClick={() => setSelectedSport("Todos")}
                                     className={cn(
-                                        "relative min-w-[90px] sm:min-w-[110px] h-20 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
+                                        "relative min-w-[80px] sm:min-w-[110px] h-16 sm:h-28 rounded-[1.2rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
                                         selectedSport === "Todos"
                                             ? "bg-violet-600/30 border-violet-500/50 scale-105"
                                             : "bg-background/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
                                     )}
                                 >
-                                    <div className="z-10 flex flex-col items-center gap-3">
+                                    <div className="z-10 flex flex-col items-center gap-1.5 sm:gap-3">
                                         <div className={cn(
-                                            "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500",
+                                            "w-8 h-8 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500",
                                             selectedSport === "Todos" ? "bg-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.5)]" : "bg-white/5 border border-white/10"
                                         )}>
-                                            <LayoutGrid 
-                                                size={24} 
-                                                className={selectedSport === "Todos" ? "text-white" : "text-white/40"} 
-                                            />
+                                            <LayoutGrid size={18} className={selectedSport === "Todos" ? "text-white" : "text-white/40"} />
                                         </div>
                                         <span className={cn(
-                                            "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
-                                            selectedSport === "Todos" ? "text-white" : "text-white/20"
+                                            "text-[9px] sm:text-[11px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-colors",
+                                            selectedSport === "Todos" ? "text-white" : "text-white/30"
                                         )}>
                                             Todos
                                         </span>
                                     </div>
                                 </button>
-
                                 {availableSports.map((sport) => {
                                     const isActive = selectedSport === sport;
                                     return (
@@ -212,29 +243,23 @@ export default function PartidosPage() {
                                             key={sport}
                                             onClick={() => setSelectedSport(sport)}
                                             className={cn(
-                                                "group/btn relative min-w-[90px] sm:min-w-[110px] h-20 sm:h-28 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
+                                                "group/btn relative min-w-[80px] sm:min-w-[110px] h-16 sm:h-28 rounded-[1.2rem] sm:rounded-[2rem] flex flex-col items-center justify-center border transition-all duration-500 overflow-hidden shrink-0 shadow-2xl",
                                                 isActive
                                                     ? "bg-violet-600/30 border-violet-500/50 scale-105"
                                                     : "bg-[#1a0b38]/40 border-white/10 hover:border-white/20 hover:bg-white/[0.05] backdrop-blur-xl"
                                             )}
                                         >
-                                            <div className="z-10 flex flex-col items-center gap-3">
+                                            <div className="z-10 flex flex-col items-center gap-1.5 sm:gap-3">
                                                 <div className={cn(
-                                                    "w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500 overflow-hidden",
+                                                    "w-8 h-8 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-500 overflow-hidden",
                                                     isActive ? "shadow-[0_0_20px_rgba(139,92,246,0.3)] border-transparent" : "bg-white/5 border border-white/10"
                                                 )}>
-                                                    <SportIcon 
-                                                        sport={sport} 
-                                                        size={32} 
-                                                        className={cn(
-                                                            "transition-all duration-500",
-                                                            isActive ? "grayscale-0 opacity-100" : "grayscale-0 opacity-100 group-hover/btn:opacity-100"
-                                                        )} 
-                                                    />
+                                                    <SportIcon sport={sport} size={22} className="sm:hidden" />
+                                                    <SportIcon sport={sport} size={32} className="hidden sm:block" />
                                                 </div>
                                                 <span className={cn(
-                                                    "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
-                                                    isActive ? "text-white" : "text-white/20 group-hover/btn:text-white/40"
+                                                    "text-[9px] sm:text-[11px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-colors",
+                                                    isActive ? "text-white" : "text-white/30 group-hover/btn:text-white/60"
                                                 )}>
                                                     {sport}
                                                 </span>
@@ -244,23 +269,17 @@ export default function PartidosPage() {
                                 })}
                             </div>
                         </div>
-
-                        {/* 2. Gender Selectors */}
-                        <div className="flex justify-center w-full px-4 overflow-x-auto no-scrollbar">
+                        {/* Gender pills */}
+                        <div className="flex justify-center w-full">
                             <div className="flex gap-2 p-1.5 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl">
                                 {GENDERS.map((g) => {
                                     const isSelected = selectedGender === g.value;
                                     return (
-                                        <button
-                                            key={g.value}
-                                            onClick={() => setSelectedGender(g.value)}
+                                        <button key={g.value} onClick={() => setSelectedGender(g.value)}
                                             className={cn(
-                                                "relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-[8.5px] sm:text-[10px] font-display font-black tracking-widest transition-all overflow-hidden border whitespace-nowrap",
-                                                isSelected
-                                                    ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105"
-                                                    : "bg-transparent border-transparent text-white/30 hover:text-white/60"
-                                            )}
-                                        >
+                                                "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-[8.5px] sm:text-[10px] font-display font-black tracking-widest transition-all border whitespace-nowrap",
+                                                isSelected ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105" : "bg-transparent border-transparent text-white/30 hover:text-white/60"
+                                            )}>
                                             <span className={cn("text-xs sm:text-sm leading-none", isSelected ? "text-[#7C3AED]" : "text-violet-400")}>{g.icon}</span>
                                             <span className="uppercase">{g.label}</span>
                                         </button>
@@ -268,18 +287,18 @@ export default function PartidosPage() {
                                 })}
                             </div>
                         </div>
-
-                        {!loading && (
+                        {!loading && !jornadasLoading && (
                             <div className="text-center">
                                 <p className="text-[10px] font-black text-white/20 tracking-[0.3em] uppercase">
-                                    {filteredMatches.length} encuentro{filteredMatches.length !== 1 ? 's' : ''} encontrado{filteredMatches.length !== 1 ? 's' : ''}
+                                    {filteredMatches.length} encuentro{filteredMatches.length !== 1 ? 's' : ''}{filteredJornadas.length > 0 ? ` · ${filteredJornadas.length} jornada${filteredJornadas.length !== 1 ? 's' : ''}` : ''}
                                 </p>
                             </div>
                         )}
+
                     </div>
                 </div>
 
-                {loading ? (
+                {loading || jornadasLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[1, 2, 3, 4, 5, 6].map(i => (
                             <div key={i} className="h-48 rounded-[2rem] bg-white/5 animate-pulse border border-white/5" />
@@ -291,12 +310,12 @@ export default function PartidosPage() {
                             <section
                                 key={group.fecha}
                                 id={`date-${group.fecha}`}
-                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-[300px] sm:scroll-mt-[400px] bg-transparent pb-16"
+                                className="relative animate-in fade-in slide-in-from-bottom-6 duration-1000 scroll-mt-[220px] sm:scroll-mt-[320px] bg-transparent pb-16"
                             >
-                                <div className="flex items-center justify-center gap-4 mb-6 sm:mb-10 sticky top-[250px] sm:top-[310px] z-40 py-4 pointer-events-none">
+                                <div className="flex items-center justify-center gap-4 mb-6 sm:mb-10 py-4">
                                     <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/20 to-white/10 max-w-[100px] sm:max-w-xs" />
                                     <h2 className={cn(
-                                        "flex items-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-2xl pointer-events-auto",
+                                        "flex items-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-full border backdrop-blur-3xl transition-all duration-500 shadow-2xl",
                                         group.isToday
                                             ? "bg-black border-emerald-500/40 text-white shadow-[0_0_40px_rgba(139,92,246,0.2)] scale-105"
                                             : "bg-[#09080d] border-white/20 text-white shadow-black/80 ring-1 ring-white/10"
@@ -306,9 +325,7 @@ export default function PartidosPage() {
                                                 const parts = group.label.split(',');
                                                 return (
                                                     <>
-                                                        <span className={cn(
-                                                            "text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-emerald-400"
-                                                        )}>
+                                                        <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-emerald-400">
                                                             {parts[0]}
                                                         </span>
                                                         {parts[1] && (
@@ -332,14 +349,11 @@ export default function PartidosPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {group.partidos.map(partido => (
-                                        <div key={partido.id} className="h-full">
-                                            {partido.estado === 'en_curso' ? (
-                                                <LiveMatchCard partido={partido} />
-                                            ) : partido.estado === 'finalizado' ? (
-                                                <ResultCard partido={partido} />
-                                            ) : (
-                                                <UpcomingMatchCard partido={partido} />
-                                            )}
+                                        <MatchCardEntry key={partido.id} partido={partido} />
+                                    ))}
+                                    {group.jornadas.map(jornada => (
+                                        <div key={`jornada-${jornada.id}`} className="h-full">
+                                            <JornadaCard jornada={jornada} />
                                         </div>
                                     ))}
                                 </div>
@@ -360,289 +374,38 @@ export default function PartidosPage() {
     );
 }
 
-// --- Unified Match Card Component Base ---
-
-function UnifiedCard({
-    partido,
-    statusLabel,
-    statusIcon,
-    statusColor,
-    scoreDisplay, // For Results/Live
-    timeDisplay,  // For Upcoming
-    highlightWinner = false
-}: {
-    partido: any,
-    statusLabel: string,
-    statusIcon?: React.ReactNode,
-    statusColor?: string,
-    scoreDisplay?: { a: any, b: any },
-    timeDisplay?: string,
-    highlightWinner?: boolean
-}) {
-    const sportName = partido.disciplinas?.name || 'Deporte';
-    const genero = (partido.genero || 'masculino').toLowerCase();
-
-    // Helper for Abbreviation
-    const getAbbr = (name?: string) => {
-        if (!name) return "??";
-        // Remove special characters and split
-        const words = name.replace(/[^\w\s]/gi, '').split(/\s+/).filter(word => word.length > 2);
-        if (words.length >= 2) {
-             return (words[0][0] + words[1][0]).toUpperCase();
-        }
-        return name.substring(0, 2).toUpperCase();
-    };
-
-    const displayNameA = getDisplayName(partido, 'a');
-    const displayNameB = getDisplayName(partido, 'b');
-    const sideAAbbr = getAbbr(displayNameA);
-    const sideBAbbr = getAbbr(displayNameB);
-
-    const sideAIcon = (partido as any).carrera_a?.escudo_url || (partido as any).delegacion_a_info?.escudo_url || (partido as any).atleta_a?.avatar_url;
-    const sideBIcon = (partido as any).carrera_b?.escudo_url || (partido as any).delegacion_b_info?.escudo_url || (partido as any).atleta_b?.avatar_url;
-
-    const winnerA = highlightWinner && (
-        (sportName !== 'Ajedrez' && Number(scoreDisplay?.a) > Number(scoreDisplay?.b)) ||
-        (sportName === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'victoria_a')
-    );
-    const winnerB = highlightWinner && (
-        (sportName !== 'Ajedrez' && Number(scoreDisplay?.b) > Number(scoreDisplay?.a)) ||
-        (sportName === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'victoria_b')
-    );
-    const isChessDraw = sportName === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'empate';
-
-    return (
-        <Link href={`/partido/${partido.id}`} className="group block h-full">
-            <div className={cn(
-                "relative h-full overflow-hidden rounded-[2.2rem] border transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-1 backdrop-blur-xl shadow-2xl",
-                SPORT_BORDER[sportName] || 'border-white/10',
-            )} style={{ 
-                background: `linear-gradient(135deg, ${SPORT_COLORS[sportName]}15 0%, rgba(255,255,255,0.02) 100%)`,
-                borderColor: `${SPORT_COLORS[sportName]}30`
-            }}>
-                {/* Background Element 08 - Constant Presence */}
-                <div className="absolute -right-16 -bottom-16 w-48 h-48 opacity-[0.08] mix-blend-screen pointer-events-none group-hover:opacity-[0.12] transition-opacity duration-700">
-                    <img src="/elementos/08.png" alt="" className="w-full h-full object-contain filter contrast-125 saturate-150" />
-                </div>
-                
-                {/* Acierta y gana overlay logic */}
-                <div className="absolute inset-0 bg-background mix-blend-overlay opacity-40 group-hover:opacity-30 transition-opacity" />
-                
-                {/* Ambient Background - Large Sport Watermark (Redesigned style) */}
-                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none select-none opacity-[0.12] group-hover:opacity-[0.16] transition-opacity duration-700">
-                    <SportIcon sport={sportName} size={220} className={cn("transition-all duration-700", SPORT_ACCENT[sportName] || 'text-white')} />
-                </div>
-
-                <div className="relative p-6 flex flex-col h-full justify-center">
-                    {/* Header */}
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="flex items-center gap-2.5">
-                            <div className={cn("w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner group-hover:border-violet-500/30 transition-colors", sportName === 'Fútbol' ? 'border-emerald-500/30 shadow-emerald-500/10' : '')}>
-                                <SportIcon sport={sportName} size={15} variant="react" className="text-white transition-opacity group-hover:opacity-100 placeholder:grayscale" />
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-[10px] md:text-[11px] font-bold font-display text-white tracking-widest leading-tight truncate">{sportName}</span>
-                                <span className="text-[10px] md:text-[11px] font-medium text-white/30 leading-tight truncate uppercase tracking-wider mt-0.5">{partido.lugar || 'Sede'}</span>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-1.5 min-w-[80px] pr-2">
-                            {statusLabel === 'LIVE' ? (
-                                <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportName} />
-                            ) : (
-                                <div className={cn(
-                                    "flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 shadow-inner",
-                                    statusLabel === 'PROGRAMADO' ? "text-violet-400 border-violet-500/20 bg-violet-500/5 transition-all group-hover:bg-violet-500/10" : "text-white/40"
-                                )}>
-                                    {statusIcon}
-                                    <span className="text-[9px] font-black uppercase tracking-[0.1em]">{statusLabel}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Content */}
-                    {partido.marcador_detalle?.tipo === 'carrera' ? (
-                        /* ── RACE layout (Natación) ── */
-                        <div className="flex-1 flex flex-col items-center justify-center gap-3 py-2 text-center w-full min-w-0">
-                            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tighter truncate w-full px-4 drop-shadow-2xl">
-                                {partido.marcador_detalle?.distancia} {partido.marcador_detalle?.estilo}
-                            </h3>
-                            <div className="flex flex-col items-center gap-1.5">
-                                {partido.estado === 'finalizado' ? (
-                                    <div className="flex flex-col gap-1">
-                                        {(['🥇', '🥈', '🥉'] as const).map((medal, i) => {
-                                            const p = (partido.marcador_detalle?.participantes || [])
-                                                .slice()
-                                                .sort((a: any, b: any) => (a.posicion ?? 99) - (b.posicion ?? 99))[i];
-                                            if (!p) return null;
-                                            return (
-                                                <span key={i} className="text-[11px] font-black text-white/60 tracking-tight italic">
-                                                    {medal} {p.nombre} {p.tiempo ? `• ${p.tiempo}` : ''}
-                                                </span>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <span className="text-sm font-bold text-cyan-600 uppercase tracking-widest">
-                                        {(partido.marcador_detalle?.participantes || []).length} PARTICIPANTES
-                                    </span>
-                                )}
-                                <span className={cn(
-                                    "text-[9px] font-black tracking-[0.2em] uppercase mt-1",
-                                    genero === 'femenino' ? "text-pink-500/80" :
-                                    genero === 'mixto' ? "text-purple-500/80" :
-                                    "text-blue-500/80"
-                                )}>
-                                    {genero}
-                                </span>
-                            </div>
-                        </div>
-                    ) : (
-                    /* ── NORMAL / AJEDREZ layout (Redesigned) ── */
-                    <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-2">
-                        {/* Team A */}
-                        <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
-                             <div className={cn(
-                                "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-500 shadow-xl overflow-hidden",
-                                winnerA ? "border-emerald-500/50 text-white shadow-emerald-500/10 scale-105" : "border-white/10 text-white"
-                            )}>
-                                {sideAIcon ? (
-                                    <img 
-                                        src={sideAIcon} 
-                                        alt="" 
-                                        className="w-full h-full object-cover p-2" 
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                                    />
-                                ) : sideAAbbr}
-                            </div>
-                            <span className={cn(
-                                "text-[9px] font-bold uppercase tracking-widest leading-tight line-clamp-2 max-w-[85px] transition-all",
-                                winnerA ? "text-white" : "text-white/60"
-                            )}>
-                                {displayNameA}
-                            </span>
-                            {sportName === 'Ajedrez' && winnerA && (
-                                <div className="absolute -top-2 bg-amber-500 text-black px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter shadow-lg z-20">
-                                    Ganador
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Center Display (Score or Time) */}
-                        <div className="flex flex-col items-center justify-center min-w-[90px]">
-                            {timeDisplay ? (
-                                <div className="text-3xl sm:text-4xl font-black text-white tabular-nums tracking-tighter mb-0.5 leading-none">
-                                    {timeDisplay}
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center">
-                                    {sportName !== 'Ajedrez' && (
-                                        <div className="flex items-center justify-center gap-2.5 font-bold text-4xl sm:text-5xl text-white tracking-tighter tabular-nums mb-0.5 leading-none">
-                                            <span className={(winnerB && sportName !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.a}</span>
-                                            <span className="text-white/30 text-2xl -mt-1">:</span>
-                                            <span className={(winnerA && sportName !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.b}</span>
-                                        </div>
-                                    )}
-                                    {sportName === 'Ajedrez' && isChessDraw && (
-                                        <div className="bg-white/10 text-white/60 border border-white/20 px-2.5 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.2em] mb-2">
-                                            Empate
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            <div className={cn(
-                                "text-[9px] font-black tracking-[0.2em] uppercase transition-all flex items-center gap-1.5",
-                                genero === 'femenino' ? "text-[#FF4081]" : "text-[#4081FF]"
-                            )}>
-                                <span className="w-1 h-1 rounded-full bg-current" aria-hidden="true"></span>
-                                {genero}
-                                <span className="w-1 h-1 rounded-full bg-current" aria-hidden="true"></span>
-                            </div>
-                        </div>
-
-                        {/* Team B */}
-                        <div className="flex flex-col items-center gap-2 text-center relative min-w-0 w-full">
-                             <div className={cn(
-                                "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-500 shadow-xl overflow-hidden",
-                                winnerB ? "border-emerald-500/50 text-white shadow-emerald-500/10 scale-105" : "border-white/10 text-white"
-                            )}>
-                                {sideBIcon ? (
-                                    <img 
-                                        src={sideBIcon} 
-                                        alt="" 
-                                        className="w-full h-full object-cover p-2"
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                                    />
-                                ) : sideBAbbr}
-                            </div>
-                            <span className={cn(
-                                "text-[9px] font-bold uppercase tracking-widest leading-tight line-clamp-2 max-w-[85px] transition-all",
-                                winnerB ? "text-white" : "text-white/60"
-                            )}>
-                                {displayNameB}
-                            </span>
-                            {sportName === 'Ajedrez' && winnerB && (
-                                <div className="absolute -top-2 bg-amber-500 text-black px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter shadow-lg z-20">
-                                    Ganador
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    )}
-
-                    {/* Footer - Redesigned Style */}
-                     <div className={cn(
-                        "mt-6 pt-4 border-t border-white/5 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.4em] transition-all duration-500 opacity-30 group-hover:opacity-100",
-                        SPORT_ACCENT[sportName] || 'text-white'
-                    )}>
-                        Analizar Partido <MoveRight size={12} className="ml-3 group-hover:translate-x-2 transition-transform" />
-                    </div>
-                </div>
-            </div>
-        </Link>
-    );
-}
-
-function LiveMatchCard({ partido }: { partido: any }) {
+function MatchCardEntry({ partido }: { partido: any }) {
     const sportName = partido.disciplinas?.name || 'Deporte';
     const { scoreA, scoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
 
-    return (
-        <UnifiedCard
-            partido={partido}
-            statusLabel="LIVE"
-            scoreDisplay={{ a: scoreA, b: scoreB }}
-        />
-    );
-}
+    if (partido.estado === 'en_curso') {
+        return (
+            <UnifiedCard
+                partido={partido}
+                statusLabel="LIVE"
+                scoreDisplay={{ a: scoreA, b: scoreB }}
+            />
+        );
+    }
 
-function UpcomingMatchCard({ partido }: { partido: any }) {
+    if (partido.estado === 'finalizado') {
+        return (
+            <UnifiedCard
+                partido={partido}
+                statusLabel="FINALIZADO"
+                scoreDisplay={{ a: scoreA, b: scoreB }}
+                highlightWinner={true}
+            />
+        );
+    }
+
     const date = new Date(partido.fecha);
     const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-
     return (
         <UnifiedCard
             partido={partido}
             statusLabel="PROGRAMADO"
-            statusColor="text-white/30"
             timeDisplay={timeStr}
-        />
-    );
-}
-
-function ResultCard({ partido }: { partido: any }) {
-    const sportName = partido.disciplinas?.name || 'Deporte';
-    const { scoreA, scoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
-
-    return (
-        <UnifiedCard
-            partido={partido}
-            statusLabel="FINALIZADO"
-            statusColor="text-white/20"
-            scoreDisplay={{ a: scoreA, b: scoreB }}
-            highlightWinner={true}
         />
     );
 }

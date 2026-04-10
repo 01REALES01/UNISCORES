@@ -70,11 +70,14 @@ export async function GET(request: NextRequest) {
 
         // ── Ensure profile row exists (critical for new OAuth users) ─────────
         try {
+            // Initialize admin client early — needed for profile upsert (bypasses RLS)
+            const admin = getSupabaseAdmin();
+
             const { data: existingProfile } = await supabase
                 .from('profiles')
                 .select('id')
                 .eq('id', user.id)
-                .single()
+                .maybeSingle()
 
             if (!existingProfile) {
                 const fullName =
@@ -84,7 +87,9 @@ export async function GET(request: NextRequest) {
                     user.email?.split('@')[0] ||
                     'Usuario'
 
-                const { error: insertError } = await supabase
+                // Use service-role client to bypass RLS (profiles has no INSERT policy for anon/user)
+                const clientForProfile = admin ?? supabase;
+                const { error: insertError } = await clientForProfile
                     .from('profiles')
                     .upsert({
                         id: user.id,
@@ -93,16 +98,16 @@ export async function GET(request: NextRequest) {
                         roles: ['public'],
                         is_public: true,
                         points: 0,
+                        updated_at: new Date().toISOString(),
                     }, { onConflict: 'id' })
 
                 if (insertError) {
-                    console.error('[Auth Callback] Profile upsert failed:', insertError.message)
+                    console.error('[Auth Callback] Profile upsert failed:', insertError.code, insertError.message)
                 }
             }
 
             // ── Auto-link jugador → profile (by email, then by name) ─────────
             // Uses service-role client to bypass RLS restrictions
-            const admin = getSupabaseAdmin();
             if (admin) {
                 let linked = false;
 

@@ -2,9 +2,9 @@
 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Activity, CheckCircle2, ChevronRight } from "lucide-react";
+import { Activity, CheckCircle2, ChevronRight, Shield, Square } from "lucide-react";
 import { calculateStandings } from "../utils/standings";
 import { SportIcon } from "@/components/sport-icons";
 
@@ -51,37 +51,77 @@ interface GroupStageTableProps {
 
 export function GroupStageTable({ matches, sportName, grupo, light = false, teamIdMap = {} }: GroupStageTableProps) {
     const [fairPlayData, setFairPlayData] = useState<Record<string, number>>({});
+    const matchIds = useMemo(() => matches.map(m => m.id), [matches]);
 
+    const fetchFairPlay = useCallback(async () => {
+        if (matchIds.length === 0) return;
+
+        // Build lookup: matchId + '_equipo_a' → real team name
+        // Events store 'equipo_a'/'equipo_b' as literals, not the real name
+        const teamNameByMatchAndSide: Record<string, string> = {};
+        matches.forEach(m => {
+            const a = m.delegacion_a || m.equipo_a;
+            const b = m.delegacion_b || m.equipo_b;
+            if (a) teamNameByMatchAndSide[`${m.id}_equipo_a`] = a;
+            if (b) teamNameByMatchAndSide[`${m.id}_equipo_b`] = b;
+        });
+
+        const { data, error } = await supabase
+            .from('olympics_eventos')
+            .select('tipo_evento, equipo, descripcion, partido_id')
+            .in('partido_id', matchIds)
+            .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play']);
+
+        if (!error && data) {
+            const counts: Record<string, number> = {};
+            matches.forEach(m => {
+                const a = m.delegacion_a || m.equipo_a;
+                const b = m.delegacion_b || m.equipo_b;
+                if (a && !counts[a]) counts[a] = 2000;
+                if (b && !counts[b]) counts[b] = 2000;
+            });
+            data.forEach((e: any) => {
+                if (!e.equipo) return;
+                // Resolve 'equipo_a'/'equipo_b' to the real team name using the lookup map
+                const resolvedTeam = teamNameByMatchAndSide[`${e.partido_id}_${e.equipo}`] || e.equipo;
+                if (!(resolvedTeam in counts)) counts[resolvedTeam] = 2000;
+                if (e.tipo_evento === 'tarjeta_amarilla') counts[resolvedTeam] -= 50;
+                if (e.tipo_evento === 'tarjeta_roja') counts[resolvedTeam] -= 100;
+                if (e.tipo_evento === 'expulsion_delegado') counts[resolvedTeam] -= 100;
+                if (e.tipo_evento === 'mal_comportamiento') counts[resolvedTeam] -= 100;
+                if (e.tipo_evento === 'ajuste_fair_play') counts[resolvedTeam] += Number(e.descripcion ?? 0);
+            });
+            setFairPlayData(counts);
+        }
+    }, [matchIds, matches]);
+
+    // Initial load + re-fetch when matches prop changes
     useEffect(() => {
-        const fetchFairPlay = async () => {
-            const matchIds = matches.map(m => m.id);
-            if (matchIds.length === 0) return;
-            const { data, error } = await supabase
-                .from('olympics_eventos')
-                .select('tipo_evento, equipo')
-                .in('partido_id', matchIds)
-                .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento']);
-            if (!error && data) {
-                const counts: Record<string, number> = {};
-                matches.forEach(m => {
-                    const a = m.delegacion_a || m.equipo_a;
-                    const b = m.delegacion_b || m.equipo_b;
-                    if (a && !counts[a]) counts[a] = 2000;
-                    if (b && !counts[b]) counts[b] = 2000;
-                });
-                data.forEach(e => {
-                    if (!e.equipo) return;
-                    if (!(e.equipo in counts)) counts[e.equipo] = 2000;
-                    if (e.tipo_evento === 'tarjeta_amarilla') counts[e.equipo] -= 50;
-                    if (e.tipo_evento === 'tarjeta_roja') counts[e.equipo] -= 100;
-                    if (e.tipo_evento === 'expulsion_delegado') counts[e.equipo] -= 100;
-                    if (e.tipo_evento === 'mal_comportamiento') counts[e.equipo] -= 100;
-                });
-                setFairPlayData(counts);
-            }
-        };
         fetchFairPlay();
-    }, [matches]);
+    }, [fetchFairPlay]);
+
+    // Real-time subscription: re-fetch whenever a card event is inserted/deleted/updated
+    useEffect(() => {
+        if (matchIds.length === 0) return;
+
+        const channel = supabase
+            .channel(`fairplay-group-${grupo}-${matchIds.join('-')}`)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'olympics_eventos' },
+                (payload: any) => {
+                    const FP_TYPES = ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play'];
+                    const record = payload.new || payload.old;
+                    // Only re-fetch if it's a relevant event for one of our matches
+                    if (record && matchIds.includes(record.partido_id) && FP_TYPES.includes(record.tipo_evento)) {
+                        fetchFairPlay();
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [matchIds, grupo, fetchFairPlay]);
 
     const standings = useMemo(() => calculateStandings(matches, sportName, fairPlayData, teamIdMap), [matches, sportName, fairPlayData, teamIdMap]);
 
@@ -89,6 +129,7 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
     const played = matches.filter(m => m.estado === 'finalizado').length;
     const total  = matches.length;
     const isVoley = sportName === 'Voleibol';
+    const isFutbol = sportName === 'Fútbol';
 
     return (
         <div className={cn(
@@ -135,7 +176,14 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                             <th className="text-center py-4 px-3 w-10">{isVoley ? 'SP' : 'GC'}</th>
                             {isVoley && <th className="text-center py-4 px-3 w-14" title="Coeficiente de Puntos">CP</th>}
                             <th className="text-center py-4 px-3 w-10">{isVoley ? 'CS' : 'DIF'}</th>
-                            <th className="text-center py-4 px-3 w-12">FP</th>
+                            {isFutbol && (
+                                <th className="text-center py-4 px-3 w-16" title="Fair Play">
+                                    <div className="flex items-center justify-center gap-1">
+                                        <Shield size={10} className="text-emerald-400/70" />
+                                        <span>FP</span>
+                                    </div>
+                                </th>
+                            )}
                             <th className={cn("text-center py-4 px-6 sm:px-8 w-16", light ? "text-violet-500" : "text-violet-300")}>PTS</th>
                         </tr>
                     </thead>
@@ -195,7 +243,23 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                                             </span>
                                         )}
                                     </td>
-                                    <td className="text-center py-4 px-3 text-white/40 font-bold tabular-nums">{team.fairPlayPoints}</td>
+                                    {isFutbol && (
+                                        <td className="text-center py-4 px-3">
+                                            <div className={cn(
+                                                "inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-black text-[11px] tabular-nums border",
+                                                team.fairPlayPoints === 2000
+                                                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                                    : team.fairPlayPoints >= 1900
+                                                    ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                                                    : team.fairPlayPoints >= 1800
+                                                    ? "bg-orange-500/10 border-orange-500/20 text-orange-400"
+                                                    : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                                            )}>
+                                                <Shield size={9} className="shrink-0 opacity-70" />
+                                                {team.fairPlayPoints}
+                                            </div>
+                                        </td>
+                                    )}
                                     <td className="text-center py-4 px-6 sm:px-8 text-lg font-black tabular-nums tracking-tighter text-white">
                                         {team.points}
                                     </td>

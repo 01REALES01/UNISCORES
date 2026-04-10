@@ -108,6 +108,10 @@ export function ToastProvider() {
                     }
 
                     // Caso 2: Cambio de marcador
+                    // Si el partido ya está finalizado, no mostrar notificaciones de puntaje
+                    // (evita spam cuando el admin edita eventos post-partido)
+                    if (newItem.estado === 'finalizado') return;
+
                     const oldDetail = oldItem?.marcador_detalle || {};
                     const newDetail = newItem?.marcador_detalle || {};
 

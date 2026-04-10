@@ -89,8 +89,8 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
                   )}>
                     <div className="text-right py-1">
                       <p className="text-sm sm:text-lg font-black leading-tight text-white uppercase tracking-tight">
-                        <Link 
-                          href={e.jugadores?.profile_id ? `/perfil/${e.jugadores.profile_id}` : `/jugador/${e.jugadores?.id}`} 
+                        <Link
+                          href={e.jugadores?.profile_id ? `/perfil/${e.jugadores.profile_id}` : `/jugador/${e.jugadores?.id}`}
                           className="hover:text-emerald-400 transition-colors"
                         >
                           {e.jugadores?.nombre || getDisplayName(match, 'a')}
@@ -115,8 +115,8 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
                     </div>
                     <div className="text-left py-1">
                       <p className="text-sm sm:text-lg font-black leading-tight text-white uppercase tracking-tight">
-                        <Link 
-                          href={e.jugadores?.profile_id ? `/perfil/${e.jugadores.profile_id}` : `/jugador/${e.jugadores?.id}`} 
+                        <Link
+                          href={e.jugadores?.profile_id ? `/perfil/${e.jugadores.profile_id}` : `/jugador/${e.jugadores?.id}`}
                           className="hover:opacity-80 transition-opacity"
                         >
                           {e.jugadores?.nombre || getDisplayName(match, 'b')}

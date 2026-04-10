@@ -166,6 +166,14 @@ export default function PublicMatchDetail() {
     const { scoreA, scoreB, subScoreA, subScoreB, extra, subLabel } = getCurrentScore(sportName, m.marcador_detalle || {});
     const generoMatch = m.genero || 'masculino';
     const hasTimer = ['Fútbol', 'Baloncesto', 'Futsal', 'Fútbol Sala'].includes(sportName);
+    // Para fútbol mostramos la fase si el admin la seteó (1º Tiempo / Entretiempo / 2º Tiempo)
+    const faseFutbol = m.marcador_detalle?.fase_futbol as 'primer_tiempo' | 'entretiempo' | 'segundo_tiempo' | undefined;
+    const extraFutbol = faseFutbol === 'primer_tiempo' ? '1º Tiempo'
+        : faseFutbol === 'entretiempo' ? 'Entretiempo'
+        : faseFutbol === 'segundo_tiempo' ? '2º Tiempo'
+        : null;
+    const showExtra = sportName === 'Fútbol' ? !!extraFutbol : !!extra;
+    const displayExtra = sportName === 'Fútbol' ? extraFutbol : extra;
     const sportColor = SPORT_COLORS[sportName] || '#10b981';
 
     const tenisDetalle = m.marcador_detalle || {};
@@ -532,13 +540,13 @@ export default function PublicMatchDetail() {
                                             "flex items-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-2 sm:mb-3",
                                             isLive ? (SPORT_LIVE_TEXT[m.disciplinas?.name ?? ''] || SPORT_LIVE_TEXT.default) : "text-white/40"
                                         )}>
-                                            {extra ? (
+                                            {showExtra ? (
                                                 <div className="flex items-center gap-2">
                                                     <span className={cn(
                                                         "brightness-125 drop-shadow-[0_0_8px_currentColor]",
                                                         isLive ? (SPORT_ACCENT[m.disciplinas?.name ?? ''] || 'text-white') : 'text-white/40'
                                                     )}>
-                                                        {extra}
+                                                        {displayExtra}
                                                     </span>
                                                     {subScoreA !== undefined && sportName !== 'Voleibol' && (
                                                         <span className="text-white/30 font-mono text-[9px] tracking-normal brightness-75">
