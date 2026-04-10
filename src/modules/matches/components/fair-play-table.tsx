@@ -96,15 +96,26 @@ export function FairPlayTable({ genero, sportName, teamIdMap = {} }: FairPlayTab
                 if (b && !(b in scores)) { scores[b] = 2000; amarillas[b] = 0; rojas[b] = 0; otros[b] = 0; }
             });
 
+            // Build lookup: partido_id + '_equipo_a' → real team name
+            const teamNameByMatchAndSide: Record<string, string> = {};
+            partidos.forEach((p: any) => {
+                const a = p.delegacion_a || p.equipo_a;
+                const b = p.delegacion_b || p.equipo_b;
+                if (a) teamNameByMatchAndSide[`${p.id}_equipo_a`] = a;
+                if (b) teamNameByMatchAndSide[`${p.id}_equipo_b`] = b;
+            });
+
             const { data: eventos } = await supabase
                 .from('olympics_eventos')
-                .select('tipo_evento, equipo, descripcion')
+                .select('tipo_evento, equipo, descripcion, partido_id')
                 .in('partido_id', matchIds)
                 .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play']);
 
             (eventos ?? []).forEach((e: any) => {
-                const team = e.equipo;
-                if (!team) return;
+                const rawTeam = e.equipo;
+                if (!rawTeam) return;
+                // Resolve 'equipo_a'/'equipo_b' to real team name
+                const team = teamNameByMatchAndSide[`${e.partido_id}_${rawTeam}`] || rawTeam;
                 if (!(team in scores)) { scores[team] = 2000; amarillas[team] = 0; rojas[team] = 0; otros[team] = 0; }
                 if (e.tipo_evento === 'tarjeta_amarilla') { scores[team] -= 50; amarillas[team]++; }
                 else if (e.tipo_evento === 'tarjeta_roja') { scores[team] -= 100; rojas[team]++; }

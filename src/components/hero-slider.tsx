@@ -320,7 +320,13 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                     <div className="flex flex-col items-center mt-2 md:mt-3 w-full">
                                                         <div className={cn("flex flex-col items-center gap-1.5 mb-2 md:mb-3")}>
                                                             <div className={cn("flex items-center gap-2 text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] brightness-125", liveText)}>
-                                                                <span>{scoreInfo.extra || 'EN CURSO'}</span>
+                                                                <span>{
+                                                                    sName === 'Fútbol' && currentMatch.marcador_detalle?.fase_futbol
+                                                                        ? (currentMatch.marcador_detalle.fase_futbol === 'primer_tiempo' ? '1° Tiempo'
+                                                                            : currentMatch.marcador_detalle.fase_futbol === 'entretiempo' ? 'Entretiempo'
+                                                                            : '2° Tiempo')
+                                                                        : (scoreInfo.extra || 'EN CURSO')
+                                                                }</span>
                                                             </div>
 
                                                             {/* Neon Gender Label */}

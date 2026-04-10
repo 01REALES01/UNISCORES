@@ -13,6 +13,7 @@ export type MarcadorFutbol = {
   tiempos?: Record<number, { goles_a: number; goles_b: number }>;
   tiempo_inicio?: string;
   estado_cronometro?: 'corriendo' | 'pausado' | 'detenido';
+  fase_futbol?: 'primer_tiempo' | 'entretiempo' | 'segundo_tiempo';
 };
 
 export type MarcadorBaloncesto = {

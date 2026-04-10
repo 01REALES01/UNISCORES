@@ -322,7 +322,15 @@ export default function PublicMatchDetail() {
     const sportEmoji = getSportEmoji(sportName);
     const { scoreA, scoreB, subScoreA, subScoreB, extra, subLabel } = getCurrentScore(sportName, match.marcador_detalle || {});
     const generoMatch = match.genero || 'masculino';
-    const hasTimer = ['Fútbol', 'Baloncesto', 'Futsal'].includes(sportName);
+    const hasTimer = ['Fútbol', 'Baloncesto', 'Futsal', 'Fútbol Sala'].includes(sportName);
+    // Para fútbol solo mostramos el tiempo si el admin usó los botones de fase
+    const faseFutbol = match.marcador_detalle?.fase_futbol as 'primer_tiempo' | 'entretiempo' | 'segundo_tiempo' | undefined;
+    const extraFutbol = faseFutbol === 'primer_tiempo' ? '1º Tiempo'
+        : faseFutbol === 'entretiempo' ? 'Entretiempo'
+        : faseFutbol === 'segundo_tiempo' ? '2º Tiempo'
+        : null;
+    const showExtra = sportName === 'Fútbol' ? !!extraFutbol : !!extra;
+    const displayExtra = sportName === 'Fútbol' ? extraFutbol : extra;
     const sportColor = SPORT_COLORS[sportName] || '#10b981';
 
     const tenisDetalle = match.marcador_detalle || {};
@@ -662,14 +670,13 @@ export default function PublicMatchDetail() {
                                             "flex items-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-2 sm:mb-3",
                                             isLive ? (SPORT_LIVE_TEXT[match.disciplinas?.name ?? ''] || SPORT_LIVE_TEXT.default) : "text-white/40"
                                         )}>
-                                            {/* Quarter or 'Finalizado' / 'Programado' */}
-                                            {extra ? (
+                                            {showExtra ? (
                                                 <div className="flex items-center gap-2">
                                                     <span className={cn(
                                                         "brightness-125 drop-shadow-[0_0_8px_currentColor]",
                                                         isLive ? (SPORT_ACCENT[match.disciplinas?.name ?? ''] || 'text-white') : 'text-white/40'
                                                     )}>
-                                                        {extra}
+                                                        {displayExtra}
                                                     </span>
                                                     {subScoreA !== undefined && (
                                                         <span className="text-white/30 font-mono text-[9px] tracking-normal brightness-75">

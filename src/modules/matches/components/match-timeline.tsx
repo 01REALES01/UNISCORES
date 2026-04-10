@@ -88,13 +88,14 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
                     !isTeamA ? "opacity-0 pointer-events-none translate-x-4" : "opacity-100 translate-x-0"
                   )}>
                     <div className="text-right py-1">
-                      <p className="text-[13px] sm:text-[15px] font-black leading-tight text-white/95 truncate max-w-[90px] sm:max-w-none">
-                        {e.jugadores?.profile_id ? (
-                      <Link href={`/perfil/${e.jugadores.profile_id}`} className="hover:text-emerald-400 transition-colors">
-                        {e.jugadores.nombre}
-                      </Link>
-                    ) : (e.jugadores?.nombre || getDisplayName(match, 'a'))}
-                  </p>
+                      <p className="text-sm sm:text-lg font-black leading-tight text-white uppercase tracking-tight">
+                        <Link
+                          href={e.jugadores?.profile_id ? `/perfil/${e.jugadores.profile_id}` : `/jugador/${e.jugadores?.id}`}
+                          className="hover:text-emerald-400 transition-colors"
+                        >
+                          {e.jugadores?.nombre || getDisplayName(match, 'a')}
+                        </Link>
+                      </p>
                   <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-[0.15em]">{eventLabel}</p>
                 </div>
                 <div className="w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] rounded-xl border flex items-center justify-center flex-shrink-0 shadow-lg relative group-hover/item:scale-110 transition-transform" style={{ backgroundColor: `${sportColor}15`, borderColor: `${sportColor}30`, color: sportColor }}>
@@ -113,12 +114,13 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
                       <span className="relative z-10">{eventIcon}</span>
                     </div>
                     <div className="text-left py-1">
-                      <p className="text-[13px] sm:text-[15px] font-black leading-tight text-white/95 truncate max-w-[90px] sm:max-w-none">
-                        {e.jugadores?.profile_id ? (
-                          <Link href={`/perfil/${e.jugadores.profile_id}`} className="hover:opacity-80 transition-opacity">
-                            {e.jugadores.nombre}
-                          </Link>
-                        ) : (e.jugadores?.nombre || getDisplayName(match, 'b'))}
+                      <p className="text-sm sm:text-lg font-black leading-tight text-white uppercase tracking-tight">
+                        <Link
+                          href={e.jugadores?.profile_id ? `/perfil/${e.jugadores.profile_id}` : `/jugador/${e.jugadores?.id}`}
+                          className="hover:opacity-80 transition-opacity"
+                        >
+                          {e.jugadores?.nombre || getDisplayName(match, 'b')}
+                        </Link>
                       </p>
                       <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-[0.15em]">{eventLabel}</p>
                     </div>

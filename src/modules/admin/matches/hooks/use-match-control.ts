@@ -283,19 +283,21 @@ export function useMatchControl(matchId: string) {
         }
     };
 
-    const handleNuevoEvento = async (tipo: string, equipo: string, jugador_id: number | null) => {
+    const handleNuevoEvento = async (tipo: string, equipo: string, jugador_id: number | null, bypassFinalized = false) => {
         if (!match || !profile) return;
         const disciplinaName = match.disciplinas?.name || 'Deporte';
 
-        if (match.estado === 'finalizado' || match.estado === 'cancelado') {
-            toast.error('No se pueden registrar eventos en partidos ya finalizados.');
-            return;
-        }
-
-        if (match.estado !== 'en_curso') {
-            if (!(match.estado === 'programado' && tipo === 'cambio')) {
-                toast.error('Solo se pueden registrar eventos de juego en partidos EN CURSO.');
+        if (!bypassFinalized) {
+            if (match.estado === 'finalizado' || match.estado === 'cancelado') {
+                toast.error('No se pueden registrar eventos en partidos ya finalizados.');
                 return;
+            }
+
+            if (match.estado !== 'en_curso') {
+                if (!(match.estado === 'programado' && tipo === 'cambio')) {
+                    toast.error('Solo se pueden registrar eventos de juego en partidos EN CURSO.');
+                    return;
+                }
             }
         }
 
@@ -426,6 +428,35 @@ export function useMatchControl(matchId: string) {
             }
         } catch (err: any) {
             toast.error('Error al cambiar período: ' + err.message);
+        }
+    };
+
+    const handleCambiarFaseFutbol = async (fase: 'primer_tiempo' | 'entretiempo' | 'segundo_tiempo') => {
+        if (!match || !profile) return;
+        try {
+            const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
+            const detalle = { ...(freshMatch?.marcador_detalle || match.marcador_detalle || {}) };
+
+            let detalleFinal: any;
+            let mensaje = '';
+
+            if (fase === 'primer_tiempo') {
+                detalleFinal = { ...detalle, tiempo_actual: 1, fase_futbol: 'primer_tiempo' };
+                mensaje = '1º Tiempo';
+            } else if (fase === 'entretiempo') {
+                detalleFinal = { ...detalle, fase_futbol: 'entretiempo' };
+                mensaje = 'Entretiempo';
+            } else {
+                detalleFinal = { ...detalle, tiempo_actual: 2, fase_futbol: 'segundo_tiempo' };
+                mensaje = '2º Tiempo';
+            }
+
+            await supabase.from('partidos').update({ marcador_detalle: auditDetalle(detalleFinal) }).eq('id', matchId);
+            registrarEventoSistema('periodo', mensaje);
+            await logAction('CHANGE_PERIOD', 'partido', matchId, { mensaje });
+            toast.success(mensaje);
+        } catch (err: any) {
+            toast.error('Error al cambiar fase: ' + err.message);
         }
     };
 
@@ -641,6 +672,7 @@ export function useMatchControl(matchId: string) {
         handleNuevoEvento,
         handleManualScoreUpdate,
         handleCambiarPeriodo,
+        handleCambiarFaseFutbol,
         handleCambiarSetDirecto,
         confirmarFinalizar,
         finalizarPorWO,

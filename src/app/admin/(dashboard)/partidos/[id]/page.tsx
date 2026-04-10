@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, Loader2, Edit3 } from "lucide-react";
+import { AlertCircle, Loader2, Edit3, X } from "lucide-react";
 import { Button, Card } from "@/components/ui-primitives";
 import { useAuth } from "@/hooks/useAuth";
 import { getCurrentScore } from "@/lib/sport-scoring";
@@ -17,7 +17,6 @@ import { AdminPlayerRoster } from "@/modules/admin/matches/components/admin-play
 import { AjedrezControl } from "@/modules/admin/matches/components/ajedrez-control";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { EditMatchModal } from "@/modules/matches/components/edit-match-modal";
 import type { Evento } from "@/modules/matches/types";
 
 // Local UI Constants (could be moved to a constants file if reused)
@@ -93,6 +92,7 @@ export default function MatchControlPage() {
         handleNuevoEvento,
         handleManualScoreUpdate,
         handleCambiarPeriodo,
+        handleCambiarFaseFutbol,
         handleCambiarSetDirecto,
         confirmarFinalizar,
         finalizarPorWO,
@@ -123,6 +123,7 @@ export default function MatchControlPage() {
     );
 
     const disciplinaName = match.disciplinas?.name || 'Fútbol';
+    const isTeamSport = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
     const bgGradient = DISCIPLINES_COLORS[disciplinaName] || 'from-slate-700 to-slate-900';
     const actions = GET_SPORT_ACTIONS(disciplinaName);
     const { scoreA, scoreB, labelA, labelB, extra: scoreExtra } = getCurrentScore(disciplinaName, match.marcador_detalle || {});
@@ -137,6 +138,19 @@ export default function MatchControlPage() {
             />
 
             <div className="relative z-10 max-w-7xl mx-auto px-6">
+                {/* Edición Completa — solo deportes de equipo finalizados */}
+                {isTeamSport && match.estado === 'finalizado' && (
+                    <div className="flex items-center justify-end mb-6 -mt-4">
+                        <button
+                            onClick={() => setShowFullEditor(true)}
+                            className="group relative flex items-center gap-3 px-8 py-4 rounded-[1.5rem] bg-indigo-600 border border-indigo-400/50 text-white hover:bg-indigo-500 active:scale-95 transition-all text-xs font-black uppercase tracking-[0.2em] shadow-[0_4px_20px_rgba(79,70,229,0.4)] overflow-hidden"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                            <Edit3 size={18} className="relative z-10 group-hover:rotate-12 transition-transform" />
+                            <span className="relative z-10">Edición Completa</span>
+                        </button>
+                    </div>
+                )}
                 {match.marcador_detalle?.tipo === 'carrera' ? (
                     <Card className="p-8 mb-12">
                         <RaceControl
@@ -168,6 +182,7 @@ export default function MatchControlPage() {
                         onFinalizar={() => setIsEndingMatch(true)}
                         onCambiarPeriodo={handleCambiarPeriodo}
                         onCambiarSet={(setNum, pA, pB) => handleCambiarSetDirecto(setNum, pA, pB)}
+                        onCambiarFaseFutbol={handleCambiarFaseFutbol}
                     />
                 )}
 
@@ -183,7 +198,16 @@ export default function MatchControlPage() {
                     />
                 )}
 
-                {match.marcador_detalle?.tipo !== 'carrera' && (
+                {match.marcador_detalle?.tipo !== 'carrera' && match.estado === 'finalizado' && (
+                    <div className="mt-8 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center">
+                        <AlertCircle size={20} className="shrink-0 text-white/30" />
+                        <p className="text-sm font-bold text-white/40 uppercase tracking-widest">
+                            Partido finalizado — no se pueden registrar eventos desde acá
+                        </p>
+                    </div>
+                )}
+
+                {match.marcador_detalle?.tipo !== 'carrera' && match.estado !== 'finalizado' && (
                 <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-8">
                     <AdminEventCreator
                         match={match}
@@ -273,12 +297,95 @@ export default function MatchControlPage() {
                 }}
             />
 
-            <EditMatchModal 
-                match={match} 
-                isOpen={showFullEditor} 
-                onClose={() => setShowFullEditor(false)} 
-                profile={profile}
-            />
+            {/* Edición Completa — modal con registro de eventos sin restricción de estado */}
+            {showFullEditor && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 backdrop-blur-sm overflow-y-auto py-8 px-4">
+                    <div className="relative w-full max-w-7xl bg-[#0d0d12] border border-white/10 rounded-[2rem] shadow-2xl p-6 sm:p-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <Edit3 size={20} className="text-indigo-400" />
+                                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-white">Edición Completa</h2>
+                            </div>
+                            <button
+                                onClick={() => setShowFullEditor(false)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <AdminPlayerRoster
+                            match={match}
+                            jugadoresA={jugadoresA}
+                            jugadoresB={jugadoresB}
+                            matchId={matchId}
+                            onPlayersUpdated={fetchJugadores}
+                            disciplinaName={disciplinaName}
+                        />
+
+                        <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-8">
+                            <AdminEventCreator
+                                match={match}
+                                actions={actions}
+                                jugadoresA={jugadoresA}
+                                jugadoresB={jugadoresB}
+                                eventos={eventos}
+                                onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id, true)}
+                                onAddPlayer={async (team, data) => {
+                                    try {
+                                        let jId: number | null = null;
+                                        const { data: existing } = await supabase
+                                            .from('jugadores')
+                                            .select('id')
+                                            .eq('profile_id', data.profile_id)
+                                            .maybeSingle();
+
+                                        if (existing && data.profile_id) {
+                                            jId = existing.id;
+                                        } else {
+                                            const { data: created, error: cErr } = await supabase
+                                                .from('jugadores')
+                                                .insert({
+                                                    nombre: data.nombre,
+                                                    numero: data.numero ? parseInt(data.numero) : null,
+                                                    profile_id: data.profile_id || null,
+                                                    carrera_id: team === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
+                                                })
+                                                .select()
+                                                .single();
+                                            if (cErr) throw cErr;
+                                            jId = created.id;
+                                        }
+
+                                        const { error: rErr } = await supabase.from('roster_partido').insert({
+                                            partido_id: parseInt(matchId),
+                                            jugador_id: jId,
+                                            equipo_a_or_b: team
+                                        });
+                                        if (rErr) throw rErr;
+
+                                        fetchJugadores();
+                                        toast.success("Jugador añadido");
+                                        return jId;
+                                    } catch (error: any) {
+                                        console.error("Error adding player:", error);
+                                        toast.error(`Error: ${error.message}`);
+                                        return null;
+                                    }
+                                }}
+                                disciplinaName={disciplinaName}
+                            />
+
+                            <AdminMatchTimeline
+                                eventos={eventos}
+                                match={match}
+                                onDeleteEvent={(e) => setConfirmingDeletion(e)}
+                                disciplinaName={disciplinaName}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

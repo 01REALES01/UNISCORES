@@ -1,5 +1,5 @@
 import { Avatar } from "@/components/ui-primitives";
-import { Play, Square, Radio, Clock, AlertCircle, CheckCircle, ArrowRight } from "lucide-react";
+import { Play, Square, Radio, Clock, AlertCircle, CheckCircle, ArrowRight, Lock } from "lucide-react";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { SPORT_COLORS } from "@/lib/constants";
@@ -14,6 +14,7 @@ interface AdminScoreboardProps {
   onFinalizar: () => void;
   onCambiarPeriodo?: () => void;
   onCambiarSet?: (setNum: number, puntosA: number, puntosB: number) => void;
+  onCambiarFaseFutbol?: (fase: 'primer_tiempo' | 'entretiempo' | 'segundo_tiempo') => void;
 }
 
 export const AdminScoreboard = ({
@@ -24,8 +25,10 @@ export const AdminScoreboard = ({
   onFinalizar,
   onCambiarPeriodo,
   onCambiarSet,
+  onCambiarFaseFutbol,
 }: AdminScoreboardProps) => {
   const [showModeModal, setShowModeModal] = useState(false);
+  const [showFaseError, setShowFaseError] = useState(false);
   const [pendingSet, setPendingSet] = useState<number | null>(null);
   const [editPuntosA, setEditPuntosA] = useState(0);
   const [editPuntosB, setEditPuntosB] = useState(0);
@@ -186,6 +189,50 @@ export const AdminScoreboard = ({
                     })}
                   </div>
                 )}
+                {isLive && disciplinaName === 'Fútbol' && onCambiarFaseFutbol && (() => {
+                  const fase = detalle.fase_futbol;
+                  const tiempoActual = detalle.tiempo_actual || 1;
+                  const activeFase = fase === 'entretiempo' ? 'entretiempo'
+                    : fase === 'segundo_tiempo' || tiempoActual === 2 ? 'segundo_tiempo'
+                    : 'primer_tiempo';
+
+                  const FASE_ORDER: Record<string, number> = { primer_tiempo: 0, entretiempo: 1, segundo_tiempo: 2 };
+                  const activeIndex = FASE_ORDER[activeFase] ?? 0;
+
+                  const fases: { key: 'primer_tiempo' | 'entretiempo' | 'segundo_tiempo'; label: string }[] = [
+                    { key: 'primer_tiempo', label: '1º Tiempo' },
+                    { key: 'entretiempo', label: 'Entretiempo' },
+                    { key: 'segundo_tiempo', label: '2º Tiempo' },
+                  ];
+
+                  return (
+                    <div className="flex items-center gap-2 px-1">
+                      {fases.map(({ key, label }) => {
+                        const isActive = activeFase === key;
+                        const isPast = FASE_ORDER[key] < activeIndex;
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => {
+                              if (isPast) { setShowFaseError(true); return; }
+                              if (!isActive) onCambiarFaseFutbol(key);
+                            }}
+                            className="flex-1 h-9 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 border flex items-center justify-center gap-1"
+                            style={isActive
+                              ? { background: sportColor, color: '#000', borderColor: 'transparent', boxShadow: `0 2px 10px ${sportColor}40`, cursor: 'default' }
+                              : isPast
+                                ? { background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.06)', cursor: 'not-allowed' }
+                                : { background: `${sportColor}05`, color: `${sportColor}60`, borderColor: `${sportColor}20` }
+                            }
+                          >
+                            {isPast && <Lock size={8} />}
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
               
               {isFinal && (
@@ -343,6 +390,31 @@ export const AdminScoreboard = ({
               style={{ borderColor: `${sportColor}10` }}
             >
               Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    {/* Football Phase — No-going-back Warning Modal */}
+    {showFaseError && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="relative bg-[#0a0816] border rounded-[3rem] p-10 max-w-sm w-full shadow-2xl overflow-hidden animate-in zoom-in-95"
+          style={{ borderColor: 'rgba(239,68,68,0.25)' }}>
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-600 to-red-400" />
+
+          <div className="relative z-10 flex flex-col items-center text-center">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-red-500/30 bg-red-500/15">
+              <Lock size={28} className="text-red-400" />
+            </div>
+            <h2 className="text-xl font-black uppercase tracking-tight text-white mb-2">No se puede regresar</h2>
+            <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-8">
+              Las fases del partido avanzan en un solo sentido.<br />No es posible regresar a una fase anterior.
+            </p>
+            <button
+              onClick={() => setShowFaseError(false)}
+              className="w-full h-11 rounded-2xl font-black text-[9px] uppercase tracking-widest text-white transition-all active:scale-95 bg-red-500/20 border border-red-500/30 hover:bg-red-500/30"
+            >
+              Entendido
             </button>
           </div>
         </div>
