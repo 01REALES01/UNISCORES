@@ -189,27 +189,23 @@ export default function AdminDashboard() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {stats.map((stat) => (
                     <div
                         key={stat.name}
-                        className={`relative group overflow-hidden rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-red-500/10 border border-white/5 bg-white/8/40 backdrop-blur-md`}
+                        className="relative rounded-2xl p-5 border border-white/5 bg-white/[0.04]"
                     >
-                        {/* Glow Gradient Background */}
-                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${stat.pulse ? 'from-rose-500 to-orange-500' : 'from-red-500 to-cyan-500'}`} />
-
-                        <div className="relative flex items-center justify-between z-10">
+                        <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.name}</p>
                                 <h3 className="text-4xl font-black text-white tracking-tight">{stat.value}</h3>
                             </div>
-
-                            <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color} ring-1 ${stat.ring} shadow-lg`}>
-                                <stat.icon size={24} />
+                            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
+                                <stat.icon size={22} />
                                 {stat.pulse && (
-                                    <span className="absolute top-4 right-4 flex h-3 w-3">
+                                    <span className="absolute top-3 right-3 flex h-2.5 w-2.5">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
-                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500" />
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
                                     </span>
                                 )}
                             </div>
@@ -220,25 +216,23 @@ export default function AdminDashboard() {
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Live Matches */}
-                <div className="rounded-3xl border border-white/5 bg-white/8/40 backdrop-blur-md p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-
-                    <div className="flex items-center justify-between mb-6 relative z-10">
-                        <h3 className="text-lg font-bold flex items-center gap-3 text-white">
-                            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500">
-                                <Zap size={18} />
+                <div className="rounded-2xl border border-white/5 bg-white/[0.04] p-5">
+                    <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-sm font-bold flex items-center gap-2 text-white">
+                            <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500">
+                                <Zap size={16} />
                             </div>
                             En Curso Ahora
                         </h3>
                         {enVivo.length > 0 && (
-                            <span className="flex items-center gap-2 text-[10px] font-black tracking-wider text-rose-400 bg-rose-500/10 px-3 py-1.5 rounded-full border border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.2)] animate-pulse">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                            <span className="flex items-center gap-1.5 text-[10px] font-black tracking-wider text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
                                 LIVE
                             </span>
                         )}
                     </div>
 
-                    <div className="space-y-3 relative z-10">
+                    <div className="space-y-2">
                         {enVivo.length > 0 ? (
                             enVivo.map(p => {
                                 const score = getScore(p);
@@ -246,50 +240,42 @@ export default function AdminDashboard() {
                                     <Link
                                         key={p.id}
                                         href={`/admin/partidos/${p.id}`}
-                                        className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-rose-500/30 transition-all group"
+                                        className="flex items-center gap-3 p-3.5 rounded-xl bg-white/5 hover:bg-white/8 border border-white/5"
                                     >
-                                        <span className="text-3xl filter drop-shadow-md">{getSportEmoji(p.disciplinas?.name ?? '')}</span>
+                                        <span className="text-2xl">{getSportEmoji(p.disciplinas?.name ?? '')}</span>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center justify-between mb-0.5">
                                                 <span className="text-sm font-bold text-slate-200 truncate">{p.carrera_a?.nombre || p.equipo_a}</span>
-                                                <span className="text-xl font-black text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]">{score.a}</span>
+                                                <span className="text-lg font-black text-rose-400">{score.a}</span>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-bold text-slate-400 truncate">{p.carrera_b?.nombre || p.equipo_b}</span>
-                                                <span className="text-xl font-black text-slate-500">{score.b}</span>
+                                                <span className="text-lg font-black text-slate-500">{score.b}</span>
                                             </div>
                                         </div>
-                                        <div className="h-8 w-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-all">
-                                            <ArrowUpRight size={16} />
-                                        </div>
+                                        <ArrowUpRight size={15} className="text-white/20 shrink-0" />
                                     </Link>
                                 );
                             })
                         ) : (
-                            <div className="text-center py-12 rounded-2xl border border-dashed border-white/10">
-                                <div className="inline-flex p-4 rounded-full bg-white/5 mb-3">
-                                    <Activity size={24} className="text-slate-500" />
-                                </div>
-                                <p className="text-sm font-medium text-slate-400">No hay partidos en curso</p>
+                            <div className="text-center py-10 rounded-xl border border-dashed border-white/10">
+                                <Activity size={22} className="text-slate-600 mx-auto mb-2" />
+                                <p className="text-sm font-medium text-slate-500">No hay partidos en curso</p>
                             </div>
                         )}
                     </div>
                 </div>
 
                 {/* Activity Feed */}
-                <div className="rounded-3xl border border-white/5 bg-white/8/40 backdrop-blur-md p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-
-                    <div className="flex items-center justify-between mb-6 relative z-10">
-                        <h3 className="text-lg font-bold flex items-center gap-3 text-white">
-                            <div className="p-2 rounded-xl bg-red-500/10 text-red-500">
-                                <Clock size={18} />
-                            </div>
-                            Actividad Reciente
-                        </h3>
+                <div className="rounded-2xl border border-white/5 bg-white/[0.04] p-5">
+                    <div className="flex items-center gap-2 mb-5">
+                        <div className="p-1.5 rounded-lg bg-slate-500/10 text-slate-400">
+                            <Clock size={16} />
+                        </div>
+                        <h3 className="text-sm font-bold text-white">Actividad Reciente</h3>
                     </div>
 
-                    <div className="space-y-2 relative z-10">
+                    <div className="space-y-1">
                         {finalizados.concat(programados).length > 0 ? (
                             [...finalizados.slice(0, 3), ...programados.slice(0, 3)].map(p => {
                                 const score = getScore(p);
@@ -298,23 +284,23 @@ export default function AdminDashboard() {
                                     <Link
                                         key={p.id}
                                         href={`/admin/partidos/${p.id}`}
-                                        className="flex items-center gap-4 p-3.5 rounded-2xl hover:bg-white/5 transition-all group border border-transparent hover:border-white/5"
+                                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5"
                                     >
-                                        <span className="text-2xl opacity-80">{getSportEmoji(p.disciplinas?.name ?? '')}</span>
+                                        <span className="text-xl">{getSportEmoji(p.disciplinas?.name ?? '')}</span>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-semibold text-slate-200 truncate">
-                                                {p.carrera_a?.nombre || p.equipo_a} <span className="text-slate-500 mx-1">vs</span> {p.carrera_b?.nombre || p.equipo_b}
+                                                {p.carrera_a?.nombre || p.equipo_a} <span className="text-slate-500">vs</span> {p.carrera_b?.nombre || p.equipo_b}
                                             </p>
-                                            <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide mt-0.5">
-                                                {p.disciplinas?.name} • {new Date(p.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+                                            <p className="text-[11px] text-slate-500 mt-0.5">
+                                                {p.disciplinas?.name} · {new Date(p.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
                                             </p>
                                         </div>
                                         {isFinal ? (
-                                            <span className="text-xs font-bold font-mono bg-white/5 text-slate-300 px-3 py-1.5 rounded-lg border border-white/5">
+                                            <span className="text-xs font-bold font-mono bg-white/5 text-slate-300 px-2.5 py-1 rounded-lg border border-white/5 shrink-0">
                                                 {score.a} - {score.b}
                                             </span>
                                         ) : (
-                                            <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">
+                                            <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-lg bg-slate-500/10 text-slate-400 border border-white/5 shrink-0">
                                                 Programado
                                             </span>
                                         )}
@@ -322,8 +308,8 @@ export default function AdminDashboard() {
                                 );
                             })
                         ) : (
-                            <div className="text-center py-12 rounded-2xl border border-dashed border-white/10">
-                                <p className="text-sm font-medium text-slate-400">Sin actividad reciente</p>
+                            <div className="text-center py-10 rounded-xl border border-dashed border-white/10">
+                                <p className="text-sm font-medium text-slate-500">Sin actividad reciente</p>
                             </div>
                         )}
                     </div>
@@ -331,26 +317,24 @@ export default function AdminDashboard() {
             </div>
 
             {/* Disciplines Overview */}
-            {/* Disciplines Overview */}
-            <div className="rounded-3xl border border-white/5 bg-white/8/40 backdrop-blur-md p-8 relative overflow-hidden">
-                <div className="flex items-center gap-3 mb-6 relative z-10">
-                    <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
-                        <Trophy size={18} />
+            <div className="rounded-2xl border border-white/5 bg-white/[0.04] p-5">
+                <div className="flex items-center gap-2 mb-5">
+                    <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
+                        <Trophy size={16} />
                     </div>
-                    <h3 className="text-lg font-bold text-white">Disciplinas Activas</h3>
+                    <h3 className="text-sm font-bold text-white">Disciplinas Activas</h3>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 relative z-10">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                     {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'].map(sport => {
                         const count = partidos.filter(p => p.disciplinas?.name === sport).length;
                         const liveCount = partidos.filter(p => p.disciplinas?.name === sport && p.estado === 'en_curso').length;
                         return (
                             <div
                                 key={sport}
-                                className={`relative group flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${count > 0
-                                    ? 'border-white/10 bg-white/5 hover:bg-white/10 hover:shadow-lg hover:shadow-red-500/10'
-                                    : 'border-white/5 bg-transparent opacity-40 hover:opacity-100'
-                                    }`}
+                                className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border ${
+                                    count > 0 ? 'border-white/8 bg-white/[0.03]' : 'border-white/5 opacity-40'
+                                }`}
                             >
                                 {liveCount > 0 && (
                                     <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
@@ -358,12 +342,9 @@ export default function AdminDashboard() {
                                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
                                     </span>
                                 )}
-                                <span className="text-3xl filter drop-shadow-lg transition-transform group-hover:scale-110 duration-300">{getSportEmoji(sport)}</span>
-                                <span className="text-[10px] font-bold text-center leading-tight text-slate-300 uppercase tracking-wider">{sport}</span>
-                                <div className="mt-1 flex items-baseline gap-1">
-                                    <span className={`text-xl font-black ${liveCount > 0 ? 'text-rose-400' : 'text-red-400'}`}>{count}</span>
-                                    <span className="text-[8px] font-medium text-slate-500">parts</span>
-                                </div>
+                                <span className="text-2xl">{getSportEmoji(sport)}</span>
+                                <span className="text-[9px] font-bold text-center leading-tight text-slate-400 uppercase tracking-wide">{sport}</span>
+                                <span className={`text-lg font-black ${liveCount > 0 ? 'text-rose-400' : 'text-slate-300'}`}>{count}</span>
                             </div>
                         );
                     })}

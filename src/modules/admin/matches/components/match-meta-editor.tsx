@@ -15,7 +15,16 @@ interface MatchMetaEditorProps {
 
 const INDIVIDUAL_SPORTS = ['Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
 
-type ProfileResult = { id: string; full_name: string; avatar_url?: string; carrera?: { nombre: string } };
+type ProfileResult = { 
+  id: string; 
+  full_name: string; 
+  avatar_url?: string | null; 
+  carrera?: { nombre: string } | null;
+  source?: 'profile' | 'jugador';
+  badge?: string;
+  realId?: number;
+  profile_id?: string | null;
+};
 
 function AthletePicker({
   label,
