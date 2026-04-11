@@ -44,7 +44,7 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
   const sport = match.disciplinas?.name || '';
   const sportColor = SPORT_COLORS[sport] || '#84cc16';
   const isTenisField = sport === 'Tenis';
-  const maxSets = MAX_SETS[sport] ?? 3;
+  const maxSets = MAX_SETS;
   // field names inside each set object
   const fieldA = isTenisField ? 'juegos_a' : 'puntos_a';
   const fieldB = isTenisField ? 'juegos_b' : 'puntos_b';
