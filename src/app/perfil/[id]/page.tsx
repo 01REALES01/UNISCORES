@@ -152,7 +152,7 @@ export default function PublicProfilePage() {
 
             const isAthlete = p.roles?.includes('deportista');
             if (isAthlete) {
-                fetchHistory(p.id);
+                fetchHistory(p.id, p.full_name);
                 fetchDetailedStats(p.id);
                 // Fetch multi-sport disciplines
                 const { data: pdData } = await supabase
@@ -301,19 +301,27 @@ export default function PublicProfilePage() {
                 if (type === 'empate') s.empates++;
             });
 
-            setSportStatsMap(prev => ({ ...prev, ...statsMap }));
+            // Deep-merge per disciplina key so wins/losses set by fetchHistory aren't clobbered
+            setSportStatsMap(prev => {
+                const newMap = { ...prev };
+                Object.keys(statsMap).forEach(sid => {
+                    newMap[sid] = { ...(newMap[sid] || {}), ...statsMap[sid] };
+                });
+                return newMap;
+            });
         } catch (err) {
             console.error("Error fetching detailed stats:", err);
         }
     };
 
-    const fetchHistory = async (id: string) => {
+    const fetchHistory = async (id: string, fullName?: string) => {
         setLoadingHistory(true);
         try {
             // ── STEP 1: Get all jugador rows linked to this profile ──────────────
+            // Include disciplinas(name) to avoid reading stale React state later
             const { data: jugRows } = await supabase
                 .from('jugadores')
-                .select('id, carrera_id, disciplina_id')
+                .select('id, carrera_id, disciplina_id, disciplinas(name)')
                 .eq('profile_id', id);
 
             const jugadorIds = (jugRows || []).map((j: any) => j.id);
@@ -322,23 +330,70 @@ export default function PublicProfilePage() {
             const matchIdSet = new Set<string>();
 
             // ── STEP 2a: Matches the player actually participated in (via events) ─
+            // Also capture the equipo field — it's the most reliable way to know
+            // which side the player was on (used later for win/loss calculation)
+            const matchSideMap = new Map<string, 'a' | 'b'>();
             if (jugadorIds.length > 0) {
                 const { data: evRows } = await supabase
                     .from('olympics_eventos')
-                    .select('partido_id')
+                    .select('partido_id, equipo')
                     .in('jugador_id_normalized', jugadorIds);
-                evRows?.forEach((e: any) => e.partido_id && matchIdSet.add(e.partido_id));
+                evRows?.forEach((e: any) => {
+                    if (!e.partido_id) return;
+                    matchIdSet.add(e.partido_id);
+                    if (e.equipo === 'equipo_a') matchSideMap.set(e.partido_id, 'a');
+                    else if (e.equipo === 'equipo_b') matchSideMap.set(e.partido_id, 'b');
+                });
             }
 
-            // ── STEP 2b: Team matches via carrera_id (future + past collective sports) ──
-            // Fútbol/Baloncesto/Voleibol use virtual rosters, NOT roster_partido
-            // so we must look up matches via carrera_a_id / carrera_b_id on partidos
-            for (const carreraId of carreraIds) {
-                const { data: carMatches } = await supabase
-                    .from('partidos')
-                    .select('id')
-                    .or(`carrera_a_id.eq.${carreraId},carrera_b_id.eq.${carreraId}`);
-                carMatches?.forEach((m: any) => matchIdSet.add(m.id));
+            // ── STEP 2b: Team matches via (carrera_id + disciplina_id) ────────────
+            // ONLY for collective sports — individual sports use only athlete_a/b_id (Step 2c)
+            // isIndividualAthlete reads from the jugRow JOIN (not stale React state)
+            const INDIVIDUAL_SPORTS_NAMES = ['Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
+
+            const isIndividualAthlete = (jugRows || []).some((j: any) => {
+                // disciplinas comes from the JOIN in Step 1 — always fresh, never stale
+                const discName = (Array.isArray(j.disciplinas) ? j.disciplinas[0]?.name : j.disciplinas?.name) || '';
+                return INDIVIDUAL_SPORTS_NAMES.includes(discName);
+            });
+
+            if (!isIndividualAthlete) {
+                const carreraDisciplinaPairs = (jugRows || [])
+                    .filter((j: any) => j.carrera_id && j.disciplina_id)
+                    .map((j: any) => ({ carrera_id: j.carrera_id, disciplina_id: j.disciplina_id }));
+
+                for (const pair of carreraDisciplinaPairs) {
+                    // Query by single carrera_a_id / carrera_b_id field
+                    const { data: carMatches } = await supabase
+                        .from('partidos')
+                        .select('id')
+                        .eq('disciplina_id', pair.disciplina_id)
+                        .or(`carrera_a_id.eq.${pair.carrera_id},carrera_b_id.eq.${pair.carrera_id}`);
+                    carMatches?.forEach((m: any) => matchIdSet.add(m.id));
+
+                    // Also query via delegacion nombre (covers partidos without carrera_a_id set)
+                    // This is the primary channel for upcoming matches in team sports
+                    const { data: delegRows } = await supabase
+                        .from('delegaciones')
+                        .select('nombre')
+                        .eq('disciplina_id', pair.disciplina_id)
+                        .contains('carrera_ids', [pair.carrera_id]);
+
+                    for (const deleg of (delegRows || [])) {
+                        const nombre = deleg.nombre;
+                        // Two separate queries to avoid issues with special chars in .or()
+                        const { data: mA } = await supabase
+                            .from('partidos').select('id')
+                            .eq('disciplina_id', pair.disciplina_id)
+                            .eq('equipo_a', nombre);
+                        const { data: mB } = await supabase
+                            .from('partidos').select('id')
+                            .eq('disciplina_id', pair.disciplina_id)
+                            .eq('equipo_b', nombre);
+                        mA?.forEach((m: any) => matchIdSet.add(m.id));
+                        mB?.forEach((m: any) => matchIdSet.add(m.id));
+                    }
+                }
             }
 
             // ── STEP 2c: Individual-sport matches (athlete_a_id / athlete_b_id) ──
@@ -348,6 +403,28 @@ export default function PublicProfilePage() {
                 .or(`athlete_a_id.eq.${id},athlete_b_id.eq.${id}`);
             indRows?.forEach((m: any) => matchIdSet.add(m.id));
 
+            // ── STEP 2c-extra: Name-based fallback for individual sports ──────────
+            // Covers matches where athlete_a_id was never set (created before the editor fix)
+            // or where the editor saved only equipo_a/b = full_name without setting the FK.
+            if (isIndividualAthlete && fullName) {
+                const individualDisciplinaIds = (jugRows || [])
+                    .map((j: any) => j.disciplina_id)
+                    .filter(Boolean);
+
+                if (individualDisciplinaIds.length > 0) {
+                    const [nameA, nameB] = await Promise.all([
+                        supabase.from('partidos').select('id')
+                            .in('disciplina_id', individualDisciplinaIds)
+                            .ilike('equipo_a', fullName),
+                        supabase.from('partidos').select('id')
+                            .in('disciplina_id', individualDisciplinaIds)
+                            .ilike('equipo_b', fullName),
+                    ]);
+                    nameA.data?.forEach((m: any) => matchIdSet.add(m.id));
+                    nameB.data?.forEach((m: any) => matchIdSet.add(m.id));
+                }
+            }
+
             if (matchIdSet.size === 0) {
                 setHistory([]);
                 return;
@@ -356,7 +433,7 @@ export default function PublicProfilePage() {
             // ── STEP 3: Fetch full details for all collected match IDs ──────────
             const { data: matches } = await supabase
                 .from('partidos')
-                .select('id, fecha, equipo_a, equipo_b, estado, marcador_detalle, disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id, carrera_a_id, carrera_b_id')
+                .select('id, fecha, equipo_a, equipo_b, estado, marcador_detalle, disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids')
                 .in('id', [...matchIdSet])
                 .order('fecha', { ascending: false });
 
@@ -373,11 +450,16 @@ export default function PublicProfilePage() {
                     const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
                     const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
 
-                    let side: 'a' | 'b' | null = null;
-                    if (p.athlete_a_id === id) side = 'a';
-                    else if (p.athlete_b_id === id) side = 'b';
-                    else if (carreraIds.includes(p.carrera_a_id)) side = 'a';
-                    else if (carreraIds.includes(p.carrera_b_id)) side = 'b';
+                    // Priority: event equipo (most reliable) → athlete_a/b_id → carrera_a/b_ids arrays → scalar carrera_a/b_id
+                    let side: 'a' | 'b' | null = matchSideMap.get(p.id) || null;
+                    if (!side) {
+                        if (p.athlete_a_id === id) side = 'a';
+                        else if (p.athlete_b_id === id) side = 'b';
+                        else if (Array.isArray(p.carrera_a_ids) && p.carrera_a_ids.some((cid: number) => carreraIds.includes(cid))) side = 'a';
+                        else if (Array.isArray(p.carrera_b_ids) && p.carrera_b_ids.some((cid: number) => carreraIds.includes(cid))) side = 'b';
+                        else if (carreraIds.includes(p.carrera_a_id)) side = 'a';
+                        else if (carreraIds.includes(p.carrera_b_id)) side = 'b';
+                    }
 
                     if (side === 'a' && scoreA > scoreB) winLossBySport[discId].wins++;
                     else if (side === 'b' && scoreB > scoreA) winLossBySport[discId].wins++;
@@ -386,7 +468,7 @@ export default function PublicProfilePage() {
 
                 const discName = Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name;
                 return {
-                    match_id: p.id,
+                    id: p.id,
                     fecha: p.fecha,
                     disciplina: discName,
                     equipo_a: p.equipo_a,
@@ -683,15 +765,24 @@ export default function PublicProfilePage() {
                                     {/* Record Row */}
                                     {(() => {
                                         const s = sportStatsMap[selectedSportId || ''] || { wins: 0, losses: 0 };
+                                        const total = (s.wins || 0) + (s.losses || 0);
                                         return (
-                                            <div className="grid grid-cols-2 gap-4 mb-10">
-                                                <div className="bg-white/5 border border-white/5 rounded-[1.5rem] p-5 transition-all hover:bg-white/10 hover:-translate-y-1 shadow-xl">
-                                                    <p className="text-[10px] font-display font-black uppercase tracking-widest text-emerald-400/60 mb-2">Victorias</p>
-                                                    <p className="text-4xl font-black font-mono tabular-nums tracking-tighter text-white drop-shadow-md">{s.wins || 0}</p>
+                                            <div className="flex flex-col gap-3 mb-10">
+                                                {/* Row 1: Victorias + Derrotas */}
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="bg-white/5 border border-white/5 rounded-[1.5rem] p-5 transition-all hover:bg-white/10 hover:-translate-y-1 shadow-xl">
+                                                        <p className="text-[10px] font-display font-black uppercase tracking-widest text-emerald-400/60 mb-2">Victorias</p>
+                                                        <p className="text-4xl font-black font-mono tabular-nums tracking-tighter text-white drop-shadow-md">{s.wins || 0}</p>
+                                                    </div>
+                                                    <div className="bg-white/5 border border-white/5 rounded-[1.5rem] p-5 transition-all hover:bg-white/10 hover:-translate-y-1 shadow-xl">
+                                                        <p className="text-[10px] font-display font-black uppercase tracking-widest text-rose-400/60 mb-2">Derrotas</p>
+                                                        <p className="text-4xl font-black font-mono tabular-nums tracking-tighter text-white drop-shadow-md">{s.losses || 0}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="bg-white/5 border border-white/5 rounded-[1.5rem] p-5 transition-all hover:bg-white/10 hover:-translate-y-1 shadow-xl">
-                                                    <p className="text-[10px] font-display font-black uppercase tracking-widest text-rose-400/60 mb-2">Derrotas</p>
-                                                    <p className="text-4xl font-black font-mono tabular-nums tracking-tighter text-white drop-shadow-md">{s.losses || 0}</p>
+                                                {/* Row 2: Partidos Jugados — full width */}
+                                                <div className="bg-white/5 border border-white/5 rounded-[1.5rem] p-5 transition-all hover:bg-white/10 hover:-translate-y-1 shadow-xl flex items-center justify-between">
+                                                    <p className="text-[10px] font-display font-black uppercase tracking-widest text-white/30">Partidos Jugados</p>
+                                                    <p className="text-4xl font-black font-mono tabular-nums tracking-tighter text-white drop-shadow-md">{total}</p>
                                                 </div>
                                             </div>
                                         );
@@ -989,36 +1080,38 @@ export default function PublicProfilePage() {
                                             const isLive = h.estado === 'en_curso';
 
                                             return (
-                                                <div key={i} className={cn(
-                                                    "flex items-center justify-between bg-black/40 border p-6 rounded-[2rem] transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden",
-                                                    isLive ? "border-emerald-500/40 bg-emerald-500/5" : "border-white/5 hover:border-white/20 hover:bg-white/[0.05]"
-                                                )}>
-                                                    <div className="flex items-center gap-6 relative z-10">
-                                                        <div className={cn(
-                                                            "w-12 h-12 rotate-45 rounded-xl border flex items-center justify-center transition-all shadow-inner",
-                                                            isLive ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : "bg-white/5 border-white/10 text-white/40 group-hover:text-amber-400 group-hover:border-amber-500/30"
-                                                        )}>
-                                                            <div className="-rotate-45">{icon}</div>
+                                                <Link key={i} href={`/partido/${h.id}`} className="block">
+                                                    <div className={cn(
+                                                        "flex items-center justify-between bg-black/40 border p-6 rounded-[2rem] transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden",
+                                                        isLive ? "border-emerald-500/40 bg-emerald-500/5" : "border-white/5 hover:border-white/20 hover:bg-white/[0.05]"
+                                                    )}>
+                                                        <div className="flex items-center gap-6 relative z-10">
+                                                            <div className={cn(
+                                                                "w-12 h-12 rotate-45 rounded-xl border flex items-center justify-center transition-all shadow-inner",
+                                                                isLive ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : "bg-white/5 border-white/10 text-white/40 group-hover:text-amber-400 group-hover:border-amber-500/30"
+                                                            )}>
+                                                                <div className="-rotate-45">{icon}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-3 mb-1.5">
+                                                                    <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.15em]">{h.disciplina}</span>
+                                                                    {isLive && (
+                                                                        <Badge className="bg-emerald-500 text-black font-black text-[8px] animate-pulse">EN VIVO</Badge>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-4">
+                                                                <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_a}</p>
+                                                                <span className="text-[10px] font-display font-black text-white/15">VS</span>
+                                                                <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_b}</p>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-3 mb-1.5">
-                                                                <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.15em]">{h.disciplina}</span>
-                                                                {isLive && (
-                                                                    <Badge className="bg-emerald-500 text-black font-black text-[8px] animate-pulse">EN VIVO</Badge>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-center gap-4">
-                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_a}</p>
-                                                              <span className="text-[10px] font-display font-black text-white/15">VS</span>
-                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_b}</p>
-                                                            </div>
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-[14px] font-black text-white font-mono">{new Date(h.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">{new Date(h.fecha).toLocaleDateString()}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="flex flex-col items-end">
-                                                        <span className="text-[14px] font-black text-white font-mono">{new Date(h.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                        <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">{new Date(h.fecha).toLocaleDateString()}</span>
-                                                    </div>
-                                                </div>
+                                                </Link>
                                             );
                                         })}
                                     </div>
@@ -1053,29 +1146,31 @@ export default function PublicProfilePage() {
                                             const icon = getSportIcon(h.disciplina);
 
                                             return (
-                                                <div key={i} className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-white/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
-                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-                                                    <div className="flex items-center gap-6 relative z-10">
-                                                        <div className="w-12 h-12 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all shadow-inner">
-                                                            <div className="-rotate-45">{icon}</div>
+                                                <Link key={i} href={`/partido/${h.id}`} className="block">
+                                                    <div className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-white/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
+                                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+                                                        <div className="flex items-center gap-6 relative z-10">
+                                                            <div className="w-12 h-12 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all shadow-inner">
+                                                                <div className="-rotate-45">{icon}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-3 mb-1.5 ">
+                                                                    <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.25em]">{h.disciplina}</span>
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
+                                                                    <span className="text-[10px] font-mono font-bold text-white/20 uppercase tabular-nums">{new Date(h.fecha).toLocaleDateString()}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-4">
+                                                                  <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_a}</p>
+                                                                  <span className="text-[10px] font-display font-black text-white/15">VS</span>
+                                                                  <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_b}</p>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-3 mb-1.5 ">
-                                                                <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.25em]">{h.disciplina}</span>
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
-                                                                <span className="text-[10px] font-mono font-bold text-white/20 uppercase tabular-nums">{new Date(h.fecha).toLocaleDateString()}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-4">
-                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_a}</p>
-                                                              <span className="text-[10px] font-display font-black text-white/15">VS</span>
-                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_b}</p>
-                                                            </div>
+                                                        <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white">
+                                                            {scoreA} <span className="text-white/20 mx-1">-</span> {scoreB}
                                                         </div>
                                                     </div>
-                                                    <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white">
-                                                        {scoreA} <span className="text-white/20 mx-1">-</span> {scoreB}
-                                                    </div>
-                                                </div>
+                                                </Link>
                                             );
                                         })
                                     ) : (

@@ -41,12 +41,13 @@ function LoginPageContent() {
         }
     }, [searchParams]);
 
-    // If already logged in, redirect to home
+    // If already logged in, redirect to intended destination or home
     useEffect(() => {
         if (!authLoading && user) {
-            router.replace("/");
+            const dest = searchParams.get('redirect') || "/";
+            router.replace(dest);
         }
-    }, [authLoading, user, router]);
+    }, [authLoading, user, router, searchParams]);
 
     const handleMicrosoftLogin = async () => {
         setLoading(true);

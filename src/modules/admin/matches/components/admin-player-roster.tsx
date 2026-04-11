@@ -46,9 +46,20 @@ export const AdminPlayerRoster = ({
         const timer = setTimeout(async () => {
             try {
                 // Parallel search in profiles and jugadores base table
+                const tokens = q.split(/\s+/);
+                let pQuery = supabase.from('profiles').select('id, full_name, avatar_url');
+                let jQuery = supabase.from('jugadores').select('id, nombre, profile_id');
+
+                tokens.forEach(token => {
+                    if (token) {
+                        pQuery = pQuery.ilike('full_name', `%${token}%`);
+                        jQuery = jQuery.ilike('nombre', `%${token}%`);
+                    }
+                });
+
                 const [profilesRes, jugadoresRes] = await Promise.all([
-                    supabase.from('profiles').select('id, full_name, avatar_url').ilike('full_name', `%${q}%`).limit(10),
-                    supabase.from('jugadores').select('id, nombre, profile_id').ilike('nombre', `%${q}%`).limit(10)
+                    pQuery.limit(10),
+                    jQuery.limit(10)
                 ]);
 
                 const profiles = profilesRes.data || [];

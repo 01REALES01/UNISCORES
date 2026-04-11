@@ -7,7 +7,7 @@ import {
     Activity, MapPin, BatteryCharging
 } from "lucide-react";
 import Link from "next/link";
-import { SPORT_ACCENT, SPORT_BORDER } from "@/lib/constants";
+import { SPORT_ACCENT, SPORT_BORDER, SPORT_COLORS } from "@/lib/constants";
 import { Avatar, Badge } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { SportIcon } from "@/components/sport-icons";
@@ -18,6 +18,22 @@ import { useAuth } from "@/hooks/useAuth";
 import { getDisplayName, getCarreraSubtitle, getAbbr } from "@/lib/sport-helpers";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 import { JornadaCard } from "@/modules/matches/components/match-card";
+
+// Helper for shield URLs
+function getShieldUrl(match: any, side: "a" | "b") {
+    if (side === "a") {
+        return (
+            match.atleta_a?.avatar_url ||
+            match.carrera_a?.escudo_url ||
+            match.delegacion_a_info?.escudo_url
+        );
+    }
+    return (
+        match.atleta_b?.avatar_url ||
+        match.carrera_b?.escudo_url ||
+        match.delegacion_b_info?.escudo_url
+    );
+}
 
 const SPORTS_FILTERS = [
     { id: 'all', label: 'Todos', icon: Trophy },
@@ -310,8 +326,8 @@ export default function CalendarioPage() {
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN: CARDS */}
-                    <div className="space-y-6 flex flex-col">
+                    {/* RIGHT COLUMN: CARDS — Improved for better readability and premium look */}
+                    <div className="space-y-6 flex flex-col xl:min-w-[420px]">
                         {matchOfTheDay ? (
                             <div className="bg-black/20 backdrop-blur-3xl rounded-[2.5rem] border border-white/[0.05] p-6 sm:p-7 flex flex-col relative overflow-hidden shadow-2xl group transition-all duration-500">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
@@ -364,52 +380,101 @@ export default function CalendarioPage() {
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-between w-full mb-10 relative px-2 gap-2">
-                                            <div className="flex flex-col items-center gap-3 flex-1">
-                                                <div className={cn("w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border-[3px] flex items-center justify-center text-lg sm:text-xl font-black transition-all shadow-lg relative overflow-hidden group/team", matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0) > (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0) ? "border-emerald-500" : "border-white/5 text-white/20")}>
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover/team:opacity-100 transition-opacity" />
-                                                    {getAbbr(getDisplayName(matchOfTheDay, 'a'))}
-                                                </div>
-                                                <span className={cn("text-[9px] font-black uppercase tracking-[0.15em] leading-tight text-center max-w-[80px] transition-colors", matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0) > (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0) ? "text-emerald-400" : "text-white/20")}>{getDisplayName(matchOfTheDay, 'a')}</span>
-                                            </div>
+                                            {(() => {
+                                                const det = matchOfTheDay.marcador_detalle || {};
+                                                const isTenis = matchOfTheDay.disciplinas?.name === 'Tenis' || matchOfTheDay.disciplinas?.name === 'Tenis de Mesa';
+                                                
+                                                const scoreA = isTenis ? (det.sets_a ?? 0) : (det.goles_a ?? det.puntos_a ?? det.total_a ?? 0);
+                                                const scoreB = isTenis ? (det.sets_b ?? 0) : (det.goles_b ?? det.puntos_b ?? det.total_b ?? 0);
+                                                const winnerSide = matchOfTheDay.estado === 'finalizado' && scoreA !== scoreB ? (scoreA > scoreB ? 'a' : 'b') : null;
+                                                const shieldA = getShieldUrl(matchOfTheDay, 'a');
+                                                const shieldB = getShieldUrl(matchOfTheDay, 'b');
 
-                                            <div className="flex flex-col items-center justify-center shrink-0 min-w-[100px] sm:min-w-[140px]">
-                                                {matchOfTheDay.estado === 'en_curso' ? (
-                                                    <div className="flex flex-col items-center gap-3">
-                                                        {matchOfTheDay.disciplinas?.name === 'Ajedrez' ? (
-                                                            <span className="text-xl font-black text-emerald-400 tracking-[0.3em] animate-pulse">VS</span>
-                                                        ) : (
-                                                            <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter drop-shadow-md leading-none tabular-nums">
-                                                                {(matchOfTheDay.marcador_detalle?.goles_a || matchOfTheDay.marcador_detalle?.sets_a || matchOfTheDay.marcador_detalle?.total_a || 0)}-{(matchOfTheDay.marcador_detalle?.goles_b || matchOfTheDay.marcador_detalle?.sets_b || matchOfTheDay.marcador_detalle?.total_b || 0)}
+                                                return (
+                                                    <>
+                                                        <div className="flex flex-col items-center gap-3 flex-1">
+                                                            <div className="relative">
+                                                                <Avatar 
+                                                                    name={getDisplayName(matchOfTheDay, 'a')} 
+                                                                    src={shieldA} 
+                                                                    size="lg" 
+                                                                    className={cn(
+                                                                        "w-16 h-16 transition-all duration-500",
+                                                                        winnerSide === "a" ? "border-[3px] border-amber-400 scale-110 shadow-[0_0_20px_rgba(251,191,36,0.4)]" : "border-2 border-white/5 bg-black/40"
+                                                                    )} 
+                                                                />
+                                                                {winnerSide === "a" && (
+                                                                    <div className="absolute -top-1 -right-1 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg">
+                                                                        <Trophy size={10} className="text-black" />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <span className={cn(
+                                                                "text-[9px] font-black uppercase tracking-[0.15em] leading-tight text-center max-w-[80px] transition-colors",
+                                                                winnerSide === "a" ? "text-white" : winnerSide === "b" ? "text-white/40" : "text-white/20"
+                                                            )}>
+                                                                {getDisplayName(matchOfTheDay, 'a')}
                                                             </span>
-                                                        )}
-                                                        <div className="scale-90"><PublicLiveTimer detalle={matchOfTheDay.marcador_detalle} deporte={matchOfTheDay.disciplinas?.name} /></div>
-                                                    </div>
-                                                ) : matchOfTheDay.estado === 'finalizado' ? (
-                                                    <div className="flex flex-col items-center gap-1.5">
-                                                        <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter drop-shadow-lg leading-none tabular-nums">
-                                                            {(matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.sets_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0)}-{(matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.sets_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0)}
-                                                        </span>
-                                                        <span className="text-[7px] font-black text-white/10 uppercase tracking-[0.2em]">Finalizado</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex flex-col items-center">
-                                                        <span className="text-4xl sm:text-5xl font-black tracking-tighter text-white drop-shadow-lg leading-none">
-                                                            {new Date(matchOfTheDay.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                                                        </span>
-                                                        <div className="mt-3 px-2.5 py-1 rounded-full bg-white/5 border border-white/5">
-                                                            <span className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em]">{isSameDay(new Date(matchOfTheDay.fecha), new Date()) ? 'HOY' : 'PROGRAMADO'}</span>
                                                         </div>
-                                                    </div>
-                                                )}
-                                            </div>
 
-                                            <div className="flex flex-col items-center gap-3 flex-1">
-                                                <div className={cn("w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 border-[3px] flex items-center justify-center text-lg sm:text-xl font-black transition-all shadow-lg relative overflow-hidden group/team", matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0) > (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0) ? "border-emerald-500" : "border-white/5 text-white/20")}>
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover/team:opacity-100 transition-opacity" />
-                                                    {getAbbr(getDisplayName(matchOfTheDay, 'b'))}
-                                                </div>
-                                                <span className={cn("text-[9px] font-black uppercase tracking-[0.15em] leading-tight text-center max-w-[80px] transition-colors", matchOfTheDay.estado === 'finalizado' && (matchOfTheDay.marcador_detalle?.goles_b ?? matchOfTheDay.marcador_detalle?.total_b ?? 0) > (matchOfTheDay.marcador_detalle?.goles_a ?? matchOfTheDay.marcador_detalle?.total_a ?? 0) ? "text-emerald-400" : "text-white/20")}>{getDisplayName(matchOfTheDay, 'b')}</span>
-                                            </div>
+                                                        <div className="flex flex-col items-center justify-center shrink-0 min-w-[100px] sm:min-w-[140px]">
+                                                            {matchOfTheDay.estado === 'en_curso' ? (
+                                                                <div className="flex flex-col items-center gap-3">
+                                                                    {matchOfTheDay.disciplinas?.name === 'Ajedrez' ? (
+                                                                        <span className="text-xl font-black text-emerald-400 tracking-[0.3em] animate-pulse">VS</span>
+                                                                    ) : (
+                                                                        <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter drop-shadow-md leading-none tabular-nums">
+                                                                            {scoreA}-{scoreB}
+                                                                        </span>
+                                                                    )}
+                                                                    <div className="scale-90"><PublicLiveTimer detalle={matchOfTheDay.marcador_detalle} deporte={matchOfTheDay.disciplinas?.name} /></div>
+                                                                </div>
+                                                            ) : matchOfTheDay.estado === 'finalizado' ? (
+                                                                <div className="flex flex-col items-center gap-1.5">
+                                                                    <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter drop-shadow-lg leading-none tabular-nums">
+                                                                        {scoreA}-{scoreB}
+                                                                    </span>
+                                                                    <span className="text-[7px] font-black text-white/10 uppercase tracking-[0.2em]">Finalizado</span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col items-center">
+                                                                    <span className="text-4xl sm:text-5xl font-black tracking-tighter text-white drop-shadow-lg leading-none">
+                                                                        {new Date(matchOfTheDay.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                                    </span>
+                                                                    <div className="mt-3 px-2.5 py-1 rounded-full bg-white/5 border border-white/5">
+                                                                        <span className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em]">{isSameDay(new Date(matchOfTheDay.fecha), new Date()) ? 'HOY' : 'PROGRAMADO'}</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex flex-col items-center gap-3 flex-1">
+                                                            <div className="relative">
+                                                                <Avatar 
+                                                                    name={getDisplayName(matchOfTheDay, 'b')} 
+                                                                    src={shieldB} 
+                                                                    size="lg" 
+                                                                    className={cn(
+                                                                        "w-16 h-16 transition-all duration-500",
+                                                                        winnerSide === "b" ? "border-[3px] border-amber-400 scale-110 shadow-[0_0_20px_rgba(251,191,36,0.4)]" : "border-2 border-white/5 bg-black/40"
+                                                                    )} 
+                                                                />
+                                                                {winnerSide === "b" && (
+                                                                    <div className="absolute -top-1 -right-1 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg">
+                                                                        <Trophy size={10} className="text-black" />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <span className={cn(
+                                                                "text-[9px] font-black uppercase tracking-[0.15em] leading-tight text-center max-w-[80px] transition-colors",
+                                                                winnerSide === "b" ? "text-white" : winnerSide === "a" ? "text-white/40" : "text-white/20"
+                                                            )}>
+                                                                {getDisplayName(matchOfTheDay, 'b')}
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     )}
 
@@ -469,39 +534,94 @@ export default function CalendarioPage() {
                                     {upcomingFixtures.map(match => {
                                         const sportName = match.disciplinas?.name || 'Deporte';
                                         const sportAccent = SPORT_ACCENT[sportName] || 'text-violet-500';
+                                        const sportColor = SPORT_COLORS[sportName] || '#a78bfa';
                                         const isLive = match.estado === 'en_curso';
                                         const isFinished = match.estado === 'finalizado';
                                         const genero = (match.genero || 'masculino').toLowerCase();
                                         const isRace = match.marcador_detalle?.tipo === 'carrera';
                                         const det = match.marcador_detalle || {};
-                                        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
-                                        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
+                                        
+                                        // Standard scoring logic
+                                        const isTenis = sportName === 'Tenis' || sportName === 'Tenis de Mesa';
+                                        const scoreA = isTenis ? (det.sets_a ?? 0) : (det.goles_a ?? det.puntos_a ?? det.total_a ?? 0);
+                                        const scoreB = isTenis ? (det.sets_b ?? 0) : (det.goles_b ?? det.puntos_b ?? det.total_b ?? 0);
+
+                                        // Winner logic
+                                        const winnerSide = isFinished && scoreA !== scoreB ? (scoreA > scoreB ? 'a' : 'b') : null;
+
+                                        const shieldA = getShieldUrl(match, 'a');
+                                        const shieldB = getShieldUrl(match, 'b');
+
+                                        // Sport icon from public folder
+                                        const sportIconMap: Record<string, string> = {
+                                            "Fútbol": "/FutbolIcono.png",
+                                            "Baloncesto": "/BasketIcono.png",
+                                            "Voleibol": "/VolleyIcono.png",
+                                            "Tenis": "/TenisIcono.png",
+                                            "Tenis de Mesa": "/TenisDMIcono.png",
+                                            "Ajedrez": "/AjedrezIcono.png",
+                                            "Natación": "/NatacionIcono.png",
+                                        };
+                                        const sportWatermark = sportIconMap[sportName];
 
                                         return (
                                             <Link key={match.id} href={`/partido/${match.id}`} className="block group/item">
-                                                <div className="bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-emerald-500/40 rounded-[2.5rem] p-7 transition-all duration-500 relative overflow-hidden shadow-sm hover:shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
-                                                    {isLive && <div className="absolute inset-0 bg-emerald-500/[0.02] pointer-events-none" />}
-                                                    <div className="relative z-10 flex flex-col gap-6">
+                                                <div
+                                                    className={cn(
+                                                        "border rounded-2xl sm:rounded-[2rem] p-5 sm:p-7 transition-all duration-500 relative overflow-hidden shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] group/card",
+                                                        isLive ? "border-emerald-500/40" : "border-white/[0.08]"
+                                                    )}
+                                                    style={{
+                                                        background: `radial-gradient(ellipse at 0% 0%, ${sportColor}18 0%, transparent 55%), radial-gradient(ellipse at 100% 100%, ${sportColor}12 0%, transparent 55%)`,
+                                                    }}
+                                                >
+                                                    {/* Sport watermark icon */}
+                                                    {sportWatermark && (
+                                                        <div
+                                                            className="absolute -right-3 -bottom-3 pointer-events-none select-none z-0 transition-all duration-700 group-hover/card:scale-110 group-hover/card:opacity-[0.14]"
+                                                            style={{ opacity: 0.08 }}
+                                                        >
+                                                            <img src={sportWatermark} alt="" className="w-28 h-28 sm:w-36 sm:h-36 object-contain" />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Radial glow */}
+                                                    <div
+                                                        className="absolute -right-12 -bottom-12 w-48 h-48 rounded-full blur-[80px] pointer-events-none z-0 opacity-25"
+                                                        style={{ backgroundColor: sportColor }}
+                                                    />
+
+                                                    {isLive && <div className="absolute inset-0 bg-emerald-500/[0.03] pointer-events-none" />}
+
+                                                    <div className="relative z-10 flex flex-col gap-5">
                                                         <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-4">
-                                                                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-500", isLive ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)] scale-110" : "bg-black/40 border-white/5 text-white/[0.15] group-hover/item:border-white/20 group-hover/item:text-white/40")}>
-                                                                    <SportIcon sport={sportName} size={28} variant="react" />
+                                                            <div className="flex items-center gap-3">
+                                                                <div
+                                                                    className={cn(
+                                                                        "w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center border-2 transition-all duration-500 shadow-lg",
+                                                                        isLive
+                                                                            ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)] scale-110"
+                                                                            : "bg-black/40"
+                                                                    )}
+                                                                    style={!isLive ? { borderColor: `${sportColor}40`, backgroundColor: `${sportColor}12` } : undefined}
+                                                                >
+                                                                    <SportIcon sport={sportName} size={24} variant="react" className={cn("transition-all", isLive ? "text-emerald-400" : sportAccent)} />
                                                                 </div>
                                                                 <div className="flex flex-col">
                                                                     <span className={cn("text-xs font-black uppercase tracking-[0.25em]", sportAccent)}>{sportName}</span>
                                                                     <div className="flex items-center gap-2 mt-1.5">
-                                                                        <span className={cn("text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border", genero === 'femenino' ? "bg-pink-500/10 border-pink-500/20 text-pink-400" : genero === 'mixto' ? "bg-purple-500/10 border-purple-500/20 text-purple-400" : "bg-blue-500/10 border-blue-500/20 text-blue-400")}>{genero}</span>
+                                                                        <span className={cn("text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border", genero === 'femenino' ? "bg-pink-500/10 border-pink-500/20 text-pink-400" : genero === 'mixto' ? "bg-purple-500/10 border-purple-500/20 text-purple-400" : "bg-blue-500/10 border-blue-500/20 text-blue-400")}>{genero}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex flex-col items-end gap-2">
+                                                            <div className="flex flex-col items-end gap-1.5">
                                                                 <span className="text-base font-black text-white tabular-nums drop-shadow-md">{new Date(match.fecha).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                                                                 {isLive ? (
-                                                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/40 rounded-full shadow-lg shadow-emerald-500/10">
-                                                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                                                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.3em]">LIVE</span>
+                                                                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-500/40 rounded-full shadow-lg">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                                        <span className="text-[8px] font-black text-emerald-400 uppercase tracking-[0.1em]">LIVE</span>
                                                                     </div>
-                                                                ) : isFinished ? <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Final</span> : null}
+                                                                ) : isFinished ? <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">Finalizado</span> : null}
                                                             </div>
                                                         </div>
 
@@ -509,7 +629,7 @@ export default function CalendarioPage() {
                                                             <div className="bg-black/60 border border-white/5 rounded-[2rem] p-6 flex flex-col items-center gap-3 shadow-inner">
                                                                 <span className="text-lg font-black text-white tracking-tight text-center leading-tight">{det.distancia} {det.estilo}</span>
                                                                 {isFinished ? (
-                                                                    <div className="flex gap-4 mt-4 w-full justify-center">
+                                                                    <div className="flex gap-4 mt-4 w-full justify-center overflow-x-auto no-scrollbar py-2">
                                                                         {(Array.isArray(det.participantes) ? det.participantes : []).sort((a: any, b: any) => (a.posicion || 99) - (b.posicion || 99)).slice(0, 3).map((p: any, idx: number) => (
                                                                             <div key={idx} className="flex flex-col items-center gap-2 bg-white/[0.02] px-5 py-4 rounded-[1.5rem] border border-white/5 min-w-[95px] hover:bg-white/[0.05] transition-all">
                                                                                 <span className="text-xl">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
@@ -521,35 +641,103 @@ export default function CalendarioPage() {
                                                                 ) : <span className="text-[10px] font-black text-white/10 uppercase tracking-[0.4em] mt-2">{det.participantes?.length || 0} Atletas en Lista</span>}
                                                             </div>
                                                         ) : (
-                                                            <div className="flex flex-col gap-6">
-                                                                <div className="flex items-center justify-between group/team">
+                                                            <div className="flex flex-col gap-5">
+                                                                <div className="flex items-center justify-between transition-all">
                                                                     <div className="flex items-center gap-4 min-w-0">
-                                                                        <div className="w-12 h-12 rounded-full bg-black/40 border-2 border-white/5 flex items-center justify-center text-xs font-black shrink-0 transition-all duration-500 group-hover/item:border-white/30 text-white/20 group-hover/item:text-white group-hover/team:scale-110 shadow-lg">{getAbbr(getDisplayName(match, 'a'))}</div>
+                                                                        <div className="relative">
+                                                                            <Avatar
+                                                                                name={getDisplayName(match, 'a')}
+                                                                                src={shieldA}
+                                                                                size="sm"
+                                                                                className={cn(
+                                                                                    "w-12 h-12 transition-all duration-500",
+                                                                                    winnerSide === "a"
+                                                                                        ? "border-2 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)] scale-110"
+                                                                                        : "border border-white/10 bg-black/40"
+                                                                                )}
+                                                                            />
+                                                                            {winnerSide === "a" && (
+                                                                                <div className="absolute -top-1 -right-1 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg">
+                                                                                    <Trophy size={8} className="text-black" />
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
                                                                         <div className="flex flex-col min-w-0">
-                                                                            <span className={cn("text-[15px] font-black truncate leading-tight transition-colors", isFinished ? (scoreA > scoreB ? "text-white" : "text-white/40") : "text-white/80 group-hover/item:text-white")}>{getDisplayName(match, 'a')}</span>
-                                                                            {getCarreraSubtitle(match, 'a') && <span className="text-[10px] font-bold text-white/10 truncate leading-tight mt-1 uppercase tracking-[0.1em]">{getCarreraSubtitle(match, 'a')}</span>}
+                                                                            <span className={cn(
+                                                                                "text-[15px] font-black truncate leading-tight transition-colors",
+                                                                                winnerSide === "a" ? "text-white" : winnerSide === "b" ? "text-white/40" : "text-white/80"
+                                                                            )}>
+                                                                                {getDisplayName(match, 'a')}
+                                                                            </span>
+                                                                            <span className="text-[9px] font-black text-white/30 truncate uppercase tracking-widest mt-1">
+                                                                                {getCarreraSubtitle(match, 'a') || 'Competidor'}
+                                                                            </span>
                                                                         </div>
                                                                     </div>
-                                                                    {(isLive || isFinished) && <span className={cn("text-3xl font-black tabular-nums min-w-[2rem] text-right", isFinished ? (scoreA > scoreB ? "text-white" : "text-white/20") : (isLive ? "text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.5)]" : "text-white/40"))}>{scoreA}</span>}
+                                                                    {(isLive || isFinished) && (
+                                                                        <span className={cn(
+                                                                            "text-3xl font-black tabular-nums min-w-[2.5rem] text-right",
+                                                                            winnerSide === "a" ? "text-white" : winnerSide === "b" ? "text-white/10" : "text-white/80"
+                                                                        )}>
+                                                                            {scoreA}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
-                                                                <div className="flex items-center justify-between group/team">
+
+                                                                <div className="flex items-center justify-between transition-all">
                                                                     <div className="flex items-center gap-4 min-w-0">
-                                                                        <div className="w-12 h-12 rounded-full bg-black/40 border-2 border-white/5 flex items-center justify-center text-xs font-black shrink-0 transition-all duration-500 group-hover/item:border-white/30 text-white/20 group-hover/item:text-white group-hover/team:scale-110 shadow-lg">{getAbbr(getDisplayName(match, 'b'))}</div>
+                                                                        <div className="relative">
+                                                                            <Avatar
+                                                                                name={getDisplayName(match, 'b')}
+                                                                                src={shieldB}
+                                                                                size="sm"
+                                                                                className={cn(
+                                                                                    "w-12 h-12 transition-all duration-500",
+                                                                                    winnerSide === "b"
+                                                                                        ? "border-2 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)] scale-110"
+                                                                                        : "border border-white/10 bg-black/40"
+                                                                                )}
+                                                                            />
+                                                                            {winnerSide === "b" && (
+                                                                                <div className="absolute -top-1 -right-1 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg">
+                                                                                    <Trophy size={8} className="text-black" />
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
                                                                         <div className="flex flex-col min-w-0">
-                                                                            <span className={cn("text-[15px] font-black truncate leading-tight transition-colors", isFinished ? (scoreB > scoreA ? "text-white" : "text-white/40") : "text-white/80 group-hover/item:text-white")}>{getDisplayName(match, 'b')}</span>
-                                                                            {getCarreraSubtitle(match, 'b') && <span className="text-[10px] font-bold text-white/10 truncate leading-tight mt-1 uppercase tracking-[0.1em]">{getCarreraSubtitle(match, 'b')}</span>}
+                                                                            <span className={cn(
+                                                                                "text-[15px] font-black truncate leading-tight transition-colors",
+                                                                                winnerSide === "b" ? "text-white" : winnerSide === "a" ? "text-white/40" : "text-white/80"
+                                                                            )}>
+                                                                                {getDisplayName(match, 'b')}
+                                                                            </span>
+                                                                            <span className="text-[9px] font-black text-white/30 truncate uppercase tracking-widest mt-1">
+                                                                                {getCarreraSubtitle(match, 'b') || 'Competidor'}
+                                                                            </span>
                                                                         </div>
                                                                     </div>
-                                                                    {(isLive || isFinished) && <span className={cn("text-3xl font-black tabular-nums min-w-[2rem] text-right", isFinished ? (scoreB > scoreA ? "text-white" : "text-white/20") : (isLive ? "text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.5)]" : "text-white/40"))}>{scoreB}</span>}
+                                                                    {(isLive || isFinished) && (
+                                                                        <span className={cn(
+                                                                            "text-3xl font-black tabular-nums min-w-[2.5rem] text-right",
+                                                                            winnerSide === "b" ? "text-white" : winnerSide === "a" ? "text-white/10" : "text-white/80"
+                                                                        )}>
+                                                                            {scoreB}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         )}
 
-                                                        <div className="flex items-center justify-between border-t border-white/5 pt-5 mt-2">
+                                                        <div className="flex items-center justify-between border-t border-white/5 pt-5 mt-auto">
                                                             <div className="flex items-center gap-2.5 min-w-0">
-                                                                <MapPin size={14} className="text-white/10 shrink-0" /><span className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] truncate">{match.lugar || 'Complejo Deportivo'}</span>
+                                                                <MapPin size={14} className="text-emerald-400/30 shrink-0" />
+                                                                <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] truncate">
+                                                                    {match.lugar || 'Complejo Deportivo'}
+                                                                </span>
                                                             </div>
-                                                            <div className="px-5 opacity-0 group-hover/item:opacity-100 transition-opacity"><Badge variant="outline" className="text-[9px] font-black uppercase tracking-[0.2em] bg-white/5 border-white/10 text-white/40 px-3 py-1 rounded-full">Detalles</Badge></div>
+                                                            <Badge variant="outline" className="text-[8px] font-black uppercase tracking-[0.2em] bg-white/5 border-white/10 text-white/40 px-3 py-1 rounded-full whitespace-nowrap">
+                                                                Detalles
+                                                            </Badge>
                                                         </div>
                                                     </div>
                                                 </div>

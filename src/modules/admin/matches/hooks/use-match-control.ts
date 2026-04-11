@@ -194,13 +194,23 @@ export function useMatchControl(matchId: string) {
         fetchMatchDetails();
     }, [matchId, fetchMatchDetails]);
 
+    // Keep a stable ref to the latest profile so the channel callback can read it
+    // without profile being listed as a useEffect dependency (which caused the channel
+    // to be torn down + recreated every time profile went null → cached → fresh).
+    const profileRef = useRef(profile);
+    useEffect(() => { profileRef.current = profile; }, [profile]);
+
     useEffect(() => {
-        if (!profile) return;
+        if (typeof window === 'undefined') return;
 
         const sessionId = Math.random().toString(36).substring(7);
-        const channel = supabase.channel(`match-presence-${matchId}`, {
-            config: { presence: { key: `${profile.id}-${sessionId}` } },
+        // Unique channel name per mount — matchId only (not profile) prevents re-creation
+        const channel = supabase.channel(`match-presence-${matchId}:${sessionId}`, {
+            config: { presence: { key: `${sessionId}` } },
         });
+
+        // Track which sessions we've already toasted so we never double-fire
+        const seenJoins = new Set<string>();
 
         channel
             .on('presence', { event: 'sync' }, () => {
@@ -209,8 +219,12 @@ export function useMatchControl(matchId: string) {
                 setActiveEditors(editors.filter((e: any) => e.session_id !== sessionId));
             })
             .on('presence', { event: 'join' }, ({ newPresences }) => {
-                const otherSession = newPresences.find((p: any) => p.session_id !== sessionId);
-                if (otherSession) toast.info(`${otherSession.user_name || 'Alguien'} se ha unido a la edición`);
+                newPresences.forEach((p: any) => {
+                    if (p.session_id === sessionId) return;        // own session
+                    if (seenJoins.has(p.session_id)) return;       // already toasted
+                    seenJoins.add(p.session_id);
+                    toast.info(`${p.user_name || 'Alguien'} se ha unido a la edición`);
+                });
             })
             .on('postgres_changes', {
                 event: 'UPDATE',
@@ -228,17 +242,19 @@ export function useMatchControl(matchId: string) {
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
+                    const p = profileRef.current;
                     await channel.track({
-                        user_id: profile.id,
+                        user_id: p?.id ?? 'anon',
                         session_id: sessionId,
-                        user_name: profile.full_name || profile.email,
+                        user_name: p?.full_name || (p as any)?.email || 'Staff',
                         online_at: new Date().toISOString(),
                     });
                 }
             });
 
         return () => { supabase.removeChannel(channel); };
-    }, [matchId, profile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [matchId]); // ← matchId only; profile is read via profileRef
 
     // Chronometer interval removed — matches no longer track time minute by minute
 

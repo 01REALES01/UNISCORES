@@ -129,7 +129,14 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
         if (q.length < 2) { setAthleteAResults([]); return; }
         setSearchingA(true);
         const t = setTimeout(async () => {
-            const { data } = await supabase.from('profiles').select('id, full_name, avatar_url, carreras_ids').ilike('full_name', `%${q}%`).limit(8);
+            const tokens = q.split(/\s+/);
+            let query = supabase.from('profiles').select('id, full_name, avatar_url, carreras_ids');
+            
+            tokens.forEach(token => {
+                if (token) query = query.ilike('full_name', `%${token}%`);
+            });
+
+            const { data } = await query.limit(8);
             setAthleteAResults(data ?? []);
             setSearchingA(false);
         }, 350);
@@ -141,7 +148,14 @@ export function CreateMatchModal({ isOpen, onClose }: CreateMatchModalProps) {
         if (q.length < 2) { setAthleteBResults([]); return; }
         setSearchingB(true);
         const t = setTimeout(async () => {
-            const { data } = await supabase.from('profiles').select('id, full_name, avatar_url, carreras_ids').ilike('full_name', `%${q}%`).limit(8);
+            const tokens = q.split(/\s+/);
+            let query = supabase.from('profiles').select('id, full_name, avatar_url, carreras_ids');
+            
+            tokens.forEach(token => {
+                if (token) query = query.ilike('full_name', `%${token}%`);
+            });
+
+            const { data } = await query.limit(8);
             setAthleteBResults(data ?? []);
             setSearchingB(false);
         }, 350);

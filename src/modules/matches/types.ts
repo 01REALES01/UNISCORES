@@ -30,8 +30,6 @@ export type Partido = {
   carrera_b_id?: number;
   athlete_a_id?: string;
   athlete_b_id?: string;
-  jugador_a_id?: number;
-  jugador_b_id?: number;
   responsable_id?: string;
   last_edited_by?: string;
   updated_at?: string;
@@ -48,6 +46,11 @@ export type PartidoWithRelations = Partido & {
   delegacion_b_info?: { escudo_url?: string } | null;
   atleta_a?: { id: string; full_name: string; avatar_url?: string } | null;
   atleta_b?: { id: string; full_name: string; avatar_url?: string } | null;
+  roster?: Array<{
+    id: number;
+    equipo_a_or_b: string;
+    jugador?: { id: number; nombre: string; profile_id?: string | null } | null;
+  }> | null;
 };
 
 // ── Jugador ───────────────────────────────────────────────────────────────────

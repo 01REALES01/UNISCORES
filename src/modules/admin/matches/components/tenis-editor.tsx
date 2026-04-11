@@ -127,12 +127,12 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
         marcador_detalle: stampAudit(newDetalle, profile),
       };
 
-      // If match is finalized, also update ganador in partidos table
+      // If match is finalized, ensure result is reflected in the detail object
       if (match.estado === 'finalizado') {
         const finalSetsA = newDetalle.sets_a ?? newDetalle.sets_total_a ?? 0;
         const finalSetsB = newDetalle.sets_b ?? newDetalle.sets_total_b ?? 0;
-        if (finalSetsA > finalSetsB) updates.ganador = 'equipo_a';
-        else if (finalSetsB > finalSetsA) updates.ganador = 'equipo_b';
+        newDetalle.resultado_final = finalSetsA > finalSetsB ? 'victoria_a' : finalSetsB > finalSetsA ? 'victoria_b' : 'empate';
+        updates.marcador_detalle = stampAudit(newDetalle, profile);
       }
 
       const { error } = await supabase.from('partidos').update(updates).eq('id', match.id);

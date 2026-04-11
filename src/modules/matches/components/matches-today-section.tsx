@@ -345,51 +345,52 @@ function SportGroup({
         "rounded-2xl overflow-hidden border transition-all duration-300 relative group/sport",
         hasLive
           ? SPORT_BORDER[sportName] || "border-white/15"
-          : "border-white/[0.06]"
+          : "border-white/[0.08]"
       )}
       style={{
-        background: `linear-gradient(135deg, ${accentColor}${hasLive ? '12' : '07'} 0%, transparent 60%)`,
-        boxShadow: hasLive ? `0 0 30px ${accentColor}20` : 'none',
+        backgroundColor: "rgba(10, 10, 10, 0.4)",
+        background: `radial-gradient(circle at 0% 0%, ${accentColor}${hasLive ? '15' : '08'} 0%, transparent 50%), radial-gradient(circle at 100% 100%, ${accentColor}${hasLive ? '10' : '05'} 0%, transparent 50%)`,
+        boxShadow: hasLive ? `0 0 30px ${accentColor}25` : 'none',
       }}
     >
       {/* Large sport watermark icon */}
       <div
-        className="absolute -right-4 -bottom-4 pointer-events-none select-none z-0 transition-all duration-1000 group-hover/sport:scale-110 group-hover/sport:opacity-[0.07]"
-        style={{ opacity: 0.045 }}
+        className="absolute -right-2 -bottom-2 pointer-events-none select-none z-0 transition-all duration-1000 group-hover/sport:scale-110 group-hover/sport:opacity-[0.12]"
+        style={{ opacity: 0.1 }}
         aria-hidden="true"
       >
         {customIcon ? (
           <img
             src={customIcon}
             alt=""
-            className="w-32 h-32 object-contain filter grayscale brightness-200 contrast-75"
+            className="w-40 h-40 object-contain"
           />
         ) : (
           <SportIcon
             sport={sportName}
-            size={140}
+            size={160}
             variant="react"
             className="text-white"
           />
         )}
       </div>
 
-      {/* Subtle radial glow behind icon */}
+      {/* Enhanced radial glow behind icon */}
       <div
-        className="absolute -right-8 -bottom-8 w-48 h-48 rounded-full blur-3xl pointer-events-none z-0 opacity-20"
+        className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full blur-[100px] pointer-events-none z-0 opacity-30"
         style={{ backgroundColor: accentColor }}
       />
 
       {/* Sport header */}
       <div
-        className="relative z-10 flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]"
+        className="relative z-10 flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] backdrop-blur-sm"
         style={{
-          background: `linear-gradient(90deg, ${accentColor}15 0%, transparent 80%)`,
+          background: `linear-gradient(90deg, ${accentColor}20 0%, transparent 80%)`,
         }}
       >
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: `${accentColor}25` }}
+          style={{ backgroundColor: `${accentColor}30` }}
         >
           <SportIcon
             sport={sportName}
@@ -406,7 +407,7 @@ function SportGroup({
         </span>
         <div className="flex items-center gap-3 ml-auto">
           {hasLive && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ backgroundColor: `${accentColor}20` }}>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ backgroundColor: `${accentColor}25` }}>
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />

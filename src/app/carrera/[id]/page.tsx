@@ -389,7 +389,35 @@ export default function CarreraProfilePage() {
         return map;
     }, [deportesInscritos]);
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
+    const [loadTimeout, setLoadTimeout] = useState(false);
+
+    useEffect(() => {
+        if (!loading || carrera) { setLoadTimeout(false); return; }
+        const t = setTimeout(() => setLoadTimeout(true), 8000);
+        return () => clearTimeout(t);
+    }, [loading, carrera]);
+
+    if (loading && !carrera) {
+        if (loadTimeout) {
+            return (
+                <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-4 text-center gap-6">
+                    <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center border border-white/10 shadow-xl">
+                        <GraduationCap className="text-violet-400" size={32} />
+                    </div>
+                    <h1 className="text-xl font-black uppercase tracking-wider">La carga está tardando</h1>
+                    <p className="text-white/40 max-w-sm font-bold text-sm">La conexión puede estar lenta. Intenta de nuevo.</p>
+                    <button
+                        onClick={() => { setLoadTimeout(false); mutate(); }}
+                        className="px-8 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-sm font-black uppercase tracking-widest transition-all active:scale-95 shadow-xl"
+                    >
+                        Reintentar
+                    </button>
+                </div>
+            );
+        }
+        return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
+    }
+
     if (!carrera || error) return (
         <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-4 text-center">
             <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10 shadow-xl"><GraduationCap className="text-violet-400" size={32} /></div>

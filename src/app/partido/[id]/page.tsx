@@ -324,10 +324,16 @@ export default function PublicMatchDetail() {
                                         })
                                         .map((p: any, idx: number) => {
                                             const hasProfile = !!p.profile_id;
+                                            const hasNominal = !!p.jugador_id;
+                                            
+                                            // Redirection logic: Profile > Activation Page > Nothing
+                                            const athleteTarget = hasProfile ? `/perfil/${p.profile_id}` : hasNominal ? `/jugador/${p.jugador_id}` : null;
+                                            const careerTarget = p.carrera_id ? `/carrera/${p.carrera_id}` : null;
+
                                             const Content = (
                                                 <div className={cn(
                                                     "flex items-center gap-4 p-3 sm:p-4 rounded-2xl border transition-all duration-300 relative group/participant active:scale-[0.98] active:brightness-110",
-                                                    hasProfile ? "cursor-pointer bg-white/[0.03] border-white/10 hover:border-emerald-500/30 hover:bg-white/10 hover:shadow-2xl hover:shadow-emerald-500/10" : "cursor-default bg-white/5 border-white/10 text-white/60",
+                                                    athleteTarget ? "cursor-pointer bg-white/[0.03] border-white/10 hover:border-emerald-500/30 hover:bg-white/10 hover:shadow-2xl hover:shadow-emerald-500/10" : "cursor-default bg-white/5 border-white/10 text-white/60",
                                                     p.posicion === 1 ? "bg-gradient-to-r from-yellow-500/20 to-yellow-900/5 border-[#FFC000]/40 text-yellow-100 shadow-[0_0_30px_rgba(234,179,8,0.15)] scale-[1.02] z-10" :
                                                         p.posicion === 2 ? "bg-gradient-to-r from-slate-400/20 to-slate-800/10 border-slate-400/40 text-slate-100" :
                                                             p.posicion === 3 ? "bg-gradient-to-r from-orange-700/20 to-orange-900/10 border-orange-600/40 text-orange-100" :
@@ -336,15 +342,27 @@ export default function PublicMatchDetail() {
                                                     <div className="text-2xl sm:text-3xl font-black italic w-8 sm:w-12 text-center opacity-80 flex-shrink-0">
                                                         {p.posicion === 1 ? '🥇' : p.posicion === 2 ? '🥈' : p.posicion === 3 ? '🥉' : (p.posicion || idx + 1)}
                                                     </div>
-
+ 
                                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                        <div className={cn("font-bold text-base sm:text-xl truncate leading-tight transition-colors flex items-center gap-1.5", hasProfile ? "group-hover/participant:text-emerald-400" : "text-white/90")}>
+                                                        <div 
+                                                            className={cn("font-bold text-base sm:text-xl truncate leading-tight transition-colors flex items-center gap-1.5", athleteTarget ? "group-hover/participant:text-emerald-400" : "text-white/90")}
+                                                            onClick={(e) => {
+                                                                if (athleteTarget) {
+                                                                    e.stopPropagation();
+                                                                    router.push(athleteTarget);
+                                                                }
+                                                            }}
+                                                        >
                                                             {p.nombre}
-                                                            {hasProfile && <ExternalLink size={14} className="opacity-30 group-hover/participant:opacity-100 transition-opacity" />}
+                                                            {athleteTarget && <ExternalLink size={14} className="opacity-30 group-hover/participant:opacity-100 transition-opacity" />}
                                                         </div>
                                                         <div className="text-xs sm:text-sm font-medium opacity-60 uppercase tracking-wide truncate mt-0.5 text-white/70">
-                                                            {p.carrera_id ? (
-                                                                <Link href={`/carrera/${p.carrera_id}`} className="hover:text-white transition-colors">
+                                                            {careerTarget ? (
+                                                                <Link 
+                                                                    href={careerTarget} 
+                                                                    className="hover:text-white hover:underline transition-all"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
                                                                     {p.equipo}
                                                                 </Link>
                                                             ) : (
@@ -353,23 +371,25 @@ export default function PublicMatchDetail() {
                                                             {p.carril && <span className="ml-2 px-1.5 py-0.5 rounded bg-white/10 text-[10px]">CARRIL {p.carril}</span>}
                                                         </div>
                                                     </div>
-
+ 
                                                     <div className="text-right font-mono font-bold text-lg sm:text-2xl tabular-nums tracking-tight text-white drop-shadow-md">
                                                         {p.tiempo || '--:--'}
                                                     </div>
-
-                                                    {hasProfile && (
+ 
+                                                    {athleteTarget && (
                                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-30 group-hover/participant:opacity-100 transition-all translate-x-4 group-hover/participant:translate-x-0">
-                                                            <div className="px-2 py-1 rounded-lg bg-emerald-500 text-black text-[8px] font-black uppercase tracking-tighter shadow-[0_0_10px_rgba(16,185,129,0.3)]">PERFIL</div>
+                                                            <div className="px-2 py-1 rounded-lg bg-emerald-500 text-black text-[8px] font-black uppercase tracking-tighter shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                                                                {hasProfile ? 'PERFIL' : 'ACTIVAR'}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
                                             );
-
-                                            return hasProfile ? (
-                                                <Link key={idx} href={`/perfil/${p.profile_id}`}>
+ 
+                                            return athleteTarget ? (
+                                                <div key={idx} onClick={() => router.push(athleteTarget)}>
                                                     {Content}
-                                                </Link>
+                                                </div>
                                             ) : (
                                                 <div key={idx}>{Content}</div>
                                             );
@@ -389,96 +409,96 @@ export default function PublicMatchDetail() {
                                     <div className="relative shrink-0 p-1">
                                         <div className={cn(
                                             "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
-                                            `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
+                                            SPORT_GLOW[sportName]
                                         )} />
                                         
-                                        <div className="relative group/avatar">
-                                            {(() => {
-                                                const profile = (m as any).atleta_a;
-                                                const profileId = profile?.id || m.athlete_a_id;
-                                                const delegacionId = (m as any).delegacion_a_id;
-                                                const carreraId = m.carrera_a_id || (m as any).carrera_a?.id || profile?.carrera?.id;
-                                                
-                                                const target = profileId 
-                                                    ? `/perfil/${profileId}` 
-                                                    : delegacionId 
-                                                        ? `/equipo/${delegacionId}` 
-                                                        : carreraId 
-                                                            ? `/carrera/${carreraId}` 
-                                                            : null;
-                                                
-                                                const Content = (
-                                                    <div 
-                                                        onClick={(e) => {
-                                                            if (target) {
-                                                                e.stopPropagation();
-                                                                router.push(target);
+                                        <div className="flex flex-col items-center gap-1 w-full relative z-10 sm:mt-1">
+                                        {(() => {
+                                            const joinedProfile = (m as any).atleta_a;
+                                            const displayName = (m.equipo_a || '').toLowerCase().trim();
+                                            const profileName = (joinedProfile?.full_name || '').toLowerCase().trim();
+                                            
+                                            // Stricter name matching: must share substantial parts of the name
+                                            const dnParts = displayName.split(/\s+/).filter(p => p.length > 2);
+                                            const pnParts = profileName.split(/\s+/).filter(p => p.length > 2);
+                                            const matchesCount = dnParts.filter(p => pnParts.includes(p)).length;
+                                            const nameMatches = profileName.length > 0 && (
+                                                matchesCount >= 2 || (dnParts.length === 1 && pnParts.includes(dnParts[0]))
+                                            );
+
+                                            const profileId = nameMatches ? (joinedProfile?.id || m.athlete_a_id) : null;
+                                            // Look up nominal ID from roster_partido join data
+                                            const rosterA = (m as any).roster?.find((r: any) => r.equipo_a_or_b === 'equipo_a');
+                                            const nominalId = !profileId ? rosterA?.jugador?.id : null;
+                                            const delegacionId = (m as any).delegacion_a_id;
+                                            const carreraId = m.carrera_a_id || (m as any).carrera_a?.id || (m as any).atleta_a?.carrera?.id;
+                                            
+                                            const archiveTarget = profileId ? `/perfil/${profileId}` : nominalId ? `/jugador/${nominalId}` : null;
+                                            const delegTarget = delegacionId ? `/equipo/${delegacionId}` : carreraId ? `/carrera/${carreraId}` : null;
+                                            
+                                            const target = archiveTarget || delegTarget;
+                                            
+                                            const Content = (
+                                                <div 
+                                                    onClick={(e) => {
+                                                        if (target) {
+                                                            e.stopPropagation();
+                                                            router.push(target);
+                                                        }
+                                                    }}
+                                                    className="relative group/btn cursor-pointer block"
+                                                >
+                                                    <div className="relative">
+                                                        <div className={cn("absolute inset-0 rounded-full blur-2xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500", SPORT_GLOW[sportName])} />
+                                                        <Avatar 
+                                                            src={
+                                                                (m as any).atleta_a?.avatar_url || 
+                                                                (m as any).atleta_a?.carrera?.escudo_url ||
+                                                                (m as any).carrera_a?.escudo_url || 
+                                                                (m as any).delegacion_a_info?.escudo_url ||
+                                                                '/logo_olimpiadas.png'
                                                             }
-                                                        }}
-                                                        className="relative group/btn cursor-pointer block"
-                                                    >
-                                                        <div className="relative">
-                                                            <div className={cn("absolute inset-0 rounded-full blur-2xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500", SPORT_GLOW[sportName])} />
-                                                            <Avatar 
-                                                                src={
-                                                                    profile?.avatar_url || 
-                                                                    profile?.carrera?.escudo_url ||
-                                                                    (m as any).carrera_a?.escudo_url || 
-                                                                    (m as any).delegacion_a_info?.escudo_url ||
-                                                                    '/logo_olimpiadas.png'
-                                                                }
-                                                                size="lg" 
-                                                                className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} 
-                                                            />
-                                                            
-                                                            <div className="absolute -bottom-2 z-30 flex justify-center w-full">
-                                                                <div className={cn(
-                                                                    "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
-                                                                    "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
-                                                                    "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95",
-                                                                    !target && "opacity-50 grayscale cursor-default"
-                                                                )} style={{ 
-                                                                    backgroundColor: sportColor,
-                                                                    color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
-                                                                    boxShadow: target ? `0 4px 12px ${sportColor}40` : 'none'
-                                                                }}>
-                                                                    {profileId ? 'VER PERFIL' : 'VER CARRERA'}
-                                                                </div>
+                                                            size="lg" 
+                                                            className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} 
+                                                        />
+                                                        
+                                                        <div className="absolute -bottom-2 z-30 flex justify-center w-full">
+                                                            <div className={cn(
+                                                                "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
+                                                                "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
+                                                                "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95",
+                                                                !target && "opacity-50 grayscale cursor-default"
+                                                            )} style={{ 
+                                                                backgroundColor: sportColor,
+                                                                color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
+                                                                boxShadow: target ? `0 4px 12px ${sportColor}40` : 'none'
+                                                            }}>
+                                                                {profileId ? 'VER PERFIL' : nominalId ? 'ACTIVAR' : 'VER CARRERA'}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                );
-
-                                                return target ? <Link href={target}>{Content}</Link> : Content;
-                                            })()}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col items-center gap-1 w-full relative z-10 sm:mt-1">
-                                        {(() => {
-                                            const profileId = (m as any).atleta_a?.id || m.athlete_a_id;
-                                            const delegacionId = (m as any).delegacion_a_id;
-                                            const carreraId = m.carrera_a_id || (m as any).carrera_a?.id || (m as any).atleta_a?.carrera?.id;
-                                            const name = getDisplayName(m, 'a');
+                                                </div>
+                                            );
                                             
-                                            const target = profileId 
-                                                ? `/perfil/${profileId}` 
-                                                : delegacionId 
-                                                    ? `/equipo/${delegacionId}` 
-                                                    : carreraId 
-                                                        ? `/carrera/${carreraId}` 
-                                                        : null;
-
+                                            const name = getDisplayName(m, 'a');
                                             const NameElement = (
-                                                <h2 className={cn(
-                                                    "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm",
-                                                    target ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105 cursor-pointer" : "text-white"
-                                                )}>
+                                                <h2 
+                                                    className={cn(
+                                                        "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm mt-3",
+                                                        target ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105 cursor-pointer" : "text-white"
+                                                    )}
+                                                    onClick={() => target && router.push(target)}
+                                                >
                                                     {name}
                                                 </h2>
                                             );
-
-                                            return target ? <Link href={target} className="block w-full">{NameElement}</Link> : NameElement;
+ 
+                                            return (
+                                                <div className="flex flex-col items-center">
+                                                    {Content}
+                                                    {NameElement}
+                                                </div>
+                                            );
                                         })()}
                                         
                                         {isIndividualSport(sportName) && getDisplayName(m, 'a') !== 'TBD' && getDisplayName(m, 'a') !== 'BYE' && (
@@ -520,10 +540,11 @@ export default function PublicMatchDetail() {
                                                 return finalTarget ? <Link href={finalTarget}>{labelContent}</Link> : labelContent;
                                             })()
                                         )}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col items-center relative z-20 min-w-[120px] sm:min-w-[180px] shrink-0">
+                            <div className="flex flex-col items-center relative z-20 min-w-[120px] sm:min-w-[180px] shrink-0">
                                     {sportName === 'Ajedrez' ? (
                                         <div className="flex flex-col items-center justify-center w-full min-h-[100px] sm:min-h-[140px]">
                                             {isFinished && m.marcador_detalle?.resultado_final === 'empate' ? (
@@ -608,96 +629,96 @@ export default function PublicMatchDetail() {
                                     <div className="relative shrink-0 p-1">
                                         <div className={cn(
                                             "absolute inset-0 rounded-full blur-xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500",
-                                            `bg-gradient-to-br ${SPORT_GRADIENT[sportName] || 'from-white/20'}`
+                                            SPORT_GLOW[sportName]
                                         )} />
                                         
-                                        <div className="relative group/avatar">
-                                            {(() => {
-                                                const profile = (m as any).atleta_b;
-                                                const profileId = profile?.id || m.athlete_b_id;
-                                                const delegacionId = (m as any).delegacion_b_id;
-                                                const carreraId = m.carrera_b_id || (m as any).carrera_b?.id || profile?.carrera?.id;
-                                                
-                                                const target = profileId 
-                                                    ? `/perfil/${profileId}` 
-                                                    : delegacionId 
-                                                        ? `/equipo/${delegacionId}` 
-                                                        : carreraId 
-                                                            ? `/carrera/${carreraId}` 
-                                                            : null;
-                                                
-                                                const Content = (
-                                                    <div 
-                                                        onClick={(e) => {
-                                                            if (target) {
-                                                                e.stopPropagation();
-                                                                router.push(target);
+                                        <div className="flex flex-col items-center gap-1 w-full relative z-10 sm:mt-1">
+                                        {(() => {
+                                            const joinedProfile = (m as any).atleta_b;
+                                            const displayName = (m.equipo_b || '').toLowerCase().trim();
+                                            const profileName = (joinedProfile?.full_name || '').toLowerCase().trim();
+                                            
+                                            // Stricter name matching: must share substantial parts of the name
+                                            const dnParts = displayName.split(/\s+/).filter(p => p.length > 2);
+                                            const pnParts = profileName.split(/\s+/).filter(p => p.length > 2);
+                                            const matchesCount = dnParts.filter(p => pnParts.includes(p)).length;
+                                            const nameMatches = profileName.length > 0 && (
+                                                matchesCount >= 2 || (dnParts.length === 1 && pnParts.includes(dnParts[0]))
+                                            );
+
+                                            const profileId = nameMatches ? (joinedProfile?.id || m.athlete_b_id) : null;
+                                            // Look up nominal ID from roster_partido join data
+                                            const rosterB = (m as any).roster?.find((r: any) => r.equipo_a_or_b === 'equipo_b');
+                                            const nominalId = !profileId ? rosterB?.jugador?.id : null;
+                                            const delegacionId = (m as any).delegacion_b_id;
+                                            const carreraId = m.carrera_b_id || (m as any).carrera_b?.id || (m as any).atleta_b?.carrera?.id;
+                                            
+                                            const archiveTarget = profileId ? `/perfil/${profileId}` : nominalId ? `/jugador/${nominalId}` : null;
+                                            const delegTarget = delegacionId ? `/equipo/${delegacionId}` : carreraId ? `/carrera/${carreraId}` : null;
+                                            
+                                            const target = archiveTarget || delegTarget;
+                                            
+                                            const Content = (
+                                                <div 
+                                                    onClick={(e) => {
+                                                        if (target) {
+                                                            e.stopPropagation();
+                                                            router.push(target);
+                                                        }
+                                                    }}
+                                                    className="relative group/btn cursor-pointer block"
+                                                >
+                                                    <div className="relative">
+                                                        <div className={cn("absolute inset-0 rounded-full blur-2xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500", SPORT_GLOW[sportName])} />
+                                                        <Avatar 
+                                                            src={
+                                                                (m as any).atleta_b?.avatar_url || 
+                                                                (m as any).atleta_b?.carrera?.escudo_url ||
+                                                                (m as any).carrera_b?.escudo_url || 
+                                                                (m as any).delegacion_b_info?.escudo_url ||
+                                                                '/logo_olimpiadas.png'
                                                             }
-                                                        }}
-                                                        className="relative group/btn cursor-pointer block"
-                                                    >
-                                                        <div className="relative">
-                                                            <div className={cn("absolute inset-0 rounded-full blur-2xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500", SPORT_GLOW[sportName])} />
-                                                            <Avatar 
-                                                                src={
-                                                                    profile?.avatar_url || 
-                                                                    profile?.carrera?.escudo_url ||
-                                                                    (m as any).carrera_b?.escudo_url || 
-                                                                    (m as any).delegacion_b_info?.escudo_url ||
-                                                                    '/logo_olimpiadas.png'
-                                                                }
-                                                                size="lg" 
-                                                                className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} 
-                                                            />
-                                                            
-                                                            <div className="absolute -bottom-2 z-30 flex justify-center w-full">
-                                                                <div className={cn(
-                                                                    "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
-                                                                    "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
-                                                                    "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95",
-                                                                    !target && "opacity-50 grayscale cursor-default"
-                                                                )} style={{ 
-                                                                    backgroundColor: sportColor,
-                                                                    color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
-                                                                    boxShadow: target ? `0 4px 12px ${sportColor}40` : 'none'
-                                                                }}>
-                                                                    {profileId ? 'VER PERFIL' : 'VER CARRERA'}
-                                                                </div>
+                                                            size="lg" 
+                                                            className={cn("w-20 h-20 sm:w-28 sm:h-28 text-2xl sm:text-4xl border-2 border-white/10 shadow-2xl bg-black/40 relative z-10 transition-all group-hover/btn:scale-105")} 
+                                                        />
+                                                        
+                                                        <div className="absolute -bottom-2 z-30 flex justify-center w-full">
+                                                            <div className={cn(
+                                                                "py-0.5 px-2 rounded-full backdrop-blur-2xl border border-white/20 transition-all duration-300",
+                                                                "font-black text-[6px] sm:text-[8px] uppercase tracking-widest shadow-xl",
+                                                                "group-hover/btn:-translate-y-0.5 group-hover/btn:scale-110 active:scale-95",
+                                                                !target && "opacity-50 grayscale cursor-default"
+                                                            )} style={{ 
+                                                                backgroundColor: sportColor,
+                                                                color: ['Ajedrez'].includes(sportName) ? '#000' : '#fff',
+                                                                boxShadow: target ? `0 4px 12px ${sportColor}40` : 'none'
+                                                            }}>
+                                                                {profileId ? 'VER PERFIL' : nominalId ? 'ACTIVAR' : 'VER CARRERA'}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                );
-
-                                                return target ? <Link href={target}>{Content}</Link> : Content;
-                                            })()}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col items-center gap-1 w-full relative z-10 sm:mt-1">
-                                        {(() => {
-                                            const profileId = (m as any).atleta_b?.id || m.athlete_b_id;
-                                            const delegacionId = (m as any).delegacion_b_id;
-                                            const carreraId = m.carrera_b_id || (m as any).carrera_b?.id || (m as any).atleta_b?.carrera?.id;
-                                            const name = getDisplayName(m, 'b');
+                                                </div>
+                                            );
                                             
-                                            const target = profileId 
-                                                ? `/perfil/${profileId}` 
-                                                : delegacionId 
-                                                    ? `/equipo/${delegacionId}` 
-                                                    : carreraId 
-                                                        ? `/carrera/${carreraId}` 
-                                                        : null;
-
+                                            const name = getDisplayName(m, 'b');
                                             const NameElement = (
-                                                <h2 className={cn(
-                                                    "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm",
-                                                    target ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105 cursor-pointer" : "text-white"
-                                                )}>
+                                                <h2 
+                                                    className={cn(
+                                                        "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm mt-3",
+                                                        target ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105 cursor-pointer" : "text-white"
+                                                    )}
+                                                    onClick={() => target && router.push(target)}
+                                                >
                                                     {name}
                                                 </h2>
                                             );
-
-                                            return target ? <Link href={target} className="block w-full">{NameElement}</Link> : NameElement;
+ 
+                                            return (
+                                                <div className="flex flex-col items-center">
+                                                    {Content}
+                                                    {NameElement}
+                                                </div>
+                                            );
                                         })()}
                                         
                                         {isIndividualSport(sportName) && getDisplayName(m, 'b') !== 'TBD' && getDisplayName(m, 'b') !== 'BYE' && (
@@ -723,7 +744,8 @@ export default function PublicMatchDetail() {
                                                         <img
                                                             src={
                                                                 (m as any).atleta_b?.carrera?.escudo_url ||
-                                                                (m as any).carrera_b?.escudo_url || 
+                                                                (m as any).carrera_b?.nombre ? (m as any).carrera_b?.escudo_url :
+                                                                (m as any).atleta_b?.carrera?.escudo_url ||
                                                                 (m as any).delegacion_b_info?.escudo_url ||
                                                                 '/logo_olimpiadas.png'
                                                             }
@@ -739,6 +761,7 @@ export default function PublicMatchDetail() {
                                                 return finalTarget ? <Link href={finalTarget}>{labelContent}</Link> : labelContent;
                                             })()
                                         )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

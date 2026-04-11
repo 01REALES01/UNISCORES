@@ -12,6 +12,152 @@ import type { ParsedJugador } from "@/app/api/admin/import-jugadores/route";
 type Tab = 'directorio' | 'importar';
 type ImportStep = 'upload' | 'review' | 'done';
 
+import { Plus, Loader2, Save, X } from "lucide-react";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal: Crear Jugador Manual
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ModalJugador({ onClose, onSaved, carreras, disciplinas }: { onClose: () => void, onSaved: () => void, carreras: any[], disciplinas: any[] }) {
+  const [loading, setLoading] = useState(false);
+  const [nombre, setNombre] = useState('');
+  const [carreraId, setCarreraId] = useState<number | null>(null);
+  const [disciplinaId, setDisciplinaId] = useState<number | null>(null);
+  const [genero, setGenero] = useState<'masculino' | 'femenino' | 'mixto'>('masculino');
+  const [numero, setNumero] = useState('');
+  const [sexo, setSexo] = useState('M');
+
+  const handleSave = async () => {
+    if (!nombre.trim()) return toast.error('El nombre es obligatorio');
+    if (!carreraId) return toast.error('El programa es obligatorio');
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('jugadores').insert({
+        nombre: nombre.trim(),
+        carrera_id: carreraId,
+        disciplina_id: disciplinaId,
+        genero,
+        numero: numero ? parseInt(numero) : null,
+        sexo
+      });
+
+      if (error) throw error;
+      toast.success('Jugador creado');
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md bg-[#0d0d14] border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
+          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Nuevo Deportista</h3>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-colors text-white/40 hover:text-white">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black uppercase tracking-widest text-white/40">Nombre Completo</label>
+            <input
+              type="text"
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              placeholder="Ej: Mateo Gonzalez"
+              className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-sm text-white outline-none focus:border-violet-500/50 transition-all font-bold"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-white/40">Programa / Carrera</label>
+              <select
+                value={carreraId || ''}
+                onChange={e => setCarreraId(e.target.value ? parseInt(e.target.value) : null)}
+                className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-3 text-sm text-white outline-none focus:border-violet-500/50 transition-all font-bold"
+              >
+                <option value="">Seleccionar...</option>
+                {carreras.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-white/40">Deporte (Opcional)</label>
+              <select
+                value={disciplinaId || ''}
+                onChange={e => setDisciplinaId(e.target.value ? parseInt(e.target.value) : null)}
+                className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-3 text-sm text-white outline-none focus:border-violet-500/50 transition-all font-bold"
+              >
+                <option value="">Seleccionar...</option>
+                {disciplinas.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-white/40">Rama</label>
+              <select
+                value={genero}
+                onChange={e => setGenero(e.target.value as any)}
+                className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-3 text-sm text-white outline-none focus:border-violet-500/50 transition-all font-bold"
+              >
+                <option value="masculino">Masculino</option>
+                <option value="femenino">Femenino</option>
+                <option value="mixto">Mixto</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-white/40">Sexo</label>
+              <select
+                value={sexo}
+                onChange={e => setSexo(e.target.value)}
+                className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-3 text-sm text-white outline-none focus:border-violet-500/50 transition-all font-bold"
+              >
+                <option value="M">Masculino (M)</option>
+                <option value="F">Femenino (F)</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-white/40"># Camiseta</label>
+              <input
+                type="number"
+                value={numero}
+                onChange={e => setNumero(e.target.value)}
+                placeholder="0"
+                className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-sm text-white outline-none focus:border-violet-500/50 transition-all font-bold"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 bg-white/[0.02] border-t border-white/5 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 h-11 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 font-bold text-sm transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="flex-[1.5] h-11 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-violet-600/20"
+          >
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {loading ? 'Guardando...' : 'Crear Deportista'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab 1: Directorio
 // ─────────────────────────────────────────────────────────────────────────────
@@ -22,18 +168,23 @@ function DirectorioTab() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCarrera, setFilterCarrera] = useState<number | null>(null);
+  const [disciplinas, setDisciplinas] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const [jugRes, carRes, discRes] = await Promise.all([
+      supabase.from('jugadores').select('*, carrera:carrera_id(nombre), disciplina:disciplina_id(name)').order('created_at', { ascending: false }),
+      supabase.from('carreras').select('id, nombre').order('nombre'),
+      supabase.from('disciplinas').select('id, name').order('name'),
+    ]);
+    if (jugRes.data) setJugadores(jugRes.data);
+    if (carRes.data) setCarreras(carRes.data);
+    if (discRes.data) setDisciplinas(discRes.data);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const [jugRes, carRes] = await Promise.all([
-        supabase.from('jugadores').select('*, carrera:carrera_id(nombre), disciplina:disciplina_id(name)'),
-        supabase.from('carreras').select('id, nombre'),
-      ]);
-      if (jugRes.data) setJugadores(jugRes.data);
-      if (carRes.data) setCarreras(carRes.data);
-      setLoading(false);
-    };
     fetchData();
   }, []);
 
@@ -104,13 +255,30 @@ function DirectorioTab() {
         </div>
 
         <Button
+          onClick={() => setShowModal(true)}
+          className="bg-violet-600 hover:bg-violet-700 text-white font-black uppercase tracking-widest text-[10px] gap-2"
+        >
+          <Plus size={14} /> Nuevo Deportista
+        </Button>
+
+        <Button
           onClick={handleDeleteAll}
           disabled={loading || jugadores.length === 0}
-          className="bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 border border-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed group"
         >
-          🗑️ Limpiar todos
+          <XCircle size={14} className="group-hover:text-rose-300" /> 
+          <span className="hidden sm:inline ml-2">Vaciar</span>
         </Button>
         </div>
+
+        {showModal && (
+          <ModalJugador
+            carreras={carreras}
+            disciplinas={disciplinas}
+            onClose={() => setShowModal(false)}
+            onSaved={fetchData}
+          />
+        )}
       </div>
 
       <div className="border border-white/10 rounded-2xl overflow-hidden">

@@ -78,7 +78,16 @@ async function fetchProfileWithRetry(
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [profile, setProfile] = useState<Profile | null>(null);
+    const [profile, setProfile] = useState<Profile | null>(() => {
+        // Hydrate profile from localStorage instantly for faster UX (prevents lockout flickers)
+        if (typeof window !== 'undefined') {
+            try {
+                const cached = localStorage.getItem('auth-profile-cache');
+                if (cached) return JSON.parse(cached);
+            } catch (e) { console.error('[useAuth] Cache parse error:', e); }
+        }
+        return null;
+    });
     const [loading, setLoading] = useState(true);
     const [profileLoading, setProfileLoading] = useState(false);
     const mountedRef = useRef(true);
@@ -93,7 +102,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const result = await fetchProfileWithRetry(userId);
             if (!mountedRef.current) return null;
+            
             setProfile(result);
+            
+            // Cache the result for next time
+            if (result && typeof window !== 'undefined') {
+                try {
+                    localStorage.setItem('auth-profile-cache', JSON.stringify(result));
+                } catch (e) { /* ignore storage errors */ }
+            } else if (!result && typeof window !== 'undefined') {
+                localStorage.removeItem('auth-profile-cache');
+            }
+
             if (!result) console.warn('[useAuth] Profile not found after all retries for user:', userId);
             return result;
         } finally {
@@ -124,7 +144,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                 const currentUser = session?.user ?? null;
                 setUser(currentUser);
-                if (currentUser) await fetchProfile(currentUser.id);
+                if (currentUser) {
+                    await fetchProfile(currentUser.id);
+                } else {
+                    // No user = clear profile cache
+                    if (typeof window !== 'undefined') localStorage.removeItem('auth-profile-cache');
+                    setProfile(null);
+                }
             } catch (err: unknown) {
                 const e = err as { name?: string; message?: string };
                 if (e?.name === 'AbortError' || e?.message?.includes('abort')) return;
@@ -146,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 await fetchProfile(currentUser.id);
             } else if (!currentUser) {
                 setProfile(null);
+                if (typeof window !== 'undefined') localStorage.removeItem('auth-profile-cache');
             }
 
             if (mountedRef.current) setLoading(false);
@@ -163,17 +190,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('[useAuth] App foregrounded — refreshing session...');
             try {
                 const { data: { session } } = await supabase.auth.getSession();
+                if (!mountedRef.current) return;
+
                 if (session?.user) {
                     setUser(session.user);
+                    // Fetch profile in background without flipping 'loading' to true
                     await fetchProfile(session.user.id);
+                } else if (user) {
+                    // User was logged in but session is gone now
+                    setUser(null);
+                    setProfile(null);
+                    if (typeof window !== 'undefined') localStorage.removeItem('auth-profile-cache');
                 }
             } catch (err) {
                 console.error('[useAuth] Error refreshing on visibility change:', err);
             } finally {
-                if (mountedRef.current) {
-                    setLoading(false);
-                    setProfileLoading(false);
-                }
+                // IMPORTANT: Do not set global loading=true here to avoid UI jumps
+                if (mountedRef.current) setProfileLoading(false);
             }
         };
 
@@ -185,7 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             subscription.unsubscribe();
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [fetchProfile]);
+    }, [fetchProfile, user]); // added user to deps for visibility listener logic
 
     const signOut = async () => {
         try {
@@ -193,9 +226,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (err: unknown) {
             const e = err as { name?: string };
             if (e?.name !== 'AbortError') console.error('[useAuth] Sign out error:', err);
+        } finally {
+            setUser(null);
+            setProfile(null);
+            if (typeof window !== 'undefined') localStorage.removeItem('auth-profile-cache');
+            setLoading(false);
         }
-        setUser(null);
-        setProfile(null);
     };
 
     const roles = profile?.roles || ['public'];

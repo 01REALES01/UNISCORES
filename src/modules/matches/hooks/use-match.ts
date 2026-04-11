@@ -9,6 +9,8 @@ import type { PartidoWithRelations } from "@/modules/matches/types";
 // partidos.disciplina_id → disciplinas
 // partidos.carrera_a_id / carrera_b_id → carreras
 // partidos.athlete_a_id / athlete_b_id → profiles
+// Nota: jugador_a_id / jugador_b_id NO existen en partidos.
+//       Los jugadores nominales se obtienen vía roster_partido.
 const MATCH_COLUMNS = [
     'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
     'disciplinas:disciplina_id(id, name)',
@@ -17,7 +19,8 @@ const MATCH_COLUMNS = [
     'atleta_a:profiles!athlete_a_id(id, full_name, avatar_url, carrera:carrera_id(id, nombre, escudo_url))',
     'atleta_b:profiles!athlete_b_id(id, full_name, avatar_url, carrera:carrera_id(id, nombre, escudo_url))',
     'delegacion_a_info:delegaciones!delegacion_a_id(id, escudo_url)',
-    'delegacion_b_info:delegaciones!delegacion_b_id(id, escudo_url)'
+    'delegacion_b_info:delegaciones!delegacion_b_id(id, escudo_url)',
+    'roster:roster_partido(id, equipo_a_or_b, jugador:jugadores(id, nombre, profile_id))'
 ].join(', ');
 
 export function useMatch(id: number | string | null | undefined) {

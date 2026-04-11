@@ -18,8 +18,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     // Redirect to login if not authenticated or not staff
     useEffect(() => {
+        // Only redirect if we are SURE loading is finished and there's no user
         if (!loading && !user) {
-            router.push("/login");
+            // Include original path for redirect memory
+            const currentPath = window.location.pathname;
+            router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
         }
     }, [loading, user, router]);
 
@@ -28,7 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push("/login");
     };
 
-    // Show loading while checking auth
+    // 1. Initial Auth Check (Global Spinner)
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-background">
@@ -37,23 +40,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         );
     }
 
-    // Not authenticated
+    // 2. Not authenticated — will be handled by useEffect redirect
     if (!user) {
-        return null; // Will redirect via useEffect
+        return null; 
     }
 
-    // Authenticated but profile still loading and no cached profile yet
-    // Only block if we haven't loaded the profile AND it's still loading
+    // 3. Authenticated but profile logic is still in flight
+    // If we have a user but profile is null AND profileLoading is true, it's the first fetch
     if (profileLoading && !profile) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6">
                 <UniqueLoading size="lg" />
+                <div className="text-center space-y-2 animate-pulse">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-500/60">Verificando Credenciales</p>
+                    <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest">{user.email}</p>
+                </div>
             </div>
         );
     }
 
-    // Authenticated but no staff role — show access denied
-    if (!isStaff) {
+    // 4. Case where profile fetch finished but returned null (rare but possible if user deleted)
+    // or if we have a user but no staff roles.
+    if (!profile || !isStaff) {
+        // If it's still profileLoading, wait a bit more (safety)
+        if (profileLoading) return null; 
+
         return (
             <div className="min-h-screen flex items-center justify-center bg-background p-4">
                 <div className="max-w-md w-full text-center space-y-6">
@@ -63,24 +74,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <div>
                         <h1 className="text-2xl font-extrabold tracking-tight mb-2">Acceso Restringido</h1>
                         <p className="text-muted-foreground">
-                            Tu cuenta <span className="text-foreground font-semibold">{user.email}</span> no tiene permisos de administrador.
+                            Tu cuenta <span className="text-foreground font-semibold">{user.email}</span> no tiene permisos de administrador registrados.
                         </p>
                     </div>
                     <div className="bg-muted/10 rounded-2xl p-4 border border-border/20">
                         <p className="text-sm text-muted-foreground">
-                            Contacta a un administrador para que te asigne el rol de <span className="text-purple-400 font-bold">admin</span>, <span className="text-rose-400 font-bold">data_entry</span> o <span className="text-blue-400 font-bold">periodista</span>.
+                            Si eres parte de la organización, contacta a un administrador para que te asigne el rol de <span className="text-purple-400 font-bold">admin</span>, <span className="text-rose-400 font-bold">data_entry</span> o <span className="text-blue-400 font-bold">periodista</span>.
                         </p>
                     </div>
                     <div className="flex gap-3 justify-center">
                         <button
                             onClick={handleLogout}
-                            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+                            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all font-display uppercase tracking-widest"
                         >
                             Cerrar Sesión
                         </button>
                         <Link
                             href="/"
-                            className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/25"
+                            className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 font-display uppercase tracking-widest"
                         >
                             Ir a Inicio
                         </Link>
