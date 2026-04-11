@@ -128,7 +128,7 @@ function MatchRow({ partido }: { partido: Partido }) {
               className={cn(
                 "text-[11px] sm:text-[13px] font-bold text-right truncate leading-tight max-w-full transition-all duration-500",
                 winnerSide === "a"
-                  ? "text-amber-300 font-black drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]"
+                  ? "text-white font-black"
                   : winnerSide === "b"
                   ? "text-white/50"
                   : isLive
@@ -235,15 +235,15 @@ function MatchRow({ partido }: { partido: Partido }) {
             <div className="flex flex-col items-center gap-0.5">
               {isSetSport ? (
                 <div className="flex items-center gap-1 font-black tabular-nums text-sm sm:text-base tracking-tight">
-                  <span className={cn(winnerSide === "a" ? "text-amber-400 font-black" : "text-white/40")}>{setsWonA ?? scoreA}</span>
+                  <span className={cn(winnerSide === "a" ? "text-white font-black" : "text-white/35")}>{setsWonA ?? scoreA}</span>
                   <span className="text-white/10 text-xs">-</span>
-                  <span className={cn(winnerSide === "b" ? "text-amber-400 font-black" : "text-white/40")}>{setsWonB ?? scoreB}</span>
+                  <span className={cn(winnerSide === "b" ? "text-white font-black" : "text-white/35")}>{setsWonB ?? scoreB}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1 font-black tabular-nums text-sm sm:text-base tracking-tight">
-                  <span className={cn(winnerSide === "a" ? "text-amber-400 font-black" : "text-white/40")}>{scoreA}</span>
+                  <span className={cn(winnerSide === "a" ? "text-white font-black" : "text-white/35")}>{scoreA}</span>
                   <span className="text-white/10 text-xs">-</span>
-                  <span className={cn(winnerSide === "b" ? "text-amber-400 font-black" : "text-white/40")}>{scoreB}</span>
+                  <span className={cn(winnerSide === "b" ? "text-white font-black" : "text-white/35")}>{scoreB}</span>
                 </div>
               )}
               <span className="text-[8px] font-bold text-white/15 uppercase tracking-widest">Final</span>
@@ -298,7 +298,7 @@ function MatchRow({ partido }: { partido: Partido }) {
             className={cn(
               "text-[11px] sm:text-[13px] font-bold text-left truncate leading-tight transition-all duration-500",
               winnerSide === "b"
-                ? "text-amber-300 font-black drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]"
+                ? "text-white font-black"
                 : winnerSide === "a"
                 ? "text-white/50"
                 : isLive

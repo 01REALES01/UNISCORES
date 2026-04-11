@@ -253,8 +253,8 @@ export default function PublicProfilePage() {
         try {
             // events aggregation: iterate over all events associated with any jugador linked to this profile
             const { data: events } = await supabase
-                .from('eventos')
-                .select('tipo_evento, jugador_id, jugadores!inner(profile_id, disciplina_id)')
+                .from('olympics_eventos')
+                .select('tipo_evento, jugador_id_normalized, jugadores!inner(profile_id, disciplina_id)')
                 .eq('jugadores.profile_id', id);
 
             const statsMap: Record<string, any> = {};
@@ -297,135 +297,16 @@ export default function PublicProfilePage() {
 
     const fetchHistory = async (id: string) => {
         setLoadingHistory(true);
-        try {
-            // First, try to get team matches via normalized roster_partido
-            const { data: teamMatches } = await supabase
-                .from('roster_partido')
-                .select(`
-                    equipo:equipo_a_or_b,
-                    partidos!inner(
-                        id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
-                        disciplina_id, disciplinas(name)
-                    ),
-                    jugadores!inner(profile_id, disciplina_id)
-                `)
-                .eq('jugadores.profile_id', id)
-                .order('partido_id', { ascending: false });
-
-
-            // Second, get individual matches directly from partidos
-            const { data: indMatches } = await supabase
-                .from('partidos')
-                .select(`
-                    id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
-                    disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id
-                `)
-                .or(`athlete_a_id.eq.${id},athlete_b_id.eq.${id}`)
-                .order('fecha', { ascending: false });
-
-            let allMatches: any[] = [];
-            const winLossBySport: Record<string, { wins: number, losses: number }> = {};
-
-            if (teamMatches && teamMatches.length > 0) {
-                teamMatches.forEach((d: any) => {
-                    const p = d.partidos;
-                    const discId = p.disciplina_id;
-                    if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
-                    
-                    if (p.estado === 'finalizado') {
-                        const det = p.marcador_detalle || {};
-                        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
-                        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
-                        const side = d.equipo; // 'equipo_a' or 'equipo_b'
-                        
-                        if (side === 'equipo_a' && scoreA > scoreB) winLossBySport[discId].wins++;
-                        else if (side === 'equipo_b' && scoreB > scoreA) winLossBySport[discId].wins++;
-                        else if (scoreA !== scoreB) winLossBySport[discId].losses++;
-                    }
-
-                    if (p.estado === 'finalizado' || p.estado === 'en_curso') {
-                        allMatches.push({
-                            match_id: p.id,
-                            fecha: p.fecha,
-                            disciplina: p.disciplinas?.name,
-                            equipo_a: p.equipo_a,
-                            equipo_b: p.equipo_b,
-                            estado: p.estado,
-                            marcador_final: p.marcador_detalle
-                        });
-                    }
-                });
-            }
-
-            if (indMatches && indMatches.length > 0) {
-                indMatches.forEach((p: any) => {
-                    const discId = p.disciplina_id;
-                    if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
-
-                    if (p.estado === 'finalizado') {
-                        const det = p.marcador_detalle || {};
-                        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
-                        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
-                        const isAthleteA = p.athlete_a_id === id;
-                        
-                        if (isAthleteA && scoreA > scoreB) winLossBySport[discId].wins++;
-                        else if (!isAthleteA && scoreB > scoreA) winLossBySport[discId].wins++;
-                        else if (scoreA !== scoreB) winLossBySport[discId].losses++;
-                    }
-
-                    if (p.estado === 'finalizado' || p.estado === 'en_curso') {
-                        allMatches.push({
-                            match_id: p.id,
-                            fecha: p.fecha,
-                            disciplina: p.disciplinas?.name,
-                            equipo_a: p.equipo_a,
-                            equipo_b: p.equipo_b,
-                            estado: p.estado,
-                            marcador_final: p.marcador_detalle
-                        });
-                    }
-                });
-            }
-
-            // Update sportStatsMap with wins/losses
-            setSportStatsMap(prev => {
-                const newMap = { ...prev };
-                Object.keys(winLossBySport).forEach(sid => {
-                    newMap[sid] = { ...(newMap[sid] || {}), ...winLossBySport[sid] };
-                });
-                return newMap;
-            });
-
-            // Sort ascending locally to ensure correct inter-leaving of team & individual
-            allMatches.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-
-            // Deduplicate across the two calls just in case
-            const uniqueMatches: any[] = [];
-            const seenIds = new Set();
-            for (const m of allMatches) {
-                if (!seenIds.has(m.match_id)) {
-                    seenIds.add(m.match_id);
-                    uniqueMatches.push(m);
-                }
-            }
-
-            // If we still found strictly 0 matches, fallback to the RPC just in case
-            if (uniqueMatches.length === 0) {
-                const { data } = await supabase.rpc('get_athlete_event_history', {
-                    athlete_profile_id: id
-                });
-                if (data) {
-                    uniqueMatches.push(...data);
-                }
-            }
-            
-            setHistory(uniqueMatches.slice(0, 5));
+            setHistory(uniqueMatches.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()));
         } catch (err) {
             console.error("Error fetching history:", err);
         } finally {
             setLoadingHistory(false);
         }
     };
+
+    const upcomingMatches = history.filter(h => h.estado === 'programado' || h.estado === 'en_curso').sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    const recentResults = history.filter(h => h.estado === 'finalizado').sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
 
@@ -977,64 +858,125 @@ export default function PublicProfilePage() {
                             <InstitutionalBanner />
                         </div>
 
-                        {/* ENCUENTROS RECIENTES */}
-                        <div className="rounded-[3rem] bg-black/20 border border-white/10 p-8 lg:p-12 shadow-2xl backdrop-blur-md space-y-10 relative overflow-hidden group/history">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] pointer-events-none" />
-                            
-                            <div className="flex items-center justify-between border-b border-white/10 pb-8 relative z-10">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2.5 bg-white/5 rounded-2xl border border-white/10 shadow-inner">
-                                      <Swords size={20} className="text-white/40" />
-                                    </div>
-                                    <h3 className="text-[11px] font-display font-black uppercase tracking-[0.5em] text-white/60">
-                                        HISTORIAL DE COMPETENCIA
-                                    </h3>
-                                </div>
-                                <Link href="/quiniela" className="text-[10px] font-display font-black uppercase tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors px-4 py-2 bg-white/5 rounded-full border border-white/10 hover:bg-white/10">
-                                    VER TODOS
-                                </Link>
-                            </div>
-
-                            <div className="flex flex-col gap-4">
-                                {loadingHistory ? (
-                                    <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white/20" /></div>
-                                ) : history.length > 0 ? (
-                                    history.slice(0, 4).map((h, i) => {
-                                        const scoreA = h.marcador_final?.goles_a ?? h.marcador_final?.sets_a ?? h.marcador_final?.total_a ?? 0;
-                                        const scoreB = h.marcador_final?.goles_b ?? h.marcador_final?.sets_b ?? h.marcador_final?.total_b ?? 0;
-                                        const icon = getSportIcon(h.disciplina);
-
-                                        return (
-                                            <div key={i} className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-white/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
-                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-                                                <div className="flex items-center gap-6 relative z-10">
-                                                    <div className="w-12 h-12 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all shadow-inner">
-                                                        <div className="-rotate-45">{icon}</div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-3 mb-1.5 ">
-                                                            <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.25em]">{h.disciplina}</span>
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
-                                                            <span className="text-[10px] font-mono font-bold text-white/20 uppercase tabular-nums">{new Date(h.fecha).toLocaleDateString()}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-4">
-                                                          <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_a}</p>
-                                                          <span className="text-[10px] font-display font-black text-white/15">VS</span>
-                                                          <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_b}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white">
-                                                    {scoreA} <span className="text-white/20 mx-1">-</span> {scoreB}
-                                                </div>
+                        {/* ━━━ ACTIVIDAD DEPORTIVA: Próximos y Resultados ━━━ */}
+                        <div className="space-y-8">
+                            {/* PRÓXIMOS ENCUENTROS */}
+                            {upcomingMatches.length > 0 && (
+                                <div className="rounded-[3rem] bg-black/20 border border-amber-500/20 p-8 lg:p-12 shadow-2xl backdrop-blur-md space-y-10 relative overflow-hidden group/upcoming">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[80px] pointer-events-none" />
+                                    
+                                    <div className="flex items-center justify-between border-b border-white/10 pb-8 relative z-10">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-2.5 bg-amber-500/10 rounded-2xl border border-amber-500/20 shadow-inner">
+                                              <Calendar size={20} className="text-amber-400" />
                                             </div>
-                                        );
-                                    })
-                                ) : (
-                                    <div className="text-center py-12 border border-dashed border-white/5 rounded-[2rem]">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/10">Sin participaciones registradas</p>
+                                            <h3 className="text-[11px] font-display font-black uppercase tracking-[0.5em] text-amber-200/60">
+                                                PRÓXIMOS ENCUENTROS
+                                            </h3>
+                                        </div>
                                     </div>
-                                )}
+
+                                    <div className="flex flex-col gap-4">
+                                        {upcomingMatches.map((h, i) => {
+                                            const icon = getSportIcon(h.disciplina);
+                                            const isLive = h.estado === 'en_curso';
+
+                                            return (
+                                                <div key={i} className={cn(
+                                                    "flex items-center justify-between bg-black/40 border p-6 rounded-[2rem] transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden",
+                                                    isLive ? "border-emerald-500/40 bg-emerald-500/5" : "border-white/5 hover:border-white/20 hover:bg-white/[0.05]"
+                                                )}>
+                                                    <div className="flex items-center gap-6 relative z-10">
+                                                        <div className={cn(
+                                                            "w-12 h-12 rotate-45 rounded-xl border flex items-center justify-center transition-all shadow-inner",
+                                                            isLive ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : "bg-white/5 border-white/10 text-white/40 group-hover:text-amber-400 group-hover:border-amber-500/30"
+                                                        )}>
+                                                            <div className="-rotate-45">{icon}</div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-3 mb-1.5">
+                                                                <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.15em]">{h.disciplina}</span>
+                                                                {isLive && (
+                                                                    <Badge className="bg-emerald-500 text-black font-black text-[8px] animate-pulse">EN VIVO</Badge>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-4">
+                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_a}</p>
+                                                              <span className="text-[10px] font-display font-black text-white/15">VS</span>
+                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_b}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-[14px] font-black text-white font-mono">{new Date(h.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                        <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">{new Date(h.fecha).toLocaleDateString()}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* RESULTADOS RECIENTES */}
+                            <div className="rounded-[3rem] bg-black/20 border border-white/10 p-8 lg:p-12 shadow-2xl backdrop-blur-md space-y-10 relative overflow-hidden group/history">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] pointer-events-none" />
+                                
+                                <div className="flex items-center justify-between border-b border-white/10 pb-8 relative z-10">
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-2.5 bg-white/5 rounded-2xl border border-white/10 shadow-inner">
+                                          <Swords size={20} className="text-white/40" />
+                                        </div>
+                                        <h3 className="text-[11px] font-display font-black uppercase tracking-[0.5em] text-white/60">
+                                            RESULTADOS RECIENTES
+                                        </h3>
+                                    </div>
+                                    <Link href="/quiniela" className="text-[10px] font-display font-black uppercase tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors px-4 py-2 bg-white/5 rounded-full border border-white/10 hover:bg-white/10">
+                                        VER TODOS
+                                    </Link>
+                                </div>
+
+                                <div className="flex flex-col gap-4">
+                                    {loadingHistory ? (
+                                        <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white/20" /></div>
+                                    ) : recentResults.length > 0 ? (
+                                        recentResults.slice(0, 5).map((h, i) => {
+                                            const scoreA = h.marcador_final?.goles_a ?? h.marcador_final?.sets_a ?? h.marcador_final?.total_a ?? 0;
+                                            const scoreB = h.marcador_final?.goles_b ?? h.marcador_final?.sets_b ?? h.marcador_final?.total_b ?? 0;
+                                            const icon = getSportIcon(h.disciplina);
+
+                                            return (
+                                                <div key={i} className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-white/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+                                                    <div className="flex items-center gap-6 relative z-10">
+                                                        <div className="w-12 h-12 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all shadow-inner">
+                                                            <div className="-rotate-45">{icon}</div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-3 mb-1.5 ">
+                                                                <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.25em]">{h.disciplina}</span>
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
+                                                                <span className="text-[10px] font-mono font-bold text-white/20 uppercase tabular-nums">{new Date(h.fecha).toLocaleDateString()}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-4">
+                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_a}</p>
+                                                              <span className="text-[10px] font-display font-black text-white/15">VS</span>
+                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_b}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white">
+                                                        {scoreA} <span className="text-white/20 mx-1">-</span> {scoreB}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="text-center py-12 border border-dashed border-white/5 rounded-[2rem]">
+                                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/10">Sin participaciones recientes</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
