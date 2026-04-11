@@ -159,10 +159,18 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
                             {noticia.titulo}
                         </h3>
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] sm:text-[11px] font-bold text-white/30 mt-3 sm:mt-4 uppercase tracking-widest">
-                        <span className="flex items-center gap-1.5"><Clock size={11} /> {getRelativeTime(noticia.created_at)}</span>
+                    <div className="flex items-center gap-2 text-[10px] sm:text-[11px] font-bold text-white/30 mt-3 sm:mt-4 uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5 shrink-0"><Clock size={11} /> {getRelativeTime(noticia.created_at)}</span>
+                        {noticia.autor_nombre && (
+                            <>
+                                <span className="text-white/15">·</span>
+                                <span className="truncate max-w-[100px] sm:max-w-[160px] normal-case text-white/25 tracking-normal">
+                                    {noticia.autor_nombre}
+                                </span>
+                            </>
+                        )}
                         {noticia.news_reactions && noticia.news_reactions.length > 0 && (
-                            <NewsReactionSummary reactions={noticia.news_reactions} className="ml-auto" />
+                            <NewsReactionSummary reactions={noticia.news_reactions} className="ml-auto shrink-0" />
                         )}
                     </div>
                 </div>

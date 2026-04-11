@@ -103,7 +103,9 @@ function MatchRow({ partido }: { partido: Partido }) {
       <div
         className={cn(
           "relative flex items-center gap-2 px-3 py-3 sm:px-4 sm:py-3.5 transition-all duration-200",
-          "hover:bg-white/[0.06] cursor-pointer",
+          isLive
+            ? "bg-white/[0.04] hover:bg-white/[0.08]"
+            : "hover:bg-white/[0.04] cursor-pointer",
           "border-b border-white/[0.04] last:border-b-0"
         )}
       >
@@ -111,7 +113,7 @@ function MatchRow({ partido }: { partido: Partido }) {
         {isLive && (
           <div
             className={cn(
-              "absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full",
+              "absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full shadow-[2px_0_8px_currentColor]",
               SPORT_LIVE_BAR[sportName] || "bg-emerald-500"
             )}
           />
@@ -122,20 +124,21 @@ function MatchRow({ partido }: { partido: Partido }) {
           <div className="flex flex-col items-end min-w-0">
             <span
               className={cn(
-                "text-[11px] sm:text-sm font-bold text-right truncate leading-tight max-w-full",
+                "text-[11px] sm:text-[13px] font-bold text-right truncate leading-tight max-w-full transition-colors",
                 winnerSide === "a"
-                  ? "text-white"
+                  ? "text-white font-black"
                   : winnerSide === "b"
-                  ? "text-white/40"
-                  : "text-white/80"
+                  ? "text-white/30"
+                  : isLive
+                  ? "text-white/90"
+                  : "text-white/70"
               )}
             >
               {nameA}
             </span>
-            {/* Mobile: show grupo + genero as subtitle */}
             {(genero || grupo) && (
-              <span className="sm:hidden text-[8px] font-bold text-white/25 uppercase tracking-wider truncate max-w-full">
-                {[grupo ? `Grupo ${grupo}` : null, genero === "femenino" ? "Fem" : genero === "mixto" ? "Mixto" : genero === "masculino" ? "Mas" : ""].filter(Boolean).join(" · ")}
+              <span className="sm:hidden text-[8px] font-bold text-white/20 uppercase tracking-wider truncate max-w-full">
+                {[grupo ? `Grupo ${grupo}` : null, genero === "femenino" ? "Fem" : genero === "mixto" ? "Mix" : ""].filter(Boolean).join(" · ")}
               </span>
             )}
           </div>
@@ -144,11 +147,23 @@ function MatchRow({ partido }: { partido: Partido }) {
               name={nameA}
               src={shieldA}
               size="sm"
-              className="w-6 h-6 sm:w-8 sm:h-8 border border-white/10 bg-black/40 shrink-0"
+              className={cn(
+                "w-7 h-7 sm:w-8 sm:h-8 shrink-0 transition-all duration-300",
+                winnerSide === "a"
+                  ? "border-2 border-amber-400/60 shadow-[0_0_10px_rgba(251,191,36,0.35)]"
+                  : winnerSide === "b"
+                  ? "border border-white/5 opacity-40 grayscale"
+                  : "border border-white/15 bg-black/40"
+              )}
             />
           ) : (
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/10 border border-white/10 flex items-center justify-center shrink-0">
-              <span className="text-[8px] sm:text-[9px] font-black text-white/50">
+            <div className={cn(
+              "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-all",
+              winnerSide === "a"
+                ? "bg-amber-500/20 border-2 border-amber-400/50"
+                : "bg-white/8 border border-white/10"
+            )}>
+              <span className="text-[8px] sm:text-[9px] font-black text-white/60">
                 {nameA?.substring(0, 2).toUpperCase()}
               </span>
             </div>
@@ -156,50 +171,45 @@ function MatchRow({ partido }: { partido: Partido }) {
         </div>
 
         {/* Score / Time center */}
-        <div className="flex flex-col items-center justify-center w-[60px] sm:w-[88px] shrink-0">
+        <div className="flex flex-col items-center justify-center w-[64px] sm:w-[90px] shrink-0">
           {isLive ? (
             isSetSport ? (
-              /* ── Set-based live: current set score BIG, sets won small ── */
               <div className="flex flex-col items-center gap-0.5">
-                {/* Current set score — main display */}
-                <div className="flex items-center gap-1.5 font-black text-white tabular-nums text-sm sm:text-lg tracking-tight">
+                <div className="flex items-center gap-1 font-black text-white tabular-nums text-sm sm:text-lg tracking-tight">
                   {isTenis && labelA ? (
                     <>
                       <span>{labelA}</span>
-                      <span className="text-white/30">-</span>
+                      <span className="text-white/25 text-xs">·</span>
                       <span>{labelB}</span>
                     </>
                   ) : (
                     <>
                       <span>{currentSetScoreA ?? 0}</span>
-                      <span className="text-white/30">-</span>
+                      <span className="text-white/25 text-xs">·</span>
                       <span>{currentSetScoreB ?? 0}</span>
                     </>
                   )}
                 </div>
-                {/* Sets won — small subtitle */}
-                <div className="flex items-center gap-1 text-[10px] font-bold text-white/40 tabular-nums">
-                  <span>Sets {setsWonA ?? 0}</span>
-                  <span className="text-white/20">-</span>
+                <div className="flex items-center gap-1 text-[9px] font-bold text-white/35 tabular-nums">
+                  <span>{setsWonA ?? 0}</span>
+                  <span className="text-white/15">-</span>
                   <span>{setsWonB ?? 0}</span>
                 </div>
-                {/* Set indicator + live dot */}
                 <div className="flex items-center gap-1 mt-0.5">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
                   </span>
                   <span className="text-[8px] font-black text-red-400 uppercase tracking-widest">
-                    {setActual ? `Set ${setActual}` : "En vivo"}
+                    {setActual ? `S${setActual}` : "Live"}
                   </span>
                 </div>
               </div>
             ) : (
-              /* ── Regular live score ── */
               <>
-                <div className="flex items-center gap-1.5 font-black text-white tabular-nums text-sm sm:text-lg tracking-tight">
+                <div className="flex items-center gap-1 font-black text-white tabular-nums text-sm sm:text-lg tracking-tight">
                   <span>{labelA ?? scoreA}</span>
-                  <span className="text-white/30">-</span>
+                  <span className="text-white/25 text-xs">·</span>
                   <span>{labelB ?? scoreB}</span>
                 </div>
                 <div className="flex items-center gap-1 mt-0.5">
@@ -207,40 +217,34 @@ function MatchRow({ partido }: { partido: Partido }) {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
                   </span>
-                  <span className="text-[8px] font-black text-red-400 uppercase tracking-widest">
-                    En vivo
-                  </span>
+                  <span className="text-[8px] font-black text-red-400 uppercase tracking-widest">Live</span>
                 </div>
               </>
             )
           ) : isFinished ? (
-            isSetSport ? (
-              /* ── Set-based finished: show sets won ── */
-              <div className="flex items-center gap-1.5 font-black tabular-nums text-sm sm:text-lg tracking-tight">
-                <span className={winnerSide === "a" ? "text-white" : "text-white/40"}>
-                  {setsWonA ?? scoreA}
-                </span>
-                <span className="text-white/20">-</span>
-                <span className={winnerSide === "b" ? "text-white" : "text-white/40"}>
-                  {setsWonB ?? scoreB}
-                </span>
-              </div>
-            ) : (
-              /* ── Regular finished score ── */
-              <div className="flex items-center gap-1.5 font-black tabular-nums text-sm sm:text-lg tracking-tight">
-                <span className={winnerSide === "a" ? "text-white" : "text-white/40"}>
-                  {scoreA}
-                </span>
-                <span className="text-white/20">-</span>
-                <span className={winnerSide === "b" ? "text-white" : "text-white/40"}>
-                  {scoreB}
-                </span>
-              </div>
-            )
+            <div className="flex flex-col items-center gap-0.5">
+              {isSetSport ? (
+                <div className="flex items-center gap-1 font-black tabular-nums text-sm sm:text-base tracking-tight">
+                  <span className={winnerSide === "a" ? "text-white" : "text-white/35"}>{setsWonA ?? scoreA}</span>
+                  <span className="text-white/15 text-xs">-</span>
+                  <span className={winnerSide === "b" ? "text-white" : "text-white/35"}>{setsWonB ?? scoreB}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 font-black tabular-nums text-sm sm:text-base tracking-tight">
+                  <span className={winnerSide === "a" ? "text-white" : "text-white/35"}>{scoreA}</span>
+                  <span className="text-white/15 text-xs">-</span>
+                  <span className={winnerSide === "b" ? "text-white" : "text-white/35"}>{scoreB}</span>
+                </div>
+              )}
+              <span className="text-[8px] font-bold text-white/20 uppercase tracking-widest">Final</span>
+            </div>
           ) : (
-            <span className="text-xs sm:text-sm font-bold text-white/50 tabular-nums">
-              {formatMatchTime(partido.fecha)}
-            </span>
+            <div className="flex flex-col items-center">
+              <span className="text-xs sm:text-sm font-black text-white/60 tabular-nums">
+                {formatMatchTime(partido.fecha)}
+              </span>
+              <span className="text-[8px] font-bold text-white/20 uppercase tracking-widest">Hoy</span>
+            </div>
           )}
         </div>
 
@@ -251,23 +255,37 @@ function MatchRow({ partido }: { partido: Partido }) {
               name={nameB}
               src={shieldB}
               size="sm"
-              className="w-6 h-6 sm:w-8 sm:h-8 border border-white/10 bg-black/40 shrink-0"
+              className={cn(
+                "w-7 h-7 sm:w-8 sm:h-8 shrink-0 transition-all duration-300",
+                winnerSide === "b"
+                  ? "border-2 border-amber-400/60 shadow-[0_0_10px_rgba(251,191,36,0.35)]"
+                  : winnerSide === "a"
+                  ? "border border-white/5 opacity-40 grayscale"
+                  : "border border-white/15 bg-black/40"
+              )}
             />
           ) : (
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/10 border border-white/10 flex items-center justify-center shrink-0">
-              <span className="text-[8px] sm:text-[9px] font-black text-white/50">
+            <div className={cn(
+              "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-all",
+              winnerSide === "b"
+                ? "bg-amber-500/20 border-2 border-amber-400/50"
+                : "bg-white/8 border border-white/10"
+            )}>
+              <span className="text-[8px] sm:text-[9px] font-black text-white/60">
                 {nameB?.substring(0, 2).toUpperCase()}
               </span>
             </div>
           )}
           <span
             className={cn(
-              "text-[11px] sm:text-sm font-bold text-left truncate leading-tight",
+              "text-[11px] sm:text-[13px] font-bold text-left truncate leading-tight transition-colors",
               winnerSide === "b"
-                ? "text-white"
+                ? "text-white font-black"
                 : winnerSide === "a"
-                ? "text-white/40"
-                : "text-white/80"
+                ? "text-white/30"
+                : isLive
+                ? "text-white/90"
+                : "text-white/70"
             )}
           >
             {nameB}
@@ -293,20 +311,22 @@ function SportGroup({
   return (
     <div
       className={cn(
-        "rounded-2xl overflow-hidden border transition-all",
-        SPORT_BORDER[sportName] || "border-white/10",
-        "bg-white/[0.03]"
+        "rounded-2xl overflow-hidden border transition-all duration-300",
+        hasLive
+          ? SPORT_BORDER[sportName] || "border-white/15"
+          : "border-white/[0.06]"
       )}
       style={{
-        background: `linear-gradient(135deg, ${accentColor}08 0%, transparent 60%)`,
+        background: `linear-gradient(135deg, ${accentColor}${hasLive ? '10' : '06'} 0%, transparent 55%)`,
+        boxShadow: hasLive ? `0 0 24px ${accentColor}15` : 'none',
       }}
     >
       {/* Sport header */}
       <div
-        className={cn(
-          "flex items-center gap-3 px-4 py-3 border-b",
-          "border-white/[0.06]"
-        )}
+        className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]"
+        style={{
+          background: `linear-gradient(90deg, ${accentColor}12 0%, transparent 80%)`,
+        }}
       >
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -320,24 +340,22 @@ function SportGroup({
           />
         </div>
         <span
-          className="text-sm font-black uppercase tracking-wider"
+          className="text-[13px] font-black uppercase tracking-wider"
           style={{ color: accentColor }}
         >
           {sportName}
         </span>
         <div className="flex items-center gap-3 ml-auto">
           {hasLive && (
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ backgroundColor: `${accentColor}15` }}>
+              <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
               </span>
-              <span className="text-[9px] font-black text-red-400 uppercase tracking-widest">
-                Live
-              </span>
+              <span className="text-[9px] font-black text-red-400 uppercase tracking-widest">Live</span>
             </div>
           )}
-          <span className="text-[10px] font-bold text-white/30 tracking-wider">
+          <span className="text-[10px] font-bold text-white/25 tracking-wider">
             {matches.length} {matches.length === 1 ? "partido" : "partidos"}
           </span>
         </div>
