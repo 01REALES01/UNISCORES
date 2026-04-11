@@ -53,6 +53,7 @@ export default function EstadisticasPage() {
     const [topUsers, setTopUsers] = useState<TopUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeSport, setActiveSport] = useState<string>("Todos");
+    const [activeGender, setActiveGender] = useState<string>("Todos");
 
     useEffect(() => {
         fetchAll();
@@ -63,7 +64,7 @@ export default function EstadisticasPage() {
         try {
             // 1. Fetch raw data without complex joins first to be safe
             const [allMatchesRes, eventosRes, topCareersRes, topUsersRes, disciplinesRes] = await Promise.all([
-                supabase.from('partidos').select('id, estado, disciplina_id, carrera_a_id, carrera_b_id'),
+                supabase.from('partidos').select('id, estado, disciplina_id, carrera_a_id, carrera_b_id, genero'),
                 supabase.from('olympics_eventos').select('tipo_evento, partido_id, equipo, jugador_id_normalized'),
                 supabase.from('carreras').select('id, nombre, escudo_url, followers_count').order('followers_count', { ascending: false }).limit(10),
                 supabase.from('profiles').select('id, full_name, avatar_url, followers_count').order('followers_count', { ascending: false }).limit(10),
@@ -86,8 +87,31 @@ export default function EstadisticasPage() {
 
             const matches = (allMatchesRes.data || []).map(m => ({ ...m, disciplina_name: discMap.get(m.disciplina_id) }));
             const allEvents = (eventosRes.data || []).map(e => {
-                const p = matches.find(m => m.id === e.partido_id);
-                return { ...e, partidos: p, jugadores: playerMap.get(e.jugador_id_normalized) };
+                const match = matches.find(m => m.id === e.partido_id);
+                const player = playerMap.get(e.jugador_id_normalized);
+                
+                if (player && match) {
+                    // Enrich player object for leaderboards
+                    if (!(player as any).enriched) {
+                        const fallbackProfile = !player.profile_id ? profileByName.get(player.nombre?.toLowerCase()) : null;
+                        const finalProfileId = player.profile_id || fallbackProfile?.id;
+                        const profilesData = (player as any).profiles;
+                        const joinedAvatar = Array.isArray(profilesData) ? profilesData[0]?.avatar_url : profilesData?.avatar_url;
+                        const finalAvatar = joinedAvatar || fallbackProfile?.avatar_url;
+
+                        const matchCareerId = e.equipo === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id;
+                        const careerId = player.carrera_id || matchCareerId;
+                        const c = careerMap.get(careerId || 0);
+
+                        (player as any).avatar_url = finalAvatar;
+                        (player as any).equipo_nombre = c?.nombre;
+                        (player as any).escudo_url = c?.escudo_url;
+                        (player as any).profile_id = finalProfileId;
+                        (player as any).enriched = true;
+                    }
+                }
+
+                return { ...e, partidos: match, jugadores: player };
             });
 
             // Count events from finalized OR in-course matches for live updates
@@ -100,122 +124,116 @@ export default function EstadisticasPage() {
             setTopCareers(topCareersRes?.data || []);
             setTopUsers(topUsersRes?.data || []);
 
-            // ⚽ Goleadores
-            const soccerMap = new Map<number, LeaderboardEntry>();
-            activeEventos.filter(e => {
-                const type = e.tipo_evento?.toLowerCase() || '';
-                const sport = e.partidos?.disciplina_name || '';
-                return (type === 'gol') && (sport.includes('Fútbol') || sport.includes('Futsal'));
-            }).forEach(e => {
-                const j = e.jugadores;
-                if (!j || !e.partidos) return; // Fix: Safety check for e.partidos
-
-                const currentMatch = e.partidos;
-                const matchCareerId = e.equipo === 'equipo_a' ? currentMatch.carrera_a_id : currentMatch.carrera_b_id;
-                
-                if (!soccerMap.has(j.id)) {
-                    // Try to find a profile by name if profile_id is missing
-                    const fallbackProfile = !j.profile_id ? profileByName.get(j.nombre?.toLowerCase()) : null;
-                    const finalProfileId = j.profile_id || fallbackProfile?.id;
-                    
-                    // Handle profiles join being an array or object
-                    const profilesData = (j as any).profiles;
-                    const joinedAvatar = Array.isArray(profilesData) ? profilesData[0]?.avatar_url : profilesData?.avatar_url;
-                    const finalAvatar = joinedAvatar || fallbackProfile?.avatar_url;
-
-                    // Career Logic: Priority 1: Player's official career, Priority 2: Team in match
-                    const careerId = j.carrera_id || matchCareerId;
-                    const c = careerMap.get(careerId || 0);
-
-                    soccerMap.set(j.id, {
-                        id: j.id, rank: 0, nombre: j.nombre, avatar_url: finalAvatar,
-                        profile_id: finalProfileId, equipo: c?.nombre, escudo_url: c?.escudo_url,
-                        value: 0
-                    });
-                }
-                soccerMap.get(j.id)!.value++;
-            });
-            setTopGoleadores(Array.from(soccerMap.values()).sort((a, b) => b.value - a.value).slice(0, 20));
-
-            // 🏀 Anotadores Basket
-            const basketMap = new Map<number, LeaderboardEntry>();
-            activeEventos.filter(e => {
-                const sport = e.partidos?.disciplina_name || '';
-                const type = e.tipo_evento?.toLowerCase() || '';
-                return sport.includes('Baloncesto') && (type.startsWith('punto') || type === 'puntos');
-            }).forEach(e => {
-                const j = e.jugadores;
-                if (!j || !e.partidos) return;
-
-                const currentMatch = e.partidos;
-                const matchCareerId = e.equipo === 'equipo_a' ? currentMatch.carrera_a_id : currentMatch.carrera_b_id;
-
-                if (!basketMap.has(j.id)) {
-                    const fallbackProfile = !j.profile_id ? profileByName.get(j.nombre?.toLowerCase()) : null;
-                    const finalProfileId = j.profile_id || fallbackProfile?.id;
-                    
-                    const profilesData = (j as any).profiles;
-                    const joinedAvatar = Array.isArray(profilesData) ? profilesData[0]?.avatar_url : profilesData?.avatar_url;
-                    const finalAvatar = joinedAvatar || fallbackProfile?.avatar_url;
-
-                    const careerId = j.carrera_id || matchCareerId;
-                    const c = careerMap.get(careerId || 0);
-
-                    basketMap.set(j.id, {
-                        id: j.id, rank: 0, nombre: j.nombre, avatar_url: finalAvatar,
-                        profile_id: finalProfileId, equipo: c?.nombre, escudo_url: c?.escudo_url,
-                        value: 0
-                    });
-                }
-                basketMap.get(j.id)!.value += getPointValue(e.tipo_evento);
-            });
-            setTopAnotadores(Array.from(basketMap.values()).sort((a, b) => b.value - a.value).slice(0, 20));
-
-            // 🟨 Tarjeteadores
-            const cardMap = new Map<number, LeaderboardEntry & { yellow: number, red: number }>();
-            activeEventos.filter(e => {
-                const sport = e.partidos?.disciplina_name || '';
-                const type = e.tipo_evento?.toLowerCase() || '';
-                return (sport.includes('Fútbol') || sport.includes('Futsal')) && type.startsWith('tarjeta');
-            }).forEach(e => {
-                const j = e.jugadores;
-                if (!j || !e.partidos) return;
-
-                const currentMatch = e.partidos;
-                const matchCareerId = e.equipo === 'equipo_a' ? currentMatch.carrera_a_id : currentMatch.carrera_b_id;
-
-                if (!cardMap.has(j.id)) {
-                    const fallbackProfile = !j.profile_id ? profileByName.get(j.nombre?.toLowerCase()) : null;
-                    const finalProfileId = j.profile_id || fallbackProfile?.id;
-                    
-                    const profilesData = (j as any).profiles;
-                    const joinedAvatar = Array.isArray(profilesData) ? profilesData[0]?.avatar_url : profilesData?.avatar_url;
-                    const finalAvatar = joinedAvatar || fallbackProfile?.avatar_url;
-
-                    const careerId = j.carrera_id || matchCareerId;
-                    const c = careerMap.get(careerId || 0);
-
-                    cardMap.set(j.id, {
-                        id: j.id, rank: 0, nombre: j.nombre, avatar_url: finalAvatar,
-                        profile_id: finalProfileId, equipo: c?.nombre, escudo_url: c?.escudo_url,
-                        value: 0, yellow: 0, red: 0
-                    });
-                }
-                const p = cardMap.get(j.id)!;
-                const t = e.tipo_evento?.toLowerCase();
-                if (t === 'tarjeta_amarilla') { p.yellow++; p.value += 1; }
-                else if (t === 'tarjeta_roja') { p.red++; p.value += 3; }
-            });
-            setTopTarjeteadores(Array.from(cardMap.values()).map(p => ({
-                ...p, secondaryStats: [{ label: "Amarillas", value: p.yellow }, { label: "Rojas", value: p.red }]
-            })).sort((a, b) => b.value - a.value).slice(0, 20));
-
         } catch (err) {
             console.error("Error fetching stats:", err);
         } finally {
             setLoading(false);
         }
     };
+
+    // ─── Reactive Data Processing ───────────────────────────────────────────
+
+    const filteredEventos = useMemo(() => {
+        let filtered = eventos;
+        if (activeSport !== 'Todos') {
+            filtered = filtered.filter(e => e.partidos?.disciplina_name === activeSport);
+        }
+        if (activeGender !== 'Todos') {
+            filtered = filtered.filter(e => e.partidos?.genero === activeGender.toLowerCase());
+        }
+        return filtered;
+    }, [eventos, activeSport, activeGender]);
+
+    // Count events from current selection
+    const leaderboards = useMemo(() => {
+        // We still need the maps from fetchAll but they are better computed here reactively
+        // We'll use a slightly different approach: we need player info and career info
+        // which was already fetched and stored in the 'eventos' objects in fetchAll.
+
+        // ⚽ Goleadores
+        const soccerMap = new Map<number, LeaderboardEntry>();
+        filteredEventos.filter(e => {
+            const type = e.tipo_evento?.toLowerCase() || '';
+            const sport = e.partidos?.disciplina_name || '';
+            return (type === 'gol') && (sport.includes('Fútbol') || sport.includes('Futsal'));
+        }).forEach(e => {
+            const j = e.jugadores;
+            if (!j || !e.partidos) return;
+
+            if (!soccerMap.has(j.id)) {
+                soccerMap.set(j.id, {
+                    id: j.id, rank: 0, nombre: j.nombre, 
+                    avatar_url: j.avatar_url,
+                    profile_id: j.profile_id, 
+                    equipo: j.equipo_nombre,
+                    escudo_url: j.escudo_url,
+                    value: 0
+                });
+            }
+            soccerMap.get(j.id)!.value++;
+        });
+
+        // 🏀 Anotadores Basket
+        const basketMap = new Map<number, LeaderboardEntry>();
+        filteredEventos.filter(e => {
+            const sport = e.partidos?.disciplina_name || '';
+            const type = e.tipo_evento?.toLowerCase() || '';
+            return sport.includes('Baloncesto') && (type.startsWith('punto') || type === 'puntos');
+        }).forEach(e => {
+            const j = e.jugadores;
+            if (!j || !e.partidos) return;
+
+            if (!basketMap.has(j.id)) {
+                basketMap.set(j.id, {
+                    id: j.id, rank: 0, nombre: j.nombre, 
+                    avatar_url: j.avatar_url,
+                    profile_id: j.profile_id, 
+                    equipo: j.equipo_nombre,
+                    escudo_url: j.escudo_url,
+                    value: 0
+                });
+            }
+            basketMap.get(j.id)!.value += getPointValue(e.tipo_evento);
+        });
+
+        // 🟨 Tarjeteadores
+        const cardMap = new Map<number, LeaderboardEntry & { yellow: number, red: number }>();
+        filteredEventos.filter(e => {
+            const sport = e.partidos?.disciplina_name || '';
+            const type = e.tipo_evento?.toLowerCase() || '';
+            return (sport.includes('Fútbol') || sport.includes('Futsal')) && type.startsWith('tarjeta');
+        }).forEach(e => {
+            const j = e.jugadores;
+            if (!j || !e.partidos) return;
+
+            if (!cardMap.has(j.id)) {
+                cardMap.set(j.id, {
+                    id: j.id, rank: 0, nombre: j.nombre, 
+                    avatar_url: j.avatar_url,
+                    profile_id: j.profile_id, 
+                    equipo: j.equipo_nombre,
+                    escudo_url: j.escudo_url,
+                    value: 0, yellow: 0, red: 0
+                });
+            }
+            const p = cardMap.get(j.id)!;
+            const t = e.tipo_evento?.toLowerCase();
+            if (t === 'tarjeta_amarilla') { p.yellow++; p.value += 1; }
+            else if (t === 'tarjeta_roja') { p.red++; p.value += 3; }
+        });
+
+        const goleadores = Array.from(soccerMap.values()).sort((a, b) => b.value - a.value).slice(0, 20);
+        const anotadores = Array.from(basketMap.values()).sort((a, b) => b.value - a.value).slice(0, 20);
+        const tarjeteadores = Array.from(cardMap.values()).map(p => ({
+            ...p, secondaryStats: [{ label: "Amarillas", value: p.yellow }, { label: "Rojas", value: p.red }]
+        })).sort((a, b) => b.value - a.value).slice(0, 20);
+
+        return { goleadores, anotadores, tarjeteadores };
+    }, [filteredEventos]);
+
+    // Helper process to inject career info into player list
+    // This is a bit tricky because the previous code did a lot of Map lookups
+    // I'll update fetchAll to pre-attach as much info as possible to each event's player.
 
     const availableSports = useMemo(() => {
         const set = new Set<string>();
@@ -224,9 +242,20 @@ export default function EstadisticasPage() {
     }, [allMatches]);
 
     const pulseData = useMemo(() => {
-        const isAll = activeSport === 'Todos';
-        const filteredMatches = isAll ? allMatches : allMatches.filter(m => m.disciplina_name === activeSport);
-        const filteredEventos = isAll ? eventos : eventos.filter(e => e.partidos?.disciplina_name === activeSport);
+        const isAllSport = activeSport === 'Todos';
+        const isAllGender = activeGender === 'Todos';
+        
+        const filteredMatches = allMatches.filter(m => {
+            const sportMatch = isAllSport || m.disciplina_name === activeSport;
+            const genderMatch = isAllGender || m.genero === activeGender.toLowerCase();
+            return sportMatch && genderMatch;
+        });
+
+        const filteredEventos = eventos.filter(e => {
+            const sportMatch = isAllSport || e.partidos?.disciplina_name === activeSport;
+            const genderMatch = isAllGender || e.partidos?.genero === activeGender.toLowerCase();
+            return sportMatch && genderMatch;
+        });
 
         const totalMatches = filteredMatches.length;
         const finalizedMatches = filteredMatches.filter(m => m.estado === 'finalizado').length;
@@ -245,7 +274,7 @@ export default function EstadisticasPage() {
             if (e.tipo_evento?.toLowerCase() === 'tarjeta_roja') redCards++;
         });
 
-        const activeSportsCount = new Set(allMatches.map(m => m.disciplinas?.name).filter(Boolean)).size;
+        const activeSportsCount = new Set(filteredMatches.map(m => m.disciplina_name).filter(Boolean)).size;
 
         return { 
             sport: activeSport, 
@@ -253,9 +282,9 @@ export default function EstadisticasPage() {
             finalizedMatches, 
             metric1: { value: goals, label: "Goles", sublabel: "En fútbol y futsal" },
             metric2: { value: yellowCards + redCards, label: "Tarjetas", sublabel: `${yellowCards} amarillas · ${redCards} rojas` },
-            metric3: { value: isAll ? activeSportsCount : finalizedMatches, label: isAll ? "Disciplinas" : "Completados", sublabel: isAll ? "Deportes activos" : "Partidos jugados" }
+            metric3: { value: isAllSport ? activeSportsCount : finalizedMatches, label: isAllSport ? "Disciplinas" : "Completados", sublabel: isAllSport ? "Deportes activos" : "Partidos jugados" }
         };
-    }, [allMatches, eventos, activeSport]);
+    }, [allMatches, eventos, activeSport, activeGender]);
 
     if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
 
@@ -319,21 +348,28 @@ export default function EstadisticasPage() {
                             <>
                                 <section>
                                     <SectionHeader title="Resumen General" delay={0.2} />
-                                    <PulseHeader activeSport={activeSport} onSportChange={setActiveSport} availableSports={availableSports} data={pulseData} />
+                                    <PulseHeader 
+                                        activeSport={activeSport} 
+                                        onSportChange={setActiveSport} 
+                                        activeGender={activeGender}
+                                        onGenderChange={setActiveGender}
+                                        availableSports={availableSports} 
+                                        data={pulseData} 
+                                    />
                                 </section>
 
                                 <div className="grid grid-cols-1 gap-12 sm:gap-16 relative">
                                     <section className="relative z-10">
                                         <SectionHeader title="Máximos Goleadores" delay={0.3} />
-                                        <LeaderboardTable title="Bota de Oro" icon={Trophy} entries={topGoleadores} sportName="Fútbol / Futsal" accentColor="#10b981" valueLabel="Goles" />
+                                        <LeaderboardTable title="Bota de Oro" icon={Trophy} entries={leaderboards.goleadores} sportName="Fútbol / Futsal" accentColor="#10b981" valueLabel="Goles" />
                                     </section>
                                     <section className="relative z-10">
                                         <SectionHeader title="Máximos Anotadores" delay={0.4} />
-                                        <LeaderboardTable title="Puntos Totales" icon={Target} entries={topAnotadores} sportName="Baloncesto" accentColor="#f59e0b" valueLabel="Puntos" />
+                                        <LeaderboardTable title="Puntos Totales" icon={Target} entries={leaderboards.anotadores} sportName="Baloncesto" accentColor="#f59e0b" valueLabel="Puntos" />
                                     </section>
                                     <section className="relative z-10">
                                         <SectionHeader title="Control de Disciplina" delay={0.5} />
-                                        <LeaderboardTable title="Lucha por el Juego Limpio" icon={ShieldAlert} entries={topTarjeteadores} sportName="Fútbol / Futsal" accentColor="#facc15" valueLabel="Pts Disciplina" />
+                                        <LeaderboardTable title="Lucha por el Juego Limpio" icon={ShieldAlert} entries={leaderboards.tarjeteadores} sportName="Fútbol / Futsal" accentColor="#facc15" valueLabel="Pts Disciplina" />
                                         <p className="mt-4 px-6 text-[10px] font-medium text-white/20 italic">* Puntuación: Roja (3 pts), Amarilla (1 pt). A mayor puntuación, menor disciplina.</p>
                                     </section>
                                 </div>

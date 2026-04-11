@@ -16,15 +16,14 @@ export function WelcomeHero() {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
                 <m.div 
                     animate={{ 
-                        scale: [1, 1.2, 1],
-                        opacity: [0.15, 0.25, 0.15]
+                        opacity: [0.15, 0.22, 0.15]
                     }}
                     transition={{ 
-                        duration: 8,
+                        duration: 10,
                         repeat: Infinity,
-                        ease: "easeInOut"
+                        ease: "linear"
                     }}
-                    className="w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[140px] translate-x-1/2 translate-y-1/4" 
+                    className="w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[100px] translate-x-1/2 translate-y-1/4" 
                 />
             </div>
 
@@ -32,12 +31,11 @@ export function WelcomeHero() {
             <div className="absolute inset-0 flex items-center justify-end pointer-events-none overflow-hidden">
                 <m.div
                     animate={{ 
-                        y: [0, -15, 0],
-                        rotate: [0, 2, 0],
-                        scale: [1, 1.05, 1]
+                        y: [0, -10, 0],
+                        rotate: [0, 1.5, 0]
                     }}
                     transition={{ 
-                        duration: 6,
+                        duration: 8,
                         repeat: Infinity,
                         ease: "easeInOut"
                     }}
@@ -47,7 +45,7 @@ export function WelcomeHero() {
                     <img
                         src="/elementos/19.png"
                         alt=""
-                        className="w-[450px] md:w-[700px] h-auto drop-shadow-[0_0_60px_rgba(124,58,237,0.2)] brightness-[0.8] contrast-[1.1] grayscale-[0.2]"
+                        className="w-[450px] md:w-[700px] h-auto drop-shadow-[0_0_40px_rgba(124,58,237,0.15)] brightness-[0.8] contrast-[1.1] grayscale-[0.2]"
                         aria-hidden="true"
                     />
                 </m.div>

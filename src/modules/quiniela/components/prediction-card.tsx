@@ -88,7 +88,8 @@ export const PredictionCard = ({
   };
 
   const isPredicted = prediction !== undefined && prediction !== null;
-  const isLocked = locked || match.estado !== 'programado';
+  const isPast = new Date(match.fecha) < new Date();
+  const isLocked = locked || match.estado !== 'programado' || isPast;
   const isFinished = match.estado === 'finalizado';
   const isLive = match.estado === 'en_curso';
 

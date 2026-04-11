@@ -55,6 +55,14 @@ export default function PublicMatchDetail() {
         }
     );
 
+    // ─── Loading timeout: show retry UI after 8s instead of infinite spinner ───
+    const [loadTimeout, setLoadTimeout] = useState(false);
+    useEffect(() => {
+        if (!matchLoading || match) { setLoadTimeout(false); return; }
+        const t = setTimeout(() => setLoadTimeout(true), 8000);
+        return () => clearTimeout(t);
+    }, [matchLoading, match]);
+
     // ─── Voting Logic ───────────────────────────────────────────────────────────
     const [saving, setSaving] = useState(false);
     const [votingPick, setVotingPick] = useState<string | null>(null);
@@ -71,7 +79,8 @@ export default function PublicMatchDetail() {
             return;
         }
         if (!m) return;
-        if (m.estado !== 'programado') {
+        const isPast = new Date(m.fecha) < new Date();
+        if (m.estado !== 'programado' || isPast) {
             toast.error("Este partido ya no acepta predicciones");
             return;
         }
@@ -125,11 +134,24 @@ export default function PublicMatchDetail() {
 
     const fetchError = matchError?.message;
 
-    if (matchLoading && !match) return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white">
-            <UniqueLoading size="lg" />
-        </div>
-    );
+    if (matchLoading && !match) {
+        if (loadTimeout) return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white gap-4 px-6">
+                <p className="text-white/40 text-sm font-bold text-center">No se pudo cargar el partido</p>
+                <button
+                    onClick={() => { setLoadTimeout(false); mutateMatch(); }}
+                    className="px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-white text-sm font-black transition-colors active:scale-95"
+                >
+                    Reintentar
+                </button>
+            </div>
+        );
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white">
+                <UniqueLoading size="lg" />
+            </div>
+        );
+    }
 
     if (!match) return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white p-8 text-center gap-4">

@@ -60,6 +60,15 @@ export function useQuiniela() {
     const handlePredict = async (matchId: any, data: any) => {
         if (!user) return;
 
+        const targetMatch = matches.find(m => m.id === matchId);
+        if (targetMatch) {
+            const isPast = new Date(targetMatch.fecha) < new Date();
+            if (targetMatch.estado !== 'programado' || isPast) {
+                toast.error("Este partido ya no acepta predicciones");
+                return;
+            }
+        }
+
         return toast.promise(
             async () => {
                 // Ensure public profile exists

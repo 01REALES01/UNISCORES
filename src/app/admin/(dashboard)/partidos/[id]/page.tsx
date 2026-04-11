@@ -18,6 +18,7 @@ import { AjedrezControl } from "@/modules/admin/matches/components/ajedrez-contr
 import { ScoreBreakdownEditor } from "@/modules/admin/matches/components/score-breakdown-editor";
 import { FutbolEditor } from "@/modules/admin/matches/components/futbol-score-editor";
 import { BasquetEditor } from "@/modules/admin/matches/components/basquet-score-editor";
+import { TenisEditor } from "@/modules/admin/matches/components/tenis-editor";
 import { MatchMetaEditor } from "@/modules/admin/matches/components/match-meta-editor";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -129,6 +130,7 @@ export default function MatchControlPage() {
 
     const disciplinaName = match.disciplinas?.name || 'Fútbol';
     const isTeamSport = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
+    const isTenisSport = ['Tenis', 'Tenis de Mesa'].includes(disciplinaName);
     const bgGradient = DISCIPLINES_COLORS[disciplinaName] || 'from-slate-700 to-slate-900';
     const actions = GET_SPORT_ACTIONS(disciplinaName);
     const { scoreA, scoreB } = getCurrentScore(disciplinaName, match.marcador_detalle || {});
@@ -167,8 +169,8 @@ export default function MatchControlPage() {
                     />
                 )}
 
-                {/* Edición Completa — deportes de equipo (siempre visible) */}
-                {isTeamSport && (
+                {/* Edición Completa — deportes de equipo y tenis */}
+                {(isTeamSport || isTenisSport) && (
                     <div className="flex items-center justify-end mb-4 -mt-2">
                         <button
                             onClick={() => setShowFullEditor(true)}
@@ -327,7 +329,7 @@ export default function MatchControlPage() {
 
             {/* Edición Completa — modal tabbed mobile-first */}
             {showFullEditor && (() => {
-                const tabLabel = disciplinaName === 'Baloncesto' ? 'Cuartos' : disciplinaName === 'Fútbol' ? 'Tiempos' : 'Sets';
+                const tabLabel = disciplinaName === 'Baloncesto' ? 'Cuartos' : disciplinaName === 'Fútbol' ? 'Tiempos' : 'Sets / Marcador';
                 const tabs: { id: 'marcador' | 'eventos' | 'jugadores'; label: string }[] = [
                     { id: 'marcador' as const, label: tabLabel },
                     { id: 'eventos' as const, label: 'Eventos' },
@@ -374,7 +376,7 @@ export default function MatchControlPage() {
 
                         {/* Tab content */}
                         <div className="flex-1 overflow-y-auto px-4 pb-24">
-                            {/* MARCADOR TAB — Sets (Voleibol) / Cuartos (Baloncesto) / Fútbol */}
+                            {/* MARCADOR TAB — Sets (Voleibol/Tenis) / Cuartos (Baloncesto) / Fútbol */}
                             {activeTab === 'marcador' && (
                                 <div className="max-w-lg mx-auto pt-2">
                                     {disciplinaName === 'Baloncesto' ? (
@@ -404,6 +406,12 @@ export default function MatchControlPage() {
                                                 handleNuevoEvento(tipo, equipo, jugadorId, bypass, overrides)
                                             }
                                             onDeleteEvent={(e) => setConfirmingDeletion(e)}
+                                        />
+                                    ) : isTenisSport ? (
+                                        <TenisEditor
+                                            match={match}
+                                            profile={profile}
+                                            onSaved={fetchMatchDetails}
                                         />
                                     ) : null}
                                 </div>

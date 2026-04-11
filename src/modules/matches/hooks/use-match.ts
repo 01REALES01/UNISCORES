@@ -21,12 +21,21 @@ const MATCH_COLUMNS = [
 ].join(', ');
 
 export function useMatch(id: number | string | null | undefined) {
+    // sessionStorage fallback: survive mobile JS context discards
+    let fallbackData: PartidoWithRelations | undefined;
+    if (id && typeof window !== 'undefined') {
+        try {
+            const raw = sessionStorage.getItem(`swr-match-${id}`);
+            if (raw) fallbackData = JSON.parse(raw);
+        } catch {}
+    }
+
     const { data, error, isLoading, isValidating, mutate } = useSWR(
         id ? `match:${id}` : null,
         async () => {
             if (!id) return null;
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10_000);
+            const timeout = setTimeout(() => controller.abort(), 30_000);
             try {
                 const { data, error } = await supabase
                     .from('partidos')
@@ -35,13 +44,16 @@ export function useMatch(id: number | string | null | undefined) {
                     .abortSignal(controller.signal)
                     .single();
                 if (error) throw error;
-                return data as unknown as PartidoWithRelations;
+                const result = data as unknown as PartidoWithRelations;
+                try { sessionStorage.setItem(`swr-match-${id}`, JSON.stringify(result)); } catch {}
+                return result;
             } finally {
                 clearTimeout(timeout);
             }
         },
         {
-            revalidateOnFocus: true,
+            fallbackData,
+            revalidateOnFocus: false, // visibility-revalidate handles this
             revalidateOnReconnect: true,
             dedupingInterval: 5000,
             keepPreviousData: true,

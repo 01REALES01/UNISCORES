@@ -36,19 +36,21 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
         const isMobileDevice = window.innerWidth < 768;
         const currentConfig = isMobileDevice ? {
             folder: "/animacion_movil/",
-            total: 240,
-            interval: 16.67,
+            total: 120, // Reduced from 240 for memory efficiency
+            interval: 33.34, // Slower but steadier for Safari
             startFrame: 0,
-            isMobile: true
+            isMobile: true,
+            step: 2 // Skips every other frame
         } : {
             folder: "/animacion_UNISCORES/",
             total: 179,
             interval: 22,
             startFrame: 0,
-            isMobile: false
+            isMobile: false,
+            step: 1
         };
         
-        setConfig(currentConfig);
+        setConfig(currentConfig as any);
 
         try {
             if (sessionStorage.getItem(SPLASH_KEY) === "true") {
@@ -64,7 +66,8 @@ export function SplashScreen({ onComplete }: { onComplete?: () => void }) {
 
         for (let i = 0; i < currentConfig.total; i++) {
             const img = new Image();
-            img.src = `${currentConfig.folder}ezgif-frame-${(i + 1).toString().padStart(3, '0')}.jpg`;
+            const frameNum = (i * (currentConfig as any).step) + 1;
+            img.src = `${currentConfig.folder}ezgif-frame-${frameNum.toString().padStart(3, '0')}.jpg`;
             img.onload = () => {
                 loaded++;
                 if (loaded >= currentConfig.total) setIsReady(true);

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuditLogger } from "@/hooks/useAuditLogger";
-import { Trophy, Settings, Save, Trash2, LayoutDashboard, Shield, Plus, Minus } from "lucide-react";
+import { Trophy, Settings, Save, Trash2, LayoutDashboard, Shield, Plus, Minus, RefreshCw, CheckCircle, AlertTriangle, Database } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { DEPORTES_INDIVIDUALES, DEPORTES_CON_CATEGORIA, DEPORTES_CON_BRACKET } from "@/lib/constants";
@@ -228,6 +228,154 @@ function ClasificacionTab() {
     );
 }
 
+function SyncDataTab({ isAdmin }: { isAdmin: boolean }) {
+    const [status, setStatus] = useState<{
+        total_finished: number;
+        with_arrays: number;
+        coverage_pct: number;
+        missing: number;
+    } | null>(null);
+    const [syncing, setSyncing] = useState(false);
+    const [loadingStatus, setLoadingStatus] = useState(true);
+    const [lastResult, setLastResult] = useState<any>(null);
+
+    const loadStatus = async () => {
+        setLoadingStatus(true);
+        try {
+            const res = await fetch('/api/admin/sync-carrera-ids');
+            const data = await res.json();
+            if (res.ok) setStatus(data);
+        } catch {
+            toast.error('Error al cargar estado');
+        } finally {
+            setLoadingStatus(false);
+        }
+    };
+
+    useEffect(() => { loadStatus(); }, []);
+
+    const handleSync = async () => {
+        if (!window.confirm('¿Ejecutar sincronización de carreras en todos los partidos? Esta operación puede tomar unos segundos.')) return;
+        setSyncing(true);
+        try {
+            const res = await fetch('/api/admin/sync-carrera-ids', { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            setLastResult(data);
+            toast.success(`✅ ${data.message}`);
+            await loadStatus();
+        } catch (e: any) {
+            toast.error('Error: ' + e.message);
+        } finally {
+            setSyncing(false);
+        }
+    };
+
+    if (!isAdmin) return <div className="text-white/40 text-sm py-8 text-center">Solo admins pueden ejecutar sincronizaciones.</div>;
+
+    return (
+        <div className="space-y-5">
+            {/* Coverage card */}
+            <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                    <Database size={14} className="text-cyan-400" />
+                    <span className="text-xs font-black uppercase tracking-widest text-cyan-400/80">Estado de Datos — Partidos Finalizados</span>
+                </div>
+                <div className="p-6">
+                    {loadingStatus ? (
+                        <div className="text-white/30 text-sm">Analizando datos...</div>
+                    ) : status ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 text-center">
+                                <p className="text-3xl font-black text-white tabular-nums">{status.total_finished}</p>
+                                <p className="text-[10px] uppercase tracking-widest text-white/30 mt-1">Total partidos</p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-center">
+                                <p className="text-3xl font-black text-emerald-400 tabular-nums">{status.with_arrays}</p>
+                                <p className="text-[10px] uppercase tracking-widest text-emerald-400/50 mt-1">Con carreras ID</p>
+                            </div>
+                            <div className={`p-4 rounded-xl border text-center ${
+                                status.missing > 0 ? 'bg-amber-500/5 border-amber-500/10' : 'bg-white/[0.03] border-white/5'
+                            }`}>
+                                <p className={`text-3xl font-black tabular-nums ${
+                                    status.missing > 0 ? 'text-amber-400' : 'text-white/30'
+                                }`}>{status.missing}</p>
+                                <p className="text-[10px] uppercase tracking-widest text-white/30 mt-1">Sin carreras ID</p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 text-center">
+                                <p className={`text-3xl font-black tabular-nums ${
+                                    status.coverage_pct >= 90 ? 'text-emerald-400' :
+                                    status.coverage_pct >= 60 ? 'text-amber-400' : 'text-rose-400'
+                                }`}>{status.coverage_pct}%</p>
+                                <p className="text-[10px] uppercase tracking-widest text-white/30 mt-1">Cobertura</p>
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
+            </div>
+
+            {/* Diagnosis message */}
+            {status && status.missing > 0 && (
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/15 text-amber-200 text-xs">
+                    <AlertTriangle size={18} className="shrink-0 text-amber-400 mt-0.5" />
+                    <div>
+                        <p className="font-black mb-1">Se detectaron {status.missing} partidos sin carreras asignadas.</p>
+                        <p className="text-amber-200/60">Esto causa que las victorias no se contabilicen correctamente en el medallero y perfil de carreras. Ejecuta la sincronización para corregirlo.</p>
+                    </div>
+                </div>
+            )}
+            {status && status.missing === 0 && (
+                <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/15 text-emerald-200 text-xs">
+                    <CheckCircle size={18} className="shrink-0 text-emerald-400" />
+                    <p className="font-bold">Todos los partidos finalizados tienen carreras asignadas correctamente. El medallero está siendo calculado con datos completos.</p>
+                </div>
+            )}
+
+            {/* Last result detail */}
+            {lastResult && (
+                <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 space-y-2">
+                    <p className="text-xs font-black uppercase tracking-widest text-white/40">Resultado de última sincronización</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex justify-between p-2 rounded-lg bg-white/5">
+                            <span className="text-white/40">Actualizados</span>
+                            <span className="font-black text-white">{lastResult.stats?.updated ?? 0}</span>
+                        </div>
+                        <div className="flex justify-between p-2 rounded-lg bg-white/5">
+                            <span className="text-white/40">Desde FK singular</span>
+                            <span className="font-black text-white">{lastResult.stats?.pass1_from_singular_fk ?? 0}</span>
+                        </div>
+                        <div className="flex justify-between p-2 rounded-lg bg-white/5">
+                            <span className="text-white/40">Desde delegación</span>
+                            <span className="font-black text-white">{lastResult.stats?.pass2_from_delegacion ?? 0}</span>
+                        </div>
+                        <div className="flex justify-between p-2 rounded-lg bg-white/5">
+                            <span className="text-white/40">Sin ID aún</span>
+                            <span className={`font-black ${ (lastResult.stats?.finished_missing_arrays ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                {lastResult.stats?.finished_missing_arrays ?? 0}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Sync button */}
+            <button
+                onClick={handleSync}
+                disabled={syncing || loadingStatus}
+                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 font-black text-sm uppercase tracking-widest hover:bg-cyan-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
+                {syncing ? 'Sincronizando...' : 'Sincronizar Carreras en Partidos'}
+            </button>
+
+            <div className="text-xs text-white/20 px-2">
+                Esta operación actualiza el campo <code className="text-white/40 bg-white/5 px-1 rounded">carrera_a_ids</code> / <code className="text-white/40 bg-white/5 px-1 rounded">carrera_b_ids</code> en todos los partidos históricos. Es necesario ejecutarla al menos una vez para que el medallero y las estadísticas de victorias por carrera sean precisos.
+            </div>
+        </div>
+    );
+}
+
+
 function BracketVisibilityToggle() {
     const [hidden, setHidden] = useState<boolean>(false);
     const [updating, setUpdating] = useState(true);
@@ -235,6 +383,7 @@ function BracketVisibilityToggle() {
     useEffect(() => {
         supabase.from('site_config').select('value').eq('key', 'hide_team_brackets').maybeSingle()
             .then(({ data }) => { if (data) setHidden(data.value === true); setUpdating(false); });
+
     }, []);
 
     const toggle = async () => {
@@ -306,10 +455,11 @@ function FairPlayAdminTab() {
 
 export default function PuntosAdminPage() {
     const { isAdmin } = useAuth();
-    const [tab, setTab] = useState<'clasificacion' | 'config' | 'general' | 'fairplay'>('clasificacion');
+    const [tab, setTab] = useState<'clasificacion' | 'sync' | 'config' | 'general' | 'fairplay'>('clasificacion');
     const tabs = [
         { id: 'clasificacion', label: 'Clasificación', icon: Trophy },
         ...(isAdmin ? [
+            { id: 'sync', label: 'Integridad de Datos', icon: Database },
             { id: 'config', label: 'Configurar Puntos', icon: Settings },
             { id: 'general', label: 'Ajustes Generales', icon: LayoutDashboard },
             { id: 'fairplay', label: 'Fair Play', icon: Shield },
@@ -331,6 +481,7 @@ export default function PuntosAdminPage() {
                     ))}
                 </div>
                 {tab === 'clasificacion' && <ClasificacionTab />}
+                {tab === 'sync' && <SyncDataTab isAdmin={isAdmin} />}
                 {tab === 'config' && <PuntosConfigTab isAdmin={isAdmin} />}
                 {tab === 'general' && (
                     <div className="space-y-6">

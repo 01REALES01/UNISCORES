@@ -11,12 +11,21 @@ const EVENT_COLUMNS = `
 `.replace(/\s+/g, ' ').trim();
 
 export function useMatchEvents(partidoId: number | string | null | undefined) {
+    // sessionStorage fallback: survive mobile JS context discards
+    let fallbackData: Evento[] | undefined;
+    if (partidoId && typeof window !== 'undefined') {
+        try {
+            const raw = sessionStorage.getItem(`swr-match-events-${partidoId}`);
+            if (raw) fallbackData = JSON.parse(raw);
+        } catch {}
+    }
+
     const { data, error, isLoading, mutate } = useSWR(
         partidoId ? `match:${partidoId}:events` : null,
         async () => {
             if (!partidoId) return [];
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10_000);
+            const timeout = setTimeout(() => controller.abort(), 30_000);
             try {
                 const { data, error } = await supabase
                     .from('olympics_eventos')
@@ -25,13 +34,16 @@ export function useMatchEvents(partidoId: number | string | null | undefined) {
                     .abortSignal(controller.signal)
                     .order('minuto', { ascending: false });
                 if (error) throw error;
-                return (data || []) as unknown as Evento[];
+                const result = (data || []) as unknown as Evento[];
+                try { sessionStorage.setItem(`swr-match-events-${partidoId}`, JSON.stringify(result)); } catch {}
+                return result;
             } finally {
                 clearTimeout(timeout);
             }
         },
         {
-            revalidateOnFocus: true,
+            fallbackData,
+            revalidateOnFocus: false, // visibility-revalidate handles this
             revalidateOnReconnect: true,
             dedupingInterval: 3000,
             keepPreviousData: true,

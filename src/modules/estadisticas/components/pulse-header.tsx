@@ -20,6 +20,8 @@ export interface SportPulseData {
 interface PulseHeaderProps {
   activeSport: string;
   onSportChange: (sport: string) => void;
+  activeGender: string;
+  onGenderChange: (gender: string) => void;
   availableSports: string[];
   data: SportPulseData;
 }
@@ -34,7 +36,7 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
 };
 
-export function PulseHeader({ activeSport, onSportChange, availableSports, data }: PulseHeaderProps) {
+export function PulseHeader({ activeSport, onSportChange, activeGender, onGenderChange, availableSports, data }: PulseHeaderProps) {
   const completionPct = data.totalMatches > 0 ? Math.round((data.finalizedMatches / data.totalMatches) * 100) : 0;
   const accentColor = activeSport === 'Todos' ? '#818cf8' : (SPORT_COLORS[activeSport] || '#818cf8');
 
@@ -70,30 +72,46 @@ export function PulseHeader({ activeSport, onSportChange, availableSports, data 
   ];
 
   return (
-    <div className="space-y-5">
-      {/* Sport filter pills */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => onSportChange('Todos')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-display font-black tracking-wide transition-all border",
-            activeSport === 'Todos'
-              ? "bg-violet-500/15 border-violet-500/40 text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.15)]"
-              : "bg-black/20 backdrop-blur-md border-white/5 text-white/40 hover:border-white/20 hover:text-white/80"
-          )}
-        >
-          <LayoutGrid size={12} />
-          Todos
-        </button>
+    <div className="space-y-8">
+      {/* Gender filter - Centered and Premium */}
+      <div className="flex justify-center w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex gap-1.5 p-1.5 bg-black/40 backdrop-blur-3xl rounded-full border border-white/10 shadow-2xl w-full max-w-md">
+          {[
+            { label: 'Todos', value: 'Todos', icon: Activity },
+            { label: 'Masculino', value: 'Masculino', icon: Zap },
+            { label: 'Femenino', value: 'Femenino', icon: Award },
+          ].map((g) => {
+            const isSelected = activeGender === g.value;
+            return (
+              <button
+                key={g.value}
+                onClick={() => onGenderChange(g.value)}
+                className={cn(
+                  "relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-[10px] font-display font-black tracking-widest transition-all border whitespace-nowrap",
+                  isSelected
+                    ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105"
+                    : "bg-transparent border-transparent text-white/50 hover:text-white/80"
+                )}
+              >
+                <g.icon size={12} className={cn(isSelected ? "text-[#7C3AED]" : "text-violet-400")} />
+                <span className="uppercase">{g.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Sport filter pills - Cleaner list */}
+      <div className="flex flex-wrap items-center justify-center gap-2 px-2">
         {availableSports.map(sport => {
           const isActive = activeSport === sport;
           const color = SPORT_COLORS[sport] || '#818cf8';
           return (
             <button
               key={sport}
-              onClick={() => onSportChange(sport)}
+              onClick={() => onSportChange(isActive ? 'Todos' : sport)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-display font-black tracking-wide transition-all border",
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-display font-black tracking-wide transition-all border",
                 isActive
                   ? "border-white/20 text-white shadow-[0_0_15px_rgba(255,255,255,0.05)]"
                   : "bg-black/20 backdrop-blur-md border-white/5 text-white/40 hover:border-white/20 hover:text-white/80"
@@ -101,7 +119,7 @@ export function PulseHeader({ activeSport, onSportChange, availableSports, data 
               style={isActive ? { backgroundColor: `${color}15`, borderColor: `${color}40`, color, boxShadow: `0 0 15px ${color}20` } : undefined}
             >
               <SportIcon sport={sport} size={12} />
-              {sport}
+              <span className="uppercase">{sport}</span>
             </button>
           );
         })}

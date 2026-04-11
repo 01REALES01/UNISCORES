@@ -16,11 +16,12 @@ import {
     ChevronDown,
     Loader2,
     Check,
-    PenTool,
     Trophy,
     X,
-    Edit
+    Edit,
+    Trash2
 } from "lucide-react";
+import { toast } from "sonner";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { useRouter } from "next/navigation";
 
@@ -71,6 +72,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
     const [selectedDisciplina, setSelectedDisciplina] = useState<string | null>(null);
     // Multi-sport: tracks disciplina_ids per user from profile_disciplinas table
     const [userDisciplinas, setUserDisciplinas] = useState<Record<string, number[]>>({});
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     const { profile: currentProfile, isAdmin } = useAuth();
     const { logAction } = useAuditLogger();
     const router = useRouter();
@@ -218,6 +220,40 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
 
         setUpdatingId(null);
         setSelectedDisciplina(null);
+    };
+
+    const handleDeleteUser = async (userId: string, email: string) => {
+        if (userId === currentProfile?.id) return;
+
+        const confirmText = `¿Estás seguro de que deseas eliminar permanentemente a ${email}? \n\nEsta acción borrará tanto el perfil como la cuenta de autenticación (login) y no se puede deshacer.`;
+        
+        if (!window.confirm(confirmText)) return;
+
+        setDeletingId(userId);
+        try {
+            const res = await fetch('/api/admin/usuarios/eliminar', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || 'Error al eliminar');
+
+            toast.success('Usuario eliminado correctamente');
+            
+            // Audit log local (opcional porque el perfil ya no existe, pero intentamos)
+            await logAction('DELETE_USER', 'usuario', userId, { email });
+            
+            // Update local state
+            setProfiles(prev => prev.filter(p => p.id !== userId));
+        } catch (err: any) {
+            console.error('Delete error:', err);
+            alert('Error: ' + err.message);
+        } finally {
+            setDeletingId(null);
+        }
     };
 
     const { filteredProfiles, stats } = useMemo(() => {
@@ -372,6 +408,20 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                             })}
                                         </p>
                                     </div>
+                                    {!isCurrentUser && (
+                                        <button
+                                            onClick={() => handleDeleteUser(userProfile.id, userProfile.email)}
+                                            disabled={deletingId === userProfile.id}
+                                            className="opacity-0 group-hover:opacity-100 p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-all ml-2"
+                                            title="Eliminar usuario"
+                                        >
+                                            {deletingId === userProfile.id ? (
+                                                <Loader2 size={16} className="animate-spin" />
+                                            ) : (
+                                                <Trash2 size={16} />
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
 
                                 {/* Right Content - Role Selector (Multiple Badges) */}

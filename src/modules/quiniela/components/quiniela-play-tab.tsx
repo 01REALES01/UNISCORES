@@ -107,11 +107,13 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
         return groups;
     }, [baseFilteredMatches]);
 
-    // Sorted day keys
-    const sortedDays = useMemo(() =>
-        Object.keys(dayGroups).sort((a, b) => a.localeCompare(b)),
-        [dayGroups]
-    );
+    // Sorted day keys (only today and future)
+    const sortedDays = useMemo(() => {
+        const todayKey = getDateKey(new Date().toISOString());
+        return Object.keys(dayGroups)
+            .filter(d => d >= todayKey)
+            .sort((a, b) => a.localeCompare(b));
+    }, [dayGroups]);
 
     // Find default day: first day with upcoming matches, or today, or first available
     const defaultDay = useMemo(() => {
