@@ -10,17 +10,6 @@ import { Avatar } from '@/components/ui-primitives';
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface ProfileResult {
-  id: string;
-  realId: number | null;
-  full_name: string;
-  avatar_url: string | null;
-  carrera: { id: number; nombre: string } | null;
-  source: 'profile' | 'jugador';
-  badge: string;
-  profile_id: string | null;
-}
-
 interface MatchMetaEditorProps {
   match: any;
   profile: any;
