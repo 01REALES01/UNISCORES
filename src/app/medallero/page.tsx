@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { 
@@ -23,6 +23,7 @@ import { SportIcon } from "@/shared/components/sport-icons";
 import { cn } from "@/lib/utils";
 import { SPORT_COLORS, DEPORTES_INDIVIDUALES } from "@/lib/constants";
 import UniqueLoading from "@/components/ui/morph-loading";
+import { computeCareerStats } from "@/lib/sport-helpers";
 
 type Tab = "carreras" | "equipos";
 
@@ -49,92 +50,89 @@ export default function MedalleroPage() {
     const [searchQuery, setSearchQuery] = useState("");
 
     // Initial data fetch
-    useEffect(() => {
-        async function fetchData() {
-            setLoading(true);
-            try {
-                const [
-                    { data: cData },
-                    { data: dData },
-                    { data: discData },
-                    { data: pData },
-                    { data: aData }
-                ] = await Promise.all([
-                    supabase.from('carreras').select('*').order('nombre'),
-                    supabase.from('delegaciones').select('id, nombre, genero, disciplina_id, carrera_ids, disciplinas(name)').order('nombre'),
-                    supabase.from('disciplinas').select('id, name').order('name'),
-                    supabase.from('partidos').select('id, disciplina_id, carrera_a_id, carrera_b_id, marcador_detalle, estado, genero').eq('estado', 'finalizado'),
-                    supabase.from('jugadores').select('id, nombre, disciplina_id, genero, profile:profiles(id, full_name, avatar_url, points, roles)')
-                ]);
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [
+                { data: cData },
+                { data: dData },
+                { data: discData },
+                { data: pData },
+                { data: aData }
+            ] = await Promise.all([
+                supabase.from('carreras').select('*').order('nombre'),
+                supabase.from('delegaciones').select('id, nombre, genero, disciplina_id, carrera_ids, disciplinas(name)').order('nombre'),
+                supabase.from('disciplinas').select('id, name').order('name'),
+                supabase.from('partidos').select('id, disciplina_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, marcador_detalle, estado, genero, fase').eq('estado', 'finalizado'),
+                supabase.from('jugadores').select('id, nombre, disciplina_id, genero, profile:profiles(id, full_name, avatar_url, points, roles)')
+            ]);
 
-                if (cData) setCarreras(cData);
-                if (dData) setEquipos(dData);
-                if (discData) setDisciplinas(discData);
-                if (pData) setPartidos(pData);
-                if (aData) {
-                    const mapped = (aData as any[]).map(j => {
-                        const prof = Array.isArray(j.profile) ? j.profile[0] : j.profile;
-                        return {
-                            id: prof?.id || `j-${j.id}`,
-                            full_name: prof?.full_name || j.nombre,
-                            avatar_url: prof?.avatar_url || null,
-                            points: prof?.points || 0,
-                            disciplina_id: j.disciplina_id,
-                            genero: j.genero
-                        };
-                    });
-                    setAthletes(mapped);
-                }
-            } catch (err) {
-                console.error("Error fetching data:", err);
-            } finally {
-                setLoading(false);
+            if (cData) setCarreras(cData);
+            if (dData) setEquipos(dData);
+            if (discData) setDisciplinas(discData);
+            if (pData) setPartidos(pData);
+            if (aData) {
+                const mapped = (aData as any[]).map(j => {
+                    const prof = Array.isArray(j.profile) ? j.profile[0] : j.profile;
+                    return {
+                        id: prof?.id || `j-${j.id}`,
+                        full_name: prof?.full_name || j.nombre,
+                        avatar_url: prof?.avatar_url || null,
+                        points: prof?.points || 0,
+                        disciplina_id: j.disciplina_id,
+                        genero: j.genero
+                    };
+                });
+                setAthletes(mapped);
             }
+        } catch (err) {
+            console.error("Error fetching data:", err);
+        } finally {
+            setLoading(false);
         }
-        fetchData();
     }, []);
+
+    useEffect(() => {
+        fetchData();
+
+        // Realtime subscription for matches to auto-refresh stats
+        const channel = supabase
+            .channel('medallero-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
+                fetchData();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [fetchData]);
 
     // Performance calculation for "Carreras"
     const careerStatsList = useMemo(() => {
-        const statsMap: Record<number, Stats> = {};
-        
-        carreras.forEach(c => {
-            statsMap[c.id] = { won: 0, played: 0 };
-        });
-
         const filteredPartidos = partidos.filter(p => {
             if (sportFilter !== "todos" && p.disciplina_id !== sportFilter) return false;
             if (genderFilter !== "todos" && p.genero !== genderFilter) return false;
             return true;
         });
 
-        filteredPartidos.forEach(p => {
-            if (statsMap[p.carrera_a_id]) statsMap[p.carrera_a_id].played++;
-            if (statsMap[p.carrera_b_id]) statsMap[p.carrera_b_id].played++;
-
-            const det = p.marcador_detalle || {};
-            const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? det.puntos_a ?? det.juegos_a ?? 0;
-            const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? det.puntos_b ?? det.juegos_b ?? 0;
-
-            if (scoreA > scoreB) {
-                if (statsMap[p.carrera_a_id]) statsMap[p.carrera_a_id].won++;
-            } else if (scoreB > scoreA) {
-                if (statsMap[p.carrera_b_id]) statsMap[p.carrera_b_id].won++;
-            }
+        const list = carreras.map(c => {
+            const stats = computeCareerStats(filteredPartidos, c.id);
+            return {
+                id: c.id,
+                nombre: c.nombre,
+                escudo_url: c.escudo_url,
+                won: stats.won,
+                played: stats.played,
+                draw: stats.draw,
+                lost: stats.lost
+            };
         });
 
-        const list = carreras.map(c => ({
-            id: c.id,
-            nombre: c.nombre,
-            escudo_url: c.escudo_url,
-            ...statsMap[c.id]
-        }));
-
-        return list
-            .sort((a, b) => {
-                if (b.won !== a.won) return b.won - a.won;
-                return b.played - a.played;
-            });
+        return list.sort((a, b) => {
+            if (b.won !== a.won) return b.won - a.won;
+            return b.played - a.played;
+        });
     }, [carreras, partidos, sportFilter, genderFilter]);
 
     const filteredCarreras = careerStatsList.filter(c => 

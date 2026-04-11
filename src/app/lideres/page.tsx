@@ -23,6 +23,7 @@ type Scorer = {
     numero: number | null;
     profile_id: string | null;
     disciplina: string;
+    genero: string;
     goles: number;
     puntos_totales: number;
     partidos_jugados: number;
@@ -34,6 +35,7 @@ export default function LideresPage() {
     const [scorers, setScorers] = useState<Scorer[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeSport, setActiveSport] = useState<string>("todos");
+    const [activeGender, setActiveGender] = useState<string>("todos");
     const [sports, setSports] = useState<string[]>([]);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -56,7 +58,7 @@ export default function LideresPage() {
                 .from('olympics_eventos')
                 .select(`
                     tipo_evento, partido_id, equipo,
-                    jugadores(id, nombre, numero, profile_id),
+                    jugadores(id, nombre, numero, profile_id, genero),
                     partidos(estado, disciplinas(name))
                 `)
                 .in('tipo_evento', ['gol', 'punto', 'punto_1', 'punto_2', 'punto_3']);
@@ -79,6 +81,7 @@ export default function LideresPage() {
                             numero: j.numero,
                             profile_id: j.profile_id,
                             disciplina: disc,
+                            genero: j.genero || 'masculino',
                             goles: 0,
                             puntos_totales: 0,
                             partidos_jugados: 0,
@@ -143,9 +146,11 @@ export default function LideresPage() {
         };
     }, []);
 
-    const filtered = activeSport === 'todos'
-        ? scorers
-        : scorers.filter(s => s.disciplina === activeSport);
+    const filtered = scorers.filter(s => {
+        const sportMatch = activeSport === 'todos' || s.disciplina === activeSport;
+        const genderMatch = activeGender === 'todos' || (s.genero || 'masculino').toLowerCase() === activeGender.toLowerCase();
+        return sportMatch && genderMatch;
+    });
 
     const top3 = filtered.slice(0, 3);
     const rest = filtered.slice(3);
@@ -194,14 +199,38 @@ export default function LideresPage() {
                     </p>
                 </motion.div>
 
+                {/* Gender Filters */}
+                <div className="flex justify-center mb-8">
+                    <div className="flex p-1.5 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl w-full sm:w-auto overflow-hidden relative">
+                        {[
+                            { id: 'todos', label: 'Todos' },
+                            { id: 'masculino', label: 'Masculino' },
+                            { id: 'femenino', label: 'Femenino' },
+                        ].map(g => (
+                            <button
+                                key={g.id}
+                                onClick={() => setActiveGender(g.id)}
+                                className={cn(
+                                    "flex-1 sm:w-36 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-500",
+                                    activeGender === g.id
+                                        ? "bg-[#F5F5DC] text-[#7C3AED] shadow-xl scale-105"
+                                        : "text-white/30 hover:text-white/60 hover:bg-white/5"
+                                )}
+                            >
+                                {g.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 {/* Sport Filters */}
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mb-10">
+                <div className="flex flex-wrap justify-center gap-3 pb-2 mb-10">
                     <button
                         onClick={() => setActiveSport('todos')}
                         className={cn(
                             "flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border shrink-0",
                             activeSport === 'todos'
-                                ? "bg-white/10 text-white border-white/20 shadow-xl"
+                                ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl"
                                 : "bg-white/[0.02] border-white/5 text-white/30 hover:text-white hover:bg-white/5"
                         )}
                     >
@@ -214,14 +243,9 @@ export default function LideresPage() {
                             className={cn(
                                 "flex items-center gap-3 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border shrink-0",
                                 activeSport === name
-                                    ? "text-white border-transparent shadow-lg"
+                                    ? "bg-[#F5F5DC] text-[#7C3AED] border-transparent shadow-lg text-[#7C3AED]"
                                     : "bg-white/[0.02] border-white/5 text-white/30 hover:text-white hover:bg-white/5"
                             )}
-                            style={activeSport === name ? {
-                                backgroundColor: `${SPORT_COLORS[name] || '#fff'}20`,
-                                borderColor: `${SPORT_COLORS[name] || '#fff'}40`,
-                                boxShadow: `0 0 20px ${SPORT_COLORS[name] || '#fff'}15`
-                            } : undefined}
                         >
                             <SportIcon sport={name} size={18} />
                             {name}
