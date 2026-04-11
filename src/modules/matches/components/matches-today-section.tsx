@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
 import { Avatar } from "@/components/ui-primitives";
+import { Trophy } from "lucide-react";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { getDisplayName } from "@/lib/sport-helpers";
 import {
@@ -67,23 +68,17 @@ function MatchRow({ partido }: { partido: Partido }) {
   const det = partido.marcador_detalle || {};
   const setActual = det.set_actual;
 
-  // For Voleibol: scoreA/B = sets won, subScoreA/B = points in current set
-  // For Tenis: scoreA/B = games in current set, subScoreA/B = sets won
-  // We want to display: sets won as main, current set score as sub
   const isVolley = sportName === "Voleibol";
   const isTenis = ["Tenis", "Tenis de Mesa"].includes(sportName);
 
-  // Normalize: setsWon and currentSetScore
   const setsWonA = isVolley ? scoreA : isTenis ? subScoreA : null;
   const setsWonB = isVolley ? scoreB : isTenis ? subScoreB : null;
   const currentSetScoreA = isVolley ? subScoreA : isTenis ? scoreA : null;
   const currentSetScoreB = isVolley ? subScoreB : isTenis ? scoreB : null;
 
-  // For finished set sports, determine winner by sets
   const finalScoreA = isSetSport && isFinished ? (setsWonA ?? scoreA ?? 0) : (scoreA ?? 0);
   const finalScoreB = isSetSport && isFinished ? (setsWonB ?? scoreB ?? 0) : (scoreB ?? 0);
 
-  // Determine winner for finished matches
   const winnerSide =
     isFinished && finalScoreA !== finalScoreB
       ? finalScoreA > finalScoreB
@@ -92,7 +87,6 @@ function MatchRow({ partido }: { partido: Partido }) {
       : null;
 
   const genero = (partido.genero || "").toLowerCase();
-  const fase = partido.fase;
   const grupo = partido.grupo;
 
   return (
@@ -102,33 +96,41 @@ function MatchRow({ partido }: { partido: Partido }) {
     >
       <div
         className={cn(
-          "relative flex items-center gap-2 px-3 py-3 sm:px-4 sm:py-3.5 transition-all duration-200",
+          "relative flex items-center gap-2 px-3 py-3 sm:px-4 sm:py-3.5 transition-all duration-300",
           isLive
             ? "bg-white/[0.04] hover:bg-white/[0.08]"
-            : "hover:bg-white/[0.04] cursor-pointer",
-          "border-b border-white/[0.04] last:border-b-0"
+            : "hover:bg-white/[0.02] cursor-pointer",
+          "border-b border-white/[0.04] last:border-b-0 overflow-hidden"
         )}
       >
+        {/* Subtle highlight background for winner side */}
+        {winnerSide === "a" && (
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/[0.03] to-transparent pointer-events-none" />
+        )}
+        {winnerSide === "b" && (
+          <div className="absolute inset-0 bg-gradient-to-l from-amber-500/[0.03] to-transparent pointer-events-none" />
+        )}
+
         {/* Live bar indicator */}
         {isLive && (
           <div
             className={cn(
-              "absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full shadow-[2px_0_8px_currentColor]",
+              "absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full shadow-[2px_0_8px_currentColor] z-10",
               SPORT_LIVE_BAR[sportName] || "bg-emerald-500"
             )}
           />
         )}
 
         {/* Team A */}
-        <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2 min-w-0">
+        <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2.5 min-w-0 z-10">
           <div className="flex flex-col items-end min-w-0">
             <span
               className={cn(
-                "text-[11px] sm:text-[13px] font-bold text-right truncate leading-tight max-w-full transition-colors",
+                "text-[11px] sm:text-[13px] font-bold text-right truncate leading-tight max-w-full transition-all duration-500",
                 winnerSide === "a"
-                  ? "text-white font-black"
+                  ? "text-amber-300 font-black drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]"
                   : winnerSide === "b"
-                  ? "text-white/30"
+                  ? "text-white/50"
                   : isLive
                   ? "text-white/90"
                   : "text-white/70"
@@ -143,27 +145,35 @@ function MatchRow({ partido }: { partido: Partido }) {
             )}
           </div>
           {shieldA ? (
-            <Avatar
-              name={nameA}
-              src={shieldA}
-              size="sm"
-              className={cn(
-                "w-7 h-7 sm:w-8 sm:h-8 shrink-0 transition-all duration-300",
-                winnerSide === "a"
-                  ? "border-2 border-amber-400/60 shadow-[0_0_10px_rgba(251,191,36,0.35)]"
-                  : winnerSide === "b"
-                  ? "border border-white/5 opacity-40 grayscale"
-                  : "border border-white/15 bg-black/40"
+            <div className="relative shrink-0">
+              <Avatar
+                name={nameA}
+                src={shieldA}
+                size="sm"
+                className={cn(
+                  "w-7 h-7 sm:w-8 sm:h-8 transition-all duration-500",
+                  winnerSide === "a"
+                    ? "border-2 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] scale-110"
+                    : "border border-white/10 bg-black/40"
+                )}
+              />
+              {winnerSide === "a" && (
+                <div className="absolute -top-1.5 -right-1.5 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg animate-in zoom-in duration-500">
+                  <Trophy size={8} className="text-black" />
+                </div>
               )}
-            />
+            </div>
           ) : (
             <div className={cn(
-              "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-all",
+              "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-500",
               winnerSide === "a"
-                ? "bg-amber-500/20 border-2 border-amber-400/50"
+                ? "bg-amber-500/30 border-2 border-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.4)] scale-110"
                 : "bg-white/8 border border-white/10"
             )}>
-              <span className="text-[8px] sm:text-[9px] font-black text-white/60">
+              <span className={cn(
+                "text-[8px] sm:text-[9px] font-black",
+                winnerSide === "a" ? "text-amber-200" : "text-white/60"
+              )}>
                 {nameA?.substring(0, 2).toUpperCase()}
               </span>
             </div>
@@ -171,7 +181,7 @@ function MatchRow({ partido }: { partido: Partido }) {
         </div>
 
         {/* Score / Time center */}
-        <div className="flex flex-col items-center justify-center w-[64px] sm:w-[90px] shrink-0">
+        <div className="flex flex-col items-center justify-center w-[64px] sm:w-[90px] shrink-0 z-10">
           {isLive ? (
             isSetSport ? (
               <div className="flex flex-col items-center gap-0.5">
@@ -197,10 +207,10 @@ function MatchRow({ partido }: { partido: Partido }) {
                 </div>
                 <div className="flex items-center gap-1 mt-0.5">
                   <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                   </span>
-                  <span className="text-[8px] font-black text-red-400 uppercase tracking-widest">
+                  <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">
                     {setActual ? `S${setActual}` : "Live"}
                   </span>
                 </div>
@@ -214,10 +224,10 @@ function MatchRow({ partido }: { partido: Partido }) {
                 </div>
                 <div className="flex items-center gap-1 mt-0.5">
                   <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                   </span>
-                  <span className="text-[8px] font-black text-red-400 uppercase tracking-widest">Live</span>
+                  <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Live</span>
                 </div>
               </>
             )
@@ -225,64 +235,72 @@ function MatchRow({ partido }: { partido: Partido }) {
             <div className="flex flex-col items-center gap-0.5">
               {isSetSport ? (
                 <div className="flex items-center gap-1 font-black tabular-nums text-sm sm:text-base tracking-tight">
-                  <span className={winnerSide === "a" ? "text-white" : "text-white/35"}>{setsWonA ?? scoreA}</span>
-                  <span className="text-white/15 text-xs">-</span>
-                  <span className={winnerSide === "b" ? "text-white" : "text-white/35"}>{setsWonB ?? scoreB}</span>
+                  <span className={cn(winnerSide === "a" ? "text-amber-400 font-black" : "text-white/40")}>{setsWonA ?? scoreA}</span>
+                  <span className="text-white/10 text-xs">-</span>
+                  <span className={cn(winnerSide === "b" ? "text-amber-400 font-black" : "text-white/40")}>{setsWonB ?? scoreB}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1 font-black tabular-nums text-sm sm:text-base tracking-tight">
-                  <span className={winnerSide === "a" ? "text-white" : "text-white/35"}>{scoreA}</span>
-                  <span className="text-white/15 text-xs">-</span>
-                  <span className={winnerSide === "b" ? "text-white" : "text-white/35"}>{scoreB}</span>
+                  <span className={cn(winnerSide === "a" ? "text-amber-400 font-black" : "text-white/40")}>{scoreA}</span>
+                  <span className="text-white/10 text-xs">-</span>
+                  <span className={cn(winnerSide === "b" ? "text-amber-400 font-black" : "text-white/40")}>{scoreB}</span>
                 </div>
               )}
-              <span className="text-[8px] font-bold text-white/20 uppercase tracking-widest">Final</span>
+              <span className="text-[8px] font-bold text-white/15 uppercase tracking-widest">Final</span>
             </div>
           ) : (
-            <div className="flex flex-col items-center">
-              <span className="text-xs sm:text-sm font-black text-white/60 tabular-nums">
+            <div className="flex flex-col items-center px-2 py-1 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+              <span className="text-xs sm:text-sm font-black text-white/80 tabular-nums">
                 {formatMatchTime(partido.fecha)}
               </span>
-              <span className="text-[8px] font-bold text-white/20 uppercase tracking-widest">Hoy</span>
+              <span className="text-[7px] font-black text-white/25 uppercase tracking-[0.2em]">Hoy</span>
             </div>
           )}
         </div>
 
         {/* Team B */}
-        <div className="flex-1 flex items-center gap-1.5 sm:gap-2 min-w-0">
+        <div className="flex-1 flex items-center gap-1.5 sm:gap-2.5 min-w-0 z-10">
           {shieldB ? (
-            <Avatar
-              name={nameB}
-              src={shieldB}
-              size="sm"
-              className={cn(
-                "w-7 h-7 sm:w-8 sm:h-8 shrink-0 transition-all duration-300",
-                winnerSide === "b"
-                  ? "border-2 border-amber-400/60 shadow-[0_0_10px_rgba(251,191,36,0.35)]"
-                  : winnerSide === "a"
-                  ? "border border-white/5 opacity-40 grayscale"
-                  : "border border-white/15 bg-black/40"
+            <div className="relative shrink-0">
+              <Avatar
+                name={nameB}
+                src={shieldB}
+                size="sm"
+                className={cn(
+                  "w-7 h-7 sm:w-8 sm:h-8 transition-all duration-500",
+                  winnerSide === "b"
+                    ? "border-2 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] scale-110"
+                    : "border border-white/10 bg-black/40"
+                )}
+              />
+              {winnerSide === "b" && (
+                <div className="absolute -top-1.5 -left-1.5 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg animate-in zoom-in duration-500">
+                  <Trophy size={8} className="text-black" />
+                </div>
               )}
-            />
+            </div>
           ) : (
             <div className={cn(
-              "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-all",
+              "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-500",
               winnerSide === "b"
-                ? "bg-amber-500/20 border-2 border-amber-400/50"
+                ? "bg-amber-500/30 border-2 border-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.4)] scale-110"
                 : "bg-white/8 border border-white/10"
             )}>
-              <span className="text-[8px] sm:text-[9px] font-black text-white/60">
+              <span className={cn(
+                "text-[8px] sm:text-[9px] font-black",
+                winnerSide === "b" ? "text-amber-200" : "text-white/60"
+              )}>
                 {nameB?.substring(0, 2).toUpperCase()}
               </span>
             </div>
           )}
           <span
             className={cn(
-              "text-[11px] sm:text-[13px] font-bold text-left truncate leading-tight transition-colors",
+              "text-[11px] sm:text-[13px] font-bold text-left truncate leading-tight transition-all duration-500",
               winnerSide === "b"
-                ? "text-white font-black"
+                ? "text-amber-300 font-black drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]"
                 : winnerSide === "a"
-                ? "text-white/30"
+                ? "text-white/50"
                 : isLive
                 ? "text-white/90"
                 : "text-white/70"
