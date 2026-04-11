@@ -141,7 +141,6 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
                             <Trophy size={24} className="text-white/20" />
                         </div>
                     )}
-                    <NewsReactionSummary reactions={noticia.news_reactions} className="absolute top-2 right-2 scale-75 origin-top-right sm:scale-90" />
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-center sm:py-1">
                     <div>
@@ -164,6 +163,9 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
                     </div>
                     <div className="flex items-center gap-3 text-[10px] sm:text-[11px] font-bold text-white/30 mt-3 sm:mt-4 uppercase tracking-widest">
                         <span className="flex items-center gap-1.5"><Clock size={11} /> {getRelativeTime(noticia.created_at)}</span>
+                        {noticia.news_reactions && noticia.news_reactions.length > 0 && (
+                            <NewsReactionSummary reactions={noticia.news_reactions} className="ml-auto" />
+                        )}
                     </div>
                 </div>
                 <div className="hidden sm:flex items-center pr-2 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
@@ -292,6 +294,9 @@ export function NewsGridCard({ noticia }: { noticia: Noticia }) {
 
                     <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between gap-3 text-[9px] sm:text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">
                         <span className="flex items-center gap-1.5 shrink-0"><Clock size={12} className="text-emerald-400/60" /> {getRelativeTime(noticia.created_at)}</span>
+                        {noticia.news_reactions && noticia.news_reactions.length > 0 && (
+                            <NewsReactionSummary reactions={noticia.news_reactions} />
+                        )}
                     </div>
                 </div>
             </div>
