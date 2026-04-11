@@ -54,21 +54,19 @@ function NewsReactionSummary({ reactions, className }: { reactions?: { emoji: st
 
     return (
         <div className={cn(
-            "flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group/sum hover:scale-105 transition-all duration-300",
+            "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/15 shadow-lg",
             className
         )}>
-            <div className="flex items-center -space-x-2">
-                {topEmojis.map((emoji, i) => (
-                    <div 
-                        key={i} 
-                        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] sm:text-[12px] shadow-sm ring-1 ring-white/10"
-                        style={{ zIndex: 10 - i }}
-                    >
-                        {emoji}
-                    </div>
-                ))}
-            </div>
-            <span className="text-[11px] sm:text-[12px] font-black text-emerald-400 tracking-tight tabular-nums drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">
+            {topEmojis.map((emoji, i) => (
+                <span
+                    key={i}
+                    className="text-[14px] leading-none"
+                >
+                    {emoji}
+                </span>
+            ))}
+            {topEmojis.length > 0 && <div className="w-[1px] h-3 bg-white/15 mx-0.5" />}
+            <span className="text-[11px] font-black text-emerald-400 tabular-nums leading-none tracking-tight">
                 {total}
             </span>
         </div>
