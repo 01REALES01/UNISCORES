@@ -297,7 +297,112 @@ export default function PublicProfilePage() {
 
     const fetchHistory = async (id: string) => {
         setLoadingHistory(true);
-            setHistory(uniqueMatches.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()));
+        try {
+            // First, try to get team matches via normalized roster_partido (any status)
+            const { data: teamMatches } = await supabase
+                .from('roster_partido')
+                .select(`
+                    equipo:equipo_a_or_b,
+                    partidos!inner(
+                        id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
+                        disciplina_id, disciplinas(name)
+                    ),
+                    jugadores!inner(profile_id, disciplina_id)
+                `)
+                .eq('jugadores.profile_id', id)
+                .order('partido_id', { ascending: false });
+
+
+            // Second, get individual matches directly from partidos (any status)
+            const { data: indMatches } = await supabase
+                .from('partidos')
+                .select(`
+                    id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
+                    disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id
+                `)
+                .or(`athlete_a_id.eq.${id},athlete_b_id.eq.${id}`)
+                .order('fecha', { ascending: false });
+
+            let allMatches: any[] = [];
+            const winLossBySport: Record<string, { wins: number, losses: number }> = {};
+
+            if (teamMatches && teamMatches.length > 0) {
+                teamMatches.forEach((d: any) => {
+                    const p = d.partidos;
+                    const discId = p.disciplina_id;
+                    if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
+                    
+                    if (p.estado === 'finalizado') {
+                        const det = p.marcador_detalle || {};
+                        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
+                        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
+                        const side = d.equipo; // 'equipo_a' or 'equipo_b'
+                        
+                        if (side === 'equipo_a' && scoreA > scoreB) winLossBySport[discId].wins++;
+                        else if (side === 'equipo_b' && scoreB > scoreA) winLossBySport[discId].wins++;
+                        else if (scoreA !== scoreB) winLossBySport[discId].losses++;
+                    }
+
+                    allMatches.push({
+                        match_id: p.id,
+                        fecha: p.fecha,
+                        disciplina: p.disciplinas?.name,
+                        equipo_a: p.equipo_a,
+                        equipo_b: p.equipo_b,
+                        estado: p.estado,
+                        marcador_final: p.marcador_detalle
+                    });
+                });
+            }
+
+            if (indMatches && indMatches.length > 0) {
+                indMatches.forEach((p: any) => {
+                    const discId = p.disciplina_id;
+                    if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
+
+                    if (p.estado === 'finalizado') {
+                        const det = p.marcador_detalle || {};
+                        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
+                        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
+                        const isAthleteA = p.athlete_a_id === id;
+                        
+                        if (isAthleteA && scoreA > scoreB) winLossBySport[discId].wins++;
+                        else if (!isAthleteA && scoreB > scoreA) winLossBySport[discId].wins++;
+                        else if (scoreA !== scoreB) winLossBySport[discId].losses++;
+                    }
+
+                    allMatches.push({
+                        match_id: p.id,
+                        fecha: p.fecha,
+                        disciplina: p.disciplinas?.name,
+                        equipo_a: p.equipo_a,
+                        equipo_b: p.equipo_b,
+                        estado: p.estado,
+                        marcador_final: p.marcador_detalle
+                    });
+                });
+            }
+
+            // Deduplicate across the two calls
+            const uniqueMatches: any[] = [];
+            const seenIds = new Set();
+            for (const m of allMatches) {
+                if (!seenIds.has(m.match_id)) {
+                    seenIds.add(m.match_id);
+                    uniqueMatches.push(m);
+                }
+            }
+
+            // Update sportStatsMap with wins/losses
+            setSportStatsMap(prev => {
+                const newMap = { ...prev };
+                Object.keys(winLossBySport).forEach(sid => {
+                    newMap[sid] = { ...(newMap[sid] || {}), ...winLossBySport[sid] };
+                });
+                return newMap;
+            });
+
+            setHistory(uniqueMatches);
         } catch (err) {
             console.error("Error fetching history:", err);
         } finally {

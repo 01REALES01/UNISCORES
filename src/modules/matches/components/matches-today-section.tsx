@@ -329,26 +329,46 @@ function SportGroup({
   return (
     <div
       className={cn(
-        "rounded-2xl overflow-hidden border transition-all duration-300",
+        "rounded-2xl overflow-hidden border transition-all duration-300 relative group/sport",
         hasLive
           ? SPORT_BORDER[sportName] || "border-white/15"
           : "border-white/[0.06]"
       )}
       style={{
-        background: `linear-gradient(135deg, ${accentColor}${hasLive ? '10' : '06'} 0%, transparent 55%)`,
-        boxShadow: hasLive ? `0 0 24px ${accentColor}15` : 'none',
+        background: `linear-gradient(135deg, ${accentColor}${hasLive ? '12' : '07'} 0%, transparent 60%)`,
+        boxShadow: hasLive ? `0 0 30px ${accentColor}20` : 'none',
       }}
     >
+      {/* Large sport watermark icon */}
+      <div
+        className="absolute -right-4 -bottom-4 pointer-events-none select-none z-0 transition-all duration-1000 group-hover/sport:scale-110 group-hover/sport:opacity-[0.07]"
+        style={{ opacity: 0.045 }}
+        aria-hidden="true"
+      >
+        <SportIcon
+          sport={sportName}
+          size={140}
+          variant="react"
+          className="text-white"
+        />
+      </div>
+
+      {/* Subtle radial glow behind icon */}
+      <div
+        className="absolute -right-8 -bottom-8 w-48 h-48 rounded-full blur-3xl pointer-events-none z-0 opacity-20"
+        style={{ backgroundColor: accentColor }}
+      />
+
       {/* Sport header */}
       <div
-        className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]"
+        className="relative z-10 flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]"
         style={{
-          background: `linear-gradient(90deg, ${accentColor}12 0%, transparent 80%)`,
+          background: `linear-gradient(90deg, ${accentColor}15 0%, transparent 80%)`,
         }}
       >
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: `${accentColor}20` }}
+          style={{ backgroundColor: `${accentColor}25` }}
         >
           <SportIcon
             sport={sportName}
@@ -365,7 +385,7 @@ function SportGroup({
         </span>
         <div className="flex items-center gap-3 ml-auto">
           {hasLive && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ backgroundColor: `${accentColor}15` }}>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ backgroundColor: `${accentColor}20` }}>
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
@@ -380,7 +400,7 @@ function SportGroup({
       </div>
 
       {/* Match rows */}
-      <div>
+      <div className="relative z-10">
         {matches.map((match) => (
           <MatchRow key={match.id} partido={match} />
         ))}
