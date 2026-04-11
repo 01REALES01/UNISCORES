@@ -326,6 +326,19 @@ function SportGroup({
   const hasLive = matches.some((m) => m.estado === "en_curso");
   const accentColor = SPORT_COLORS[sportName] || "#a78bfa";
 
+  // Map sport names to public image icons
+  const customIconMap: Record<string, string> = {
+    "Fútbol": "/FutbolIcono.png",
+    "Baloncesto": "/BasketIcono.png",
+    "Voleibol": "/VolleyIcono.png",
+    "Tenis": "/TenisIcono.png",
+    "Tenis de Mesa": "/TenisDMIcono.png",
+    "Ajedrez": "/AjedrezIcono.png",
+    "Natación": "/NatacionIcono.png",
+  };
+
+  const customIcon = customIconMap[sportName];
+
   return (
     <div
       className={cn(
@@ -345,12 +358,20 @@ function SportGroup({
         style={{ opacity: 0.045 }}
         aria-hidden="true"
       >
-        <SportIcon
-          sport={sportName}
-          size={140}
-          variant="react"
-          className="text-white"
-        />
+        {customIcon ? (
+          <img
+            src={customIcon}
+            alt=""
+            className="w-32 h-32 object-contain filter grayscale brightness-200 contrast-75"
+          />
+        ) : (
+          <SportIcon
+            sport={sportName}
+            size={140}
+            variant="react"
+            className="text-white"
+          />
+        )}
       </div>
 
       {/* Subtle radial glow behind icon */}

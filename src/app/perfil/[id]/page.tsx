@@ -251,18 +251,30 @@ export default function PublicProfilePage() {
 
     const fetchDetailedStats = async (id: string) => {
         try {
-            // events aggregation: iterate over all events associated with any jugador linked to this profile
-            const { data: events } = await supabase
+            // ── STEP 1: Find all jugador IDs linked to this profile ──────────────
+            const { data: jugRows } = await supabase
+                .from('jugadores')
+                .select('id, disciplina_id')
+                .eq('profile_id', id);
+
+            if (!jugRows || jugRows.length === 0) return;
+
+            const jugadorIds = jugRows.map((j: any) => j.id);
+            // Map jugador_id -> disciplina_id for fast lookup
+            const jugDisc: Record<number, string> = {};
+            jugRows.forEach((j: any) => { jugDisc[j.id] = j.disciplina_id; });
+
+            // ── STEP 2: Fetch events by jugador IDs (no FK join needed) ──────────
+            const { data: evs } = await supabase
                 .from('olympics_eventos')
-                .select('tipo_evento, jugador_id_normalized, jugadores!inner(profile_id, disciplina_id)')
-                .eq('jugadores.profile_id', id);
+                .select('tipo_evento, jugador_id_normalized')
+                .in('jugador_id_normalized', jugadorIds);
 
             const statsMap: Record<string, any> = {};
 
-            events?.forEach(ev => {
-                const discId = (ev.jugadores as any)?.disciplina_id;
+            evs?.forEach((ev: any) => {
+                const discId = jugDisc[ev.jugador_id_normalized];
                 if (!discId) return;
-
                 if (!statsMap[discId]) {
                     statsMap[discId] = {
                         goals: 0, pts3: 0, pts2: 0, pts1: 0,
@@ -271,7 +283,6 @@ export default function PublicProfilePage() {
                         gold: 0, silver: 0, bronze: 0,
                     };
                 }
-
                 const s = statsMap[discId];
                 const type = ev.tipo_evento.toLowerCase();
                 s.totalEvents++;
@@ -279,16 +290,17 @@ export default function PublicProfilePage() {
                 if (type === 'punto_3' || type.includes('triple')) s.pts3++;
                 if (type === 'punto_2' || type.includes('doble')) s.pts2++;
                 if (type === 'punto_1' || type.includes('libre')) s.pts1++;
-                if (type.includes('amarilla')) s.yellowCards++;
-                if (type.includes('roja')) s.redCards++;
+                if (type.includes('amarilla') || type === 'tarjeta_amarilla') s.yellowCards++;
+                if (type.includes('roja') || type === 'tarjeta_roja') s.redCards++;
                 if (type === 'falta') s.fouls++;
                 if (type === 'punto') s.puntos++;
                 if (type === 'set') s.sets++;
-                if (type === 'victoria') { if (discId) s.victorias++; else s.gold++; }
+                if (type === 'victoria') s.victorias++;
                 if (type === 'segundo') s.silver++;
                 if (type === 'tercero') s.bronze++;
                 if (type === 'empate') s.empates++;
             });
+
             setSportStatsMap(prev => ({ ...prev, ...statsMap }));
         } catch (err) {
             console.error("Error fetching detailed stats:", err);
@@ -298,102 +310,92 @@ export default function PublicProfilePage() {
     const fetchHistory = async (id: string) => {
         setLoadingHistory(true);
         try {
-            // First, try to get team matches via normalized roster_partido (any status)
-            const { data: teamMatches } = await supabase
-                .from('roster_partido')
-                .select(`
-                    equipo:equipo_a_or_b,
-                    partidos!inner(
-                        id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
-                        disciplina_id, disciplinas(name)
-                    ),
-                    jugadores!inner(profile_id, disciplina_id)
-                `)
-                .eq('jugadores.profile_id', id)
-                .order('partido_id', { ascending: false });
+            // ── STEP 1: Get all jugador rows linked to this profile ──────────────
+            const { data: jugRows } = await supabase
+                .from('jugadores')
+                .select('id, carrera_id, disciplina_id')
+                .eq('profile_id', id);
 
+            const jugadorIds = (jugRows || []).map((j: any) => j.id);
+            const carreraIds = [...new Set((jugRows || []).map((j: any) => j.carrera_id).filter(Boolean))];
 
-            // Second, get individual matches directly from partidos (any status)
-            const { data: indMatches } = await supabase
+            const matchIdSet = new Set<string>();
+
+            // ── STEP 2a: Matches the player actually participated in (via events) ─
+            if (jugadorIds.length > 0) {
+                const { data: evRows } = await supabase
+                    .from('olympics_eventos')
+                    .select('partido_id')
+                    .in('jugador_id_normalized', jugadorIds);
+                evRows?.forEach((e: any) => e.partido_id && matchIdSet.add(e.partido_id));
+            }
+
+            // ── STEP 2b: Team matches via carrera_id (future + past collective sports) ──
+            // Fútbol/Baloncesto/Voleibol use virtual rosters, NOT roster_partido
+            // so we must look up matches via carrera_a_id / carrera_b_id on partidos
+            for (const carreraId of carreraIds) {
+                const { data: carMatches } = await supabase
+                    .from('partidos')
+                    .select('id')
+                    .or(`carrera_a_id.eq.${carreraId},carrera_b_id.eq.${carreraId}`);
+                carMatches?.forEach((m: any) => matchIdSet.add(m.id));
+            }
+
+            // ── STEP 2c: Individual-sport matches (athlete_a_id / athlete_b_id) ──
+            const { data: indRows } = await supabase
                 .from('partidos')
-                .select(`
-                    id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
-                    disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id
-                `)
-                .or(`athlete_a_id.eq.${id},athlete_b_id.eq.${id}`)
+                .select('id')
+                .or(`athlete_a_id.eq.${id},athlete_b_id.eq.${id}`);
+            indRows?.forEach((m: any) => matchIdSet.add(m.id));
+
+            if (matchIdSet.size === 0) {
+                setHistory([]);
+                return;
+            }
+
+            // ── STEP 3: Fetch full details for all collected match IDs ──────────
+            const { data: matches } = await supabase
+                .from('partidos')
+                .select('id, fecha, equipo_a, equipo_b, estado, marcador_detalle, disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id, carrera_a_id, carrera_b_id')
+                .in('id', [...matchIdSet])
                 .order('fecha', { ascending: false });
 
-            let allMatches: any[] = [];
+            if (!matches) { setHistory([]); return; }
+
             const winLossBySport: Record<string, { wins: number, losses: number }> = {};
 
-            if (teamMatches && teamMatches.length > 0) {
-                teamMatches.forEach((d: any) => {
-                    const p = d.partidos;
-                    const discId = p.disciplina_id;
-                    if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
-                    
-                    if (p.estado === 'finalizado') {
-                        const det = p.marcador_detalle || {};
-                        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
-                        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
-                        const side = d.equipo; // 'equipo_a' or 'equipo_b'
-                        
-                        if (side === 'equipo_a' && scoreA > scoreB) winLossBySport[discId].wins++;
-                        else if (side === 'equipo_b' && scoreB > scoreA) winLossBySport[discId].wins++;
-                        else if (scoreA !== scoreB) winLossBySport[discId].losses++;
-                    }
+            const formatted = matches.map((p: any) => {
+                const discId = p.disciplina_id;
+                if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
 
-                    allMatches.push({
-                        match_id: p.id,
-                        fecha: p.fecha,
-                        disciplina: p.disciplinas?.name,
-                        equipo_a: p.equipo_a,
-                        equipo_b: p.equipo_b,
-                        estado: p.estado,
-                        marcador_final: p.marcador_detalle
-                    });
-                });
-            }
+                if (p.estado === 'finalizado') {
+                    const det = p.marcador_detalle || {};
+                    const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
+                    const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
 
-            if (indMatches && indMatches.length > 0) {
-                indMatches.forEach((p: any) => {
-                    const discId = p.disciplina_id;
-                    if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
+                    let side: 'a' | 'b' | null = null;
+                    if (p.athlete_a_id === id) side = 'a';
+                    else if (p.athlete_b_id === id) side = 'b';
+                    else if (carreraIds.includes(p.carrera_a_id)) side = 'a';
+                    else if (carreraIds.includes(p.carrera_b_id)) side = 'b';
 
-                    if (p.estado === 'finalizado') {
-                        const det = p.marcador_detalle || {};
-                        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
-                        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
-                        const isAthleteA = p.athlete_a_id === id;
-                        
-                        if (isAthleteA && scoreA > scoreB) winLossBySport[discId].wins++;
-                        else if (!isAthleteA && scoreB > scoreA) winLossBySport[discId].wins++;
-                        else if (scoreA !== scoreB) winLossBySport[discId].losses++;
-                    }
-
-                    allMatches.push({
-                        match_id: p.id,
-                        fecha: p.fecha,
-                        disciplina: p.disciplinas?.name,
-                        equipo_a: p.equipo_a,
-                        equipo_b: p.equipo_b,
-                        estado: p.estado,
-                        marcador_final: p.marcador_detalle
-                    });
-                });
-            }
-
-            // Deduplicate across the two calls
-            const uniqueMatches: any[] = [];
-            const seenIds = new Set();
-            for (const m of allMatches) {
-                if (!seenIds.has(m.match_id)) {
-                    seenIds.add(m.match_id);
-                    uniqueMatches.push(m);
+                    if (side === 'a' && scoreA > scoreB) winLossBySport[discId].wins++;
+                    else if (side === 'b' && scoreB > scoreA) winLossBySport[discId].wins++;
+                    else if (side && scoreA !== scoreB) winLossBySport[discId].losses++;
                 }
-            }
 
-            // Update sportStatsMap with wins/losses
+                const discName = Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name;
+                return {
+                    match_id: p.id,
+                    fecha: p.fecha,
+                    disciplina: discName,
+                    equipo_a: p.equipo_a,
+                    equipo_b: p.equipo_b,
+                    estado: p.estado,
+                    marcador_final: p.marcador_detalle
+                };
+            });
+
             setSportStatsMap(prev => {
                 const newMap = { ...prev };
                 Object.keys(winLossBySport).forEach(sid => {
@@ -402,7 +404,7 @@ export default function PublicProfilePage() {
                 return newMap;
             });
 
-            setHistory(uniqueMatches);
+            setHistory(formatted);
         } catch (err) {
             console.error("Error fetching history:", err);
         } finally {
