@@ -188,91 +188,129 @@ export default function PerfilPage() {
     const fetchHistory = async (id: string) => {
         setLoadingHistory(true);
         try {
+            const matchIdSet = new Set<string>();
+            const matchSideMap = new Map<string, 'a' | 'b'>(); // Track which side the user is on
+            const carreraIds = profile?.carreras_ids || [];
+            const fullName = profile?.full_name;
+
+            // ── STEP 1: Matches where athlete is explicitly in roster ──────────
             const { data: teamMatches } = await supabase
                 .from('roster_partido')
                 .select(`
                     equipo:equipo_a_or_b,
-                    partidos!inner(
-                        id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
-                        disciplina_id, disciplinas(name)
-                    ),
-                    jugadores!inner(profile_id, disciplina_id)
+                    partido_id,
+                    partidos!inner(id, disciplina_id, disciplinas(name)),
+                    jugadores!inner(profile_id, nombre, carrera_id, disciplina_id)
                 `)
-                .eq('jugadores.profile_id', id)
-                .order('partido_id', { ascending: false });
+                .eq('jugadores.profile_id', id);
 
-            const { data: indMatches } = await supabase
+            const jugRows = (teamMatches || []).map((d: any) => d.jugadores);
+            teamMatches?.forEach((d: any) => {
+                matchIdSet.add(d.partido_id);
+                matchSideMap.set(d.partido_id, d.equipo === 'equipo_a' ? 'a' : 'b');
+            });
+
+            // ── STEP 2: Team matches via Career overlap ─────────────────────────
+            const INDIVIDUAL_SPORTS_NAMES = ['Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
+            const isIndividualAthlete = (jugRows || []).some((j: any) => {
+                const discName = (Array.isArray(j.disciplinas) ? j.disciplinas[0]?.name : j.disciplinas?.name) || '';
+                return INDIVIDUAL_SPORTS_NAMES.includes(discName);
+            });
+
+            if (!isIndividualAthlete) {
+                const { data: jugSearch } = await supabase
+                    .from('jugadores')
+                    .select('carrera_id, disciplina_id')
+                    .eq('profile_id', id);
+
+                const pairs = (jugSearch || []).filter(j => j.carrera_id && j.disciplina_id);
+                for (const pair of pairs) {
+                    const { data: carMatches } = await supabase
+                        .from('partidos')
+                        .select('id')
+                        .eq('disciplina_id', pair.disciplina_id)
+                        .or(`carrera_a_id.eq.${pair.carrera_id},carrera_b_id.eq.${pair.carrera_id}`);
+                    carMatches?.forEach((m: any) => matchIdSet.add(m.id));
+
+                    const { data: delegRows } = await supabase
+                        .from('delegaciones')
+                        .select('nombre')
+                        .eq('disciplina_id', pair.disciplina_id)
+                        .contains('carrera_ids', [pair.carrera_id]);
+
+                    for (const deleg of (delegRows || [])) {
+                        const { data: mA } = await supabase.from('partidos').select('id').eq('disciplina_id', pair.disciplina_id).eq('equipo_a', deleg.nombre);
+                        const { data: mB } = await supabase.from('partidos').select('id').eq('disciplina_id', pair.disciplina_id).eq('equipo_b', deleg.nombre);
+                        mA?.forEach((m: any) => matchIdSet.add(m.id));
+                        mB?.forEach((m: any) => matchIdSet.add(m.id));
+                    }
+                }
+            }
+
+            // ── STEP 3: Individual-sport matches (athlete_a_id / athlete_b_id) ──
+            const { data: indRows } = await supabase
                 .from('partidos')
-                .select(`
-                    id, fecha, equipo_a, equipo_b, estado, marcador_detalle,
-                    disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id
-                `)
-                .or(`athlete_a_id.eq.${id},athlete_b_id.eq.${id}`)
+                .select('id')
+                .or(`athlete_a_id.eq.${id},athlete_b_id.eq.${id}`);
+            indRows?.forEach((m: any) => matchIdSet.add(m.id));
+
+            // ── STEP 4: Name-based fallback for individual sports ──────────────
+            if (isIndividualAthlete && fullName) {
+                const { data: nameA } = await supabase.from('partidos').select('id').ilike('equipo_a', fullName);
+                const { data: nameB } = await supabase.from('partidos').select('id').ilike('equipo_b', fullName);
+                nameA?.forEach((m: any) => matchIdSet.add(m.id));
+                nameB?.forEach((m: any) => matchIdSet.add(m.id));
+            }
+
+            if (matchIdSet.size === 0) {
+                setHistory([]);
+                return;
+            }
+
+            // ── FINAL: Fetch full details ───────────────────────────────────────
+            const { data: matches } = await supabase
+                .from('partidos')
+                .select('id, fecha, equipo_a, equipo_b, estado, marcador_detalle, disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids')
+                .in('id', [...matchIdSet])
                 .order('fecha', { ascending: false });
 
-            let allMatches: any[] = [];
+            if (!matches) { setHistory([]); return; }
+
             const winLossBySport: Record<string, { wins: number, losses: number }> = {};
+            const formatted = matches.map((p: any) => {
+                const discId = p.disciplina_id;
+                if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
 
-            if (teamMatches && teamMatches.length > 0) {
-                teamMatches.forEach((d: any) => {
-                    const p = d.partidos;
-                    const discId = p.disciplina_id;
-                    if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
-                    
-                    if (p.estado === 'finalizado') {
-                        const det = p.marcador_detalle || {};
-                        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
-                        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
-                        const side = d.equipo;
-                        
-                        if (side === 'equipo_a' && scoreA > scoreB) winLossBySport[discId].wins++;
-                        else if (side === 'equipo_b' && scoreB > scoreA) winLossBySport[discId].wins++;
-                        else if (scoreA !== scoreB) winLossBySport[discId].losses++;
+                if (p.estado === 'finalizado') {
+                    const det = p.marcador_detalle || {};
+                    const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
+                    const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
+
+                    let side: 'a' | 'b' | null = matchSideMap.get(p.id) || null;
+                    if (!side) {
+                        if (p.athlete_a_id === id) side = 'a';
+                        else if (p.athlete_b_id === id) side = 'b';
+                        else if (Array.isArray(p.carrera_a_ids) && p.carrera_a_ids.some((cid: number) => carreraIds.includes(cid))) side = 'a';
+                        else if (Array.isArray(p.carrera_b_ids) && p.carrera_b_ids.some((cid: number) => carreraIds.includes(cid))) side = 'b';
+                        else if (carreraIds.includes(p.carrera_a_id)) side = 'a';
+                        else if (carreraIds.includes(p.carrera_b_id)) side = 'b';
                     }
 
-                    if (p.estado === 'finalizado' || p.estado === 'en_curso') {
-                        allMatches.push({
-                            match_id: p.id,
-                            fecha: p.fecha,
-                            disciplina: p.disciplinas?.name,
-                            equipo_a: p.equipo_a,
-                            equipo_b: p.equipo_b,
-                            estado: p.estado,
-                            marcador_final: p.marcador_detalle
-                        });
-                    }
-                });
-            }
+                    if (side === 'a' && scoreA > scoreB) winLossBySport[discId].wins++;
+                    else if (side === 'b' && scoreB > scoreA) winLossBySport[discId].wins++;
+                    else if (side && scoreA !== scoreB) winLossBySport[discId].losses++;
+                }
 
-            if (indMatches && indMatches.length > 0) {
-                indMatches.forEach((p: any) => {
-                    const discId = p.disciplina_id;
-                    if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
-
-                    if (p.estado === 'finalizado') {
-                        const det = p.marcador_detalle || {};
-                        const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
-                        const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
-                        const isAthleteA = p.athlete_a_id === id;
-                        
-                        if (isAthleteA && scoreA > scoreB) winLossBySport[discId].wins++;
-                        else if (!isAthleteA && scoreB > scoreA) winLossBySport[discId].wins++;
-                        else if (scoreA !== scoreB) winLossBySport[discId].losses++;
-                    }
-
-                    if (p.estado === 'finalizado' || p.estado === 'en_curso') {
-                        allMatches.push({
-                            match_id: p.id,
-                            fecha: p.fecha,
-                            disciplina: p.disciplinas?.name,
-                            equipo_a: p.equipo_a,
-                            equipo_b: p.equipo_b,
-                            estado: p.estado,
-                            marcador_final: p.marcador_detalle
-                        });
-                    }
-                });
-            }
+                return {
+                    id: p.id,
+                    fecha: p.fecha,
+                    disciplina: (Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name),
+                    equipo_a: p.equipo_a,
+                    equipo_b: p.equipo_b,
+                    estado: p.estado,
+                    marcador_final: p.marcador_detalle
+                };
+            });
 
             setSportStatsMap(prev => {
                 const newMap = { ...prev };
@@ -282,8 +320,7 @@ export default function PerfilPage() {
                 return newMap;
             });
 
-            allMatches.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-            setHistory(allMatches.slice(0, 5));
+            setHistory(formatted);
         } catch (err) {
             console.error("Error fetching history:", err);
         } finally {
@@ -300,6 +337,9 @@ export default function PerfilPage() {
             .or(`sender_id.eq.${profile.id},receiver_id.eq.${profile.id}`);
         setFriendsCount(count || 0);
     };
+
+    const upcomingMatches = history.filter(h => h.estado === 'programado' || h.estado === 'en_curso').sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    const recentResults = history.filter(h => h.estado === 'finalizado').sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
     const fetchFollowers = async () => {
         if (!user?.id) return;
@@ -936,51 +976,97 @@ export default function PerfilPage() {
                             <InstitutionalBanner />
                         </div>
 
+
+                        {/* ━━━ PARTIDOS PRÓXIMOS ━━━ */}
+                        {upcomingMatches.length > 0 && (
+                            <div className="rounded-[3rem] bg-black/20 border border-white/10 p-8 lg:p-12 shadow-2xl backdrop-blur-md space-y-10 relative overflow-hidden group/upcoming">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/5 blur-[80px] pointer-events-none" />
+                                <div className="flex items-center gap-4 border-b border-white/10 pb-8 relative z-10">
+                                    <div className="p-2.5 bg-white/5 rounded-2xl border border-white/10 shadow-inner">
+                                        <Zap size={20} className="text-violet-400 animate-pulse" />
+                                    </div>
+                                    <h3 className="text-[11px] font-display font-black uppercase tracking-[0.5em] text-white/60">
+                                        PARTIDOS PRÓXIMOS
+                                    </h3>
+                                </div>
+                                <div className="flex flex-col gap-4">
+                                    {upcomingMatches.map((h, i) => (
+                                        <Link key={i} href={`/partido/${h.id}`} className="block">
+                                            <div className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-violet-500/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
+                                                <div className="flex items-center gap-6 relative z-10">
+                                                    <div className="w-12 h-12 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-violet-400 group-hover:border-violet-500/30 transition-all shadow-inner">
+                                                        <div className="-rotate-45">{getSportIcon(h.disciplina)}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1.5">
+                                                            <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.25em]">{h.disciplina}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_a}</p>
+                                                            <span className="text-[10px] font-display font-black text-white/15">VS</span>
+                                                            <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_b}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-[14px] font-black text-white font-mono">{new Date(h.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">{new Date(h.fecha).toLocaleDateString()}</span>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ━━━ RESULTADOS RECIENTES ━━━ */}
                         <div className="rounded-[3rem] bg-black/20 border border-white/10 p-8 lg:p-12 shadow-2xl backdrop-blur-md space-y-10 relative overflow-hidden group/history">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] pointer-events-none" />
                             <div className="flex items-center justify-between border-b border-white/10 pb-8 relative z-10">
                                 <div className="flex items-center gap-4">
                                     <div className="p-2.5 bg-white/5 rounded-2xl border border-white/10 shadow-inner"><Swords size={20} className="text-white/40" /></div>
-                                    <h3 className="text-[11px] font-display font-bold tracking-[0.3em] text-white/50">Historial de competencia</h3>
+                                    <h3 className="text-[11px] font-display font-bold tracking-[0.3em] text-white/50 uppercase">RESULTADOS RECIENTES</h3>
                                 </div>
                                 <Link href="/quiniela" className="text-[10px] font-display font-bold tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors px-4 py-2 bg-white/5 rounded-full border border-white/10">Ver todos</Link>
                             </div>
                             <div className="flex flex-col gap-4">
                                 {loadingHistory ? (
                                     <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white/20" /></div>
-                                ) : history.length > 0 ? (
-                                    history.map((h, i) => {
+                                ) : recentResults.length > 0 ? (
+                                    recentResults.slice(0, 5).map((h, i) => {
                                         const scoreA = h.marcador_final?.goles_a ?? h.marcador_final?.sets_a ?? h.marcador_final?.total_a ?? 0;
                                         const scoreB = h.marcador_final?.goles_b ?? h.marcador_final?.sets_b ?? h.marcador_final?.total_b ?? 0;
                                         const icon = getSportIcon(h.disciplina);
                                         return (
-                                            <div key={i} className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-white/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
-                                                <div className="flex items-center gap-6 relative z-10">
-                                                    <div className="w-12 h-12 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all shadow-inner">
-                                                        <div className="-rotate-45">{icon}</div>
+                                            <Link key={i} href={`/partido/${h.id}`} className="block">
+                                                <div className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-white/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
+                                                    <div className="flex items-center gap-6 relative z-10">
+                                                        <div className="w-12 h-12 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all shadow-inner">
+                                                            <div className="-rotate-45">{icon}</div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-3 mb-1.5 ">
+                                                                <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.25em]">{h.disciplina}</span>
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
+                                                                <span className="text-[10px] font-mono font-bold text-white/20 uppercase tabular-nums">{new Date(h.fecha).toLocaleDateString()}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-4">
+                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_a}</p>
+                                                              <span className="text-[10px] font-display font-black text-white/15">VS</span>
+                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_b}</p>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-3 mb-1.5">
-                                                            <span className="text-[11px] font-display font-bold text-white/40 tracking-wide">{h.disciplina}</span>
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
-                                                            <span className="text-[10px] font-mono font-bold text-white/20 uppercase tabular-nums">{new Date(h.fecha).toLocaleDateString()}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-4">
-                                                          <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_a}</p>
-                                                          <span className="text-[10px] font-display font-black text-white/15">VS</span>
-                                                          <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_b}</p>
-                                                        </div>
+                                                    <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white">
+                                                        {scoreA} <span className="text-white/20 mx-1">-</span> {scoreB}
                                                     </div>
                                                 </div>
-                                                <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white">
-                                                    {scoreA} <span className="text-white/20 mx-1">-</span> {scoreB}
-                                                </div>
-                                            </div>
+                                            </Link>
                                         );
                                     })
                                 ) : (
                                     <div className="text-center py-12 border border-dashed border-white/5 rounded-[2rem]">
-                                        <p className="text-[11px] font-bold tracking-wide text-white/10">Sin participaciones registradas</p>
+                                        <p className="text-[11px] font-bold tracking-wide text-white/10 capitalize">Sin resultados registrados</p>
                                     </div>
                                 )}
                             </div>

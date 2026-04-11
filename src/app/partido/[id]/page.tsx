@@ -419,9 +419,9 @@ export default function PublicMatchDetail() {
                                             const profileName = (joinedProfile?.full_name || '').toLowerCase().trim();
                                             
                                             // Stricter name matching: must share substantial parts of the name
-                                            const dnParts = displayName.split(/\s+/).filter(p => p.length > 2);
-                                            const pnParts = profileName.split(/\s+/).filter(p => p.length > 2);
-                                            const matchesCount = dnParts.filter(p => pnParts.includes(p)).length;
+                                            const dnParts = displayName.split(/\s+/).filter((p: string) => p.length > 2);
+                                            const pnParts = profileName.split(/\s+/).filter((p: string) => p.length > 2);
+                                            const matchesCount = dnParts.filter((p: string) => pnParts.includes(p)).length;
                                             const nameMatches = profileName.length > 0 && (
                                                 matchesCount >= 2 || (dnParts.length === 1 && pnParts.includes(dnParts[0]))
                                             );
@@ -639,9 +639,9 @@ export default function PublicMatchDetail() {
                                             const profileName = (joinedProfile?.full_name || '').toLowerCase().trim();
                                             
                                             // Stricter name matching: must share substantial parts of the name
-                                            const dnParts = displayName.split(/\s+/).filter(p => p.length > 2);
-                                            const pnParts = profileName.split(/\s+/).filter(p => p.length > 2);
-                                            const matchesCount = dnParts.filter(p => pnParts.includes(p)).length;
+                                            const dnParts = displayName.split(/\s+/).filter((p: string) => p.length > 2);
+                                            const pnParts = profileName.split(/\s+/).filter((p: string) => p.length > 2);
+                                            const matchesCount = dnParts.filter((p: string) => pnParts.includes(p)).length;
                                             const nameMatches = profileName.length > 0 && (
                                                 matchesCount >= 2 || (dnParts.length === 1 && pnParts.includes(dnParts[0]))
                                             );
