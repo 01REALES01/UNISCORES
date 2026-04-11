@@ -81,6 +81,10 @@ export async function DELETE(request: Request) {
 
     } catch (err: any) {
         console.error('[API Admin Delete User] Error crítico:', err.message)
-        return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+        return NextResponse.json({ 
+            error: 'Error interno del servidor', 
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        }, { status: 500 })
     }
 }

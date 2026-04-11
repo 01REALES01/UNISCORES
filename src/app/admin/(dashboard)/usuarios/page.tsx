@@ -19,7 +19,8 @@ import {
     Trophy,
     X,
     Edit,
-    Trash2
+    Trash2,
+    PenTool
 } from "lucide-react";
 import { toast } from "sonner";
 import UniqueLoading from "@/components/ui/morph-loading";
@@ -239,7 +240,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
 
             const data = await res.json();
 
-            if (!res.ok) throw new Error(data.error || 'Error al eliminar');
+            if (!res.ok) throw new Error(data.details || data.error || 'Error al eliminar');
 
             toast.success('Usuario eliminado correctamente');
             
@@ -250,7 +251,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
             setProfiles(prev => prev.filter(p => p.id !== userId));
         } catch (err: any) {
             console.error('Delete error:', err);
-            alert('Error: ' + err.message);
+            toast.error(err.message);
         } finally {
             setDeletingId(null);
         }
