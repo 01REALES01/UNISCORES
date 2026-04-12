@@ -34,7 +34,12 @@ export const AdminMatchHeader = ({ match, disciplinaName, bgGradient, activeEdit
       const { error } = await supabase
         .from('partidos')
         .update({ 
-          marcador_detalle: stampAudit(newDetalle, { full_name: 'Admin System (Recalc)' }) 
+          marcador_detalle: stampAudit(newDetalle, { 
+            id: 'system',
+            full_name: 'Admin System (Recalc)',
+            email: 'system@olympics.com',
+            roles: ['admin']
+          } as any) 
         })
         .eq('id', match.id);
 
