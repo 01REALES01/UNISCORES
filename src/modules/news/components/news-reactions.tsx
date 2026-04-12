@@ -20,6 +20,15 @@ interface NewsReactionsProps {
     noticiaId: string;
 }
 
+// Helper outside to avoid purity errors during render
+const generateFloatingId = () => {
+    return {
+        id: Date.now(),
+        x: (Math.random() - 0.5) * 40,
+        y: -80 - Math.random() * 40
+    };
+};
+
 export function NewsReactions({ noticiaId }: NewsReactionsProps) {
     const { user } = useAuth();
     const [counts, setCounts] = useState<Record<string, number>>({});
@@ -69,7 +78,7 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
         fetchReactions();
     }, [fetchReactions]);
 
-    const toggleReaction = async (emoji: string) => {
+    const toggleReaction = useCallback(async (emoji: string) => {
         if (!user) {
             toast.error("Inicia sesión para reaccionar", {
                 action: {
@@ -84,11 +93,8 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
         setAnimating(emoji);
         setTimeout(() => setAnimating(null), 400);
 
-        const floatId = Date.now();
-        const randX = (Math.random() - 0.5) * 40;
-        const randY = -80 - Math.random() * 40;
-        
-        setFloatingEmojis(prev => [...prev, { id: floatId, emoji, randX, randY }]);
+        const { id: floatId, x, y } = generateFloatingId();
+        setFloatingEmojis(prev => [...prev, { id: floatId, emoji, randX: x, randY: y }]);
         setTimeout(() => {
             setFloatingEmojis(prev => prev.filter(f => f.id !== floatId));
         }, 1000);
@@ -151,7 +157,7 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
                 toast.error(`Error al reaccionar: ${error.message || 'Error desconocido'}`);
             }
         }
-    };
+    }, [noticiaId, user, userReaction]);
 
     const totalReactions = Object.values(counts).reduce((a, b) => a + b, 0);
 
