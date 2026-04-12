@@ -106,8 +106,8 @@ export class VoleibolService extends BaseSportService {
     d.puntos_b = cur.puntos_b || 0;
     d.total_a = cur.puntos_a || 0;
     d.total_b = cur.puntos_b || 0;
-    d.goles_a = cur.puntos_a || 0; // alias
-    d.goles_b = cur.puntos_b || 0;
+    d.goles_a = setsA; // Alias: prioritize sets won for winner detection
+    d.goles_b = setsB;
     const pA = cur.puntos_a || 0;
     const pB = cur.puntos_b || 0;
     const minPts = currentSet === 5 ? 15 : 25;

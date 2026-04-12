@@ -38,6 +38,7 @@ import { SafeBackButton } from "@/shared/components/safe-back-button";
 import { isCreator, hasAuraBadge, hasMvpBadge, SPORT_ACCENT } from "@/lib/constants";
 import { SportIcon } from "@/shared/components/sport-icons";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
+import { getCurrentScore } from "@/lib/sport-scoring";
 
 export default function PublicProfilePage() {
     const params = useParams();
@@ -447,9 +448,8 @@ export default function PublicProfilePage() {
                 if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
 
                 if (p.estado === 'finalizado') {
-                    const det = p.marcador_detalle || {};
-                    const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
-                    const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
+                    const sportName = (Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name) || '';
+                    const { scoreA, scoreB } = getCurrentScore(sportName, p.marcador_detalle || {});
 
                     // Priority: event equipo (most reliable) → athlete_a/b_id → carrera_a/b_ids arrays → scalar carrera_a/b_id
                     let side: 'a' | 'b' | null = matchSideMap.get(p.id) || null;
@@ -1135,8 +1135,8 @@ export default function PublicProfilePage() {
                                         <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white/20" /></div>
                                     ) : recentResults.length > 0 ? (
                                         recentResults.slice(0, 5).map((h, i) => {
-                                            const scoreA = h.marcador_final?.goles_a ?? h.marcador_final?.sets_a ?? h.marcador_final?.total_a ?? 0;
-                                            const scoreB = h.marcador_final?.goles_b ?? h.marcador_final?.sets_b ?? h.marcador_final?.total_b ?? 0;
+                                            const sportName = h.disciplina || '';
+                                            const { scoreA, scoreB } = getCurrentScore(sportName, h.marcador_final || {});
                                             const icon = getSportIcon(h.disciplina);
 
                                             return (

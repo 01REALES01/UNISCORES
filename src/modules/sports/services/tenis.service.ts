@@ -82,14 +82,14 @@ export class TenisService extends BaseSportService {
     
     const { labelA, labelB } = formatTenisPunto(s.puntos_a || 0, s.puntos_b || 0);
     return {
-      scoreA: juegosA,                              // games in set (for winner logic & dots)
-      scoreB: juegosB,
+      scoreA: d.sets_total_a ?? d.sets_a ?? 0,      // sets won (primary score)
+      scoreB: d.sets_total_b ?? d.sets_b ?? 0,
       labelA,                                       // "0" | "15" | "30" | "40" | "DEUCE" | "AD" | ""
       labelB,
-      subScoreA: d.sets_total_a ?? d.sets_a ?? 0,   // sets won → dots
-      subScoreB: d.sets_total_b ?? d.sets_b ?? 0,
-      extra: `${juegosA}–${juegosB} · Set ${set}`, // games + set label
-      subLabel: 'Sets',
+      subScoreA: juegosA,                           // games in current set -> dots/secondary
+      subScoreB: juegosB,
+      extra: `Set ${set} · ${juegosA}–${juegosB}`, // Set label + games
+      subLabel: 'Juegos',
     };
   }
 
@@ -242,8 +242,8 @@ export class TenisService extends BaseSportService {
     d.sets_total_b = setsB;
     d.games_a = gamesA;
     d.games_b = gamesB;
-    d.goles_a = gamesA;     // Backwards-compat for generic DB queries
-    d.goles_b = gamesB;
+    d.goles_a = setsA;     // Backwards-compat: prioritize sets as the deciding "goles" alias
+    d.goles_b = setsB;
 
     // Auto-advance: si el set actual tiene ganador y el partido sigue, pasar al siguiente
     const currentSet = d.set_actual || 1;

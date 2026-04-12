@@ -37,6 +37,7 @@ import { useRouter } from "next/navigation";
 import { SportIcon } from "@/shared/components/sport-icons";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 import { SPORT_ACCENT } from "@/lib/constants";
+import { getCurrentScore } from "@/lib/sport-scoring";
 
 export default function PerfilPage() {
     const router = useRouter();
@@ -284,8 +285,8 @@ export default function PerfilPage() {
 
                 if (p.estado === 'finalizado') {
                     const det = p.marcador_detalle || {};
-                    const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? 0;
-                    const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? 0;
+                    const sportName = (Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name) || '';
+                    const { scoreA, scoreB } = getCurrentScore(sportName, det);
 
                     let side: 'a' | 'b' | null = matchSideMap.get(p.id) || null;
                     if (!side) {
@@ -1030,8 +1031,7 @@ export default function PerfilPage() {
                                     <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white/20" /></div>
                                 ) : recentResults.length > 0 ? (
                                     recentResults.slice(0, 5).map((h, i) => {
-                                        const scoreA = h.marcador_final?.goles_a ?? h.marcador_final?.sets_a ?? h.marcador_final?.total_a ?? 0;
-                                        const scoreB = h.marcador_final?.goles_b ?? h.marcador_final?.sets_b ?? h.marcador_final?.total_b ?? 0;
+                                        const { scoreA, scoreB } = getCurrentScore(h.disciplina, h.marcador_final);
                                         const icon = getSportIcon(h.disciplina);
                                         return (
                                             <Link key={i} href={`/partido/${h.id}`} className="block">

@@ -14,6 +14,7 @@ import { Avatar, Badge, Button } from "@/shared/components/ui-primitives";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
+import { getCurrentScore } from "@/lib/sport-scoring";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -710,8 +711,7 @@ function MatchRow({ match }: { match: any }) {
     const det = match.marcador_detalle || {};
     const nameA = getDisplayName(match, "a");
     const nameB = getDisplayName(match, "b");
-    const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? det.puntos_a ?? det.juegos_a ?? 0;
-    const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? det.puntos_b ?? det.juegos_b ?? 0;
+    const { scoreA, scoreB } = getCurrentScore(sportName, det);
     const isLive = estado === "en_curso";
     const isFinal = estado === "finalizado";
     const genero = (match.genero || 'masculino').toLowerCase();

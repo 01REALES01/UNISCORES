@@ -191,14 +191,14 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                     </div>
                   ) : extra && isSetSport ? (
                     <div className="flex items-center justify-between w-full min-w-[160px] px-1">
-                      {/* Team A: número sets + dots */}
+                      {/* Team A: número de juegos + dots de sets */}
                       <div className="flex items-center gap-1">
                         <span className="text-xs font-black tabular-nums text-white/70">{subScoreA ?? 0}</span>
                         <div className="flex items-center gap-0.5">
-                          {Array.from({ length: Math.max(subScoreA ?? 0, 0) }).map((_, i) => (
+                          {Array.from({ length: Math.max(scoreA ?? 0, 0) }).map((_, i) => (
                             <span key={i} className="w-1.5 h-1.5 rounded-full bg-white/80 shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
                           ))}
-                          {(subScoreA ?? 0) === 0 && <span className="w-1.5 h-1.5 rounded-full bg-white/15 border border-white/20" />}
+                          {(scoreA ?? 0) === 0 && <span className="w-1.5 h-1.5 rounded-full bg-white/15 border border-white/20" />}
                         </div>
                       </div>
 
@@ -211,13 +211,13 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                         {extra?.includes('Set') ? `SET ${extra.split('Set').pop()?.trim()}` : extra}
                       </div>
 
-                      {/* Team B: dots + número sets */}
+                      {/* Team B: dots de sets + número de juegos */}
                       <div className="flex items-center gap-1">
                         <div className="flex items-center gap-0.5">
-                          {Array.from({ length: Math.max(subScoreB ?? 0, 0) }).map((_, i) => (
+                          {Array.from({ length: Math.max(scoreB ?? 0, 0) }).map((_, i) => (
                             <span key={i} className="w-1.5 h-1.5 rounded-full bg-white/80 shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
                           ))}
-                          {(subScoreB ?? 0) === 0 && <span className="w-1.5 h-1.5 rounded-full bg-white/15 border border-white/20" />}
+                          {(scoreB ?? 0) === 0 && <span className="w-1.5 h-1.5 rounded-full bg-white/15 border border-white/20" />}
                         </div>
                         <span className="text-xs font-black tabular-nums text-white/70">{subScoreB ?? 0}</span>
                       </div>
@@ -362,12 +362,13 @@ export function ResultCard({ partido }: { partido: Partido }) {
   const isDraw = scoreA === scoreB;
   const genero = (partido.genero || 'masculino').toLowerCase();
   const categoria = partido.categoria;
-  const isSetSport = ['Tenis', 'Tenis de Mesa', 'V\u00f3leibol', 'Voleibol', 'B\u00e1dminton', 'Badminton'].includes(sportName);
-  // For set sports, winner is who won more sets
-  const sA = subScoreA ?? scoreA;
-  const sB = subScoreB ?? scoreB;
-  const setWinnerA = isSetSport ? sA > sB : winnerA;
-  const setWinnerB = isSetSport ? sB > sA : !winnerA && scoreB > scoreA;
+  const isSetSport = ['Tenis', 'Tenis de Mesa', 'Voleibol', 'Vóleibol', 'Bádminton', 'Badminton'].includes(sportName);
+  
+  // New unified scoring: scoreA/B are primary, subScoreA/B are secondary
+  const primaryA = scoreA;
+  const primaryB = scoreB;
+  const secondaryA = subScoreA;
+  const secondaryB = subScoreB;
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block relative z-10">
@@ -510,13 +511,9 @@ export function ResultCard({ partido }: { partido: Partido }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 ml-2">
-                      {isSetSport ? (
-                        <>
-                          <span className={cn("text-xl font-black tabular-nums", matchResult === 'A' ? "text-white" : "text-slate-600")}>{sA}</span>
-                          {sportName !== 'Voleibol' && <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({scoreA})</span>}
-                        </>
-                      ) : (
-                        <span className={cn("text-xl font-black tabular-nums", matchResult === 'A' ? "text-white" : "text-slate-600")}>{scoreA}</span>
+                      <span className={cn("text-xl font-black tabular-nums", matchResult === 'A' ? "text-white" : "text-slate-600")}>{primaryA}</span>
+                      {secondaryA !== undefined && secondaryA !== null && (
+                        <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({secondaryA})</span>
                       )}
                     </div>
                   </div>
@@ -546,13 +543,9 @@ export function ResultCard({ partido }: { partido: Partido }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 ml-2">
-                      {isSetSport ? (
-                        <>
-                          <span className={cn("text-xl font-black tabular-nums", matchResult === 'B' ? "text-white" : "text-slate-600")}>{sB}</span>
-                          {sportName !== 'Voleibol' && <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({scoreB})</span>}
-                        </>
-                      ) : (
-                        <span className={cn("text-xl font-black tabular-nums", matchResult === 'B' ? "text-white" : "text-slate-600")}>{scoreB}</span>
+                      <span className={cn("text-xl font-black tabular-nums", matchResult === 'B' ? "text-white" : "text-slate-600")}>{primaryB}</span>
+                      {secondaryB !== undefined && secondaryB !== null && (
+                        <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({secondaryB})</span>
                       )}
                     </div>
                   </div>

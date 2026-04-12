@@ -12,6 +12,7 @@ import { Avatar, Badge, Button } from "@/shared/components/ui-primitives";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
+import { getCurrentScore } from "@/lib/sport-scoring";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
 import {
     SPORT_EMOJI,
@@ -62,8 +63,7 @@ function MatchRow({ match, carreraName }: { match: any; carreraName?: string }) 
 
     const nameA = getDisplayName(match, "a");
     const nameB = getDisplayName(match, "b");
-    const scoreA = det.goles_a ?? det.sets_a ?? det.total_a ?? det.puntos_a ?? det.juegos_a ?? null;
-    const scoreB = det.goles_b ?? det.sets_b ?? det.total_b ?? det.puntos_b ?? det.juegos_b ?? null;
+    const { scoreA, scoreB } = getCurrentScore(disc || '', det);
 
     const isLive = estado === "en_curso";
     const isFinal = estado === "finalizado";
