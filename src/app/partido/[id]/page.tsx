@@ -43,6 +43,11 @@ export default function PublicMatchDetail() {
             const { data, error } = await supabase.from('pronosticos').select('winner_pick, prediction_type').eq('match_id', matchId);
             if (error) throw error;
             return data;
+        },
+        { 
+            revalidateOnFocus: false,
+            keepPreviousData: true,
+            dedupingInterval: 10000 
         }
     );
 
@@ -52,6 +57,11 @@ export default function PublicMatchDetail() {
             const { data, error } = await supabase.from('pronosticos').select('*').eq('match_id', matchId).eq('user_id', user!.id).maybeSingle();
             if (error) throw error;
             return data;
+        },
+        { 
+            revalidateOnFocus: false,
+            keepPreviousData: true,
+            dedupingInterval: 10000 
         }
     );
 

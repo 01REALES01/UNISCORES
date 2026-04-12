@@ -93,6 +93,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const mountedRef = useRef(true);
     const profileFetchInFlightRef = useRef(false);
     const lastRefreshRef = useRef<number>(0);
+    const userRef = useRef<User | null>(user);
+
+    // Keep userRef in sync for handlers that need it without triggering effects
+    useEffect(() => {
+        userRef.current = user;
+    }, [user]);
 
     const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
         if (profileFetchInFlightRef.current) return null;
@@ -196,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     setUser(session.user);
                     // Fetch profile in background without flipping 'loading' to true
                     await fetchProfile(session.user.id);
-                } else if (user) {
+                } else if (userRef.current) {
                     // User was logged in but session is gone now
                     setUser(null);
                     setProfile(null);
@@ -218,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             subscription.unsubscribe();
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [fetchProfile, user]); // added user to deps for visibility listener logic
+    }, [fetchProfile]); // Removed user dependency to break infinite loop
 
     const signOut = async () => {
         try {
