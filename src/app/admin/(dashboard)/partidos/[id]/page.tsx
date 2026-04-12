@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Edit3, X } from "lucide-react";
 import { Button, Card } from "@/components/ui-primitives";
 import { useAuth } from "@/hooks/useAuth";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { RaceControl } from "@/components/race-control";
 import { useMatchControl } from "@/modules/admin/matches/hooks/use-match-control";
