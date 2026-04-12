@@ -53,7 +53,7 @@ async function fetchProfileWithRetry(
             const { data, error } = await safeQuery<Profile>(
                 supabase
                     .from('profiles')
-                    .select('*, disciplina:disciplinas(id, name, icon)')
+                    .select('*')
                     .eq('id', userId)
                     .single(),
                 'auth-profile-fetch'

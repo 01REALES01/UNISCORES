@@ -12,15 +12,21 @@ type QueryResult<T> = {
 };
 
 /**
- * Ejecuta una query de Supabase con timeout.
- * Si no responde en 8s, devuelve error en vez de colgar el UI.
+ * Ejecuta una query de Supabase con timeout y cancelación real.
  */
 export async function safeQuery<T = any>(
-    queryBuilder: PromiseLike<{ data: T | null; error: any }>,
+    query: any, // Accepts the PostgrestBuilder or similar
     label?: string
 ): Promise<QueryResult<T>> {
+    const controller = new AbortController();
+    
     try {
-        const result = await withTimeout(queryBuilder, TIMEOUT_MS);
+        // Apply the abort signal to the query if it's a Supabase query builder
+        const executableQuery = typeof query.abortSignal === 'function' 
+            ? query.abortSignal(controller.signal) 
+            : query;
+
+        const result = await withTimeout(executableQuery, TIMEOUT_MS, controller);
 
         if (result.error) {
             console.warn(`[safeQuery] ${label || ''} error:`, result.error.message);
@@ -44,11 +50,17 @@ export async function safeQuery<T = any>(
  * Ejecuta una mutación de Supabase con timeout. NO reintenta.
  */
 export async function safeMutation<T = any>(
-    queryBuilder: PromiseLike<{ data: T | null; error: any }>,
+    query: any,
     label?: string
 ): Promise<QueryResult<T>> {
+    const controller = new AbortController();
+
     try {
-        const result = await withTimeout(queryBuilder, TIMEOUT_MS);
+        const executableQuery = typeof query.abortSignal === 'function' 
+            ? query.abortSignal(controller.signal) 
+            : query;
+
+        const result = await withTimeout(executableQuery, TIMEOUT_MS, controller);
 
         if (result.error) {
             console.warn(`[safeMutation] ${label || ''} error:`, result.error.message);
@@ -79,15 +91,22 @@ export function invalidateAllCache(): void { /* no-op */ }
 
 // ─── Helpers internos ────────────────────────────────────────────────────────
 
-function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
+function withTimeout<T>(
+    promise: PromiseLike<T>, 
+    ms: number, 
+    controller: AbortController
+): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const timer = setTimeout(() => {
+            controller.abort();
             reject(new Error(`Query timed out after ${ms}ms`));
         }, ms);
 
         Promise.resolve(promise).then(
             (result) => { clearTimeout(timer); resolve(result); },
             (err) => { clearTimeout(timer); reject(err); }
-        );
+        ).finally(() => {
+            clearTimeout(timer);
+        });
     });
 }
