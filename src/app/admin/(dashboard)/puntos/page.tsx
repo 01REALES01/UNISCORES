@@ -97,7 +97,7 @@ function ClasificacionTab() {
     const [configs, setConfigs] = useState<PuntosConfig[]>([]);
     const [enrolledTeams, setEnrolledTeams] = useState<EnrolledTeam[]>([]);
     const [selectedDisc, setSelectedDisc] = useState<number | null>(null);
-    const [selectedGenero, setSelectedGenero] = useState<'masculino' | 'femenino' | 'mixto'>('masculino');
+    const [selectedGenero, setSelectedGenero] = useState<'todos' | 'masculino' | 'femenino' | 'mixto'>('todos');
     const [selectedCategoria, setSelectedCategoria] = useState<Categoria | null>(null);
     const [positions, setPositions] = useState<Record<number, string | null>>({});
     const [saving, setSaving] = useState(false);
@@ -116,13 +116,16 @@ function ClasificacionTab() {
     }, []);
 
     const fetchData = useCallback(async (discId: number, genero: string, categoria: Categoria | null) => {
-        const { data: cdData } = await supabase
+        let queryCd = supabase
             .from('carrera_disciplina')
             .select('equipo_nombre, carrera_id')
-            .eq('disciplina_id', discId)
-            .eq('genero', genero);
-
-        const teamMap: Record<string, number[]> = {};
+            .eq('disciplina_id', discId);
+        
+        if (genero !== 'todos') {
+            queryCd = queryCd.eq('genero', genero);
+        }
+        
+        const { data: cdData } = await queryCd;
         (cdData ?? []).forEach((r: any) => {
             if (!teamMap[r.equipo_nombre]) teamMap[r.equipo_nombre] = [];
             teamMap[r.equipo_nombre].push(r.carrera_id);
@@ -130,7 +133,8 @@ function ClasificacionTab() {
         const teams: EnrolledTeam[] = Object.entries(teamMap).map(([equipo_nombre, carrera_ids]) => ({ equipo_nombre, carrera_ids }));
         setEnrolledTeams(teams);
 
-        let query = supabase.from('clasificacion_disciplina').select('*, carreras(id, nombre)').eq('disciplina_id', discId).eq('genero', genero).order('posicion');
+        let query = supabase.from('clasificacion_disciplina').select('*, carreras(id, nombre)').eq('disciplina_id', discId).order('posicion');
+        if (genero !== 'todos') query = query.eq('genero', genero);
         query = categoria ? query.eq('categoria', categoria) : query.is('categoria', null);
 
         const { data } = await query;
@@ -188,6 +192,7 @@ function ClasificacionTab() {
                     {disciplinas.map(d => <option key={d.id} value={d.id} className="bg-[#1a1730]">{d.name}</option>)}
                 </select>
                 <select value={selectedGenero} onChange={e => setSelectedGenero(e.target.value as any)} className="bg-[#1a1730] border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50">
+                    <option value="todos" className="bg-[#1a1730]">Todos</option>
                     {GENEROS.map(g => <option key={g} value={g} className="bg-[#1a1730]">{g}</option>)}
                 </select>
                 {hasCategoria && (
@@ -405,7 +410,7 @@ function BracketVisibilityToggle() {
 function FairPlayAdminTab() {
     const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
     const [selectedDisc, setSelectedDisc] = useState<number | null>(null);
-    const [selectedGenero, setSelectedGenero] = useState<'masculino' | 'femenino' | 'mixto'>('masculino');
+    const [selectedGenero, setSelectedGenero] = useState<'todos' | 'masculino' | 'femenino' | 'mixto'>('todos');
     const [teamData, setTeamData] = useState<any[]>([]);
 
     useEffect(() => {
@@ -414,7 +419,9 @@ function FairPlayAdminTab() {
     }, []);
 
     const loadData = useCallback(async (discId: number, genero: string) => {
-        const { data: pts } = await supabase.from('partidos').select('id, equipo_a, equipo_b, delegacion_a, delegacion_b').eq('disciplina_id', discId).eq('genero', genero);
+        let query = supabase.from('partidos').select('id, equipo_a, equipo_b, delegacion_a, delegacion_b').eq('disciplina_id', discId);
+        if (genero !== 'todos') query = query.eq('genero', genero);
+        const { data: pts } = await query;
         const matchIds = (pts ?? []).map((p: any) => p.id);
         if (matchIds.length === 0) { setTeamData([]); return; }
         const scores: Record<string, number> = {};
@@ -432,6 +439,7 @@ function FairPlayAdminTab() {
                     {disciplinas.map(d => <option key={d.id} value={d.id} className="bg-[#1a1730]">{d.name}</option>)}
                 </select>
                 <select value={selectedGenero} onChange={e => setSelectedGenero(e.target.value as any)} className="bg-[#1a1730] border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50">
+                    <option value="todos" className="bg-[#1a1730]">Todos</option>
                     {GENEROS.map(g => <option key={g} value={g} className="bg-[#1a1730]">{g}</option>)}
                 </select>
             </div>

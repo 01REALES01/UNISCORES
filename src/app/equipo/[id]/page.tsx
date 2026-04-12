@@ -12,6 +12,7 @@ import { Avatar, Badge, Button } from "@/shared/components/ui-primitives";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 import {
     SPORT_EMOJI,
     SPORT_ACCENT,
@@ -315,9 +316,7 @@ function TabButton({
                 </div>
                 <h1 className="text-3xl font-black mb-3 font-display uppercase tracking-widest text-center text-white/90">Equipo no encontrado</h1>
                 <p className="text-white/40 mb-10 max-w-sm text-center font-bold italic text-sm">La delegación o equipo deportivo que buscas no se encuentra disponible actualmente.</p>
-                <Button onClick={() => router.back()} className="rounded-2xl px-10 h-14 bg-violet-600 text-white font-black uppercase tracking-widest hover:bg-violet-700 shadow-2xl shadow-violet-600/30">
-                    <ChevronLeft className="mr-2" size={20} /> Volver al Inicio
-                </Button>
+                <SafeBackButton fallback="/clasificacion" className="shadow-none rounded-2xl px-10 h-14 bg-violet-600 text-white font-black uppercase tracking-widest hover:bg-violet-700 shadow-2xl shadow-violet-600/30" label="Volver a Clasificación" />
             </div>
         );
     }
@@ -338,12 +337,7 @@ function TabButton({
 
             <main className="max-w-4xl mx-auto px-4 pt-10 pb-32 relative z-10">
                 <div className="mb-8 font-display">
-                    <button onClick={() => router.back()} className="group flex items-center gap-3 text-white/30 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.3em]">
-                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 group-hover:bg-violet-600 group-hover:border-transparent group-hover:text-white transition-all shadow-xl">
-                            <ChevronLeft size={16} />
-                        </div>
-                        Regresar
-                    </button>
+                    <SafeBackButton fallback="/clasificacion" variant="ghost" label="Regresar" />
                 </div>
 
                 {/* ═══ HERO SECTION ═══ */}

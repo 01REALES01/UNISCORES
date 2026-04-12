@@ -2,7 +2,7 @@
 
 import useSWR from "swr";
 import { supabase } from "@/lib/supabase";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { computeCareerStats, CareerStats } from "@/lib/sport-helpers";
 import { EQUIPO_NOMBRE_TO_CARRERAS } from "@/lib/constants";
 
@@ -54,7 +54,7 @@ export type CarreraProfile = {
 
 async function fetchCarreraProfile(carreraId: number) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
+    const timeout = setTimeout(() => controller.abort(), 20_000);
 
     try {
         // 1. Fetch the career itself
@@ -70,31 +70,17 @@ async function fetchCarreraProfile(carreraId: number) {
         }
 
         // 2. Fetch all matches where this carrera participates (either side).
-        // Uses GIN-indexed array containment so fusions are included automatically:
-        // a match where the career appears in carrera_a_ids or carrera_b_ids is returned.
-        const [matchesA, matchesB] = await Promise.all([
-            supabase
-                .from('partidos')
-                .select(MATCH_COLUMNS)
-                .contains('carrera_a_ids', [carreraId])
-                .abortSignal(controller.signal)
-                .order('fecha', { ascending: false }),
-            supabase
-                .from('partidos')
-                .select(MATCH_COLUMNS)
-                .contains('carrera_b_ids', [carreraId])
-                .abortSignal(controller.signal)
-                .order('fecha', { ascending: false }),
-        ]);
+        // Optimized: Single query using .or with array containment markers
+        const { data: matchesData, error: matchesErr } = await supabase
+            .from('partidos')
+            .select(MATCH_COLUMNS)
+            .or(`carrera_a_ids.cs.{${carreraId}},carrera_b_ids.cs.{${carreraId}}`)
+            .abortSignal(controller.signal)
+            .order('fecha', { ascending: false })
+            .limit(40);
 
-        // Merge and deduplicate by id
-        const allMatchesRaw = [...((matchesA.data || []) as any[]), ...((matchesB.data || []) as any[])];
-        const seen = new Set<number>();
-        const matches = allMatchesRaw.filter((m: any) => {
-            if (seen.has(m.id)) return false;
-            seen.add(m.id);
-            return true;
-        }).sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+        if (matchesErr) console.error('[useCarreraProfile] Matches error:', matchesErr);
+        const matches = (matchesData || []).sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
         // 3. Fetch news for this carrera
         const { data: newsData } = await supabase
@@ -103,20 +89,21 @@ async function fetchCarreraProfile(carreraId: number) {
             .eq('published', true)
             .eq('carrera', carrera.nombre)
             .abortSignal(controller.signal)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(10);
 
         // 4. Fetch athletes that belong to this carrera
         const { data: athletesData } = await supabase
             .from('profiles')
             .select('id, full_name, avatar_url, roles, athlete_disciplina_id, points, sexo, genero, disciplina:disciplinas(name)')
             .contains('carreras_ids', [carreraId])
-            .abortSignal(controller.signal);
+            .abortSignal(controller.signal)
+            .limit(50);
 
-        // 5. Compute stats by ID (handles fusions via carrera_a_ids / carrera_b_ids)
+        // 5. Compute stats by ID
         const stats = computeCareerStats(matches, carreraId);
 
-        // 6. Fetch enrolled sports from delegaciones (carrera appears in carrera_ids[])
-        // Strategy: Also search by name for known Escuela de Negocios teams if current career is one of them.
+        // 6. Fetch enrolled sports from delegaciones
         const businessNames = ['ESCUELA DE NEGOCIOS', 'NEGOCIOS INT. / ADMÓN.'];
         const businessCareerIds = [1, 6, 20];
         const isBusiness = businessCareerIds.includes(carreraId);
@@ -129,10 +116,6 @@ async function fetchCarreraProfile(carreraId: number) {
             .not('genero', 'is', null)
             .abortSignal(controller.signal);
 
-        // Deduplicate by (disciplina_id, genero) — a carrera can appear in multiple
-        // delegaciones for the same sport (e.g. DCPRI and a direct entry); keep the
-        // one whose equipo_nombre differs most from the carrera name (i.e. prefer the
-        // combined-team name over a solo entry).
         const deduped = new Map<string, DeporteInscrito>();
         for (const d of (delegData || []) as any[]) {
             const dname = Array.isArray(d.disciplinas) ? d.disciplinas[0]?.name : d.disciplinas?.name ?? '';
@@ -148,7 +131,6 @@ async function fetchCarreraProfile(carreraId: number) {
                 disciplina_name: dname,
                 isCombined: (d.carrera_ids?.length ?? 0) > 1 || isCombinedByConfig,
             };
-            // Prefer combined-team names (longer / different from the carrera name)
             if (!deduped.has(key) || d.nombre !== carrera.nombre) {
                 deduped.set(key, entry);
             }
@@ -164,12 +146,18 @@ async function fetchCarreraProfile(carreraId: number) {
             deportesInscritos,
         };
 
-        // Persist to sessionStorage for instant fallback on return
-        try {
-            sessionStorage.setItem(`swr-carrera-${carreraId}`, JSON.stringify(result));
-        } catch { /* quota exceeded — non-critical */ }
+        if (typeof window !== 'undefined') {
+            try {
+                sessionStorage.setItem(`swr-carrera-${carreraId}`, JSON.stringify(result));
+            } catch (e) {
+                console.warn('sessionStorage quota exceeded');
+            }
+        }
 
         return result;
+    } catch (err) {
+        console.error('[useCarreraProfile] Critical fetch error:', err);
+        throw err;
     } finally {
         clearTimeout(timeout);
     }
@@ -178,41 +166,45 @@ async function fetchCarreraProfile(carreraId: number) {
 // ─── Hook ───────────────────────────────────────────────────────────────────
 
 export function useCarreraProfile(carreraId: number | null): CarreraProfile {
-    // Attempt to hydrate from sessionStorage so the user sees cached data instantly
-    let fallbackData: any = undefined;
-    if (carreraId && typeof window !== 'undefined') {
+    const getFallback = useCallback(() => {
+        if (!carreraId || typeof window === 'undefined') return undefined;
         try {
             const raw = sessionStorage.getItem(`swr-carrera-${carreraId}`);
-            if (raw) fallbackData = JSON.parse(raw);
-        } catch { /* ignore parse errors */ }
-    }
+            if (raw) return JSON.parse(raw);
+        } catch {
+            return undefined;
+        }
+        return undefined;
+    }, [carreraId]);
 
     const { data, error, isLoading, mutate } = useSWR(
-        carreraId ? `carrera-profile:${carreraId}` : null,
+        carreraId ? `carrera-profile-v3:${carreraId}` : null,
         () => fetchCarreraProfile(carreraId!),
         {
-            fallbackData,
+            fallbackData: getFallback(),
             revalidateOnFocus: false,
             revalidateOnReconnect: true,
-            dedupingInterval: 15000,
+            dedupingInterval: 10000,
             keepPreviousData: true,
         }
     );
 
-    // Stable ref for mutate to avoid stale closures in the channel callback
     const mutateRef = useRef(mutate);
     mutateRef.current = mutate;
 
-    // ── Realtime subscription — properly scoped to component lifecycle ────────
     useEffect(() => {
         if (!carreraId || typeof window === 'undefined') return;
 
-        let activeChannel: ReturnType<typeof supabase.channel> | null = null;
-        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+        let activeChannel: any = null;
+        let debounceTimer: any = null;
 
         const debounced = () => {
             if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => mutateRef.current(), 1000);
+            debounceTimer = setTimeout(() => {
+                if (typeof document !== 'undefined' && !document.hidden) {
+                    mutateRef.current();
+                }
+            }, 3000);
         };
 
         const setup = () => {
@@ -220,24 +212,29 @@ export function useCarreraProfile(carreraId: number | null): CarreraProfile {
                 supabase.removeChannel(activeChannel);
                 activeChannel = null;
             }
-            // Unique channel name per mount — prevents collision with stale singletons
             activeChannel = supabase
-                .channel(`carrera-profile:${carreraId}:${Date.now()}`)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, debounced)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'noticias' }, debounced)
+                .channel(`carrera-rt:${carreraId}`)
+                .on('postgres_changes', { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'partidos',
+                    filter: `carrera_a_id=eq.${carreraId}` 
+                }, debounced)
+                .on('postgres_changes', { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'partidos',
+                    filter: `carrera_b_id=eq.${carreraId}` 
+                }, debounced)
                 .subscribe();
         };
 
         setup();
 
-        // Listen for the global app:revalidate event (fired by VisibilityRevalidate
-        // when the user returns to the tab). Recreate channel + revalidate SWR.
         const handleRevalidate = () => {
             mutateRef.current();
-            // Recreate channel in case Supabase disconnected while tab was hidden
             setup();
         };
-
         window.addEventListener('app:revalidate', handleRevalidate);
 
         return () => {
@@ -258,8 +255,9 @@ export function useCarreraProfile(carreraId: number | null): CarreraProfile {
             byDiscipline: {},
         },
         deportesInscritos: data?.deportesInscritos || [],
-        loading: isLoading,
+        loading: isLoading && !data,
         error,
         mutate,
     };
 }
+

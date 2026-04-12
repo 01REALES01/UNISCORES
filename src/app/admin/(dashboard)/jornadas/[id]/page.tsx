@@ -7,6 +7,7 @@ import { ChevronLeft, Plus, Trash2, Save, CheckCircle, Loader2 } from "lucide-re
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -180,9 +181,7 @@ export default function JornadaDetailPage() {
     return (
         <div className="space-y-6 max-w-3xl">
             {/* Back */}
-            <Link href="/admin/jornadas" className="inline-flex items-center gap-1.5 text-white/40 hover:text-white/70 text-sm transition-colors">
-                <ChevronLeft size={16} /> Volver a Jornadas
-            </Link>
+            <SafeBackButton fallback="/admin/jornadas" variant="admin" size="sm" label="Volver a Jornadas" />
 
             {/* Header */}
             <div className="flex items-start justify-between gap-4">

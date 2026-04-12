@@ -3,6 +3,7 @@ import { Card, Button } from "@/components/ui-primitives";
 import { cn } from "@/lib/utils";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { useState } from "react";
+import { MatchReviewModal } from "./match-review-modal";
 
 interface AdminModalsProps {
   isEndingMatch: boolean;
@@ -17,6 +18,10 @@ interface AdminModalsProps {
   confirmingDeletion: any;
   onCloseDeletion: () => void;
   onConfirmDeletion: () => void;
+  showReview: boolean;
+  onCloseReview: () => void;
+  onConfirmReview: () => void;
+  eventos: any[];
 }
 
 export const AdminModals = ({
@@ -31,7 +36,11 @@ export const AdminModals = ({
   onManualScoreUpdate,
   confirmingDeletion,
   onCloseDeletion,
-  onConfirmDeletion
+  onConfirmDeletion,
+  showReview,
+  onCloseReview,
+  onConfirmReview,
+  eventos,
 }: AdminModalsProps) => {
   const [showWOModal, setShowWOModal] = useState(false);
   return (
@@ -166,6 +175,16 @@ export const AdminModals = ({
             </div>
           </Card>
         </div>
+      )}
+
+      {showReview && (
+        <MatchReviewModal 
+          match={match}
+          eventos={eventos}
+          onClose={onCloseReview}
+          onConfirm={onConfirmReview}
+          disciplinaName={disciplinaName}
+        />
       )}
     </>
   );

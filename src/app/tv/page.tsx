@@ -8,6 +8,7 @@ import { PublicLiveTimer } from "@/components/public-live-timer";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { Badge, Avatar } from "@/components/ui-primitives";
 import { cn } from "@/lib/utils";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 import { SPORT_EMOJI } from "@/lib/constants";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -344,9 +345,7 @@ export default function TvPage() {
                 <MonitorPlay className="w-24 h-24 text-red-500 mb-8 opacity-80" />
                 <h1 className="text-3xl font-black uppercase tracking-wider mb-4 font-sans">Vista Exclusiva<br/>para TV</h1>
                 <p className="text-white/40 mb-12 font-bold max-w-xs mx-auto">Esta vista de tablero está diseñada únicamente para pantallas gigantes (Digital Signage).</p>
-                <Link href="/" className="bg-[#111] hover:bg-white hover:text-black transition-all text-white border border-white/10 px-8 py-4 rounded-3xl font-black uppercase tracking-widest text-sm flex items-center gap-3 shadow-2xl relative z-10">
-                    <ChevronLeft size={18} /> Volver al Inicio
-                </Link>
+                <SafeBackButton fallback="/" className="bg-[#111] hover:bg-white hover:text-black transition-all text-white border border-white/10 px-8 py-4 rounded-3xl font-black uppercase tracking-widest text-sm flex items-center gap-3 shadow-2xl relative z-10 shadow-none hover:shadow-none" label="Volver al inicio" />
             </div>
 
             {/* TV VIEW - HIDDEN ON MOBILE */}

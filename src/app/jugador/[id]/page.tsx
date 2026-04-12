@@ -117,7 +117,7 @@ export default function JugadorPublicPage() {
         <div className="min-h-screen bg-background flex flex-col items-center justify-center text-white gap-4 p-8 text-center">
             <Trophy size={48} className="text-slate-700" />
             <h1 className="text-xl font-bold">Jugador no encontrado</h1>
-            <SafeBackButton fallback="/" label="Volver al inicio" />
+            <SafeBackButton fallback="/medallero" label="Volver al Medallero" />
         </div>
     );
 
@@ -155,12 +155,7 @@ export default function JugadorPublicPage() {
                 
                 {/* Top Nav Actions */}
                 <div className="flex items-center justify-between">
-                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-sans">
-                        <div className="p-2 rounded-full bg-white/5 border border-white/5 group-hover:bg-white group-hover:text-black transition-all flex items-center justify-center">
-                            <ChevronLeft size={14} />
-                        </div>
-                        Regresar
-                    </button>
+                    <SafeBackButton fallback="/medallero" variant="ghost" label="Regresar" />
 
                     <div className="flex items-center gap-2">
                          {/* Compartir */}

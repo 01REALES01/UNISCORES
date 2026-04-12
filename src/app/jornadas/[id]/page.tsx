@@ -7,7 +7,8 @@ import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { SportIcon } from "@/components/sport-icons";
 import { cn } from "@/lib/utils";
-import { MapPin, Trophy, Users } from "lucide-react";
+import { MapPin, Trophy, Users, ChevronLeft } from "lucide-react";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 
 interface JornadaResultado {
     jugador_id: number | null;
@@ -113,6 +114,11 @@ export default function JornadaPublicPage() {
                     <div className="text-center py-32 text-white/30 text-lg font-bold">Jornada no encontrada</div>
                 ) : (
                     <div className="space-y-8">
+                        {/* Back button */}
+                        <div className="mb-2">
+                            <SafeBackButton fallback="/jornadas" variant="ghost" label="Regresar" />
+                        </div>
+
                         {/* Header */}
                         <div className="space-y-3">
                             <div className="flex items-center gap-3">

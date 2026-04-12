@@ -423,7 +423,7 @@ export default function CarreraProfilePage() {
             <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10 shadow-xl"><GraduationCap className="text-violet-400" size={32} /></div>
             <h1 className="text-2xl font-black mb-2 uppercase tracking-wider">Carrera no encontrada</h1>
             <p className="text-white/40 mb-8 max-w-sm font-bold italic">El programa académico que buscas no existe o no ha participado en eventos.</p>
-            <SafeBackButton fallback="/medallero" label="Volver atrás" className="bg-violet-600 hover:bg-violet-700 h-12 px-8" />
+            <SafeBackButton fallback="/medallero" label="Volver al Medallero" className="bg-violet-600 hover:bg-violet-700 h-12 px-8 shadow-none" />
         </div>
     );
 
@@ -448,7 +448,7 @@ export default function CarreraProfilePage() {
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <main className="max-w-5xl mx-auto px-4 pt-10 pb-20 relative z-10">
-                <div className="mb-8"><SafeBackButton fallback="/medallero" label="Regresar" /></div>
+                <div className="mb-8"><SafeBackButton fallback="/medallero" variant="ghost" label="Regresar" /></div>
 
                 {/* HERO SECTION */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative mb-12">

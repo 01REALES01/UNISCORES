@@ -23,8 +23,14 @@ type SetScore = { a: number; b: number };
 const MAX_SETS = 8;
 
 // Is set complete/won — returns who won ('a' | 'b' | null)
-function setWinner(sport: string, a: number, b: number): 'a' | 'b' | null {
+function setWinner(sport: string, a: number, b: number, matchFormat?: string): 'a' | 'b' | null {
   if (sport === 'Tenis') {
+    if (matchFormat === 'propset_8games') {
+      // Pro set (8 games): win at 8 with difference >= 2, or 9-7 tiebreak
+      if ((a === 8 && b <= 6) || (a === 9 && b === 7)) return 'a';
+      if ((b === 8 && a <= 6) || (b === 9 && a === 7)) return 'b';
+      return null;
+    }
     // standard: 6-0..6-4, 7-5, 7-6
     const wonA = (a === 6 && b <= 4) || (a === 7 && (b === 5 || b === 6));
     const wonB = (b === 6 && a <= 4) || (b === 7 && (a === 5 || a === 6));
@@ -87,8 +93,9 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
     setSets(prev => [...prev, { a: 0, b: 0 }]);
   };
 
-  const setsWonA = sets.filter((s, i) => setWinner(sport, s.a, s.b) === 'a').length;
-  const setsWonB = sets.filter((s, i) => setWinner(sport, s.a, s.b) === 'b').length;
+  const currentFormat = match.marcador_detalle?.match_format || 'best_of_3sets';
+  const setsWonA = sets.filter((s, i) => setWinner(sport, s.a, s.b, currentFormat) === 'a').length;
+  const setsWonB = sets.filter((s, i) => setWinner(sport, s.a, s.b, currentFormat) === 'b').length;
 
   const save = async () => {
     setSaving(true);
@@ -265,7 +272,7 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
 
           {/* Set rows */}
           {sets.map((s, idx) => {
-            const winner = setWinner(sport, s.a, s.b);
+            const winner = setWinner(sport, s.a, s.b, currentFormat);
             return (
               <div key={idx} className="grid grid-cols-[36px_1fr_1fr_28px_28px] gap-2 items-center">
                 {/* Set label */}

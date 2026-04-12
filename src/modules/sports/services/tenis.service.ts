@@ -100,6 +100,9 @@ export class TenisService extends BaseSportService {
     if (matchFormat === 'propset_8games') {
       // Pro set: match ends when someone wins the single "set" (game to 8)
       return (d.sets_a || 0) >= 1 || (d.sets_b || 0) >= 1;
+    } else if (matchFormat === 'best_of_15') {
+       // Support for "8 sets" to win as requested
+       return (d.sets_a || 0) >= 8 || (d.sets_b || 0) >= 8;
     } else {
       // Standard formats: best-of-2 or best-of-3 sets
       return (d.sets_a || 0) >= 2 || (d.sets_b || 0) >= 2;
@@ -257,9 +260,11 @@ export class TenisService extends BaseSportService {
 
     const matchOver = matchFormat === 'propset_8games'
       ? setsA >= 1 || setsB >= 1
-      : setsA >= 2 || setsB >= 2;
+      : matchFormat === 'best_of_15'
+        ? setsA >= 8 || setsB >= 8
+        : setsA >= 2 || setsB >= 2;
 
-    if (!matchOver && currentSetWon && currentSet < 3) {
+    if (!matchOver && currentSetWon && currentSet < 15) {
       d.set_actual = currentSet + 1;
       if (!d.sets[d.set_actual]) {
         d.sets[d.set_actual] = { juegos_a: 0, juegos_b: 0, puntos_a: 0, puntos_b: 0 };

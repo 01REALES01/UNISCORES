@@ -53,15 +53,22 @@ export function ScoreBreakdownEditor({ match, profile, onSaved }: ScoreBreakdown
 
   const deleteSet = (num: number) => {
     setPeriods(prev => {
+      const keys = Object.keys(prev).map(Number).sort((a, b) => a - b);
+      if (keys.length <= 1) {
+        toast.error('No se puede eliminar el único set');
+        return prev;
+      }
+      
       const entries = Object.entries(prev)
         .map(([k, v]) => [Number(k), v] as [number, PeriodScore])
         .filter(([k]) => k !== num)
         .sort(([a], [b]) => a - b);
+      
       const renumbered: Record<number, PeriodScore> = {};
       entries.forEach(([, v], idx) => { renumbered[idx + 1] = v; });
       return renumbered;
     });
-    toast.info(`Set ${num} eliminado — confirma para aplicar`);
+    toast.info(`Set ${num} eliminado — se han renumerado los sets posteriores`);
   };
 
   const addSet = () => {
@@ -82,7 +89,11 @@ export function ScoreBreakdownEditor({ match, profile, onSaved }: ScoreBreakdown
       if (sport === 'Voleibol') {
         newDetalle.sets = periods;
         const sortedNums = Object.keys(periods).map(Number).sort((a, b) => a - b);
-        newDetalle.set_actual = sortedNums[sortedNums.length - 1] || 1;
+        // Ensure set_actual is not pointing to a deleted set index
+        const lastSet = sortedNums[sortedNums.length - 1] || 1;
+        newDetalle.set_actual = Math.min(newDetalle.set_actual || 1, lastSet);
+        if ((newDetalle.set_actual || 1) < 1) newDetalle.set_actual = 1;
+        
         newDetalle = recalculateTotals(sport, newDetalle);
       } else if (sport === 'Baloncesto') {
         newDetalle.cuartos = periods;

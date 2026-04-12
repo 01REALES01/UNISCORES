@@ -34,7 +34,7 @@ export default function PartidosPage() {
     const { jornadas, loading: jornadasLoading } = useJornadas();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSport, setSelectedSport] = useState("Todos");
-    const [selectedGender, setSelectedGender] = useState<string>("masculino");
+    const [selectedGender, setSelectedGender] = useState<string>("todos");
     const [filterVisible, setFilterVisible] = useState(true);
     const lastScrollY = useRef(0);
     // Derive unique sport names from all matches + jornadas

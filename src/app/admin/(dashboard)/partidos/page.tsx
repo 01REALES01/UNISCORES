@@ -571,15 +571,16 @@ export default function PartidosPage() {
                             </div>
                             <div className="flex gap-3 p-2.5 rounded-[1.75rem] bg-black/40 border-2 border-white/5">
                                 {[
+                                    { value: 'todos', label: 'Todos', color: 'bg-zinc-700', hover: 'hover:text-zinc-300' },
                                     { value: 'masculino', label: '♂', color: 'bg-primary', hover: 'hover:text-primary' },
                                     { value: 'femenino', label: '♀', color: 'bg-pink-600', hover: 'hover:text-pink-500' },
                                     { value: 'mixto', label: '⚤', color: 'bg-purple-600', hover: 'hover:text-purple-500' },
                                 ].map(g => (
                                     <button
                                         key={g.value}
-                                        onClick={() => setGenderFilter(genderFilter === g.value ? 'todos' : g.value)}
+                                        onClick={() => setGenderFilter(g.value)}
                                         className={cn(
-                                            "flex-1 h-14 rounded-2xl text-2xl font-black transition-all duration-500 flex items-center justify-center border border-transparent",
+                                            "flex-1 h-14 rounded-2xl text-base sm:text-lg font-black transition-all duration-500 flex items-center justify-center border border-transparent px-4",
                                             genderFilter === g.value
                                                 ? `${g.color} text-white shadow-xl scale-105 border-white/20`
                                                 : `bg-white/5 text-zinc-600 ${g.hover} hover:bg-white/10 hover:border-white/10`

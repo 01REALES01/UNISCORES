@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { SmokeyBackground } from "@/components/ui/login-form";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 
 export default function LoginPage() {
     return (
@@ -198,10 +199,7 @@ function LoginPageContent() {
 
                     {/* Back to Home */}
                     <div className="mt-10 pt-6 border-t border-white/5 text-center">
-                        <Link href="/" className="group/back text-[11px] font-black uppercase tracking-[0.25em] text-amber-500/60 hover:text-amber-400 transition-all inline-flex items-center gap-2 drop-shadow-[0_0_10px_rgba(245,158,11,0)] hover:drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]">
-                            <span className="group-hover/back:-translate-x-1 transition-transform">←</span>
-                            Regresar Inicio
-                        </Link>
+                        <SafeBackButton fallback="/" variant="ghost" label="Regresar Inicio" className="text-amber-500/60 hover:text-amber-400" />
                     </div>
                 </div>
 

@@ -7,6 +7,8 @@ interface SafeBackButtonProps {
     fallback?: string;
     className?: string;
     label?: string;
+    variant?: "default" | "ghost" | "admin";
+    size?: "sm" | "md";
 }
 
 /**
@@ -19,7 +21,9 @@ interface SafeBackButtonProps {
 export function SafeBackButton({ 
     fallback = "/", 
     className, 
-    label = "Volver" 
+    label = "Volver",
+    variant = "default",
+    size = "md"
 }: SafeBackButtonProps) {
     const router = useRouter();
 
@@ -33,16 +37,23 @@ export function SafeBackButton({
         }
     };
 
+    const isSm = size === "sm";
+
     return (
         <button
             onClick={handleBack}
             className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-white group shadow-xl",
+                "flex items-center gap-2 group transition-all font-black uppercase tracking-widest active:scale-95",
+                variant === "default" && "px-4 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white shadow-xl",
+                variant === "ghost" && "text-white/30 hover:text-white",
+                variant === "admin" && "px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300",
+                isSm ? "text-[9px] px-3 py-1.5" : "text-[10px] sm:text-xs",
                 className
             )}
         >
-            <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft size={isSm ? 14 : 16} className="group-hover:-translate-x-0.5 transition-transform" />
             {label && <span>{label}</span>}
         </button>
     );
 }
+

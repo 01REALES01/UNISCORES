@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuditLogger } from "@/hooks/useAuditLogger";
 import { MarkdownEditor } from "@/shared/components/markdown-editor";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 
 const CATEGORIES = [
     { value: 'cronica', label: 'Crónica', desc: 'Narrativa de un evento deportivo' },
@@ -186,9 +187,7 @@ export default function EditNoticiaPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => router.push('/admin/noticias')} className="rounded-full">
-                        <ArrowLeft size={20} />
-                    </Button>
+                    <SafeBackButton fallback="/admin/noticias" variant="admin" size="sm" label="" />
                     <h1 className="text-2xl font-black tracking-tight">Editar Noticia</h1>
                 </div>
                 <div className="flex items-center gap-2">

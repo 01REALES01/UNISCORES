@@ -38,6 +38,11 @@ export function ExpandableTabs({
     onHover,
 }: ExpandableTabsProps) {
     const [hovered, setHovered] = React.useState<number | null>(null);
+    const [isMounted, setIsMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const handleMouseEnter = (index: number) => {
         setHovered(index);
@@ -72,13 +77,18 @@ export function ExpandableTabs({
                 const isSelected = hovered === index || activeItem === index;
                 const showLabel = isSelected || alwaysShowLabels;
 
+                const ButtonComponent = isMounted ? m.button : "button";
+                const SpanComponent = isMounted ? m.span : "span";
+
                 return (
-                    <m.button
+                    <ButtonComponent
                         key={tab.title}
-                        initial={false}
-                        animate={{
-                            backgroundColor: isSelected ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0)",
-                        }}
+                        {...(isMounted ? {
+                            initial: false,
+                            animate: {
+                                backgroundColor: isSelected ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0)",
+                            }
+                        } : {})}
                         onMouseEnter={() => handleMouseEnter(index)}
                         onMouseLeave={handleMouseLeave}
                         onClick={() => handleClick(index)}
@@ -91,18 +101,20 @@ export function ExpandableTabs({
                         <Icon size={18} strokeWidth={isSelected ? 2.5 : 2} className="transition-transform duration-300 flex-shrink-0" />
                         <AnimatePresence initial={false}>
                             {showLabel && (
-                                <m.span
-                                    initial={{ width: 0, opacity: 0, marginLeft: 0 }}
-                                    animate={{ width: "auto", opacity: 1, marginLeft: 8 }}
-                                    exit={{ width: 0, opacity: 0, marginLeft: 0 }}
-                                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                                <SpanComponent
+                                    {...(isMounted ? {
+                                        initial: { width: 0, opacity: 0, marginLeft: 0 },
+                                        animate: { width: "auto", opacity: 1, marginLeft: 8 },
+                                        exit: { width: 0, opacity: 0, marginLeft: 0 },
+                                        transition: { duration: 0.2, ease: "easeInOut" }
+                                    } : {})}
                                     className="overflow-hidden whitespace-nowrap text-[13px] font-display tracking-wide"
                                 >
                                     <span className="font-black">{tab.title.slice(0, 2)}</span>{tab.title.slice(2)}
-                                </m.span>
+                                </SpanComponent>
                             )}
                         </AnimatePresence>
-                    </m.button>
+                    </ButtonComponent>
                 );
             })}
         </div>

@@ -1,19 +1,52 @@
-import Link from "next/link";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Activity, Radio } from "lucide-react";
-import { Badge } from "@/components/ui-primitives";
-import { formatUltimaEdicion } from "@/lib/audit-helpers";
+import { Activity, Trophy, RefreshCw, Loader2 } from "lucide-react";
+import { formatUltimaEdicion, stampAudit } from "@/lib/audit-helpers";
+import { getMatchResult } from "@/modules/quiniela/helpers";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { recalculateTotals } from "@/lib/sport-scoring";
+import { toast } from "sonner";
 
 interface AdminMatchHeaderProps {
   match: any;
   disciplinaName: string;
   bgGradient: string;
   activeEditors: any[];
+  onRefresh?: () => void;
 }
 
-export const AdminMatchHeader = ({ match, disciplinaName, bgGradient, activeEditors }: AdminMatchHeaderProps) => {
+export const AdminMatchHeader = ({ match, disciplinaName, bgGradient, activeEditors, onRefresh }: AdminMatchHeaderProps) => {
+  const [recalculating, setRecalculating] = useState(false);
   const auditInfo = formatUltimaEdicion(match.marcador_detalle);
   const isLive = match.estado === 'en_curso';
+
+  const handleRecalculate = async () => {
+    setRecalculating(true);
+    try {
+      const sport = match.disciplinas?.name || '';
+      let newDetalle = { ...(match.marcador_detalle || {}) };
+      
+      // Force recalculation via service logic
+      newDetalle = recalculateTotals(sport, newDetalle);
+      
+      // Update DB
+      const { error } = await supabase
+        .from('partidos')
+        .update({ 
+          marcador_detalle: stampAudit(newDetalle, { full_name: 'Admin System (Recalc)' }) 
+        })
+        .eq('id', match.id);
+
+      if (error) throw error;
+      toast.success('Resultado recalculado y sincronizado');
+      onRefresh?.();
+    } catch (err: any) {
+      toast.error('Error al recalcular: ' + err.message);
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   return (
     <div className="relative overflow-hidden">
@@ -24,19 +57,26 @@ export const AdminMatchHeader = ({ match, disciplinaName, bgGradient, activeEdit
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 pt-6 pb-4">
         {/* Top Nav */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <div className="flex items-center gap-3">
-            <Link href="/admin/partidos">
-              <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[10px] font-black uppercase tracking-widest text-white/50 hover:text-white hover:bg-white/10 transition-all backdrop-blur-sm">
-                <ArrowLeft size={13} /> Panel
-              </button>
-            </Link>
+            <SafeBackButton fallback="/admin/partidos" variant="admin" size="sm" label="Panel" />
             <div className="px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.1] backdrop-blur-sm">
               <span className="text-[10px] font-black uppercase tracking-widest text-white/60">{disciplinaName}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Recalculate Button */}
+            <button
+              onClick={handleRecalculate}
+              disabled={recalculating}
+              className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/40 hover:text-white flex items-center gap-2 text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+              title="Forzar recalculación de marcador y ganador"
+            >
+              {recalculating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+              Recalcular
+            </button>
+
             {isLive ? (
               <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 backdrop-blur-sm">
                 <span className="relative flex h-2 w-2">
@@ -45,9 +85,31 @@ export const AdminMatchHeader = ({ match, disciplinaName, bgGradient, activeEdit
                 </span>
                 <span className="text-[10px] font-black text-rose-400 tracking-[0.2em] uppercase">En Curso</span>
               </div>
+            ) : match.estado === 'finalizado' ? (
+              (() => {
+                const result = getMatchResult(match);
+                const winnerName = result === 'A' ? match.equipo_a : result === 'B' ? match.equipo_b : null;
+                return (
+                  <div className="flex items-center gap-3">
+                    <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black tracking-[0.2em] uppercase backdrop-blur-sm flex items-center gap-2">
+                      <Trophy size={12} /> Finalizado
+                    </div>
+                    {winnerName && (
+                      <div className="px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black tracking-[0.2em] uppercase backdrop-blur-sm">
+                        Victoria: {winnerName}
+                      </div>
+                    )}
+                    {result === 'DRAW' && (
+                      <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/40 text-[10px] font-black tracking-[0.2em] uppercase backdrop-blur-sm">
+                        Empate
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
             ) : (
               <div className="px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/40 text-[10px] font-black tracking-[0.2em] uppercase backdrop-blur-sm">
-                {match.estado === 'programado' ? 'Programado' : 'Finalizado'}
+                Programado
               </div>
             )}
           </div>

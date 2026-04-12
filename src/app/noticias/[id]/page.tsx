@@ -124,7 +124,7 @@ export default function NoticiaDetailPage() {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white">
                 <h1 className="text-2xl font-black mb-2">Artículo no encontrado</h1>
-                <Link href="/noticias"><Button variant="ghost">← Volver a Noticias</Button></Link>
+                <SafeBackButton fallback="/noticias" label="Volver a Noticias" className="bg-white/5 hover:bg-white/10 text-white" />
             </div>
         );
     }
@@ -154,7 +154,7 @@ export default function NoticiaDetailPage() {
                 
                 <div className="max-w-5xl mx-auto px-6 h-16 sm:h-20 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <SafeBackButton fallback="/noticias" />
+                        <SafeBackButton fallback="/noticias" variant="ghost" label="Volver" />
                         <div className="hidden sm:block h-6 w-[1px] bg-white/10" />
                         <div className="hidden sm:flex items-center gap-2">
                              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />

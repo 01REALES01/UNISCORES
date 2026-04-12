@@ -9,6 +9,7 @@ import { ChevronLeft, Save, Loader2, Trophy, Check, Palette } from "lucide-react
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 import UniqueLoading from "@/components/ui/morph-loading";
 
 // Allowed colors — gold/yellow excluded intentionally
@@ -98,12 +99,7 @@ export default function EditProfilePage() {
 
                 {/* Back button */}
                 <div className="mb-10">
-                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-sans">
-                        <div className="p-2 rounded-full bg-white/5 border border-white/5 group-hover:bg-white group-hover:text-black transition-all flex items-center justify-center">
-                            <ChevronLeft size={14} />
-                        </div>
-                        Regresar
-                    </button>
+                    <SafeBackButton fallback="/perfil" variant="ghost" label="Regresar" />
                 </div>
 
                 <div className="mb-12 text-center lg:text-left">

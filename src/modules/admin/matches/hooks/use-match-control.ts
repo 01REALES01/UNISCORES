@@ -691,6 +691,62 @@ export function useMatchControl(matchId: string) {
         }
     };
 
+    const handleBulkBasketballStats = async (
+        equipo: 'equipo_a' | 'equipo_b',
+        jugador_id: number | null,
+        totalPuntos: number,
+        triples: number,
+        dobles: number
+    ) => {
+        if (!match || !profile) return;
+
+        const libres = totalPuntos - triples * 3 - dobles * 2;
+        if (libres < 0) {
+            toast.error('Los dobles y triples superan el total de puntos.');
+            return;
+        }
+        if (totalPuntos === 0) {
+            toast.error('Ingresa al menos 1 punto.');
+            return;
+        }
+
+        const periodo = getCurrentPeriodNumber('Baloncesto', match.marcador_detalle || {});
+        const baseEvent = {
+            partido_id: matchId,
+            minuto: 0,
+            equipo,
+            jugador_id_normalized: jugador_id,
+            periodo,
+            descripcion: stampEventAudit('Carga por lotes', profile),
+        };
+
+        const eventRows: any[] = [
+            ...Array.from({ length: triples }, () => ({ ...baseEvent, tipo_evento: 'punto_3' })),
+            ...Array.from({ length: dobles }, () => ({ ...baseEvent, tipo_evento: 'punto_2' })),
+            ...Array.from({ length: libres }, () => ({ ...baseEvent, tipo_evento: 'punto_1' })),
+        ];
+
+        const { error: evErr } = await supabase.from('olympics_eventos').insert(eventRows);
+        if (evErr) {
+            toast.error('Error al registrar eventos: ' + evErr.message);
+            return;
+        }
+
+        const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
+        const currentDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
+        const nuevoMarcador = addPoints('Baloncesto', currentDetalle, equipo, totalPuntos);
+        await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
+        setMatch((prev: any) => prev ? { ...prev, marcador_detalle: nuevoMarcador } : null);
+
+        await logAction('UPDATE_SCORE', 'partido', matchId, {
+            tipo_evento: 'bulk_basketball',
+            equipo, jugador_id, totalPuntos, triples, dobles, libres,
+        });
+
+        fetchEventos();
+        toast.success(`+${totalPuntos} pts — ${triples}×3, ${dobles}×2, ${libres}×1`);
+    };
+
     const requestDeleteEvento = async (evento: Evento) => {
         if (!match || !profile) return;
         const disciplinaName = match.disciplinas?.name || 'Deporte';
@@ -728,6 +784,7 @@ export function useMatchControl(matchId: string) {
         toggleCronometro,
         toggleModoRegistro,
         handleNuevoEvento,
+        handleBulkBasketballStats,
         handleManualScoreUpdate,
         handleCambiarPeriodo,
         handleCambiarFaseFutbol,

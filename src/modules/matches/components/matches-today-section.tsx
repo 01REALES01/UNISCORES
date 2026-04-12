@@ -18,11 +18,6 @@ import type { PartidoWithRelations as Partido } from "../types";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatMatchTime(fecha: string) {
-  const d = new Date(fecha);
-  return d.toLocaleString("es-CO", { hour: "2-digit", minute: "2-digit" });
-}
-
 function isToday(fecha: string) {
   const d = new Date(fecha);
   const now = new Date();
@@ -31,6 +26,24 @@ function isToday(fecha: string) {
     d.getMonth() === now.getMonth() &&
     d.getDate() === now.getDate()
   );
+}
+
+function parseMatchTime(fecha: string) {
+  const d = new Date(fecha);
+  // Using es-CO and making sure we get AM/PM clearly
+  const timeStr = d.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true });
+  // Split format like "08:00 a. m."
+  const parts = timeStr.split(/\s+/);
+  const time = parts[0];
+  const meridiem = (parts[1] || parts[2] || "").replace(/\./g, "").toUpperCase();
+  return { time, meridiem };
+}
+
+function getMatchDayLabel(fecha: string) {
+  if (isToday(fecha)) return "Hoy";
+  if (isTomorrow(fecha)) return "Mañana";
+  const d = new Date(fecha);
+  return d.toLocaleDateString("es-CO", { weekday: "short", day: "numeric" }).toUpperCase();
 }
 
 function getShieldUrl(partido: Partido, side: "a" | "b") {
@@ -56,7 +69,7 @@ function MatchRow({ partido }: { partido: Partido }) {
   const isFinished = partido.estado === "finalizado";
   const isAsync = isAsyncMatch(partido);
 
-  const { scoreA, scoreB, labelA, labelB, subScoreA, subScoreB, extra } =
+  const { scoreA, scoreB, labelA, labelB, subScoreA, subScoreB } =
     getCurrentScore(sportName, partido.marcador_detalle || {});
 
   const nameA = getDisplayName(partido, "a");
@@ -89,6 +102,8 @@ function MatchRow({ partido }: { partido: Partido }) {
 
   const genero = (partido.genero || "").toLowerCase();
   const grupo = partido.grupo;
+
+  const { time, meridiem } = parseMatchTime(partido.fecha);
 
   return (
     <Link
@@ -164,7 +179,7 @@ function MatchRow({ partido }: { partido: Partido }) {
         </div>
 
         {/* Score / Time center */}
-        <div className="flex flex-col items-center justify-center w-[64px] sm:w-[90px] shrink-0 z-10">
+        <div className="flex flex-col items-center justify-center w-[74px] sm:w-[96px] shrink-0 z-10 px-1">
           {isAsync ? (
             /* Async: hide score, show indicator */
             <div className="flex flex-col items-center gap-0.5 px-1">
@@ -238,11 +253,22 @@ function MatchRow({ partido }: { partido: Partido }) {
               <span className="text-[8px] font-bold text-white/15 uppercase tracking-widest">Final</span>
             </div>
           ) : (
-            <div className="flex flex-col items-center px-2 py-1 rounded-lg bg-white/[0.03] border border-white/[0.05]">
-              <span className="text-xs sm:text-sm font-black text-white/80 tabular-nums">
-                {formatMatchTime(partido.fecha)}
+            <div className={cn(
+              "flex flex-col items-center px-2 py-1.5 sm:px-3 rounded-xl transition-all duration-300 w-full",
+              "bg-white/[0.05] border border-white/10 backdrop-blur-md shadow-lg",
+              "group-hover:bg-white/[0.08] group-hover:border-white/20"
+            )}>
+              <div className="flex items-baseline gap-0.5 sm:gap-1">
+                <span className="text-xs sm:text-[15px] font-black text-white tabular-nums tracking-tighter">
+                  {time}
+                </span>
+                <span className="text-[7px] sm:text-[8px] font-black text-white/40 uppercase">
+                  {meridiem}
+                </span>
+              </div>
+              <span className="text-[6px] sm:text-[7px] font-black text-white/25 uppercase tracking-[0.2em] mt-0.5">
+                {getMatchDayLabel(partido.fecha)}
               </span>
-              <span className="text-[7px] font-black text-white/25 uppercase tracking-[0.2em]">Hoy</span>
             </div>
           )}
         </div>
@@ -410,6 +436,25 @@ function SportGroup({
   );
 }
 
+function isTomorrow(fecha: string) {
+  const d = new Date(fecha);
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return (
+    d.getFullYear() === tomorrow.getFullYear() &&
+    d.getMonth() === tomorrow.getMonth() &&
+    d.getDate() === tomorrow.getDate()
+  );
+}
+
+function formatMatchdayLabel(fecha: string) {
+  const d = new Date(fecha);
+  const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+  const str = d.toLocaleDateString('es-CO', options);
+  // Capitalize first letter
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 // ── Main section ─────────────────────────────────────────────────────────────
 
 interface MatchesTodaySectionProps {
@@ -417,11 +462,45 @@ interface MatchesTodaySectionProps {
 }
 
 export function MatchesTodaySection({ matches }: MatchesTodaySectionProps) {
-  // Get today's matches, or if none, show all non-finished
-  const todayMatches = useMemo(() => {
-    return matches.filter(
+  // Determine which matches to show: Today -> Live -> Next Day with matches
+  const { todayMatches, displayDate, isFallback } = useMemo(() => {
+    // 1. Check for real today's matches
+    const today = matches.filter(
       (m) => isToday(m.fecha) && m.estado !== "cancelado"
     );
+
+    // 2. Check for ANY live matches (might be from other dates)
+    const live = matches.filter((m) => m.estado === "en_curso");
+
+    if (today.length > 0 || live.length > 0) {
+      // Merge unique matches from today and live
+      const seen = new Set<string>();
+      const combined = [...today, ...live].filter(m => {
+        if (seen.has(m.id.toString())) return false;
+        seen.add(m.id.toString());
+        return true;
+      });
+      return { todayMatches: combined, displayDate: null, isFallback: false };
+    }
+
+    // 3. Fallback: Find the next date with matches
+    const upcoming = matches
+      .filter(m => new Date(m.fecha) > new Date() && m.estado === "programado")
+      .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+
+    if (upcoming.length > 0) {
+      const firstMatchDate = upcoming[0].fecha;
+      const nextDayMatches = upcoming.filter(m => {
+        const d1 = new Date(m.fecha);
+        const d2 = new Date(firstMatchDate);
+        return d1.getFullYear() === d2.getFullYear() &&
+               d1.getMonth() === d2.getMonth() &&
+               d1.getDate() === d2.getDate();
+      });
+      return { todayMatches: nextDayMatches, displayDate: firstMatchDate, isFallback: true };
+    }
+
+    return { todayMatches: [], displayDate: null, isFallback: false };
   }, [matches]);
 
   // Group by sport, sorted: sports with live matches first
@@ -457,35 +536,29 @@ export function MatchesTodaySection({ matches }: MatchesTodaySectionProps) {
 
   const hasAnyLive = todayMatches.some((m) => m.estado === "en_curso");
 
-  if (todayMatches.length === 0) {
-    return (
-      <section className="animate-in slide-in-from-bottom-6 fade-in duration-700">
-        <div className="flex flex-col gap-1 mb-6 px-1">
-          <p className="font-display text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 tracking-[0.3em]">Jornada del día</p>
-          <h2 className="text-4xl md:text-6xl font-black tracking-tighter font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm">
-            Partidos
-          </h2>
-        </div>
-        <div className="flex flex-col items-center justify-center gap-3 py-12 rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-          <span className="text-4xl">🗓️</span>
-          <p className="text-white/50 font-bold text-sm">Hoy no hay partidos programados</p>
-          <p className="text-white/20 text-xs">Revisa el calendario para ver las próximas fechas</p>
-        </div>
-      </section>
-    );
-  }
+  // Determine Labels
+  const sectionLabel = hasAnyLive 
+    ? "Acción en vivo" 
+    : isFallback 
+      ? (isTomorrow(displayDate!) ? "Mañana" : "Próxima Jornada")
+      : "Jornada del día";
 
-
+  const sectionSubtitle = isFallback && displayDate 
+    ? formatMatchdayLabel(displayDate) 
+    : "Partidos";
 
   return (
     <section className="animate-in slide-in-from-bottom-6 fade-in duration-700">
       <div className="flex flex-col gap-1 mb-6 px-1">
-        <p className="font-display text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 tracking-[0.3em]">
-          {hasAnyLive ? "Acción en vivo" : "Jornada del día"}
+        <p className={cn(
+          "font-display text-xs font-bold bg-clip-text text-transparent tracking-[0.3em]",
+          hasAnyLive ? "bg-gradient-to-r from-red-400 to-red-600" : "bg-gradient-to-r from-emerald-400 to-emerald-600"
+        )}>
+          {sectionLabel}
         </p>
         <div className="flex items-center gap-4">
           <h2 className="text-4xl md:text-6xl font-black tracking-tighter font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm">
-            Partidos
+            {isFallback ? sectionSubtitle : "Partidos"}
           </h2>
           {hasAnyLive && (
             <span className="flex items-center gap-1.5 text-[9px] font-black text-white bg-red-500 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse uppercase tracking-widest h-fit">

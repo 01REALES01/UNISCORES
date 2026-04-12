@@ -14,6 +14,7 @@ import {
     type NotificationPreferences,
 } from "@/services/notification-service";
 import { cn } from "@/lib/utils";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 import { toast } from "sonner";
 
 const SPORT_OPTIONS = ["Fútbol", "Baloncesto", "Voleibol", "Tenis de Mesa", "Natación", "Ajedrez", "Tenis"];
@@ -185,12 +186,7 @@ export default function NotificacionesPage() {
             <main className="max-w-3xl mx-auto px-4 pt-10 pb-20 relative z-10">
                 {/* Back button */}
                 <div className="mb-8">
-                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.2em]">
-                        <div className="p-2 rounded-xl bg-white/5 border border-white/5 group-hover:bg-indigo-500 group-hover:text-black transition-all">
-                            <ChevronLeft size={14} />
-                        </div>
-                        Regresar
-                    </button>
+                    <SafeBackButton fallback="/perfil" variant="ghost" label="Regresar" />
                 </div>
 
                 {/* Page Header */}

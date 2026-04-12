@@ -34,6 +34,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { motion } from "framer-motion";
+import { SafeBackButton } from "@/shared/components/safe-back-button";
 import { isCreator, hasAuraBadge, hasMvpBadge, SPORT_ACCENT } from "@/lib/constants";
 import { SportIcon } from "@/shared/components/sport-icons";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
@@ -507,9 +508,7 @@ export default function PublicProfilePage() {
                 </div>
                 <h1 className="text-2xl font-black mb-2 font-sans uppercase tracking-wider">Perfil no encontrado</h1>
                 <p className="text-white/40 mb-8 max-w-sm text-center font-bold">El usuario que buscas no existe o su perfil es privado.</p>
-                <button onClick={() => router.back()} className="rounded-2xl px-8 py-3 bg-[#111] border border-white/10 text-white font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all text-sm flex items-center gap-2">
-                    <ChevronLeft size={18} /> Volver
-                </button>
+                <SafeBackButton fallback="/clasificacion" className="shadow-none rounded-2xl px-10 h-14 bg-violet-600 text-white font-black uppercase tracking-widest hover:bg-violet-700 shadow-2xl shadow-violet-600/30" label="Volver a Clasificación" />
             </div>
         );
     }
@@ -555,12 +554,7 @@ export default function PublicProfilePage() {
             <main className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-6 sm:pt-8 pb-32 relative z-10 space-y-12 sm:space-y-16">
                 {/* Back button */}
                 <div>
-                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] font-sans">
-                        <div className="p-2 rounded-full bg-white/5 border border-white/5 group-hover:bg-white group-hover:text-black transition-all flex items-center justify-center">
-                            <ChevronLeft size={14} />
-                        </div>
-                        Regresar
-                    </button>
+                    <SafeBackButton fallback="/clasificacion" variant="ghost" label="Regresar" />
                 </div>
 
                 {/* ━━━ PREMIUM IDENTITY BLOCK ━━━ */}

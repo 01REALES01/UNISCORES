@@ -20,6 +20,7 @@ import { FutbolEditor } from "@/modules/admin/matches/components/futbol-score-ed
 import { BasquetEditor } from "@/modules/admin/matches/components/basquet-score-editor";
 import { TenisEditor } from "@/modules/admin/matches/components/tenis-editor";
 import { MatchMetaEditor } from "@/modules/admin/matches/components/match-meta-editor";
+import { BasketballBulkStats } from "@/modules/admin/matches/components/basketball-bulk-stats";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Evento } from "@/modules/matches/types";
@@ -95,6 +96,7 @@ export default function MatchControlPage() {
         toggleCronometro,
         toggleModoRegistro,
         handleNuevoEvento,
+        handleBulkBasketballStats,
         handleManualScoreUpdate,
         handleCambiarPeriodo,
         handleCambiarFaseFutbol,
@@ -112,6 +114,7 @@ export default function MatchControlPage() {
     const [showFullEditor, setShowFullEditor] = useState(false);
     const [fullEditorTab, setFullEditorTab] = useState<'marcador' | 'eventos' | 'jugadores'>('marcador');
     const [showMetaEditor, setShowMetaEditor] = useState(false);
+    const [showReview, setShowReview] = useState(false);
 
     if (loading) return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
@@ -125,7 +128,7 @@ export default function MatchControlPage() {
             <AlertCircle size={40} className="text-red-500 mb-6" />
             <h1 className="text-2xl font-black text-white mb-2 uppercase">Error de Conexión</h1>
             <p className="text-slate-500 mb-8">{errorCtx || "No se pudo encontrar el partido."}</p>
-            <Button onClick={() => router.back()}>Volver</Button>
+            <SafeBackButton fallback="/admin/partidos" variant="admin" label="Volver al Panel" />
         </div>
     );
 
@@ -308,13 +311,13 @@ export default function MatchControlPage() {
             <AdminModals
                 isEndingMatch={isEndingMatch}
                 onCloseEnding={() => setIsEndingMatch(false)}
-                onConfirmEnding={async () => {
-                   await confirmarFinalizar();
-                   setIsEndingMatch(false);
+                onConfirmEnding={() => {
+                    setIsEndingMatch(false);
+                    setShowReview(true);
                 }}
                 onConfirmWO={async (ganador: 'equipo_a' | 'equipo_b') => {
-                   await finalizarPorWO(ganador);
-                   setIsEndingMatch(false);
+                    await finalizarPorWO(ganador);
+                    setIsEndingMatch(false);
                 }}
                 isEditingScore={isEditingScore}
                 onCloseEditing={() => setIsEditingScore(false)}
@@ -323,9 +326,16 @@ export default function MatchControlPage() {
                 onManualScoreUpdate={handleManualScoreUpdate}
                 confirmingDeletion={confirmingDeletion}
                 onCloseDeletion={() => setConfirmingDeletion(null)}
+                showReview={showReview}
+                onCloseReview={() => setShowReview(false)}
+                onConfirmReview={async () => {
+                    setShowReview(false);
+                    await confirmarFinalizar();
+                }}
+                eventos={eventos}
                 onConfirmDeletion={() => {
-                  if (confirmingDeletion) requestDeleteEvento(confirmingDeletion);
-                  setConfirmingDeletion(null);
+                    if (confirmingDeletion) requestDeleteEvento(confirmingDeletion);
+                    setConfirmingDeletion(null);
                 }}
             />
 
@@ -474,6 +484,59 @@ export default function MatchControlPage() {
                                             }}
                                             disciplinaName={disciplinaName}
                                         />
+                                        
+                                        {disciplinaName === 'Baloncesto' && (
+                                            <div className="mt-6">
+                                                <BasketballBulkStats
+                                                    match={match}
+                                                    onSubmit={handleBulkBasketballStats}
+                                                    onAddPlayer={async (team, data) => {
+                                                        // Use the same logic as in AdminEventCreator
+                                                        try {
+                                                            let jId: number | null = null;
+                                                            const { data: existing } = await supabase
+                                                                .from('jugadores')
+                                                                .select('id')
+                                                                .eq('profile_id', data.profile_id)
+                                                                .maybeSingle();
+
+                                                            if (existing && data.profile_id) {
+                                                                jId = existing.id;
+                                                            } else {
+                                                                const { data: created, error: cErr } = await supabase
+                                                                    .from('jugadores')
+                                                                    .insert({
+                                                                        nombre: data.nombre,
+                                                                        numero: data.numero ? parseInt(data.numero) : null,
+                                                                        profile_id: data.profile_id || null,
+                                                                        carrera_id: team === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
+                                                                    })
+                                                                    .select()
+                                                                    .single();
+                                                                if (cErr) throw cErr;
+                                                                jId = created.id;
+                                                            }
+
+                                                            const { error: rErr } = await supabase.from('roster_partido').insert({
+                                                                partido_id: parseInt(matchId),
+                                                                jugador_id: jId,
+                                                                equipo_a_or_b: team
+                                                            });
+                                                            if (rErr) throw rErr;
+
+                                                            fetchJugadores();
+                                                            toast.success("Jugador añadido");
+                                                            return jId;
+                                                        } catch (error: any) {
+                                                            console.error("Error adding player:", error);
+                                                            toast.error(`Error: ${error.message}`);
+                                                            return null;
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+
                                         <AdminMatchTimeline
                                             eventos={eventos}
                                             match={match}
