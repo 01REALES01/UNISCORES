@@ -1,4 +1,5 @@
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { isAsyncMatch } from "@/lib/is-async-match";
 import { SPORT_ACCENT, SPORT_BORDER, SPORT_COLORS } from "@/lib/constants";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { SportIcon } from "@/components/sport-icons";
@@ -29,6 +30,7 @@ export function UnifiedCard({
     const router = useRouter();
     const sportName = partido.disciplinas?.name || 'Deporte';
     const genero = (partido.genero || 'masculino').toLowerCase();
+    const isAsync = isAsyncMatch(partido);
 
     const getAbbr = (name?: string) => {
         if (!name) return "??";
@@ -87,7 +89,9 @@ export function UnifiedCard({
 
                         <div className="flex flex-col items-end gap-1.5 min-w-[80px] pr-2">
                             {statusLabel === 'LIVE' ? (
-                                <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportName} />
+                                isAsync
+                                    ? <span className="text-[8px] font-black text-amber-400/60 uppercase tracking-widest px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">Sin cobertura</span>
+                                    : <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportName} />
                             ) : (
                                 <div className={cn(
                                     "flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 shadow-inner",
@@ -166,11 +170,17 @@ export function UnifiedCard({
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center">
-                                    {sportName !== 'Ajedrez' && (
+                                    {sportName !== 'Ajedrez' && !isAsync && (
                                         <div className="flex items-center justify-center gap-2.5 font-bold text-5xl sm:text-6xl text-white tracking-tighter tabular-nums mb-0.5 leading-none">
                                             <span className={(winnerB && sportName !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.a}</span>
                                             <span className="text-white/30 text-3xl -mt-1">:</span>
                                             <span className={(winnerA && sportName !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.b}</span>
+                                        </div>
+                                    )}
+                                    {sportName !== 'Ajedrez' && isAsync && (
+                                        <div className="flex flex-col items-center gap-1">
+                                            <span className="text-3xl sm:text-5xl font-black text-white/20 tracking-widest">VS</span>
+                                            <span className="text-[8px] font-black text-amber-400/50 uppercase tracking-widest">En curso</span>
                                         </div>
                                     )}
                                     {sportName === 'Ajedrez' && isChessDraw && (

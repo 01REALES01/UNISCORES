@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SPORT_ACCENT, SPORT_BORDER, SPORT_COLORS } from "@/lib/constants";
+import { isAsyncMatch } from "@/lib/is-async-match";
 import { Avatar, Badge } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { SportIcon } from "@/components/sport-icons";
@@ -419,6 +420,18 @@ export default function CalendarioPage() {
 
                                                         <div className="flex flex-col items-center justify-center shrink-0 min-w-[100px] sm:min-w-[140px]">
                                                             {matchOfTheDay.estado === 'en_curso' ? (
+                                                                isAsyncMatch(matchOfTheDay) ? (
+                                                                    <div className="flex flex-col items-center gap-2">
+                                                                        <span className="text-3xl sm:text-4xl font-black text-white/20 tracking-widest">VS</span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="relative flex h-2 w-2">
+                                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                                                                            </span>
+                                                                            <span className="text-[8px] font-black text-amber-400 uppercase tracking-widest">Sin cobertura</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
                                                                 <div className="flex flex-col items-center gap-3">
                                                                     {matchOfTheDay.disciplinas?.name === 'Ajedrez' ? (
                                                                         <span className="text-xl font-black text-emerald-400 tracking-[0.3em] animate-pulse">VS</span>
@@ -429,6 +442,7 @@ export default function CalendarioPage() {
                                                                     )}
                                                                     <div className="scale-90"><PublicLiveTimer detalle={matchOfTheDay.marcador_detalle} deporte={matchOfTheDay.disciplinas?.name} /></div>
                                                                 </div>
+                                                                )
                                                             ) : matchOfTheDay.estado === 'finalizado' ? (
                                                                 <div className="flex flex-col items-center gap-1.5">
                                                                     <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter drop-shadow-lg leading-none tabular-nums">
@@ -537,6 +551,7 @@ export default function CalendarioPage() {
                                         const sportColor = SPORT_COLORS[sportName] || '#a78bfa';
                                         const isLive = match.estado === 'en_curso';
                                         const isFinished = match.estado === 'finalizado';
+                                        const isAsync = isAsyncMatch(match);
                                         const genero = (match.genero || 'masculino').toLowerCase();
                                         const isRace = match.marcador_detalle?.tipo === 'carrera';
                                         const det = match.marcador_detalle || {};
@@ -617,10 +632,17 @@ export default function CalendarioPage() {
                                                             <div className="flex flex-col items-end gap-1.5">
                                                                 <span className="text-base font-black text-white tabular-nums drop-shadow-md">{new Date(match.fecha).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                                                                 {isLive ? (
+                                                                    isAsync ? (
+                                                                        <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full shadow-lg">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                                            <span className="text-[8px] font-black text-amber-400 uppercase tracking-[0.1em]">Sin cobertura</span>
+                                                                        </div>
+                                                                    ) : (
                                                                     <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-500/40 rounded-full shadow-lg">
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                                                         <span className="text-[8px] font-black text-emerald-400 uppercase tracking-[0.1em]">LIVE</span>
                                                                     </div>
+                                                                    )
                                                                 ) : isFinished ? <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">Finalizado</span> : null}
                                                             </div>
                                                         </div>
@@ -674,7 +696,7 @@ export default function CalendarioPage() {
                                                                             </span>
                                                                         </div>
                                                                     </div>
-                                                                    {(isLive || isFinished) && (
+                                                                    {(isLive || isFinished) && !isAsync && (
                                                                         <span className={cn(
                                                                             "text-3xl font-black tabular-nums min-w-[2.5rem] text-right",
                                                                             winnerSide === "a" ? "text-white" : winnerSide === "b" ? "text-white/10" : "text-white/80"
@@ -716,7 +738,7 @@ export default function CalendarioPage() {
                                                                             </span>
                                                                         </div>
                                                                     </div>
-                                                                    {(isLive || isFinished) && (
+                                                                    {(isLive || isFinished) && !isAsync && (
                                                                         <span className={cn(
                                                                             "text-3xl font-black tabular-nums min-w-[2.5rem] text-right",
                                                                             winnerSide === "b" ? "text-white" : winnerSide === "a" ? "text-white/10" : "text-white/80"

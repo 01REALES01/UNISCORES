@@ -1,5 +1,5 @@
 import { Avatar } from "@/components/ui-primitives";
-import { Play, Square, Radio, Clock, AlertCircle, CheckCircle, ArrowRight, Lock } from "lucide-react";
+import { Play, Square, Radio, Clock, AlertCircle, CheckCircle, ArrowRight, Lock, RefreshCw } from "lucide-react";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { SPORT_COLORS } from "@/lib/constants";
@@ -11,6 +11,7 @@ interface AdminScoreboardProps {
   scoreA: any;
   scoreB: any;
   onIniciarPartido: (modo: 'en_vivo' | 'asincronico') => void;
+  onToggleModo?: () => void;
   onFinalizar: () => void;
   onCambiarPeriodo?: () => void;
   onCambiarSet?: (setNum: number, puntosA: number, puntosB: number) => void;
@@ -22,6 +23,7 @@ export const AdminScoreboard = ({
   scoreA,
   scoreB,
   onIniciarPartido,
+  onToggleModo,
   onFinalizar,
   onCambiarPeriodo,
   onCambiarSet,
@@ -115,6 +117,22 @@ export const AdminScoreboard = ({
               ) : match.estado === 'programado' ? (
                 <span className="text-sm font-black text-white/20 uppercase tracking-[0.2em]">Programado</span>
               ) : null}
+
+              {/* Mode toggle button — only when match is in progress */}
+              {isLive && onToggleModo && (
+                <button
+                  onClick={onToggleModo}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95 mt-1",
+                    modoRegistro === 'asincronico'
+                      ? "bg-amber-500/10 border-amber-500/25 text-amber-400 hover:bg-amber-500/20"
+                      : "bg-emerald-500/10 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/20"
+                  )}
+                >
+                  <RefreshCw size={11} />
+                  {modoRegistro === 'asincronico' ? 'Cambiar a En Vivo' : 'Cambiar a Asincrónico'}
+                </button>
+              )}
 
               <div className="flex flex-col gap-2 w-full">
                 {!isFinal && (

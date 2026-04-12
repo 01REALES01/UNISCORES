@@ -7,6 +7,7 @@ import { SportIcon } from "@/components/sport-icons";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { SPORT_GRADIENT, SPORT_ACCENT, SPORT_BORDER, SPORT_GLOW } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { isAsyncMatch } from "@/lib/is-async-match";
 import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import type { PartidoWithRelations as Partido } from '../types';
 import type { JornadaWithResults } from '@/hooks/use-jornadas';
@@ -35,6 +36,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
   const genero = (partido.genero || 'masculino').toLowerCase();
   const categoria = partido.categoria;
   const isSetSport = ['Tenis', 'Tenis de Mesa', 'V\u00f3leibol', 'Voleibol', 'B\u00e1dminton', 'Badminton'].includes(sportName);
+  const isAsync = isAsyncMatch(partido);
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block h-full relative z-10">
@@ -79,7 +81,8 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
               </div>
             </div>
             <div className="z-10">
-              <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={partido.disciplinas?.name} />
+              {!isAsync && <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={partido.disciplinas?.name} />}
+              {isAsync && <span className="text-[8px] font-black text-amber-400/60 uppercase tracking-widest">Sin cobertura</span>}
             </div>
           </div>
 
@@ -128,7 +131,12 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
               </div>
 
               <div className="flex flex-col items-center justify-center">
-                {sportName === 'Ajedrez' ? (
+                {isAsync ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-2xl md:text-4xl font-black text-white/20 tracking-widest">VS</span>
+                    <span className="text-[8px] font-black text-amber-400/50 uppercase tracking-widest">En curso</span>
+                  </div>
+                ) : sportName === 'Ajedrez' ? (
                   <div className="flex items-center gap-2 mb-2">
                     <span className="relative flex h-3 w-3">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />

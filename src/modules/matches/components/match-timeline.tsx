@@ -46,8 +46,10 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
           // Separate 'fin' system events (match-end markers) from everything else.
           // This ensures: 1) post-match events appear BEFORE the finalization banner,
           // 2) there is only ONE finalization banner even if the admin re-finalized.
-          const finEvent = eventos.find(e => e.equipo === 'sistema' && e.tipo_evento === 'fin');
-          const otherEvents = eventos.filter(e => !(e.equipo === 'sistema' && e.tipo_evento === 'fin'));
+          // Filter out mode-change events (they are admin-only) and separate 'fin' events
+          const publicEvents = eventos.filter(e => e.tipo_evento !== 'modo_cambio');
+          const finEvent = publicEvents.find(e => e.equipo === 'sistema' && e.tipo_evento === 'fin');
+          const otherEvents = publicEvents.filter(e => !(e.equipo === 'sistema' && e.tipo_evento === 'fin'));
           const orderedEvents = finEvent ? [...otherEvents, finEvent] : otherEvents;
 
           return (

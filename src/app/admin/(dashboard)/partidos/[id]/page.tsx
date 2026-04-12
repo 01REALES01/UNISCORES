@@ -93,6 +93,7 @@ export default function MatchControlPage() {
         eventos,
         activeEditors,
         toggleCronometro,
+        toggleModoRegistro,
         handleNuevoEvento,
         handleManualScoreUpdate,
         handleCambiarPeriodo,
@@ -209,6 +210,7 @@ export default function MatchControlPage() {
                         scoreA={scoreA}
                         scoreB={scoreB}
                         onIniciarPartido={(modo) => toggleCronometro(modo)}
+                        onToggleModo={toggleModoRegistro}
                         onFinalizar={() => setIsEndingMatch(true)}
                         onCambiarPeriodo={handleCambiarPeriodo}
                         onCambiarSet={(setNum, pA, pB) => handleCambiarSetDirecto(setNum, pA, pB)}

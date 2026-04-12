@@ -5,8 +5,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
 import { Avatar } from "@/components/ui-primitives";
-import { Trophy } from "lucide-react";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { isAsyncMatch } from "@/lib/is-async-match";
 import { getDisplayName } from "@/lib/sport-helpers";
 import {
   SPORT_COLORS,
@@ -54,6 +54,7 @@ function MatchRow({ partido }: { partido: Partido }) {
   const sportName = partido.disciplinas?.name || "Deporte";
   const isLive = partido.estado === "en_curso";
   const isFinished = partido.estado === "finalizado";
+  const isAsync = isAsyncMatch(partido);
 
   const { scoreA, scoreB, labelA, labelB, subScoreA, subScoreB, extra } =
     getCurrentScore(sportName, partido.marcador_detalle || {});
@@ -103,14 +104,6 @@ function MatchRow({ partido }: { partido: Partido }) {
           "border-b border-white/[0.04] last:border-b-0 overflow-hidden"
         )}
       >
-        {/* Subtle highlight background for winner side */}
-        {winnerSide === "a" && (
-          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/[0.03] to-transparent pointer-events-none" />
-        )}
-        {winnerSide === "b" && (
-          <div className="absolute inset-0 bg-gradient-to-l from-amber-500/[0.03] to-transparent pointer-events-none" />
-        )}
-
         {/* Live bar indicator */}
         {isLive && (
           <div
@@ -152,27 +145,17 @@ function MatchRow({ partido }: { partido: Partido }) {
                 size="sm"
                 className={cn(
                   "w-7 h-7 sm:w-8 sm:h-8 transition-all duration-500",
-                  winnerSide === "a"
-                    ? "border-2 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] scale-110"
-                    : "border border-white/10 bg-black/40"
+                  "border border-white/10 bg-black/40"
                 )}
               />
-              {winnerSide === "a" && (
-                <div className="absolute -top-1.5 -right-1.5 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg animate-in zoom-in duration-500">
-                  <Trophy size={8} className="text-black" />
-                </div>
-              )}
             </div>
           ) : (
             <div className={cn(
               "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-500",
-              winnerSide === "a"
-                ? "bg-amber-500/30 border-2 border-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.4)] scale-110"
-                : "bg-white/8 border border-white/10"
+              "bg-white/8 border border-white/10"
             )}>
               <span className={cn(
-                "text-[8px] sm:text-[9px] font-black",
-                winnerSide === "a" ? "text-amber-200" : "text-white/60"
+                "text-[8px] sm:text-[9px] font-black text-white/60"
               )}>
                 {nameA?.substring(0, 2).toUpperCase()}
               </span>
@@ -182,7 +165,13 @@ function MatchRow({ partido }: { partido: Partido }) {
 
         {/* Score / Time center */}
         <div className="flex flex-col items-center justify-center w-[64px] sm:w-[90px] shrink-0 z-10">
-          {isLive ? (
+          {isAsync ? (
+            /* Async: hide score, show indicator */
+            <div className="flex flex-col items-center gap-0.5 px-1">
+              <span className="text-xs sm:text-sm font-black text-white/20">VS</span>
+              <span className="text-[7px] font-black text-amber-400/50 uppercase tracking-widest">Sin cobertura</span>
+            </div>
+          ) : isLive ? (
             isSetSport ? (
               <div className="flex flex-col items-center gap-0.5">
                 <div className="flex items-center gap-1 font-black text-white tabular-nums text-sm sm:text-lg tracking-tight">
@@ -268,27 +257,17 @@ function MatchRow({ partido }: { partido: Partido }) {
                 size="sm"
                 className={cn(
                   "w-7 h-7 sm:w-8 sm:h-8 transition-all duration-500",
-                  winnerSide === "b"
-                    ? "border-2 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] scale-110"
-                    : "border border-white/10 bg-black/40"
+                  "border border-white/10 bg-black/40"
                 )}
               />
-              {winnerSide === "b" && (
-                <div className="absolute -top-1.5 -left-1.5 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg animate-in zoom-in duration-500">
-                  <Trophy size={8} className="text-black" />
-                </div>
-              )}
             </div>
           ) : (
             <div className={cn(
               "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-500",
-              winnerSide === "b"
-                ? "bg-amber-500/30 border-2 border-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.4)] scale-110"
-                : "bg-white/8 border border-white/10"
+              "bg-white/8 border border-white/10"
             )}>
               <span className={cn(
-                "text-[8px] sm:text-[9px] font-black",
-                winnerSide === "b" ? "text-amber-200" : "text-white/60"
+                "text-[8px] sm:text-[9px] font-black text-white/60"
               )}>
                 {nameB?.substring(0, 2).toUpperCase()}
               </span>
@@ -440,13 +419,8 @@ interface MatchesTodaySectionProps {
 export function MatchesTodaySection({ matches }: MatchesTodaySectionProps) {
   // Get today's matches, or if none, show all non-finished
   const todayMatches = useMemo(() => {
-    const today = matches.filter(
-      (m) => isToday(m.fecha) && m.estado !== "cancelado"
-    );
-    if (today.length > 0) return today;
-    // Fallback: show upcoming + live matches
     return matches.filter(
-      (m) => m.estado === "en_curso" || m.estado === "programado"
+      (m) => isToday(m.fecha) && m.estado !== "cancelado"
     );
   }, [matches]);
 
@@ -481,9 +455,27 @@ export function MatchesTodaySection({ matches }: MatchesTodaySectionProps) {
     return entries;
   }, [todayMatches]);
 
-  if (todayMatches.length === 0) return null;
-
   const hasAnyLive = todayMatches.some((m) => m.estado === "en_curso");
+
+  if (todayMatches.length === 0) {
+    return (
+      <section className="animate-in slide-in-from-bottom-6 fade-in duration-700">
+        <div className="flex flex-col gap-1 mb-6 px-1">
+          <p className="font-display text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 tracking-[0.3em]">Jornada del día</p>
+          <h2 className="text-4xl md:text-6xl font-black tracking-tighter font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm">
+            Partidos
+          </h2>
+        </div>
+        <div className="flex flex-col items-center justify-center gap-3 py-12 rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+          <span className="text-4xl">🗓️</span>
+          <p className="text-white/50 font-bold text-sm">Hoy no hay partidos programados</p>
+          <p className="text-white/20 text-xs">Revisa el calendario para ver las próximas fechas</p>
+        </div>
+      </section>
+    );
+  }
+
+
 
   return (
     <section className="animate-in slide-in-from-bottom-6 fade-in duration-700">

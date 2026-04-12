@@ -7,6 +7,7 @@ import { Badge, Button, Avatar } from "@/components/ui-primitives";
 import Link from "next/link";
 import { SPORT_EMOJI, SPORT_GRADIENT, SPORT_ACCENT, SPORT_GLOW, SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_COLORS } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { isAsyncMatch } from "@/lib/is-async-match";
 import { getDisplayName, getCarreraSubtitle, isRaceMatch, getSwimmingEventTitle } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
@@ -58,7 +59,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
 
         const timer = setInterval(() => {
             setCurrentIndex((prev) => (prev + 1) % featuredMatches.length);
-        }, 8000);
+        }, 12000);
         return () => clearInterval(timer);
     }, [featuredMatches.length]);
 
@@ -132,7 +133,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                     </div>
 
                     {/* Top-Left Absolute Timer */}
-                    {currentMatch.estado === 'en_curso' && currentMatch.marcador_detalle?.timer && (
+                    {currentMatch.estado === 'en_curso' && currentMatch.marcador_detalle?.timer && !isAsyncMatch(currentMatch) && (
                         <m.div 
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
@@ -290,18 +291,16 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                     <div className="text-3xl md:text-6xl font-black text-white/10 italic">VS</div>
                                                 )
                                             ) : currentMatch.estado === 'en_curso' ? (
-                                                currentMatch.marcador_detalle?.modo_registro === 'asincronico' ? (
+                                                isAsyncMatch(currentMatch) ? (
                                                     <div className="flex flex-col items-center justify-center w-full min-h-[80px] md:min-h-[100px]">
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="relative flex h-3 w-3 md:h-4 md:w-4">
-                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: SPORT_COLORS[sName] || '#ef4444' }} />
-                                                                <span className="relative inline-flex rounded-full h-3 w-3 md:h-4 md:w-4 shadow-[0_0_12px_currentColor]" style={{ background: SPORT_COLORS[sName] || '#ef4444' }} />
+                                                        <span className="text-3xl md:text-6xl font-black text-white/10 italic mb-2">VS</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="relative flex h-2 w-2">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                                                             </span>
-                                                            <span className={cn("text-lg md:text-2xl font-black uppercase tracking-widest drop-shadow-[0_0_10px_currentColor]", liveText)}>
-                                                                EN CURSO
-                                                            </span>
+                                                            <span className="text-[9px] md:text-[11px] font-black text-amber-400 uppercase tracking-widest">En curso • Sin cobertura</span>
                                                         </div>
-                                                        <span className="text-[8px] md:text-[10px] font-bold text-white/20 uppercase tracking-widest mt-2">Sin seguimiento en vivo</span>
                                                     </div>
                                                 ) : (
                                                 <div className="flex flex-col items-center w-full">

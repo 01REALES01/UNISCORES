@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import { Badge, Avatar, Button } from "@/components/ui-primitives";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { isAsyncMatch } from "@/lib/is-async-match";
 import { useMatch } from "@/modules/matches/hooks/use-match";
 import { useMatchEvents } from "@/modules/matches/hooks/use-match-events";
 import { formatTenisPunto } from "@/modules/sports/services/tenis.service";
@@ -72,6 +73,13 @@ export default function PublicMatchDetail() {
         const t = setTimeout(() => setLoadTimeout(true), 8000);
         return () => clearTimeout(t);
     }, [matchLoading, match]);
+
+    // ─── Tick for "última actualización" label ──────────────────────────────────
+    const [tick, setTick] = useState(0);
+    useEffect(() => {
+        const iv = setInterval(() => setTick(t => t + 1), 30000);
+        return () => clearInterval(iv);
+    }, []);
 
     // ─── Voting Logic ───────────────────────────────────────────────────────────
     const [saving, setSaving] = useState(false);
@@ -192,6 +200,7 @@ export default function PublicMatchDetail() {
     const m = match as Partido;
 
     const isLive = m.estado === 'en_curso';
+    const isAsync = isAsyncMatch(m);
     const isFinished = m.estado === 'finalizado';
     const sportName = m.disciplinas?.name || 'Deporte';
     const sportEmoji = getSportEmoji(sportName);
@@ -259,17 +268,20 @@ export default function PublicMatchDetail() {
 
                     <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-center">
                         <div className="flex flex-col justify-center items-center mb-8 relative z-20 px-4 w-full">
-                            {isLive && hasTimer && (
+                            {isLive && hasTimer && !isAsync && (
                                 <div className="z-30 flex items-center justify-center scale-90 sm:scale-100 transition-all mb-4 drop-shadow-md">
                                     <PublicLiveTimer detalle={m.marcador_detalle || {}} deporte={m.disciplinas?.name} />
                                 </div>
                             )}
 
-                            {isLive && m.marcador_detalle?.modo_registro === 'asincronico' && (
-                                <div className="z-30 max-w-md mx-auto mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-[10px] sm:text-xs font-bold leading-relaxed animate-pulse flex items-center gap-3">
-                                    <AlignLeft size={20} className="shrink-0 text-amber-400 opacity-80" />
-                                    <p className="text-left">
-                                        La información del partido puede no ser fiel a la realidad del momento porque el partido no está siendo cubierto en vivo. Vuelva al finalizar el encuentro.
+                            {isAsync && (
+                                <div className="z-30 max-w-sm mx-auto mb-6 p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center">
+                                    <span className="text-3xl block mb-2">📡</span>
+                                    <p className="text-amber-200 text-sm font-black uppercase tracking-wider mb-1">
+                                        Sin cobertura en vivo
+                                    </p>
+                                    <p className="text-amber-200/60 text-[11px] font-bold leading-relaxed">
+                                        Este partido no está siendo cubierto en vivo. El resultado se publicará al finalizar el encuentro.
                                     </p>
                                 </div>
                             )}
@@ -314,6 +326,21 @@ export default function PublicMatchDetail() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Última actualización */}
+                            {(isLive || isFinished) && m.marcador_detalle?.ultimo_update && (() => {
+                                void tick; // trigger re-render every 30s
+                                const diff = Math.floor((Date.now() - new Date(m.marcador_detalle.ultimo_update).getTime()) / 1000);
+                                const label = diff < 60 ? `hace ${diff}s`
+                                    : diff < 3600 ? `hace ${Math.floor(diff / 60)} min`
+                                    : diff < 86400 ? `hace ${Math.floor(diff / 3600)}h`
+                                    : `hace ${Math.floor(diff / 86400)}d`;
+                                return (
+                                    <p className="text-[9px] sm:text-[10px] font-bold text-white/20 mt-3 tracking-wider">
+                                        Última actualización {label}
+                                    </p>
+                                );
+                            })()}
                         </div>
 
                         {m.marcador_detalle?.tipo === 'carrera' ? (
@@ -555,7 +582,21 @@ export default function PublicMatchDetail() {
                                 </div>
 
                             <div className="flex flex-col items-center relative z-20 min-w-[120px] sm:min-w-[180px] shrink-0">
-                                    {sportName === 'Ajedrez' ? (
+                                    {isAsync ? (
+                                        /* Async match: hide score, show VS */
+                                        <>
+                                            <div className="bg-white/5 backdrop-blur-sm px-6 py-4 rounded-3xl border border-white/5 shadow-inner">
+                                                <span className="text-3xl sm:text-5xl font-black text-white/20 tracking-widest">VS</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-3 text-[10px] sm:text-xs font-black text-amber-400 uppercase tracking-widest">
+                                                <span className="relative flex h-2 w-2">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                                                </span>
+                                                EN CURSO
+                                            </div>
+                                        </>
+                                    ) : sportName === 'Ajedrez' ? (
                                         <div className="flex flex-col items-center justify-center w-full min-h-[100px] sm:min-h-[140px]">
                                             {isFinished && m.marcador_detalle?.resultado_final === 'empate' ? (
                                                 <div className="bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 flex flex-col items-center shadow-lg">
@@ -597,6 +638,7 @@ export default function PublicMatchDetail() {
                                         </>
                                     )}
 
+                                    {!isAsync && (
                                     <div className="flex flex-col items-center mt-3 sm:mt-4 w-full">
                                         <div className={cn(
                                             "flex items-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-widest mb-2 sm:mb-3",
@@ -632,6 +674,7 @@ export default function PublicMatchDetail() {
                                             ) : null}
                                         </div>
                                     </div>
+                                    )}
                                 </div>
 
                                 {/* Team B */}
@@ -955,7 +998,7 @@ export default function PublicMatchDetail() {
                     ) : null}
                 </div>
 
-                {sportName !== 'Voleibol' && (
+                {sportName !== 'Voleibol' && !isAsync && (
                     <MatchTimeline
                         match={m}
                         eventos={eventos}
@@ -963,6 +1006,7 @@ export default function PublicMatchDetail() {
                     />
                 )}
 
+                {!isAsync && (
                 <div className="mt-8">
                     <MatchStats
                         match={m}
@@ -970,6 +1014,7 @@ export default function PublicMatchDetail() {
                         sportName={sportName}
                     />
                 </div>
+                )}
 
                 <div className="mt-20 text-center">
                     <p className="text-slate-600 text-xs uppercase tracking-widest font-bold">

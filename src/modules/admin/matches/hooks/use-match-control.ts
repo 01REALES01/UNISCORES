@@ -548,6 +548,43 @@ export function useMatchControl(matchId: string) {
         }
     };
 
+    const toggleModoRegistro = async () => {
+        if (!match || !profile) return;
+        try {
+            const { data: freshMatch } = await supabase
+                .from('partidos')
+                .select('marcador_detalle')
+                .eq('id', matchId)
+                .single();
+            const detalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
+            const currentMode = detalle.modo_registro || 'en_vivo';
+            const newMode = currentMode === 'en_vivo' ? 'asincronico' : 'en_vivo';
+
+            const nuevoDetalle = {
+                ...detalle,
+                modo_registro: newMode,
+                ultimo_update: new Date().toISOString()
+            };
+
+            await supabase.from('partidos').update({
+                marcador_detalle: auditDetalle(nuevoDetalle)
+            }).eq('id', matchId);
+
+            setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: nuevoDetalle }) : null);
+            registrarEventoSistema('modo_cambio', `Modo cambiado a ${newMode === 'en_vivo' ? 'En Vivo' : 'Asincrónico'}`);
+
+            await logAction('UPDATE_MATCH', 'partido', matchId, {
+                cambio: 'modo_registro',
+                anterior: currentMode,
+                nuevo: newMode
+            });
+
+            toast.success(`Modo cambiado a ${newMode === 'en_vivo' ? 'En Vivo 📡' : 'Asincrónico 🕐'}`);
+        } catch (err: any) {
+            toast.error('Error al cambiar modo: ' + err.message);
+        }
+    };
+
     const confirmarFinalizar = async () => {
         if (!match || !profile) return;
         setCronometroActivo(false);
@@ -689,6 +726,7 @@ export function useMatchControl(matchId: string) {
         cronometroActivo,
         activeEditors,
         toggleCronometro,
+        toggleModoRegistro,
         handleNuevoEvento,
         handleManualScoreUpdate,
         handleCambiarPeriodo,
