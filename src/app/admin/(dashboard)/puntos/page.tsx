@@ -126,6 +126,7 @@ function ClasificacionTab() {
         }
         
         const { data: cdData } = await queryCd;
+        const teamMap: Record<string, number[]> = {};
         (cdData ?? []).forEach((r: any) => {
             if (!teamMap[r.equipo_nombre]) teamMap[r.equipo_nombre] = [];
             teamMap[r.equipo_nombre].push(r.carrera_id);
