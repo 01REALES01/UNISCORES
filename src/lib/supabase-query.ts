@@ -26,7 +26,11 @@ export async function safeQuery<T = any>(
             ? query.abortSignal(controller.signal) 
             : query;
 
-        const result = await withTimeout(executableQuery, TIMEOUT_MS, controller);
+        const result = await withTimeout<{ data: T | null; error: any }>(
+            executableQuery,
+            TIMEOUT_MS,
+            controller
+        );
 
         if (result.error) {
             console.warn(`[safeQuery] ${label || ''} error:`, result.error.message);
@@ -60,7 +64,11 @@ export async function safeMutation<T = any>(
             ? query.abortSignal(controller.signal) 
             : query;
 
-        const result = await withTimeout(executableQuery, TIMEOUT_MS, controller);
+        const result = await withTimeout<{ data: T | null; error: any }>(
+            executableQuery,
+            TIMEOUT_MS,
+            controller
+        );
 
         if (result.error) {
             console.warn(`[safeMutation] ${label || ''} error:`, result.error.message);
