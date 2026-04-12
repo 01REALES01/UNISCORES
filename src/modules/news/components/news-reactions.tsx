@@ -25,7 +25,7 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
     const [counts, setCounts] = useState<Record<string, number>>({});
     const [userReaction, setUserReaction] = useState<string | null>(null);
     const [animating, setAnimating] = useState<string | null>(null);
-    const [floatingEmojis, setFloatingEmojis] = useState<{ id: number; emoji: string }[]>([]);
+    const [floatingEmojis, setFloatingEmojis] = useState<{ id: number; emoji: string; randX?: number; randY?: number }[]>([]);
     const [loading, setLoading] = useState(true);
     const [pickerOpen, setPickerOpen] = useState(false);
     const [emojiData, setEmojiData] = useState<unknown>(null);
