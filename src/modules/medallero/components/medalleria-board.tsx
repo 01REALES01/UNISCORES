@@ -71,7 +71,7 @@ export function MedalLeaderboard() {
         }
 
         // Pre-normalize matches (handle array/object join and status)
-        const matches = rawMatches.map(m => ({
+        const matches = (rawMatches as any[]).map((m: any) => ({
             ...m,
             disciplinas: Array.isArray(m.disciplinas) ? m.disciplinas[0] : m.disciplinas,
             estado_norm: (m.estado || '').toLowerCase().trim()
