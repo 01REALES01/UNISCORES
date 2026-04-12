@@ -10,6 +10,26 @@ import { cn } from "@/lib/utils";
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 
+const ToolbarButton = ({ icon: Icon, onClick, title, active = false }: any) => (
+    <button
+        type="button"
+        onMouseDown={(e) => {
+            e.preventDefault(); // CRITICAL: Stop focus from leaving textarea
+            onClick();
+        }}
+        title={title}
+        className={cn(
+            "p-2 rounded-xl transition-all duration-300 relative group",
+            active ? "bg-white/10 text-white shadow-lg" : "text-white/30 hover:bg-white/5 hover:text-white"
+        )}
+    >
+        <Icon size={18} className="group-hover:scale-110 transition-transform" />
+        <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-900 border border-white/10 rounded text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+            {title}
+        </span>
+    </button>
+);
+
 interface MarkdownEditorProps {
     value: string;
     onChange: (value: string) => void;
@@ -142,26 +162,6 @@ export function MarkdownEditor({ value, onChange, placeholder, rows = 12, catego
             </div>
         );
     };
-
-    const ToolbarButton = ({ icon: Icon, onClick, title, active = false }: any) => (
-        <button
-            type="button"
-            onMouseDown={(e) => {
-                e.preventDefault(); // CRITICAL: Stop focus from leaving textarea
-                onClick();
-            }}
-            title={title}
-            className={cn(
-                "p-2 rounded-xl transition-all duration-300 relative group",
-                active ? "bg-white/10 text-white shadow-lg" : "text-white/30 hover:bg-white/5 hover:text-white"
-            )}
-        >
-            <Icon size={18} className="group-hover:scale-110 transition-transform" />
-            <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-900 border border-white/10 rounded text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                {title}
-            </span>
-        </button>
-    );
 
     return (
         <div 

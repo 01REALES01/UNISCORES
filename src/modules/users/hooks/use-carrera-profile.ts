@@ -190,7 +190,9 @@ export function useCarreraProfile(carreraId: number | null): CarreraProfile {
     );
 
     const mutateRef = useRef(mutate);
-    mutateRef.current = mutate;
+    useEffect(() => {
+        mutateRef.current = mutate;
+    }, [mutate]);
 
     useEffect(() => {
         if (!carreraId || typeof window === 'undefined') return;

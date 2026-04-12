@@ -84,8 +84,11 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
         setAnimating(emoji);
         setTimeout(() => setAnimating(null), 400);
 
-        const floatId = Date.now() + Math.random();
-        setFloatingEmojis(prev => [...prev, { id: floatId, emoji }]);
+        const floatId = Date.now();
+        const randX = (Math.random() - 0.5) * 40;
+        const randY = -80 - Math.random() * 40;
+        
+        setFloatingEmojis(prev => [...prev, { id: floatId, emoji, randX, randY }]);
         setTimeout(() => {
             setFloatingEmojis(prev => prev.filter(f => f.id !== floatId));
         }, 1000);
@@ -229,8 +232,8 @@ export function NewsReactions({ noticiaId }: NewsReactionsProps) {
                                             initial={{ opacity: 1, y: 0, scale: 0.5 }}
                                             animate={{ 
                                                 opacity: [1, 1, 0], 
-                                                y: -80 - Math.random() * 40,
-                                                x: (Math.random() - 0.5) * 40,
+                                                y: f.randY ?? -100,
+                                                x: f.randX ?? 0,
                                                 scale: [0.5, 1.8, 1.2]
                                             }}
                                             transition={{ duration: 1, ease: "easeOut" }}
