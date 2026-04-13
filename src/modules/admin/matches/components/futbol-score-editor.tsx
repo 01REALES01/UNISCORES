@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Trash2, Plus, Loader2, AlertCircle } from "lucide-react";
+import { Trash2, Plus, Loader2, AlertCircle, Save } from "lucide-react";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { PlayerSearchForm } from "./player-search-form";
+import { supabase } from "@/lib/supabase";
+import { stampAudit } from "@/lib/audit-helpers";
+import { toast } from "sonner";
 
 interface FutbolEditorProps {
   match: any;
@@ -64,6 +67,43 @@ function MiniScore({ label, golesA, golesB, nameA, nameB, active, onClick }: any
 }
 
 export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEvent, onDeleteEvent, onAddPlayer }: FutbolEditorProps) {
+  const [manualMode, setManualMode] = useState(false);
+  const [manualGolesA, setManualGolesA] = useState(0);
+  const [manualGolesB, setManualGolesB] = useState(0);
+  const [savingManual, setSavingManual] = useState(false);
+
+  const initManualMode = () => {
+    const d = match.marcador_detalle || {};
+    setManualGolesA(d.goles_a ?? d.total_a ?? 0);
+    setManualGolesB(d.goles_b ?? d.total_b ?? 0);
+    setManualMode(true);
+  };
+
+  const saveManualScore = async () => {
+    setSavingManual(true);
+    try {
+      const { data: fresh } = await supabase
+        .from('partidos').select('marcador_detalle').eq('id', match.id).single();
+      const newDetalle = { ...(fresh?.marcador_detalle || match.marcador_detalle || {}) };
+      newDetalle.goles_a = manualGolesA;
+      newDetalle.goles_b = manualGolesB;
+      newDetalle.total_a = manualGolesA;
+      newDetalle.total_b = manualGolesB;
+      newDetalle.ultimo_update = new Date().toISOString();
+      const { error } = await supabase
+        .from('partidos')
+        .update({ marcador_detalle: stampAudit(newDetalle, match.profile) })
+        .eq('id', match.id);
+      if (error) throw error;
+      toast.success('Marcador actualizado');
+      setManualMode(false);
+    } catch (err: any) {
+      toast.error('Error: ' + (err.message || 'Error desconocido'));
+    } finally {
+      setSavingManual(false);
+    }
+  };
+
   const [selectedTiempo, setSelectedTiempo] = useState<1 | 2>(1);
   const [newTipo, setNewTipo] = useState('');
   const [newEquipo, setNewEquipo] = useState<'equipo_a' | 'equipo_b' | ''>('');
@@ -124,8 +164,80 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
 
   const currentEvents = byTiempo[selectedTiempo];
 
+  const totalGolesA = countGoles(1, 'equipo_a') + countGoles(2, 'equipo_a');
+  const totalGolesB = countGoles(1, 'equipo_b') + countGoles(2, 'equipo_b');
+
   return (
     <div className="space-y-5">
+      {/* Total score */}
+      <div className="grid grid-cols-3 items-center py-3 px-4 rounded-2xl border border-white/5 bg-white/[0.03]">
+        <div className="text-left">
+          <p className="text-[8px] font-black text-white/30 uppercase tracking-widest truncate">{nameA}</p>
+          <span className="text-3xl font-black text-white tabular-nums">{match.marcador_detalle?.goles_a ?? totalGolesA}</span>
+        </div>
+        <span className="text-white/10 font-black text-xl text-center">vs</span>
+        <div className="text-right">
+          <p className="text-[8px] font-black text-white/30 uppercase tracking-widest truncate">{nameB}</p>
+          <span className="text-3xl font-black text-white tabular-nums">{match.marcador_detalle?.goles_b ?? totalGolesB}</span>
+        </div>
+      </div>
+
+      {/* Manual score toggle */}
+      <button
+        type="button"
+        onClick={() => manualMode ? setManualMode(false) : initManualMode()}
+        className={cn(
+          "w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 border",
+          manualMode
+            ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
+            : "bg-white/[0.03] border-white/10 text-white/40 hover:text-white/70"
+        )}
+      >
+        {manualMode ? '✕ Cerrar edición manual' : '✎ Editar marcador manualmente'}
+      </button>
+
+      {manualMode && (
+        <div className="space-y-3 p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5">
+          <p className="text-[9px] font-black text-amber-400 uppercase tracking-[0.2em]">Marcador manual</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <p className="text-[9px] font-bold text-white/50 text-center truncate">{nameA}</p>
+              <div className="flex items-center justify-center gap-1 bg-white/[0.04] rounded-xl border border-white/[0.06] p-1">
+                <button onClick={() => setManualGolesA(Math.max(0, manualGolesA - 1))}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/40 active:scale-90 text-lg font-bold">−</button>
+                <input type="number" inputMode="numeric" min={0} value={manualGolesA}
+                  onChange={(e) => setManualGolesA(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-14 text-3xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button onClick={() => setManualGolesA(manualGolesA + 1)}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg active:scale-90 font-bold"
+                  style={{ color: SPORT_COLOR, background: `${SPORT_COLOR}20` }}>+</button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-[9px] font-bold text-white/50 text-center truncate">{nameB}</p>
+              <div className="flex items-center justify-center gap-1 bg-white/[0.04] rounded-xl border border-white/[0.06] p-1">
+                <button onClick={() => setManualGolesB(Math.max(0, manualGolesB - 1))}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/40 active:scale-90 text-lg font-bold">−</button>
+                <input type="number" inputMode="numeric" min={0} value={manualGolesB}
+                  onChange={(e) => setManualGolesB(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-14 text-3xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button onClick={() => setManualGolesB(manualGolesB + 1)}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg active:scale-90 font-bold"
+                  style={{ color: '#3b82f6', background: 'rgba(59,130,246,0.2)' }}>+</button>
+              </div>
+            </div>
+          </div>
+          <button onClick={saveManualScore} disabled={savingManual}
+            className="w-full h-11 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] text-black transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+            style={{ background: SPORT_COLOR, boxShadow: `0 4px 20px ${SPORT_COLOR}40` }}>
+            {savingManual ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            {savingManual ? 'Guardando...' : 'Confirmar Marcador'}
+          </button>
+        </div>
+      )}
+
       {/* Mini scoreboards per tiempo */}
       <div className="flex gap-2">
         <MiniScore

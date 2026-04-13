@@ -231,7 +231,14 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
                   onClick={() => setDirectA(Math.max(0, directA - 1))}
                   className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold"
                 >−</button>
-                <span className="text-4xl font-black text-white tabular-nums min-w-[48px] text-center">{directA}</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={directA}
+                  onChange={(e) => setDirectA(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-16 text-4xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
                 <button
                   onClick={() => setDirectA(directA + 1)}
                   className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold"
@@ -247,7 +254,14 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
                   onClick={() => setDirectB(Math.max(0, directB - 1))}
                   className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold"
                 >−</button>
-                <span className="text-4xl font-black text-white tabular-nums min-w-[48px] text-center">{directB}</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={directB}
+                  onChange={(e) => setDirectB(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-16 text-4xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
                 <button
                   onClick={() => setDirectB(directB + 1)}
                   className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold"
@@ -367,12 +381,15 @@ function Stepper({
         onClick={() => onChange(value - 1)}
         className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold shrink-0"
       >−</button>
-      <span
-        className="text-xl font-black tabular-nums min-w-[28px] text-center select-none"
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        value={value}
+        onChange={(e) => onChange(Math.max(0, parseInt(e.target.value) || 0))}
+        className="w-10 text-xl font-black tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         style={{ color: highlight ? color : 'white' }}
-      >
-        {value}
-      </span>
+      />
       <button
         onClick={() => onChange(value + 1)}
         className="w-8 h-8 flex items-center justify-center rounded-xl transition-all active:scale-90 font-bold shrink-0"

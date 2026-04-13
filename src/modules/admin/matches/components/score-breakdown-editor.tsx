@@ -224,9 +224,14 @@ function Stepper({ value, onChange, color }: { value: number; onChange: (v: numb
         onClick={() => onChange(value - 1)}
         className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold shrink-0"
       >−</button>
-      <span className="text-xl font-black text-white tabular-nums min-w-[32px] text-center select-none">
-        {value}
-      </span>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        value={value}
+        onChange={(e) => onChange(Math.max(0, parseInt(e.target.value) || 0))}
+        className="w-12 text-xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+      />
       <button
         onClick={() => onChange(value + 1)}
         className="w-9 h-9 flex items-center justify-center rounded-xl transition-all active:scale-90 font-bold shrink-0"

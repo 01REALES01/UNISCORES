@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, Loader2, ChevronDown, ChevronUp, Save } from "lucide-react";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { PlayerSearchForm } from "./player-search-form";
+import { supabase } from "@/lib/supabase";
+import { stampAudit } from "@/lib/audit-helpers";
+import { recalculateTotals } from "@/lib/sport-scoring";
+import { toast } from "sonner";
 
 interface BasquetEditorProps {
   match: any;
@@ -256,6 +260,42 @@ export function BasquetEditor({
     </div>
   );
 
+  const [manualMode, setManualMode] = useState(false);
+  const [manualQuarters, setManualQuarters] = useState<Record<number, { puntos_a: number; puntos_b: number }>>({});
+  const [savingManual, setSavingManual] = useState(false);
+
+  const initManualMode = () => {
+    const init: Record<number, { puntos_a: number; puntos_b: number }> = {};
+    CUARTOS.forEach(q => {
+      init[q] = { puntos_a: qA(q), puntos_b: qB(q) };
+    });
+    setManualQuarters(init);
+    setManualMode(true);
+  };
+
+  const saveManualScores = async () => {
+    setSavingManual(true);
+    try {
+      const { data: fresh } = await supabase
+        .from('partidos').select('marcador_detalle').eq('id', match.id).single();
+      let newDetalle = { ...(fresh?.marcador_detalle || match.marcador_detalle || {}) };
+      newDetalle.cuartos = manualQuarters;
+      newDetalle.cuarto_actual = Math.max(...Object.keys(manualQuarters).map(Number));
+      newDetalle = recalculateTotals('Baloncesto', newDetalle);
+      const { error } = await supabase
+        .from('partidos')
+        .update({ marcador_detalle: stampAudit(newDetalle, match.profile) })
+        .eq('id', match.id);
+      if (error) throw error;
+      toast.success('Marcador actualizado');
+      setManualMode(false);
+    } catch (err: any) {
+      toast.error('Error: ' + (err.message || 'Error desconocido'));
+    } finally {
+      setSavingManual(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Total */}
@@ -270,6 +310,74 @@ export function BasquetEditor({
           <span className="text-3xl font-black text-white tabular-nums">{totalB}</span>
         </div>
       </div>
+
+      {/* Manual score toggle */}
+      <button
+        type="button"
+        onClick={() => manualMode ? setManualMode(false) : initManualMode()}
+        className={cn(
+          "w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 border",
+          manualMode
+            ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
+            : "bg-white/[0.03] border-white/10 text-white/40 hover:text-white/70"
+        )}
+      >
+        {manualMode ? '✕ Cerrar edición manual' : '✎ Editar marcador manualmente'}
+      </button>
+
+      {/* Manual score editor */}
+      {manualMode && (
+        <div className="space-y-3 p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5">
+          <p className="text-[9px] font-black text-amber-400 uppercase tracking-[0.2em]">Marcador manual por cuarto</p>
+          <div className="grid grid-cols-[44px_1fr_1fr] gap-2 items-center px-1 mb-1">
+            <span />
+            <p className="text-[8px] font-black text-white/40 uppercase tracking-widest text-center truncate">{nameA}</p>
+            <p className="text-[8px] font-black text-white/40 uppercase tracking-widest text-center truncate">{nameB}</p>
+          </div>
+          {Object.keys(manualQuarters).map(Number).sort((a, b) => a - b).map(q => (
+            <div key={q} className="grid grid-cols-[44px_1fr_1fr] gap-2 items-center">
+              <span className="text-[10px] font-black text-center" style={{ color: `${SPORT_COLOR}90` }}>
+                {q <= 4 ? `Q${q}` : `OT${q-4}`}
+              </span>
+              <div className="flex items-center justify-center gap-1 bg-white/[0.04] rounded-xl border border-white/[0.06] p-1">
+                <button onClick={() => setManualQuarters(prev => ({ ...prev, [q]: { ...prev[q], puntos_a: Math.max(0, prev[q].puntos_a - 1) } }))}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/40 active:scale-90 text-lg font-bold">−</button>
+                <input type="number" inputMode="numeric" min={0}
+                  value={manualQuarters[q]?.puntos_a ?? 0}
+                  onChange={(e) => setManualQuarters(prev => ({ ...prev, [q]: { ...prev[q], puntos_a: Math.max(0, parseInt(e.target.value) || 0) } }))}
+                  className="w-12 text-xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button onClick={() => setManualQuarters(prev => ({ ...prev, [q]: { ...prev[q], puntos_a: prev[q].puntos_a + 1 } }))}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg active:scale-90 font-bold"
+                  style={{ color: SPORT_COLOR, background: `${SPORT_COLOR}20` }}>+</button>
+              </div>
+              <div className="flex items-center justify-center gap-1 bg-white/[0.04] rounded-xl border border-white/[0.06] p-1">
+                <button onClick={() => setManualQuarters(prev => ({ ...prev, [q]: { ...prev[q], puntos_b: Math.max(0, prev[q].puntos_b - 1) } }))}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/40 active:scale-90 text-lg font-bold">−</button>
+                <input type="number" inputMode="numeric" min={0}
+                  value={manualQuarters[q]?.puntos_b ?? 0}
+                  onChange={(e) => setManualQuarters(prev => ({ ...prev, [q]: { ...prev[q], puntos_b: Math.max(0, parseInt(e.target.value) || 0) } }))}
+                  className="w-12 text-xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button onClick={() => setManualQuarters(prev => ({ ...prev, [q]: { ...prev[q], puntos_b: prev[q].puntos_b + 1 } }))}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg active:scale-90 font-bold"
+                  style={{ color: '#3b82f6', background: 'rgba(59,130,246,0.2)' }}>+</button>
+              </div>
+            </div>
+          ))}
+          <div className="grid grid-cols-[44px_1fr_1fr] gap-2 items-center border-t border-white/10 pt-3">
+            <span className="text-[8px] font-black text-white/20 uppercase text-center">Tot</span>
+            <span className="text-2xl font-black text-white tabular-nums text-center">{Object.values(manualQuarters).reduce((s, q) => s + q.puntos_a, 0)}</span>
+            <span className="text-2xl font-black text-white tabular-nums text-center">{Object.values(manualQuarters).reduce((s, q) => s + q.puntos_b, 0)}</span>
+          </div>
+          <button onClick={saveManualScores} disabled={savingManual}
+            className="w-full h-11 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] text-black transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+            style={{ background: SPORT_COLOR, boxShadow: `0 4px 20px ${SPORT_COLOR}40` }}>
+            {savingManual ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            {savingManual ? 'Guardando...' : 'Confirmar Marcador'}
+          </button>
+        </div>
+      )}
 
       {/* Quarter selector */}
       <div className="grid grid-cols-4 gap-1.5">
