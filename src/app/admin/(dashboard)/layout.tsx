@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
+import { AdminGlobalSearch } from "@/modules/admin/components/admin-global-search";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [open, setOpen] = useState(false);
@@ -221,7 +222,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden relative">
 
 
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16 md:mt-0">
+                <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-16 md:top-0 z-40">
+                    <AdminGlobalSearch />
+                    <div className="hidden md:flex items-center gap-4">
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Sistema Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <main className="flex-1 overflow-y-auto p-4 md:p-6">
                     {children}
                 </main>
             </div>

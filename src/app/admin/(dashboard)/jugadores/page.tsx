@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui-primitives";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { ParsedJugador } from "@/app/api/admin/import-jugadores/route";
 
 type Tab = 'directorio' | 'importar';
@@ -163,13 +164,20 @@ function ModalJugador({ onClose, onSaved, carreras, disciplinas }: { onClose: ()
 // ─────────────────────────────────────────────────────────────────────────────
 
 function DirectorioTab() {
+  const searchParams = useSearchParams();
   const [jugadores, setJugadores] = useState<any[]>([]);
   const [carreras, setCarreras] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [filterCarrera, setFilterCarrera] = useState<number | null>(null);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [loadTimeout, setLoadTimeout] = useState(false);
+
+  useEffect(() => {
+    const q = searchParams.get('search');
+    if (q !== null) setSearchTerm(q);
+  }, [searchParams]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -184,21 +192,57 @@ function DirectorioTab() {
     setLoading(false);
   };
 
+  // Resilience: 8s safety net
+  useEffect(() => {
+    if (!loading) { setLoadTimeout(false); return; }
+    const t = setTimeout(() => {
+      if (loading) setLoadTimeout(true);
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [loading]);
+
   useEffect(() => {
     fetchData();
   }, []);
 
   let filtered = jugadores;
   if (searchTerm) {
-    const term = searchTerm.toLowerCase();
-    filtered = filtered.filter(j => j.nombre.toLowerCase().includes(term));
+    const tokens = searchTerm.toLowerCase().split(/\s+/).filter(Boolean);
+    filtered = filtered.filter(j => {
+      const name = j.nombre.toLowerCase();
+      const car = (j.carrera?.nombre || '').toLowerCase();
+      const sport = (j.disciplina?.name || '').toLowerCase();
+      return tokens.every(token => name.includes(token) || car.includes(token) || sport.includes(token));
+    });
   }
   if (filterCarrera) {
     filtered = filtered.filter(j => j.carrera_id === filterCarrera);
   }
 
-  if (loading) {
-    return <div className="text-white/40 py-12 text-center">Cargando...</div>;
+  if (loading && jugadores.length === 0) {
+    if (loadTimeout) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 px-8 text-center bg-white/[0.02] border border-white/5 rounded-[2rem]">
+          <div className="w-20 h-20 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-6">
+            <Users size={32} className="text-violet-500 animate-pulse" />
+          </div>
+          <h3 className="text-lg font-black text-white mb-2">Conexión Lenta</h3>
+          <p className="text-white/40 text-sm max-w-sm mb-8 font-bold italic">
+            No hemos podido recuperar el directorio de deportistas. Intenta forzar la carga.
+          </p>
+          <Button 
+            onClick={() => { setLoadTimeout(false); fetchData(); }} 
+            className="bg-violet-600 hover:bg-violet-500 text-white font-black uppercase tracking-widest text-[10px] h-11 px-8 rounded-xl"
+          >
+            Reintentar Carga
+          </Button>
+        </div>
+      );
+    }
+    return <div className="text-white/40 py-12 text-center flex flex-col items-center gap-4">
+      <Loader2 className="animate-spin text-violet-500" size={32} />
+      <span>Cargando deportistas...</span>
+    </div>;
   }
 
   const handleDeleteAll = async () => {

@@ -261,37 +261,6 @@ function TabButton({
         return () => clearTimeout(timer);
     }, [loading]);
 
-    if (loadTimeout && loading && !delegacion) {
-        return (
-            <ResilienceUI 
-                title="Conexión Lenta"
-                description="La información del equipo está tardando en cargar. Esto puede deberse a tu conexión o a un retraso en el servidor."
-                onRetry={() => {
-                    setLoadTimeout(false);
-                    mutate();
-                }}
-                backFallback="/clasificacion"
-                retryLabel="REINTENTAR CARGA"
-            />
-        );
-    }
-
-    if (loading && !delegacion) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
-
-    if (!delegacion || error) {
-        return (
-            <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-4">
-                <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-8 border border-white/10 shadow-2xl">
-                    <ShieldHalf className="text-white/20" size={40} />
-                </div>
-                <h1 className="text-3xl font-black mb-3 font-display uppercase tracking-widest text-center text-white/90">Equipo no encontrado</h1>
-                <p className="text-white/40 mb-10 max-w-sm text-center font-bold italic text-sm">La delegación o equipo deportivo que buscas no se encuentra disponible actualmente.</p>
-                <SafeBackButton fallback="/clasificacion" className="shadow-none rounded-2xl px-10 h-14 bg-violet-600 text-white font-black uppercase tracking-widest hover:bg-violet-700 shadow-2xl shadow-violet-600/30" label="Volver a Clasificación" />
-            </div>
-        );
-    }
-
-
     const filteredMatches = useMemo(() => {
         if (!matches) return [];
         let results = matches;
@@ -328,7 +297,40 @@ function TabButton({
             });
     }, [filteredMatches]);
 
-    const sportName = delegacion.disciplinas?.name || "Multideporte";
+    if (loadTimeout && loading && !delegacion) {
+        return (
+            <ResilienceUI 
+                title="Conexión Lenta"
+                description="La información del equipo está tardando en cargar. Esto puede deberse a tu conexión o a un retraso en el servidor."
+                onRetry={() => {
+                    setLoadTimeout(false);
+                    mutate();
+                }}
+                backFallback="/clasificacion"
+                retryLabel="REINTENTAR CARGA"
+            />
+        );
+    }
+
+    if (loading && !delegacion) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
+
+    if (!delegacion || error) {
+        return (
+            <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-4">
+                <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-8 border border-white/10 shadow-2xl">
+                    <ShieldHalf className="text-white/20" size={40} />
+                </div>
+                <h1 className="text-3xl font-black mb-3 font-display uppercase tracking-widest text-center text-white/90">Equipo no encontrado</h1>
+                <p className="text-white/40 mb-10 max-w-sm text-center font-bold italic text-sm">La delegación o equipo deportivo que buscas no se encuentra disponible actualmente.</p>
+                <SafeBackButton fallback="/clasificacion" className="shadow-none rounded-2xl px-10 h-14 bg-violet-600 text-white font-black uppercase tracking-widest hover:bg-violet-700 shadow-2xl shadow-violet-600/30" label="Volver a Clasificación" />
+            </div>
+        );
+    }
+
+
+
+ 
+     const sportName = delegacion.disciplinas?.name || "Multideporte";
     const sportAccent = SPORT_ACCENT[sportName] || "text-white/60";
     const winRate = stats.played > 0 ? Math.round((stats.won / stats.played) * 100) : 0;
 

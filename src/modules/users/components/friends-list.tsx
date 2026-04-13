@@ -221,12 +221,16 @@ function UserSearchSection({ userId }: { userId: string }) {
 
         setSearching(true);
         const timer = setTimeout(async () => {
-            const { data } = await supabase
-                .from('profiles')
-                .select('id, full_name, avatar_url, points')
-                .ilike('full_name', `%${q}%`)
-                .neq('id', userId)
-                .limit(8);
+            const tokens = q.split(/\s+/);
+            let pQuery = supabase.from('profiles').select('id, full_name, avatar_url, points');
+            
+            tokens.forEach(token => {
+                if (token) {
+                    pQuery = pQuery.ilike('full_name', `%${token}%`);
+                }
+            });
+
+            const { data } = await pQuery.neq('id', userId).limit(10);
             setResults(data ?? []);
             setSearching(false);
         }, 350);
@@ -323,6 +327,15 @@ export function FriendsList({ userId }: FriendsListProps) {
         rejectRequest,
     } = useFriends(userId);
 
+    const [friendsSearch, setFriendsSearch] = useState('');
+
+    const filteredFriends = friends.filter(f => {
+        if (!friendsSearch.trim()) return true;
+        const tokens = friendsSearch.toLowerCase().split(/\s+/).filter(Boolean);
+        const name = f.full_name.toLowerCase();
+        return tokens.every(token => name.includes(token));
+    });
+
     if (isLoading) {
         return (
             <div className="flex flex-col justify-center items-center py-32 space-y-4">
@@ -383,6 +396,19 @@ export function FriendsList({ userId }: FriendsListProps) {
                     </div>
                 </div>
 
+                {friends.length > 0 && (
+                    <div className="mb-6 relative group">
+                        <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-violet-500 transition-colors" />
+                        <input
+                            type="text"
+                            value={friendsSearch}
+                            onChange={(e) => setFriendsSearch(e.target.value)}
+                            placeholder="Find within your connections..."
+                            className="w-full h-11 pl-11 pr-4 rounded-2xl bg-white/[0.03] border border-white/5 focus:border-violet-500/30 focus:bg-white/[0.05] outline-none text-xs font-bold text-white transition-all shadow-inner"
+                        />
+                    </div>
+                )}
+
                 {friends.length === 0 ? (
                     <div className="relative overflow-hidden rounded-[3rem] p-12 lg:p-20 text-center bg-black/20 border-2 border-dashed border-white/5 group">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] group-hover:scale-110 transition-transform duration-1000">
@@ -401,7 +427,7 @@ export function FriendsList({ userId }: FriendsListProps) {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <AnimatePresence mode="popLayout" initial={false}>
-                            {(friends as any[]).map((f) => (
+                            {(filteredFriends as any[]).map((f) => (
                                 <FriendCard
                                     key={f.friendship_id}
                                     friend={f}

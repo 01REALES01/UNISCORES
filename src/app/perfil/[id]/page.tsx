@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { FriendButton } from "@/modules/users/components/friend-button";
 import { FollowButton } from "@/modules/users/components/follow-button";
+import { usePublicProfile } from "@/modules/users/hooks/use-public-profile";
 import { FriendsList } from "@/modules/users/components/friends-list";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -163,10 +164,6 @@ export default function PublicProfilePage() {
 
     const upcomingMatches = history.filter(h => h.estado === 'programado' || h.estado === 'en_curso').sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
     const recentResults = history.filter(h => h.estado === 'finalizado').sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-0 h-14 bg-violet-600 text-white font-black uppercase tracking-widest hover:bg-violet-700 shadow-2xl shadow-violet-600/30" label="Volver a Clasificación" />
-            </div>
-        );
-    }
 
     const isDeportista = profile.roles?.includes('deportista');
     
@@ -786,7 +783,7 @@ export default function PublicProfilePage() {
                                 </div>
 
                                 <div className="flex flex-col gap-4">
-                                    {loadingHistory ? (
+                                    {loading ? (
                                         <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white/20" /></div>
                                     ) : recentResults.length > 0 ? (
                                         recentResults.slice(0, 5).map((h, i) => {

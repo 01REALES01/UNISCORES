@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { LayoutGrid, Star } from "lucide-react";
 import { SportIcon } from "@/components/sport-icons";
@@ -24,6 +25,8 @@ interface MatchFiltersProps {
 }
 
 export function MatchFilters({ activeFilter, setActiveFilter, matches }: MatchFiltersProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const allSports = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
 
   return (
@@ -113,7 +116,7 @@ export function MatchFilters({ activeFilter, setActiveFilter, matches }: MatchFi
               <SportLabel name={sport} />
             </div>
 
-            {hasLive && (
+            {mounted && hasLive && (
               <span className="absolute top-2 right-2 flex h-2 w-2">
                 <span className="animate-ping absolute h-full w-full rounded-full bg-rose-500 opacity-75" />
                 <span className="relative rounded-full h-2 w-2 bg-rose-500 shadow-sm" />

@@ -121,63 +121,112 @@ function computeMedallero(
         });
 }
 
-// ─── Realtime (singleton) ─────────────────────────────────────────────────────
-let isMedalleroSubscribed = false;
-
-function subscribeToMedallero(swrKey: string) {
-    if (typeof window === 'undefined') return;
-    if (isMedalleroSubscribed) return;
-    isMedalleroSubscribed = true;
-
-    let debounce: ReturnType<typeof setTimeout> | null = null;
-
-    supabase
-        .channel('global:medallero:changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
-            if (debounce) clearTimeout(debounce);
-            debounce = setTimeout(() => globalMutate(swrKey), 1000);
-        })
-        .subscribe();
-}
-
 // ─── Hook ─────────────────────────────────────────────────────────────────────
+
 export function useMedallero(activeSport: string = 'todos', activeGender: string = 'todos') {
     const swrKey = `medallero:${activeSport}:${activeGender}`;
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const { data, error, isLoading } = useSWR(
+    // sessionStorage fallback: provide instant data even if JS context was discarded
+    let fallbackData: MedalEntry[] | undefined = undefined;
+    if (typeof window !== 'undefined') {
+        try {
+            const raw = sessionStorage.getItem('swr-medallero');
+            if (raw) fallbackData = JSON.parse(raw);
+        } catch {}
+    }
+
+    const { data, error, isLoading, mutate } = useSWR(
         swrKey,
         async () => {
-            const [matchesResult, carrerasResult] = await Promise.all([
-                safeQuery(
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 30_000);
+            
+            try {
+                const [matchesResult, carrerasResult] = await Promise.all([
                     supabase.from('partidos').select(
                         'id, estado, genero, fase, marcador_detalle, carrera_a_ids, carrera_b_ids, disciplinas(name)'
-                    ),
-                    'medallero-fetch'
-                ),
-                supabase.from('carreras').select('id, nombre, escudo_url'),
-            ]);
+                    ).abortSignal(controller.signal),
+                    supabase.from('carreras').select('id, nombre, escudo_url').abortSignal(controller.signal),
+                ]);
 
-            if (matchesResult.error || !matchesResult.data) return SAMPLE_DATA;
-            const carreras: CarreraLookup[] = carrerasResult.data ?? [];
-            const result = computeMedallero(matchesResult.data, carreras, activeSport, activeGender);
-            return result.length > 0 ? result : SAMPLE_DATA;
+                if (matchesResult.error) throw matchesResult.error;
+
+                const carreras: CarreraLookup[] = carrerasResult.data ?? [];
+                let result = computeMedallero(matchesResult.data || [], carreras, activeSport, activeGender);
+                
+                // If filter returns nothing but we have total data, we might show empty.
+                // But for the global view (todos/todos), if empty, we use sample fallback.
+                if (result.length === 0 && activeSport === 'todos' && activeGender === 'todos') {
+                    result = SAMPLE_DATA;
+                }
+
+                // Persist successful fetch (only for global view to avoid bloat, or all key-based)
+                if (typeof window !== 'undefined' && result.length > 0) {
+                    try { sessionStorage.setItem('swr-medallero', JSON.stringify(result)); } catch {}
+                }
+
+                return result;
+            } catch (err: any) {
+                if (err.name === 'AbortError') console.error('[useMedallero] Fetch timed out');
+                if (fallbackData) return fallbackData;
+                return SAMPLE_DATA;
+            } finally {
+                clearTimeout(timeout);
+            }
         },
-        { dedupingInterval: 15000, keepPreviousData: true }
+        { 
+            fallbackData,
+            revalidateOnFocus: false,
+            revalidateOnReconnect: true,
+            dedupingInterval: 15000, 
+            keepPreviousData: true 
+        }
     );
 
     useEffect(() => {
-        subscribeToMedallero(swrKey);
-        return () => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
+        if (typeof window === 'undefined') return;
+
+        let activeChannel: any = null;
+        let debounce: ReturnType<typeof setTimeout> | null = null;
+
+        const setupSubscription = () => {
+            if (activeChannel?.state === 'joined') return;
+            if (activeChannel) supabase.removeChannel(activeChannel);
+
+            activeChannel = supabase
+                .channel(`medallero:changes:${Date.now()}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
+                    if (debounce) clearTimeout(debounce);
+                    debounce = setTimeout(() => mutate(), 1500);
+                })
+                .subscribe();
         };
-    // swrKey changes when filters change — no need to re-subscribe the singleton
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+
+        setupSubscription();
+
+        const handleRevalidate = () => {
+            mutate();
+            if (activeChannel) {
+                supabase.removeChannel(activeChannel);
+                activeChannel = null;
+            }
+            setupSubscription();
+        };
+
+        window.addEventListener('app:revalidate', handleRevalidate);
+
+        return () => {
+            window.removeEventListener('app:revalidate', handleRevalidate);
+            if (debounce) clearTimeout(debounce);
+            if (activeChannel) supabase.removeChannel(activeChannel);
+        };
+    }, [mutate]);
 
     return {
         medallero: data || [],
-        loading: isLoading,
+        loading: isLoading && !data,
         error,
+        mutate,
     };
 }
+

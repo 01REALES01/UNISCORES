@@ -5,7 +5,7 @@ import { mutate } from "swr";
 import { supabase } from "@/lib/supabase";
 
 // Only revalidate if user was away for 2+ seconds — prevents reload on quick glitches
-const MIN_HIDDEN_MS = 5_000;
+const MIN_HIDDEN_MS = 1_000;
 
 /**
  * Revalidates all SWR data when the user returns after being away for 15+ seconds.

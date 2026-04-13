@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { supabase } from "@/lib/supabase";
 import { useAuth, type Profile, type UserRole } from "@/hooks/useAuth";
@@ -63,9 +64,11 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
         description: 'Atleta con perfil público y stats',
     },
 };export default function UsuariosPage() {
+    const searchParams = useSearchParams();
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [loadTimeout, setLoadTimeout] = useState(false);
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
     const [roleFilter, setRoleFilter] = useState<string>('all');
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -86,9 +89,23 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
     }, [isAdmin, currentProfile, router]);
 
     useEffect(() => {
+        const q = searchParams.get('search');
+        if (q !== null) setSearchQuery(q);
+    }, [searchParams]);
+
+    useEffect(() => {
         fetchProfiles();
         fetchDisciplinas();
     }, []);
+
+    // Resilience: 8s safety net
+    useEffect(() => {
+        if (!loading) { setLoadTimeout(false); return; }
+        const t = setTimeout(() => {
+            if (loading) setLoadTimeout(true);
+        }, 8000);
+        return () => clearTimeout(t);
+    }, [loading]);
 
     async function fetchDisciplinas() {
         const { data } = await supabase.from('disciplinas').select('id, name').order('name');
@@ -262,8 +279,15 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
             const userRoles = p.roles || ['public'];
             if (roleFilter !== 'all' && !userRoles.includes(roleFilter as UserRole)) return false;
             if (searchQuery) {
-                const q = searchQuery.toLowerCase();
-                if (!p.email.toLowerCase().includes(q) && !(p.full_name || '').toLowerCase().includes(q)) return false;
+                const tokens = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
+                const name = (p.full_name || '').toLowerCase();
+                const email = (p.email || '').toLowerCase();
+                
+                const matchAll = tokens.every(token => 
+                    name.includes(token) || email.includes(token)
+                );
+                
+                if (!matchAll) return false;
             }
             return true;
         });
@@ -360,9 +384,27 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
             </div>
 
             {/* Users List */}
-            {loading ? (
+            {loading && profiles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-32">
-                    <UniqueLoading size="lg" />
+                    {loadTimeout ? (
+                        <div className="flex flex-col items-center text-center max-w-sm">
+                            <div className="w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-6">
+                                <Shield className="text-amber-500 animate-pulse" size={32} />
+                            </div>
+                            <h3 className="text-xl font-black text-white mb-2">Sincronización Lenta</h3>
+                            <p className="text-slate-400 text-sm mb-8 italic">
+                                La base de datos de usuarios está tardando más de lo esperado en responder.
+                            </p>
+                            <Button 
+                                onClick={() => { setLoadTimeout(false); fetchProfiles(); }} 
+                                className="bg-amber-500 hover:bg-amber-400 text-black font-bold uppercase tracking-widest text-[10px] h-11 px-8 rounded-xl"
+                            >
+                                Reintentar Conexión
+                            </Button>
+                        </div>
+                    ) : (
+                        <UniqueLoading size="lg" />
+                    )}
                 </div>
             ) : filteredProfiles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-5">

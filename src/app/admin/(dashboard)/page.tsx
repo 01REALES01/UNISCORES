@@ -17,6 +17,7 @@ export default function AdminDashboard() {
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const fetchAttemptRef = useRef(0);
+    const [loadTimeout, setLoadTimeout] = useState(false);
     const { loading: authLoading } = useAuth();
 
     const fetchData = useCallback(async () => {
@@ -57,6 +58,11 @@ export default function AdminDashboard() {
         window.addEventListener('app:revalidate', freshFetch);
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
+        // Resonance Safety Net (8s)
+        const t = setTimeout(() => {
+            if (loading) setLoadTimeout(true);
+        }, 8000);
+
         const sub = supabase
             .channel('admin-dashboard')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
@@ -68,6 +74,7 @@ export default function AdminDashboard() {
         return () => {
             window.removeEventListener('app:revalidate', freshFetch);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            clearTimeout(t);
             if (debounceRef.current) clearTimeout(debounceRef.current);
             if (retryRef.current) clearTimeout(retryRef.current);
             supabase.removeChannel(sub);
@@ -144,6 +151,26 @@ export default function AdminDashboard() {
     };
 
     if (loading) {
+        if (loadTimeout) {
+            return (
+                <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center bg-white/[0.02] border border-white/5 rounded-3xl">
+                    <div className="w-20 h-20 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-6">
+                        <Activity className="text-violet-500 animate-pulse" size={32} />
+                    </div>
+                    <h3 className="text-xl font-black text-white mb-2">Panel en Espera</h3>
+                    <p className="text-slate-400 text-sm max-w-sm mb-8 leading-relaxed">
+                        Estamos recuperando las últimas métricas. Si la conexión tarda demasiado, puedes intentar forzar la carga.
+                    </p>
+                    <button 
+                        onClick={() => { setLoadTimeout(false); fetchData(); }} 
+                        className="bg-violet-600 hover:bg-violet-500 text-white font-bold uppercase tracking-widest text-[10px] h-11 px-8 rounded-xl shadow-lg shadow-violet-500/20 transition-all active:scale-95"
+                    >
+                        Reintentar Sincronización
+                    </button>
+                </div>
+            );
+        }
+
         return (
             <div className="space-y-8 animate-pulse">
                 <div className="h-10 w-48 bg-muted/30 rounded-xl" />

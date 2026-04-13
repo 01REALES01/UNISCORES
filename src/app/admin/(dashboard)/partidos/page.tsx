@@ -8,7 +8,7 @@ import { Plus, Calendar, Clock, Zap, Trash2, Search, TrendingUp, Trophy, Loader2
 import { toast } from "sonner";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { CreateMatchModal } from "@/components/create-match-modal";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuditLogger } from "@/hooks/useAuditLogger";
 import { cn } from "@/lib/utils";
@@ -22,8 +22,10 @@ export default function PartidosPage() {
     const [sportFilter, setSportFilter] = useState('todos');
     const [genderFilter, setGenderFilter] = useState('todos');
     const [categoriaFilter, setCategoriaFilter] = useState('todos');
-    const [dateFilter, setDateFilter] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [dateFilter, setDateFilter] = useState(() => new Date().toLocaleDateString('en-CA'));
+    const [loadTimeout, setLoadTimeout] = useState(false);
+    const searchParams = useSearchParams();
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [importingTennis, setImportingTennis] = useState(false);
@@ -54,8 +56,24 @@ export default function PartidosPage() {
     }, []);
 
     useEffect(() => {
-        fetchPartidos();
+        const q = searchParams.get('search');
+        if (q !== null) setSearchQuery(q);
+    }, [searchParams]);
 
+    useEffect(() => {
+        fetchPartidos();
+    }, [fetchPartidos]);
+
+    // Resonance Safety Net (8s)
+    useEffect(() => {
+        if (!loading) { setLoadTimeout(false); return; }
+        const t = setTimeout(() => {
+            if (loading) setLoadTimeout(true);
+        }, 8000);
+        return () => clearTimeout(t);
+    }, [loading]);
+
+    useEffect(() => {
         const setupChannel = () => {
             if (channelRef.current) supabase.removeChannel(channelRef.current);
             channelRef.current = supabase
@@ -240,12 +258,22 @@ export default function PartidosPage() {
             if (pDate !== dateFilter) return false;
         }
         if (searchQuery) {
-            const q = searchQuery.toLowerCase();
-            const dispA = getDisplayName(p, 'a');
-            const dispB = getDisplayName(p, 'b');
-            const carA = getCarreraName(p, 'a');
-            const carB = getCarreraName(p, 'b');
-            if (!dispA.toLowerCase().includes(q) && !dispB.toLowerCase().includes(q) && !carA.toLowerCase().includes(q) && !carB.toLowerCase().includes(q)) return false;
+            const tokens = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
+            const dispA = getDisplayName(p, 'a').toLowerCase();
+            const dispB = getDisplayName(p, 'b').toLowerCase();
+            const carA = getCarreraName(p, 'a').toLowerCase();
+            const carB = getCarreraName(p, 'b').toLowerCase();
+            const sport = (p.disciplinas?.name || '').toLowerCase();
+
+            const matchAll = tokens.every(token => 
+                dispA.includes(token) || 
+                dispB.includes(token) || 
+                carA.includes(token) || 
+                carB.includes(token) ||
+                sport.includes(token)
+            );
+            
+            if (!matchAll) return false;
         }
         return true;
     });
@@ -306,6 +334,33 @@ export default function PartidosPage() {
         matches: filteredPartidos.filter(p => p.disciplinas?.name === sport),
     })).filter(g => g.matches.length > 0);
     const ungrouped = filteredPartidos.filter(p => !p.disciplinas?.name);
+
+    if (loading && partidos.length === 0) {
+        if (loadTimeout) {
+            return (
+                <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center bg-white/[0.02] border border-white/5 rounded-3xl">
+                    <div className="w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-6">
+                        <Zap size={32} className="text-amber-500 animate-pulse" />
+                    </div>
+                    <h3 className="text-xl font-black text-white mb-2">Sincronización Lenta</h3>
+                    <p className="text-slate-400 text-sm max-w-sm mb-8 leading-relaxed">
+                        No hemos podido recuperar los partidos recientes. Puede haber un retraso en la conexión con la base de datos.
+                    </p>
+                    <Button 
+                        onClick={() => { setLoadTimeout(false); fetchPartidos(); }} 
+                        className="bg-amber-500 hover:bg-amber-400 text-black font-bold uppercase tracking-widest text-xs h-12 px-8 rounded-xl shadow-lg shadow-amber-500/20"
+                    >
+                        Reintentar Conexión
+                    </Button>
+                </div>
+            );
+        }
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <UniqueLoading size="lg" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-5">
@@ -452,11 +507,7 @@ export default function PartidosPage() {
             </div>
 
             {/* Match list grouped by sport */}
-            {loading ? (
-                <div className="flex justify-center py-20">
-                    <UniqueLoading size="lg" />
-                </div>
-            ) : filteredPartidos.length === 0 ? (
+            {filteredPartidos.length === 0 ? (
                 <div className="text-center py-16">
                     <Calendar size={28} className="text-slate-600 mx-auto mb-3" />
                     <p className="text-sm font-medium text-slate-400">Sin partidos</p>

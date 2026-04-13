@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { SPORT_COLORS, DEPORTES_INDIVIDUALES } from "@/lib/constants";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { computeCareerStats } from "@/lib/sport-helpers";
+import { ResilienceUI } from "@/components/resilience-ui";
 
 type Tab = "carreras" | "equipos";
 
@@ -43,15 +44,25 @@ export default function MedalleroPage() {
     const [partidos, setPartidos] = useState<any[]>([]);
     const [athletes, setAthletes] = useState<any[]>([]);
     
-    // UI states
     const [loading, setLoading] = useState(true);
-    const [sportFilter, setSportFilter] = useState("todos");
-    const [genderFilter, setGenderFilter] = useState("todos");
+    const [loadTimeout, setLoadTimeout] = useState(false);
+
+    // Filters
+    const [sportFilter, setSportFilter] = useState<number | 'todos'>('todos');
+    const [genderFilter, setGenderFilter] = useState<string>('todos');
     const [searchQuery, setSearchQuery] = useState("");
+
+    const tabs = [
+        { id: "carreras" as Tab, label: "Programas", icon: GraduationCap },
+        { id: "equipos" as Tab, label: "Equipos", icon: Users },
+    ];
 
     // Initial data fetch
     const fetchData = useCallback(async () => {
         setLoading(true);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+
         try {
             const [
                 { data: cData },
@@ -60,11 +71,11 @@ export default function MedalleroPage() {
                 { data: pData },
                 { data: aData }
             ] = await Promise.all([
-                supabase.from('carreras').select('*').order('nombre'),
-                supabase.from('delegaciones').select('id, nombre, genero, disciplina_id, carrera_ids, disciplinas(name)').order('nombre'),
-                supabase.from('disciplinas').select('id, name').order('name'),
-                supabase.from('partidos').select('id, disciplina_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, marcador_detalle, estado, genero, fase').eq('estado', 'finalizado'),
-                supabase.from('jugadores').select('id, nombre, disciplina_id, genero, profile:profiles(id, full_name, avatar_url, points, roles)')
+                supabase.from('carreras').select('*').order('nombre').abortSignal(controller.signal),
+                supabase.from('delegaciones').select('id, nombre, genero, disciplina_id, carrera_ids, disciplinas(name)').order('nombre').abortSignal(controller.signal),
+                supabase.from('disciplinas').select('id, name').order('name').abortSignal(controller.signal),
+                supabase.from('partidos').select('id, disciplina_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, marcador_detalle, estado, genero, fase').eq('estado', 'finalizado').abortSignal(controller.signal),
+                supabase.from('jugadores').select('id, nombre, disciplina_id, genero, profile:profiles(id, full_name, avatar_url, points, roles)').abortSignal(controller.signal)
             ]);
 
             if (cData) setCarreras(cData);
@@ -85,9 +96,13 @@ export default function MedalleroPage() {
                 });
                 setAthletes(mapped);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error fetching data:", err);
+            if (err.name === 'AbortError') {
+                console.warn("[Medallero] Fetch timed out");
+            }
         } finally {
+            clearTimeout(timeout);
             setLoading(false);
         }
     }, []);
@@ -95,9 +110,8 @@ export default function MedalleroPage() {
     useEffect(() => {
         fetchData();
 
-        // Realtime subscription for matches to auto-refresh stats
         const channel = supabase
-            .channel('medallero-realtime')
+            .channel(`medallero:global:${Date.now()}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
                 fetchData();
             })
@@ -108,90 +122,105 @@ export default function MedalleroPage() {
         };
     }, [fetchData]);
 
-    // Performance calculation for "Carreras"
-    const careerStatsList = useMemo(() => {
-        const filteredPartidos = partidos.filter(p => {
-            if (sportFilter !== "todos" && p.disciplina_id !== sportFilter) return false;
-            if (genderFilter !== "todos" && p.genero !== genderFilter) return false;
-            return true;
-        });
+    // Resilience: If loading takes > 8s, offer a retry
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (loading) {
+                console.warn("[Medallero] Load exceeded 8s timeout, showing Retry UI");
+                setLoadTimeout(true);
+            }
+        }, 8000);
+        return () => clearTimeout(timer);
+    }, [loading]);
 
-        const list = carreras.map(c => {
-            const stats = computeCareerStats(filteredPartidos, c.id);
+    const getCareerNames = useCallback((ids: number[]) => {
+        return ids.map(id => carreras.find(c => c.id === id)?.nombre).filter(Boolean).join(" + ");
+    }, [carreras]);
+
+    const filteredCarreras = useMemo(() => {
+        let matchesToCompute = partidos;
+        if (sportFilter !== 'todos') {
+            matchesToCompute = matchesToCompute.filter(m => m.disciplina_id === sportFilter);
+        }
+        if (genderFilter !== 'todos') {
+            matchesToCompute = matchesToCompute.filter(m => (m.genero || '').toLowerCase() === genderFilter);
+        }
+
+        let results = carreras.map(c => {
+            const stats = computeCareerStats(matchesToCompute, c.id);
             return {
-                id: c.id,
-                nombre: c.nombre,
-                escudo_url: c.escudo_url,
-                won: stats.won,
-                played: stats.played,
-                draw: stats.draw,
-                lost: stats.lost
+                ...c,
+                ...stats,
             };
         });
 
-        return list.sort((a, b) => {
-            if (b.won !== a.won) return b.won - a.won;
-            return b.played - a.played;
-        });
-    }, [carreras, partidos, sportFilter, genderFilter]);
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            results = results.filter(c => c.nombre.toLowerCase().includes(q));
+        }
 
-    const filteredCarreras = careerStatsList.filter(c => 
-        (c.nombre || "").toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    // Helpers
-    const getCareerNames = (ids: number[]) => {
-        return ids.map(id => carreras.find(c => c.id === id)?.nombre).filter(Boolean).join(" / ");
-    };
-
-    const filteredEquiposList = useMemo(() => {
-        if (!equipos) return [];
-        return equipos.filter(e => {
-            const matchesSport = sportFilter === "todos" || e.disciplina_id === sportFilter;
-            const matchesGender = genderFilter === "todos" || e.genero === genderFilter;
-            
-            const safeName = e.nombre || "";
-            const careerNames = e.carrera_ids ? getCareerNames(e.carrera_ids) : "";
-            
-            const matchesSearch = safeName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                careerNames.toLowerCase().includes(searchQuery.toLowerCase());
-            
-            const isPlaceholder = /^\d+$/.test(safeName.trim()) || 
-                                safeName.toLowerCase().includes("finalista") || 
-                                safeName.toLowerCase().includes("ganador") ||
-                                safeName.toLowerCase().includes("cupo") ||
-                                safeName.toLowerCase().includes("grupo");
-            
-            const isRealCombinedTeam = (e.carrera_ids?.length || 0) >= 2;
-
-            return matchesSport && matchesGender && matchesSearch && !isPlaceholder && isRealCombinedTeam;
-        });
-    }, [equipos, sportFilter, genderFilter, searchQuery, carreras]);
-    
-    // Athlete filtering for individual sports
-    const filteredAthletesList = useMemo(() => {
-        return athletes.filter(a => {
-            const matchesSport = sportFilter === "todos" || a.disciplina_id === sportFilter;
-            const matchesGender = genderFilter === "todos" || a.genero === genderFilter;
-            const matchesSearch = a.full_name.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesSport && matchesGender && matchesSearch;
-        });
-    }, [athletes, sportFilter, genderFilter, searchQuery]);
+        return results.sort((a, b) => b.won - a.won);
+    }, [carreras, partidos, sportFilter, genderFilter, searchQuery]);
 
     const isIndividualSelected = useMemo(() => {
         if (sportFilter === 'todos') return false;
-        const sportObj = disciplinas.find(d => d.id === sportFilter);
-        return sportObj && DEPORTES_INDIVIDUALES.includes(sportObj.name);
+        const sport = disciplinas.find(d => d.id === sportFilter);
+        return sport ? DEPORTES_INDIVIDUALES.includes(sport.name) : false;
     }, [sportFilter, disciplinas]);
 
-    const tabs: { id: Tab; label: string; icon: any }[] = [
-        { id: "carreras", label: "Carreras", icon: GraduationCap },
-        { id: "equipos", label: "Programas", icon: Users },
-    ];
+    const filteredEquiposList = useMemo(() => {
+        let results = equipos;
+        if (sportFilter !== 'todos') {
+            results = results.filter(e => e.disciplina_id === sportFilter);
+        }
+        if (genderFilter !== 'todos') {
+            results = results.filter(e => e.genero?.toLowerCase() === genderFilter);
+        }
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            results = results.filter(e => {
+                const discName = (Array.isArray(e.disciplinas) ? e.disciplinas[0] : e.disciplinas)?.name || '';
+                const careerNames = (e.carrera_ids || []).map((id: number) => carreras.find(c => c.id === id)?.nombre || '').join(' ').toLowerCase();
+                return discName.toLowerCase().includes(q) || careerNames.includes(q);
+            });
+        }
+        return results;
+    }, [equipos, sportFilter, genderFilter, searchQuery, carreras]);
+
+    const filteredAthletesList = useMemo(() => {
+        let results = athletes;
+        if (sportFilter !== 'todos') {
+            results = results.filter(a => a.disciplina_id === sportFilter);
+        }
+        if (genderFilter !== 'todos') {
+            results = results.filter(a => a.genero?.toLowerCase() === genderFilter);
+        }
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            results = results.filter(a => a.full_name.toLowerCase().includes(q));
+        }
+        return results.sort((a, b) => b.points - a.points);
+    }, [athletes, sportFilter, genderFilter, searchQuery]);
+
+    if (loadTimeout && loading && carreras.length === 0) {
+        return (
+            <ResilienceUI 
+                title="Sincronización Lenta"
+                description="Estamos teniendo problemas para conectar con el medallero en tiempo real. Esto puede ser por saturación en la red o conexión inestable."
+                onRetry={() => {
+                    setLoadTimeout(false);
+                    fetchData();
+                }}
+                backFallback="/"
+                retryLabel="REINTENTAR SINCRONIZACIÓN"
+            />
+        );
+    }
 
 
+ 
+     if (loading && carreras.length === 0) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
 
     const selectedSportName = disciplinas.find(d => d.id === sportFilter)?.name || "Global";
 

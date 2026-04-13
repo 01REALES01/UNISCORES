@@ -25,7 +25,7 @@ const MATCH_COLUMNS = [
 // ─── SWR Fetcher ─────────────────────────────────────────────────────────────
 const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
     try {
         const { data, error } = await supabase
@@ -37,9 +37,6 @@ const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
         clearTimeout(timeoutId);
 
         if (error) {
-            // Fallback for missing columns or FK relationships not yet in the
-            // PostgREST schema cache (e.g. before SQL migration is applied in prod).
-            // PGRST204 = column not found, PGRST200 = relationship not found.
             const isSchemaMiss =
                 error.code === 'PGRST204' ||
                 error.code === 'PGRST200' ||
@@ -47,8 +44,6 @@ const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
                 error.message?.includes('relationship');
 
             if (isSchemaMiss) {
-                // Strip all columns added after the initial schema:
-                // fase/grupo/bracket_order, delegacion FK IDs, and delegacion FK joins.
                 const FALLBACK_COLUMNS = [
                     'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria',
                     'delegacion_a, delegacion_b',
@@ -67,11 +62,20 @@ const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
                     .abortSignal(controller.signal);
 
                 if (fallback.error) throw fallback.error;
-                return (fallback.data || []) as unknown as PartidoWithRelations[];
+                const finalData = (fallback.data || []) as unknown as PartidoWithRelations[];
+                if (typeof window !== 'undefined' && finalData.length > 0) {
+                    try { sessionStorage.setItem('swr-global-matches', JSON.stringify(finalData)); } catch {}
+                }
+                return finalData;
             }
             throw error;
         }
-        return (data || []) as unknown as PartidoWithRelations[];
+        
+        const finalData = (data || []) as unknown as PartidoWithRelations[];
+        if (typeof window !== 'undefined' && finalData.length > 0) {
+            try { sessionStorage.setItem('swr-global-matches', JSON.stringify(finalData)); } catch {}
+        }
+        return finalData;
     } catch (err: unknown) {
         clearTimeout(timeoutId);
         if (err instanceof Error && err.name === 'AbortError') {
@@ -85,17 +89,28 @@ const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
 let globalChannel: any = null;
 
 export function useMatches() {
+    // sessionStorage fallback: provide data immediately even if app context was cleared
+    let fallbackData: PartidoWithRelations[] | undefined = undefined;
+    if (typeof window !== 'undefined') {
+        try {
+            const raw = sessionStorage.getItem('swr-global-matches');
+            if (raw) fallbackData = JSON.parse(raw);
+        } catch {}
+    }
+
     const { data, error, isLoading, mutate } = useSWR(
         'global:partidos',
         fetchMatches,
         {
+            fallbackData,
             revalidateOnReconnect: true,
             revalidateOnMount: true,
-            revalidateOnFocus: true,
+            revalidateOnFocus: false, // Managed by VisibilityRevalidate
             dedupingInterval: 5000,
             keepPreviousData: true,
         }
     );
+
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
