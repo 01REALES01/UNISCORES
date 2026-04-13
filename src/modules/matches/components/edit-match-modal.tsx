@@ -21,25 +21,125 @@ type EditMatchModalProps = {
 function NumericStepper({ label, value, onChange, color = "indigo", sublabel }: { label: string, value: number, onChange: (val: number) => void, color?: string, sublabel?: string }) {
     return (
         <div className="flex flex-col items-center gap-3">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{label}</span>
-            <div className="flex items-center gap-2 bg-black/40 border border-white/5 rounded-[1.5rem] p-1.5 shadow-2xl">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 truncate max-w-[100px]">{label}</span>
+            <div className="flex items-center gap-1 bg-black/40 border border-white/5 rounded-[1.5rem] p-1.5 shadow-2xl">
                 <button 
                     onClick={() => onChange(Math.max(0, value - 1))}
-                    className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/5 active:scale-90 transition-all text-slate-500 hover:text-white"
+                    className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/5 active:scale-90 transition-all text-slate-500 hover:text-white"
                 >
-                    <Minus size={16} />
+                    <Minus size={14} />
                 </button>
-                <div className="w-14 text-center select-none">
-                    <span className="text-2xl font-black text-white font-mono tabular-nums">{value}</span>
-                </div>
+                <input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    value={value}
+                    onChange={(e) => onChange(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-12 text-center text-2xl font-black text-white font-mono tabular-nums bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
                 <button 
                     onClick={() => onChange(value + 1)}
-                    className={`w-10 h-10 flex items-center justify-center rounded-xl bg-${color}-500/10 hover:bg-${color}-500/20 active:scale-90 transition-all text-${color}-400`}
+                    className={`w-9 h-9 flex items-center justify-center rounded-xl bg-${color}-500/10 hover:bg-${color}-500/20 active:scale-90 transition-all text-${color}-400`}
                 >
-                    <Plus size={16} />
+                    <Plus size={14} />
                 </button>
             </div>
             {sublabel && <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{sublabel}</span>}
+        </div>
+    );
+}
+
+function PeriodScoreRow({
+    periodLabel,
+    isActive,
+    onActivate,
+    scoreA,
+    scoreB,
+    onChangeA,
+    onChangeB,
+    onDelete,
+    teamA,
+    teamB,
+    color = "indigo",
+}: {
+    periodLabel: string;
+    isActive: boolean;
+    onActivate: () => void;
+    scoreA: number;
+    scoreB: number;
+    onChangeA: (v: number) => void;
+    onChangeB: (v: number) => void;
+    onDelete?: () => void;
+    teamA: string;
+    teamB: string;
+    color?: string;
+}) {
+    return (
+        <div className={`p-3 rounded-2xl border transition-colors ${isActive ? `bg-${color}-500/10 border-${color}-500/20` : 'bg-black/20 border-white/5'}`}>
+            <div className="flex items-center justify-between mb-2">
+                <button
+                    type="button"
+                    onClick={onActivate}
+                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500"
+                >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? `bg-${color}-500 animate-pulse` : 'bg-slate-700'}`} />
+                    {periodLabel}
+                    {isActive && <span className={`text-${color}-400 text-[8px]`}>(VIVO)</span>}
+                </button>
+                {onDelete && (
+                    <button onClick={onDelete} className="p-1.5 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-red-500/10 transition-all">
+                        <X size={12} />
+                    </button>
+                )}
+            </div>
+            <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                <div className="flex flex-col items-center gap-1">
+                    <span className="text-[8px] font-bold text-slate-600 uppercase truncate max-w-full">{teamA}</span>
+                    <div className="flex items-center gap-1">
+                        <button onClick={() => onChangeA(Math.max(0, scoreA - 1))} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-slate-500 active:scale-90">-</button>
+                        <input
+                            type="number"
+                            inputMode="numeric"
+                            min={0}
+                            value={scoreA}
+                            onChange={(e) => onChangeA(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-10 h-8 text-center text-lg font-black text-white font-mono bg-black/30 rounded-lg outline-none border border-white/5 focus:border-indigo-500/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button onClick={() => onChangeA(scoreA + 1)} className={`w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-${color}-400 active:scale-90`}>+</button>
+                    </div>
+                </div>
+                <span className="text-slate-700 text-xs font-black">VS</span>
+                <div className="flex flex-col items-center gap-1">
+                    <span className="text-[8px] font-bold text-slate-600 uppercase truncate max-w-full">{teamB}</span>
+                    <div className="flex items-center gap-1">
+                        <button onClick={() => onChangeB(Math.max(0, scoreB - 1))} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-slate-500 active:scale-90">-</button>
+                        <input
+                            type="number"
+                            inputMode="numeric"
+                            min={0}
+                            value={scoreB}
+                            onChange={(e) => onChangeB(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-10 h-8 text-center text-lg font-black text-white font-mono bg-black/30 rounded-lg outline-none border border-white/5 focus:border-purple-500/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button onClick={() => onChangeB(scoreB + 1)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-purple-400 active:scale-90">+</button>
+                    </div>
+                </div>
+            </div>
+            {!isActive && (
+                <button
+                    type="button"
+                    onClick={onActivate}
+                    className={`w-full mt-2 py-1.5 rounded-xl bg-${color}-500/10 border border-${color}-500/20 text-${color}-500 text-[8px] font-black uppercase tracking-widest hover:bg-${color}-500 hover:text-white transition-all`}
+                >
+                    Proyectar EN VIVO
+                </button>
+            )}
+            {isActive && (
+                <div className={`w-full mt-2 py-1.5 rounded-xl bg-${color}-500/20 border border-${color}-500/40 text-${color}-400 text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-1`}>
+                    <Activity size={10} className="animate-pulse" />
+                    EN VIVO
+                </div>
+            )}
         </div>
     );
 }
@@ -108,9 +208,10 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
         jugador_id: null as number | null,
     });
 
-    // Edición Avanzada (Voleibol / Tenis)
+    // Edición Avanzada (todos los deportes)
     const [showAdvancedEdit, setShowAdvancedEdit] = useState(false);
     const [advancedSets, setAdvancedSets] = useState<any>({});
+    const [advancedFutbolTiempos, setAdvancedFutbolTiempos] = useState<Record<number, { goles_a: number; goles_b: number }>>({});
     // Nuevo estado local para evitar depender únicamente de la prop 'match' que puede estar cacheada
     const [localDetalle, setLocalDetalle] = useState<any>(match?.marcador_detalle || {});
     const [advancedSetActual, setAdvancedSetActual] = useState(1);
@@ -138,14 +239,25 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
             setManualPeriod(d.cuarto_actual || 1);
             setAdvancedSets(JSON.parse(JSON.stringify(d.cuartos || {})));
             setAdvancedSetActual(d.cuarto_actual || 1);
+            setAdvancedFutbolTiempos({});
         } else if (sport === 'Fútbol') {
             setManualPeriod(d.tiempo_actual || 1);
             setAdvancedSets({});
-            setAdvancedSetActual(1);
+            setAdvancedSetActual(d.tiempo_actual || 1);
+            const tiempos: Record<number, { goles_a: number; goles_b: number }> = {};
+            if (d.tiempos) {
+                for (const [k, v] of Object.entries(d.tiempos)) {
+                    tiempos[Number(k)] = { goles_a: (v as any)?.goles_a ?? 0, goles_b: (v as any)?.goles_b ?? 0 };
+                }
+            }
+            if (!tiempos[1]) tiempos[1] = { goles_a: 0, goles_b: 0 };
+            if (!tiempos[2]) tiempos[2] = { goles_a: 0, goles_b: 0 };
+            setAdvancedFutbolTiempos(tiempos);
         } else {
             setManualPeriod(d.set_actual || 1);
             setAdvancedSets(JSON.parse(JSON.stringify(d.sets || {})));
             setAdvancedSetActual(d.set_actual || 1);
+            setAdvancedFutbolTiempos({});
         }
 
         setShowAdvancedEdit(true);
@@ -211,10 +323,11 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
         if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
             forcedDetalle.sets = advancedSets;
         } else if (sport === 'Baloncesto') {
-            forcedDetalle.cuartos = advancedSets; // Basketball uses 'cuartos' internally
+            forcedDetalle.cuartos = advancedSets;
+        } else if (sport === 'Fútbol') {
+            forcedDetalle.tiempos = advancedFutbolTiempos;
         }
 
-        // Apply scores (this adjusts current period internally + handles DB specific fields)
         forcedDetalle = setPoints(sport, forcedDetalle, 'equipo_a', parseInt(manualScoreA) || 0);
         forcedDetalle = setPoints(sport, forcedDetalle, 'equipo_b', parseInt(manualScoreB) || 0);
         
@@ -1044,228 +1157,208 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                         </div>
                     </div>
 
-                    {/* Panel de Edición Avanzada — Industrial Control Center */}
+                    {/* Panel de Edición Avanzada — Mobile First */}
                     {showAdvancedEdit && (
-                        <div className="rounded-[2rem] p-6 sm:p-8 space-y-8 border-2 border-indigo-500/30 bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-300 relative overflow-hidden">
+                        <div className="rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 space-y-5 border-2 border-indigo-500/30 bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-300 relative overflow-hidden">
                             <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
                             
-                            <div className="flex justify-between items-center relative z-10">
-                                <div>
-                                    <h4 className="font-black text-xl sm:text-2xl uppercase tracking-tighter flex items-center gap-3 text-white">
-                                        <div className="w-2 h-8 bg-indigo-500 rounded-full" />
-                                        Consola de Corrección
+                            {/* Header */}
+                            <div className="flex justify-between items-start relative z-10">
+                                <div className="min-w-0">
+                                    <h4 className="font-black text-base sm:text-xl uppercase tracking-tighter flex items-center gap-2 text-white">
+                                        <div className="w-1.5 h-6 bg-indigo-500 rounded-full shrink-0" />
+                                        Corrección Manual
                                     </h4>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Protocolo de ajuste manual de alta precisión</p>
+                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Edita marcador total y por período</p>
                                 </div>
-                                <Button size="sm" variant="ghost" className="h-10 w-10 p-0 rounded-xl hover:bg-white/5" onClick={() => setShowAdvancedEdit(false)}>
-                                    <X size={20} className="text-slate-500" />
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-white/5 shrink-0" onClick={() => setShowAdvancedEdit(false)}>
+                                    <X size={18} className="text-slate-500" />
                                 </Button>
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 relative z-10">
-                                {/* Left Side: Scores & Time */}
-                                <div className="space-y-8">
-                                    <div className="flex justify-around gap-4 p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
+                            <div className="space-y-5 relative z-10">
+                                {/* Marcador Global */}
+                                <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl space-y-3">
+                                    <h5 className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em]">Marcador Global</h5>
+                                    <div className="flex items-center justify-around gap-2">
                                         <NumericStepper 
                                             label={match.carrera_a?.nombre || match.equipo_a} 
                                             value={parseInt(manualScoreA)} 
                                             onChange={v => setManualScoreA(v.toString())}
                                             color="indigo"
-                                            sublabel="Goles/Puntos Totales"
                                         />
-                                        <div className="w-px h-16 bg-white/5 self-center" />
+                                        <span className="text-slate-700 text-xs font-black">VS</span>
                                         <NumericStepper 
                                             label={match.carrera_b?.nombre || match.equipo_b} 
                                             value={parseInt(manualScoreB)} 
                                             onChange={v => setManualScoreB(v.toString())}
                                             color="purple"
-                                            sublabel="Goles/Puntos Totales"
                                         />
                                     </div>
+                                </div>
 
-                                    <div className="flex justify-around gap-4 p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
+                                {/* Minuto y Periodo actual */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col items-center">
                                         <NumericStepper 
                                             label="Minuto" 
                                             value={manualMinute} 
                                             onChange={setManualMinute}
                                             color="emerald"
-                                            sublabel="Tiempo de Juego"
                                         />
-                                        <div className="w-px h-16 bg-white/5 self-center" />
+                                    </div>
+                                    <div className="p-3 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col items-center">
                                         <NumericStepper 
                                             label={match.disciplinas?.name === 'Baloncesto' ? 'Cuarto' : match.disciplinas?.name === 'Fútbol' ? 'Tiempo' : 'Set'} 
                                             value={manualPeriod} 
                                             onChange={setManualPeriod}
                                             color="amber"
-                                            sublabel="Set en Vivo"
                                         />
-                                        <p className="text-[8px] font-black text-amber-500/60 uppercase absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap tracking-widest">Este set se proyecta al público</p>
                                     </div>
                                 </div>
 
-                                {/* Right Side: Sub-scores / Sets */}
-                                <div className="space-y-6">
-                                    <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 space-y-6">
-                                        <div className="flex items-center justify-between">
-                                            <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Desglose por Períodos</h5>
-                                        </div>
-                                        
-                                        {match.disciplinas?.name === 'Baloncesto' ? (
-                                            /* ── Baloncesto: 4 cuartos + prórrogas ── */
-                                            <div className="space-y-6">
-                                                {Object.keys(advancedSets).length === 0 && (
-                                                    <p className="text-[10px] text-slate-600 italic text-center py-4">No hay datos de cuartos registrados. Usa "+ Añadir Prórroga" para iniciar uno.</p>
-                                                )}
-                                                {Object.keys(advancedSets).map(Number).sort((a, b) => a - b).map(qNum => (
-                                                    <div key={qNum} className={`p-4 rounded-2xl border transition-colors ${manualPeriod === qNum ? 'bg-orange-500/10 border-orange-500/20' : 'bg-black/20 border-white/5'}`}>
-                                                        <p 
-                                                            className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2 cursor-pointer group/header"
-                                                            onClick={() => setManualPeriod(qNum)}
-                                                        >
-                                                            <span className={`w-1.5 h-1.5 rounded-full ${manualPeriod === qNum ? 'bg-orange-500 animate-pulse' : 'bg-slate-700'}`} />
-                                                            {qNum > 4 ? `PRÓRROGA ${qNum-4}` : `${qNum}º CUARTO`} {manualPeriod === qNum && <span className="text-orange-400 font-bold ml-auto">(EN VIVO)</span>}
-                                                            {advancedSets[qNum] && (
-                                                                <button 
-                                                                    onClick={(e) => { e.stopPropagation(); handleDeleteSet(qNum); }}
-                                                                    className="ml-2 p-1.5 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-red-500/10 transition-all"
-                                                                    title="Eliminar este cuarto"
-                                                                >
-                                                                    <X size={12} />
-                                                                </button>
-                                                            )}
-                                                        </p>
-                                                        <div className="flex items-center justify-between gap-8 mb-4">
-                                                            <div className="flex-1 flex flex-col gap-1">
-                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">{match.carrera_a?.nombre || match.equipo_a}</span>
-                                                                <div className="flex items-center gap-3">
-                                                                    <button onClick={() => handleAdvChange(qNum, 'puntos_a', ((advancedSets[qNum]?.puntos_a || 0) - 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500">-</button>
-                                                                    <span className="text-xl font-black text-white font-mono w-6 text-center">{advancedSets[qNum]?.puntos_a || 0}</span>
-                                                                    <button onClick={() => handleAdvChange(qNum, 'puntos_a', ((advancedSets[qNum]?.puntos_a || 0) + 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-orange-400">+</button>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex-1 flex flex-col gap-1 items-end">
-                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">{match.carrera_b?.nombre || match.equipo_b}</span>
-                                                                <div className="flex items-center gap-3">
-                                                                    <button onClick={() => handleAdvChange(qNum, 'puntos_b', ((advancedSets[qNum]?.puntos_b || 0) - 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500">-</button>
-                                                                    <span className="text-xl font-black text-white font-mono w-6 text-center">{advancedSets[qNum]?.puntos_b || 0}</span>
-                                                                    <button onClick={() => handleAdvChange(qNum, 'puntos_b', ((advancedSets[qNum]?.puntos_b || 0) + 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-purple-400">+</button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                {/* Desglose por períodos */}
+                                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+                                    <h5 className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em]">Desglose por Períodos</h5>
+                                    
+                                    {(() => {
+                                        const sport = match.disciplinas?.name || '';
+                                        const teamA = match.carrera_a?.nombre || match.equipo_a;
+                                        const teamB = match.carrera_b?.nombre || match.equipo_b;
 
-                                                        {manualPeriod !== qNum && (
-                                                            <button 
-                                                                onClick={() => setManualPeriod(qNum)}
-                                                                className="w-full py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[9px] font-black uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-all"
-                                                            >
-                                                                Proyectar este Cuarto (EN VIVO)
-                                                            </button>
-                                                        )}
-                                                        {manualPeriod === qNum && (
-                                                            <div className="w-full py-2 rounded-xl bg-orange-500/20 border border-orange-500/40 text-orange-400 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                                                                <Activity size={12} className="animate-pulse" />
-                                                                Proyectado actualmente (EN VIVO)
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
+                                        if (sport === 'Baloncesto') {
+                                            const quarters = Object.keys(advancedSets).map(Number).sort((a, b) => a - b);
+                                            return (
+                                                <div className="space-y-3">
+                                                    {quarters.length === 0 && (
+                                                        <p className="text-[9px] text-slate-600 italic text-center py-3">Sin datos de cuartos. Añade uno abajo.</p>
+                                                    )}
+                                                    {quarters.map(qNum => (
+                                                        <PeriodScoreRow
+                                                            key={qNum}
+                                                            periodLabel={qNum > 4 ? `PRÓRROGA ${qNum-4}` : `${qNum}º CUARTO`}
+                                                            isActive={manualPeriod === qNum}
+                                                            onActivate={() => setManualPeriod(qNum)}
+                                                            scoreA={advancedSets[qNum]?.puntos_a || 0}
+                                                            scoreB={advancedSets[qNum]?.puntos_b || 0}
+                                                            onChangeA={v => handleAdvChange(qNum, 'puntos_a', v.toString())}
+                                                            onChangeB={v => handleAdvChange(qNum, 'puntos_b', v.toString())}
+                                                            onDelete={() => handleDeleteSet(qNum)}
+                                                            teamA={teamA}
+                                                            teamB={teamB}
+                                                            color="orange"
+                                                        />
+                                                    ))}
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const nextQ = Math.max(4, ...Object.keys(advancedSets).map(Number), 0) + 1;
+                                                            handleAdvChange(nextQ, 'puntos_a', '0');
+                                                            handleAdvChange(nextQ, 'puntos_b', '0');
+                                                            setManualPeriod(nextQ);
+                                                            toast.info(`Añadido ${nextQ > 4 ? `Prórroga ${nextQ-4}` : `${nextQ}º Cuarto`}`);
+                                                        }}
+                                                        className="w-full py-3 rounded-xl border-2 border-dashed border-white/10 hover:border-orange-500/40 hover:bg-orange-500/5 text-slate-500 hover:text-orange-400 text-[9px] font-black uppercase tracking-[0.15em] transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        <Plus size={14} />
+                                                        Añadir Cuarto / Prórroga
+                                                    </button>
+                                                </div>
+                                            );
+                                        }
 
-                                                <button 
-                                                    onClick={() => {
-                                                        const nextQ = Math.max(4, ...Object.keys(advancedSets).map(Number), 0) + 1;
-                                                        handleAdvChange(nextQ, 'puntos_a', '0');
-                                                        handleAdvChange(nextQ, 'puntos_b', '0');
-                                                        setManualPeriod(nextQ);
-                                                        toast.info(`Añadido ${nextQ > 4 ? `Prórroga ${nextQ-4}` : `${nextQ}º Cuarto`}`);
-                                                    }}
-                                                    className="w-full py-4 rounded-[1.5rem] border-2 border-dashed border-white/10 hover:border-orange-500/40 hover:bg-orange-500/5 text-slate-500 hover:text-orange-400 text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 group"
-                                                >
-                                                    <Plus size={16} className="group-hover:rotate-90 transition-transform" />
-                                                    Añadir Cuarto / Prórroga
-                                                </button>
-                                            </div>
-                                        ) : (match.disciplinas?.name === 'Voleibol' || match.disciplinas?.name === 'Tenis' || match.disciplinas?.name === 'Tenis de Mesa') ? (
-                                            /* ── Voleibol / Tenis: sets ── */
-                                            <div className="space-y-6">
-                                                {[1, 2, 3, 4, 5].map(setNum => (
-                                                    <div key={setNum} className={`p-4 rounded-2xl border transition-colors ${manualPeriod === setNum ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-black/20 border-white/5'}`}>
-                                                        <p 
-                                                            className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2 cursor-pointer group/header"
-                                                            onClick={() => setManualPeriod(setNum)}
-                                                        >
-                                                            <span className={`w-1.5 h-1.5 rounded-full ${manualPeriod === setNum ? 'bg-indigo-500 animate-pulse' : 'bg-slate-700'}`} />
-                                                            SET {setNum} {manualPeriod === setNum && <span className="text-indigo-400 font-bold ml-auto">(EN VIVO)</span>}
-                                                            {advancedSets[setNum] && (
-                                                                <button 
-                                                                    onClick={(e) => { e.stopPropagation(); handleDeleteSet(setNum); }}
-                                                                    className="ml-2 p-1.5 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-red-500/10 transition-all"
-                                                                    title="Eliminar este set"
-                                                                >
-                                                                    <X size={12} />
-                                                                </button>
-                                                            )}
-                                                        </p>
-                                                        <div className="flex items-center justify-between gap-8 mb-4">
-                                                            <div className="flex-1 flex flex-col gap-1">
-                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">{match.carrera_a?.nombre || match.equipo_a}</span>
-                                                                <div className="flex items-center gap-3">
-                                                                    <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a'] || 0) - 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500">-</button>
-                                                                    <span className="text-xl font-black text-white font-mono w-6 text-center">{advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a'] || 0}</span>
-                                                                    <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_a' : 'puntos_a'] || 0) + 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-indigo-400">+</button>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex-1 flex flex-col gap-1 items-end">
-                                                                <span className="text-[9px] font-bold text-slate-600 uppercase">{match.carrera_b?.nombre || match.equipo_b}</span>
-                                                                <div className="flex items-center gap-3">
-                                                                    <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] || 0) - 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500">-</button>
-                                                                    <span className="text-xl font-black text-white font-mono w-6 text-center">{advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] || 0}</span>
-                                                                    <button onClick={() => handleAdvChange(setNum, match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b', ((advancedSets[setNum]?.[match.disciplinas?.name === 'Tenis' ? 'juegos_b' : 'puntos_b'] || 0) + 1).toString())} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-indigo-400">+</button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                        if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
+                                            const fieldA = sport === 'Tenis' ? 'juegos_a' : 'puntos_a';
+                                            const fieldB = sport === 'Tenis' ? 'juegos_b' : 'puntos_b';
+                                            return (
+                                                <div className="space-y-3">
+                                                    {[1, 2, 3, 4, 5].map(setNum => (
+                                                        <PeriodScoreRow
+                                                            key={setNum}
+                                                            periodLabel={`SET ${setNum}`}
+                                                            isActive={manualPeriod === setNum}
+                                                            onActivate={() => setManualPeriod(setNum)}
+                                                            scoreA={advancedSets[setNum]?.[fieldA] || 0}
+                                                            scoreB={advancedSets[setNum]?.[fieldB] || 0}
+                                                            onChangeA={v => handleAdvChange(setNum, fieldA, v.toString())}
+                                                            onChangeB={v => handleAdvChange(setNum, fieldB, v.toString())}
+                                                            onDelete={advancedSets[setNum] ? () => handleDeleteSet(setNum) : undefined}
+                                                            teamA={teamA}
+                                                            teamB={teamB}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            );
+                                        }
 
-                                                        {manualPeriod !== setNum && (
-                                                            <button 
-                                                                onClick={() => setManualPeriod(setNum)}
-                                                                className="w-full py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 text-[9px] font-black uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all shadow-sm"
-                                                            >
-                                                                Proyectar este Set (EN VIVO)
-                                                            </button>
-                                                        )}
-                                                        {manualPeriod === setNum && (
-                                                            <div className="w-full py-2 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                                                                <Activity size={12} className="animate-pulse" />
-                                                                Proyectado actualmente (EN VIVO)
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : match.disciplinas?.name === 'Fútbol' ? (
-                                            /* ── Fútbol: 2 tiempos con goles ── */
-                                            <div className="py-8 text-center bg-black/20 rounded-2xl border border-dashed border-emerald-500/10 space-y-4">
-                                                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-2xl">⚽</div>
-                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-[260px] mx-auto">
-                                                    Ajusta goles y minuto arriba. Los goles se registran a nivel total del partido.
+                                        if (sport === 'Fútbol') {
+                                            const tiempoKeys = Object.keys(advancedFutbolTiempos).map(Number).sort((a, b) => a - b);
+                                            const handleFutbolChange = (t: number, side: 'goles_a' | 'goles_b', v: number) => {
+                                                setAdvancedFutbolTiempos(prev => ({
+                                                    ...prev,
+                                                    [t]: { ...prev[t], [side]: v }
+                                                }));
+                                            };
+                                            return (
+                                                <div className="space-y-3">
+                                                    {tiempoKeys.map(t => (
+                                                        <PeriodScoreRow
+                                                            key={t}
+                                                            periodLabel={t <= 2 ? `${t}º TIEMPO` : `PRÓRROGA ${t - 2}`}
+                                                            isActive={manualPeriod === t}
+                                                            onActivate={() => setManualPeriod(t)}
+                                                            scoreA={advancedFutbolTiempos[t]?.goles_a || 0}
+                                                            scoreB={advancedFutbolTiempos[t]?.goles_b || 0}
+                                                            onChangeA={v => handleFutbolChange(t, 'goles_a', v)}
+                                                            onChangeB={v => handleFutbolChange(t, 'goles_b', v)}
+                                                            onDelete={t > 2 ? () => {
+                                                                setAdvancedFutbolTiempos(prev => {
+                                                                    const next = { ...prev };
+                                                                    delete next[t];
+                                                                    return next;
+                                                                });
+                                                                if (manualPeriod === t) setManualPeriod(Math.min(t - 1, 2));
+                                                            } : undefined}
+                                                            teamA={teamA}
+                                                            teamB={teamB}
+                                                            color="emerald"
+                                                        />
+                                                    ))}
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const nextT = Math.max(2, ...Object.keys(advancedFutbolTiempos).map(Number)) + 1;
+                                                            setAdvancedFutbolTiempos(prev => ({ ...prev, [nextT]: { goles_a: 0, goles_b: 0 } }));
+                                                            setManualPeriod(nextT);
+                                                            toast.info(`Añadido ${nextT > 2 ? `Prórroga ${nextT - 2}` : `${nextT}º Tiempo`}`);
+                                                        }}
+                                                        className="w-full py-3 rounded-xl border-2 border-dashed border-white/10 hover:border-emerald-500/40 hover:bg-emerald-500/5 text-slate-500 hover:text-emerald-400 text-[9px] font-black uppercase tracking-[0.15em] transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        <Plus size={14} />
+                                                        Añadir Prórroga
+                                                    </button>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div className="py-6 text-center bg-black/20 rounded-xl border border-dashed border-white/5">
+                                                <AlertCircle size={24} className="mx-auto text-slate-700 mb-2" />
+                                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-[220px] mx-auto">
+                                                    Ajusta el marcador global arriba. Los cambios sobreescriben el marcador automático.
                                                 </p>
                                             </div>
-                                        ) : (
-                                            <div className="py-12 text-center bg-black/20 rounded-2xl border border-dashed border-white/5">
-                                                <AlertCircle size={32} className="mx-auto text-slate-700 mb-4" />
-                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-[200px] mx-auto">
-                                                    IMPORTANTE: Los ajustes manuales sobreescriben el marcador automático.
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <Button onClick={saveAdvancedEdit} className="w-full h-20 bg-indigo-500 hover:bg-indigo-600 text-black font-black text-sm uppercase tracking-[0.2em] rounded-3xl shadow-2xl shadow-indigo-500/20 transition-all active:scale-95 group relative overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                                        <Save size={24} className="mr-3 group-hover:rotate-12 transition-transform" />
-                                        CONFIRMAR CAMBIOS
-                                    </Button>
-                                    <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.3em]">Protocolo de Auditoría Activado</p>
+                                        );
+                                    })()}
                                 </div>
+
+                                {/* Confirm Button */}
+                                <Button onClick={saveAdvancedEdit} className="w-full h-14 sm:h-16 bg-indigo-500 hover:bg-indigo-600 text-black font-black text-xs sm:text-sm uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-indigo-500/20 transition-all active:scale-95 group relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                                    <Save size={20} className="mr-2 group-hover:rotate-12 transition-transform" />
+                                    CONFIRMAR CAMBIOS
+                                </Button>
+                                <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.2em]">Los cambios se aplican inmediatamente</p>
                             </div>
                         </div>
                     )}
