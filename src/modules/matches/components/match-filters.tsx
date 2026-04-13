@@ -27,7 +27,7 @@ export function MatchFilters({ activeFilter, setActiveFilter, matches }: MatchFi
   const allSports = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
 
   return (
-    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 md:justify-center px-2">
+    <div className="flex gap-4 overflow-x-auto no-scrollbar pb-6 px-8 justify-start mask-linear-fade">
       <button
         onClick={() => setActiveFilter('todos')}
         className={cn(

@@ -26,7 +26,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Evento } from "@/modules/matches/types";
 
-// Local UI Constants (could be moved to a constants file if reused)
+// Local UI Constants
 const DISCIPLINES_COLORS: Record<string, string> = {
     'Fútbol': 'from-emerald-500 to-emerald-900',
     'Baloncesto': 'from-orange-500 to-orange-800',
@@ -117,6 +117,53 @@ export default function MatchControlPage() {
     const [showMetaEditor, setShowMetaEditor] = useState(false);
     const [showReview, setShowReview] = useState(false);
 
+    const handleAddPlayer = async (team: string, data: { nombre: string; numero: string; profile_id: string }) => {
+        if (!match) return null;
+        try {
+            let jId: number | null = null;
+            if (data.profile_id) {
+                const { data: existing } = await supabase
+                    .from('jugadores')
+                    .select('id')
+                    .eq('profile_id', data.profile_id)
+                    .maybeSingle();
+                if (existing) jId = existing.id;
+            }
+
+            if (!jId) {
+                const { data: created, error: cErr } = await supabase
+                    .from('jugadores')
+                    .insert({
+                        nombre: data.nombre,
+                        numero: data.numero ? parseInt(data.numero) : null,
+                        profile_id: data.profile_id || null,
+                        disciplina_id: match.disciplina_id,
+                        genero: match.genero,
+                        carrera_id: team === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
+                    })
+                    .select()
+                    .single();
+                if (cErr) throw cErr;
+                jId = created.id;
+            }
+
+            const { error: rErr } = await supabase.from('roster_partido').insert({
+                partido_id: parseInt(matchId),
+                jugador_id: jId,
+                equipo_a_or_b: team
+            });
+            if (rErr) throw rErr;
+
+            fetchJugadores();
+            toast.success("Jugador añadido");
+            return jId;
+        } catch (error: any) {
+            console.error("Error adding player:", error);
+            toast.error(`Error: ${error.message}`);
+            return null;
+        }
+    };
+
     if (loading) return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
             <Loader2 className="w-12 h-12 text-red-500 animate-spin" />
@@ -150,7 +197,6 @@ export default function MatchControlPage() {
             />
 
             <div className="relative z-10 max-w-7xl mx-auto px-6">
-                {/* Fecha / Lugar — editable */}
                 <div className="flex items-center justify-between gap-3 py-3 mb-2">
                     <div className="flex items-center gap-3 text-[10px] text-white/30 font-bold flex-wrap">
                         <span>📅 {match.fecha ? new Date(match.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : 'Sin fecha'}</span>
@@ -174,7 +220,6 @@ export default function MatchControlPage() {
                     />
                 )}
 
-                {/* Edición Completa — deportes de equipo y tenis */}
                 {(isTeamSport || isTenisSport) && (
                     <div className="flex items-center justify-end mb-4 -mt-2">
                         <button
@@ -186,6 +231,7 @@ export default function MatchControlPage() {
                         </button>
                     </div>
                 )}
+                
                 {match.marcador_detalle?.tipo === 'carrera' ? (
                     <Card className="p-8 mb-12">
                         <RaceControl
@@ -222,7 +268,6 @@ export default function MatchControlPage() {
                     />
                 )}
 
-                {/* Roster + Event sections — not applicable for natación */}
                 {match.marcador_detalle?.tipo !== 'carrera' && match.estado !== 'finalizado' && (
                     <AdminPlayerRoster
                         match={match}
@@ -231,6 +276,7 @@ export default function MatchControlPage() {
                         matchId={matchId}
                         onPlayersUpdated={fetchJugadores}
                         disciplinaName={disciplinaName}
+                        onAddPlayer={handleAddPlayer}
                     />
                 )}
 
@@ -252,50 +298,7 @@ export default function MatchControlPage() {
                         jugadoresB={jugadoresB}
                         eventos={eventos}
                         onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id)}
-                        onAddPlayer={async (team, data) => {
-                            try {
-                                // 1. Find or create in 'jugadores'
-                                let jId: number | null = null;
-                                const { data: existing } = await supabase
-                                    .from('jugadores')
-                                    .select('id')
-                                    .eq('profile_id', data.profile_id)
-                                    .maybeSingle();
-
-                                if (existing && data.profile_id) {
-                                    jId = existing.id;
-                                } else {
-                                    const { data: created, error: cErr } = await supabase
-                                        .from('jugadores')
-                                        .insert({
-                                            nombre: data.nombre,
-                                            numero: data.numero ? parseInt(data.numero) : null,
-                                            profile_id: data.profile_id || null,
-                                            carrera_id: team === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
-                                        })
-                                        .select()
-                                        .single();
-                                    if (cErr) throw cErr;
-                                    jId = created.id;
-                                }
-
-                                // 2. Link to roster
-                                const { error: rErr } = await supabase.from('roster_partido').insert({
-                                    partido_id: parseInt(matchId),
-                                    jugador_id: jId,
-                                    equipo_a_or_b: team
-                                });
-                                if (rErr) throw rErr;
-
-                                fetchJugadores();
-                                toast.success("Jugador añadido");
-                                return jId;
-                            } catch (error: any) {
-                                console.error("Error adding player:", error);
-                                toast.error(`Error: ${error.message}`);
-                                return null;
-                            }
-                        }}
+                        onAddPlayer={handleAddPlayer}
                         disciplinaName={disciplinaName}
                     />
 
@@ -340,7 +343,6 @@ export default function MatchControlPage() {
                 }}
             />
 
-            {/* Edición Completa — modal tabbed mobile-first */}
             {showFullEditor && (() => {
                 const tabLabel = disciplinaName === 'Baloncesto' ? 'Cuartos' : disciplinaName === 'Fútbol' ? 'Tiempos' : 'Sets / Marcador';
                 const tabs: { id: 'marcador' | 'eventos' | 'jugadores'; label: string }[] = [
@@ -352,7 +354,6 @@ export default function MatchControlPage() {
 
                 return (
                     <div className="fixed inset-0 z-50 flex flex-col bg-[#080810]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-                        {/* Header — sticky, always visible */}
                         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] shrink-0 bg-[#080810]">
                             <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
                                 <Edit3 size={14} className="text-indigo-400" />
@@ -370,7 +371,6 @@ export default function MatchControlPage() {
                             </button>
                         </div>
 
-                        {/* Tabs */}
                         <div className="flex gap-1 px-4 py-2 shrink-0 bg-[#080810] border-b border-white/[0.04]">
                             {tabs.map(tab => (
                                 <button
@@ -387,9 +387,7 @@ export default function MatchControlPage() {
                             ))}
                         </div>
 
-                        {/* Tab content */}
                         <div className="flex-1 overflow-y-auto px-4 pb-24">
-                            {/* MARCADOR TAB — Sets (Voleibol/Tenis) / Cuartos (Baloncesto) / Fútbol */}
                             {activeTab === 'marcador' && (
                                 <div className="max-w-lg mx-auto pt-2">
                                     {disciplinaName === 'Baloncesto' ? (
@@ -402,6 +400,7 @@ export default function MatchControlPage() {
                                                 handleNuevoEvento(tipo, equipo, jugadorId, bypass, overrides)
                                             }
                                             onDeleteEvent={(e) => setConfirmingDeletion(e)}
+                                            onAddPlayer={handleAddPlayer}
                                         />
                                     ) : disciplinaName === 'Voleibol' ? (
                                         <ScoreBreakdownEditor
@@ -419,6 +418,7 @@ export default function MatchControlPage() {
                                                 handleNuevoEvento(tipo, equipo, jugadorId, bypass, overrides)
                                             }
                                             onDeleteEvent={(e) => setConfirmingDeletion(e)}
+                                            onAddPlayer={handleAddPlayer}
                                         />
                                     ) : isTenisSport ? (
                                         <TenisEditor
@@ -430,7 +430,6 @@ export default function MatchControlPage() {
                                 </div>
                             )}
 
-                            {/* EVENTOS TAB */}
                             {activeTab === 'eventos' && (
                                 <div className="max-w-7xl mx-auto pt-2">
                                     <div className="grid lg:grid-cols-[1.5fr_1fr] gap-6">
@@ -441,48 +440,7 @@ export default function MatchControlPage() {
                                             jugadoresB={jugadoresB}
                                             eventos={eventos}
                                             onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id, true)}
-                                            onAddPlayer={async (team, data) => {
-                                                try {
-                                                    let jId: number | null = null;
-                                                    const { data: existing } = await supabase
-                                                        .from('jugadores')
-                                                        .select('id')
-                                                        .eq('profile_id', data.profile_id)
-                                                        .maybeSingle();
-
-                                                    if (existing && data.profile_id) {
-                                                        jId = existing.id;
-                                                    } else {
-                                                        const { data: created, error: cErr } = await supabase
-                                                            .from('jugadores')
-                                                            .insert({
-                                                                nombre: data.nombre,
-                                                                numero: data.numero ? parseInt(data.numero) : null,
-                                                                profile_id: data.profile_id || null,
-                                                                carrera_id: team === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
-                                                            })
-                                                            .select()
-                                                            .single();
-                                                        if (cErr) throw cErr;
-                                                        jId = created.id;
-                                                    }
-
-                                                    const { error: rErr } = await supabase.from('roster_partido').insert({
-                                                        partido_id: parseInt(matchId),
-                                                        jugador_id: jId,
-                                                        equipo_a_or_b: team
-                                                    });
-                                                    if (rErr) throw rErr;
-
-                                                    fetchJugadores();
-                                                    toast.success("Jugador añadido");
-                                                    return jId;
-                                                } catch (error: any) {
-                                                    console.error("Error adding player:", error);
-                                                    toast.error(`Error: ${error.message}`);
-                                                    return null;
-                                                }
-                                            }}
+                                            onAddPlayer={handleAddPlayer}
                                             disciplinaName={disciplinaName}
                                         />
                                         
@@ -491,49 +449,7 @@ export default function MatchControlPage() {
                                                 <BasketballBulkStats
                                                     match={match}
                                                     onSubmit={handleBulkBasketballStats}
-                                                    onAddPlayer={async (team, data) => {
-                                                        // Use the same logic as in AdminEventCreator
-                                                        try {
-                                                            let jId: number | null = null;
-                                                            const { data: existing } = await supabase
-                                                                .from('jugadores')
-                                                                .select('id')
-                                                                .eq('profile_id', data.profile_id)
-                                                                .maybeSingle();
-
-                                                            if (existing && data.profile_id) {
-                                                                jId = existing.id;
-                                                            } else {
-                                                                const { data: created, error: cErr } = await supabase
-                                                                    .from('jugadores')
-                                                                    .insert({
-                                                                        nombre: data.nombre,
-                                                                        numero: data.numero ? parseInt(data.numero) : null,
-                                                                        profile_id: data.profile_id || null,
-                                                                        carrera_id: team === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
-                                                                    })
-                                                                    .select()
-                                                                    .single();
-                                                                if (cErr) throw cErr;
-                                                                jId = created.id;
-                                                            }
-
-                                                            const { error: rErr } = await supabase.from('roster_partido').insert({
-                                                                partido_id: parseInt(matchId),
-                                                                jugador_id: jId,
-                                                                equipo_a_or_b: team
-                                                            });
-                                                            if (rErr) throw rErr;
-
-                                                            fetchJugadores();
-                                                            toast.success("Jugador añadido");
-                                                            return jId;
-                                                        } catch (error: any) {
-                                                            console.error("Error adding player:", error);
-                                                            toast.error(`Error: ${error.message}`);
-                                                            return null;
-                                                        }
-                                                    }}
+                                                    onAddPlayer={handleAddPlayer}
                                                 />
                                             </div>
                                         )}
@@ -548,7 +464,6 @@ export default function MatchControlPage() {
                                 </div>
                             )}
 
-                            {/* JUGADORES TAB */}
                             {activeTab === 'jugadores' && (
                                 <div className="max-w-7xl mx-auto pt-2">
                                     <AdminPlayerRoster
@@ -558,12 +473,12 @@ export default function MatchControlPage() {
                                         matchId={matchId}
                                         onPlayersUpdated={fetchJugadores}
                                         disciplinaName={disciplinaName}
+                                        onAddPlayer={handleAddPlayer}
                                     />
                                 </div>
                             )}
                         </div>
 
-                        {/* Bottom close bar — always reachable on mobile */}
                         <div className="shrink-0 px-4 py-3 border-t border-white/[0.06] bg-[#080810]" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
                             <button
                                 onClick={() => setShowFullEditor(false)}

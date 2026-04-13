@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(grep -n \"import.*rediction\\\\|import.*uiniela\\\\|import.*oting\" /Users/orlandopalma/Documents/GitHub/project_olympics/src/app/partido/[id]/page.tsx)",
-      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(npx next:*)",
+      "Bash(find d:\\\\\\\\Documents\\\\\\\\GitHub\\\\\\\\project_olympics -type f -name \"*.sql\")",
+      "Bash(ls -la \"d:\\\\\\\\Documents\\\\\\\\GitHub\\\\\\\\project_olympics/supabase/\")",
+      "Bash(grep -E \"\\\\.\\(sql|json\\)$\")",
+      "Bash(find d:/Documents/GitHub/project_olympics -name \"*.sql\" -exec grep -l \"delegaciones\\\\|INSERT.*partidos\" {} \\\\;)",
+      "Bash(ls -lah d:/Documents/GitHub/project_olympics/*.xlsx)",
+      "Bash(awk '{print $NF}')"
     ]
   }
 }

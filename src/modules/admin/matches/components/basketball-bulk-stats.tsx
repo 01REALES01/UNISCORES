@@ -6,6 +6,7 @@ import { getDisplayName } from "@/lib/sport-helpers";
 import { Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { PlayerSearchForm } from "./player-search-form";
 
 const ORANGE = '#f97316';
 
@@ -41,8 +42,6 @@ export const BasketballBulkStats = ({
 
   // New player form state
   const [addingPlayer, setAddingPlayer] = useState(false);
-  const [newPlayerForm, setNewPlayerForm] = useState({ nombre: '', numero: '', profile_id: '' });
-  const [addingPlayerLoading, setAddingPlayerLoading] = useState(false);
 
   const totalNum = parseInt(total) || 0;
   const triplesNum = parseInt(triples) || 0;
@@ -56,29 +55,62 @@ export const BasketballBulkStats = ({
   const isValid = totalNum > 0 && selectedInList && !libresError;
 
   // ── Internal player fetch (carrera_id only — no disciplina/genero filter) ──
+  // ── Internal player fetch (carrera_id + roster_partido) ──
   const fetchLocalPlayers = useCallback(async () => {
     setLoadingPlayers(true);
     try {
+      // 1. Fetch EXPLICIT Roster (From roster_partido)
+      const { data: explicitRoster } = await supabase
+        .from('roster_partido')
+        .select('*, jugador:jugadores(*)')
+        .eq('partido_id', match.id);
+
+      const explicitA = (explicitRoster || [])
+        .filter(r => r.equipo_a_or_b === 'equipo_a' && r.jugador)
+        .map(r => ({ ...r.jugador }));
+      
+      const explicitB = (explicitRoster || [])
+        .filter(r => r.equipo_a_or_b === 'equipo_b' && r.jugador)
+        .map(r => ({ ...r.jugador }));
+
+      const seenIds = new Set((explicitRoster || []).map(r => r.jugador_id));
+
+      // 2. Fetch VIRTUAL Roster (By Career IDs)
       let idsA: number[] = match.carrera_a_id ? [match.carrera_a_id] : [];
       let idsB: number[] = match.carrera_b_id ? [match.carrera_b_id] : [];
 
       const [{ data: delegA }, { data: delegB }] = await Promise.all([
-        supabase.from('delegaciones').select('carrera_ids').eq('nombre', match.equipo_a).maybeSingle(),
-        supabase.from('delegaciones').select('carrera_ids').eq('nombre', match.equipo_b).maybeSingle(),
+        supabase.from('delegaciones').select('carrera_ids').ilike('nombre', match.equipo_a).maybeSingle(),
+        supabase.from('delegaciones').select('carrera_ids').ilike('nombre', match.equipo_b).maybeSingle(),
       ]);
 
       if (delegA?.carrera_ids?.length) idsA = [...new Set([...idsA, ...delegA.carrera_ids])];
       if (delegB?.carrera_ids?.length) idsB = [...new Set([...idsB, ...delegB.carrera_ids])];
 
       const allIds = [...new Set([...idsA, ...idsB])];
-      if (!allIds.length) return;
+      
+      let finalA = [...explicitA];
+      let finalB = [...explicitB];
 
-      const { data } = await supabase.from('jugadores').select('*').in('carrera_id', allIds);
-      if (!data) return;
+      if (allIds.length > 0) {
+        let query = supabase.from('jugadores').select('*').in('carrera_id', allIds);
+        if (match.disciplina_id) query = query.eq('disciplina_id', match.disciplina_id);
+        if (match.genero) query = query.eq('genero', match.genero);
+        
+        const { data: virtualPlayers } = await query;
+        if (virtualPlayers) {
+          virtualPlayers.forEach(v => {
+            if (!seenIds.has(v.id)) {
+              if (idsA.includes(v.carrera_id)) finalA.push(v);
+              else if (idsB.includes(v.carrera_id)) finalB.push(v);
+            }
+          });
+        }
+      }
 
-      data.sort((a, b) => a.nombre.localeCompare(b.nombre));
-      setJugadoresA(data.filter(j => idsA.includes(j.carrera_id)));
-      setJugadoresB(data.filter(j => idsB.includes(j.carrera_id) && !idsA.includes(j.carrera_id)));
+      const sorter = (a: any, b: any) => a.nombre.localeCompare(b.nombre);
+      setJugadoresA(finalA.sort(sorter));
+      setJugadoresB(finalB.sort(sorter));
     } finally {
       setLoadingPlayers(false);
     }
@@ -92,7 +124,6 @@ export const BasketballBulkStats = ({
     setEquipo(eq);
     setJugadorId(null);
     setAddingPlayer(false);
-    setNewPlayerForm({ nombre: '', numero: '', profile_id: '' });
   };
 
   const reset = () => {
@@ -113,20 +144,6 @@ export const BasketballBulkStats = ({
     }
   };
 
-  const handleAddPlayer = async () => {
-    if (!newPlayerForm.nombre || addingPlayerLoading) return;
-    setAddingPlayerLoading(true);
-    try {
-      const newId = await onAddPlayer(equipo, newPlayerForm);
-      // Re-fetch so the new player appears before we select them
-      await fetchLocalPlayers();
-      setAddingPlayer(false);
-      setNewPlayerForm({ nombre: '', numero: '', profile_id: '' });
-      if (newId) setJugadorId(newId);
-    } finally {
-      setAddingPlayerLoading(false);
-    }
-  };
 
   return (
     <div
@@ -189,66 +206,27 @@ export const BasketballBulkStats = ({
               2. Jugador
             </p>
             <button
-              onClick={() => {
-                setAddingPlayer(v => !v);
-                setNewPlayerForm({ nombre: '', numero: '', profile_id: '' });
-              }}
-              className="text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all"
-              style={
-                addingPlayer
-                  ? { background: `${ORANGE}15`, color: `${ORANGE}cc`, borderColor: `${ORANGE}30` }
-                  : { background: `${ORANGE}08`, color: `${ORANGE}80`, borderColor: `${ORANGE}20` }
-              }
+              onClick={() => setAddingPlayer(true)}
+              className="text-[9px] font-black uppercase text-orange-500/60 hover:text-orange-500 transition-colors"
             >
               + Nuevo
             </button>
           </div>
 
-          {/* New player inline form */}
           {addingPlayer && (
-            <div
-              className="p-4 rounded-xl border mb-3 space-y-3 animate-in fade-in zoom-in-95 duration-200"
-              style={{ borderColor: `${ORANGE}25`, background: `${ORANGE}05` }}
-            >
-              <p className="text-[8px] font-black uppercase tracking-widest" style={{ color: `${ORANGE}60` }}>
-                Nuevo jugador — {getDisplayName(match, equipo === 'equipo_a' ? 'a' : 'b')}
-              </p>
-              <input
-                placeholder="Nombre completo"
-                autoFocus
-                className="w-full bg-black/20 border rounded-lg px-3 py-2.5 text-[11px] font-bold focus:outline-none transition-all placeholder:text-white/15 text-white"
-                style={{ borderColor: `${ORANGE}20` }}
-                value={newPlayerForm.nombre}
-                onChange={e => setNewPlayerForm(p => ({ ...p, nombre: e.target.value }))}
-                onKeyDown={e => e.key === 'Enter' && handleAddPlayer()}
+            <div className="mb-4">
+              <PlayerSearchForm
+                match={match}
+                team={equipo}
+                sportColor={ORANGE}
+                onSelect={async (data) => {
+                  const newId = await onAddPlayer(equipo, data);
+                  await fetchLocalPlayers();
+                  setAddingPlayer(false);
+                  if (newId) setJugadorId(newId);
+                }}
+                onCancel={() => setAddingPlayer(false)}
               />
-              <div className="flex gap-2">
-                <input
-                  placeholder="#"
-                  className="w-14 bg-black/20 border rounded-lg px-2 py-2.5 text-[11px] text-center font-mono font-black focus:outline-none text-white placeholder:text-white/15"
-                  style={{ borderColor: `${ORANGE}20` }}
-                  value={newPlayerForm.numero}
-                  onChange={e => setNewPlayerForm(p => ({ ...p, numero: e.target.value }))}
-                />
-                <Button
-                  size="sm"
-                  onClick={handleAddPlayer}
-                  disabled={!newPlayerForm.nombre || addingPlayerLoading}
-                  className="flex-1 h-9 font-black text-[9px] uppercase tracking-widest text-black"
-                  style={{ background: ORANGE }}
-                >
-                  {addingPlayerLoading ? <Loader2 size={12} className="animate-spin" /> : 'Registrar'}
-                </Button>
-                <button
-                  onClick={() => {
-                    setAddingPlayer(false);
-                    setNewPlayerForm({ nombre: '', numero: '', profile_id: '' });
-                  }}
-                  className="h-9 w-9 rounded-lg bg-white/5 flex items-center justify-center text-white/25 hover:text-white text-xs transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
             </div>
           )}
 

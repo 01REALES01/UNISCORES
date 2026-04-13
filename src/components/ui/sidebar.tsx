@@ -89,22 +89,16 @@ export const DesktopSidebar = ({
     return (
         <m.div
             className={cn(
-                "h-full px-4 py-4 hidden md:flex md:flex-col bg-background/90 backdrop-blur-2xl border-r border-white/5 w-[300px] flex-shrink-0 shadow-2xl shadow-red-900/10",
+                "h-full px-3 py-3 hidden md:flex md:flex-col bg-background border-r border-white/8 flex-shrink-0",
                 className
             )}
             animate={{
-                width: animate ? (open ? "300px" : "80px") : "300px",
+                width: animate ? (open ? "220px" : "64px") : "220px",
             }}
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
             {...props}
         >
-            {/* Sidebar Background Ambient Gradient */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-                <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-red-500/5 to-transparent" />
-                <div className="absolute bottom-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-            </div>
-
             {children}
         </m.div>
     );
@@ -146,7 +140,7 @@ export const MobileSidebar = ({
                                 ease: "easeInOut",
                             }}
                             className={cn(
-                                "fixed h-full w-[280px] inset-y-0 left-0 bg-background p-6 z-[100] flex flex-col justify-between border-r border-white/10 shadow-2xl",
+                                "fixed h-full w-[240px] inset-y-0 left-0 bg-background p-5 z-[100] flex flex-col justify-between border-r border-white/8",
                                 className
                             )}
                         >
@@ -198,14 +192,14 @@ export const SidebarLink = ({
             href={link.href}
             onClick={onClick}
             className={cn(
-                "flex items-center group/sidebar py-3 rounded-2xl transition-all duration-300 overflow-hidden hover:bg-white/5 text-slate-400 hover:text-white hover:shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]",
-                animate ? (open ? "justify-start gap-4 px-3" : "justify-center gap-0 px-0") : "justify-start gap-4 px-3",
+                "flex items-center group/sidebar py-2 rounded-lg transition-colors duration-150 overflow-hidden hover:bg-white/5 text-slate-400 hover:text-white",
+                animate ? (open ? "justify-start gap-3 px-2.5" : "justify-center gap-0 px-0") : "justify-start gap-3 px-2.5",
                 className
             )}
             {...props}
         >
-            <div className="relative z-10 flex min-w-[24px] items-center justify-center flex-shrink-0">
-                <div className="transition-transform duration-300 group-hover/sidebar:text-primary group-hover/sidebar:scale-110 flex items-center justify-center">
+            <div className="flex min-w-[20px] items-center justify-center flex-shrink-0">
+                <div className="flex items-center justify-center">
                     {link.icon}
                 </div>
             </div>

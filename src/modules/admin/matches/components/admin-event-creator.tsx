@@ -4,6 +4,7 @@ import { Avatar, Button } from "@/components/ui-primitives";
 import { cn } from "@/lib/utils";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { SPORT_COLORS } from "@/lib/constants";
+import { PlayerSearchForm } from "./player-search-form";
 
 interface AdminEventCreatorProps {
   match: any;
@@ -40,7 +41,6 @@ export const AdminEventCreator = ({
     jugador_id: null as number | null,
   });
   const [addingPlayerTeam, setAddingPlayerTeam] = useState<string | null>(null);
-  const [newPlayerForm, setNewPlayerForm] = useState({ nombre: '', numero: '', profile_id: '' });
 
   const sportColor = SPORT_COLORS[disciplinaName] || '#6366f1';
   const isIndividualSport = ['Ajedrez', 'Tenis', 'Tenis de Mesa'].includes(disciplinaName);
@@ -72,11 +72,10 @@ export const AdminEventCreator = ({
     setNuevoEvento({ tipo: '', equipo: '', jugador_id: null });
   };
 
-  const handleLocalAddPlayer = async () => {
-    if (!newPlayerForm.nombre || !addingPlayerTeam) return;
-    const newJugadorId = await onAddPlayer(addingPlayerTeam, newPlayerForm);
+  const handleLocalAddPlayer = async (data: any) => {
+    if (!addingPlayerTeam) return;
+    const newJugadorId = await onAddPlayer(addingPlayerTeam, data);
     setAddingPlayerTeam(null);
-    setNewPlayerForm({ nombre: '', numero: '', profile_id: '' });
     if (newJugadorId) {
       setNuevoEvento(prev => ({ ...prev, jugador_id: newJugadorId }));
     }
@@ -194,23 +193,13 @@ export const AdminEventCreator = ({
             </div>
 
             {addingPlayerTeam ? (
-              <div className="p-4 rounded-xl border animate-in fade-in zoom-in-95 duration-200 space-y-3" style={{ borderColor: `${sportColor}25`, background: `${sportColor}05` }}>
-                <p className="text-[8px] font-black uppercase tracking-widest" style={{ color: `${sportColor}60` }}>Nuevo jugador para {getDisplayName(match, addingPlayerTeam === 'equipo_a' ? 'a' : 'b')}</p>
-                <input placeholder="Nombre completo"
-                  className="w-full bg-black/20 border rounded-lg px-3 py-2.5 text-[11px] font-bold focus:outline-none transition-all placeholder:text-white/15"
-                  style={{ borderColor: `${sportColor}20` }}
-                  value={newPlayerForm.nombre} onChange={e => setNewPlayerForm({ ...newPlayerForm, nombre: e.target.value })} autoFocus
-                />
-                <div className="flex gap-2">
-                  <input placeholder="#"
-                    className="w-14 bg-black/20 border rounded-lg px-2 py-2.5 text-[11px] text-center font-mono font-black focus:outline-none"
-                    style={{ borderColor: `${sportColor}20` }}
-                    value={newPlayerForm.numero} onChange={e => setNewPlayerForm({ ...newPlayerForm, numero: e.target.value })}
-                  />
-                  <Button size="sm" onClick={handleLocalAddPlayer} className="flex-1 h-9 text-black font-black text-[9px] uppercase tracking-widest" style={{ background: sportColor }}>Registrar</Button>
-                  <button onClick={() => setAddingPlayerTeam(null)} className="h-9 w-9 rounded-lg bg-white/5 flex items-center justify-center text-white/25 hover:text-white text-xs">✕</button>
-                </div>
-              </div>
+              <PlayerSearchForm
+                match={match}
+                team={addingPlayerTeam}
+                sportColor={sportColor}
+                onSelect={handleLocalAddPlayer}
+                onCancel={() => setAddingPlayerTeam(null)}
+              />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
                 {(nuevoEvento.equipo === 'equipo_a' ? jugadoresA : jugadoresB).map(j => {

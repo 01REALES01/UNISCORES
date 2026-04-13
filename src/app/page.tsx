@@ -51,9 +51,8 @@ import { useCarreras } from "@/hooks/use-carreras";
 import { supabase } from "@/lib/supabase";
 
 import type { PartidoWithRelations as Partido } from '@/modules/matches/types';
-import { LiveMatchCard, UpcomingMatchCard, ResultCard, JornadaCard } from '@/modules/matches/components/match-card';
+import { LiveMatchCard, UpcomingMatchCard, ResultCard } from '@/modules/matches/components/match-card';
 import { MatchFilters } from '@/modules/matches/components/match-filters';
-import { useJornadas } from '@/hooks/use-jornadas';
 import { LiveMatchesSection } from '@/modules/matches/components/live-matches-section';
 import { MatchesTodaySection } from '@/modules/matches/components/matches-today-section';
 import { AboutFooter } from '@/shared/components/about-footer';
@@ -72,7 +71,6 @@ export default function Home() {
 
   // ─── SWR Hooks — cached, deduplicated, realtime-enabled ──────────────────
   const { matches: rawMatches, loading: matchesLoading } = useMatches();
-  const { jornadas } = useJornadas();
   const { news: latestNews, loading: newsLoading } = useNews(2);
   const { favoriteIds, loading: favoritosLoading, mutate: mutateFavoritos } = useFavoritos(user?.id);
   const { carreras, loading: carrerasLoading } = useCarreras();
@@ -324,19 +322,6 @@ export default function Home() {
     return true;
   });
 
-  const filteredJornadas = jornadas.filter(j => {
-    const sportName = (j.disciplinas as any)?.name ?? '';
-    if (activeFilter !== 'todos' && activeFilter !== 'favoritos' && sportName !== activeFilter) return false;
-    if (activeFilter === 'favoritos' && favoriteNames.length > 0) {
-      const jornadaCarreras = (j.jornada_resultados ?? []).map((r: any) => (r.carreras as any)?.nombre).filter(Boolean);
-      if (!jornadaCarreras.some((c: string) => favoriteNames.includes(c))) return false;
-    }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return sportName.toLowerCase().includes(q) || (j.nombre ?? '').toLowerCase().includes(q);
-    }
-    return true;
-  });
 
   const showLoginPrompt = activeFilter === 'favoritos' && !user;
   const showEmptyFavoritesPrompt = activeFilter === 'favoritos' && user && favoriteIds.length === 0;
@@ -531,19 +516,6 @@ export default function Home() {
           <MatchesTodaySection matches={displayPartidos} />
         )}
 
-        {/* ━━━ JORNADAS (Ajedrez / Tenis de Mesa) ━━━ */}
-        {!hideMatches && filteredJornadas.length > 0 && (
-          <section className="space-y-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/30 px-1">
-              Jornadas · Deportes Individuales
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {filteredJornadas.map(j => (
-                <JornadaCard key={j.id} jornada={j} />
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* ━━━ INSTITUTIONAL BRAND BREAK ━━━ */}
         <div className="mt-8 mb-20 relative z-0">

@@ -73,6 +73,8 @@ export const EQUIPO_NOMBRE_TO_CARRERAS: Record<string, string[]> = {
     'INGENIERÍA INDUSTRIAL':               ['Ingeniería Industrial'],
     'INGENIERÍA CIVIL':                    ['Ingeniería Civil'],
     'INGENIERÍA DE SISTEMAS':              ['Ingeniería de Sistemas'],
+    'ING. CIVIL/SISTEMAS':                 ['Ingeniería Civil', 'Ingeniería de Sistemas'],
+    'INGENIERÍA CIVIL/SISTEMAS':           ['Ingeniería Civil', 'Ingeniería de Sistemas'],
     'ING. ELÉCTRICA/CIENCIA DATOS':        ['Ingeniería Eléctrica', 'Ingeniería Electrónica', 'Ciencia de Datos'],
     'INGENIERÍA ELÉCTRICA/CIENCIA DATOS':  ['Ingeniería Eléctrica', 'Ingeniería Electrónica', 'Ciencia de Datos'],
     'ING.A ELÉCTRICA/CIENCIA DATOS':       ['Ingeniería Eléctrica', 'Ingeniería Electrónica', 'Ciencia de Datos'],

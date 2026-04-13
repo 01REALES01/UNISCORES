@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
+import { PlayerSearchForm } from "./player-search-form";
 
 interface BasquetEditorProps {
   match: any;
@@ -18,6 +19,7 @@ interface BasquetEditorProps {
     overrides: { minuto: number; periodo: number }
   ) => void;
   onDeleteEvent: (evento: any) => void;
+  onAddPlayer?: (team: string, data: any) => Promise<number | null>;
 }
 
 const SPORT_COLOR = '#f97316';
@@ -61,10 +63,12 @@ export function BasquetEditor({
   jugadoresB,
   onAddEvent,
   onDeleteEvent,
+  onAddPlayer,
 }: BasquetEditorProps) {
   const [selectedCuarto, setSelectedCuarto] = useState<Cuarto>(1);
   const [loadingKey, setLoadingKey] = useState<string | null>(null); // "jugadorId-tipo"
   const [showEvents, setShowEvents] = useState(false);
+  const [addingPlayerTeam, setAddingPlayerTeam] = useState<string | null>(null);
 
   const nameA = getDisplayName(match, 'a');
   const nameB = getDisplayName(match, 'b');
@@ -120,15 +124,42 @@ export function BasquetEditor({
   ) => (
     <div className="space-y-1">
       {/* Team header */}
-      <div className="flex items-center gap-2 px-1 mb-2">
-        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: accentColor }} />
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] truncate" style={{ color: accentColor }}>
-          {teamName}
-        </span>
-        <span className="text-[10px] font-black text-white/50 ml-auto tabular-nums">
-          {equipo === 'equipo_a' ? qA(selectedCuarto) : qB(selectedCuarto)} pts
-        </span>
+      <div className="flex items-center justify-between px-1 mb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: accentColor }} />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] truncate" style={{ color: accentColor }}>
+            {teamName}
+          </span>
+          <span className="text-[10px] font-black text-white/50 tabular-nums ml-2">
+            {equipo === 'equipo_a' ? qA(selectedCuarto) : qB(selectedCuarto)} pts
+          </span>
+        </div>
+        {onAddPlayer && (
+          <button
+            onClick={() => setAddingPlayerTeam(addingPlayerTeam === equipo ? null : equipo)}
+            className="text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border transition-all"
+            style={addingPlayerTeam === equipo 
+              ? { background: `${accentColor}25`, color: accentColor, borderColor: `${accentColor}40` }
+              : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.1)' }
+            }
+          >
+            + Jugador
+          </button>
+        )}
       </div>
+
+      {addingPlayerTeam === equipo && (
+        <PlayerSearchForm
+          match={match}
+          team={equipo}
+          sportColor={accentColor}
+          onSelect={async (data) => {
+            await onAddPlayer?.(equipo, data);
+            setAddingPlayerTeam(null);
+          }}
+          onCancel={() => setAddingPlayerTeam(null)}
+        />
+      )}
 
       {/* Players */}
       {jugadores.length === 0 ? (

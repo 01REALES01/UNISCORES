@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
-import { Avatar, Button } from "@/components/ui-primitives";
-import { Users, Plus, Trash2, ChevronDown, Search, UserCheck, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Avatar } from "@/components/ui-primitives";
+import { Users, Plus, Trash2, ChevronDown, UserCheck } from "lucide-react";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { SPORT_COLORS } from "@/lib/constants";
+import { PlayerSearchForm } from "./player-search-form";
 
 interface AdminPlayerRosterProps {
     match: any;
@@ -14,6 +15,7 @@ interface AdminPlayerRosterProps {
     matchId: string;
     onPlayersUpdated: () => void;
     disciplinaName: string;
+    onAddPlayer?: (team: string, data: any) => Promise<number | null>;
 }
 
 export const AdminPlayerRoster = ({
@@ -22,186 +24,18 @@ export const AdminPlayerRoster = ({
     jugadoresB,
     matchId,
     onPlayersUpdated,
-    disciplinaName
+    disciplinaName,
+    onAddPlayer
 }: AdminPlayerRosterProps) => {
     const [expanded, setExpanded] = useState(true);
     const [addingTeam, setAddingTeam] = useState<string | null>(null);
-    const [form, setForm] = useState({ nombre: '', numero: '' });
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<any[]>([]);
-    const [searching, setSearching] = useState(false);
-    const [mode, setMode] = useState<'search' | 'manual'>('search');
-    const [selectedProfile, setSelectedProfile] = useState<any>(null);
-    const [profileNumero, setProfileNumero] = useState('');
 
     const sportColor = SPORT_COLORS[disciplinaName] || '#6366f1';
     const isColectivo = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
 
-    // Debounced dual-source search
-    useEffect(() => {
-        const q = searchQuery.trim();
-        if (q.length < 2) { setSearchResults([]); return; }
-
-        setSearching(true);
-        const timer = setTimeout(async () => {
-            try {
-                // Parallel search in profiles and jugadores base table
-                const tokens = q.split(/\s+/);
-                let pQuery = supabase.from('profiles').select('id, full_name, avatar_url');
-                let jQuery = supabase.from('jugadores').select('id, nombre, profile_id');
-
-                tokens.forEach(token => {
-                    if (token) {
-                        pQuery = pQuery.ilike('full_name', `%${token}%`);
-                        jQuery = jQuery.ilike('nombre', `%${token}%`);
-                    }
-                });
-
-                const [profilesRes, jugadoresRes] = await Promise.all([
-                    pQuery.limit(10),
-                    jQuery.limit(10)
-                ]);
-
-                const profiles = profilesRes.data || [];
-                const players = jugadoresRes.data || [];
-
-                // Unified results format
-                const unified: any[] = [];
-                const seenProfileIds = new Set();
-                const seenPlayerIds = new Set();
-
-                // 1. Add Profiles (Registered Users)
-                profiles.forEach(p => {
-                    unified.push({
-                        id: p.id, // profile UUID
-                        name: p.full_name,
-                        avatar: p.avatar_url,
-                        source: 'profile',
-                        badge: 'Cuenta Activa'
-                    });
-                    seenProfileIds.add(p.id);
-                });
-
-                // 2. Add Players who DON'T have a profile among the ones we already found
-                players.forEach(j => {
-                    if (j.profile_id && seenProfileIds.has(j.profile_id)) return;
-                    
-                    unified.push({
-                        id: j.id, // numeric player ID
-                        name: j.nombre,
-                        avatar: null,
-                        source: 'jugador',
-                        badge: 'Solo Acta',
-                        profile_id: j.profile_id
-                    });
-                    seenPlayerIds.add(j.id);
-                });
-
-                setSearchResults(unified);
-            } catch (err) {
-                console.error("Search error:", err);
-            } finally {
-                setSearching(false);
-            }
-        }, 350);
-
-        return () => { clearTimeout(timer); setSearching(false); };
-    }, [searchQuery]);
-
-    const handleAddFromUnified = async (item: any) => {
-        if (!addingTeam) return;
-
-        try {
-            let jugador_id: number;
-
-            if (item.source === 'profile') {
-                // Check if already in 'jugadores'
-                const { data: existing } = await supabase
-                    .from('jugadores')
-                    .select('id')
-                    .eq('profile_id', item.id)
-                    .maybeSingle();
-
-                if (existing) {
-                    jugador_id = existing.id;
-                } else {
-                    const { data: created, error: createError } = await supabase
-                        .from('jugadores')
-                        .insert({
-                            nombre: item.name,
-                            profile_id: item.id,
-                            carrera_id: addingTeam === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
-                        })
-                        .select()
-                        .single();
-                    if (createError) throw createError;
-                    jugador_id = created.id;
-                }
-            } else {
-                // Already a jugador record
-                jugador_id = item.id;
-            }
-
-            // Link to match
-            const { error: rosterError } = await supabase.from('roster_partido').insert({
-                partido_id: parseInt(matchId),
-                jugador_id: jugador_id,
-                equipo_a_or_b: addingTeam
-            });
-
-            if (rosterError) throw rosterError;
-
-            toast.success(`${item.name} añadido`);
-            onPlayersUpdated();
-        } catch (error: any) {
-            console.error("Error adding athlete:", error);
-            toast.error(`Error: ${error.message}`);
-        }
-        resetAddForm();
-    };
-
-    const handleAddManual = async () => {
-        if (!form.nombre || !addingTeam) return;
-
-        try {
-            // 1. Create base player
-            const { data: created, error: createError } = await supabase
-                .from('jugadores')
-                .insert({
-                    nombre: form.nombre,
-                    numero: form.numero ? parseInt(form.numero) : null,
-                    carrera_id: addingTeam === 'equipo_a' ? match.carrera_a_id : match.carrera_b_id
-                })
-                .select()
-                .single();
-            
-            if (createError) throw createError;
-
-            // 2. Link to match
-            const { error: rosterError } = await supabase.from('roster_partido').insert({
-                partido_id: parseInt(matchId),
-                jugador_id: created.id,
-                equipo_a_or_b: addingTeam
-            });
-
-            if (rosterError) throw rosterError;
-
-            toast.success("Jugador añadido");
-            onPlayersUpdated();
-        } catch (error: any) {
-            console.error("Error al añadir jugador (manual):", error);
-            toast.error(`Error: ${error.message}`);
-        }
-        resetAddForm();
-    };
 
     const resetAddForm = () => {
-        setForm({ nombre: '', numero: '' });
         setAddingTeam(null);
-        setSearchQuery('');
-        setSearchResults([]);
-        setSelectedProfile(null);
-        setProfileNumero('');
     };
 
     const handleDelete = async (player: any) => {
@@ -278,144 +112,22 @@ export const AdminPlayerRoster = ({
                 {/* Add Player */}
                 {!isColectivo && (
                     isAdding ? (
-                        <div className="rounded-xl border overflow-hidden animate-in fade-in zoom-in-95 duration-200" style={{ borderColor: `${sportColor}25`, background: `${sportColor}05` }}>
-                            {/* Mode Tabs */}
-                            <div className="flex border-b" style={{ borderColor: `${sportColor}10` }}>
-                                <button
-                                    onClick={() => { setMode('search'); setSelectedProfile(null); }}
-                                    className={cn(
-                                        "flex-1 py-2 text-[9px] font-black uppercase tracking-widest transition-all",
-                                        mode === 'search' ? "text-white/80" : "text-white/25 hover:text-white/40"
-                                    )}
-                                    style={mode === 'search' ? { background: `${sportColor}15`, color: sportColor } : {}}
-                                >
-                                    <Search size={10} className="inline mr-1 -translate-y-px" /> Buscar Perfil
-                                </button>
-                                <button
-                                    onClick={() => { setMode('manual'); setSelectedProfile(null); }}
-                                    className={cn(
-                                        "flex-1 py-2 text-[9px] font-black uppercase tracking-widest transition-all",
-                                        mode === 'manual' ? "text-white/80" : "text-white/25 hover:text-white/40"
-                                    )}
-                                    style={mode === 'manual' ? { background: `${sportColor}15`, color: sportColor } : {}}
-                                >
-                                    <Plus size={10} className="inline mr-1 -translate-y-px" /> Manual
-                                </button>
-                            </div>
-
-                            <div className="p-3">
-                                {mode === 'search' ? (
-                                    <div className="space-y-2">
-                                        {selectedProfile ? (
-                                            /* Profile selected → show confirm + jersey number */
-                                            <div className="space-y-2 animate-in fade-in duration-200">
-                                                <div className="flex items-center gap-2 p-2 rounded-lg border" style={{ borderColor: `${sportColor}30`, background: `${sportColor}08` }}>
-                                                    <Avatar name={selectedProfile.name} src={selectedProfile.avatar} className="w-8 h-8 shrink-0 border border-white/20" />
-                                                    <div className="flex-1 min-w-0">
-                                                        <span className="text-[10px] font-bold text-white/80 block truncate">{selectedProfile.name}</span>
-                                                        <span className="text-[8px] font-bold" style={{ color: `${sportColor}80` }}>{selectedProfile.badge} ✓</span>
-                                                    </div>
-                                                    <button onClick={() => setSelectedProfile(null)} className="text-[9px] text-white/25 hover:text-white/50">✕</button>
-                                                </div>
-                                                <div className="flex gap-1.5">
-                                                    <input
-                                                        placeholder="# Camiseta"
-                                                        className="w-20 bg-black/20 border rounded-lg px-2 py-2 text-[11px] text-center font-mono font-black focus:outline-none transition-all"
-                                                        style={{ borderColor: `${sportColor}20` }}
-                                                        value={profileNumero}
-                                                        onChange={e => setProfileNumero(e.target.value)}
-                                                        autoFocus
-                                                        onKeyDown={e => e.key === 'Enter' && handleAddFromUnified(selectedProfile)}
-                                                    />
-                                                    <Button size="sm" onClick={() => handleAddFromUnified(selectedProfile)}
-                                                        className="flex-1 h-8 text-black font-black text-[9px] uppercase tracking-widest rounded-lg"
-                                                        style={{ background: sportColor }}>
-                                                        Registrar
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            /* Search input */
-                                            <>
-                                                <div className="relative">
-                                                    <input
-                                                        placeholder="Buscar por nombre..."
-                                                        className="w-full bg-black/20 border rounded-lg px-3 py-2 text-[11px] font-bold focus:outline-none transition-all placeholder:text-white/15"
-                                                        style={{ borderColor: `${sportColor}20` }}
-                                                        value={searchQuery}
-                                                        onChange={e => setSearchQuery(e.target.value)}
-                                                        autoFocus
-                                                    />
-                                                    {searching && (
-                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                                            <Loader2 size={12} className="animate-spin text-white/30" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="max-h-[160px] overflow-y-auto space-y-1">
-                                                    {searchResults.map(p => (
-                                                        <button
-                                                            key={p.source === 'profile' ? p.id : `j-${p.id}`}
-                                                            onClick={() => { setSelectedProfile(p); setSearchQuery(''); setSearchResults([]); }}
-                                                            className="w-full flex items-center gap-2.5 p-2 rounded-lg border hover:border-opacity-50 transition-all text-left group/res"
-                                                            style={{ borderColor: `${sportColor}10`, background: `${sportColor}03` }}
-                                                        >
-                                                            <Avatar name={p.name} src={p.avatar} className="w-7 h-7 shrink-0 border border-white/10" />
-                                                            <div className="flex-1 min-w-0">
-                                                                <span className="text-[10px] font-bold text-white/80 truncate block">{p.name}</span>
-                                                                <span className="text-[7px] font-black uppercase tracking-widest text-white/20">{p.badge}</span>
-                                                            </div>
-                                                            <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center opacity-40 group-hover/res:opacity-100 transition-opacity">
-                                                                <Plus size={12} style={{ color: sportColor }} />
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                    {searchQuery.trim().length >= 2 && !searching && searchResults.length === 0 && (
-                                                        <p className="text-[9px] text-white/15 text-center py-3">Sin resultados</p>
-                                                    )}
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        <input
-                                            placeholder="Nombre del jugador"
-                                            className="w-full bg-black/20 border rounded-lg px-3 py-2 text-[11px] font-bold focus:outline-none transition-all placeholder:text-white/15"
-                                            style={{ borderColor: `${sportColor}20` }}
-                                            value={form.nombre}
-                                            onChange={e => setForm({ ...form, nombre: e.target.value })}
-                                            autoFocus
-                                            onKeyDown={e => e.key === 'Enter' && handleAddManual()}
-                                        />
-                                        <div className="flex gap-1.5">
-                                            <input
-                                                placeholder="#"
-                                                className="w-14 bg-black/20 border rounded-lg px-2 py-2 text-[11px] text-center font-mono font-black focus:outline-none"
-                                                style={{ borderColor: `${sportColor}20` }}
-                                                value={form.numero}
-                                                onChange={e => setForm({ ...form, numero: e.target.value })}
-                                                onKeyDown={e => e.key === 'Enter' && handleAddManual()}
-                                            />
-                                            <Button size="sm" onClick={handleAddManual}
-                                                className="flex-1 h-8 text-black font-black text-[9px] uppercase tracking-widest rounded-lg"
-                                                style={{ background: sportColor }}>
-                                                Registrar
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
-                                <button
-                                    onClick={resetAddForm}
-                                    className="w-full mt-2 py-1.5 text-[9px] font-bold text-white/20 hover:text-white/40 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                            </div>
+                        <div className="animate-in fade-in zoom-in-95 duration-200">
+                             <PlayerSearchForm
+                                match={match}
+                                team={teamKey}
+                                sportColor={sportColor}
+                                onSelect={async (data) => {
+                                    await onAddPlayer?.(teamKey, data);
+                                    resetAddForm();
+                                }}
+                                onCancel={resetAddForm}
+                                autoFocus
+                            />
                         </div>
                     ) : (
                         <button
-                            onClick={() => { setAddingTeam(teamKey); setForm({ nombre: '', numero: '' }); setMode('search'); }}
+                            onClick={() => { setAddingTeam(teamKey); }}
                             className="w-full py-2.5 rounded-xl border border-dashed text-[9px] font-black text-white/20 uppercase tracking-widest transition-all flex items-center justify-center gap-1.5"
                             style={{ borderColor: `${sportColor}15` }}
                             onMouseEnter={e => { e.currentTarget.style.borderColor = `${sportColor}40`; e.currentTarget.style.color = sportColor; e.currentTarget.style.background = `${sportColor}08`; }}

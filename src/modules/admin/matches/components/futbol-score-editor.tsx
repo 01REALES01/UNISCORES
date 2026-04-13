@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Trash2, Plus, Loader2, AlertCircle } from "lucide-react";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
+import { PlayerSearchForm } from "./player-search-form";
 
 interface FutbolEditorProps {
   match: any;
@@ -12,6 +13,7 @@ interface FutbolEditorProps {
   jugadoresB: any[];
   onAddEvent: (tipo: string, equipo: string, jugadorId: number | null, bypass: boolean, overrides: { minuto: number; periodo: number }) => void;
   onDeleteEvent: (evento: any) => void;
+  onAddPlayer?: (team: string, data: any) => Promise<number | null>;
 }
 
 const TIPOS_FUTBOL = [
@@ -61,13 +63,14 @@ function MiniScore({ label, golesA, golesB, nameA, nameB, active, onClick }: any
   );
 }
 
-export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEvent, onDeleteEvent }: FutbolEditorProps) {
+export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEvent, onDeleteEvent, onAddPlayer }: FutbolEditorProps) {
   const [selectedTiempo, setSelectedTiempo] = useState<1 | 2>(1);
   const [newTipo, setNewTipo] = useState('');
   const [newEquipo, setNewEquipo] = useState<'equipo_a' | 'equipo_b' | ''>('');
   const [newJugadorId, setNewJugadorId] = useState<number | null>(null);
   const [newMinuto, setNewMinuto] = useState<number>(1);
   const [saving, setSaving] = useState(false);
+  const [addingPlayer, setAddingPlayer] = useState(false);
 
   const nameA = getDisplayName(match, 'a');
   const nameB = getDisplayName(match, 'b');
@@ -240,8 +243,37 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
         {/* Jugador */}
         {newEquipo && (
           <div className="space-y-2">
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30">Jugador</p>
-            {jugadoresEquipo.length === 0 ? (
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30">Jugador</p>
+              {onAddPlayer && (
+                <button
+                  onClick={() => setAddingPlayer(!addingPlayer)}
+                  className="text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border transition-all"
+                  style={addingPlayer 
+                    ? { background: `${SPORT_COLOR}25`, color: SPORT_COLOR, borderColor: `${SPORT_COLOR}40` }
+                    : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.1)' }
+                  }
+                >
+                  {addingPlayer ? '✕ Cancelar' : '+ Nuevo'}
+                </button>
+              )}
+            </div>
+
+            {addingPlayer && (
+              <PlayerSearchForm
+                match={match}
+                team={newEquipo}
+                sportColor={SPORT_COLOR}
+                onSelect={async (data) => {
+                  const id = await onAddPlayer?.(newEquipo, data);
+                  if (id) setNewJugadorId(id);
+                  setAddingPlayer(false);
+                }}
+                onCancel={() => setAddingPlayer(false)}
+              />
+            )}
+
+            {jugadoresEquipo.length === 0 && !addingPlayer ? (
               <div className="flex items-center gap-2 py-2 text-amber-400/70">
                 <AlertCircle size={12} />
                 <span className="text-[9px] font-bold">No hay jugadores en el roster de este equipo</span>

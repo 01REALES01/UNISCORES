@@ -37,9 +37,29 @@ const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
         clearTimeout(timeoutId);
 
         if (error) {
-            // Fallback for missing columns (e.g. before SQL migration is run)
-            if (error.code === 'PGRST204' || error.message?.includes('column')) {
-                const FALLBACK_COLUMNS = MATCH_COLUMNS.replace('fase, grupo, bracket_order,', '');
+            // Fallback for missing columns or FK relationships not yet in the
+            // PostgREST schema cache (e.g. before SQL migration is applied in prod).
+            // PGRST204 = column not found, PGRST200 = relationship not found.
+            const isSchemaMiss =
+                error.code === 'PGRST204' ||
+                error.code === 'PGRST200' ||
+                error.message?.includes('column') ||
+                error.message?.includes('relationship');
+
+            if (isSchemaMiss) {
+                // Strip all columns added after the initial schema:
+                // fase/grupo/bracket_order, delegacion FK IDs, and delegacion FK joins.
+                const FALLBACK_COLUMNS = [
+                    'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria',
+                    'delegacion_a, delegacion_b',
+                    'carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
+                    'disciplinas:disciplina_id(name)',
+                    'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
+                    'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
+                    'atleta_a:profiles!athlete_a_id(full_name, avatar_url)',
+                    'atleta_b:profiles!athlete_b_id(full_name, avatar_url)',
+                ].join(', ');
+
                 const fallback = await supabase
                     .from('partidos')
                     .select(FALLBACK_COLUMNS)
@@ -117,10 +137,20 @@ export function useMatches() {
             setupSubscription(); // Re-verify/re-connect if channel died
         };
 
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                console.log('[useMatches] App foregrounded — reconnecting realtime & refreshing data');
+                setupSubscription();
+                mutate();
+            }
+        };
+
         window.addEventListener('app:revalidate', handleRevalidate);
-        
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
         return () => {
             window.removeEventListener('app:revalidate', handleRevalidate);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (debounceTimer) clearTimeout(debounceTimer);
         };
     }, [mutate]);

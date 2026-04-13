@@ -22,6 +22,8 @@ export function useNotifications() {
     const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const mountedRef = useRef(true);
+    const notifChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+    const friendChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
     // Initial fetch
     const fetchAll = useCallback(async () => {
@@ -110,59 +112,73 @@ export function useNotifications() {
 
         fetchAll();
 
-        // Subscribe to new notifications
-        const notifChannel = supabase
-            .channel(`notifications:${user.id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `user_id=eq.${user.id}`,
-                },
-                (payload) => {
-                    if (!mountedRef.current) return;
-                    const newNotif = payload.new as Notification;
+        const setupChannels = () => {
+            if (notifChannelRef.current) supabase.removeChannel(notifChannelRef.current);
+            if (friendChannelRef.current) supabase.removeChannel(friendChannelRef.current);
 
-                    setNotifications(prev => {
-                        if (prev.some(n => n.id === newNotif.id)) return prev;
-                        return [newNotif, ...prev];
-                    });
-                    setUnreadCount(prev => prev + 1);
+            notifChannelRef.current = supabase
+                .channel(`notifications:${user.id}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `user_id=eq.${user.id}`,
+                    },
+                    (payload) => {
+                        if (!mountedRef.current) return;
+                        const newNotif = payload.new as Notification;
 
-                    // Show toast for new notification
-                    const toastIcon = getNotifIcon(newNotif.type);
-                    toast(newNotif.title, {
-                        description: newNotif.body || undefined,
-                        icon: toastIcon,
-                        duration: 5000,
-                    });
-                }
-            )
-            .subscribe();
+                        setNotifications(prev => {
+                            if (prev.some(n => n.id === newNotif.id)) return prev;
+                            return [newNotif, ...prev];
+                        });
+                        setUnreadCount(prev => prev + 1);
 
-        // Subscribe to friend request changes
-        const friendChannel = supabase
-            .channel(`friend_requests:${user.id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'friend_requests',
-                    filter: `receiver_id=eq.${user.id}`,
-                },
-                () => {
-                    if (mountedRef.current) refreshFriendRequests();
-                }
-            )
-            .subscribe();
+                        const toastIcon = getNotifIcon(newNotif.type);
+                        toast(newNotif.title, {
+                            description: newNotif.body || undefined,
+                            icon: toastIcon,
+                            duration: 5000,
+                        });
+                    }
+                )
+                .subscribe();
+
+            friendChannelRef.current = supabase
+                .channel(`friend_requests:${user.id}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'friend_requests',
+                        filter: `receiver_id=eq.${user.id}`,
+                    },
+                    () => {
+                        if (mountedRef.current) refreshFriendRequests();
+                    }
+                )
+                .subscribe();
+        };
+
+        setupChannels();
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                setupChannels();
+                fetchAll();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
             mountedRef.current = false;
-            supabase.removeChannel(notifChannel);
-            supabase.removeChannel(friendChannel);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (notifChannelRef.current) supabase.removeChannel(notifChannelRef.current);
+            if (friendChannelRef.current) supabase.removeChannel(friendChannelRef.current);
         };
     }, [user?.id, fetchAll, refreshFriendRequests]);
 

@@ -169,8 +169,8 @@ export default function CalendarioPage() {
 
                 <div className="sticky top-[72px] z-40 -mx-4 px-4 py-8 mb-12 transition-all duration-300">
                     <div className="flex flex-col gap-4 sm:gap-8 max-w-6xl mx-auto">
-                        <div className="flex justify-center w-full">
-                            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3 px-1 w-full max-w-5xl justify-start sm:justify-center group">
+                        <div className="flex justify-center w-full relative">
+                            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-6 px-8 w-full max-w-5xl justify-start mask-linear-fade group">
                                 {SPORTS_FILTERS.map((filter) => {
                                     const isActive = activeFilter === filter.id;
                                     return (

@@ -1,42 +1,19 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Button } from "@/components/ui-primitives";
+import { Button, Avatar } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
-import { Plus, Calendar, Clock, Zap, ArrowUpRight, Trash2, Search, MapPin, TrendingUp, Trophy, Activity, Loader2, Crown, Handshake, AlertTriangle, X, Users } from "lucide-react";
+import { Plus, Calendar, Clock, Zap, Trash2, Search, TrendingUp, Trophy, Loader2, AlertTriangle, X, Users } from "lucide-react";
 import { toast } from "sonner";
 import UniqueLoading from "@/components/ui/morph-loading";
-import { Card, Badge, Avatar, LiveIndicator } from "@/components/ui-primitives";
 import { CreateMatchModal } from "@/components/create-match-modal";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuditLogger } from "@/hooks/useAuditLogger";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import SuggestiveSearch from "@/components/ui/suggestive-search";
 import { SPORT_EMOJI } from "@/lib/constants";
 import { getDisplayName, getCarreraName, getCarreraSubtitle } from "@/lib/sport-helpers";
-
-const SPORT_GRADIENT: Record<string, string> = {
-    'Fútbol': 'from-emerald-500/20 to-emerald-900/5',
-    'Baloncesto': 'from-orange-500/20 to-orange-900/5',
-    'Voleibol': 'from-red-500/20 to-red-900/5',
-    'Tenis': 'from-lime-500/20 to-lime-900/5',
-    'Tenis de Mesa': 'from-rose-500/20 to-rose-900/5',
-    'Ajedrez': 'from-slate-500/20 to-slate-900/5',
-    'Natación': 'from-cyan-500/20 to-cyan-900/5',
-};
-
-const SPORT_ACCENT: Record<string, string> = {
-    'Fútbol': 'border-emerald-500/30',
-    'Baloncesto': 'border-orange-500/30',
-    'Voleibol': 'border-red-500/30',
-    'Tenis': 'border-lime-500/30',
-    'Tenis de Mesa': 'border-rose-500/30',
-    'Ajedrez': 'border-slate-500/30',
-    'Natación': 'border-cyan-500/30',
-};
 
 export default function PartidosPage() {
     const [partidos, setPartidos] = useState<any[]>([]);
@@ -45,6 +22,7 @@ export default function PartidosPage() {
     const [sportFilter, setSportFilter] = useState('todos');
     const [genderFilter, setGenderFilter] = useState('todos');
     const [categoriaFilter, setCategoriaFilter] = useState('todos');
+    const [dateFilter, setDateFilter] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -58,6 +36,7 @@ export default function PartidosPage() {
     const { logAction } = useAuditLogger();
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const natacionFileRef = useRef<HTMLInputElement>(null);
+    const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
     useEffect(() => {
         if (isPeriodista) {
@@ -67,7 +46,7 @@ export default function PartidosPage() {
 
     const fetchPartidos = useCallback(async () => {
         const { data } = await safeQuery(
-            supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url)`).order('fecha', { ascending: true }),
+            supabase.from('partidos').select(`*, disciplinas(name), delegacion_a, delegacion_b, carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url), delegacion_a_info:delegaciones!delegacion_a_id(escudo_url), delegacion_b_info:delegaciones!delegacion_b_id(escudo_url)`).order('fecha', { ascending: true }),
             'admin-partidos'
         );
         if (data) setPartidos(data);
@@ -77,17 +56,32 @@ export default function PartidosPage() {
     useEffect(() => {
         fetchPartidos();
 
-        const channel = supabase
-            .channel('realtime-partidos')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
-                if (debounceRef.current) clearTimeout(debounceRef.current);
-                debounceRef.current = setTimeout(() => fetchPartidos(), 800);
-            })
-            .subscribe();
+        const setupChannel = () => {
+            if (channelRef.current) supabase.removeChannel(channelRef.current);
+            channelRef.current = supabase
+                .channel('realtime-partidos')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
+                    if (debounceRef.current) clearTimeout(debounceRef.current);
+                    debounceRef.current = setTimeout(() => fetchPartidos(), 800);
+                })
+                .subscribe();
+        };
+
+        setupChannel();
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                setupChannel();
+                fetchPartidos();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (debounceRef.current) clearTimeout(debounceRef.current);
-            supabase.removeChannel(channel);
+            if (channelRef.current) supabase.removeChannel(channelRef.current);
         };
     }, [fetchPartidos]);
 
@@ -241,6 +235,10 @@ export default function PartidosPage() {
         if (sportFilter !== 'todos' && p.disciplinas?.name !== sportFilter) return false;
         if (genderFilter !== 'todos' && (p.genero || 'masculino') !== genderFilter) return false;
         if (categoriaFilter !== 'todos' && (p.categoria || null) !== categoriaFilter) return false;
+        if (dateFilter) {
+            const pDate = new Date(p.fecha).toISOString().slice(0, 10);
+            if (pDate !== dateFilter) return false;
+        }
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             const dispA = getDisplayName(p, 'a');
@@ -256,6 +254,7 @@ export default function PartidosPage() {
     const programadosCount = partidos.filter(p => p.estado === 'programado').length;
     const finalizadosCount = partidos.filter(p => p.estado === 'finalizado').length;
     const uniqueSports = Array.from(new Set(partidos.map(p => p.disciplinas?.name).filter(Boolean)));
+    const uniqueDates = Array.from(new Set(partidos.map(p => new Date(p.fecha).toISOString().slice(0, 10)))).sort();
 
     const getScore = (p: any) => {
         const md = p.marcador_detalle || {};
@@ -301,551 +300,255 @@ export default function PartidosPage() {
         },
     ];
 
+    // Group matches by sport for list view
+    const sportGroups = uniqueSports.map(sport => ({
+        sport,
+        matches: filteredPartidos.filter(p => p.disciplinas?.name === sport),
+    })).filter(g => g.matches.length > 0);
+    const ungrouped = filteredPartidos.filter(p => !p.disciplinas?.name);
+
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            {/* ─── HERO HEADER "Cyber-Olympic Luxury" ─── */}
-            <motion.div 
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="relative overflow-hidden rounded-[2.5rem] bg-background/60 backdrop-blur-2xl border border-white/5 p-10 group"
-            >
-                {/* Background Pattern - Moving Noise & Orbs */}
-                <motion.div 
-                    animate={{ 
-                        backgroundPosition: ["0% 0%", "100% 100%"],
-                        opacity: [0.3, 0.4, 0.3]
-                    }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:200%_200%] mix-blend-overlay pointer-events-none"
-                />
-                
-                <div className="absolute top-[-30%] right-[-5%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none animate-pulse" />
-                <div className="absolute bottom-[-20%] left-0 w-[400px] h-[400px] bg-orange-600/10 rounded-full blur-[100px] pointer-events-none" />
-
-                <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-8">
-                    <div className="space-y-4">
-                        <motion.div 
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="flex items-center gap-3"
-                        >
-                            <div className="px-3 py-1 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white/60">
-                                Admin Control Center
-                            </div>
-                            {liveCount > 0 && (
-                                <motion.span 
-                                    animate={{ scale: [1, 1.05, 1] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-400 text-[10px] font-black tracking-widest uppercase"
-                                >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]" />
-                                    {liveCount} En Juego
-                                </motion.span>
-                            )}
-                        </motion.div>
-                        
-                        <div className="space-y-1">
-                            <h1 className="text-4xl sm:text-6xl font-black tracking-tighter text-white leading-[0.9] flex flex-col">
-                                <span className="text-primary/80">Gestión de</span>
-                                <span>Partidos</span>
-                            </h1>
-                            <p className="text-zinc-400 text-sm font-medium tracking-tight max-w-md">
-                                Monitorea y controla eventos deportivos en tiempo real con precisión milimétrica.
-                            </p>
-                        </div>
-                    </div>
+        <div className="space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-lg font-bold text-white">Partidos</h2>
+                    <p className="text-xs text-slate-500">{partidos.length} en total</p>
                 </div>
-
-                {/* ─── ACTION CONTROL GRID "Command Center" ─── */}
-                <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
-                        <Button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="w-full h-20 rounded-[1.5rem] bg-gradient-to-br from-primary via-primary to-orange-700 text-white text-xs font-black uppercase tracking-widest shadow-xl border-0 flex items-center gap-4 px-6 group/btn transition-all hover:shadow-primary/20"
-                        >
-                            <div className="p-2.5 rounded-xl bg-white/20">
-                                <Plus size={22} strokeWidth={3} />
-                            </div>
-                            <span className="text-left leading-tight">Lanzar Nuevo<br/>Partido</span>
-                        </Button>
-                    </motion.div>
-
-                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
-                        <Button
-                            onClick={importTennisBrackets}
-                            disabled={importingTennis}
-                            className="w-full h-20 rounded-[1.5rem] bg-gradient-to-br from-lime-600 via-lime-500 to-green-700 text-white text-xs font-black uppercase tracking-widest shadow-xl border-0 flex items-center gap-4 px-6 group/btn disabled:opacity-60"
-                        >
-                            <div className="p-2.5 rounded-xl bg-white/20">
-                                {importingTennis ? <Loader2 size={22} className="animate-spin" /> : <Plus size={22} strokeWidth={3} />}
-                            </div>
-                            <span className="text-left leading-tight">{importingTennis ? 'Importando...' : 'Importar Brackets\nTenis'}</span>
-                        </Button>
-                    </motion.div>
-
-                    <input 
-                        type="file" 
-                        accept=".xlsx,.xls" 
-                        className="hidden" 
-                        ref={natacionFileRef}
-                        onChange={handleImportNatacion} 
-                    />
-                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
-                        <Button
-                            onClick={() => natacionFileRef.current?.click()}
-                            disabled={importingNatacion}
-                            className="w-full h-20 rounded-[1.5rem] bg-gradient-to-br from-cyan-600 via-cyan-500 to-blue-700 text-white text-xs font-black uppercase tracking-widest shadow-xl border-0 flex items-center gap-4 px-6 group/btn disabled:opacity-60"
-                        >
-                            <div className="p-2.5 rounded-xl bg-white/20">
-                                {importingNatacion ? <Loader2 size={22} className="animate-spin" /> : <Plus size={22} strokeWidth={3} />}
-                            </div>
-                            <span className="text-left leading-tight">{importingNatacion ? 'Importando...' : 'Importar Datos\nNatación'}</span>
-                        </Button>
-                    </motion.div>
-
-                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
-                        <Button
-                            onClick={handleBackfillNatacion}
-                            disabled={backfillingNatacion}
-                            className="w-full h-20 rounded-[1.5rem] bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-700 text-white text-xs font-black uppercase tracking-widest shadow-xl border-0 flex items-center gap-4 px-6 group/btn disabled:opacity-60"
-                        >
-                            <div className="p-2.5 rounded-xl bg-white/20">
-                                {backfillingNatacion ? <Loader2 size={22} className="animate-spin" /> : <Users size={22} strokeWidth={3} />}
-                            </div>
-                            <span className="text-left leading-tight">{backfillingNatacion ? 'Vinculando...' : 'Vincular Perfiles\nGlobales'}</span>
-                        </Button>
-                    </motion.div>
-
-                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
-                        <Button
-                            onClick={deleteNatacionData}
-                            disabled={deletingTennis}
-                            className="w-full h-20 rounded-[1.5rem] bg-white/5 border border-white/10 text-white/40 text-xs font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all flex items-center gap-4 px-6 group/btn disabled:opacity-60"
-                        >
-                            <div className="p-2.5 rounded-xl bg-white/10 group-hover/btn:bg-red-500/20">
-                                {deletingTennis ? <Loader2 size={22} className="animate-spin" /> : <Trash2 size={22} strokeWidth={3} />}
-                            </div>
-                            <span className="text-left leading-tight">Limpiar Datos<br/>Natación</span>
-                        </Button>
-                    </motion.div>
-
-                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
-                        <Button
-                            onClick={deleteTennisBrackets}
-                            disabled={deletingTennis}
-                            className="w-full h-20 rounded-[1.5rem] bg-white/5 border border-white/10 text-white/40 text-xs font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all flex items-center gap-4 px-6 group/btn disabled:opacity-60"
-                        >
-                            <div className="p-2.5 rounded-xl bg-white/10 group-hover/btn:bg-red-500/20">
-                                {deletingTennis ? <Loader2 size={22} className="animate-spin" /> : <Trash2 size={22} strokeWidth={3} />}
-                            </div>
-                            <span className="text-left leading-tight">Limpiar Brackets<br/>Tenis</span>
-                        </Button>
-                    </motion.div>
+                <div className="flex items-center gap-2">
+                    <Button
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="h-8 px-3 text-xs rounded-lg bg-violet-600 hover:bg-violet-500 text-white border-0 flex items-center gap-1.5"
+                    >
+                        <Plus size={13} /> Nuevo
+                    </Button>
                 </div>
-            </motion.div>
-             {/* ─── STATS CARDS "Tech Pods" ─── */}
-            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-                {statsConfig.map((stat, index) => {
+            </div>
+
+            {/* Stats — compact filter pills */}
+            <div className="flex flex-wrap gap-2">
+                {statsConfig.map((stat) => {
                     const isActive = filter === stat.filterKey;
                     const Icon = stat.icon;
                     return (
-                        <motion.button
+                        <button
                             key={stat.label}
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: index * 0.1 + 0.4 }}
-                            whileHover={{ y: -5, scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
                             onClick={() => setFilter(filter === stat.filterKey ? 'todos' : stat.filterKey)}
                             className={cn(
-                                "relative group p-6 rounded-[2rem] border text-left transition-all duration-500 overflow-hidden backdrop-blur-xl",
+                                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors",
                                 isActive
-                                    ? "border-primary/20 bg-primary/5 shadow-2xl ring-1 ring-primary/20"
-                                    : "border-white/5 bg-zinc-900/40 hover:bg-zinc-800/60 hover:border-white/10"
+                                    ? "border-violet-500/40 bg-violet-500/10 text-violet-300"
+                                    : "border-white/8 bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/5"
                             )}
                         >
-                            {/* Inner Shine Effect */}
-                            <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-                            
-                            <div className="relative z-10">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className={cn(
-                                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500",
-                                        isActive
-                                            ? `bg-gradient-to-br ${stat.gradient} shadow-lg shadow-primary/25`
-                                            : "bg-white/5 group-hover:bg-white/10"
-                                    )}>
-                                        <Icon size={20} className={isActive ? "text-white" : "text-zinc-500"} />
-                                    </div>
-                                    {stat.pulse && (
-                                        <div className="relative flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20">
-                                            <span className="flex h-2 w-2">
-                                                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-rose-500 opacity-75" />
-                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
-                                            </span>
-                                            <span className="text-[8px] font-black text-rose-500 uppercase">En Curso</span>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="space-y-0.5">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 group-hover:text-zinc-400 transition-colors uppercase">{stat.label}</p>
-                                    <p className={cn(
-                                        "text-4xl font-black tabular-nums tracking-tighter transition-all duration-500",
-                                        isActive ? "text-white drop-shadow-md lg:text-5xl" : "text-white/40 group-hover:text-white/60"
-                                    )}>
-                                        {stat.value}
-                                    </p>
-                                </div>
-                            </div>
-                        </motion.button>
+                            <Icon size={12} className={isActive ? "text-violet-400" : "text-slate-500"} />
+                            {stat.label}
+                            <span className={cn("font-bold", isActive ? "text-white" : "text-slate-300")}>{stat.value}</span>
+                            {stat.pulse && stat.value > 0 && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />}
+                        </button>
                     );
                 })}
             </div>
-             {/* ─── FILTERS BAR "Glass Bar" ─── */}
-            <motion.div 
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.8 }}
-                className="relative overflow-hidden rounded-[2rem] bg-zinc-950/40 backdrop-blur-xl border border-white/5 p-6"
-            >
-                <div className="flex flex-col gap-10 w-full">
-                    {/* Search Group */}
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/30 ml-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                            Buscar Partido
-                        </div>
-                        <div className="relative w-full">
-                            <SuggestiveSearch
-                                value={searchQuery}
-                                onChange={setSearchQuery}
-                                suggestions={["Buscar por equipo...", "Buscar por jugador...", "Filtra por universidad..."]}
-                                className="h-20 rounded-[1.5rem] bg-black/40 border-2 border-white/5 focus-within:border-primary/50 focus-within:bg-black/60 focus-within:ring-8 focus-within:ring-primary/5 transition-all w-full text-lg font-bold placeholder:text-zinc-700 px-8"
-                            />
-                        </div>
-                    </div>
 
-                    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8 w-full">
-                        {/* Sport Filter Group */}
-                        <div className="lg:col-span-8 space-y-3">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/30 ml-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500/40" />
-                                Disciplina
-                            </div>
-                            <div className="flex gap-2.5 p-2.5 rounded-[1.75rem] bg-black/40 border-2 border-white/5 overflow-x-auto no-scrollbar">
+            {/* Filters */}
+            <div className="flex flex-col gap-3 p-4 rounded-xl border border-white/5 bg-white/[0.02]">
+                {/* Search */}
+                <div className="relative">
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                    <input
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        placeholder="Buscar por equipo o jugador..."
+                        className="w-full h-8 pl-8 pr-3 rounded-lg bg-white/5 border border-white/8 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40"
+                    />
+                </div>
+
+                {/* Sport + Gender in one row */}
+                <div className="flex flex-wrap gap-1.5">
+                    <button
+                        onClick={() => setSportFilter('todos')}
+                        className={cn("px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors", sportFilter === 'todos' ? "bg-violet-600 text-white" : "bg-white/5 text-slate-400 hover:text-white")}
+                    >
+                        Todos
+                    </button>
+                    {uniqueSports.map(sport => (
+                        <button
+                            key={sport}
+                            onClick={() => { setSportFilter(sportFilter === sport ? 'todos' : sport); setCategoriaFilter('todos'); }}
+                            className={cn("px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1", sportFilter === sport ? "bg-violet-600 text-white" : "bg-white/5 text-slate-400 hover:text-white")}
+                        >
+                            {SPORT_EMOJI[sport]} {sport}
+                        </button>
+                    ))}
+                    <div className="w-px bg-white/10 self-stretch mx-1" />
+                    {[{ v: 'masculino', l: '♂' }, { v: 'femenino', l: '♀' }, { v: 'mixto', l: '⚤' }].map(g => (
+                        <button
+                            key={g.v}
+                            onClick={() => setGenderFilter(genderFilter === g.v ? 'todos' : g.v)}
+                            className={cn("px-2.5 py-1 rounded-md text-sm font-medium transition-colors", genderFilter === g.v ? "bg-violet-600 text-white" : "bg-white/5 text-slate-500 hover:text-white")}
+                        >
+                            {g.l}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Date filter */}
+                {uniqueDates.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1 border-t border-white/5">
+                        {uniqueDates.map(date => {
+                            const d = new Date(date + 'T12:00:00');
+                            const label = d.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
+                            const isActive = dateFilter === date;
+                            return (
                                 <button
-                                    onClick={() => setSportFilter('todos')}
+                                    key={date}
+                                    onClick={() => setDateFilter(isActive ? '' : date)}
                                     className={cn(
-                                        "px-8 py-4 rounded-2xl text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 min-w-[100px] border border-transparent",
-                                        sportFilter === 'todos'
-                                            ? "bg-primary text-white shadow-xl shadow-primary/20 border-white/20"
-                                            : "bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10 hover:border-white/10"
+                                        "px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors capitalize",
+                                        isActive ? "bg-violet-600 text-white" : "bg-white/5 text-slate-400 hover:text-white"
                                     )}
                                 >
-                                    Todos
+                                    {label}
                                 </button>
-                                {uniqueSports.map(sport => (
-                                    <button
-                                        key={sport}
-                                        onClick={() => { setSportFilter(sportFilter === sport ? 'todos' : sport); setCategoriaFilter('todos'); }}
-                                        className={cn(
-                                            "px-8 py-4 rounded-2xl text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 whitespace-nowrap flex items-center gap-3 min-w-fit border border-transparent",
-                                            sportFilter === sport
-                                                ? "bg-primary text-white shadow-xl shadow-primary/20 border-white/20"
-                                                : "bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10 hover:border-white/10"
-                                        )}
-                                    >
-                                        <span className="text-xl">{SPORT_EMOJI[sport]}</span>
-                                        <span>{sport}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Gender Filter Group */}
-                        <div className="lg:col-span-4 space-y-3">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/30 ml-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-pink-500/40" />
-                                Género
-                            </div>
-                            <div className="flex gap-3 p-2.5 rounded-[1.75rem] bg-black/40 border-2 border-white/5">
-                                {[
-                                    { value: 'todos', label: 'Todos', color: 'bg-zinc-700', hover: 'hover:text-zinc-300' },
-                                    { value: 'masculino', label: '♂', color: 'bg-primary', hover: 'hover:text-primary' },
-                                    { value: 'femenino', label: '♀', color: 'bg-pink-600', hover: 'hover:text-pink-500' },
-                                    { value: 'mixto', label: '⚤', color: 'bg-purple-600', hover: 'hover:text-purple-500' },
-                                ].map(g => (
-                                    <button
-                                        key={g.value}
-                                        onClick={() => setGenderFilter(g.value)}
-                                        className={cn(
-                                            "flex-1 h-14 rounded-2xl text-base sm:text-lg font-black transition-all duration-500 flex items-center justify-center border border-transparent px-4",
-                                            genderFilter === g.value
-                                                ? `${g.color} text-white shadow-xl scale-105 border-white/20`
-                                                : `bg-white/5 text-zinc-600 ${g.hover} hover:bg-white/10 hover:border-white/10`
-                                        )}
-                                    >
-                                        {g.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                            );
+                        })}
                     </div>
+                )}
 
-                    {/* Category Filter Group (Conditional) */}
-                    {showCategoriaFilter && (
-                        <motion.div 
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            className="space-y-3"
-                        >
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/30 ml-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-lime-500/40" />
-                                Nivel de Categoría
-                            </div>
-                            <div className="flex flex-wrap gap-2.5 p-3 rounded-[1.75rem] bg-black/40 border-2 border-lime-500/20">
-                                {[
-                                    { value: 'todos', label: 'Todos los Niveles' },
-                                    { value: 'principiante', label: 'Principiante' },
-                                    { value: 'intermedio', label: 'Intermedio' },
-                                    { value: 'avanzado', label: 'Avanzado' },
-                                ].map(c => (
-                                    <button
-                                        key={c.value}
-                                        onClick={() => setCategoriaFilter(c.value)}
-                                        className={cn(
-                                            "flex-1 min-w-[140px] py-4 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 border border-transparent",
-                                            categoriaFilter === c.value
-                                                ? "bg-lime-600 text-white shadow-xl shadow-lime-500/20 border-white/20"
-                                                : "bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10 hover:border-white/10"
-                                        )}
-                                    >
-                                        {c.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </motion.div>
-                    )}
-                </div>
-            </motion.div>
+                {/* Category filter (conditional) */}
+                {showCategoriaFilter && (
+                    <div className="flex gap-1.5 pt-1 border-t border-white/5">
+                        {[{ v: 'todos', l: 'Todos' }, { v: 'principiante', l: 'Principiante' }, { v: 'intermedio', l: 'Intermedio' }, { v: 'avanzado', l: 'Avanzado' }].map(c => (
+                            <button
+                                key={c.v}
+                                onClick={() => setCategoriaFilter(c.v)}
+                                className={cn("px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors", categoriaFilter === c.v ? "bg-lime-700 text-white" : "bg-white/5 text-slate-400 hover:text-white")}
+                            >
+                                {c.l}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
 
-            {/* ─── MATCHES GRID ─── */}
+            {/* Utility actions — collapsed row */}
+            <input type="file" accept=".xlsx,.xls" className="hidden" ref={natacionFileRef} onChange={handleImportNatacion} />
+            <div className="flex flex-wrap gap-2">
+                <button onClick={importTennisBrackets} disabled={importingTennis} className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/8 bg-white/[0.02] text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50">
+                    {importingTennis ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />} Brackets Tenis
+                </button>
+                <button onClick={() => natacionFileRef.current?.click()} disabled={importingNatacion} className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/8 bg-white/[0.02] text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50">
+                    {importingNatacion ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />} Importar Natación
+                </button>
+                <button onClick={handleBackfillNatacion} disabled={backfillingNatacion} className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/8 bg-white/[0.02] text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50">
+                    {backfillingNatacion ? <Loader2 size={11} className="animate-spin" /> : <Users size={11} />} Vincular Perfiles
+                </button>
+                <button onClick={deleteNatacionData} disabled={deletingTennis} className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/8 bg-white/[0.02] text-xs text-slate-500 hover:text-rose-400 hover:border-rose-500/20 transition-colors disabled:opacity-50">
+                    {deletingTennis ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />} Limpiar Natación
+                </button>
+                <button onClick={deleteTennisBrackets} disabled={deletingTennis} className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/8 bg-white/[0.02] text-xs text-slate-500 hover:text-rose-400 hover:border-rose-500/20 transition-colors disabled:opacity-50">
+                    {deletingTennis ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />} Limpiar Tenis
+                </button>
+            </div>
+
+            {/* Match list grouped by sport */}
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-32">
+                <div className="flex justify-center py-20">
                     <UniqueLoading size="lg" />
                 </div>
             ) : filteredPartidos.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-5">
-                    <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                        <Calendar size={40} className="text-white/15" />
-                    </div>
-                    <div className="text-center">
-                        <p className="font-bold text-lg text-white">Sin partidos</p>
-                        <p className="text-slate-500 text-sm mt-1 max-w-xs">
-                            {searchQuery ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer partido para comenzar'}
-                        </p>
-                    </div>
-                    {!searchQuery && (
-                        <Button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="mt-2 rounded-xl bg-gradient-to-r from-red-500 to-orange-600 text-white border-0 shadow-lg shadow-red-500/25"
-                        >
-                            <Plus size={16} className="mr-1" /> Crear Partido
-                        </Button>
-                    )}
+                <div className="text-center py-16">
+                    <Calendar size={28} className="text-slate-600 mx-auto mb-3" />
+                    <p className="text-sm font-medium text-slate-400">Sin partidos</p>
+                    <p className="text-xs text-slate-600 mt-1">
+                        {searchQuery ? 'Sin resultados para tu búsqueda' : 'Crea el primer partido'}
+                    </p>
                 </div>
             ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <AnimatePresence mode="popLayout">
-                    {filteredPartidos.map((partido, index) => {
-                        const isLive = partido.estado === 'en_curso';
-                        const isFinished = partido.estado === 'finalizado';
-                        const score = getScore(partido);
-                        const sportName = partido.disciplinas?.name || 'Deporte';
-                        const emoji = SPORT_EMOJI[sportName] || '🏅';
-                        const gradient = SPORT_GRADIENT[sportName] || 'from-slate-500/20 to-slate-600/5';
-                        const accent = SPORT_ACCENT[sportName] || 'border-white/5';
-
-                        return (
-                            <motion.div
-                                key={partido.id}
-                                layout
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
-                                transition={{ delay: index * 0.05 + 1 }}
-                                whileHover={{ y: -8 }}
-                                onClick={() => router.push(`/admin/partidos/${partido.id}`)}
-                                className={cn(
-                                    "group relative rounded-[2.5rem] border overflow-hidden cursor-pointer transition-all duration-700 backdrop-blur-3xl",
-                                    isLive
-                                        ? "border-rose-500/40 bg-rose-500/[0.03] shadow-2xl shadow-rose-500/10"
-                                        : "border-white/5 bg-zinc-900/40 hover:bg-zinc-800/40 hover:border-white/20 hover:shadow-2xl"
-                                )}
-                            >
-                                {/* Sport Backdrop Gradient */}
-                                <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-20 group-hover:opacity-40 transition-opacity duration-700`} />
-                                
-                                {/* Top Content Container */}
-                                <div className="relative p-6 space-y-6">
-                                    {/* Header: Sport & Status Info */}
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">
-                                                {emoji}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 group-hover:text-zinc-300 transition-colors">{sportName}</h4>
-                                                <span className={cn(
-                                                    "text-[9px] font-black uppercase px-2 py-0.5 rounded-full border w-fit mt-1",
-                                                    (partido.genero || 'masculino') === 'femenino' ? 'border-pink-500/30 text-pink-400 bg-pink-500/5' :
-                                                    (partido.genero || 'masculino') === 'mixto' ? 'border-purple-500/30 text-purple-400 bg-purple-500/5' :
-                                                    'border-blue-500/30 text-blue-400 bg-blue-500/5'
-                                                )}>
-                                                    {partido.genero || 'masculino'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-2">
-                                            {isLive ? (
-                                                <motion.div 
-                                                    animate={{ opacity: [1, 0.5, 1] }} 
-                                                    transition={{ duration: 1.5, repeat: Infinity }}
-                                                    className="px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-                                                >
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> EN CURSO
-                                                </motion.div>
-                                            ) : isFinished ? (
-                                                <span className="px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 text-[9px] font-black uppercase tracking-widest border border-white/5">
-                                                    Archive
-                                                </span>
-                                            ) : (
-                                                <span className="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-[9px] font-black uppercase tracking-widest border border-cyan-500/30 flex items-center gap-1.5">
-                                                    <Calendar size={10} /> SCHED
-                                                </span>
-                                            )}
-                                            {isLive && (
-                                                <span className="text-[10px] font-mono font-black text-rose-400/80 tracking-tighter italic">
-                                                    CONTROL EN CURSO
-                                                </span>
-                                            )}
-                                        </div>
+                <div className="space-y-4">
+                    {(sportGroups.length > 0 ? sportGroups : [{ sport: '', matches: ungrouped }]).map(({ sport, matches }) => (
+                        <div key={sport || 'sin-deporte'} className="rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden">
+                            {/* Sport header */}
+                            {sport && (
+                                <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-base">{SPORT_EMOJI[sport] || '🏅'}</span>
+                                        <span className="text-xs font-bold text-slate-300 uppercase tracking-wide">{sport}</span>
                                     </div>
+                                    <span className="text-[10px] text-slate-600">{matches.length} partido{matches.length !== 1 ? 's' : ''}</span>
+                                </div>
+                            )}
+                            {/* Match rows */}
+                            <div className="divide-y divide-white/[0.04]">
+                                {matches.map((partido) => {
+                                    const isLive = partido.estado === 'en_curso';
+                                    const isFinished = partido.estado === 'finalizado';
+                                    const score = getScore(partido);
+                                    const isCarrera = partido.marcador_detalle?.tipo === 'carrera';
+                                    return (
+                                        <div
+                                            key={partido.id}
+                                            onClick={() => router.push(`/admin/partidos/${partido.id}`)}
+                                            className="group flex items-center gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer transition-colors"
+                                        >
+                                            {/* Status dot */}
+                                            <span className={cn("shrink-0 w-1.5 h-1.5 rounded-full", isLive ? "bg-rose-500 animate-pulse" : isFinished ? "bg-slate-600" : "bg-slate-700")} />
 
-                                    {/* Scoreboard Area */}
-                                    {partido.marcador_detalle?.tipo === 'carrera' ? (
-                                        <div className="py-2 flex flex-col items-center gap-4">
-                                            <div className="text-center group-hover:scale-105 transition-transform">
-                                                <h3 className="text-xl font-black text-white tracking-tighter">
-                                                    {partido.marcador_detalle?.distancia && partido.marcador_detalle?.estilo
-                                                        ? `${partido.marcador_detalle.distancia} ${partido.marcador_detalle.estilo}`
-                                                        : partido.equipo_a}
-                                                </h3>
-                                                {partido.marcador_detalle?.serie && (
-                                                    <span className="text-[10px] text-primary font-black uppercase tracking-[0.3em] opacity-80 mt-1 block">
-                                                        Heat #{partido.marcador_detalle.serie}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/5 flex items-center gap-3">
-                                                <Users size={14} className="text-zinc-600" />
-                                                <span className="text-[10px] font-black text-zinc-500 uppercase">{(partido.marcador_detalle?.participantes || []).length} Competidores</span>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-4">
-                                            {/* Local */}
-                                            <div className="flex flex-col items-center gap-3">
-                                                <div className="relative group/avatar">
-                                                    <Avatar name={getDisplayName(partido, 'a')} src={partido.carrera_a?.escudo_url} className="w-16 h-16 rounded-[1.25rem] border-2 border-white/5 ring-4 ring-black/20 group-hover/avatar:scale-105 transition-all duration-500" />
-                                                    {score.a > score.b && isFinished && (
-                                                        <div className="absolute -top-2 -right-2 bg-primary p-1.5 rounded-lg shadow-xl shadow-primary/40 rotate-12">
-                                                            <Trophy size={14} className="text-white" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-sm font-black text-white truncate max-w-[100px] leading-tight">{getDisplayName(partido, 'a')}</p>
-                                                    <p className="text-[9px] font-bold text-zinc-500 uppercase">{getCarreraSubtitle(partido, 'a')}</p>
-                                                </div>
-                                            </div>
-
-                                            {/* CENTER SCORE */}
-                                            <div className="flex flex-col items-center justify-center p-4 rounded-3xl bg-black/40 border border-white/5 shadow-inner">
-                                                <div className="flex items-center gap-3">
-                                                    <span className={cn("text-4xl font-black font-mono tracking-tighter tabular-nums", score.a > score.b && isFinished ? "text-primary" : "text-white")}>{score.a}</span>
-                                                    <span className="text-2xl font-black text-zinc-800">:</span>
-                                                    <span className={cn("text-4xl font-black font-mono tracking-tighter tabular-nums", score.b > score.a && isFinished ? "text-primary" : "text-white")}>{score.b}</span>
-                                                </div>
-                                                {isLive && (
-                                                    <div className="mt-2 flex items-center gap-1.5">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                                                        <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest whitespace-nowrap">En Curso</span>
+                                            {/* Teams/name */}
+                                            <div className="flex-1 min-w-0">
+                                                {isCarrera ? (
+                                                    <p className="text-xs font-semibold text-slate-200 truncate">
+                                                        {partido.marcador_detalle?.distancia && partido.marcador_detalle?.estilo
+                                                            ? `${partido.marcador_detalle.distancia} ${partido.marcador_detalle.estilo}`
+                                                            : partido.equipo_a}
+                                                        {partido.marcador_detalle?.serie && <span className="text-slate-500 ml-1">Heat #{partido.marcador_detalle.serie}</span>}
+                                                    </p>
+                                                ) : (
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        <Avatar name={getDisplayName(partido, 'a')} src={partido.carrera_a?.escudo_url || partido.delegacion_a_info?.escudo_url} size="sm" className="w-5 h-5 shrink-0 border border-white/10 bg-black/40" />
+                                                        <p className="text-xs font-semibold text-slate-200 truncate">
+                                                            {getDisplayName(partido, 'a')}
+                                                            <span className="text-slate-600 mx-1.5">vs</span>
+                                                            {getDisplayName(partido, 'b')}
+                                                        </p>
+                                                        <Avatar name={getDisplayName(partido, 'b')} src={partido.carrera_b?.escudo_url || partido.delegacion_b_info?.escudo_url} size="sm" className="w-5 h-5 shrink-0 border border-white/10 bg-black/40" />
                                                     </div>
                                                 )}
-                                            </div>
-
-                                            {/* Visitante */}
-                                            <div className="flex flex-col items-center gap-3">
-                                                <div className="relative group/avatar">
-                                                    <Avatar name={getDisplayName(partido, 'b')} src={partido.carrera_b?.escudo_url} className="w-16 h-16 rounded-[1.25rem] border-2 border-white/5 ring-4 ring-black/20 group-hover/avatar:scale-105 transition-all duration-500" />
-                                                    {score.b > score.a && isFinished && (
-                                                        <div className="absolute -top-2 -left-2 bg-primary p-1.5 rounded-lg shadow-xl shadow-primary/40 -rotate-12">
-                                                            <Trophy size={14} className="text-white" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-sm font-black text-white truncate max-w-[100px] leading-tight">{getDisplayName(partido, 'b')}</p>
-                                                    <p className="text-[9px] font-bold text-zinc-500 uppercase">{getCarreraSubtitle(partido, 'b')}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Action Footer */}
-                                    <div className="pt-6 border-t border-white/5 flex items-center justify-between">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2 text-zinc-500 group-hover:text-zinc-400 transition-colors">
-                                                <Clock size={12} className="text-primary/60" />
-                                                <span className="text-[11px] font-black tracking-tight italic">
+                                                <p className="text-[10px] text-slate-600 mt-0.5">
                                                     {new Date(partido.fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
+                                                    {partido.lugar && <span className="ml-1.5">{partido.lugar}</span>}
+                                                    {partido.genero && partido.genero !== 'masculino' && <span className="ml-1.5 capitalize">{partido.genero}</span>}
+                                                </p>
                                             </div>
-                                            <div className="flex items-center gap-2 text-zinc-600">
-                                                <MapPin size={11} />
-                                                <span className="text-[10px] font-bold uppercase tracking-tighter truncate max-w-[120px]">{partido.lugar || 'Arena'}</span>
-                                            </div>
-                                        </div>
 
-                                        <div className="flex items-center gap-2">
-                                            <motion.button
-                                                whileHover={{ scale: 1.1, rotate: 10 }}
-                                                whileTap={{ scale: 0.9 }}
+                                            {/* Score / status */}
+                                            <div className="shrink-0 text-right">
+                                                {isCarrera ? (
+                                                    <span className="text-[10px] text-slate-500">
+                                                        {(partido.marcador_detalle?.participantes || []).length} competidores
+                                                    </span>
+                                                ) : isFinished || isLive ? (
+                                                    <span className={cn("text-sm font-bold font-mono", isLive ? "text-rose-400" : "text-slate-400")}>
+                                                        {score.a} – {score.b}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] text-slate-600 uppercase">Prog.</span>
+                                                )}
+                                            </div>
+
+                                            {/* Delete */}
+                                            <button
                                                 onClick={(e) => { e.stopPropagation(); setMatchToDelete(partido); }}
-                                                className="p-3 rounded-2xl bg-zinc-950/60 border border-white/5 text-zinc-600 hover:text-rose-500 hover:border-rose-500/30 transition-all opacity-0 group-hover:opacity-100"
+                                                className="shrink-0 p-1.5 rounded-md text-slate-700 hover:text-rose-400 hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100"
                                             >
-                                                {deletingId === partido.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                                            </motion.button>
-                                            
-                                            <motion.button
-                                                whileHover={{ x: 3 }}
-                                                className="px-5 py-3 rounded-2xl bg-primary text-white text-[11px] font-black uppercase tracking-[0.1em] shadow-lg shadow-primary/20 flex items-center gap-2 group/btn"
-                                            >
-                                                Control
-                                                <ArrowUpRight size={14} className="group-hover/btn:rotate-45 transition-transform" />
-                                            </motion.button>
+                                                {deletingId === partido.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                                            </button>
                                         </div>
-                                    </div>
-                                </div>
-
-                                {/* Bottom Shine Line */}
-                                <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </motion.div>
-                        );
-                    })}
-                </AnimatePresence>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 

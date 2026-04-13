@@ -210,8 +210,8 @@ export default function PartidosPage() {
                     filterVisible ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
                 )}>
                     <div className="flex flex-col gap-4 sm:gap-6 max-w-6xl mx-auto">
-                        <div className="flex justify-center w-full">
-                            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 w-full max-w-4xl justify-start sm:justify-center">
+                        <div className="flex justify-center w-full relative">
+                            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 px-8 w-full max-w-5xl justify-start mask-linear-fade">
                                 <button
                                     onClick={() => setSelectedSport("Todos")}
                                     className={cn(

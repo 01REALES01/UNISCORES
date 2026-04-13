@@ -54,45 +54,43 @@ export function useMatchControl(matchId: string) {
 
         const isColectivo = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(m.disciplinas?.name || '');
 
+        // 1. Fetch EXPLICIT Roster (From roster_partido table)
+        const { data: explicitRoster } = await supabase
+            .from('roster_partido')
+            .select('*, jugador:jugadores(*)')
+            .eq('partido_id', matchId);
+
+        const explicitProcessed = (explicitRoster || []).map((r: any) => ({
+            id: r.jugador?.id,
+            roster_id: r.id, 
+            nombre: r.jugador?.nombre,
+            numero: r.jugador?.numero,
+            equipo: r.equipo_a_or_b as 'equipo_a' | 'equipo_b',
+            profile_id: r.jugador?.profile_id
+        })).filter(j => j.id); // Filter out potential broken links
+
         if (!isColectivo) {
-            // Lógica original para deportes individuales (consulta roster manual)
-            const { data } = await supabase
-                .from('roster_partido')
-                .select('*, jugador:jugadores(*)')
-                .eq('partido_id', matchId);
-            
-            if (data) {
-                const transformed = data.map((r: any) => ({
-                    id: r.jugador?.id,
-                    roster_id: r.id, 
-                    nombre: r.jugador?.nombre,
-                    numero: r.jugador?.numero,
-                    equipo: r.equipo_a_or_b,
-                    profile_id: r.jugador?.profile_id
-                }));
-                setJugadoresA(transformed.filter((j: any) => j.equipo === 'equipo_a'));
-                setJugadoresB(transformed.filter((j: any) => j.equipo === 'equipo_b'));
-            }
-        } else {
-            // Plantilla Virtual para deportes colectivos usando array carrera_ids de Delegaciones
-            let idsA = m.carrera_a_id ? [m.carrera_a_id] : [];
-            let idsB = m.carrera_b_id ? [m.carrera_b_id] : [];
+            setJugadoresA(explicitProcessed.filter(j => j.equipo === 'equipo_a'));
+            setJugadoresB(explicitProcessed.filter(j => j.equipo === 'equipo_b'));
+            return;
+        }
 
-            // Consultar tabla delegaciones (ilike para tolerar diferencias de capitalización como 'Geología' vs 'GEOLOGÍA')
-            const { data: delegARows } = await supabase.from('delegaciones').select('carrera_ids').ilike('nombre', m.equipo_a ?? '').limit(1);
-            const { data: delegBRows } = await supabase.from('delegaciones').select('carrera_ids').ilike('nombre', m.equipo_b ?? '').limit(1);
-            const delegA = delegARows?.[0];
-            const delegB = delegBRows?.[0];
+        // 2. Colectivo: Complement with VIRTUAL Roster (Based on Career IDs)
+        let idsA = m.carrera_a_id ? [m.carrera_a_id] : [];
+        let idsB = m.carrera_b_id ? [m.carrera_b_id] : [];
 
-            if (delegA?.carrera_ids?.length) idsA = delegA.carrera_ids;
-            if (delegB?.carrera_ids?.length) idsB = delegB.carrera_ids;
+        const { data: delegARows } = await supabase.from('delegaciones').select('carrera_ids').ilike('nombre', m.equipo_a ?? '').limit(1);
+        const { data: delegBRows } = await supabase.from('delegaciones').select('carrera_ids').ilike('nombre', m.equipo_b ?? '').limit(1);
+        const delegA = delegARows?.[0];
+        const delegB = delegBRows?.[0];
 
-            const allCarreraIds = [...new Set([...idsA, ...idsB])];
+        if (delegA?.carrera_ids?.length) idsA = [...new Set([...idsA, ...delegA.carrera_ids])];
+        if (delegB?.carrera_ids?.length) idsB = [...new Set([...idsB, ...delegB.carrera_ids])];
 
-            if (allCarreraIds.length === 0) {
-                setJugadoresA([]); setJugadoresB([]); return;
-            }
+        const allCarreraIds = [...new Set([...idsA, ...idsB])];
 
+        let virtualProcessed: any[] = [];
+        if (allCarreraIds.length > 0) {
             let jugadoresQuery = supabase
                 .from('jugadores')
                 .select('*')
@@ -102,21 +100,32 @@ export function useMatchControl(matchId: string) {
             const { data: jugadores } = await jugadoresQuery;
 
             if (jugadores) {
-                // Ordenar por nombre para un Roster más organizado
-                jugadores.sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-                const transformed = jugadores.map(j => ({
+                virtualProcessed = jugadores.map(j => ({
                     id: j.id,
-                    roster_id: null, // Virtual, no se puede "borrar" del partido
+                    roster_id: null, // Virtual, belongs to delegation
                     nombre: j.nombre,
                     numero: j.numero,
                     equipo: (idsA.includes(j.carrera_id) ? 'equipo_a' : 'equipo_b') as 'equipo_a' | 'equipo_b',
                     profile_id: j.profile_id
                 }));
-                setJugadoresA(transformed.filter(j => j.equipo === 'equipo_a'));
-                setJugadoresB(transformed.filter(j => j.equipo === 'equipo_b'));
             }
         }
+
+        // 3. MERGE (Priority to Explicit)
+        const finalA: any[] = explicitProcessed.filter(j => j.equipo === 'equipo_a');
+        const finalB: any[] = explicitProcessed.filter(j => j.equipo === 'equipo_b');
+        const seenIds = new Set(explicitProcessed.map(j => j.id));
+
+        virtualProcessed.forEach(v => {
+            if (!seenIds.has(v.id)) {
+                if (v.equipo === 'equipo_a') finalA.push(v);
+                else finalB.push(v);
+            }
+        });
+
+        const sorter = (a: any, b: any) => a.nombre.localeCompare(b.nombre);
+        setJugadoresA(finalA.sort(sorter));
+        setJugadoresB(finalB.sort(sorter));
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [matchId]);
 
