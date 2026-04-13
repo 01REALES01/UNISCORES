@@ -90,6 +90,8 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
     const jugIds = jugRows.map(j => j.id);
     const sportStatsMap: Record<string, any> = {};
     let finalHistory: any[] = [];
+    const matchSideMap = new Map<string, 'a' | 'b'>();
+    const matchIdSet = new Set<string>();
 
     if (jugIds.length > 0) {
         // Events
@@ -100,8 +102,6 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
         const jugDisc: Record<number, string> = {};
         jugRows.forEach((j: any) => { jugDisc[j.id] = j.disciplina_id; });
 
-        const matchSideMap = new Map<string, 'a' | 'b'>();
-        const matchIdSet = new Set<string>();
 
         evs?.forEach((ev: any) => {
             const discId = jugDisc[ev.jugador_id_normalized];
@@ -132,29 +132,44 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
                 else if (ev.equipo === 'equipo_b') matchSideMap.set(ev.partido_id, 'b');
             }
         });
+    }
 
-        // Individual Matches
-        const { data: indMatches } = await supabase.from('partidos').select('id').or(`athlete_a_id.eq.${profileId},athlete_b_id.eq.${profileId}`).abortSignal(signal);
-        indMatches?.forEach(m => matchIdSet.add(m.id));
+    // Individual Matches
+    const { data: indMatches } = await supabase.from('partidos').select('id').or(`athlete_a_id.eq.${profileId},athlete_b_id.eq.${profileId}`).abortSignal(signal);
+    indMatches?.forEach(m => matchIdSet.add(m.id));
 
-        // Team Matches (via Delegaciones)
-        const delegIds = athleteTeams.map(d => d.id);
-        if (delegIds.length > 0) {
-            const { data: teamMatches } = await supabase
-                .from('partidos')
-                .select('id')
-                .or(`delegacion_a.in.(${delegIds.join(',')}),delegacion_b.in.(${delegIds.join(',')})`)
-                .abortSignal(signal);
-            teamMatches?.forEach(m => matchIdSet.add(m.id));
-        }
+    // Team Matches (via Delegaciones)
+    const dIds = athleteTeams.map(d => d.id);
+    if (dIds.length > 0) {
+        const { data: teamMatches } = await supabase
+            .from('partidos')
+            .select('id')
+            .or(`delegacion_a.in.(${dIds.join(',')}),delegacion_b.in.(${dIds.join(',')})`)
+            .abortSignal(signal);
+        teamMatches?.forEach(m => matchIdSet.add(m.id));
+    }
 
-        // Fallback name-based individual
-        const isIndividual = jugRows.some(j => INDIVIDUAL_SPORTS_NAMES.includes((Array.isArray(j.disciplinas) ? j.disciplinas[0]?.name : j.disciplinas?.name) || ''));
-        if (isIndividual && profile.full_name) {
-             const indDiscIds = jugRows.filter(j => INDIVIDUAL_SPORTS_NAMES.includes((Array.isArray(j.disciplinas) ? j.disciplinas[0]?.name : j.disciplinas?.name) || '')).map(j => j.disciplina_id);
-             const { data: nameMatches } = await supabase.from('partidos').select('id').in('disciplina_id', indDiscIds).or(`equipo_a.ilike.${profile.full_name},equipo_b.ilike.${profile.full_name}`).abortSignal(signal);
-             nameMatches?.forEach(m => matchIdSet.add(m.id));
-        }
+    // Fallback name-based individual
+    const isIndiv = profile.athlete_disciplina_id && INDIVIDUAL_SPORTS_NAMES.includes(profile.disciplina?.name || '');
+    if (isIndiv && profile.full_name) {
+        const { data: nameMatches } = await supabase.from('partidos').select('id').eq('disciplina_id', profile.athlete_disciplina_id).or(`equipo_a.ilike.${profile.full_name},equipo_b.ilike.${profile.full_name}`).abortSignal(signal);
+        nameMatches?.forEach(m => matchIdSet.add(m.id));
+    }
+    // 4. Team Matches by Career IDs & Disciplines (Upcoming/Recent without events)
+    const careerIdsMatch = profile.carreras_ids || [];
+    const discIdsMatch = pdData.map((r: any) => r.disciplina_id);
+    if (discIdsMatch.length === 0 && profile.athlete_disciplina_id) {
+        discIdsMatch.push(profile.athlete_disciplina_id);
+    }
+    if (careerIdsMatch.length > 0 && discIdsMatch.length > 0) {
+        const { data: qryRes } = await supabase
+            .from('partidos')
+            .select('id')
+            .in('disciplina_id', discIdsMatch)
+            .or(`carrera_a_id.in.(${careerIdsMatch.join(',')}),carrera_b_id.in.(${careerIdsMatch.join(',')}),carrera_a_ids.ov.{${careerIdsMatch.join(',')}},carrera_b_ids.ov.{${careerIdsMatch.join(',')}}`)
+            .abortSignal(signal);
+        qryRes?.forEach(m => matchIdSet.add(m.id));
+    }
 
         // Full Match Details
         if (matchIdSet.size > 0) {
@@ -171,8 +186,9 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
                     const discId = p.disciplina_id;
                     if (!sportStatsMap[discId]) sportStatsMap[discId] = { goals: 0, pts3: 0, pts2: 0, pts1: 0, yellowCards: 0, redCards: 0, fouls: 0, totalEvents: 0, puntos: 0, sets: 0, victorias: 0, empates: 0, gold: 0, silver: 0, bronze: 0, wins: 0, losses: 0 };
                     const s = sportStatsMap[discId];
+                    const normalizedEstado = (p.estado || '').toLowerCase().trim();
 
-                    if (p.estado === 'finalizado') {
+                    if (normalizedEstado === 'finalizado') {
                         const sportName = (Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name) || '';
                         const { scoreA, scoreB } = getCurrentScore(sportName, p.marcador_detalle || {});
 
@@ -196,8 +212,8 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
                         disciplina: (Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name),
                         equipo_a: p.equipo_a,
                         equipo_b: p.equipo_b,
-                        estado: p.estado,
-                        marcador_final: p.marcador_detalle
+                        marcador_final: p.marcador_detalle,
+                        estado: (p.estado || '').toLowerCase().trim()
                     };
                 });
             }
