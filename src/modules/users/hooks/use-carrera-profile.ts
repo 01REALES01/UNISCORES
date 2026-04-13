@@ -54,7 +54,7 @@ export type CarreraProfile = {
 
 async function fetchCarreraProfile(carreraId: number) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20_000);
+    const timeout = setTimeout(() => controller.abort(), 30_000);
 
     try {
         // 1. Fetch the career itself
@@ -70,7 +70,6 @@ async function fetchCarreraProfile(carreraId: number) {
         }
 
         // 2. Fetch all matches where this carrera participates (either side).
-        // Optimized: Single query using .or with array containment markers
         const { data: matchesData, error: matchesErr } = await supabase
             .from('partidos')
             .select(MATCH_COLUMNS)
@@ -92,13 +91,13 @@ async function fetchCarreraProfile(carreraId: number) {
             .order('created_at', { ascending: false })
             .limit(10);
 
-        // 4. Fetch athletes that belong to this carrera
+        // 4. Fetch athletes that belong to this career
         const { data: athletesData } = await supabase
             .from('profiles')
             .select('id, full_name, avatar_url, roles, athlete_disciplina_id, points, sexo, genero, disciplina:disciplinas(name)')
-            .contains('carreras_ids', [carreraId])
+            .or(`carreras_ids.cs.{${carreraId}}`)
             .abortSignal(controller.signal)
-            .limit(50);
+            .limit(200);
 
         // 5. Compute stats by ID
         const stats = computeCareerStats(matches, carreraId);
@@ -141,7 +140,9 @@ async function fetchCarreraProfile(carreraId: number) {
             carrera,
             matches,
             news: newsData || [],
-            athletes: (athletesData || []).filter((a: any) => a.roles?.includes('deportista')),
+            athletes: (athletesData || []).filter((a: any) => 
+                (a.roles || []).includes('deportista') || a.athlete_disciplina_id
+            ),
             stats,
             deportesInscritos,
         };
@@ -150,7 +151,7 @@ async function fetchCarreraProfile(carreraId: number) {
             try {
                 sessionStorage.setItem(`swr-carrera-${carreraId}`, JSON.stringify(result));
             } catch (e) {
-                console.warn('sessionStorage quota exceeded');
+                console.warn('[useCarreraProfile] SessionStorage error:', e);
             }
         }
 
@@ -166,47 +167,35 @@ async function fetchCarreraProfile(carreraId: number) {
 // ─── Hook ───────────────────────────────────────────────────────────────────
 
 export function useCarreraProfile(carreraId: number | null): CarreraProfile {
-    const getFallback = useCallback(() => {
-        if (!carreraId || typeof window === 'undefined') return undefined;
+    let fallbackData: any = undefined;
+    if (carreraId && typeof window !== 'undefined') {
         try {
             const raw = sessionStorage.getItem(`swr-carrera-${carreraId}`);
-            if (raw) return JSON.parse(raw);
-        } catch {
-            return undefined;
-        }
-        return undefined;
-    }, [carreraId]);
+            if (raw) fallbackData = JSON.parse(raw);
+        } catch {}
+    }
 
     const { data, error, isLoading, mutate } = useSWR(
-        carreraId ? `carrera-profile-v3:${carreraId}` : null,
+        carreraId ? `carrera-profile-v4:${carreraId}` : null,
         () => fetchCarreraProfile(carreraId!),
         {
-            fallbackData: getFallback(),
+            fallbackData,
             revalidateOnFocus: false,
             revalidateOnReconnect: true,
-            dedupingInterval: 10000,
+            dedupingInterval: 15000,
             keepPreviousData: true,
         }
     );
-
-    const mutateRef = useRef(mutate);
-    useEffect(() => {
-        mutateRef.current = mutate;
-    }, [mutate]);
 
     useEffect(() => {
         if (!carreraId || typeof window === 'undefined') return;
 
         let activeChannel: any = null;
-        let debounceTimer: any = null;
+        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
         const debounced = () => {
             if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                if (typeof document !== 'undefined' && !document.hidden) {
-                    mutateRef.current();
-                }
-            }, 3000);
+            debounceTimer = setTimeout(() => mutate(), 1000);
         };
 
         const setup = () => {
@@ -215,27 +204,17 @@ export function useCarreraProfile(carreraId: number | null): CarreraProfile {
                 activeChannel = null;
             }
             activeChannel = supabase
-                .channel(`carrera-rt:${carreraId}`)
-                .on('postgres_changes', { 
-                    event: '*', 
-                    schema: 'public', 
-                    table: 'partidos',
-                    filter: `carrera_a_id=eq.${carreraId}` 
-                }, debounced)
-                .on('postgres_changes', { 
-                    event: '*', 
-                    schema: 'public', 
-                    table: 'partidos',
-                    filter: `carrera_b_id=eq.${carreraId}` 
-                }, debounced)
+                .channel(`carrera-profile:${carreraId}:${Date.now()}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, debounced)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'noticias' }, debounced)
                 .subscribe();
         };
 
         setup();
 
         const handleRevalidate = () => {
-            mutateRef.current();
-            setup();
+            mutate();
+            setup(); // Re-establish channel to be safe
         };
         window.addEventListener('app:revalidate', handleRevalidate);
 
@@ -244,7 +223,7 @@ export function useCarreraProfile(carreraId: number | null): CarreraProfile {
             if (debounceTimer) clearTimeout(debounceTimer);
             if (activeChannel) supabase.removeChannel(activeChannel);
         };
-    }, [carreraId]);
+    }, [carreraId, mutate]);
 
     return {
         carrera: data?.carrera || null,
