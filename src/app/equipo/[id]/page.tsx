@@ -14,6 +14,7 @@ import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
+import { ResilienceUI } from "@/components/resilience-ui";
 import {
     SPORT_EMOJI,
     SPORT_ACCENT,
@@ -242,71 +243,40 @@ function TabButton({
     const delegacionId = params.id ? Number(params.id) : null;
 
     const { user, profile, isStaff } = useAuth();
-    const { delegacion, carreras, matches, athletes, stats, loading, error } =
+    const { delegacion, carreras, matches, athletes, stats, loading, error, mutate } =
         useTeamProfile(delegacionId);
 
     const [activeTab, setActiveTab] = useState<"partidos" | "plantilla">("partidos");
     const [selectedGender, setSelectedGender] = useState<string>("todos");
+    const [loadTimeout, setLoadTimeout] = useState(false);
 
-    const groupedFilteredMatches = useMemo(() => {
-        const groups: Record<string, any[]> = {};
-        const todayStr = new Date().toISOString().split('T')[0];
-        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-        const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-        matches.forEach((match: any) => {
-            const fecha = (match.fecha || '').split('T')[0];
-            if (!fecha) return;
-            if (!groups[fecha]) groups[fecha] = [];
-            groups[fecha].push(match);
-        });
-
-        return Object.keys(groups).sort((a, b) => a.localeCompare(b)).map(fecha => {
-            const dateObj = new Date(fecha + 'T12:00:00');
-            let label = dateObj.toLocaleDateString('es-ES', {
-                weekday: 'long', day: 'numeric', month: 'short',
-            });
-
-            const isToday = fecha === todayStr;
-            const isYesterday = fecha === yesterdayStr;
-            const isTomorrow = fecha === tomorrowStr;
-
-            if (isToday) label = `HOY — ${label}`;
-            else if (isYesterday) label = `Ayer — ${label}`;
-            else if (isTomorrow) label = `Mañana — ${label}`;
-
-            const sorted = groups[fecha].sort((a: any, b: any) => {
-                const order: Record<string, number> = { en_curso: 0, programado: 1, finalizado: 2 };
-                const oA = order[(a.estado || '').toLowerCase().trim()] ?? 99;
-                const oB = order[(b.estado || '').toLowerCase().trim()] ?? 99;
-                if (oA !== oB) return oA - oB;
-                return new Date(a.fecha).getTime() - new Date(a.fecha).getTime();
-            });
-
-            return { fecha, label, partidos: sorted, isToday };
-        });
-    }, [matches]);
-
+    // Resilience: If loading takes > 8s, offer a retry
     useEffect(() => {
-        if (activeTab !== "partidos" || loading || groupedFilteredMatches.length === 0) return;
-        const todayStr = new Date().toISOString().split('T')[0];
-        const target = groupedFilteredMatches.find(g => g.fecha >= todayStr)?.fecha;
-        if (target) {
-            setTimeout(() => {
-                const el = document.getElementById(`team-date-${target}`);
-                if (el) {
-                    const offset = window.innerWidth < 768 ? 80 : 120;
-                    const bodyRect = document.body.getBoundingClientRect().top;
-                    const elRect = el.getBoundingClientRect().top;
-                    window.scrollTo({ top: elRect - bodyRect - offset, behavior: 'auto' });
-                }
-            }, 150);
-        }
-    }, [activeTab, loading, groupedFilteredMatches.length]);
+        const timer = setTimeout(() => {
+            if (loading) {
+                console.warn("[TeamProfile] Load exceeded 8s timeout, showing Retry UI");
+                setLoadTimeout(true);
+            }
+        }, 8000);
+        return () => clearTimeout(timer);
+    }, [loading]);
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
+    if (loadTimeout && loading && !delegacion) {
+        return (
+            <ResilienceUI 
+                title="Conexión Lenta"
+                description="La información del equipo está tardando en cargar. Esto puede deberse a tu conexión o a un retraso en el servidor."
+                onRetry={() => {
+                    setLoadTimeout(false);
+                    mutate();
+                }}
+                backFallback="/clasificacion"
+                retryLabel="REINTENTAR CARGA"
+            />
+        );
+    }
+
+    if (loading && !delegacion) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
 
     if (!delegacion || error) {
         return (
@@ -320,6 +290,43 @@ function TabButton({
             </div>
         );
     }
+
+
+    const filteredMatches = useMemo(() => {
+        if (!matches) return [];
+        let results = matches;
+        if (selectedGender !== "todos") {
+            results = results.filter((m) => (m.genero || "").toLowerCase() === selectedGender);
+        }
+        return results;
+    }, [matches, selectedGender]);
+
+    const groupedFilteredMatches = useMemo(() => {
+        const groups: Record<string, any[]> = {};
+        const today = new Date().toISOString().split("T")[0];
+
+        filteredMatches.forEach((m) => {
+            const dateStr = new Date(m.fecha).toISOString().split("T")[0];
+            if (!groups[dateStr]) groups[dateStr] = [];
+            groups[dateStr].push(m);
+        });
+
+        return Object.keys(groups)
+            .sort((a, b) => a.localeCompare(b))
+            .map((date) => {
+                const dateObj = new Date(date + "T12:00:00Z");
+                return {
+                    fecha: date,
+                    isToday: date === today,
+                    label: dateObj.toLocaleDateString("es-CO", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                    }),
+                    partidos: groups[date],
+                };
+            });
+    }, [filteredMatches]);
 
     const sportName = delegacion.disciplinas?.name || "Multideporte";
     const sportAccent = SPORT_ACCENT[sportName] || "text-white/60";

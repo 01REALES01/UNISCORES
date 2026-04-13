@@ -12,6 +12,7 @@ import { FollowCareerButton } from "@/modules/careers/components/follow-career-b
 import { SportIcon } from "@/components/sport-icons";
 import { Avatar, Badge, Button } from "@/shared/components/ui-primitives";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
+import { ResilienceUI } from "@/components/resilience-ui";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 import { getCurrentScore } from "@/lib/sport-scoring";
@@ -225,6 +226,7 @@ function JugadorCard({ j }: { j: any }) {
     );
 }
 
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function CarreraProfilePage() {
@@ -399,23 +401,15 @@ export default function CarreraProfilePage() {
     }, [loading, carrera]);
 
     if (loading && !carrera) {
-        if (loadTimeout) {
-            return (
-                <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-4 text-center gap-6">
-                    <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center border border-white/10 shadow-xl">
-                        <GraduationCap className="text-violet-400" size={32} />
-                    </div>
-                    <h1 className="text-xl font-black uppercase tracking-wider">La carga está tardando</h1>
-                    <p className="text-white/40 max-w-sm font-bold text-sm">La conexión puede estar lenta. Intenta de nuevo.</p>
-                    <button
-                        onClick={() => { setLoadTimeout(false); mutate(); }}
-                        className="px-8 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-sm font-black uppercase tracking-widest transition-all active:scale-95 shadow-xl"
-                    >
-                        Reintentar
-                    </button>
-                </div>
-            );
-        }
+        if (loadTimeout) return (
+            <ResilienceUI 
+                title="Conexión Lenta"
+                description="La carga del programa está tardando. ¿Deseas reintentar?"
+                onRetry={() => { setLoadTimeout(false); mutate(); }}
+                backFallback="/medallero"
+                retryLabel="REINTENTAR"
+            />
+        );
         return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
     }
 

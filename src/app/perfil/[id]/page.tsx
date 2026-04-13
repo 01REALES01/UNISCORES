@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { motion } from "framer-motion";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
+import { ResilienceUI } from "@/components/resilience-ui";
 import { isCreator, hasAuraBadge, hasMvpBadge, SPORT_ACCENT } from "@/lib/constants";
 import { SportIcon } from "@/shared/components/sport-icons";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
@@ -44,28 +45,42 @@ export default function PublicProfilePage() {
     const params = useParams();
     const router = useRouter();
     const { user, profile: currentUserProfile, isStaff } = useAuth();
-    const [profile, setProfile] = useState<any>(null);
-    const [carreras, setCarreras] = useState<any[]>([]);
-    const [history, setHistory] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [loadingHistory, setLoadingHistory] = useState(false);
-    const [followedProfiles, setFollowedProfiles] = useState<any[]>([]);
-    const [followedCareers, setFollowedCareers] = useState<any[]>([]);
-    const [friendsCount, setFriendsCount] = useState(0);
-    const [athleteDisciplinas, setAthleteDisciplinas] = useState<any[]>([]);
-    const [athleteTeams, setAthleteTeams] = useState<any[]>([]);
-    const [detailedStats, setDetailedStats] = useState<any>({
-        goals: 0,
-        pts3: 0,
-        pts2: 0,
-        pts1: 0,
-        yellowCards: 0,
-        redCards: 0,
-        fouls: 0,
-        totalEvents: 0
-    });
+    const profileId = params.id as string;
+
+    const { 
+        profile, 
+        carreras, 
+        history, 
+        followedProfiles, 
+        followedCareers, 
+        friendsCount, 
+        athleteDisciplinas, 
+        athleteTeams, 
+        sportStatsMap, 
+        loading, 
+        error, 
+        mutate 
+    } = usePublicProfile(profileId, user?.id);
+
     const [selectedSportId, setSelectedSportId] = useState<string | null>(null);
-    const [sportStatsMap, setSportStatsMap] = useState<Record<string, any>>({});
+    const [loadTimeout, setLoadTimeout] = useState(false);
+
+    // Sync selectedSportId once disciplines load
+    useEffect(() => {
+        if (athleteDisciplinas.length > 0 && !selectedSportId) {
+            setSelectedSportId(athleteDisciplinas[0].id);
+        } else if (profile?.athlete_disciplina_id && !selectedSportId) {
+            setSelectedSportId(profile.athlete_disciplina_id);
+        }
+    }, [athleteDisciplinas, profile, selectedSportId]);
+
+    // Resilience: If loading takes > 8s, offer a retry
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (loading) setLoadTimeout(true);
+        }, 8000);
+        return () => clearTimeout(timer);
+    }, [loading]);
 
     const renderRoleCard = (role: string) => {
         const roleLower = role.toLowerCase();
@@ -119,386 +134,19 @@ export default function PublicProfilePage() {
         return <SportIcon sport={disciplina || ''} size={18} />;
     };
 
-    const profileId = params.id as string;
+    if (loadTimeout && loading && !profile) {
+        return (
+            <ResilienceUI 
+                title="Conexión Lenta"
+                description="El perfil está tardando en cargar. ¿Deseas reintentar?"
+                onRetry={() => { setLoadTimeout(false); mutate(); }}
+                backFallback="/clasificacion"
+                retryLabel="REINTENTAR"
+            />
+        );
+    }
 
-    useEffect(() => {
-        if (profileId) {
-            fetchPublicProfile();
-        }
-    }, [profileId]);
-
-    const fetchPublicProfile = async () => {
-        setLoading(true);
-        try {
-            const { data: p, error } = await supabase
-                .from('profiles')
-                .select('*, disciplina:disciplinas(id, name, icon)')
-                .eq('id', profileId)
-                .single();
-
-            if (error || !p) {
-                console.error("Profile not found:", error);
-                setLoading(false);
-                return;
-            }
-
-            setProfile(p);
-
-            if (p.carreras_ids && p.carreras_ids.length > 0) {
-                const { data: c } = await supabase
-                    .from('carreras')
-                    .select('*')
-                    .in('id', p.carreras_ids);
-                if (c) setCarreras(c);
-            }
-
-            const isAthlete = p.roles?.includes('deportista');
-            if (isAthlete) {
-                fetchHistory(p.id, p.full_name);
-                fetchDetailedStats(p.id);
-                // Fetch multi-sport disciplines
-                const { data: pdData } = await supabase
-                    .from('profile_disciplinas')
-                    .select('disciplina_id, disciplinas(id, name)')
-                    .eq('profile_id', p.id);
-                if (pdData) {
-                    const deps = pdData.map((r: any) => (Array.isArray(r.disciplinas) ? r.disciplinas[0] : r.disciplinas)).filter(Boolean);
-                    setAthleteDisciplinas(deps);
-                    if (deps.length > 0 && !selectedSportId) {
-                        setSelectedSportId(deps[0].id);
-                    } else if (p.athlete_disciplina_id && !selectedSportId) {
-                        setSelectedSportId(p.athlete_disciplina_id);
-                    }
-                }
-                // Fetch athlete's teams/delegations
-                if (p.carreras_ids?.length) {
-                    const discIds = (pdData || []).map((r: any) => r.disciplina_id);
-                    if (discIds.length === 0 && p.athlete_disciplina_id) discIds.push(p.athlete_disciplina_id);
-                    if (discIds.length > 0) {
-                        // Get athlete's official genero from linked jugador rows, avoiding nulls
-                        const { data: jugadorRow } = await supabase
-                            .from('jugadores')
-                            .select('genero')
-                            .eq('profile_id', p.id)
-                            .not('genero', 'is', null)
-                            .order('id', { ascending: false }) // Prefer most recent
-                            .limit(1)
-                            .maybeSingle();
-                        const athleteGenero = jugadorRow?.genero; // 'masculino' | 'femenino' | null
-
-                        let delegQuery = supabase
-                            .from('delegaciones')
-                            .select('id, nombre, genero, carrera_ids, disciplina_id, disciplinas(name)')
-                            .in('disciplina_id', discIds)
-                            .overlaps('carrera_ids', p.carreras_ids);
-
-                        // Filter by gender: show matching gender + mixto; skip filter if unknown
-                        if (athleteGenero && athleteGenero !== 'mixto') {
-                            delegQuery = delegQuery.in('genero', [athleteGenero, 'mixto']);
-                        }
-
-                        const { data: delegaciones } = await delegQuery;
-                        if (delegaciones) setAthleteTeams(delegaciones);
-                    }
-                }
-            }
-
-            const isOwnProfile = p.id === user?.id;
-            if (isOwnProfile) {
-                fetchFollowing(p.id);
-            }
-            fetchFriendsCount(p.id);
-        } catch (err) {
-            console.error("Error fetching public profile:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    const fetchFriendsCount = async (id: string) => {
-        const { count } = await supabase
-            .from('friend_requests')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'accepted')
-            .or(`sender_id.eq.${id},receiver_id.eq.${id}`);
-        setFriendsCount(count || 0);
-    };
-
-    const fetchFollowing = async (id: string) => {
-        try {
-            // Profiles followed
-            const { data: profiles } = await supabase
-                .from('user_followers')
-                .select('following_profile:profiles!following_profile_id(id, full_name, avatar_url, points)')
-                .eq('follower_id', id);
-            
-            if (profiles) {
-                setFollowedProfiles(profiles.map((f: any) => f.following_profile));
-            }
-
-            // Careers followed
-            const { data: careers } = await supabase
-                .from('career_followers')
-                .select('career:carreras(id, nombre, escudo_url)')
-                .eq('follower_id', id);
-
-            if (careers) {
-                setFollowedCareers(careers.map((f: any) => f.career));
-            }
-        } catch (err) {
-            console.error("Error fetching following:", err);
-        }
-    };
-
-    const fetchDetailedStats = async (id: string) => {
-        try {
-            // ── STEP 1: Find all jugador IDs linked to this profile ──────────────
-            const { data: jugRows } = await supabase
-                .from('jugadores')
-                .select('id, disciplina_id')
-                .eq('profile_id', id);
-
-            if (!jugRows || jugRows.length === 0) return;
-
-            const jugadorIds = jugRows.map((j: any) => j.id);
-            // Map jugador_id -> disciplina_id for fast lookup
-            const jugDisc: Record<number, string> = {};
-            jugRows.forEach((j: any) => { jugDisc[j.id] = j.disciplina_id; });
-
-            // ── STEP 2: Fetch events by jugador IDs (no FK join needed) ──────────
-            const { data: evs } = await supabase
-                .from('olympics_eventos')
-                .select('tipo_evento, jugador_id_normalized')
-                .in('jugador_id_normalized', jugadorIds);
-
-            const statsMap: Record<string, any> = {};
-
-            evs?.forEach((ev: any) => {
-                const discId = jugDisc[ev.jugador_id_normalized];
-                if (!discId) return;
-                if (!statsMap[discId]) {
-                    statsMap[discId] = {
-                        goals: 0, pts3: 0, pts2: 0, pts1: 0,
-                        yellowCards: 0, redCards: 0, fouls: 0, totalEvents: 0,
-                        puntos: 0, sets: 0, victorias: 0, empates: 0,
-                        gold: 0, silver: 0, bronze: 0,
-                    };
-                }
-                const s = statsMap[discId];
-                const type = ev.tipo_evento.toLowerCase();
-                s.totalEvents++;
-                if (type === 'gol' || type === 'anotacion') s.goals++;
-                if (type === 'punto_3' || type.includes('triple')) s.pts3++;
-                if (type === 'punto_2' || type.includes('doble')) s.pts2++;
-                if (type === 'punto_1' || type.includes('libre')) s.pts1++;
-                if (type.includes('amarilla') || type === 'tarjeta_amarilla') s.yellowCards++;
-                if (type.includes('roja') || type === 'tarjeta_roja') s.redCards++;
-                if (type === 'falta') s.fouls++;
-                if (type === 'punto') s.puntos++;
-                if (type === 'set') s.sets++;
-                if (type === 'victoria') s.victorias++;
-                if (type === 'segundo') s.silver++;
-                if (type === 'tercero') s.bronze++;
-                if (type === 'empate') s.empates++;
-            });
-
-            // Deep-merge per disciplina key so wins/losses set by fetchHistory aren't clobbered
-            setSportStatsMap(prev => {
-                const newMap = { ...prev };
-                Object.keys(statsMap).forEach(sid => {
-                    newMap[sid] = { ...(newMap[sid] || {}), ...statsMap[sid] };
-                });
-                return newMap;
-            });
-        } catch (err) {
-            console.error("Error fetching detailed stats:", err);
-        }
-    };
-
-    const fetchHistory = async (id: string, fullName?: string) => {
-        setLoadingHistory(true);
-        try {
-            // ── STEP 1: Get all jugador rows linked to this profile ──────────────
-            // Include disciplinas(name) to avoid reading stale React state later
-            const { data: jugRows } = await supabase
-                .from('jugadores')
-                .select('id, carrera_id, disciplina_id, disciplinas(name)')
-                .eq('profile_id', id);
-
-            const jugadorIds = (jugRows || []).map((j: any) => j.id);
-            const carreraIds = [...new Set((jugRows || []).map((j: any) => j.carrera_id).filter(Boolean))];
-
-            const matchIdSet = new Set<string>();
-
-            // ── STEP 2a: Matches the player actually participated in (via events) ─
-            // Also capture the equipo field — it's the most reliable way to know
-            // which side the player was on (used later for win/loss calculation)
-            const matchSideMap = new Map<string, 'a' | 'b'>();
-            if (jugadorIds.length > 0) {
-                const { data: evRows } = await supabase
-                    .from('olympics_eventos')
-                    .select('partido_id, equipo')
-                    .in('jugador_id_normalized', jugadorIds);
-                evRows?.forEach((e: any) => {
-                    if (!e.partido_id) return;
-                    matchIdSet.add(e.partido_id);
-                    if (e.equipo === 'equipo_a') matchSideMap.set(e.partido_id, 'a');
-                    else if (e.equipo === 'equipo_b') matchSideMap.set(e.partido_id, 'b');
-                });
-            }
-
-            // ── STEP 2b: Team matches via (carrera_id + disciplina_id) ────────────
-            // ONLY for collective sports — individual sports use only athlete_a/b_id (Step 2c)
-            // isIndividualAthlete reads from the jugRow JOIN (not stale React state)
-            const INDIVIDUAL_SPORTS_NAMES = ['Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
-
-            const isIndividualAthlete = (jugRows || []).some((j: any) => {
-                // disciplinas comes from the JOIN in Step 1 — always fresh, never stale
-                const discName = (Array.isArray(j.disciplinas) ? j.disciplinas[0]?.name : j.disciplinas?.name) || '';
-                return INDIVIDUAL_SPORTS_NAMES.includes(discName);
-            });
-
-            if (!isIndividualAthlete) {
-                const carreraDisciplinaPairs = (jugRows || [])
-                    .filter((j: any) => j.carrera_id && j.disciplina_id)
-                    .map((j: any) => ({ carrera_id: j.carrera_id, disciplina_id: j.disciplina_id }));
-
-                for (const pair of carreraDisciplinaPairs) {
-                    // Query by single carrera_a_id / carrera_b_id field
-                    const { data: carMatches } = await supabase
-                        .from('partidos')
-                        .select('id')
-                        .eq('disciplina_id', pair.disciplina_id)
-                        .or(`carrera_a_id.eq.${pair.carrera_id},carrera_b_id.eq.${pair.carrera_id}`);
-                    carMatches?.forEach((m: any) => matchIdSet.add(m.id));
-
-                    // Also query via delegacion nombre (covers partidos without carrera_a_id set)
-                    // This is the primary channel for upcoming matches in team sports
-                    const { data: delegRows } = await supabase
-                        .from('delegaciones')
-                        .select('nombre')
-                        .eq('disciplina_id', pair.disciplina_id)
-                        .contains('carrera_ids', [pair.carrera_id]);
-
-                    for (const deleg of (delegRows || [])) {
-                        const nombre = deleg.nombre;
-                        // Two separate queries to avoid issues with special chars in .or()
-                        const { data: mA } = await supabase
-                            .from('partidos').select('id')
-                            .eq('disciplina_id', pair.disciplina_id)
-                            .eq('equipo_a', nombre);
-                        const { data: mB } = await supabase
-                            .from('partidos').select('id')
-                            .eq('disciplina_id', pair.disciplina_id)
-                            .eq('equipo_b', nombre);
-                        mA?.forEach((m: any) => matchIdSet.add(m.id));
-                        mB?.forEach((m: any) => matchIdSet.add(m.id));
-                    }
-                }
-            }
-
-            // ── STEP 2c: Individual-sport matches (athlete_a_id / athlete_b_id) ──
-            const { data: indRows } = await supabase
-                .from('partidos')
-                .select('id')
-                .or(`athlete_a_id.eq.${id},athlete_b_id.eq.${id}`);
-            indRows?.forEach((m: any) => matchIdSet.add(m.id));
-
-            // ── STEP 2c-extra: Name-based fallback for individual sports ──────────
-            // Covers matches where athlete_a_id was never set (created before the editor fix)
-            // or where the editor saved only equipo_a/b = full_name without setting the FK.
-            if (isIndividualAthlete && fullName) {
-                const individualDisciplinaIds = (jugRows || [])
-                    .map((j: any) => j.disciplina_id)
-                    .filter(Boolean);
-
-                if (individualDisciplinaIds.length > 0) {
-                    const [nameA, nameB] = await Promise.all([
-                        supabase.from('partidos').select('id')
-                            .in('disciplina_id', individualDisciplinaIds)
-                            .ilike('equipo_a', fullName),
-                        supabase.from('partidos').select('id')
-                            .in('disciplina_id', individualDisciplinaIds)
-                            .ilike('equipo_b', fullName),
-                    ]);
-                    nameA.data?.forEach((m: any) => matchIdSet.add(m.id));
-                    nameB.data?.forEach((m: any) => matchIdSet.add(m.id));
-                }
-            }
-
-            if (matchIdSet.size === 0) {
-                setHistory([]);
-                return;
-            }
-
-            // ── STEP 3: Fetch full details for all collected match IDs ──────────
-            const { data: matches } = await supabase
-                .from('partidos')
-                .select('id, fecha, equipo_a, equipo_b, estado, marcador_detalle, disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids')
-                .in('id', [...matchIdSet])
-                .order('fecha', { ascending: false });
-
-            if (!matches) { setHistory([]); return; }
-
-            const winLossBySport: Record<string, { wins: number, losses: number }> = {};
-
-            const formatted = matches.map((p: any) => {
-                const discId = p.disciplina_id;
-                if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
-
-                if (p.estado === 'finalizado') {
-                    const sportName = (Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name) || '';
-                    const { scoreA, scoreB } = getCurrentScore(sportName, p.marcador_detalle || {});
-
-                    // Priority: event equipo (most reliable) → athlete_a/b_id → carrera_a/b_ids arrays → scalar carrera_a/b_id
-                    let side: 'a' | 'b' | null = matchSideMap.get(p.id) || null;
-                    if (!side) {
-                        if (p.athlete_a_id === id) side = 'a';
-                        else if (p.athlete_b_id === id) side = 'b';
-                        else if (Array.isArray(p.carrera_a_ids) && p.carrera_a_ids.some((cid: number) => carreraIds.includes(cid))) side = 'a';
-                        else if (Array.isArray(p.carrera_b_ids) && p.carrera_b_ids.some((cid: number) => carreraIds.includes(cid))) side = 'b';
-                        else if (carreraIds.includes(p.carrera_a_id)) side = 'a';
-                        else if (carreraIds.includes(p.carrera_b_id)) side = 'b';
-                    }
-
-                    if (side === 'a' && scoreA > scoreB) winLossBySport[discId].wins++;
-                    else if (side === 'b' && scoreB > scoreA) winLossBySport[discId].wins++;
-                    else if (side && scoreA !== scoreB) winLossBySport[discId].losses++;
-                }
-
-                const discName = Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name;
-                return {
-                    id: p.id,
-                    fecha: p.fecha,
-                    disciplina: discName,
-                    equipo_a: p.equipo_a,
-                    equipo_b: p.equipo_b,
-                    estado: p.estado,
-                    marcador_final: p.marcador_detalle
-                };
-            });
-
-            setSportStatsMap(prev => {
-                const newMap = { ...prev };
-                Object.keys(winLossBySport).forEach(sid => {
-                    newMap[sid] = { ...(newMap[sid] || {}), ...winLossBySport[sid] };
-                });
-                return newMap;
-            });
-
-            setHistory(formatted);
-        } catch (err) {
-            console.error("Error fetching history:", err);
-        } finally {
-            setLoadingHistory(false);
-        }
-    };
-
-    const upcomingMatches = history.filter(h => h.estado === 'programado' || h.estado === 'en_curso').sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-    const recentResults = history.filter(h => h.estado === 'finalizado').sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
+    if (loading && !profile) return <div className="min-h-screen flex items-center justify-center bg-background"><UniqueLoading size="lg" /></div>;
 
     if (!profile) {
         return (
@@ -506,9 +154,16 @@ export default function PublicProfilePage() {
                 <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
                     <Star className="text-red-500" size={32} />
                 </div>
-                <h1 className="text-2xl font-black mb-2 font-sans uppercase tracking-wider">Perfil no encontrado</h1>
+                <h1 className="text-2xl font-black mb-2 font-display uppercase tracking-wider">Perfil no encontrado</h1>
                 <p className="text-white/40 mb-8 max-w-sm text-center font-bold">El usuario que buscas no existe o su perfil es privado.</p>
                 <SafeBackButton fallback="/clasificacion" className="shadow-none rounded-2xl px-10 h-14 bg-violet-600 text-white font-black uppercase tracking-widest hover:bg-violet-700 shadow-2xl shadow-violet-600/30" label="Volver a Clasificación" />
+            </div>
+        );
+    }
+
+    const upcomingMatches = history.filter(h => h.estado === 'programado' || h.estado === 'en_curso').sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    const recentResults = history.filter(h => h.estado === 'finalizado').sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+0 h-14 bg-violet-600 text-white font-black uppercase tracking-widest hover:bg-violet-700 shadow-2xl shadow-violet-600/30" label="Volver a Clasificación" />
             </div>
         );
     }

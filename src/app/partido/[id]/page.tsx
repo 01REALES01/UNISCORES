@@ -19,6 +19,7 @@ import { formatTenisPunto } from "@/modules/sports/services/tenis.service";
 import { getDisplayName, getCarreraName, getCarreraSubtitle, isIndividualSport } from "@/lib/sport-helpers";
 import { SPORT_LIVE_TEXT, SPORT_LIVE_BG_WRAPPER, SPORT_LIVE_BAR, SPORT_ACCENT, SPORT_COLORS, SPORT_BORDER, SPORT_GLOW, SPORT_GRADIENT, SPORT_SOFT_BG } from "@/lib/constants";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
+import { ResilienceUI } from "@/components/resilience-ui";
 import { SportIcon } from "@/components/sport-icons";
 import { parseEventAudit } from "@/lib/audit-helpers";
 
@@ -156,15 +157,13 @@ export default function PublicMatchDetail() {
 
     if (matchLoading && !match) {
         if (loadTimeout) return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white gap-4 px-6">
-                <p className="text-white/40 text-sm font-bold text-center">No se pudo cargar el partido</p>
-                <button
-                    onClick={() => { setLoadTimeout(false); mutateMatch(); }}
-                    className="px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-white text-sm font-black transition-colors active:scale-95"
-                >
-                    Reintentar
-                </button>
-            </div>
+            <ResilienceUI 
+                title="Conexión Lenta"
+                description="La información del partido está tardando en cargar. Puedes reintentar o volver al calendario."
+                onRetry={() => { setLoadTimeout(false); mutateMatch(); }}
+                backFallback="/partidos"
+                retryLabel="REINTENTAR CARGA"
+            />
         );
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white">
