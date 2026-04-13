@@ -359,15 +359,26 @@ export default function Home() {
 
       <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-24 space-y-10">
 
-        {/* Super Friendly Status Notice */}
-        <div className="flex items-center justify-center -mt-4 mb-4 animate-in fade-in slide-in-from-top-6 duration-1000">
-          <div className="bg-amber-500/10 border border-amber-500/20 backdrop-blur-xl px-6 py-3 rounded-2xl flex items-center gap-3 shadow-lg">
-            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <p className="text-[11px] md:text-xs font-semibold text-amber-100/90 tracking-wide">
-              ¡Hola! Estamos ajustando unos detalles para que todos puedan entrar. Si no logras iniciar sesión ahora, ¡intenta de nuevo en un ratito!
-            </p>
+        {/* Hero Registration CTA - Larger and Prominent */}
+        <Link 
+          href="/login" 
+          className="flex items-center justify-center -mt-2 mb-6 animate-in fade-in slide-in-from-top-8 duration-1000 w-full group"
+        >
+          <div className="bg-amber-400/10 border border-amber-400/30 backdrop-blur-2xl px-8 md:px-10 py-6 rounded-[2.5rem] flex items-center justify-between gap-5 shadow-[0_0_50px_rgba(251,191,36,0.1)] hover:border-amber-400/50 hover:bg-amber-400/20 hover:scale-[1.02] transition-all duration-500 w-full max-w-4xl cursor-pointer">
+            <div className="flex items-center gap-5">
+              <div className="w-4 h-4 rounded-full bg-amber-400 animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.5)] shrink-0" />
+              <div className="flex flex-col items-start">
+                <p className="text-base md:text-lg font-black text-amber-50 tracking-tight leading-tight">
+                  ¡Únete a la comunidad de UniScores!
+                </p>
+                <p className="text-xs md:text-sm font-medium text-amber-200/70 tracking-wide text-left">
+                  Regístrate ahora para vivir la experiencia completa y no perderte ningún detalle.
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={24} className="text-amber-400/50 group-hover:text-amber-400 group-hover:translate-x-1 transition-all shrink-0" />
           </div>
-        </div>
+        </Link>
 
         <div className="flex flex-col gap-6">
           <WelcomeHero />
