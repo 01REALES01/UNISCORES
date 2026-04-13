@@ -12,33 +12,15 @@ export function WelcomeHero() {
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
             <div className="absolute top-0 left-0 w-full h-[200px] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
 
-            {/* Bloom Glow behind the flame */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-                <m.div 
-                    animate={{ 
-                        opacity: [0.15, 0.22, 0.15]
-                    }}
-                    transition={{ 
-                        duration: 10,
-                        repeat: Infinity,
-                        ease: "linear"
-                    }}
-                    className="w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[100px] translate-x-1/2 translate-y-1/4" 
+                <div 
+                    className="w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[100px] translate-x-1/2 translate-y-1/4 opacity-[0.18]" 
                 />
             </div>
 
-            {/* Dynamic Flame background */}
+            {/* Dynamic Flame background - Now Static */}
             <div className="absolute inset-0 flex items-center justify-end pointer-events-none overflow-hidden">
-                <m.div
-                    animate={{ 
-                        y: [0, -10, 0],
-                        rotate: [0, 1.5, 0]
-                    }}
-                    transition={{ 
-                        duration: 8,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                    }}
+                <div
                     className="relative translate-x-[25%] md:translate-x-[30%] translate-y-[15%] opacity-25 hover:opacity-40 transition-opacity duration-1000"
                 >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -48,7 +30,7 @@ export function WelcomeHero() {
                         className="w-[450px] md:w-[700px] h-auto drop-shadow-[0_0_40px_rgba(124,58,237,0.15)] brightness-[0.8] contrast-[1.1] grayscale-[0.2]"
                         aria-hidden="true"
                     />
-                </m.div>
+                </div>
             </div>
 
             <div className="relative z-10 max-w-4xl mx-auto text-center">

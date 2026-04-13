@@ -117,6 +117,14 @@ export function useMatches() {
 
         let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+        const debounced = () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                console.log('[useMatches] Realtime change detected, mutating...');
+                mutate();
+            }, 500);
+        };
+
         const setupSubscription = () => {
             // If already subscribed and healthy, skip
             if (globalChannel?.state === 'joined') return;
@@ -128,13 +136,18 @@ export function useMatches() {
 
             console.log('[useMatches] Initializing realtime subscription...');
             globalChannel = supabase
-                .channel('global:partidos:changes')
+                .channel('global:matches:sync:' + Date.now())
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, () => {
-                    if (debounceTimer) clearTimeout(debounceTimer);
-                    debounceTimer = setTimeout(() => {
-                        console.log('[useMatches] Realtime change detected, mutating...');
-                        mutate();
-                    }, 500);
+                    console.log('[useMatches] Match change detected');
+                    debounced();
+                })
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'carreras' }, () => {
+                    console.log('[useMatches] Career update detected (logo/name sync)');
+                    debounced();
+                })
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'delegaciones' }, () => {
+                    console.log('[useMatches] Delegation update detected (logo sync)');
+                    debounced();
                 })
                 .subscribe((status) => {
                     if (status === 'SUBSCRIBED') console.log('[useMatches] Realtime connected');

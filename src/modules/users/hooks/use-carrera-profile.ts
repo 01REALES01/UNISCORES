@@ -207,6 +207,10 @@ export function useCarreraProfile(carreraId: number | null): CarreraProfile {
                 .channel(`carrera-profile:${carreraId}:${Date.now()}`)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, debounced)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'noticias' }, debounced)
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'carreras', filter: `id=eq.${carreraId}` }, () => {
+                    console.log(`[useCarreraProfile] Career ${carreraId} updated, re-fetching...`);
+                    debounced();
+                })
                 .subscribe();
         };
 
