@@ -28,6 +28,9 @@ export type Partido = {
   disciplina_id?: number;
   carrera_a_id?: number;
   carrera_b_id?: number;
+  /** Fusion / delegación sync: all carrera ids on side A (may differ from carrera_a_id). */
+  carrera_a_ids?: number[] | null;
+  carrera_b_ids?: number[] | null;
   athlete_a_id?: string;
   athlete_b_id?: string;
   responsable_id?: string;

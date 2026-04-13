@@ -35,12 +35,14 @@ export type TeamProfile = {
 // ─── Fetcher ────────────────────────────────────────────────────────────────
 
 async function fetchTeamProfile(delegacionId: number, signal?: AbortSignal) {
+    const sig = signal ?? new AbortController().signal;
+
     // 1. Fetch the delegacion itself
     const { data: delegacion, error: delegacionErr } = await supabase
         .from('delegaciones')
         .select('id, nombre, genero, slot_label, carrera_ids, disciplina_id, disciplinas(name)')
         .eq('id', delegacionId)
-        .abortSignal(signal)
+        .abortSignal(sig)
         .single();
 
     if (delegacionErr || !delegacion) {
@@ -48,7 +50,7 @@ async function fetchTeamProfile(delegacionId: number, signal?: AbortSignal) {
     }
 
     // 2. Fetch the allied careers for their badges and names
-    const { data: allCarreras } = await supabase.from('carreras').select('id, nombre, escudo_url').abortSignal(signal);
+    const { data: allCarreras } = await supabase.from('carreras').select('id, nombre, escudo_url').abortSignal(sig);
     const dbCareerIds = delegacion.carrera_ids || [];
     
     const normalizedNombre = (delegacion.nombre || '').trim().toUpperCase();
@@ -71,13 +73,13 @@ async function fetchTeamProfile(delegacionId: number, signal?: AbortSignal) {
             .select(MATCH_COLUMNS)
             .eq('delegacion_a_id', delegacionId)
             .order('fecha', { ascending: false })
-            .abortSignal(signal),
+            .abortSignal(sig),
         supabase
             .from('partidos')
             .select(MATCH_COLUMNS)
             .eq('delegacion_b_id', delegacionId)
             .order('fecha', { ascending: false })
-            .abortSignal(signal),
+            .abortSignal(sig),
     ]);
 
     const allMatchesRaw = [...((matchesA.data || []) as any[]), ...((matchesB.data || []) as any[])];
@@ -100,7 +102,7 @@ async function fetchTeamProfile(delegacionId: number, signal?: AbortSignal) {
             query = query.or(`disciplina_id.eq.${delegacion.disciplina_id},disciplina_id.is.null`);
         }
 
-        const { data: jugadores, error: errorJugadores } = await query.abortSignal(signal);
+        const { data: jugadores, error: errorJugadores } = await query.abortSignal(sig);
         
         if (jugadores) {
             const targetGender = (delegacion.genero || '').toLowerCase().trim();

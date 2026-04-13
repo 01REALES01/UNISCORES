@@ -4,6 +4,7 @@ import useSWR, { mutate as globalMutate } from "swr";
 import { supabase } from "@/lib/supabase";
 import { useEffect } from "react";
 import type { PartidoWithRelations } from "@/modules/matches/types";
+import { enrichPartidosCarreraShieldsFromDb } from "@/lib/match-carrera-shields";
 
 // ─── Column Selection — FK explícita según schema confirmado ─────────────────
 // partidos.disciplina_id → disciplinas
@@ -12,7 +13,7 @@ import type { PartidoWithRelations } from "@/modules/matches/types";
 const MATCH_COLUMNS = [
     'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria',
     'fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id',
-    'carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
+    'carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, athlete_a_id, athlete_b_id',
     'disciplinas:disciplina_id(name)',
     'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
     'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
@@ -47,7 +48,7 @@ const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
                 const FALLBACK_COLUMNS = [
                     'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria',
                     'delegacion_a, delegacion_b',
-                    'carrera_a_id, carrera_b_id, athlete_a_id, athlete_b_id',
+                    'carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, athlete_a_id, athlete_b_id',
                     'disciplinas:disciplina_id(name)',
                     'carrera_a:carreras!carrera_a_id(nombre, escudo_url)',
                     'carrera_b:carreras!carrera_b_id(nombre, escudo_url)',
@@ -62,7 +63,8 @@ const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
                     .abortSignal(controller.signal);
 
                 if (fallback.error) throw fallback.error;
-                const finalData = (fallback.data || []) as unknown as PartidoWithRelations[];
+                const raw = (fallback.data || []) as unknown as PartidoWithRelations[];
+                const finalData = await enrichPartidosCarreraShieldsFromDb(supabase, raw);
                 if (typeof window !== 'undefined' && finalData.length > 0) {
                     try { sessionStorage.setItem('swr-global-matches', JSON.stringify(finalData)); } catch {}
                 }
@@ -71,7 +73,8 @@ const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
             throw error;
         }
         
-        const finalData = (data || []) as unknown as PartidoWithRelations[];
+        const raw = (data || []) as unknown as PartidoWithRelations[];
+        const finalData = await enrichPartidosCarreraShieldsFromDb(supabase, raw);
         if (typeof window !== 'undefined' && finalData.length > 0) {
             try { sessionStorage.setItem('swr-global-matches', JSON.stringify(finalData)); } catch {}
         }

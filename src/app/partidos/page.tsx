@@ -19,6 +19,7 @@ import { Avatar, Badge, Button } from "@/components/ui-primitives";
 import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import { PublicLiveTimer } from "@/components/public-live-timer";
 import { JornadaCard } from "@/modules/matches/components/match-card";
+import { ResilienceUI } from "@/components/resilience-ui";
 
 
 // --- Types ---

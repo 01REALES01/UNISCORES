@@ -330,6 +330,7 @@ export function FriendsList({ userId }: FriendsListProps) {
     const [friendsSearch, setFriendsSearch] = useState('');
 
     const filteredFriends = friends.filter(f => {
+        if (!f) return false;
         if (!friendsSearch.trim()) return true;
         const tokens = friendsSearch.toLowerCase().split(/\s+/).filter(Boolean);
         const name = f.full_name.toLowerCase();

@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button, Input, Badge, Avatar } from "@/components/ui-primitives";
-import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle, Minus, Edit2, Check, Activity } from "lucide-react";
+import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle, Minus, Edit2, Check, Activity, ChevronRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { addPoints, removePoints, setPoints, getCurrentScore, ScoreDetail, recalculateTotals, getCurrentPeriodNumber, getPeriodDuration } from "@/lib/sport-scoring";
+import { addPoints, removePoints, setPoints, getCurrentScore, ScoreDetail, recalculateTotals, getCurrentPeriodNumber, getPeriodDuration, nextPeriod } from "@/lib/sport-scoring";
 import { useAuth } from "@/hooks/useAuth";
 import { stampAudit, stampEventAudit, parseEventAudit } from "@/lib/audit-helpers";
 import { toast } from "sonner";
@@ -843,40 +843,46 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                                 (localDetalle?.cuarto_actual || localDetalle?.set_actual || localDetalle?.tiempo_actual || 1)
                             ])).sort((a, b) => a - b);
 
-                            return all.map(p => {
-                                const isActive = manualPeriod === p;
-                                let label = '';
-                                if (sport === 'Baloncesto') label = p > 4 ? `OT ${p - 4}` : `${p}º Q`;
-                                else if (sport === 'Fútbol') label = `${p}º T`;
-                                else label = `Set ${p}`;
-
                             return (
-                                <button
-                                    key={p}
-                                    onClick={() => {
-                                        setManualPeriod(p);
-                                        if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
-                                            setAdvancedSetActual(p);
-                                        } else if (sport === 'Baloncesto') {
-                                            setAdvancedSetActual(p);
-                                        }
-                                    }}
-                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
-                                        isActive
-                                        ? 'bg-indigo-500 border-indigo-400 text-black shadow-lg shadow-indigo-500/20'
-                                        : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:bg-white/10'
-                                    }`}
-                                >
-                                    {label}
-                                </button>
+                                <>
+                                    {all.map((p) => {
+                                        const isActive = manualPeriod === p;
+                                        let label = '';
+                                        if (sport === 'Baloncesto') label = p > 4 ? `OT ${p - 4}` : `${p}º Q`;
+                                        else if (sport === 'Fútbol') label = `${p}º T`;
+                                        else label = `Set ${p}`;
+
+                                        return (
+                                            <button
+                                                key={p}
+                                                onClick={() => {
+                                                    setManualPeriod(p);
+                                                    if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
+                                                        setAdvancedSetActual(p);
+                                                    } else if (sport === 'Baloncesto') {
+                                                        setAdvancedSetActual(p);
+                                                    }
+                                                }}
+                                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+                                                    isActive
+                                                        ? 'bg-indigo-500 border-indigo-400 text-black shadow-lg shadow-indigo-500/20'
+                                                        : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:bg-white/10'
+                                                }`}
+                                            >
+                                                {label}
+                                            </button>
+                                        );
+                                    })}
+                                    <button
+                                        type="button"
+                                        onClick={openAdvancedEdit}
+                                        className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500/20 transition-all flex items-center gap-2"
+                                    >
+                                        <Edit2 size={12} /> Corregir Todo
+                                    </button>
+                                </>
                             );
-                        })}
-                        <button 
-                            onClick={openAdvancedEdit}
-                            className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500/20 transition-all flex items-center gap-2"
-                        >
-                            <Edit2 size={12} /> Corregir Todo
-                        </button>
+                        })()}
                     </div>
 
                     {/* Marcador y Cronómetro - Responsive Sport-Aware Hero */}

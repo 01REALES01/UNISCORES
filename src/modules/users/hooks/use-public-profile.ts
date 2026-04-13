@@ -20,12 +20,14 @@ export interface PublicProfileData {
 const INDIVIDUAL_SPORTS_NAMES = ['Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
 
 async function fetchPublicProfile(profileId: string, signal?: AbortSignal, currentUserId?: string) {
+    const sig = signal ?? new AbortController().signal;
+
     // 1. Core Profile
     const { data: profile, error: pErr } = await supabase
         .from('profiles')
         .select('*, disciplina:disciplinas(id, name, icon)')
         .eq('id', profileId)
-        .abortSignal(signal)
+        .abortSignal(sig)
         .single();
 
     if (pErr || !profile) throw new Error('Perfil no encontrado');
@@ -34,27 +36,27 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
     const [carrerasRes, friendsRes, pdRes, jugRowsRes, followerRes, followingRes] = await Promise.all([
         // Careers
         profile.carreras_ids?.length 
-            ? supabase.from('carreras').select('*').in('id', profile.carreras_ids).abortSignal(signal)
+            ? supabase.from('carreras').select('*').in('id', profile.carreras_ids).abortSignal(sig)
             : Promise.resolve({ data: [] }),
         // Friends
         supabase.from('friend_requests').select('*', { count: 'exact', head: true })
             .eq('status', 'accepted')
             .or(`sender_id.eq.${profileId},receiver_id.eq.${profileId}`)
-            .abortSignal(signal),
+            .abortSignal(sig),
         // Disciplines (for multi-sport)
         supabase.from('profile_disciplinas').select('disciplina_id, disciplinas(id, name)')
             .eq('profile_id', profileId)
-            .abortSignal(signal),
+            .abortSignal(sig),
         // Jugadores (Base for stats/history)
         supabase.from('jugadores').select('id, carrera_id, disciplina_id, disciplinas(name), genero')
             .eq('profile_id', profileId)
-            .abortSignal(signal),
+            .abortSignal(sig),
         // Following (Only if it's the current user's profile view, or always for count?)
         currentUserId === profileId 
-            ? supabase.from('user_followers').select('following_profile:profiles!following_profile_id(id, full_name, avatar_url, points)').eq('follower_id', profileId).abortSignal(signal)
+            ? supabase.from('user_followers').select('following_profile:profiles!following_profile_id(id, full_name, avatar_url, points)').eq('follower_id', profileId).abortSignal(sig)
             : Promise.resolve({ data: [] }),
         currentUserId === profileId
-            ? supabase.from('career_followers').select('career:carreras(id, nombre, escudo_url)').eq('follower_id', profileId).abortSignal(signal)
+            ? supabase.from('career_followers').select('career:carreras(id, nombre, escudo_url)').eq('follower_id', profileId).abortSignal(sig)
             : Promise.resolve({ data: [] })
     ]);
 
@@ -82,7 +84,7 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
         if (athleteGenero && athleteGenero !== 'mixto') {
             delegQuery = delegQuery.in('genero', [athleteGenero, 'mixto']);
         }
-        const { data: delegs } = await delegQuery.abortSignal(signal);
+        const { data: delegs } = await delegQuery.abortSignal(sig);
         athleteTeams = delegs || [];
     }
 
@@ -97,7 +99,7 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
         // Events
         const { data: evs } = await supabase.from('olympics_eventos').select('tipo_evento, jugador_id_normalized, partido_id, equipo')
             .in('jugador_id_normalized', jugIds)
-            .abortSignal(signal);
+            .abortSignal(sig);
 
         const jugDisc: Record<number, string> = {};
         jugRows.forEach((j: any) => { jugDisc[j.id] = j.disciplina_id; });
@@ -135,7 +137,7 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
     }
 
     // Individual Matches
-    const { data: indMatches } = await supabase.from('partidos').select('id').or(`athlete_a_id.eq.${profileId},athlete_b_id.eq.${profileId}`).abortSignal(signal);
+    const { data: indMatches } = await supabase.from('partidos').select('id').or(`athlete_a_id.eq.${profileId},athlete_b_id.eq.${profileId}`).abortSignal(sig);
     indMatches?.forEach(m => matchIdSet.add(m.id));
 
     // Team Matches (via Delegaciones)
@@ -145,14 +147,14 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
             .from('partidos')
             .select('id')
             .or(`delegacion_a.in.(${dIds.join(',')}),delegacion_b.in.(${dIds.join(',')})`)
-            .abortSignal(signal);
+            .abortSignal(sig);
         teamMatches?.forEach(m => matchIdSet.add(m.id));
     }
 
     // Fallback name-based individual
     const isIndiv = profile.athlete_disciplina_id && INDIVIDUAL_SPORTS_NAMES.includes(profile.disciplina?.name || '');
     if (isIndiv && profile.full_name) {
-        const { data: nameMatches } = await supabase.from('partidos').select('id').eq('disciplina_id', profile.athlete_disciplina_id).or(`equipo_a.ilike.${profile.full_name},equipo_b.ilike.${profile.full_name}`).abortSignal(signal);
+        const { data: nameMatches } = await supabase.from('partidos').select('id').eq('disciplina_id', profile.athlete_disciplina_id).or(`equipo_a.ilike.${profile.full_name},equipo_b.ilike.${profile.full_name}`).abortSignal(sig);
         nameMatches?.forEach(m => matchIdSet.add(m.id));
     }
     // 4. Team Matches by Career IDs & Disciplines (Upcoming/Recent without events)
@@ -167,7 +169,7 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
             .select('id')
             .in('disciplina_id', discIdsMatch)
             .or(`carrera_a_id.in.(${careerIdsMatch.join(',')}),carrera_b_id.in.(${careerIdsMatch.join(',')}),carrera_a_ids.ov.{${careerIdsMatch.join(',')}},carrera_b_ids.ov.{${careerIdsMatch.join(',')}}`)
-            .abortSignal(signal);
+            .abortSignal(sig);
         qryRes?.forEach(m => matchIdSet.add(m.id));
     }
 
@@ -178,7 +180,7 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
                 .select('id, fecha, equipo_a, equipo_b, estado, marcador_detalle, disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids')
                 .in('id', Array.from(matchIdSet))
                 .order('fecha', { ascending: false })
-                .abortSignal(signal);
+                .abortSignal(sig);
 
             if (matches) {
                 const careerIds = profile.carreras_ids || [];

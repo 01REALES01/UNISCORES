@@ -47,6 +47,7 @@ import {
     Pencil,
     TrendingUp,
     MoveRight,
+    Search,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────

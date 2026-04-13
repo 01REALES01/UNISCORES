@@ -4,6 +4,8 @@ import { safeQuery } from "@/lib/supabase-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { getMatchResult } from "@/modules/quiniela/helpers";
+import { enrichPartidosCarreraShieldsFromDb } from "@/lib/match-carrera-shields";
+import type { PartidoWithRelations } from "@/modules/matches/types";
 
 export function useQuiniela() {
     const { user, profile } = useAuth();
@@ -26,7 +28,13 @@ export function useQuiniela() {
             safeQuery(supabase.from('public_profiles').select('*').eq('id', user.id).single(), 'user-public-profile'),
         ]);
 
-        if (matchesRes.data) setMatches(matchesRes.data.filter((m: any) => m.disciplinas?.name !== 'Natación'));
+        if (matchesRes.data) {
+            const enriched = await enrichPartidosCarreraShieldsFromDb(
+                supabase,
+                matchesRes.data as PartidoWithRelations[]
+            );
+            setMatches(enriched.filter((m) => m.disciplinas?.name !== 'Natación'));
+        }
         if (predsRes.data) setPredictions(predsRes.data);
         if (allPredsRes.data) setAllPredictions(allPredsRes.data);
         if (rankingRes.data) setRanking(rankingRes.data);
@@ -50,7 +58,13 @@ export function useQuiniela() {
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, async () => {
                 const { data } = await safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url), delegacion_a_info:delegaciones!delegacion_a_id(escudo_url), delegacion_b_info:delegaciones!delegacion_b_id(escudo_url), atleta_a:profiles!athlete_a_id(full_name, avatar_url), atleta_b:profiles!athlete_b_id(full_name, avatar_url), roster_partido(equipo_a_or_b, jugador:jugadores(nombre))').order('fecha', { ascending: true }), 'rt-matches');
-                if (data) setMatches(data.filter((m: any) => m.disciplinas?.name !== 'Natación'));
+                if (data) {
+                    const enriched = await enrichPartidosCarreraShieldsFromDb(
+                        supabase,
+                        data as PartidoWithRelations[]
+                    );
+                    setMatches(enriched.filter((m) => m.disciplinas?.name !== 'Natación'));
+                }
             })
             .subscribe();
 
