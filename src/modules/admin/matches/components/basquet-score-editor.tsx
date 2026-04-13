@@ -23,17 +23,15 @@ interface BasquetEditorProps {
 }
 
 const SPORT_COLOR = '#f97316';
-const CUARTOS = [1, 2, 3, 4] as const;
-type Cuarto = 1 | 2 | 3 | 4;
-
-function getCuarto(e: any): Cuarto {
+function getCuarto(e: any): number {
   const p = e.periodo;
-  if (p >= 1 && p <= 4) return p as Cuarto;
+  if (p >= 1) return p as number;
   const m = e.minuto ?? 0;
   if (m <= 12) return 1;
   if (m <= 24) return 2;
   if (m <= 36) return 3;
-  return 4;
+  if (m <= 48) return 4;
+  return 5; // Fallback to OT1 if unknown but past Q4
 }
 
 function ptsOf(tipo: string) {
@@ -65,7 +63,18 @@ export function BasquetEditor({
   onDeleteEvent,
   onAddPlayer,
 }: BasquetEditorProps) {
-  const [selectedCuarto, setSelectedCuarto] = useState<Cuarto>(1);
+  const detalleCuartos = match.marcador_detalle?.cuartos || {};
+  const currentPeriodInMatch = match.marcador_detalle?.cuarto_actual || 1;
+  
+  // Dynamic list of quarters/periods
+  const CUARTOS = useMemo(() => {
+    const base = [1, 2, 3, 4];
+    const fromEvents = eventos.map(e => e.periodo).filter(p => p > 4);
+    const fromDetalle = Object.keys(detalleCuartos).map(Number).filter(p => p > 4);
+    return Array.from(new Set([...base, ...fromEvents, ...fromDetalle, currentPeriodInMatch])).sort((a,b) => a-b);
+  }, [eventos, detalleCuartos, currentPeriodInMatch]);
+
+  const [selectedCuarto, setSelectedCuarto] = useState<number>(currentPeriodInMatch);
   const [loadingKey, setLoadingKey] = useState<string | null>(null); // "jugadorId-tipo"
   const [showEvents, setShowEvents] = useState(false);
   const [addingPlayerTeam, setAddingPlayerTeam] = useState<string | null>(null);
@@ -79,10 +88,15 @@ export function BasquetEditor({
   );
 
   const byCuarto = useMemo(() => {
-    const map: Record<Cuarto, any[]> = { 1: [], 2: [], 3: [], 4: [] };
-    gameEvents.forEach(e => { map[getCuarto(e)]?.push(e); });
+    const map: Record<number, any[]> = {};
+    CUARTOS.forEach(q => { map[q] = []; });
+    gameEvents.forEach(e => { 
+      const q = getCuarto(e);
+      if (!map[q]) map[q] = [];
+      map[q].push(e); 
+    });
     return map;
-  }, [gameEvents]);
+  }, [gameEvents, CUARTOS]);
 
   // Points per player per cuarto (from events)
   const playerPts = useMemo(() => {
@@ -97,9 +111,9 @@ export function BasquetEditor({
   }, [byCuarto, selectedCuarto]);
 
   // Quarter aggregate from marcador_detalle (source of truth for totals)
-  const detalleCuartos = match.marcador_detalle?.cuartos || {};
-  const qA = (q: Cuarto) => detalleCuartos[q]?.puntos_a ?? 0;
-  const qB = (q: Cuarto) => detalleCuartos[q]?.puntos_b ?? 0;
+  // Quarter aggregate from marcador_detalle (source of truth for totals)
+  const qA = (q: number) => detalleCuartos[q]?.puntos_a ?? 0;
+  const qB = (q: number) => detalleCuartos[q]?.puntos_b ?? 0;
   const totalA = CUARTOS.reduce((s, q) => s + qA(q), 0);
   const totalB = CUARTOS.reduce((s, q) => s + qB(q), 0);
 
@@ -271,7 +285,7 @@ export function BasquetEditor({
                 : { background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)' }
               }
             >
-              <span className="text-[11px] font-black">Q{q}</span>
+              <span className="text-[11px] font-black">{q <= 4 ? `Q${q}` : `OT${q-4}`}</span>
               <span className="text-[9px] tabular-nums font-bold opacity-70">{qA(q)}–{qB(q)}</span>
             </button>
           );

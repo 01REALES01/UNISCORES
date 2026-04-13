@@ -38,8 +38,8 @@ function timeAgo(dateStr: string): string {
 function getNotifIcon(type: string) {
     switch (type) {
         case 'match_start': return <Zap size={16} className="text-red-500" />;
-        case 'match_end': return <Trophy size={16} className="text-amber-500" />;
-        case 'score_update': return <Zap size={16} className="text-indigo-400" />;
+        case 'match_end': return <Trophy size={16} className="text-violet-500" />;
+        case 'score_update': return <Zap size={16} className="text-violet-400" />;
         case 'friend_request': return <UserPlus size={16} className="text-blue-400" />;
         case 'friend_accepted': return <Users size={16} className="text-emerald-400" />;
         default: return <Bell size={16} className="text-white/40" />;
@@ -49,8 +49,8 @@ function getNotifIcon(type: string) {
 function getNotifAccent(type: string) {
     switch (type) {
         case 'match_start': return 'border-l-red-500';
-        case 'match_end': return 'border-l-amber-500';
-        case 'score_update': return 'border-l-indigo-500';
+        case 'match_end': return 'border-l-violet-500';
+        case 'score_update': return 'border-l-violet-500';
         case 'friend_request': return 'border-l-blue-500';
         case 'friend_accepted': return 'border-l-emerald-500';
         default: return 'border-l-white/10';
@@ -177,7 +177,7 @@ export default function NotificacionesPage() {
     return (
         <div className="min-h-screen bg-background text-white">
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/5 rounded-full blur-[120px]" />
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-600/5 rounded-full blur-[120px]" />
                 <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px]" />
             </div>
 
@@ -201,7 +201,7 @@ export default function NotificacionesPage() {
                         {unreadCount > 0 && (
                             <button
                                 onClick={() => markAllAsRead()}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 transition-all text-[10px] font-black uppercase tracking-widest"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20 transition-all text-[10px] font-black uppercase tracking-widest"
                             >
                                 <CheckCheck size={13} />
                                 Leer todo
@@ -357,7 +357,7 @@ export default function NotificacionesPage() {
                                             )}
                                         </div>
                                         {!notif.is_read && (
-                                            <div className="absolute top-4 right-10 w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_6px_rgba(99,102,241,0.5)]" />
+                                            <div className="absolute top-4 right-10 w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_6px_rgba(99,102,241,0.5)]" />
                                         )}
                                         <button
                                             className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-all"
@@ -449,7 +449,7 @@ export default function NotificacionesPage() {
                                                 className={cn(
                                                     "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",
                                                     prefs.followed_sports.includes(sport)
-                                                        ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/30"
+                                                        ? "bg-violet-500/20 text-violet-300 border-violet-500/30"
                                                         : "bg-white/[0.02] text-white/30 border-white/5 hover:bg-white/5 hover:text-white/60"
                                                 )}
                                             >

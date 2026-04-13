@@ -403,7 +403,7 @@ export default function MedalleroPage() {
                                                     "absolute -top-1 -left-1 w-12 h-12 flex items-center justify-center font-display text-base font-black italic tracking-tighter z-20 rounded-br-2xl border-b border-r shadow-2xl",
                                                     idx === 0 ? "bg-emerald-500 text-white border-emerald-400/50 shadow-emerald-500/20" :
                                                     idx === 1 ? "bg-violet-600 text-white border-violet-400/50 shadow-violet-600/20" :
-                                                    idx === 2 ? "bg-amber-600 text-white border-amber-400/50 shadow-amber-500/20" :
+                                                    idx === 2 ? "bg-violet-600 text-white border-violet-400/50 shadow-violet-500/20" :
                                                     "bg-white/10 text-white/40 border-white/20"
                                                 )}>
                                                     #{idx + 1}
@@ -565,7 +565,7 @@ export default function MedalleroPage() {
                                                 </div>
                                                 
                                                 <div className="flex items-center gap-3 mb-5">
-                                                    <span className="text-[10px] font-black uppercase text-amber-400 tracking-widest px-3 py-1 bg-amber-500/10 rounded-lg border border-amber-500/20 whitespace-nowrap">
+                                                    <span className="text-[10px] font-black uppercase text-violet-400 tracking-widest px-3 py-1 bg-violet-500/10 rounded-lg border border-violet-500/20 whitespace-nowrap">
                                                         {e.genero || 'Masculino'}
                                                     </span>
                                                     {isCombined && (

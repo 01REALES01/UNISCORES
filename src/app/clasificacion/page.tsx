@@ -264,8 +264,8 @@ export default function ClasificacionPage() {
         return thirds.sort((a, b) => compareStandings(a, b, selectedSport));
     }, [groups, groupMatches, selectedSport, fairPlayData, teamIdMap]);
 
-    const accent = SPORT_ACCENT[selectedSport] || 'text-amber-400';
-    const border = SPORT_BORDER[selectedSport] || 'border-white/10';
+    const accent = "text-violet-400";
+    const border = "border-violet-500/20";
 
     return (
         <div className="min-h-screen bg-background text-white selection:bg-violet-500/30 font-sans relative overflow-x-hidden">
@@ -284,14 +284,13 @@ export default function ClasificacionPage() {
             <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
             <main className="max-w-6xl mx-auto px-4 pt-8 pb-16 relative z-10 shrink-0">
-                {/* Header Section */}
                 <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="flex flex-col items-center text-center">
-                        <div className="flex items-center justify-center gap-2 mb-2 text-violet-400">
+                        <div className="flex items-center justify-center gap-2 mb-2">
                              <div className="p-1.5 rounded-xl bg-violet-500/10 border border-violet-500/20">
-                                <Trophy size={20} />
+                                <Trophy size={20} style={{ color: "#A78BFA" }} />
                             </div>
-                            <h4 className="text-xs font-black tracking-widest font-display uppercase tracking-[0.2em]">Tournament Bracket</h4>
+                            <h4 className="text-xs font-black tracking-widest font-display uppercase tracking-[0.2em]" style={{ color: "#A78BFA88" }}>Tournament Bracket</h4>
                         </div>
                         <div className="flex flex-col items-center gap-4">
                             <h1 className="text-5xl sm:text-7xl font-bold tracking-tighter leading-none font-display text-white drop-shadow-2xl">
@@ -336,8 +335,8 @@ export default function ClasificacionPage() {
                                             />
                                             <span className={cn(
                                                 "text-[10px] font-black uppercase tracking-[0.2em] transition-colors",
-                                                isActive ? "text-violet-400" : "text-white/30 group-hover/btn:text-white/60"
-                                            )}>
+                                                isActive ? "text-violet-400" : "text-white/20 group-hover/btn:text-white/40"
+                                            )} style={{ color: isActive ? "#A78BFA" : undefined }}>
                                                 {sport}
                                             </span>
                                         </div>
@@ -370,8 +369,8 @@ export default function ClasificacionPage() {
                                                     : "bg-black/40 border-white/10 text-white/40 hover:bg-white/10"
                                             )}
                                         >
-                                            <span className={cn("relative z-10 leading-none flex items-center justify-center", isSelected ? "text-[#7C3AED]" : "text-violet-400")}>{g.icon}</span>
-                                            <span className="relative z-10 uppercase tracking-widest">{g.label}</span>
+                                            <span className="relative z-10 leading-none flex items-center justify-center" style={{ color: isSelected ? "#7C3AED" : "#A78BFA88" }}>{g.icon}</span>
+                                            <span className="relative z-10 uppercase tracking-widest" style={{ color: isSelected ? "#7C3AED" : undefined }}>{g.label}</span>
                                         </button>
                                     );
                                 })}

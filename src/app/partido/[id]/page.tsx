@@ -256,9 +256,8 @@ export default function PublicMatchDetail() {
                 }}>
                     <div className="absolute inset-0 rounded-[2.5rem] p-[1px] bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
                     <div className={cn(
-                        "absolute top-0 left-0 right-0 h-1 mt-[-1px]", 
-                        `bg-gradient-to-r from-transparent via-${sportName.toLowerCase()}-500/40 to-transparent`
-                    )} style={{ background: `linear-gradient(to right, transparent, ${sportColor}60, transparent)` }} />
+                        "absolute top-0 left-0 right-0 h-1 mt-[-1px]"
+                    )} style={{ background: `linear-gradient(to right, transparent, ${sportColor}A0, transparent)` }} />
 
                     <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-center">
                         <div className="flex flex-col justify-center items-center mb-8 relative z-20 px-4 w-full">
@@ -469,8 +468,9 @@ export default function PublicMatchDetail() {
                                                 <h2 
                                                     className={cn(
                                                         "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm mt-3",
-                                                        targetA ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105 cursor-pointer" : "text-white"
+                                                        targetA ? "group-hover/btn:scale-105 cursor-pointer" : "text-white"
                                                     )}
+                                                    style={targetA ? { color: sportColor } : {}}
                                                     onClick={() => targetA && router.push(targetA)}
                                                 >
                                                     {nameA}
@@ -698,8 +698,9 @@ export default function PublicMatchDetail() {
                                                 <h2 
                                                     className={cn(
                                                         "font-black text-[12px] sm:text-xl leading-[1.1] uppercase tracking-tight text-center w-full px-1 transition-all duration-300 drop-shadow-sm mt-3",
-                                                        targetB ? "group-hover/btn:text-emerald-400 group-hover/btn:scale-105 cursor-pointer" : "text-white"
+                                                        targetB ? "group-hover/btn:scale-105 cursor-pointer" : "text-white"
                                                     )}
+                                                    style={targetB ? { color: sportColor } : {}}
                                                     onClick={() => {
                                                         if (targetB) {
                                                             console.log('[DEBUG-NAV-B-NAME] Navigating to:', targetB);

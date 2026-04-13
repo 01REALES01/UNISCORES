@@ -306,11 +306,15 @@ export default function CalendarioPage() {
                                             </span>
                                             {hasEvents && (
                                                 <div className={cn("mb-1 flex flex-wrap items-center justify-center gap-0.5 sm:gap-1 px-0.5", isSelected ? "opacity-100" : "opacity-60 group-hover:opacity-100")}>
-                                                    {uniqueSportsEvents.slice(0, 3).map((s, idx) => (
-                                                        <div key={idx} className={cn("transition-colors", s.estado === 'en_curso' ? "text-emerald-400" : isSelected ? "text-white/80" : "text-violet-400")}>
-                                                            <SportIcon sport={s.name} size={isSelected ? 10 : 9} variant="react" />
-                                                        </div>
-                                                    ))}
+                                                    {uniqueSportsEvents.slice(0, 3).map((s, idx) => {
+                                                        const isLive = s.estado === 'en_curso';
+                                                        const iconColor = isLive ? "#10B981" : (isSelected ? "#FFFFFFCC" : "#A78BFA66");
+                                                        return (
+                                                            <div key={idx} style={{ color: iconColor }} className={cn("transition-colors", isLive && "drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]")}>
+                                                                <SportIcon sport={s.name} size={isSelected ? 11 : 10} variant="react" />
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                             {isSelected && hasEvents && (
@@ -401,11 +405,11 @@ export default function CalendarioPage() {
                                                                     size="lg" 
                                                                     className={cn(
                                                                         "w-16 h-16 transition-all duration-500",
-                                                                        winnerSide === "a" ? "border-[3px] border-amber-400 scale-110 shadow-[0_0_20px_rgba(251,191,36,0.4)]" : "border-2 border-white/5 bg-black/40"
+                                                                        winnerSide === "a" ? "border-[3px] border-violet-400 scale-110 shadow-[0_0_20px_rgba(251,191,36,0.4)]" : "border-2 border-white/5 bg-black/40"
                                                                     )} 
                                                                 />
                                                                 {winnerSide === "a" && (
-                                                                    <div className="absolute -top-1 -right-1 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg">
+                                                                    <div className="absolute -top-1 -right-1 z-20 bg-violet-500 rounded-full p-0.5 shadow-lg">
                                                                         <Trophy size={10} className="text-black" />
                                                                     </div>
                                                                 )}
@@ -425,10 +429,10 @@ export default function CalendarioPage() {
                                                                         <span className="text-3xl sm:text-4xl font-black text-white/20 tracking-widest">VS</span>
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="relative flex h-2 w-2">
-                                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
                                                                             </span>
-                                                                            <span className="text-[8px] font-black text-amber-400 uppercase tracking-widest">Sin cobertura</span>
+                                                                            <span className="text-[8px] font-black text-violet-400 uppercase tracking-widest">Sin cobertura</span>
                                                                         </div>
                                                                     </div>
                                                                 ) : (
@@ -470,11 +474,11 @@ export default function CalendarioPage() {
                                                                     size="lg" 
                                                                     className={cn(
                                                                         "w-16 h-16 transition-all duration-500",
-                                                                        winnerSide === "b" ? "border-[3px] border-amber-400 scale-110 shadow-[0_0_20px_rgba(251,191,36,0.4)]" : "border-2 border-white/5 bg-black/40"
+                                                                        winnerSide === "b" ? "border-[3px] border-violet-400 scale-110 shadow-[0_0_20px_rgba(251,191,36,0.4)]" : "border-2 border-white/5 bg-black/40"
                                                                     )} 
                                                                 />
                                                                 {winnerSide === "b" && (
-                                                                    <div className="absolute -top-1 -right-1 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg">
+                                                                    <div className="absolute -top-1 -right-1 z-20 bg-violet-500 rounded-full p-0.5 shadow-lg">
                                                                         <Trophy size={10} className="text-black" />
                                                                     </div>
                                                                 )}
@@ -633,9 +637,9 @@ export default function CalendarioPage() {
                                                                 <span className="text-base font-black text-white tabular-nums drop-shadow-md">{new Date(match.fecha).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                                                                 {isLive ? (
                                                                     isAsync ? (
-                                                                        <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full shadow-lg">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                                                            <span className="text-[8px] font-black text-amber-400 uppercase tracking-[0.1em]">Sin cobertura</span>
+                                                                        <div className="flex items-center gap-2 px-3 py-1 bg-violet-500/10 border border-violet-500/20 rounded-full shadow-lg">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                                                                            <span className="text-[8px] font-black text-violet-400 uppercase tracking-[0.1em]">Sin cobertura</span>
                                                                         </div>
                                                                     ) : (
                                                                     <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-500/40 rounded-full shadow-lg">
@@ -674,12 +678,12 @@ export default function CalendarioPage() {
                                                                                 className={cn(
                                                                                     "w-12 h-12 transition-all duration-500",
                                                                                     winnerSide === "a"
-                                                                                        ? "border-2 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)] scale-110"
+                                                                                        ? "border-2 border-violet-400 shadow-[0_0_15px_rgba(251,191,36,0.3)] scale-110"
                                                                                         : "border border-white/10 bg-black/40"
                                                                                 )}
                                                                             />
                                                                             {winnerSide === "a" && (
-                                                                                <div className="absolute -top-1 -right-1 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg">
+                                                                                <div className="absolute -top-1 -right-1 z-20 bg-violet-500 rounded-full p-0.5 shadow-lg">
                                                                                     <Trophy size={8} className="text-black" />
                                                                                 </div>
                                                                             )}
@@ -716,12 +720,12 @@ export default function CalendarioPage() {
                                                                                 className={cn(
                                                                                     "w-12 h-12 transition-all duration-500",
                                                                                     winnerSide === "b"
-                                                                                        ? "border-2 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)] scale-110"
+                                                                                        ? "border-2 border-violet-400 shadow-[0_0_15px_rgba(251,191,36,0.3)] scale-110"
                                                                                         : "border border-white/10 bg-black/40"
                                                                                 )}
                                                                             />
                                                                             {winnerSide === "b" && (
-                                                                                <div className="absolute -top-1 -right-1 z-20 bg-amber-500 rounded-full p-0.5 shadow-lg">
+                                                                                <div className="absolute -top-1 -right-1 z-20 bg-violet-500 rounded-full p-0.5 shadow-lg">
                                                                                     <Trophy size={8} className="text-black" />
                                                                                 </div>
                                                                             )}

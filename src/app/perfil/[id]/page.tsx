@@ -93,7 +93,7 @@ export default function PublicProfilePage() {
                 glow: 'shadow-[0_0_15px_rgba(16,185,129,0.1)]'
             },
             'deportista': { 
-                color: 'text-amber-200 border-amber-200/20 bg-amber-200/5', 
+                color: 'text-violet-200 border-violet-200/20 bg-violet-200/5', 
                 icon: <Trophy size={12} />, 
                 label: 'Deportista',
                 glow: 'shadow-[0_0_15px_rgba(253,230,138,0.1)]'
@@ -185,7 +185,7 @@ export default function PublicProfilePage() {
     const firstName = profile.full_name?.split(' ')[0] || "Usuario";
 
     return (
-        <div className="min-h-screen bg-background text-white selection:bg-amber-500/30 overflow-x-hidden relative">
+        <div className="min-h-screen bg-background text-white selection:bg-violet-500/30 overflow-x-hidden relative">
             {/* ━━━ AMBIENT HYBRID BACKGROUND ━━━ */}
             <div className="fixed inset-0 z-0 pointer-events-none opacity-30 mix-blend-screen overflow-hidden">
                 <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-violet-600/10 rounded-full blur-[120px] animate-pulse" />
@@ -222,17 +222,17 @@ export default function PublicProfilePage() {
                         {/* Avatar Hub */}
                         <div className="relative group shrink-0">
                             {isProjectCreator && (
-                                <div className="absolute -inset-6 bg-gradient-to-tr from-amber-600/30 via-yellow-400/10 to-transparent blur-3xl animate-pulse" />
+                                <div className="absolute -inset-6 bg-gradient-to-tr from-violet-600/30 via-yellow-400/10 to-transparent blur-3xl animate-pulse" />
                             )}
                             <Avatar
                                 name={profile.full_name}
                                 className={cn(
                                     "relative w-32 h-32 sm:w-44 sm:h-44 lg:w-64 lg:h-64 rounded-[2.5rem] sm:rounded-[3rem] border border-white/10 shadow-2xl bg-black text-3xl sm:text-5xl lg:text-7xl font-sans ring-1 ring-white/5",
-                                    isProjectCreator && "border-amber-500/40 ring-amber-500/20 shadow-amber-500/10"
+                                    isProjectCreator && "border-violet-500/40 ring-violet-500/20 shadow-violet-500/10"
                                 )}
                             />
                             {isProjectCreator && (
-                                <div className="absolute -bottom-2 -right-2 p-3 bg-amber-500 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.5)] z-20 border-4 border-black group-hover:scale-110 transition-transform">
+                                <div className="absolute -bottom-2 -right-2 p-3 bg-violet-500 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.5)] z-20 border-4 border-black group-hover:scale-110 transition-transform">
                                     <Crown size={24} className="text-black" />
                                 </div>
                             )}
@@ -244,7 +244,7 @@ export default function PublicProfilePage() {
                                 <div className="flex flex-wrap items-center justify-center gap-2">
                                     {profile.roles?.map((role: string) => renderRoleCard(role))}
                                     {isProjectCreator && (
-                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
                                             <Crown size={12} />
                                             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Original Creator</span>
                                         </div>
@@ -264,7 +264,7 @@ export default function PublicProfilePage() {
                                     className={cn(
                                         "text-2xl sm:text-5xl lg:text-8xl font-black font-sans tracking-tighter leading-[1.1] mb-2 drop-shadow-2xl break-all sm:break-words",
                                         isProjectCreator
-                                            ? "text-transparent bg-clip-text bg-gradient-to-b from-white via-amber-200 to-amber-500"
+                                            ? "text-transparent bg-clip-text bg-gradient-to-b from-white via-violet-200 to-violet-500"
                                             : !profile.name_color ? "text-white" : undefined
                                     )}
                                     style={!isProjectCreator && profile.name_color ? { color: profile.name_color } : undefined}
@@ -394,7 +394,7 @@ export default function PublicProfilePage() {
                                                             strokeLinecap="round"
                                                             className={cn(
                                                                 "transition-all duration-1000",
-                                                                rate > 50 ? "text-emerald-400" : rate > 0 ? "text-amber-400" : "text-white/10"
+                                                                rate > 50 ? "text-emerald-400" : rate > 0 ? "text-violet-400" : "text-white/10"
                                                             )} 
                                                             style={{ filter: `drop-shadow(0 0 8px ${rate > 50 ? 'rgba(52,211,153,0.3)' : 'rgba(251,191,36,0.3)'})` }}
                                                         />
@@ -449,9 +449,9 @@ export default function PublicProfilePage() {
                                                 return (
                                                     <div className="grid grid-cols-3 gap-3">
                                                         {[
-                                                          { val: s.pts3 || 0, label: '3PT', color: 'text-amber-400' },
-                                                          { val: s.pts2 || 0, label: '2PT', color: 'text-amber-400' },
-                                                          { val: s.pts1 || 0, label: 'FT', color: 'text-amber-400' }
+                                                          { val: s.pts3 || 0, label: '3PT', color: 'text-violet-400' },
+                                                          { val: s.pts2 || 0, label: '2PT', color: 'text-violet-400' },
+                                                          { val: s.pts1 || 0, label: 'FT', color: 'text-violet-400' }
                                                         ].map((st, idx) => (
                                                           <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
                                                               <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
@@ -502,7 +502,7 @@ export default function PublicProfilePage() {
                                                     <div className="grid grid-cols-3 gap-3">
                                                         {[
                                                           { val: s.wins || 0, label: 'Victorias', color: 'text-emerald-400' },
-                                                          { val: s.empates || 0, label: 'Empates', color: 'text-amber-400' },
+                                                          { val: s.empates || 0, label: 'Empates', color: 'text-violet-400' },
                                                           { val: s.losses || 0, label: 'Derrotas', color: 'text-rose-400' },
                                                         ].map((st, idx) => (
                                                           <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
@@ -518,7 +518,7 @@ export default function PublicProfilePage() {
                                                 return (
                                                     <div className="grid grid-cols-3 gap-3">
                                                         {[
-                                                          { val: s.gold || 0, label: '1er Lugar', color: 'text-amber-400' },
+                                                          { val: s.gold || 0, label: '1er Lugar', color: 'text-violet-400' },
                                                           { val: s.silver || 0, label: '2do Lugar', color: 'text-slate-300' },
                                                           { val: s.bronze || 0, label: '3er Lugar', color: 'text-orange-400' },
                                                         ].map((st, idx) => (
@@ -541,7 +541,7 @@ export default function PublicProfilePage() {
                                                     <div className="w-[1px] h-10 bg-white/10" />
                                                     <div className="flex flex-col items-center">
                                                         <div className="flex gap-2 mb-2">
-                                                            <div className="w-3 h-4 bg-amber-500 rounded-sm shadow-[0_0_15px_rgba(245,158,11,0.4)]" />
+                                                            <div className="w-3 h-4 bg-violet-500 rounded-sm shadow-[0_0_15px_rgba(245,158,11,0.4)]" />
                                                             <p className="text-lg font-black font-mono text-white leading-none">{s.yellowCards || 0}</p>
                                                         </div>
                                                         <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Amarillas</p>
@@ -706,15 +706,15 @@ export default function PublicProfilePage() {
                         <div className="space-y-8">
                             {/* PRÓXIMOS ENCUENTROS */}
                             {upcomingMatches.length > 0 && (
-                                <div className="rounded-[3rem] bg-black/20 border border-amber-500/20 p-8 lg:p-12 shadow-2xl backdrop-blur-md space-y-10 relative overflow-hidden group/upcoming">
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[80px] pointer-events-none" />
+                                <div className="rounded-[3rem] bg-black/20 border border-violet-500/20 p-8 lg:p-12 shadow-2xl backdrop-blur-md space-y-10 relative overflow-hidden group/upcoming">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/5 blur-[80px] pointer-events-none" />
                                     
                                     <div className="flex items-center justify-between border-b border-white/10 pb-8 relative z-10">
                                         <div className="flex items-center gap-4">
-                                            <div className="p-2.5 bg-amber-500/10 rounded-2xl border border-amber-500/20 shadow-inner">
-                                              <Calendar size={20} className="text-amber-400" />
+                                            <div className="p-2.5 bg-violet-500/10 rounded-2xl border border-violet-500/20 shadow-inner">
+                                              <Calendar size={20} className="text-violet-400" />
                                             </div>
-                                            <h3 className="text-[11px] font-display font-black uppercase tracking-[0.5em] text-amber-200/60">
+                                            <h3 className="text-[11px] font-display font-black uppercase tracking-[0.5em] text-violet-200/60">
                                                 PRÓXIMOS ENCUENTROS
                                             </h3>
                                         </div>
@@ -734,7 +734,7 @@ export default function PublicProfilePage() {
                                                         <div className="flex items-center gap-6 relative z-10">
                                                             <div className={cn(
                                                                 "w-12 h-12 rotate-45 rounded-xl border flex items-center justify-center transition-all shadow-inner",
-                                                                isLive ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : "bg-white/5 border-white/10 text-white/40 group-hover:text-amber-400 group-hover:border-amber-500/30"
+                                                                isLive ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : "bg-white/5 border-white/10 text-white/40 group-hover:text-violet-400 group-hover:border-violet-500/30"
                                                             )}>
                                                                 <div className="-rotate-45">{icon}</div>
                                                             </div>

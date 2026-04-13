@@ -42,9 +42,9 @@ export default function QuinielaPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-background text-white font-sans pb-20 selection:bg-indigo-500/30">
+        <div className="min-h-screen bg-background text-white font-sans pb-20 selection:bg-violet-500/30">
             <div className="fixed inset-0 z-0 pointer-events-none opacity-40 mix-blend-screen overflow-hidden">
-                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-violet-600/20 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-violet-500/20 rounded-full blur-[120px] animate-pulse" />
             </div>
 
             <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-end overflow-hidden opacity-20">

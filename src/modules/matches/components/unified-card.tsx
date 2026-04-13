@@ -78,7 +78,7 @@ export function UnifiedCard({
                 <div className="relative p-7 sm:p-10 flex flex-col h-full justify-center">
                     <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-2.5">
-                            <div className={cn("w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner group-hover:border-violet-500/30 transition-colors", sportName === 'Fútbol' ? 'border-emerald-500/30 shadow-emerald-500/10' : '')}>
+                            <div className={cn("w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner hover:bg-white/10 transition-colors")} style={{ borderColor: `${SPORT_COLORS[sportName] || '#ffffff'}30` }}>
                                 <SportIcon sport={sportName} size={15} variant="react" className="text-white transition-opacity group-hover:opacity-100 placeholder:grayscale" />
                             </div>
                             <div className="flex flex-col">
@@ -93,10 +93,16 @@ export function UnifiedCard({
                                     ? <span className="text-[8px] font-black text-amber-400/60 uppercase tracking-widest px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">Sin cobertura</span>
                                     : <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportName} />
                             ) : (
-                                <div className={cn(
-                                    "flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 shadow-inner",
-                                    statusLabel === 'PROGRAMADO' ? "text-violet-400 border-violet-500/20 bg-violet-500/5 transition-all group-hover:bg-violet-500/10" : "text-white/40"
-                                )}>
+                                <div 
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 shadow-inner transition-all"
+                                    )}
+                                    style={statusLabel === 'PROGRAMADO' ? { 
+                                        color: SPORT_COLORS[sportName], 
+                                        borderColor: `${SPORT_COLORS[sportName]}30`,
+                                        background: `${SPORT_COLORS[sportName]}10`
+                                    } : {}}
+                                >
                                     {statusIcon}
                                     <span className="text-[9px] font-black uppercase tracking-[0.1em]">{statusLabel}</span>
                                 </div>

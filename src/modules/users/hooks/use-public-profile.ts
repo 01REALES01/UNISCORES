@@ -218,7 +218,6 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
                 });
             }
         }
-    }
 
     const result = {
         profile,

@@ -185,6 +185,43 @@ export const AdminScoreboard = ({
                     })}
                   </div>
                 )}
+                {isLive && disciplinaName === 'Baloncesto' && (
+                  <div className="flex items-center gap-2 px-1">
+                    {[1, 2, 3, 4].map(q => {
+                      const isActive = (detalle.cuarto_actual || 1) === q;
+                      const isPast = (detalle.cuarto_actual || 1) > q;
+                      return (
+                        <div
+                          key={q}
+                          className="flex-1 h-9 rounded-xl font-black text-[9px] uppercase tracking-widest border flex items-center justify-center transition-all"
+                          style={isActive
+                            ? { background: sportColor, color: '#000', borderColor: 'transparent', boxShadow: `0 2px 10px ${sportColor}40` }
+                            : isPast
+                              ? { background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.1)' }
+                              : { background: 'rgba(255,255,255,0.01)', color: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.05)' }
+                          }
+                        >
+                          Q{q}
+                        </div>
+                      );
+                    })}
+                    {detalle.cuarto_actual > 4 && (
+                      <div
+                        className="flex-1 h-9 rounded-xl font-black text-[9px] uppercase tracking-widest border flex items-center justify-center"
+                        style={{ background: sportColor, color: '#000', borderColor: 'transparent', boxShadow: `0 2px 10px ${sportColor}40` }}
+                      >
+                        OT{detalle.cuarto_actual - 4}
+                      </div>
+                    )}
+                    <button
+                      onClick={onCambiarPeriodo}
+                      className="px-4 h-9 rounded-xl border flex items-center justify-center gap-2 text-white border-white/20 bg-white/5 hover:bg-white/20 transition-all font-black text-[9px] uppercase tracking-widest active:scale-95"
+                      title="Siguiente Cuarto / Prórroga"
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
                 {isLive && disciplinaName === 'Fútbol' && onCambiarFaseFutbol && (() => {
                   const fase = detalle.fase_futbol;
                   const tiempoActual = detalle.tiempo_actual || 1;

@@ -113,32 +113,32 @@ export const SPORT_SOFT_BG: Record<string, string> = {
 
 export const SPORT_ACCENT: Record<string, string> = {
     'Fútbol': 'text-emerald-400',
-    'Baloncesto': 'text-amber-400',
-    'Voleibol': 'text-orange-400',
-    'Tenis': 'text-lime-400',
-    'Tenis de Mesa': 'text-pink-400',
-    'Ajedrez': 'text-[#F5F5DC]',
-    'Natación': 'text-sky-400',
+    'Baloncesto': 'text-violet-400',
+    'Voleibol': 'text-violet-400',
+    'Tenis': 'text-emerald-400',
+    'Tenis de Mesa': 'text-violet-400',
+    'Ajedrez': 'text-white',
+    'Natación': 'text-emerald-400',
 };
 
 export const SPORT_BORDER: Record<string, string> = {
     'Fútbol': 'border-emerald-500/20',
-    'Baloncesto': 'border-amber-500/20',
-    'Voleibol': 'border-orange-500/20',
-    'Tenis': 'border-lime-500/20',
-    'Tenis de Mesa': 'border-pink-500/20',
+    'Baloncesto': 'border-violet-500/20',
+    'Voleibol': 'border-violet-500/20',
+    'Tenis': 'border-emerald-500/20',
+    'Tenis de Mesa': 'border-violet-500/20',
     'Ajedrez': 'border-white/20',
-    'Natación': 'border-sky-500/20',
+    'Natación': 'border-emerald-500/20',
 };
 
 export const SPORT_LIVE_TEXT: Record<string, string> = {
     'Fútbol': 'text-emerald-400',
-    'Baloncesto': 'text-amber-400',
-    'Voleibol': 'text-orange-400',
-    'Tenis': 'text-lime-400',
-    'Tenis de Mesa': 'text-pink-400',
+    'Baloncesto': 'text-violet-400',
+    'Voleibol': 'text-violet-400',
+    'Tenis': 'text-emerald-400',
+    'Tenis de Mesa': 'text-violet-400',
     'Ajedrez': 'text-white',
-    'Natación': 'text-sky-400',
+    'Natación': 'text-emerald-400',
     'default': 'text-violet-300'
 };
 
@@ -165,30 +165,30 @@ export const SPORT_LIVE_BAR: Record<string, string> = {
 };
 
 export const SPORT_GLOW: Record<string, string> = {
-    'Fútbol': 'hover:shadow-lg hover:shadow-emerald-500/20',
-    'Baloncesto': 'hover:shadow-lg hover:shadow-amber-500/20',
-    'Voleibol': 'hover:shadow-lg hover:shadow-orange-500/20',
-    'Tenis': 'hover:shadow-lg hover:shadow-lime-500/20',
-    'Tenis de Mesa': 'hover:shadow-lg hover:shadow-pink-500/20',
-    'Ajedrez': 'hover:shadow-lg hover:shadow-white/20',
-    'Natación': 'hover:shadow-lg hover:shadow-sky-500/20',
-    'default': 'hover:shadow-lg hover:shadow-primary/20'
+    'Fútbol': 'text-emerald-500 drop-shadow-[0_0_20px_rgba(16,185,129,0.5)]',
+    'Baloncesto': 'text-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]',
+    'Voleibol': 'text-orange-500 drop-shadow-[0_0_20px_rgba(249,115,22,0.5)]',
+    'Tenis': 'text-lime-500 drop-shadow-[0_0_20px_rgba(132,204,22,0.5)]',
+    'Tenis de Mesa': 'text-pink-500 drop-shadow-[0_0_20px_rgba(236,72,153,0.5)]',
+    'Ajedrez': 'text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]',
+    'Natación': 'text-sky-500 drop-shadow-[0_0_20px_rgba(14,165,233,0.5)]',
+    'default': 'text-primary drop-shadow-[0_0_20px_rgba(124,58,237,0.3)]'
 };
 
 export const SPORT_GRADIENT: Record<string, string> = {
-    'Fútbol': 'from-emerald-500/20 to-transparent',
-    'Baloncesto': 'from-amber-500/20 to-transparent',
-    'Voleibol': 'from-orange-500/20 to-transparent',
-    'Tenis': 'from-lime-500/20 to-transparent',
-    'Tenis de Mesa': 'from-pink-500/20 to-transparent',
-    'Ajedrez': 'from-white/20 to-transparent',
-    'Natación': 'from-sky-500/20 to-transparent',
-    'default': 'from-primary/10 to-transparent'
+    'Fútbol': 'from-emerald-900/40 via-black to-black',
+    'Baloncesto': 'from-amber-900/40 via-black to-black',
+    'Voleibol': 'from-orange-900/40 via-black to-black',
+    'Tenis': 'from-lime-900/40 via-black to-black',
+    'Tenis de Mesa': 'from-pink-900/40 via-black to-black',
+    'Ajedrez': 'from-slate-900/40 via-black to-black',
+    'Natación': 'from-sky-900/40 via-black to-black',
+    'default': 'from-violet-900/20 via-black to-black'
 };
 
 export const BRAND_VALUES = [
     { name: 'Amistad', color: '#F97316', bg: 'bg-orange-500' },
-    { name: 'Alegría', color: '#6D28D9', bg: 'bg-primary' },
+    { name: 'Alegría', color: '#7C3AED', bg: 'bg-primary' },
     { name: 'Tolerancia', color: '#1E1B4B', bg: 'bg-[#1E1B4B]' },
     { name: 'Cortesía', color: '#F5F5DC', bg: 'bg-[#F5F5DC]', text: 'text-primary' },
     { name: 'Perseverancia', color: '#059669', bg: 'bg-secondary' },

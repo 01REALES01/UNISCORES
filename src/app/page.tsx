@@ -282,7 +282,7 @@ export default function Home() {
                 e.stopPropagation();
                 handleSaveCareers();
               }}
-              className="bg-white hover:bg-[#F5F5DC] text-violet-900 font-black uppercase tracking-widest px-6 shadow-md border-none transition-all"
+              className="bg-white hover:bg-violet-50 text-violet-900 font-black uppercase tracking-widest px-6 shadow-md border-none transition-all"
             >
               Aceptar
             </Button>
@@ -419,7 +419,7 @@ export default function Home() {
                   }}
                   className="w-full md:w-auto mt-2 block"
                 >
-                  <Button className="w-full md:w-auto bg-white hover:bg-[#F5F5DC] text-violet-900 font-black uppercase tracking-widest px-8 py-6 rounded-2xl shadow-lg transform hover:-translate-y-1 transition-all outline-none border-none">
+                  <Button className="w-full md:w-auto bg-white hover:bg-violet-50 text-violet-900 font-black uppercase tracking-widest px-8 py-6 rounded-2xl shadow-lg transform hover:-translate-y-1 transition-all outline-none border-none">
                     {showLoginPrompt ? "Ingresar a mi cuenta" : "Escoger Carreras"} <ArrowRight size={18} className="ml-2" />
                   </Button>
                 </Link>

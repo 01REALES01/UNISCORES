@@ -77,44 +77,45 @@ export function ExpandableTabs({
                 const isSelected = hovered === index || activeItem === index;
                 const showLabel = isSelected || alwaysShowLabels;
 
-                const ButtonComponent = isMounted ? m.button : "button";
-                const SpanComponent = isMounted ? m.span : "span";
-
                 return (
-                    <ButtonComponent
+                    <button
                         key={tab.title}
-                        {...(isMounted ? {
-                            initial: false,
-                            animate: {
-                                backgroundColor: isSelected ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0)",
-                            }
-                        } : {})}
                         onMouseEnter={() => handleMouseEnter(index)}
-                        onMouseLeave = {handleMouseLeave}
+                        onMouseLeave={handleMouseLeave}
                         onClick={() => handleClick(index)}
                         className={cn(
-                            "relative flex items-center rounded-full px-3 py-2 transition-all duration-300",
-                            isSelected ? activeColor : "text-[#F5F5DC]/60 hover:text-[#F5F5DC]"
+                            "relative flex items-center rounded-full px-3 py-2 transition-all duration-300 overflow-hidden",
+                            isSelected ? activeColor : "text-violet-100/40 hover:text-white"
                         )}
                         aria-label={tab.title}
                     >
-                        <Icon size={18} strokeWidth={isSelected ? 2.5 : 2} className="transition-transform duration-300 flex-shrink-0" />
+                        {isSelected && isMounted && (
+                            <m.div
+                                layoutId="expandable-tab-bg"
+                                className={cn(
+                                    "absolute inset-0 bg-white/10 -z-10",
+                                    isMounted ? "opacity-100" : "opacity-0"
+                                )}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.2 }}
+                            />
+                        )}
+                        <Icon size={18} strokeWidth={isSelected ? 2.5 : 2} className="transition-transform duration-300 flex-shrink-0 relative z-10" />
                         <AnimatePresence initial={false}>
-                            {showLabel && (
-                                <SpanComponent
-                                    {...(isMounted ? {
-                                        initial: { width: 0, opacity: 0, marginLeft: 0 },
-                                        animate: { width: "auto", opacity: 1, marginLeft: 8 },
-                                        exit: { width: 0, opacity: 0, marginLeft: 0 },
-                                        transition: { duration: 0.2, ease: "easeInOut" }
-                                    } : {})}
-                                    className="overflow-hidden whitespace-nowrap text-[13px] font-display tracking-wide"
+                            {showLabel && isMounted && (
+                                <m.span
+                                    initial={{ width: 0, opacity: 0, marginLeft: 0 }}
+                                    animate={{ width: "auto", opacity: 1, marginLeft: 8 }}
+                                    exit={{ width: 0, opacity: 0, marginLeft: 0 }}
+                                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                                    className="overflow-hidden whitespace-nowrap text-[13px] font-display tracking-wide relative z-10"
                                 >
                                     <span className="font-black">{tab.title.slice(0, 2)}</span>{tab.title.slice(2)}
-                                </SpanComponent>
+                                </m.span>
                             )}
                         </AnimatePresence>
-                    </ButtonComponent>
+                    </button>
                 );
             })}
         </div>

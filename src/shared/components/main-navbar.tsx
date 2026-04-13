@@ -120,7 +120,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                     {/* 2. CENTER: Navigation Dock */}
                     <div className="hidden xl:flex flex-shrink-0 items-center justify-center order-2 mx-2 max-w-[55%]">
                         <ExpandableTabs
-                            activeColor="text-[#F5F5DC]"
+                            activeColor="text-white"
                             activeItem={getActiveIndex()}
                             alwaysShowLabels={false}
                             tabs={navItems.map(item => ({ title: item.title, icon: item.icon }))}
@@ -134,8 +134,8 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                         <div className="flex items-center gap-2">
                             {!user ? (
                                 <Link href="/login">
-                                    <Button variant="outline" className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-[#F5F5DC] gap-2 font-medium px-3 sm:px-4 h-9 sm:h-10 text-xs sm:text-sm">
-                                        <UserIcon size={16} />
+                                    <Button variant="outline" className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white gap-2 font-medium px-3 sm:px-4 h-9 sm:h-10 text-xs sm:text-sm shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+                                        <UserIcon size={16} className="text-violet-400" />
                                         <span className="hidden sm:inline">Ingresar</span>
                                     </Button>
                                 </Link>
@@ -147,7 +147,7 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
                                     >
                                         <div className="hidden sm:block text-right pl-2">
                                             <span className="block text-[8px] text-slate-500 font-black uppercase tracking-[0.2em] leading-none mb-1">¡Hola!</span>
-                                            <p className="text-[12px] font-black text-white truncate max-w-[120px] tracking-tight group-hover:text-[#F5F5DC] transition-colors">
+                                            <p className="text-[12px] font-black text-white truncate max-w-[120px] tracking-tight group-hover:text-violet-300 transition-colors">
                                                 {profile?.full_name?.split(' ')[0] || user.email?.split('@')[0]}
                                             </p>
                                         </div>

@@ -36,6 +36,7 @@ export default function PartidosPage() {
     const [selectedSport, setSelectedSport] = useState("Todos");
     const [selectedGender, setSelectedGender] = useState<string>("todos");
     const [filterVisible, setFilterVisible] = useState(true);
+    const [loadTimeout, setLoadTimeout] = useState(false);
     const lastScrollY = useRef(0);
     // Derive unique sport names from all matches + jornadas
 
@@ -137,6 +138,12 @@ export default function PartidosPage() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    useEffect(() => {
+        if (!loading || rawMatches.length > 0) { setLoadTimeout(false); return; }
+        const t = setTimeout(() => setLoadTimeout(true), 10000);
+        return () => clearTimeout(t);
+    }, [loading, rawMatches.length]);
+
     // 5. Auto-scroll to today
     useEffect(() => {
         if (!loading && groupedMatches.length > 0) {
@@ -230,7 +237,7 @@ export default function PartidosPage() {
                                         </div>
                                         <span className={cn(
                                             "text-[9px] sm:text-[11px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-colors",
-                                            selectedSport === "Todos" ? "text-white" : "text-white/30"
+                                            selectedSport === "Todos" ? "text-white" : "text-white/20"
                                         )}>
                                             Todos
                                         </span>
@@ -259,7 +266,7 @@ export default function PartidosPage() {
                                                 </div>
                                                 <span className={cn(
                                                     "text-[9px] sm:text-[11px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-colors",
-                                                    isActive ? "text-white" : "text-white/30 group-hover/btn:text-white/60"
+                                                    isActive ? "text-white" : "text-white/20 group-hover/btn:text-white/40"
                                                 )}>
                                                     {sport}
                                                 </span>
@@ -278,9 +285,9 @@ export default function PartidosPage() {
                                         <button key={g.value} onClick={() => setSelectedGender(g.value)}
                                             className={cn(
                                                 "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-[8.5px] sm:text-[10px] font-display font-black tracking-widest transition-all border whitespace-nowrap",
-                                                isSelected ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105" : "bg-transparent border-transparent text-white/30 hover:text-white/60"
+                                                isSelected ? "bg-[#F5F5DC] text-[#7C3AED] border-[#F5F5DC] shadow-xl scale-105" : "bg-transparent border-transparent text-[#A78BFA]/40 hover:text-white"
                                             )}>
-                                            <span className={cn("text-xs sm:text-sm leading-none", isSelected ? "text-[#7C3AED]" : "text-violet-400")}>{g.icon}</span>
+                                            <span style={{ color: isSelected ? "#7C3AED" : "#A78BFA66" }} className="relative z-10 leading-none flex items-center justify-center">{g.icon}</span>
                                             <span className="uppercase">{g.label}</span>
                                         </button>
                                     );
@@ -299,11 +306,21 @@ export default function PartidosPage() {
                 </div>
 
                 {loading || jornadasLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="h-48 rounded-[2rem] bg-white/5 animate-pulse border border-white/5" />
-                        ))}
-                    </div>
+                    loadTimeout && rawMatches.length === 0 ? (
+                        <ResilienceUI 
+                            title="Sincronización Lenta"
+                            description="Los partidos están tardando en cargar. Esto puede deberse a la alta demanda actual."
+                            onRetry={() => { setLoadTimeout(false); window.location.reload(); }}
+                            backFallback="/"
+                            retryLabel="REINTENTAR CARGA"
+                        />
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[1, 2, 3, 4, 5, 6].map(i => (
+                                <div key={i} className="h-48 rounded-[2rem] bg-white/5 animate-pulse border border-white/5" />
+                            ))}
+                        </div>
+                    )
                 ) : groupedMatches.length > 0 ? (
                     <div className="space-y-16">
                         {groupedMatches.map(group => (

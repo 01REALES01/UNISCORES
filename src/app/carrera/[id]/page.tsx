@@ -86,7 +86,7 @@ function JugadorCard({ j }: { j: any }) {
                         {activated ? "Perfil Activo" : "Sin Perfil"}
                     </span>
                 </div>
-                <ArrowUpRight size={14} className="text-white/10 group-hover:text-emerald-400 transition-colors shrink-0" />
+                <ArrowUpRight size={14} className="text-white/10 group-hover:text-violet-400 transition-colors shrink-0" />
             </div>
         </Link>
     );
@@ -96,6 +96,8 @@ function JugadorCard({ j }: { j: any }) {
 
  function SportGroupedAthletes({ athletes, jugadores }: { athletes: any[]; jugadores: any[] }) {
     const [openSports, setOpenSports] = useState<Record<string, boolean>>({});
+
+    const [search, setSearch] = useState("");
 
     const grouped = useMemo(() => {
         const map: Record<string, { masculine: any[]; feminine: any[]; others: any[] }> = {};
@@ -107,13 +109,17 @@ function JugadorCard({ j }: { j: any }) {
             return 'others';
         };
 
+        const q = search.toLowerCase();
+
         for (const a of athletes) {
+            if (q && !a.full_name?.toLowerCase().includes(q)) continue;
             const sport = a.disciplina?.name || "Multideporte";
             if (!map[sport]) map[sport] = { masculine: [], feminine: [], others: [] };
             map[sport][processGender(a)].push({ ...a, isProfile: true });
         }
 
         for (const j of jugadores) {
+            if (q && !j.nombre?.toLowerCase().includes(q)) continue;
             const sport = j.disciplina?.name || "Multideporte";
             if (!map[sport]) map[sport] = { masculine: [], feminine: [], others: [] };
             
@@ -128,13 +134,25 @@ function JugadorCard({ j }: { j: any }) {
             }
         }
         return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
-    }, [athletes, jugadores]);
+    }, [athletes, jugadores, search]);
 
     const toggle = (sport: string) =>
         setOpenSports((prev) => ({ ...prev, [sport]: !prev[sport] }));
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-6">
+            <div className="relative group mx-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-violet-500 transition-colors" size={16} />
+                <input 
+                    type="text" 
+                    placeholder="BUSCAR DEPORTISTA POR NOMBRE..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none focus:border-violet-500/30 transition-all placeholder:text-white/10"
+                />
+            </div>
+
+            <div className="space-y-3">
             {grouped.map(([sport, categories]) => {
                 const isOpen = openSports[sport] ?? false;
                 const accent = SPORT_ACCENT[sport] || "text-emerald-400";
@@ -159,9 +177,9 @@ function JugadorCard({ j }: { j: any }) {
                             </div>
                             <div className={cn(
                                 "p-2 rounded-lg bg-white/5 border border-white/10 transition-all",
-                                isOpen ? "rotate-180 bg-violet-600 border-transparent shadow-lg shadow-violet-500/20" : "text-white/20"
+                                isOpen ? "rotate-180 bg-violet-500 border-transparent shadow-lg shadow-violet-500/20" : "text-white/20"
                             )}>
-                                <ChevronDown size={14} className={isOpen ? "text-white" : ""} />
+                                <ChevronDown size={14} className={isOpen ? "text-black" : ""} />
                             </div>
                         </button>
 
@@ -222,6 +240,7 @@ function JugadorCard({ j }: { j: any }) {
                     </div>
                 );
             })}
+            </div>
         </div>
     );
 }
@@ -591,7 +610,7 @@ export default function CarreraProfilePage() {
                                                     </div>
                                                 </div>
                                                 {isCombined && (
-                                                    <Badge variant="outline" className="bg-amber-500/10 border-amber-500/20 text-amber-500 text-[8px] font-black uppercase tracking-tighter shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+                                                    <Badge variant="outline" className="bg-violet-500/10 border-violet-500/20 text-violet-500 text-[8px] font-black uppercase tracking-tighter shadow-[0_0_10px_rgba(245,158,11,0.1)]">
                                                         Equipo Combinado
                                                     </Badge>
                                                 )}

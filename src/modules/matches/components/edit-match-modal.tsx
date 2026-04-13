@@ -833,10 +833,23 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                 <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 sm:space-y-10 relative z-10 custom-scrollbar">
                     {/* Period Selector - Intuitive Navigation */}
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-2 px-2 no-scrollbar">
-                        {(match.disciplinas?.name === 'Baloncesto' ? [1, 2, 3, 4] : match.disciplinas?.name === 'Fútbol' ? [1, 2] : [1, 2, 3, 4, 5]).map(p => {
+                        {(() => {
                             const sport = match.disciplinas?.name || '';
-                            const isActive = manualPeriod === p;
-                            const label = sport === 'Baloncesto' ? `${p}º cuarto` : sport === 'Fútbol' ? `${p}º tiempo` : `Set ${p}`;
+                            const base = sport === 'Baloncesto' ? [1, 2, 3, 4] : sport === 'Fútbol' ? [1, 2] : [1, 2, 3, 4, 5];
+                            // Combine base periods with any additional ones in data or the current manual selection
+                            const all = Array.from(new Set([
+                                ...base, 
+                                manualPeriod, 
+                                (localDetalle?.cuarto_actual || localDetalle?.set_actual || localDetalle?.tiempo_actual || 1)
+                            ])).sort((a, b) => a - b);
+
+                            return all.map(p => {
+                                const isActive = manualPeriod === p;
+                                let label = '';
+                                if (sport === 'Baloncesto') label = p > 4 ? `OT ${p - 4}` : `${p}º Q`;
+                                else if (sport === 'Fútbol') label = `${p}º T`;
+                                else label = `Set ${p}`;
+
                             return (
                                 <button
                                     key={p}
@@ -949,6 +962,29 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                                                         <Play size={16} fill="currentColor" />
                                                     </Button>
                                                 )}
+                                                
+                                                {/* Botón Siguiente Cuarto / Tiempo */}
+                                                <Button 
+                                                    variant="outline" 
+                                                    className="flex-1 h-11 rounded-xl bg-indigo-500/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500 hover:text-black transition-all"
+                                                    onClick={async () => {
+                                                        const sport = match.disciplinas?.name || '';
+                                                        const nuevoDetalle = nextPeriod(sport, localDetalle);
+                                                        setLocalDetalle(nuevoDetalle);
+                                                        setManualPeriod(getCurrentPeriodNumber(sport, nuevoDetalle));
+                                                        
+                                                        const { error } = await supabase
+                                                            .from('partidos')
+                                                            .update({ marcador_detalle: stampAudit(nuevoDetalle, profile) })
+                                                            .eq('id', match.id);
+                                                            
+                                                        if (error) toast.error("Error al avanzar periodo");
+                                                        else toast.success(`Iniciando ${sport === 'Baloncesto' ? 'Cuarto' : 'Tiempo'} ${getCurrentPeriodNumber(sport, nuevoDetalle)}`);
+                                                    }}
+                                                >
+                                                    <ChevronRight size={18} />
+                                                </Button>
+
                                                 <Button onClick={finalizarPartido} variant="ghost" className="flex-1 h-11 rounded-xl text-red-500 hover:text-red-400 hover:bg-red-500/10 border border-white/5">
                                                     <Square size={16} fill="currentColor" />
                                                 </Button>
@@ -1071,14 +1107,17 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                                         {match.disciplinas?.name === 'Baloncesto' ? (
                                             /* ── Baloncesto: 4 cuartos + prórrogas ── */
                                             <div className="space-y-6">
-                                                {[1, 2, 3, 4].map(qNum => (
+                                                {Object.keys(advancedSets).length === 0 && (
+                                                    <p className="text-[10px] text-slate-600 italic text-center py-4">No hay datos de cuartos registrados. Usa "+ Añadir Prórroga" para iniciar uno.</p>
+                                                )}
+                                                {Object.keys(advancedSets).map(Number).sort((a, b) => a - b).map(qNum => (
                                                     <div key={qNum} className={`p-4 rounded-2xl border transition-colors ${manualPeriod === qNum ? 'bg-orange-500/10 border-orange-500/20' : 'bg-black/20 border-white/5'}`}>
                                                         <p 
                                                             className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2 cursor-pointer group/header"
                                                             onClick={() => setManualPeriod(qNum)}
                                                         >
                                                             <span className={`w-1.5 h-1.5 rounded-full ${manualPeriod === qNum ? 'bg-orange-500 animate-pulse' : 'bg-slate-700'}`} />
-                                                            {qNum}º CUARTO {manualPeriod === qNum && <span className="text-orange-400 font-bold ml-auto">(EN VIVO)</span>}
+                                                            {qNum > 4 ? `PRÓRROGA ${qNum-4}` : `${qNum}º CUARTO`} {manualPeriod === qNum && <span className="text-orange-400 font-bold ml-auto">(EN VIVO)</span>}
                                                             {advancedSets[qNum] && (
                                                                 <button 
                                                                     onClick={(e) => { e.stopPropagation(); handleDeleteSet(qNum); }}
@@ -1124,6 +1163,20 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
                                                         )}
                                                     </div>
                                                 ))}
+
+                                                <button 
+                                                    onClick={() => {
+                                                        const nextQ = Math.max(4, ...Object.keys(advancedSets).map(Number), 0) + 1;
+                                                        handleAdvChange(nextQ, 'puntos_a', '0');
+                                                        handleAdvChange(nextQ, 'puntos_b', '0');
+                                                        setManualPeriod(nextQ);
+                                                        toast.info(`Añadido ${nextQ > 4 ? `Prórroga ${nextQ-4}` : `${nextQ}º Cuarto`}`);
+                                                    }}
+                                                    className="w-full py-4 rounded-[1.5rem] border-2 border-dashed border-white/10 hover:border-orange-500/40 hover:bg-orange-500/5 text-slate-500 hover:text-orange-400 text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 group"
+                                                >
+                                                    <Plus size={16} className="group-hover:rotate-90 transition-transform" />
+                                                    Añadir Cuarto / Prórroga
+                                                </button>
                                             </div>
                                         ) : (match.disciplinas?.name === 'Voleibol' || match.disciplinas?.name === 'Tenis' || match.disciplinas?.name === 'Tenis de Mesa') ? (
                                             /* ── Voleibol / Tenis: sets ── */

@@ -449,7 +449,16 @@ export function useMatchControl(matchId: string) {
 
             if (mensaje) {
                 const detalleFinal = { ...nuevoMarcador, minuto_actual: nuevoMinuto, estado_cronometro: 'pausado' };
-                await supabase.from('partidos').update({ marcador_detalle: auditDetalle(detalleFinal) }).eq('id', matchId);
+                const audited = auditDetalle(detalleFinal);
+                
+                const { error } = await supabase.from('partidos').update({ marcador_detalle: audited }).eq('id', matchId);
+                
+                if (error) {
+                    toast.error("Error al guardar: " + error.message);
+                    return;
+                }
+
+                setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: detalleFinal }) : null);
                 setMinutoActual(nuevoMinuto);
                 registrarEventoSistema('periodo', mensaje);
                 await logAction('CHANGE_PERIOD', 'partido', matchId, { mensaje });
