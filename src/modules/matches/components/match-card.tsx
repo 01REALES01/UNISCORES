@@ -36,6 +36,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
   const genero = (partido.genero || 'masculino').toLowerCase();
   const categoria = partido.categoria;
   const isSetSport = ['Tenis', 'Tenis de Mesa', 'Vóleibol', 'Voleibol', 'Bádminton', 'Badminton'].includes(sportName);
+  const isTenisCampo = sportName === 'Tenis';
   const isAsync = isAsyncMatch(partido);
   const matchResult = getMatchResult(partido);
 
@@ -158,6 +159,29 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                       EN CURSO
                     </span>
                   </div>
+                ) : isTenisCampo ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className={cn(
+                        'flex items-center justify-center gap-1 md:gap-2 font-black tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] text-white text-3xl md:text-6xl'
+                      )}
+                    >
+                      <span>{subScoreA ?? 0}</span>
+                      <span className="text-slate-300/40 text-2xl md:text-4xl -mt-1 md:-mt-2">:</span>
+                      <span>{subScoreB ?? 0}</span>
+                    </div>
+                    <div
+                      className={cn(
+                        'flex items-center justify-center gap-1 font-black tabular-nums text-white/45 text-[10px] md:text-xs tracking-tight',
+                        (labelA === 'DEUCE' || labelB === 'DEUCE' || labelA === 'AD' || labelB === 'AD') &&
+                          'text-white/70 text-xs md:text-sm'
+                      )}
+                    >
+                      <span>{labelA ?? '0'}</span>
+                      <span className="text-white/20">·</span>
+                      <span>{labelB ?? '0'}</span>
+                    </div>
+                  </div>
                 ) : (
                   <div className={cn(
                     "flex items-center justify-center gap-1 md:gap-2 font-black tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] text-white",
@@ -190,6 +214,35 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                       {extra?.includes('Set') ? `SET ${extra.split('Set').pop()?.trim()}` : extra}
                     </div>
                   ) : extra && isSetSport ? (
+                    isTenisCampo ? (
+                      <div className="flex items-center justify-between w-full min-w-[160px] px-1">
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: Math.max(scoreA ?? 0, 0) }).map((_, i) => (
+                            <span key={i} className="w-1.5 h-1.5 rounded-full bg-white/80 shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
+                          ))}
+                          {(scoreA ?? 0) === 0 && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-white/15 border border-white/20" />
+                          )}
+                        </div>
+                        <div
+                          className={cn(
+                            'text-[9px] font-black tracking-[0.25em] uppercase',
+                            SPORT_ACCENT[sportName] || 'text-white/60',
+                            'drop-shadow-[0_0_8px_currentColor] brightness-125'
+                          )}
+                        >
+                          {extra?.includes('Set') ? `SET ${extra.split('Set').pop()?.trim()}` : extra}
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: Math.max(scoreB ?? 0, 0) }).map((_, i) => (
+                            <span key={i} className="w-1.5 h-1.5 rounded-full bg-white/80 shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
+                          ))}
+                          {(scoreB ?? 0) === 0 && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-white/15 border border-white/20" />
+                          )}
+                        </div>
+                      </div>
+                    ) : (
                     <div className="flex items-center justify-between w-full min-w-[160px] px-1">
                       {/* Team A: número de juegos + dots de sets */}
                       <div className="flex items-center gap-1">
@@ -222,6 +275,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                         <span className="text-xs font-black tabular-nums text-white/70">{subScoreB ?? 0}</span>
                       </div>
                     </div>
+                    )
                   ) : extra ? (
                     <div className={cn(
                       "text-[10px] font-black tracking-[0.25em] uppercase transition-all duration-300",

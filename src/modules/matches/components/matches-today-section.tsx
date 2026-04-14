@@ -83,15 +83,27 @@ function MatchRow({ partido }: { partido: Partido }) {
   const setActual = det.set_actual;
 
   const isVolley = sportName === "Voleibol";
-  const isTenis = ["Tenis", "Tenis de Mesa"].includes(sportName);
+  const isTenisCampo = sportName === "Tenis";
+  const isTenisMesa = sportName === "Tenis de Mesa";
+  // Sets ganados en el partido (voleibol / tenis campo: scoreA; tenis mesa: subScore)
+  const matchSetsA = isVolley || isTenisCampo ? scoreA : isTenisMesa ? subScoreA : null;
+  const matchSetsB = isVolley || isTenisCampo ? scoreB : isTenisMesa ? subScoreB : null;
+  // Marcador “grande” en vivo: rally del set (voleibol), juegos en el set (tenis campo), puntos rally (tenis mesa)
+  const livePrimaryA = isVolley ? subScoreA : isTenisCampo ? subScoreA : isTenisMesa ? scoreA : null;
+  const livePrimaryB = isVolley ? subScoreB : isTenisCampo ? subScoreB : isTenisMesa ? scoreB : null;
 
-  const setsWonA = isVolley ? scoreA : isTenis ? subScoreA : null;
-  const setsWonB = isVolley ? scoreB : isTenis ? subScoreB : null;
-  const currentSetScoreA = isVolley ? subScoreA : isTenis ? scoreA : null;
-  const currentSetScoreB = isVolley ? subScoreB : isTenis ? scoreB : null;
-
-  const finalScoreA = isSetSport && isFinished ? (setsWonA ?? scoreA ?? 0) : (scoreA ?? 0);
-  const finalScoreB = isSetSport && isFinished ? (setsWonB ?? scoreB ?? 0) : (scoreB ?? 0);
+  const finalScoreA =
+    isFinished && isSetSport
+      ? isTenisMesa
+        ? subScoreA ?? scoreA ?? 0
+        : scoreA ?? 0
+      : scoreA ?? 0;
+  const finalScoreB =
+    isFinished && isSetSport
+      ? isTenisMesa
+        ? subScoreB ?? scoreB ?? 0
+        : scoreB ?? 0
+      : scoreB ?? 0;
 
   const winnerSide =
     isFinished && finalScoreA !== finalScoreB
@@ -189,25 +201,24 @@ function MatchRow({ partido }: { partido: Partido }) {
           ) : isLive ? (
             isSetSport ? (
               <div className="flex flex-col items-center gap-0.5">
-                <div className="flex items-center gap-1 font-black text-white tabular-nums text-sm sm:text-lg tracking-tight">
-                  {isTenis && labelA ? (
-                    <>
-                      <span>{labelA}</span>
-                      <span className="text-white/25 text-xs">·</span>
-                      <span>{labelB}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>{currentSetScoreA ?? 0}</span>
-                      <span className="text-white/25 text-xs">·</span>
-                      <span>{currentSetScoreB ?? 0}</span>
-                    </>
+                <div className="flex flex-col items-center gap-0.5">
+                  <div className="flex items-center gap-1 font-black text-white tabular-nums text-sm sm:text-lg tracking-tight">
+                    <span>{livePrimaryA ?? 0}</span>
+                    <span className="text-white/25 text-xs">·</span>
+                    <span>{livePrimaryB ?? 0}</span>
+                  </div>
+                  {isTenisCampo && (labelA != null || labelB != null) && (
+                    <div className="flex items-center gap-1 text-[9px] font-black text-white/40 tabular-nums tracking-tight">
+                      <span>{labelA ?? "0"}</span>
+                      <span className="text-white/15">·</span>
+                      <span>{labelB ?? "0"}</span>
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-1 text-[9px] font-bold text-white/35 tabular-nums">
-                  <span>{setsWonA ?? 0}</span>
+                  <span>{matchSetsA ?? 0}</span>
                   <span className="text-white/15">-</span>
-                  <span>{setsWonB ?? 0}</span>
+                  <span>{matchSetsB ?? 0}</span>
                 </div>
                 <div className="flex items-center gap-1 mt-0.5">
                   <span className="relative flex h-1.5 w-1.5">
@@ -239,9 +250,9 @@ function MatchRow({ partido }: { partido: Partido }) {
             <div className="flex flex-col items-center gap-0.5">
               {isSetSport ? (
                 <div className="flex items-center gap-1 font-black tabular-nums text-sm sm:text-base tracking-tight">
-                  <span className={cn(winnerSide === "a" ? "text-white font-black" : "text-white/35")}>{setsWonA ?? scoreA}</span>
+                  <span className={cn(winnerSide === "a" ? "text-white font-black" : "text-white/35")}>{finalScoreA}</span>
                   <span className="text-white/10 text-xs">-</span>
-                  <span className={cn(winnerSide === "b" ? "text-white font-black" : "text-white/35")}>{setsWonB ?? scoreB}</span>
+                  <span className={cn(winnerSide === "b" ? "text-white font-black" : "text-white/35")}>{finalScoreB}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1 font-black tabular-nums text-sm sm:text-base tracking-tight">

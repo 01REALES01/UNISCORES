@@ -111,6 +111,11 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
 
     // Calculate score using shared logic
     const scoreInfo = getCurrentScore(currentMatch.disciplinas?.name, currentMatch.marcador_detalle || {});
+    const sNameForScore = currentMatch.disciplinas?.name || '';
+    const isLiveTenisCampo =
+        currentMatch.estado === 'en_curso' && sNameForScore === 'Tenis';
+    const heroMainA = isLiveTenisCampo ? (scoreInfo.subScoreA ?? 0) : scoreInfo.scoreA;
+    const heroMainB = isLiveTenisCampo ? (scoreInfo.subScoreB ?? 0) : scoreInfo.scoreB;
 
     return (
         <div className="relative w-full h-[400px] md:h-[450px] rounded-[2rem] overflow-hidden mb-8 group border border-white/10 shadow-2xl">
@@ -309,10 +314,17 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                     </div>
                                                 ) : (
                                                 <div className="flex flex-col items-center w-full">
-                                                    <div className="text-[2rem] md:text-[5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-1.5 md:gap-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                                                        <span className="text-white text-right w-8 md:w-20">{scoreInfo.scoreA}</span>
-                                                        <div className="w-1.5 md:w-5 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
-                                                        <span className="text-white text-left w-8 md:w-20">{scoreInfo.scoreB}</span>
+                                                    <div className="flex flex-col items-center gap-0.5 w-full">
+                                                        <div className="text-[2rem] md:text-[5rem] leading-none font-black font-mono tracking-tighter flex items-center justify-center gap-1.5 md:gap-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                                                            <span className="text-white text-right w-8 md:w-20">{heroMainA}</span>
+                                                            <div className="w-1.5 md:w-5 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
+                                                            <span className="text-white text-left w-8 md:w-20">{heroMainB}</span>
+                                                        </div>
+                                                        {isLiveTenisCampo && (
+                                                            <div className="text-[10px] md:text-xs font-black text-white/35 tabular-nums tracking-tight">
+                                                                {scoreInfo.labelA ?? '0'} · {scoreInfo.labelB ?? '0'}
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     {/* Dynamic Info Row */}

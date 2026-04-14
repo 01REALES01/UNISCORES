@@ -7,6 +7,28 @@
 import type { ScoreDetail, ScoreResult } from '@/modules/sports/types';
 import { BaseSportService } from './base-sport.service';
 
+/** Puntos mínimos para ganar un set (25 salvo set corto a 15). */
+function minPointsToWinVolleySet(
+  setNum: number,
+  sets: Record<string, { puntos_a?: number; puntos_b?: number }> | undefined
+): number {
+  if (setNum === 5) return 15;
+  if (setNum !== 3 || !sets) return 25;
+  // BO3: 3.er set decisorio a 15 (1-1 en los dos primeros)
+  let a = 0;
+  let b = 0;
+  for (const k of [1, 2]) {
+    const s = sets[k] ?? sets[String(k) as unknown as number];
+    if (!s) continue;
+    const pA = s.puntos_a || 0;
+    const pB = s.puntos_b || 0;
+    if (pA >= 25 && pA - pB >= 2) a++;
+    else if (pB >= 25 && pB - pA >= 2) b++;
+  }
+  if (a === 1 && b === 1) return 15;
+  return 25;
+}
+
 export class VoleibolService extends BaseSportService {
   getPeriodDuration(): number { return 0; } // Sin límite de tiempo
   isCountdown(): boolean { return false; }
@@ -36,7 +58,12 @@ export class VoleibolService extends BaseSportService {
 
   isFinished(detalle: ScoreDetail): boolean {
     const d = detalle as any;
-    return (d.sets_a || 0) >= 3 || (d.sets_b || 0) >= 3;
+    const sa = d.sets_a || 0;
+    const sb = d.sets_b || 0;
+    if (sa >= 3 || sb >= 3) return true;
+    // BO3 al mejor de 3 sets
+    if (sa >= 2 || sb >= 2) return true;
+    return false;
   }
 
   addPoints(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b'): ScoreDetail {
@@ -77,21 +104,25 @@ export class VoleibolService extends BaseSportService {
 
   recalculateTotals(detalle: ScoreDetail): ScoreDetail {
     const d = this.clone(detalle) as any;
-    
+
     let setsA = 0;
     let setsB = 0;
 
     if (d.sets) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        Object.entries(d.sets).forEach(([key, set]: [string, any]) => {
-            const setNum = parseInt(key);
-            const pA = set.puntos_a || 0;
-            const pB = set.puntos_b || 0;
-            const minPts = setNum === 5 ? 15 : 25;
+      const nums = Object.keys(d.sets)
+        .map((k) => parseInt(k, 10))
+        .filter((n) => !Number.isNaN(n) && n >= 1)
+        .sort((a, b) => a - b);
+      for (const setNum of nums) {
+        const set = d.sets[setNum] ?? d.sets[String(setNum)];
+        if (!set) continue;
+        const pA = set.puntos_a || 0;
+        const pB = set.puntos_b || 0;
+        const minPts = minPointsToWinVolleySet(setNum, d.sets);
 
-            if (pA >= minPts && pA - pB >= 2) setsA++;
-            else if (pB >= minPts && pB - pA >= 2) setsB++;
-        });
+        if (pA >= minPts && pA - pB >= 2) setsA++;
+        else if (pB >= minPts && pB - pA >= 2) setsB++;
+      }
     }
 
     d.sets_a = setsA;
@@ -101,7 +132,7 @@ export class VoleibolService extends BaseSportService {
 
     // Sincronizar el set actual a la raíz (facilidad de lectura y compatibilidad)
     const currentSet = d.set_actual || 1;
-    const cur = d.sets?.[currentSet] || { puntos_a: 0, puntos_b: 0 };
+    const cur = d.sets?.[currentSet] || d.sets?.[String(currentSet)] || { puntos_a: 0, puntos_b: 0 };
     d.puntos_a = cur.puntos_a || 0;
     d.puntos_b = cur.puntos_b || 0;
     d.total_a = cur.puntos_a || 0;
@@ -110,9 +141,10 @@ export class VoleibolService extends BaseSportService {
     d.goles_b = setsB;
     const pA = cur.puntos_a || 0;
     const pB = cur.puntos_b || 0;
-    const minPts = currentSet === 5 ? 15 : 25;
-    const setWon = (pA >= minPts && pA - pB >= 2) || (pB >= minPts && pB - pA >= 2);
-    const matchOver = setsA >= 3 || setsB >= 3;
+    const minPtsCurrent = minPointsToWinVolleySet(currentSet, d.sets);
+    const setWon =
+      (pA >= minPtsCurrent && pA - pB >= 2) || (pB >= minPtsCurrent && pB - pA >= 2);
+    const matchOver = setsA >= 3 || setsB >= 3 || setsA >= 2 || setsB >= 2;
 
     if (!matchOver && setWon && currentSet < 5) {
       d.set_actual = currentSet + 1;

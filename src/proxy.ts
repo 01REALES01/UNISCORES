@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from 'next/server'
  * By refreshing the session server-side in middleware, we ensure the client
  * always receives fresh auth cookies before any page renders.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
         request,
     })
