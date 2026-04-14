@@ -36,17 +36,25 @@ export default function ClasificacionPage() {
     const [selectedGender, setSelectedGender] = useState<string>('todos');
     const [selectedCategory, setSelectedCategory] = useState<string>('avanzado');
     const [hideTeamBrackets, setHideTeamBrackets] = useState<boolean>(false);
+    const [hideTenisBrackets, setHideTenisBrackets] = useState<boolean>(false);
     const isTenis = selectedSport === 'Tenis';
     const isTeamSport = ['Fútbol', 'Voleibol', 'Baloncesto'].includes(selectedSport);
 
     // Fetch site configuration + realtime updates
     useEffect(() => {
-        supabase.from('site_config').select('value').eq('key', 'hide_team_brackets').maybeSingle()
-            .then(({ data }) => { if (data) setHideTeamBrackets(data.value === true); });
+        supabase.from('site_config').select('key, value').in('key', ['hide_team_brackets', 'hide_tenis_brackets'])
+            .then(({ data }) => {
+                data?.forEach(row => {
+                    if (row.key === 'hide_team_brackets') setHideTeamBrackets(row.value === true);
+                    if (row.key === 'hide_tenis_brackets') setHideTenisBrackets(row.value === true);
+                });
+            });
 
         const channel = supabase.channel('site_config_bracket')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_config', filter: 'key=eq.hide_team_brackets' },
                 (payload) => setHideTeamBrackets(payload.new.value === true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'site_config', filter: 'key=eq.hide_tenis_brackets' },
+                (payload) => setHideTenisBrackets((payload.new as any).value === true))
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
@@ -465,7 +473,7 @@ export default function ClasificacionPage() {
                         )}
 
                         {/* ── KNOCKOUT STAGE ── */}
-                        {bracketMatches.length > 0 && !(isTeamSport && hideTeamBrackets) && (
+                        {bracketMatches.length > 0 && !(isTeamSport && hideTeamBrackets) && !(isTenis && hideTenisBrackets) && (
                             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-500 bg-[#1e0f3a]/60 rounded-[2.5rem] p-6 md:p-8 border border-violet-500/[0.06]">
                                 <div className="flex items-center gap-3 mb-6">
                                     <Swords size={22} className="text-violet-500" />

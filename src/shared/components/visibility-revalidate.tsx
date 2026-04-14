@@ -27,7 +27,8 @@ export function VisibilityRevalidate() {
             if (elapsed < MIN_HIDDEN_MS) return;
 
             // Refresh auth session first — ensures fetchers run with a valid token
-            await supabase.auth.getSession().catch(() => {});
+            // getUser() forces a server round-trip that refreshes the token if expired
+            await supabase.auth.getUser().catch(() => {});
 
             // Revalidate all SWR data — sin borrar caché (evita spinner infinito en móvil)
             mutate(() => true);

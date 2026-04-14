@@ -21,7 +21,8 @@ import {
     X,
     Edit,
     Trash2,
-    PenTool
+    PenTool,
+    RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import UniqueLoading from "@/components/ui/morph-loading";
@@ -77,6 +78,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
     // Multi-sport: tracks disciplina_ids per user from profile_disciplinas table
     const [userDisciplinas, setUserDisciplinas] = useState<Record<string, number[]>>({});
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [syncing, setSyncing] = useState(false);
     const { profile: currentProfile, isAdmin } = useAuth();
     const { logAction } = useAuditLogger();
     const router = useRouter();
@@ -274,6 +276,25 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
         }
     };
 
+    const syncNames = async () => {
+        setSyncing(true);
+        try {
+            const res = await fetch('/api/admin/sync-names', { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.details || data.error || 'Error al sincronizar');
+            if (data.updated > 0) {
+                toast.success(data.message);
+                await fetchProfiles();
+            } else {
+                toast.info(data.message);
+            }
+        } catch (err: any) {
+            toast.error(err.message);
+        } finally {
+            setSyncing(false);
+        }
+    };
+
     const { filteredProfiles, stats } = useMemo(() => {
         const filtered = profiles.filter(p => {
             const userRoles = p.roles || ['public'];
@@ -331,6 +352,17 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                 Administra roles y permisos de acceso al sistema
                             </p>
                         </div>
+                        {isAdmin && (
+                            <button
+                                onClick={syncNames}
+                                disabled={syncing}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                                title="Actualiza los nombres de jugadores vinculados"
+                            >
+                                <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
+                                {syncing ? 'Sincronizando...' : 'Sincronizar nombres'}
+                            </button>
+                        )}
                     </div>
                 </div>
 

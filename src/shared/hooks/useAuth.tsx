@@ -195,13 +195,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             console.log('[useAuth] App foregrounded — refreshing session...');
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { user: refreshedUser } } = await supabase.auth.getUser();
                 if (!mountedRef.current) return;
 
-                if (session?.user) {
-                    setUser(session.user);
+                if (refreshedUser) {
+                    setUser(refreshedUser);
                     // Fetch profile in background without flipping 'loading' to true
-                    await fetchProfile(session.user.id);
+                    await fetchProfile(refreshedUser.id);
                 } else if (userRef.current) {
                     // User was logged in but session is gone now
                     setUser(null);

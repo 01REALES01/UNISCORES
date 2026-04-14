@@ -443,7 +443,7 @@ export function MatchMetaEditor({ match, profile: _profile, onClose, onSaved }: 
           updates.carrera_a_ids = [carreraAId];
         } else {
           updates.carrera_a_id = null;
-          updates.carrera_a_ids = null;
+          updates.carrera_a_ids = [];
         }
         if (delegAId) updates.delegacion_a_id = delegAId;
 
@@ -457,7 +457,7 @@ export function MatchMetaEditor({ match, profile: _profile, onClose, onSaved }: 
           updates.carrera_b_ids = [carreraBId];
         } else {
           updates.carrera_b_id = null;
-          updates.carrera_b_ids = null;
+          updates.carrera_b_ids = [];
         }
         if (delegBId) updates.delegacion_b_id = delegBId;
       }

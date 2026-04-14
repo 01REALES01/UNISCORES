@@ -91,12 +91,19 @@ async function fetchTeamProfile(delegacionId: number, signal?: AbortSignal) {
     }).sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
     // 4. Fetch athletes (Plantilla)
+    // Includes players matched by carrera_id OR by explicit delegacion_id override
     let athletesData: any[] = [];
-    if (delegacion.carrera_ids && delegacion.carrera_ids.length > 0) {
+    {
+        const carreraIds = delegacion.carrera_ids || [];
+        // Build the membership filter: carrera match OR manual delegation override
+        const memberFilter = carreraIds.length > 0
+            ? `carrera_id.in.(${carreraIds.join(',')}),delegacion_id.eq.${delegacionId}`
+            : `delegacion_id.eq.${delegacionId}`;
+
         let query = supabase
             .from('jugadores')
             .select('id, nombre, genero, sexo, disciplina_id, profile:profiles(id, full_name, avatar_url, roles, points, disciplina:disciplinas(name))')
-            .in('carrera_id', delegacion.carrera_ids);
+            .or(memberFilter);
 
         if (delegacion.disciplina_id) {
             query = query.or(`disciplina_id.eq.${delegacion.disciplina_id},disciplina_id.is.null`);

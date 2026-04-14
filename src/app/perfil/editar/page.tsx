@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { MainNavbar } from "@/components/main-navbar";
 import { supabase } from "@/lib/supabase";
-import { ChevronLeft, Save, Loader2, Trophy, Check, Palette } from "lucide-react";
+import { ChevronLeft, Save, Loader2, Trophy, Check, Palette, User } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,7 @@ export default function EditProfilePage() {
     const [carreras, setCarreras] = useState<any[]>([]);
     const [selectedCarreras, setSelectedCarreras] = useState<number[]>([]);
     const [nameColor, setNameColor] = useState<string | null>(null);
+    const [fullName, setFullName] = useState('');
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
 
@@ -48,6 +49,7 @@ export default function EditProfilePage() {
             if (profile) {
                 setSelectedCarreras(profile.carreras_ids || []);
                 setNameColor(profile.name_color ?? null);
+                setFullName(profile.full_name || '');
                 const { data } = await supabase.from('carreras').select('*').order('nombre');
                 if (data) setCarreras(data);
                 setFetching(false);
@@ -69,7 +71,7 @@ export default function EditProfilePage() {
         try {
             const { error } = await supabase
                 .from('profiles')
-                .update({ carreras_ids: selectedCarreras, name_color: nameColor })
+                .update({ carreras_ids: selectedCarreras, name_color: nameColor, full_name: fullName.trim() || profile?.full_name })
                 .eq('id', user.id);
 
             if (error) throw error;
@@ -112,6 +114,30 @@ export default function EditProfilePage() {
                 </div>
 
                 <form onSubmit={handleSave} className="flex flex-col gap-8 max-w-4xl mx-auto w-full">
+
+                    {/* ── Full Name ── */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35 }}
+                    >
+                        <div className="rounded-[2.5rem] bg-background border border-white/5 p-8 shadow-2xl">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-6 flex items-center gap-2">
+                                <User size={14} /> NOMBRE
+                            </h3>
+                            <input
+                                type="text"
+                                value={fullName}
+                                onChange={e => setFullName(e.target.value)}
+                                maxLength={80}
+                                placeholder="Tu nombre completo"
+                                className="w-full bg-white/[0.04] border border-white/10 rounded-2xl px-5 py-3.5 text-white text-sm font-medium placeholder:text-white/20 focus:outline-none focus:border-white/25 focus:bg-white/[0.07] transition-all"
+                            />
+                            <p className="text-[10px] text-white/25 mt-3 font-medium">
+                                Este nombre aparece en tu perfil, en el marcador y en la clasificación.
+                            </p>
+                        </div>
+                    </motion.div>
 
                     {/* ── Name Color Picker ── */}
                     <motion.div
@@ -250,10 +276,10 @@ export default function EditProfilePage() {
                     <div className="mt-4 mb-4 flex justify-end">
                         <button
                             type="submit"
-                            disabled={loading || selectedCarreras.length === 0}
+                            disabled={loading}
                             className={cn(
                                 "rounded-[2rem] px-10 py-5 font-black uppercase tracking-[0.2em] text-sm flex items-center gap-3 transition-all",
-                                loading || selectedCarreras.length === 0
+                                loading
                                     ? "bg-[#111] text-white/20 border border-white/5 cursor-not-allowed"
                                     : "bg-white text-black hover:bg-amber-400 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(255,255,255,0.1)]"
                             )}
@@ -261,7 +287,7 @@ export default function EditProfilePage() {
                             {loading ? (
                                 <><Loader2 className="animate-spin" size={20} /> Guardando...</>
                             ) : (
-                                <><Save size={20} /> {selectedCarreras.length === 0 ? 'Elige una carrera' : 'Guardar Cambios'}</>
+                                <><Save size={20} /> Guardar Cambios</>
                             )}
                         </button>
                     </div>

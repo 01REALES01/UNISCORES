@@ -171,8 +171,11 @@ function DirectorioTab() {
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [filterCarrera, setFilterCarrera] = useState<number | null>(null);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
+  const [delegaciones, setDelegaciones] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loadTimeout, setLoadTimeout] = useState(false);
+  const [openDelegDropdown, setOpenDelegDropdown] = useState<number | null>(null);
+  const [assigningId, setAssigningId] = useState<number | null>(null);
 
   useEffect(() => {
     const q = searchParams.get('search');
@@ -181,15 +184,37 @@ function DirectorioTab() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [jugRes, carRes, discRes] = await Promise.all([
-      supabase.from('jugadores').select('*, carrera:carrera_id(nombre), disciplina:disciplina_id(name)').order('created_at', { ascending: false }),
+    const [jugRes, carRes, discRes, delegRes] = await Promise.all([
+      supabase.from('jugadores').select('*, carrera:carrera_id(nombre), disciplina:disciplina_id(name), delegacion:delegacion_id(id, nombre)').order('created_at', { ascending: false }),
       supabase.from('carreras').select('id, nombre').order('nombre'),
       supabase.from('disciplinas').select('id, name').order('name'),
+      supabase.from('delegaciones').select('id, nombre, disciplina_id, genero').order('nombre'),
     ]);
     if (jugRes.data) setJugadores(jugRes.data);
     if (carRes.data) setCarreras(carRes.data);
     if (discRes.data) setDisciplinas(discRes.data);
+    if (delegRes.data) setDelegaciones(delegRes.data);
     setLoading(false);
+  };
+
+  const assignDelegacion = async (jugadorId: number, delegacionId: number | null) => {
+    setAssigningId(jugadorId);
+    setOpenDelegDropdown(null);
+    const { error } = await supabase
+      .from('jugadores')
+      .update({ delegacion_id: delegacionId })
+      .eq('id', jugadorId);
+    if (error) {
+      toast.error(`Error: ${error.message}`);
+    } else {
+      toast.success(delegacionId ? 'Delegación asignada' : 'Delegación removida');
+      setJugadores(prev => prev.map(j =>
+        j.id === jugadorId
+          ? { ...j, delegacion_id: delegacionId, delegacion: delegacionId ? delegaciones.find(d => d.id === delegacionId) : null }
+          : j
+      ));
+    }
+    setAssigningId(null);
   };
 
   // Resilience: 8s safety net
@@ -332,6 +357,7 @@ function DirectorioTab() {
               <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-white/40">Nombre</th>
               <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-white/40">Programa</th>
               <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-white/40">Deporte</th>
+              <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-white/40">Delegación</th>
               <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-white/40">Rama</th>
               <th className="px-4 py-3 text-center text-xs font-black uppercase tracking-widest text-white/40">Sexo</th>
               <th className="px-4 py-3 text-center text-xs font-black uppercase tracking-widest text-white/40">#</th>
@@ -352,6 +378,58 @@ function DirectorioTab() {
                 </td>
                 <td className="px-4 py-3 text-sm text-white/70">{j.carrera?.nombre || '—'}</td>
                 <td className="px-4 py-3 text-sm text-white/70">{j.disciplina?.name || '—'}</td>
+                {/* ── Delegación override cell ── */}
+                <td className="px-4 py-3 text-sm">
+                  {assigningId === j.id ? (
+                    <Loader2 size={14} className="animate-spin text-violet-400" />
+                  ) : openDelegDropdown === j.id ? (
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        autoFocus
+                        defaultValue={j.delegacion_id || ''}
+                        onChange={e => assignDelegacion(j.id, e.target.value ? parseInt(e.target.value) : null)}
+                        onBlur={() => setOpenDelegDropdown(null)}
+                        className="h-8 bg-[#0d0d14] border border-violet-500/40 rounded-lg px-2 text-xs text-white outline-none focus:border-violet-500 transition-all max-w-[180px]"
+                      >
+                        <option value="">— Sin delegación —</option>
+                        {(j.disciplina_id
+                          ? delegaciones.filter(d => d.disciplina_id === j.disciplina_id && (!j.genero || d.genero === j.genero))
+                          : delegaciones
+                        ).map(d => (
+                          <option key={d.id} value={d.id}>{d.nombre}</option>
+                        ))}
+                      </select>
+                      <button onClick={() => setOpenDelegDropdown(null)} className="text-white/30 hover:text-white/60 transition-colors">
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : j.delegacion ? (
+                    <div className="flex items-center gap-1.5 group/deleg">
+                      <button
+                        onClick={() => setOpenDelegDropdown(j.id)}
+                        className="inline-flex items-center gap-1.5 px-2 py-1 bg-violet-500/10 border border-violet-500/20 rounded-lg text-[10px] font-black text-violet-300 hover:bg-violet-500/20 transition-all max-w-[160px] truncate"
+                        title={j.delegacion.nombre}
+                      >
+                        <span className="truncate">{j.delegacion.nombre}</span>
+                      </button>
+                      <button
+                        onClick={() => assignDelegacion(j.id, null)}
+                        className="opacity-0 group-hover/deleg:opacity-100 text-white/30 hover:text-rose-400 transition-all"
+                        title="Remover delegación"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setOpenDelegDropdown(j.id)}
+                      className="text-white/20 hover:text-violet-400 transition-colors text-sm font-mono"
+                      title="Asignar delegación"
+                    >
+                      —
+                    </button>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-sm text-white/70 capitalize">{j.genero || '—'}</td>
                 <td className="px-4 py-3 text-sm text-white/70 text-center">{j.sexo || '—'}</td>
                 <td className="px-4 py-3 text-sm text-white/70 text-center">{j.numero || '—'}</td>

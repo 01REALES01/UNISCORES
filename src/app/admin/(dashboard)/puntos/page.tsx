@@ -382,21 +382,20 @@ function SyncDataTab({ isAdmin }: { isAdmin: boolean }) {
 }
 
 
-function BracketVisibilityToggle() {
+function BracketVisibilityToggle({ configKey, label }: { configKey: string; label: string }) {
     const [hidden, setHidden] = useState<boolean>(false);
     const [updating, setUpdating] = useState(true);
 
     useEffect(() => {
-        supabase.from('site_config').select('value').eq('key', 'hide_team_brackets').maybeSingle()
+        supabase.from('site_config').select('value').eq('key', configKey).maybeSingle()
             .then(({ data }) => { if (data) setHidden(data.value === true); setUpdating(false); });
-
-    }, []);
+    }, [configKey]);
 
     const toggle = async () => {
         setUpdating(true);
         const newValue = !hidden;
-        const { error } = await supabase.from('site_config').update({ value: newValue, updated_at: new Date().toISOString() }).eq('key', 'hide_team_brackets');
-        if (!error) { setHidden(newValue); toast.success(newValue ? 'Brackets ocultos' : 'Brackets visibles'); }
+        const { error } = await supabase.from('site_config').upsert({ key: configKey, value: newValue, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        if (!error) { setHidden(newValue); toast.success(newValue ? `${label}: oculto` : `${label}: visible`); }
         setUpdating(false);
     };
 
@@ -498,13 +497,20 @@ export default function PuntosAdminPage() {
                             <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
                                 <span className="text-xs font-black uppercase tracking-widest text-violet-400">Visibilidad de Brackets</span>
                             </div>
-                            <div className="p-6">
+                            <div className="p-6 space-y-3">
                                 <div className="flex items-center justify-between gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/10 transition-all">
                                     <div className="flex-1">
                                         <p className="text-sm font-bold text-white mb-1">Ocultar Brackets en Deportes de Equipo</p>
-                                        <p className="text-xs text-white/30 italic">Aplica para Fútbol, Voleibol y Baloncesto. Tenis siempre es visible.</p>
+                                        <p className="text-xs text-white/30 italic">Aplica para Fútbol, Voleibol y Baloncesto.</p>
                                     </div>
-                                    <BracketVisibilityToggle />
+                                    <BracketVisibilityToggle configKey="hide_team_brackets" label="Brackets equipo" />
+                                </div>
+                                <div className="flex items-center justify-between gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/10 transition-all">
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold text-white mb-1">Ocultar Bracket de Tenis</p>
+                                        <p className="text-xs text-white/30 italic">Oculta el árbol de eliminación directa en la vista pública de Tenis.</p>
+                                    </div>
+                                    <BracketVisibilityToggle configKey="hide_tenis_brackets" label="Bracket tenis" />
                                 </div>
                             </div>
                         </div>
