@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { Suspense, useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Flame, History, Trophy, Info } from "lucide-react";
@@ -15,6 +15,14 @@ import UniqueLoading from "@/components/ui/morph-loading";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 
 export default function QuinielaPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><UniqueLoading size="lg" /></div>}>
+            <QuinielaContent />
+        </Suspense>
+    );
+}
+
+function QuinielaContent() {
     const { user, profile, isStaff, loading: authLoading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
