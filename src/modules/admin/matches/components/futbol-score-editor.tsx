@@ -17,6 +17,10 @@ interface FutbolEditorProps {
   onAddEvent: (tipo: string, equipo: string, jugadorId: number | null, bypass: boolean, overrides: { minuto: number; periodo: number }) => void;
   onDeleteEvent: (evento: any) => void;
   onAddPlayer?: (team: string, data: any) => Promise<number | null>;
+  /** Admin profile for audit stamp on manual saves */
+  profile?: any;
+  /** Refetch partido so the scoreboard above matches DB (manual save bypasses event pipeline). */
+  onSaved?: () => void | Promise<void>;
 }
 
 const TIPOS_FUTBOL = [
@@ -41,32 +45,33 @@ function getTiempo(e: any): 1 | 2 {
 function MiniScore({ label, golesA, golesB, nameA, nameB, active, onClick }: any) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={cn(
-        "flex-1 flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl border transition-all active:scale-95",
+        "flex-1 flex min-h-[88px] flex-col items-center gap-1.5 py-3 px-2 rounded-2xl border-2 transition-all active:scale-[0.98] touch-manipulation",
         active
-          ? "border-emerald-500/40 bg-emerald-500/10"
-          : "border-white/5 bg-white/[0.02] hover:bg-white/[0.04]"
+          ? "border-emerald-400/60 bg-emerald-500/15"
+          : "border-white/12 bg-white/[0.05] hover:bg-white/[0.08]"
       )}
     >
-      <span className={cn("text-[9px] font-black uppercase tracking-[0.2em]", active ? "text-emerald-400" : "text-white/30")}>
+      <span className={cn("text-xs font-black uppercase tracking-wide", active ? "text-emerald-300" : "text-white/70")}>
         {label}
       </span>
       <div className="flex items-center gap-3">
         <span className="text-2xl font-black text-white tabular-nums">{golesA}</span>
-        <span className="text-white/20 font-black">:</span>
+        <span className="text-white/35 font-black">:</span>
         <span className="text-2xl font-black text-white tabular-nums">{golesB}</span>
       </div>
-      <div className="flex items-center gap-2 text-[8px] text-white/30 font-bold uppercase tracking-wider">
-        <span className="truncate max-w-[60px]">{nameA}</span>
-        <span>vs</span>
-        <span className="truncate max-w-[60px]">{nameB}</span>
+      <div className="flex w-full items-center justify-center gap-1.5 px-1 text-[10px] font-bold uppercase tracking-wide text-white/65">
+        <span className="truncate min-w-0 max-w-[42%]">{nameA}</span>
+        <span className="shrink-0 text-white/40">vs</span>
+        <span className="truncate min-w-0 max-w-[42%]">{nameB}</span>
       </div>
     </button>
   );
 }
 
-export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEvent, onDeleteEvent, onAddPlayer }: FutbolEditorProps) {
+export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEvent, onDeleteEvent, onAddPlayer, profile, onSaved }: FutbolEditorProps) {
   const [manualMode, setManualMode] = useState(false);
   const [manualGolesA, setManualGolesA] = useState(0);
   const [manualGolesB, setManualGolesB] = useState(0);
@@ -90,13 +95,15 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
       newDetalle.total_a = manualGolesA;
       newDetalle.total_b = manualGolesB;
       newDetalle.ultimo_update = new Date().toISOString();
+      const auditProfile = profile ?? match?.profile;
       const { error } = await supabase
         .from('partidos')
-        .update({ marcador_detalle: stampAudit(newDetalle, match.profile) })
+        .update({ marcador_detalle: stampAudit(newDetalle, auditProfile) })
         .eq('id', match.id);
       if (error) throw error;
       toast.success('Marcador actualizado');
       setManualMode(false);
+      await onSaved?.();
     } catch (err: any) {
       toast.error('Error: ' + (err.message || 'Error desconocido'));
     } finally {
@@ -170,14 +177,14 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
   return (
     <div className="space-y-5">
       {/* Total score */}
-      <div className="grid grid-cols-3 items-center py-3 px-4 rounded-2xl border border-white/5 bg-white/[0.03]">
-        <div className="text-left">
-          <p className="text-[8px] font-black text-white/30 uppercase tracking-widest truncate">{nameA}</p>
+      <div className="grid grid-cols-3 items-center gap-2 py-4 px-3 sm:px-4 rounded-2xl border border-white/10 bg-white/[0.05]">
+        <div className="text-left min-w-0">
+          <p className="text-[10px] sm:text-xs font-black text-white/60 uppercase tracking-wide truncate">{nameA}</p>
           <span className="text-3xl font-black text-white tabular-nums">{match.marcador_detalle?.goles_a ?? totalGolesA}</span>
         </div>
-        <span className="text-white/10 font-black text-xl text-center">vs</span>
-        <div className="text-right">
-          <p className="text-[8px] font-black text-white/30 uppercase tracking-widest truncate">{nameB}</p>
+        <span className="text-white/25 font-black text-lg text-center shrink-0">vs</span>
+        <div className="text-right min-w-0">
+          <p className="text-[10px] sm:text-xs font-black text-white/60 uppercase tracking-wide truncate">{nameB}</p>
           <span className="text-3xl font-black text-white tabular-nums">{match.marcador_detalle?.goles_b ?? totalGolesB}</span>
         </div>
       </div>
@@ -187,50 +194,50 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
         type="button"
         onClick={() => manualMode ? setManualMode(false) : initManualMode()}
         className={cn(
-          "w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 border",
+          "w-full min-h-[48px] rounded-xl px-4 text-sm font-black uppercase tracking-wide transition-all active:scale-[0.99] border touch-manipulation",
           manualMode
-            ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
-            : "bg-white/[0.03] border-white/10 text-white/40 hover:text-white/70"
+            ? "bg-amber-500/20 border-amber-400/40 text-amber-100"
+            : "bg-white/[0.08] border-white/20 text-white/90 hover:bg-white/[0.12]"
         )}
       >
-        {manualMode ? '✕ Cerrar edición manual' : '✎ Editar marcador manualmente'}
+        {manualMode ? 'Cerrar edición manual' : 'Editar marcador manualmente'}
       </button>
 
       {manualMode && (
-        <div className="space-y-3 p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5">
-          <p className="text-[9px] font-black text-amber-400 uppercase tracking-[0.2em]">Marcador manual</p>
+        <div className="space-y-3 p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10">
+          <p className="text-xs font-black text-amber-100 uppercase tracking-wide">Marcador manual</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <p className="text-[9px] font-bold text-white/50 text-center truncate">{nameA}</p>
-              <div className="flex items-center justify-center gap-1 bg-white/[0.04] rounded-xl border border-white/[0.06] p-1">
-                <button onClick={() => setManualGolesA(Math.max(0, manualGolesA - 1))}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/40 active:scale-90 text-lg font-bold">−</button>
+              <p className="text-xs font-bold text-white/75 text-center truncate">{nameA}</p>
+              <div className="flex items-center justify-center gap-1 bg-white/[0.06] rounded-xl border border-white/10 p-1">
+                <button type="button" onClick={() => setManualGolesA(Math.max(0, manualGolesA - 1))}
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/15 text-white/80 active:scale-95 text-lg font-bold touch-manipulation">−</button>
                 <input type="number" inputMode="numeric" min={0} value={manualGolesA}
                   onChange={(e) => setManualGolesA(Math.max(0, parseInt(e.target.value) || 0))}
                   className="w-14 text-3xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
-                <button onClick={() => setManualGolesA(manualGolesA + 1)}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg active:scale-90 font-bold"
-                  style={{ color: SPORT_COLOR, background: `${SPORT_COLOR}20` }}>+</button>
+                <button type="button" onClick={() => setManualGolesA(manualGolesA + 1)}
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg active:scale-95 font-bold text-white touch-manipulation"
+                  style={{ background: `${SPORT_COLOR}45`, border: `1px solid ${SPORT_COLOR}70` }}>+</button>
               </div>
             </div>
             <div className="space-y-2">
-              <p className="text-[9px] font-bold text-white/50 text-center truncate">{nameB}</p>
-              <div className="flex items-center justify-center gap-1 bg-white/[0.04] rounded-xl border border-white/[0.06] p-1">
-                <button onClick={() => setManualGolesB(Math.max(0, manualGolesB - 1))}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/40 active:scale-90 text-lg font-bold">−</button>
+              <p className="text-xs font-bold text-white/75 text-center truncate">{nameB}</p>
+              <div className="flex items-center justify-center gap-1 bg-white/[0.06] rounded-xl border border-white/10 p-1">
+                <button type="button" onClick={() => setManualGolesB(Math.max(0, manualGolesB - 1))}
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/15 text-white/80 active:scale-95 text-lg font-bold touch-manipulation">−</button>
                 <input type="number" inputMode="numeric" min={0} value={manualGolesB}
                   onChange={(e) => setManualGolesB(Math.max(0, parseInt(e.target.value) || 0))}
                   className="w-14 text-3xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
-                <button onClick={() => setManualGolesB(manualGolesB + 1)}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg active:scale-90 font-bold"
-                  style={{ color: '#3b82f6', background: 'rgba(59,130,246,0.2)' }}>+</button>
+                <button type="button" onClick={() => setManualGolesB(manualGolesB + 1)}
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg active:scale-95 font-bold text-white touch-manipulation"
+                  style={{ background: 'rgba(59,130,246,0.45)', border: '1px solid rgba(96,165,250,0.55)' }}>+</button>
               </div>
             </div>
           </div>
-          <button onClick={saveManualScore} disabled={savingManual}
-            className="w-full h-11 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] text-black transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+          <button type="button" onClick={saveManualScore} disabled={savingManual}
+            className="w-full min-h-[52px] rounded-2xl font-black text-sm uppercase tracking-wide text-zinc-950 transition-all active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 touch-manipulation"
             style={{ background: SPORT_COLOR, boxShadow: `0 4px 20px ${SPORT_COLOR}40` }}>
             {savingManual ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             {savingManual ? 'Guardando...' : 'Confirmar Marcador'}
@@ -262,11 +269,11 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
 
       {/* Events list for selected tiempo */}
       <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
+        <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between gap-2">
+          <span className="text-xs font-black uppercase tracking-wide text-white/75">
             Eventos — {selectedTiempo === 1 ? '1º Tiempo' : '2º Tiempo'}
           </span>
-          <span className="text-[9px] font-black text-white/20 tabular-nums">{currentEvents.length}</span>
+          <span className="text-xs font-black text-white/50 tabular-nums shrink-0">{currentEvents.length}</span>
         </div>
 
         {currentEvents.length === 0 ? (
@@ -297,8 +304,9 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => onDeleteEvent(e)}
-                    className="w-8 h-8 flex items-center justify-center rounded-xl text-white/20 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all active:scale-90 shrink-0"
+                    className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-white/50 hover:text-red-400 hover:bg-red-500/15 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all active:scale-95 shrink-0 touch-manipulation"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -311,7 +319,7 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
 
       {/* Add event form */}
       <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 space-y-4">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+        <p className="text-xs font-black uppercase tracking-wide text-white/70">
           Agregar evento · {selectedTiempo === 1 ? '1º Tiempo' : '2º Tiempo'}
         </p>
 
@@ -319,32 +327,34 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
           {TIPOS_FUTBOL.map(t => (
             <button
+              type="button"
               key={t.value}
               onClick={() => setNewTipo(t.value)}
-              className="flex flex-col items-center gap-1 py-2.5 rounded-xl border transition-all active:scale-95 text-center"
+              className="flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl border-2 px-1 py-2 transition-all active:scale-[0.98] text-center touch-manipulation"
               style={newTipo === t.value
-                ? { background: `${SPORT_COLOR}20`, borderColor: `${SPORT_COLOR}50`, boxShadow: `0 0 12px ${SPORT_COLOR}20` }
-                : { background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }
+                ? { background: `${SPORT_COLOR}22`, borderColor: `${SPORT_COLOR}`, boxShadow: `0 0 14px ${SPORT_COLOR}30` }
+                : { background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.14)' }
               }
             >
-              <span className="text-xl">{t.icon}</span>
-              <span className={cn("text-[8px] font-black uppercase tracking-wider leading-tight",
-                newTipo === t.value ? "text-emerald-400" : "text-white/30"
+              <span className="text-2xl leading-none">{t.icon}</span>
+              <span className={cn("text-[11px] sm:text-xs font-black uppercase tracking-wide leading-tight px-0.5",
+                newTipo === t.value ? "text-emerald-200" : "text-white/80"
               )}>{t.label}</span>
             </button>
           ))}
         </div>
 
         {/* Equipo */}
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           {(['equipo_a', 'equipo_b'] as const).map(eq => (
             <button
+              type="button"
               key={eq}
               onClick={() => { setNewEquipo(eq); setNewJugadorId(null); }}
-              className="flex-1 py-2.5 rounded-xl border font-black text-[10px] uppercase tracking-widest transition-all active:scale-95"
+              className="flex-1 min-h-[48px] rounded-xl border-2 px-2 py-2.5 text-sm font-black uppercase tracking-wide transition-all active:scale-[0.98] touch-manipulation [overflow-wrap:anywhere] leading-snug"
               style={newEquipo === eq
-                ? { background: `${SPORT_COLOR}15`, borderColor: `${SPORT_COLOR}40`, color: SPORT_COLOR }
-                : { background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)' }
+                ? { background: `${SPORT_COLOR}18`, borderColor: `${SPORT_COLOR}55`, color: '#ecfdf5' }
+                : { background: 'rgba(255,255,255,0.07)', borderColor: 'rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.88)' }
               }
             >
               {eq === 'equipo_a' ? nameA : nameB}
@@ -356,11 +366,12 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
         {newEquipo && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30">Jugador</p>
+              <p className="text-xs font-black uppercase tracking-wide text-white/65">Jugador</p>
               {onAddPlayer && (
                 <button
+                  type="button"
                   onClick={() => setAddingPlayer(!addingPlayer)}
-                  className="text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border transition-all"
+                  className="min-h-[40px] px-3 text-xs font-black uppercase tracking-wide rounded-lg border transition-all touch-manipulation"
                   style={addingPlayer 
                     ? { background: `${SPORT_COLOR}25`, color: SPORT_COLOR, borderColor: `${SPORT_COLOR}40` }
                     : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.1)' }
@@ -414,8 +425,8 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
                         </span>
                       )}
                       <span className={cn(
-                        "text-[10px] font-bold truncate",
-                        newJugadorId === j.id ? "text-emerald-400" : "text-white/70"
+                        "text-sm font-bold truncate",
+                        newJugadorId === j.id ? "text-emerald-300" : "text-white/85"
                       )}>
                         {j.nombre}
                       </span>
@@ -429,36 +440,39 @@ export function FutbolEditor({ match, eventos, jugadoresA, jugadoresB, onAddEven
         )}
 
         {/* Minuto */}
-        <div className="flex items-center gap-3">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30 shrink-0">Minuto</p>
-          <div className="flex items-center gap-2 bg-white/[0.04] rounded-xl border border-white/[0.06] p-1">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-xs font-black uppercase tracking-wide text-white/65 shrink-0">Minuto</p>
+          <div className="flex items-center gap-2 bg-white/[0.06] rounded-xl border border-white/12 p-1">
             <button
+              type="button"
               onClick={() => setNewMinuto(v => Math.max(0, v - 1))}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/15 text-white/80 active:scale-95 text-lg font-bold touch-manipulation"
             >−</button>
             <input
               type="number"
               value={newMinuto}
               onChange={e => setNewMinuto(Math.max(0, parseInt(e.target.value) || 0))}
-              className="w-14 bg-transparent text-center text-xl font-black text-white tabular-nums outline-none"
+              className="w-16 bg-transparent text-center text-xl font-black text-white tabular-nums outline-none"
             />
             <button
+              type="button"
               onClick={() => setNewMinuto(v => v + 1)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all active:scale-90 font-bold"
-              style={{ color: SPORT_COLOR, background: `${SPORT_COLOR}20` }}
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg active:scale-95 font-bold text-white touch-manipulation"
+              style={{ background: `${SPORT_COLOR}40`, border: `1px solid ${SPORT_COLOR}65` }}
             >+</button>
           </div>
-          <span className="text-[9px] text-white/20 font-bold">&apos;</span>
+          <span className="text-sm text-white/50 font-bold">&apos;</span>
         </div>
 
         {/* Confirm */}
         <button
+          type="button"
           onClick={handleAdd}
           disabled={!canAdd || saving}
-          className="w-full h-11 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full min-h-[52px] rounded-2xl font-black text-sm uppercase tracking-wide transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 touch-manipulation border-2"
           style={canAdd && !saving
-            ? { background: SPORT_COLOR, color: '#000', boxShadow: `0 4px 20px ${SPORT_COLOR}40` }
-            : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.06)' }
+            ? { background: SPORT_COLOR, color: '#052e16', borderColor: 'transparent', boxShadow: `0 4px 20px ${SPORT_COLOR}40` }
+            : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)', borderColor: 'rgba(255,255,255,0.12)' }
           }
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}

@@ -5,13 +5,15 @@ import { supabase } from "@/lib/supabase";
 import { useEffect, useRef, useCallback } from "react";
 import { computeCareerStats, CareerStats } from "@/lib/sport-helpers";
 import { EQUIPO_NOMBRE_TO_CARRERAS } from "@/lib/constants";
+import { enrichPartidosCarreraShieldsFromDb } from "@/lib/match-carrera-shields";
+import { overlayCarreraEscudoFromDelegationAlias } from "@/lib/carrera-delegacion-escudo-alias";
 
 // ─── Column Selections ──────────────────────────────────────────────────────
 
 const MATCH_COLUMNS = `
   id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle,
   fase, grupo, bracket_order, delegacion_a, delegacion_b,
-  carrera_a_ids, carrera_b_ids,
+  carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids,
   disciplinas(name, icon),
   carrera_a:carreras!carrera_a_id(nombre, escudo_url),
   carrera_b:carreras!carrera_b_id(nombre, escudo_url),
@@ -69,6 +71,8 @@ async function fetchCarreraProfile(carreraId: number) {
             throw new Error('Carrera not found');
         }
 
+        const carreraWithEscudo = await overlayCarreraEscudoFromDelegationAlias(supabase, carrera);
+
         // 2. Fetch all matches where this carrera participates (either side).
         const { data: matchesData, error: matchesErr } = await supabase
             .from('partidos')
@@ -79,7 +83,10 @@ async function fetchCarreraProfile(carreraId: number) {
             .limit(40);
 
         if (matchesErr) console.error('[useCarreraProfile] Matches error:', matchesErr);
-        const matches = (matchesData || []).sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+        const matchesSorted = ((matchesData || []) as any[]).sort(
+            (a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+        );
+        const matches = await enrichPartidosCarreraShieldsFromDb(supabase, matchesSorted as any);
 
         // 3. Fetch news for this carrera
         const { data: newsData } = await supabase
@@ -137,7 +144,7 @@ async function fetchCarreraProfile(carreraId: number) {
         const deportesInscritos: DeporteInscrito[] = Array.from(deduped.values());
 
         const result = {
-            carrera,
+            carrera: carreraWithEscudo,
             matches,
             news: newsData || [],
             athletes: (athletesData || []).filter((a: any) => 

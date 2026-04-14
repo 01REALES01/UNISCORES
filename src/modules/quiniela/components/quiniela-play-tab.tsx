@@ -1,9 +1,19 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { LayoutGrid, Clock, Zap, Trophy, Filter, AlertTriangle, ChevronLeft, ChevronRight, CalendarDays, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SPORT_ACCENT } from "@/lib/constants";
 import { SportIcon } from "@/components/sport-icons";
 import { PredictionCard } from "./prediction-card";
+
+const PLAY_SPORT_FILTERS = ['todos', 'Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez'] as const;
+const PLAY_GENDER_FILTERS = ['todos', 'masculino', 'femenino'] as const;
+
+export type QuinielaPlayRestore = {
+    day?: string;
+    sport?: string;
+    gender?: string;
+    focusMatchId?: string;
+};
 
 interface QuinielaPlayTabProps {
     matches: any[];
@@ -11,6 +21,7 @@ interface QuinielaPlayTabProps {
     allPredictions: any[];
     onPredict: (matchId: any, data: any) => Promise<any>;
     loading: boolean;
+    playRestore?: QuinielaPlayRestore;
 }
 
 // Group matches by date key (YYYY-MM-DD)
@@ -76,7 +87,7 @@ function CountdownTimer({ targetDate }: { targetDate: Date }) {
     return <span>Cierra en {hours}h {minutes}m</span>;
 }
 
-export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredict, loading }: QuinielaPlayTabProps) {
+export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredict, loading, playRestore }: QuinielaPlayTabProps) {
     const [sportFilter, setSportFilter] = useState<string>('todos');
     const [genderFilter, setGenderFilter] = useState<string>('todos');
 
@@ -131,6 +142,11 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
     }, [sortedDays, dayGroups]);
 
     const [selectedDay, setSelectedDay] = useState<string>(defaultDay);
+    const restoredFocusRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!playRestore?.focusMatchId) restoredFocusRef.current = null;
+    }, [playRestore?.focusMatchId]);
 
     // Update selected day when default changes
     useEffect(() => {
@@ -139,10 +155,53 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
         }
     }, [sortedDays, selectedDay, defaultDay]);
 
+    // Restore sport / gender from URL (return from partido detail)
+    useEffect(() => {
+        if (!playRestore) return;
+        const s = playRestore.sport;
+        if (s && (PLAY_SPORT_FILTERS as readonly string[]).includes(s)) {
+            setSportFilter(s);
+        }
+        const g = playRestore.gender;
+        if (g && (PLAY_GENDER_FILTERS as readonly string[]).includes(g)) {
+            setGenderFilter(g);
+        }
+    }, [playRestore?.sport, playRestore?.gender]);
+
+    // Restore day: prefer the day of the focused match once `matches` is loaded
+    useEffect(() => {
+        if (!playRestore?.focusMatchId || matches.length === 0) return;
+        const id = parseInt(playRestore.focusMatchId, 10);
+        if (Number.isNaN(id)) return;
+        const hit = matches.find((x: any) => x.id === id);
+        if (!hit?.fecha) return;
+        const key = getDateKey(hit.fecha);
+        if (sortedDays.includes(key)) setSelectedDay(key);
+    }, [playRestore?.focusMatchId, matches, sortedDays]);
+
+    useEffect(() => {
+        if (playRestore?.focusMatchId) return;
+        const d = playRestore?.day;
+        if (d && sortedDays.includes(d)) setSelectedDay(d);
+    }, [playRestore?.day, playRestore?.focusMatchId, sortedDays]);
+
     const currentDayIndex = sortedDays.indexOf(selectedDay);
     const currentDayMatches = dayGroups[selectedDay] || [];
     const dayStatus = currentDayMatches.length > 0 ? getDayStatus(currentDayMatches) : 'open';
     const earliestUpcoming = currentDayMatches.length > 0 ? getEarliestUpcoming(currentDayMatches) : null;
+
+    // Scroll to the card we returned from (after day/filters apply and list renders)
+    useEffect(() => {
+        const fid = playRestore?.focusMatchId;
+        if (!fid || loading) return;
+        if (restoredFocusRef.current === fid) return;
+        const el = document.getElementById(`quiniela-match-${fid}`);
+        if (!el) return;
+        restoredFocusRef.current = fid;
+        requestAnimationFrame(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    }, [playRestore?.focusMatchId, loading, selectedDay, currentDayMatches.length]);
 
     const goToPrevDay = () => {
         if (currentDayIndex > 0) setSelectedDay(sortedDays[currentDayIndex - 1]);
@@ -150,6 +209,16 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
     const goToNextDay = () => {
         if (currentDayIndex < sortedDays.length - 1) setSelectedDay(sortedDays[currentDayIndex + 1]);
     };
+
+    const quinielaReturnQuery = useMemo(() => {
+        const qs = new URLSearchParams();
+        qs.set("from", "quiniela");
+        qs.set("tab", "play");
+        qs.set("day", selectedDay);
+        qs.set("sport", sportFilter);
+        qs.set("gender", genderFilter);
+        return qs.toString();
+    }, [selectedDay, sportFilter, genderFilter]);
 
     return (
         <div className="space-y-5">
@@ -347,6 +416,7 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
                             onPredict={onPredict}
                             locked={m.estado === 'finalizado' || m.estado === 'en_curso'}
                             allPredictions={allPredictions}
+                            quinielaReturnQuery={quinielaReturnQuery}
                         />
                     ))}
                 </div>

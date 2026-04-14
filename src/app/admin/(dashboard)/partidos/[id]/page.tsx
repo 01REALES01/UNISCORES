@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, Loader2, Edit3, X } from "lucide-react";
+import { AlertCircle, Loader2, Edit3, X, Info } from "lucide-react";
 import { Button, Card } from "@/components/ui-primitives";
 import { useAuth } from "@/hooks/useAuth";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
@@ -221,13 +221,14 @@ export default function MatchControlPage() {
                 )}
 
                 {(isTeamSport || isTenisSport) && (
-                    <div className="flex items-center justify-end mb-4 -mt-2">
+                    <div className="flex items-stretch sm:items-center justify-stretch sm:justify-end mb-4 -mt-2">
                         <button
+                            type="button"
                             onClick={() => setShowFullEditor(true)}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-colors text-xs font-black uppercase tracking-[0.2em] text-white border border-indigo-400/40"
+                            className="flex w-full sm:w-auto items-center justify-center gap-2 min-h-[48px] px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] transition-colors text-sm font-black uppercase tracking-wide text-white border-2 border-indigo-300/50 shadow-lg shadow-indigo-900/30 touch-manipulation"
                         >
-                            <Edit3 size={15} />
-                            Edición Completa
+                            <Edit3 size={18} className="shrink-0" />
+                            Edición completa
                         </button>
                     </div>
                 )}
@@ -353,33 +354,38 @@ export default function MatchControlPage() {
                 const activeTab = fullEditorTab;
 
                 return (
-                    <div className="fixed inset-0 z-50 flex flex-col bg-[#080810]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-                        <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] shrink-0 bg-[#080810]">
-                            <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
-                                <Edit3 size={14} className="text-indigo-400" />
+                    <div
+                        className="fixed inset-0 z-50 flex flex-col bg-gradient-to-b from-slate-900 via-zinc-950 to-zinc-950 text-zinc-50"
+                        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+                    >
+                        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-600/50 shrink-0 bg-slate-900/95 backdrop-blur-md">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-500/30 border border-indigo-400/50 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-900/30">
+                                <Edit3 size={18} className="text-indigo-100" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-white truncate">Edición Completa</h2>
-                                <p className="text-[8px] text-white/30 font-bold uppercase tracking-widest">{disciplinaName}</p>
+                                <h2 className="text-sm font-black uppercase tracking-wide text-white truncate">Edición completa</h2>
+                                <p className="text-xs text-slate-300 font-bold uppercase tracking-wide mt-0.5 truncate">{disciplinaName}</p>
                             </div>
                             <button
+                                type="button"
                                 onClick={() => setShowFullEditor(false)}
-                                className="flex items-center gap-1.5 px-3 h-9 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/10 shrink-0"
+                                className="flex items-center gap-2 px-4 min-h-[44px] rounded-xl bg-slate-100 text-slate-900 hover:bg-white active:scale-[0.98] transition-all border border-white/30 shrink-0 touch-manipulation font-black text-xs uppercase tracking-wide shadow-md"
                             >
-                                <X size={14} className="text-white/70" />
-                                <span className="text-[9px] font-black uppercase tracking-widest text-white/70">Cerrar</span>
+                                <X size={18} />
+                                <span className="hidden sm:inline">Cerrar</span>
                             </button>
                         </div>
 
-                        <div className="flex gap-1 px-4 py-2 shrink-0 bg-[#080810] border-b border-white/[0.04]">
+                        <div className="flex gap-2 px-3 py-2.5 sm:px-4 shrink-0 bg-slate-900/90 border-b border-slate-600/40">
                             {tabs.map(tab => (
                                 <button
+                                    type="button"
                                     key={tab.id}
                                     onClick={() => setFullEditorTab(tab.id)}
-                                    className="flex-1 h-9 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 border"
+                                    className="flex-1 min-h-[48px] rounded-xl font-black text-xs sm:text-sm uppercase tracking-wide transition-all active:scale-[0.98] border-2 touch-manipulation focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-300"
                                     style={activeTab === tab.id
-                                        ? { background: '#6366f1', color: '#fff', borderColor: 'transparent', boxShadow: '0 2px 12px rgba(99,102,241,0.4)' }
-                                        : { background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.35)', borderColor: 'rgba(255,255,255,0.06)' }
+                                        ? { background: '#6366f1', color: '#fff', borderColor: '#818cf8', boxShadow: '0 2px 16px rgba(99,102,241,0.5)' }
+                                        : { background: 'rgba(30,41,59,0.85)', color: '#e2e8f0', borderColor: 'rgba(148,163,184,0.45)' }
                                     }
                                 >
                                     {tab.label}
@@ -389,13 +395,46 @@ export default function MatchControlPage() {
 
                         <div className="flex-1 overflow-y-auto px-4 pb-24">
                             {activeTab === 'marcador' && (
-                                <div className="max-w-lg mx-auto pt-2">
+                                <div className="max-w-lg mx-auto pt-3 space-y-4">
+                                    <div className="flex gap-3 rounded-2xl border border-sky-500/35 bg-sky-500/10 px-4 py-3 text-left shadow-inner">
+                                        <Info className="shrink-0 text-sky-300 mt-0.5" size={18} aria-hidden />
+                                        <div className="min-w-0 text-sm leading-snug text-slate-100">
+                                            <p className="font-black text-sky-200 uppercase tracking-wide text-[11px] mb-1">Marcador en esta pantalla</p>
+                                            {disciplinaName === 'Voleibol' ? (
+                                                <p className="text-slate-200/95">
+                                                    En <span className="text-white font-bold">voleibol</span>, editás los <span className="text-white font-bold">puntos por set</span> (rally).
+                                                    El motor recalcula los <span className="text-white font-bold">sets ganados</span>: eso es lo que ves en grande en el tablero del admin (no el 18–20 del rally).
+                                                    Tras <span className="text-white font-bold">Confirmar marcador</span>, el tablero se sincroniza con la base de datos.
+                                                </p>
+                                            ) : disciplinaName === 'Baloncesto' ? (
+                                                <p className="text-slate-200/95">
+                                                    Los <span className="text-white font-bold">+1 / +2 / +3</span> por jugador y la <span className="text-white font-bold">edición manual por cuarto</span> guardan en la base de datos.
+                                                    Tras <span className="text-white font-bold">Confirmar marcador</span> (manual), el tablero grande de arriba se actualiza.
+                                                </p>
+                                            ) : disciplinaName === 'Fútbol' ? (
+                                                <p className="text-slate-200/95">
+                                                    Los eventos (gol, tarjeta…) y el <span className="text-white font-bold">marcador manual de goles</span> guardan en la base de datos.
+                                                    Tras <span className="text-white font-bold">Confirmar marcador</span> (manual), el tablero grande de arriba se actualiza.
+                                                </p>
+                                            ) : (disciplinaName === 'Tenis' || disciplinaName === 'Tenis de Mesa') ? (
+                                                <p className="text-slate-200/95">
+                                                    Modo rápido o por set. <span className="text-white font-bold">Confirmar marcador</span> guarda y actualiza el tablero principal del admin.
+                                                </p>
+                                            ) : (
+                                                <p className="text-slate-200/95">
+                                                    Los cambios guardan en la base de datos. Usá <span className="text-white font-bold">Confirmar marcador</span> cuando aplique para refrescar el tablero de arriba.
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
                                     {disciplinaName === 'Baloncesto' ? (
                                         <BasquetEditor
                                             match={match}
                                             eventos={eventos}
                                             jugadoresA={jugadoresA}
                                             jugadoresB={jugadoresB}
+                                            profile={profile}
+                                            onSaved={fetchMatchDetails}
                                             onAddEvent={(tipo, equipo, jugadorId, bypass, overrides) =>
                                                 handleNuevoEvento(tipo, equipo, jugadorId, bypass, overrides)
                                             }
@@ -414,6 +453,8 @@ export default function MatchControlPage() {
                                             eventos={eventos}
                                             jugadoresA={jugadoresA}
                                             jugadoresB={jugadoresB}
+                                            profile={profile}
+                                            onSaved={fetchMatchDetails}
                                             onAddEvent={(tipo, equipo, jugadorId, bypass, overrides) =>
                                                 handleNuevoEvento(tipo, equipo, jugadorId, bypass, overrides)
                                             }
@@ -479,13 +520,14 @@ export default function MatchControlPage() {
                             )}
                         </div>
 
-                        <div className="shrink-0 px-4 py-3 border-t border-white/[0.06] bg-[#080810]" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+                        <div className="shrink-0 px-4 py-3 border-t border-slate-600/50 bg-slate-900/95 backdrop-blur-md" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
                             <button
+                                type="button"
                                 onClick={() => setShowFullEditor(false)}
-                                className="w-full h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.2em] text-white/60"
+                                className="w-full min-h-[52px] rounded-2xl border-2 border-slate-500/60 bg-slate-100 text-slate-900 hover:bg-white active:scale-[0.99] transition-all flex items-center justify-center gap-2 font-black text-sm uppercase tracking-wide touch-manipulation shadow-md"
                             >
-                                <X size={14} />
-                                Cerrar Editor
+                                <X size={18} />
+                                Cerrar editor
                             </button>
                         </div>
                     </div>

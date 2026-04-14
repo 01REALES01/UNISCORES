@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 interface TenisEditorProps {
   match: any;
   profile: any;
-  onSaved: () => void;
+  onSaved?: () => void | Promise<void>;
 }
 
 // A set score row
@@ -146,7 +146,7 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
       if (error) throw error;
 
       toast.success('Marcador de tenis actualizado');
-      onSaved();
+      await onSaved?.();
     } catch (err: any) {
       toast.error('Error al guardar: ' + (err.message || 'Error desconocido'));
     } finally {
@@ -159,46 +159,52 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
   const scoreLabel = isTenisField ? 'juegos' : 'pts';
 
   return (
-    <div className="space-y-3 py-2">
+    <div className="space-y-4 rounded-2xl border border-slate-500/40 bg-slate-800/40 p-3 sm:p-4 py-3">
+      <p className="text-xs leading-snug text-slate-200">
+        <span className="font-black uppercase tracking-wide text-[10px] block mb-1" style={{ color: sportColor }}>Marcador tenis / tenis de mesa</span>
+        Modo <span className="text-white font-bold">Sets directos</span> o <span className="text-white font-bold">Por set</span>. Al pulsar <span className="text-white font-bold">Confirmar marcador</span> se guarda y se actualiza el tablero principal del admin.
+      </p>
       {/* Sets won summary */}
-      <div className="grid grid-cols-3 items-center py-3 px-4 rounded-2xl border border-white/5 bg-white/[0.03]">
-        <div>
-          <p className="text-[8px] font-black text-white/30 uppercase tracking-widest truncate">{nameA}</p>
+      <div className="grid grid-cols-3 items-center gap-2 py-4 px-3 sm:px-4 rounded-2xl border border-slate-500/35 bg-slate-900/50">
+        <div className="min-w-0">
+          <p className="text-[10px] sm:text-xs font-black text-slate-200 uppercase tracking-wide truncate">{nameA}</p>
           <span className="text-3xl font-black text-white tabular-nums">
             {mode === 'rapido' ? directA : setsWonA}
           </span>
-          <span className="text-[8px] font-bold text-white/30 ml-1">sets</span>
+          <span className="text-xs font-bold text-white/50 ml-1">sets</span>
         </div>
-        <span className="text-white/10 font-black text-xl text-center">vs</span>
-        <div className="text-right">
-          <p className="text-[8px] font-black text-white/30 uppercase tracking-widest truncate">{nameB}</p>
+        <span className="text-white/25 font-black text-lg text-center shrink-0">vs</span>
+        <div className="text-right min-w-0">
+          <p className="text-[10px] sm:text-xs font-black text-slate-200 uppercase tracking-wide truncate">{nameB}</p>
           <span className="text-3xl font-black text-white tabular-nums">
             {mode === 'rapido' ? directB : setsWonB}
           </span>
-          <span className="text-[8px] font-bold text-white/30 mr-1">sets</span>
+          <span className="text-xs font-bold text-white/50 mr-1">sets</span>
         </div>
       </div>
 
       {/* Mode toggle */}
-      <div className="flex gap-1 rounded-2xl border border-white/10 bg-white/[0.02] p-1">
+      <div className="flex gap-2 rounded-2xl border border-white/15 bg-white/[0.04] p-1.5">
         <button
+          type="button"
           onClick={() => setMode('rapido')}
           className={cn(
-            "flex-1 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
+            "flex-1 min-h-[48px] rounded-xl text-sm font-black uppercase tracking-wide transition-all active:scale-[0.98] touch-manipulation",
             mode === 'rapido'
-              ? "bg-indigo-600 text-white shadow-lg"
-              : "text-white/40 hover:text-white/60"
+              ? "bg-indigo-600 text-white shadow-lg border-2 border-transparent"
+              : "bg-transparent text-white/80 border-2 border-transparent hover:text-white"
           )}
         >
           Sets directos
         </button>
         <button
+          type="button"
           onClick={() => setMode('detallado')}
           className={cn(
-            "flex-1 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
+            "flex-1 min-h-[48px] rounded-xl text-sm font-black uppercase tracking-wide transition-all active:scale-[0.98] touch-manipulation",
             mode === 'detallado'
-              ? "bg-indigo-600 text-white shadow-lg"
-              : "text-white/40 hover:text-white/60"
+              ? "bg-indigo-600 text-white shadow-lg border-2 border-transparent"
+              : "bg-transparent text-white/80 border-2 border-transparent hover:text-white"
           )}
         >
           Por set
@@ -221,15 +227,16 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
       {/* MODO RÁPIDO: Sets directos */}
       {mode === 'rapido' && (
         <div className="space-y-3 py-2">
-          <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] px-1">Sets ganados</p>
+          <p className="text-xs font-black text-white/65 uppercase tracking-wide px-1">Sets ganados</p>
           <div className="grid grid-cols-[1fr_1fr] gap-3">
             {/* Team A */}
             <div className="space-y-2">
               <p className="text-[10px] font-bold text-white/60 text-center">{nameA}</p>
               <div className="flex items-center justify-center gap-2 bg-white/[0.04] rounded-2xl border border-white/10 p-3">
                 <button
+                  type="button"
                   onClick={() => setDirectA(Math.max(0, directA - 1))}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold"
+                  className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/15 text-white/85 transition-all active:scale-95 text-lg font-bold touch-manipulation"
                 >−</button>
                 <input
                   type="number"
@@ -240,8 +247,9 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
                   className="w-16 text-4xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <button
+                  type="button"
                   onClick={() => setDirectA(directA + 1)}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold"
+                  className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl bg-indigo-600/80 hover:bg-indigo-500 text-white transition-all active:scale-95 text-lg font-bold touch-manipulation"
                 >+</button>
               </div>
             </div>
@@ -251,8 +259,9 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
               <p className="text-[10px] font-bold text-white/60 text-center">{nameB}</p>
               <div className="flex items-center justify-center gap-2 bg-white/[0.04] rounded-2xl border border-white/10 p-3">
                 <button
+                  type="button"
                   onClick={() => setDirectB(Math.max(0, directB - 1))}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold"
+                  className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/15 text-white/85 transition-all active:scale-95 text-lg font-bold touch-manipulation"
                 >−</button>
                 <input
                   type="number"
@@ -263,8 +272,9 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
                   className="w-16 text-4xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <button
+                  type="button"
                   onClick={() => setDirectB(directB + 1)}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold"
+                  className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl bg-indigo-600/80 hover:bg-indigo-500 text-white transition-all active:scale-95 text-lg font-bold touch-manipulation"
                 >+</button>
               </div>
             </div>
@@ -278,8 +288,8 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
           {/* Column headers */}
           <div className="grid grid-cols-[36px_1fr_1fr_28px_28px] gap-2 items-center px-1">
             <span />
-            <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] text-center truncate">{nameA}</p>
-            <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] text-center truncate">{nameB}</p>
+            <p className="text-[11px] sm:text-xs font-black text-white/70 uppercase tracking-wide text-center truncate">{nameA}</p>
+            <p className="text-[11px] sm:text-xs font-black text-white/70 uppercase tracking-wide text-center truncate">{nameB}</p>
             <span />
             <span />
           </div>
@@ -325,8 +335,9 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
 
                 {/* Delete */}
                 <button
+                  type="button"
                   onClick={() => deleteSet(idx)}
-                  className="w-7 h-7 flex items-center justify-center rounded-xl text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-all active:scale-90"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-white/50 hover:text-red-400 hover:bg-red-500/15 transition-all active:scale-95 touch-manipulation"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -337,8 +348,9 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
           {/* Add set */}
           {sets.length < MAX_SETS && (
             <button
+              type="button"
               onClick={addSet}
-              className="w-full py-3 rounded-2xl border border-dashed border-white/10 text-[10px] font-black text-white/30 hover:text-white/60 hover:border-white/20 uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95"
+              className="w-full min-h-[48px] py-3 rounded-2xl border-2 border-dashed border-white/25 text-sm font-black text-white/80 hover:text-white hover:border-white/35 uppercase tracking-wide transition-all flex items-center justify-center gap-2 active:scale-[0.99] touch-manipulation"
             >
               <Plus size={12} />
               Agregar Set {sets.length + 1}
@@ -349,9 +361,10 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
 
       {/* Save */}
       <button
+        type="button"
         onClick={save}
         disabled={saving}
-        className="w-full h-12 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] text-black transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+        className="w-full min-h-[52px] rounded-2xl font-black text-sm uppercase tracking-wide text-zinc-950 transition-all active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 mt-2 touch-manipulation"
         style={{ background: sportColor, boxShadow: `0 4px 20px ${sportColor}40` }}
       >
         {saving ? <Loader2 size={16} className="animate-spin text-black" /> : <Save size={16} />}
@@ -371,15 +384,16 @@ function Stepper({
 }) {
   return (
     <div
-      className="flex items-center justify-center gap-1 rounded-2xl border p-1 transition-colors"
+      className="flex items-center justify-center gap-0.5 rounded-2xl border-2 p-1 transition-colors"
       style={highlight
-        ? { background: `${color}18`, borderColor: `${color}40` }
-        : { background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.06)' }
+        ? { background: `${color}22`, borderColor: `${color}55` }
+        : { background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)' }
       }
     >
       <button
+        type="button"
         onClick={() => onChange(value - 1)}
-        className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold shrink-0"
+        className="min-h-[44px] min-w-[38px] flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/15 text-white/80 transition-all active:scale-95 text-lg font-bold shrink-0 touch-manipulation"
       >−</button>
       <input
         type="number"
@@ -387,13 +401,14 @@ function Stepper({
         min={0}
         value={value}
         onChange={(e) => onChange(Math.max(0, parseInt(e.target.value) || 0))}
-        className="w-10 text-xl font-black tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-10 text-lg font-black tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         style={{ color: highlight ? color : 'white' }}
       />
       <button
+        type="button"
         onClick={() => onChange(value + 1)}
-        className="w-8 h-8 flex items-center justify-center rounded-xl transition-all active:scale-90 font-bold shrink-0"
-        style={{ color, background: `${color}20` }}
+        className="min-h-[44px] min-w-[38px] flex items-center justify-center rounded-xl transition-all active:scale-95 font-bold text-white shrink-0 touch-manipulation"
+        style={{ background: `${color}45`, border: `1px solid ${color}70` }}
       >+</button>
     </div>
   );

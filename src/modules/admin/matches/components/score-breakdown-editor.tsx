@@ -107,7 +107,7 @@ export function ScoreBreakdownEditor({ match, profile, onSaved }: ScoreBreakdown
 
       if (error) throw error;
       toast.success('Marcador actualizado correctamente');
-      onSaved();
+      await onSaved?.();
     } catch (err: any) {
       toast.error('Error al guardar: ' + (err.message || 'Error desconocido'));
     } finally {
@@ -130,12 +130,26 @@ export function ScoreBreakdownEditor({ match, profile, onSaved }: ScoreBreakdown
     .sort(([a], [b]) => a - b);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4 rounded-2xl border border-slate-500/40 bg-slate-800/40 p-3 sm:p-4">
+      <p className="text-xs leading-snug text-slate-200">
+        {isVoleibol ? (
+          <>
+            <span className="font-black uppercase tracking-wide text-[10px] block mb-1" style={{ color: sportColor }}>Voleibol — puntos por set</span>
+            Editá el rally de cada set (25/15, diferencia de 2). El sistema calcula <span className="text-white font-bold">sets ganados</span> para el marcador grande del partido.
+            Podés <span className="text-white font-bold">agregar o borrar sets</span>. <span className="text-white font-bold">Confirmar marcador</span> guarda y actualiza el tablero del admin.
+          </>
+        ) : (
+          <>
+            <span className="font-black uppercase tracking-wide text-[10px] block mb-1" style={{ color: sportColor }}>Baloncesto — puntos por cuarto</span>
+            Ajustá cada cuarto con − / + o escribiendo. <span className="text-white font-bold">Confirmar marcador</span> guarda y actualiza el tablero principal del admin.
+          </>
+        )}
+      </p>
       {/* Column headers */}
       <div className="grid grid-cols-[44px_1fr_1fr_36px] gap-2 items-center px-1 mb-1">
         <span />
-        <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] text-center truncate">{nameA}</p>
-        <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] text-center truncate">{nameB}</p>
+        <p className="text-[11px] sm:text-xs font-black text-slate-100 uppercase tracking-wide text-center truncate">{nameA}</p>
+        <p className="text-[11px] sm:text-xs font-black text-slate-100 uppercase tracking-wide text-center truncate">{nameB}</p>
         <span />
       </div>
 
@@ -168,8 +182,9 @@ export function ScoreBreakdownEditor({ match, profile, onSaved }: ScoreBreakdown
           <div className="flex items-center justify-center">
             {isVoleibol ? (
               <button
+                type="button"
                 onClick={() => deleteSet(num)}
-                className="w-9 h-9 flex items-center justify-center rounded-xl text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-all active:scale-90"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-white/50 hover:text-red-400 hover:bg-red-500/15 transition-all active:scale-95 touch-manipulation"
               >
                 <Trash2 size={14} />
               </button>
@@ -181,18 +196,24 @@ export function ScoreBreakdownEditor({ match, profile, onSaved }: ScoreBreakdown
       {/* Add set (Voleibol only) */}
       {isVoleibol && Object.keys(periods).length < 5 && (
         <button
+          type="button"
           onClick={addSet}
-          className="w-full py-3 rounded-2xl border border-dashed border-white/10 text-[10px] font-black text-white/30 hover:text-white/60 hover:border-white/20 uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95"
+          className="w-full min-h-[48px] py-3 rounded-2xl border-2 border-dashed border-white/25 text-sm font-black text-white/80 hover:text-white hover:border-white/35 uppercase tracking-wide transition-all flex items-center justify-center gap-2 active:scale-[0.99] touch-manipulation"
         >
           <Plus size={12} />
           Agregar Set {Object.keys(periods).length + 1}
         </button>
       )}
 
-      {/* Totals */}
+      {/* Totals — en voleibol es suma de puntos del rally (no sets ganados); sets van en el tablero principal */}
       <div className="grid grid-cols-[44px_1fr_1fr_36px] gap-2 items-center border-t border-white/5 pt-4">
-        <div className="flex items-center justify-center">
-          <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Total</span>
+        <div className="flex flex-col items-center justify-center gap-0.5">
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center leading-tight">
+            {isVoleibol ? 'Pts sumados' : 'Total'}
+          </span>
+          {isVoleibol && (
+            <span className="text-[7px] font-bold text-slate-500 normal-case tracking-normal text-center px-0.5">(todos los sets)</span>
+          )}
         </div>
         <div className="text-center">
           <span className="text-3xl font-black text-white tabular-nums">{totalA}</span>
@@ -205,9 +226,10 @@ export function ScoreBreakdownEditor({ match, profile, onSaved }: ScoreBreakdown
 
       {/* Save */}
       <button
+        type="button"
         onClick={save}
         disabled={saving}
-        className="w-full h-12 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] text-black transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+        className="w-full min-h-[52px] rounded-2xl font-black text-sm uppercase tracking-wide text-zinc-950 transition-all active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 mt-2 touch-manipulation"
         style={{ background: sportColor, boxShadow: `0 4px 20px ${sportColor}40` }}
       >
         {saving ? <Loader2 size={16} className="animate-spin text-black" /> : <Save size={16} />}
@@ -219,10 +241,11 @@ export function ScoreBreakdownEditor({ match, profile, onSaved }: ScoreBreakdown
 
 function Stepper({ value, onChange, color }: { value: number; onChange: (v: number) => void; color: string }) {
   return (
-    <div className="flex items-center justify-center gap-1 bg-white/[0.04] rounded-2xl border border-white/[0.06] p-1">
+    <div className="flex items-center justify-center gap-0.5 sm:gap-1 bg-slate-900/60 rounded-2xl border border-slate-500/40 p-1">
       <button
+        type="button"
         onClick={() => onChange(value - 1)}
-        className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 text-lg font-bold shrink-0"
+        className="min-h-[44px] min-w-[40px] sm:min-w-[44px] flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/15 text-white/80 transition-all active:scale-95 text-lg font-bold shrink-0 touch-manipulation"
       >−</button>
       <input
         type="number"
@@ -230,12 +253,13 @@ function Stepper({ value, onChange, color }: { value: number; onChange: (v: numb
         min={0}
         value={value}
         onChange={(e) => onChange(Math.max(0, parseInt(e.target.value) || 0))}
-        className="w-12 text-xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-11 sm:w-12 text-lg sm:text-xl font-black text-white tabular-nums text-center bg-transparent outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       <button
+        type="button"
         onClick={() => onChange(value + 1)}
-        className="w-9 h-9 flex items-center justify-center rounded-xl transition-all active:scale-90 font-bold shrink-0"
-        style={{ color, background: `${color}20` }}
+        className="min-h-[44px] min-w-[40px] sm:min-w-[44px] flex items-center justify-center rounded-xl transition-all active:scale-95 font-bold text-white shrink-0 touch-manipulation"
+        style={{ background: `${color}45`, border: `1px solid ${color}70` }}
       >+</button>
     </div>
   );

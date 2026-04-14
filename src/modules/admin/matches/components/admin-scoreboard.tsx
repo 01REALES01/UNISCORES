@@ -1,6 +1,7 @@
 import { Avatar } from "@/components/ui-primitives";
 import { Play, Square, Radio, Clock, AlertCircle, CheckCircle, ArrowRight, Lock, RefreshCw } from "lucide-react";
 import { getDisplayName } from "@/lib/sport-helpers";
+import { getCurrentScore } from "@/lib/sport-scoring";
 import { cn } from "@/lib/utils";
 import { SPORT_COLORS } from "@/lib/constants";
 import { useState } from "react";
@@ -41,6 +42,7 @@ export const AdminScoreboard = ({
   const detalle = match.marcador_detalle || {};
   const modoRegistro = detalle.modo_registro;
   const currentSet = detalle.set_actual || 1;
+  const scoreEngine = getCurrentScore(disciplinaName, detalle);
 
   const handleSetClick = (s: number) => {
     if (s === currentSet) return;
@@ -86,15 +88,29 @@ export const AdminScoreboard = ({
 
             {/* Center */}
             <div className="flex flex-col items-center gap-5 min-w-[240px] sm:min-w-[300px]">
-              <div className="flex items-center justify-center gap-4 sm:gap-6 px-8 sm:px-12 py-6 sm:py-8 rounded-[2.5rem] border shadow-2xl relative overflow-hidden"
-                style={{ borderColor: `${sportColor}12`, background: `linear-gradient(to bottom, ${sportColor}06, ${sportColor}02)` }}>
-                <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
-                <span className="text-5xl sm:text-7xl md:text-8xl font-black tabular-nums relative z-10 text-white drop-shadow-xl">{scoreA}</span>
-                <div className="flex flex-col items-center gap-1 relative z-10">
-                  <span className="text-xl sm:text-3xl font-black text-white/10">:</span>
-                  {isLive && <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: sportColor }} />}
+              {disciplinaName === 'Voleibol' && (
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/50 text-center px-2">
+                  Marcador central = <span className="text-white/80">sets ganados</span>
+                  <span className="text-white/35"> · </span>
+                  abajo: puntos del set en juego
+                </p>
+              )}
+              <div className="flex flex-col items-center gap-1 w-full">
+                <div className="flex items-center justify-center gap-4 sm:gap-6 px-8 sm:px-12 py-6 sm:py-8 rounded-[2.5rem] border shadow-2xl relative overflow-hidden w-full max-w-md"
+                  style={{ borderColor: `${sportColor}12`, background: `linear-gradient(to bottom, ${sportColor}06, ${sportColor}02)` }}>
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
+                  <span className="text-5xl sm:text-7xl md:text-8xl font-black tabular-nums relative z-10 text-white drop-shadow-xl">{scoreA}</span>
+                  <div className="flex flex-col items-center gap-1 relative z-10">
+                    <span className="text-xl sm:text-3xl font-black text-white/10">:</span>
+                    {isLive && <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: sportColor }} />}
+                  </div>
+                  <span className="text-5xl sm:text-7xl md:text-8xl font-black tabular-nums relative z-10 text-white drop-shadow-xl">{scoreB}</span>
                 </div>
-                <span className="text-5xl sm:text-7xl md:text-8xl font-black tabular-nums relative z-10 text-white drop-shadow-xl">{scoreB}</span>
+                {disciplinaName === 'Voleibol' && scoreEngine?.extra && (
+                  <p className="text-sm font-black tabular-nums text-white/70 tracking-tight" title="Puntos del rally en el set actual">
+                    {scoreEngine.extra}
+                  </p>
+                )}
               </div>
 
               {isLive ? (

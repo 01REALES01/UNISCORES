@@ -21,10 +21,12 @@ interface PredictionCardProps {
   onPredict: (matchId: any, data: any) => void;
   locked: boolean;
   allPredictions: any[];
+  /** Query string (without leading ?) appended when opening the match from Quiniela so "Volver" restores tab/filters. */
+  quinielaReturnQuery?: string;
 }
 
 export const PredictionCard = ({
-  match, prediction, onPredict, locked, allPredictions
+  match, prediction, onPredict, locked, allPredictions, quinielaReturnQuery
 }: PredictionCardProps) => {
   const router = useRouter();
   const sportName = match.disciplinas?.name;
@@ -181,9 +183,14 @@ export const PredictionCard = ({
     return null;
   };
 
+  const partidoHref = quinielaReturnQuery
+    ? `/partido/${match.id}?${quinielaReturnQuery}`
+    : `/partido/${match.id}`;
+
   return (
     <div
-      onClick={() => router.push(`/partido/${match.id}`)}
+      id={`quiniela-match-${match.id}`}
+      onClick={() => router.push(partidoHref)}
       className={cn(
         "relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden group shadow-2xl cursor-pointer active:scale-[0.99]",
         getCardStyle()

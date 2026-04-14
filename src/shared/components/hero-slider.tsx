@@ -123,6 +123,11 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                     transition={{ duration: 0.7 }}
                     className="absolute inset-0 bg-background"
                 >
+                    <Link
+                        href={`/partido/${currentMatch.id}`}
+                        className="absolute inset-0 z-[15] md:hidden cursor-pointer touch-manipulation"
+                        aria-label={`Ver partido: ${getDisplayName(currentMatch, 'a')} vs ${getDisplayName(currentMatch, 'b')}`}
+                    />
                     {/* Background Abstracto / Deportes */}
                     <div className="absolute inset-0 opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay z-10" />
                     <div className={cn("absolute inset-0 bg-gradient-to-br opacity-60 transition-colors duration-1000", SPORT_GRADIENT[currentMatch.disciplinas?.name] || (currentMatch.estado === 'en_curso' ? 'from-rose-900/40 via-black to-black' : 'from-orange-900/40 via-black to-black'))} />
@@ -138,14 +143,14 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ delay: 0.4 }}
-                            className="absolute top-5 left-5 md:top-7 md:left-7 z-30 bg-black/40 backdrop-blur-md border border-white/10 shadow-xl rounded-full px-3 py-1.5 md:px-4 md:py-2 flex items-center justify-center"
+                            className="absolute top-5 left-5 md:top-7 md:left-7 z-30 bg-black/40 backdrop-blur-md border border-white/10 shadow-xl rounded-full px-3 py-1.5 md:px-4 md:py-2 flex items-center justify-center pointer-events-none md:pointer-events-auto"
                         >
                             <PublicLiveTimer detalle={currentMatch.marcador_detalle} deporte={currentMatch.disciplinas?.name} />
                         </m.div>
                     )}
 
                     {/* Content Container */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-20 pointer-events-none md:pointer-events-auto">
 
                         {/* Status Badge */}
                         <m.div
@@ -380,7 +385,7 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                 <ClockDisplay date={currentMatch.fecha} />
                             </div>
 
-                            <Link href={`/partido/${currentMatch.id}`}>
+                            <Link href={`/partido/${currentMatch.id}`} className="pointer-events-auto relative z-30">
                                 <Button
                                     variant="outline"
                                     className={cn(
@@ -401,21 +406,25 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
             {
                 featuredMatches.length > 1 && (
                     <>
-                        <button onClick={prevSlide} className="absolute left-1.5 md:left-4 top-1/2 -translate-y-1/2 w-8 h-8 md:w-12 md:h-12 rounded-full bg-black/40 md:bg-black/30 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:bg-black/60 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-20">
+                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); prevSlide(); }} className="absolute left-1.5 md:left-4 top-1/2 -translate-y-1/2 w-8 h-8 md:w-12 md:h-12 rounded-full bg-black/40 md:bg-black/30 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:bg-black/60 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-40 touch-manipulation">
                             <ChevronLeft size={20} className="md:size-[24px] mr-0.5" />
                         </button>
-                        <button onClick={nextSlide} className="absolute right-1.5 md:right-4 top-1/2 -translate-y-1/2 w-8 h-8 md:w-12 md:h-12 rounded-full bg-black/40 md:bg-black/30 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:bg-black/60 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-20">
+                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); nextSlide(); }} className="absolute right-1.5 md:right-4 top-1/2 -translate-y-1/2 w-8 h-8 md:w-12 md:h-12 rounded-full bg-black/40 md:bg-black/30 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:bg-black/60 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-40 touch-manipulation">
                             <ChevronRight size={20} className="md:size-[24px] ml-0.5" />
                         </button>
 
                         {/* Dots */}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-40 items-center">
                             {featuredMatches.map((_, idx) => (
                                 <button
+                                    type="button"
                                     key={idx}
-                                    onClick={() => setCurrentIndex(idx)}
-                                    className={`w-2 h-2 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-6' : 'bg-white/20 hover:bg-white/40'}`}
-                                />
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrentIndex(idx); }}
+                                    className="p-3 -m-2 md:p-1 md:-m-0 flex items-center justify-center touch-manipulation"
+                                    aria-label={`Mostrar destacado ${idx + 1} de ${featuredMatches.length}`}
+                                >
+                                    <span className={`block rounded-full transition-all ${idx === currentIndex ? 'bg-white w-6 h-2' : 'bg-white/20 hover:bg-white/40 w-2 h-2'}`} />
+                                </button>
                             ))}
                         </div>
                     </>

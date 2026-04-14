@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 
 interface SafeBackButtonProps {
     fallback?: string;
+    /** When set (e.g. return URL from ?from=quiniela), navigation uses this instead of history.back(). */
+    hrefOverride?: string | null;
     className?: string;
     label?: string;
     variant?: "default" | "ghost" | "admin";
@@ -15,11 +17,13 @@ interface SafeBackButtonProps {
  * SafeBackButton Component
  * 
  * Provides a robust "go back" functionality. 
- * If there is browser history, it uses router.back() to preserve context/filters.
- * If there is no history (direct link), it falls back to a logical parent path.
+ * If `hrefOverride` is set, navigates there (restores deep links like Quiniela tab + filters).
+ * Else if there is browser history, uses router.back() to preserve context/filters.
+ * Else falls back to a logical parent path.
  */
 export function SafeBackButton({ 
     fallback = "/", 
+    hrefOverride,
     className, 
     label = "Volver",
     variant = "default",
@@ -28,6 +32,10 @@ export function SafeBackButton({
     const router = useRouter();
 
     const handleBack = () => {
+        if (hrefOverride) {
+            router.push(hrefOverride);
+            return;
+        }
         // En Next.js / Entornos de Navegador, window.history.length > 1 
         // suele indicar que hay una página previa a la cual regresar.
         if (typeof window !== "undefined" && window.history.length > 1) {

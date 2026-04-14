@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PartidoWithRelations } from '@/modules/matches/types';
+import { applyCarreraDelegacionEscudoAliases, normalizeNombreLoose } from '@/lib/carrera-delegacion-escudo-alias';
+import { EQUIPO_NOMBRE_TO_CARRERAS } from '@/lib/constants';
 
 /** IDs to try for a side’s shield: singular FK first, then fusion array (deduped). */
 function orderedCarreraIdsForSide(
@@ -21,11 +23,39 @@ function orderedCarreraIdsForSide(
   return out;
 }
 
+/** Combined teams: use the canonical carrera shield (constants) even when FK / join is another member (e.g. Escuela de Negocios). */
+function preferredShieldCarreraNombreForSide(partido: PartidoWithRelations, side: 'a' | 'b'): string | null {
+  const equipo = side === 'a' ? partido.equipo_a : partido.equipo_b;
+  const fromEquipo = preferredShieldCarreraNombreFromLabel(equipo);
+  if (fromEquipo) return fromEquipo;
+  const del = side === 'a' ? partido.delegacion_a : partido.delegacion_b;
+  return preferredShieldCarreraNombreFromLabel(del);
+}
+
+function preferredShieldCarreraNombreFromLabel(label: string | null | undefined): string | null {
+  if (!label?.trim()) return null;
+  const list = EQUIPO_NOMBRE_TO_CARRERAS[label.trim().toUpperCase()];
+  return list?.[0] ?? null;
+}
+
 function bestEscudoForSide(
   partido: PartidoWithRelations,
   side: 'a' | 'b',
-  escudoByCarreraId: ReadonlyMap<number, string | null | undefined>
+  escudoByCarreraId: ReadonlyMap<number, string | null | undefined>,
+  nombreByCarreraId: ReadonlyMap<number, string | null | undefined>
 ): string | undefined {
+  const preferredNombre = preferredShieldCarreraNombreForSide(partido, side);
+  if (preferredNombre) {
+    const target = normalizeNombreLoose(preferredNombre);
+    for (const id of orderedCarreraIdsForSide(partido, side)) {
+      const nom = nombreByCarreraId.get(id);
+      if (nom && normalizeNombreLoose(nom) === target) {
+        const u = escudoByCarreraId.get(id);
+        if (u) return u;
+      }
+    }
+  }
+
   const joined = side === 'a' ? partido.carrera_a : partido.carrera_b;
   const fromJoin = joined?.escudo_url;
   if (fromJoin) return fromJoin;
@@ -48,21 +78,30 @@ export function collectCarreraIdsForShieldEnrichment(
   return [...s];
 }
 
+export type CarreraEscudoFetch = {
+  escudoByCarreraId: Map<number, string>;
+  nombreByCarreraId: Map<number, string>;
+};
+
 export async function fetchCarreraEscudoMap(
   client: SupabaseClient,
   ids: number[]
-): Promise<Map<number, string>> {
-  const map = new Map<number, string>();
-  if (ids.length === 0) return map;
+): Promise<CarreraEscudoFetch> {
+  const escudoByCarreraId = new Map<number, string>();
+  const nombreByCarreraId = new Map<number, string>();
+  if (ids.length === 0) return { escudoByCarreraId, nombreByCarreraId };
 
-  const { data, error } = await client.from('carreras').select('id, escudo_url').in('id', ids);
+  const { data, error } = await client.from('carreras').select('id, nombre, escudo_url').in('id', ids);
   if (error) throw error;
-  for (const row of data || []) {
-    const id = row?.id as number | undefined;
-    const url = row?.escudo_url as string | null | undefined;
-    if (id != null && url) map.set(id, url);
+  const rows = (data || []) as { id: number; nombre: string; escudo_url: string | null }[];
+  for (const row of rows) {
+    const id = row.id;
+    if (id != null && row.nombre) nombreByCarreraId.set(id, row.nombre);
+    const url = row.escudo_url?.trim();
+    if (id != null && url) escudoByCarreraId.set(id, url);
   }
-  return map;
+  await applyCarreraDelegacionEscudoAliases(client, rows, escudoByCarreraId);
+  return { escudoByCarreraId, nombreByCarreraId };
 }
 
 /** Fills `carrera_a` / `carrera_b` escudo_url when the FK join missed a logo stored on another carrera id (fusion / array sync). */
@@ -73,8 +112,8 @@ export async function enrichPartidosCarreraShieldsFromDb(
   const ids = collectCarreraIdsForShieldEnrichment(rows);
   if (ids.length === 0) return rows;
   try {
-    const map = await fetchCarreraEscudoMap(client, ids);
-    return enrichPartidosWithCarreraEscudoMap(rows, map);
+    const { escudoByCarreraId, nombreByCarreraId } = await fetchCarreraEscudoMap(client, ids);
+    return enrichPartidosWithCarreraEscudoMap(rows, escudoByCarreraId, nombreByCarreraId);
   } catch (e) {
     console.warn('[enrichPartidosCarreraShieldsFromDb] failed:', e);
     return rows;
@@ -83,11 +122,12 @@ export async function enrichPartidosCarreraShieldsFromDb(
 
 export function enrichPartidosWithCarreraEscudoMap(
   list: PartidoWithRelations[],
-  escudoByCarreraId: ReadonlyMap<number, string | null | undefined>
+  escudoByCarreraId: ReadonlyMap<number, string | null | undefined>,
+  nombreByCarreraId: ReadonlyMap<number, string | null | undefined>
 ): PartidoWithRelations[] {
   return list.map((p) => {
-    const urlA = bestEscudoForSide(p, 'a', escudoByCarreraId);
-    const urlB = bestEscudoForSide(p, 'b', escudoByCarreraId);
+    const urlA = bestEscudoForSide(p, 'a', escudoByCarreraId, nombreByCarreraId);
+    const urlB = bestEscudoForSide(p, 'b', escudoByCarreraId, nombreByCarreraId);
     let next: PartidoWithRelations = p;
 
     if (urlA) {

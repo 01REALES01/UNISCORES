@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Flame, History, Trophy, Info } from "lucide-react";
 import { Button } from "@/components/ui-primitives";
 import { cn } from "@/lib/utils";
@@ -17,10 +17,26 @@ import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 export default function QuinielaPage() {
     const { user, profile, isStaff, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'play' | 'history' | 'ranking'>('ranking');
+    const searchParams = useSearchParams();
+    const [activeTab, setActiveTab] = useState<'play' | 'history' | 'ranking'>('play');
     const [showDisclaimer, setShowDisclaimer] = useState(false);
 
     const { matches, predictions, allPredictions, ranking, loading, userPublicProfile, handlePredict, stats } = useQuiniela();
+
+    useEffect(() => {
+        const t = searchParams.get("tab");
+        if (t === "play" || t === "history" || t === "ranking") setActiveTab(t);
+    }, [searchParams]);
+
+    const playRestore = useMemo(
+        () => ({
+            day: searchParams.get("day") ?? undefined,
+            sport: searchParams.get("sport") ?? undefined,
+            gender: searchParams.get("gender") ?? undefined,
+            focusMatchId: searchParams.get("focus") ?? undefined,
+        }),
+        [searchParams]
+    );
 
     useEffect(() => { if (!authLoading && !user) router.push("/login"); }, [user, authLoading, router]);
 
@@ -116,7 +132,16 @@ export default function QuinielaPage() {
                     ))}
                 </div>
 
-                {activeTab === 'play' && <QuinielaPlayTab matches={matches} predictions={predictions} allPredictions={allPredictions} onPredict={handlePredict} loading={loading} />}
+                {activeTab === 'play' && (
+                    <QuinielaPlayTab
+                        matches={matches}
+                        predictions={predictions}
+                        allPredictions={allPredictions}
+                        onPredict={handlePredict}
+                        loading={loading}
+                        playRestore={playRestore}
+                    />
+                )}
                 {activeTab === 'history' && <QuinielaHistoryTab predictions={predictions} matches={matches} />}
                 {activeTab === 'ranking' && <QuinielaRankingTab ranking={ranking} user={user} profile={profile} userPoints={userPublicProfile?.points || 0} />}
             </div>

@@ -5,13 +5,15 @@ import { supabase } from "@/lib/supabase";
 import { useEffect } from "react";
 import { computeCareerStats, CareerStats } from "@/lib/sport-helpers";
 import { EQUIPO_NOMBRE_TO_CARRERAS } from "@/lib/constants";
+import { enrichPartidosCarreraShieldsFromDb } from "@/lib/match-carrera-shields";
+import { overlayCarreraEscudoFromDelegationAlias } from "@/lib/carrera-delegacion-escudo-alias";
 
 // ─── Column Selections ──────────────────────────────────────────────────────
 
 const MATCH_COLUMNS = `
   id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle,
   fase, grupo, bracket_order, delegacion_a_id, delegacion_b_id,
-  carrera_a_ids, carrera_b_ids,
+  carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids,
   disciplinas(name, icon),
   carrera_a:carreras!carrera_a_id(nombre, escudo_url),
   carrera_b:carreras!carrera_b_id(nombre, escudo_url),
@@ -59,8 +61,11 @@ async function fetchTeamProfile(delegacionId: number, signal?: AbortSignal) {
         ? configNames.map((n: string) => n.toLowerCase()) 
         : [(delegacion.nombre || '').toLowerCase()];
 
-    const carreras = (allCarreras || []).filter((c: any) => 
+    const carrerasRaw = (allCarreras || []).filter((c: any) => 
         dbCareerIds.includes(c.id) || targetNames.includes(c.nombre.toLowerCase())
+    );
+    const carreras = await Promise.all(
+        carrerasRaw.map((c: any) => overlayCarreraEscudoFromDelegationAlias(supabase, c))
     );
 
     const finalCareerIds = carreras.map((c: any) => c.id);
@@ -84,11 +89,13 @@ async function fetchTeamProfile(delegacionId: number, signal?: AbortSignal) {
 
     const allMatchesRaw = [...((matchesA.data || []) as any[]), ...((matchesB.data || []) as any[])];
     const seen = new Set<number>();
-    const matches = allMatchesRaw.filter((m: any) => {
+    const matchesDeduped = allMatchesRaw.filter((m: any) => {
         if (seen.has(m.id)) return false;
         seen.add(m.id);
         return true;
     }).sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+    const matches = await enrichPartidosCarreraShieldsFromDb(supabase, matchesDeduped);
 
     // 4. Fetch athletes (Plantilla)
     // Includes players matched by carrera_id OR by explicit delegacion_id override

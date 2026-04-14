@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Badge, Avatar, Button } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
@@ -33,7 +33,20 @@ import UniqueLoading from "@/components/ui/morph-loading";
 export default function PublicMatchDetail() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const matchId = params.id as string;
+
+    const quinielaReturnHref = useMemo(() => {
+        if (searchParams.get("from") !== "quiniela") return null;
+        const qs = new URLSearchParams();
+        qs.set("tab", "play");
+        for (const k of ["day", "sport", "gender"] as const) {
+            const v = searchParams.get(k);
+            if (v) qs.set(k, v);
+        }
+        qs.set("focus", matchId);
+        return `/quiniela?${qs.toString()}`;
+    }, [searchParams, matchId]);
     const { user, isStaff } = useAuth();
 
     // ─── SWR Data Fetching ──────────────────────────────────────────────────────
@@ -238,7 +251,12 @@ export default function PublicMatchDetail() {
             </div>
 
             <div className="fixed top-0 left-0 right-0 z-50 px-4 py-4 flex justify-between items-center pointer-events-none">
-                <SafeBackButton fallback="/partidos" label="Volver" className="pointer-events-auto" />
+                <SafeBackButton
+                    fallback="/partidos"
+                    hrefOverride={quinielaReturnHref}
+                    label="Volver"
+                    className="pointer-events-auto"
+                />
 
                 <div className="pointer-events-auto flex gap-2">
                     <button className="p-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all text-white">
