@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Trophy, LayoutDashboard, Calendar, Users, LogOut, Menu, X, Zap, Shield, BarChart3, Newspaper, Loader2, Upload, ListOrdered, Shuffle, ClipboardList, BookOpen, CalendarDays } from "lucide-react";
@@ -16,6 +16,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname();
     const router = useRouter();
     const { user, profile, loading, isStaff, isAdmin, isPeriodista, signOut, profileLoading } = useAuth();
+    const primaryScrollRef = useRef<HTMLDivElement>(null);
+    const bodyScrollYRef = useRef(0);
 
     // Redirect to login if not authenticated or not staff
     useEffect(() => {
@@ -26,6 +28,91 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
         }
     }, [loading, user, router]);
+
+    /** Bloquea el scroll del documento (evita 2ª barra). El único scroll vertical es #admin-primary-scroll. */
+    useLayoutEffect(() => {
+        if (loading || !user) return;
+        if (profileLoading && !profile) return;
+        if (!profile || !isStaff) return;
+
+        bodyScrollYRef.current = window.scrollY;
+        const body = document.body;
+        const html = document.documentElement;
+        body.style.position = "fixed";
+        body.style.top = `-${bodyScrollYRef.current}px`;
+        body.style.left = "0";
+        body.style.right = "0";
+        body.style.width = "100%";
+        body.style.overflow = "hidden";
+        html.style.overflow = "hidden";
+
+        return () => {
+            body.style.position = "";
+            body.style.top = "";
+            body.style.left = "";
+            body.style.right = "";
+            body.style.width = "";
+            body.style.overflow = "";
+            html.style.overflow = "";
+            window.scrollTo(0, bodyScrollYRef.current);
+        };
+    }, [loading, user, profile, profileLoading, isStaff]);
+
+    /**
+     * Si el navegador aún entrega wheel al documento, reenvía al panel principal
+     * (no roba eventos de inputs ni de regiones con data-nested-scroll).
+     */
+    useEffect(() => {
+        if (loading || !user || !profile || !isStaff) return;
+
+        const isTextInput = (el: EventTarget | null) => {
+            if (!(el instanceof HTMLElement)) return false;
+            const tag = el.tagName;
+            if (tag === "TEXTAREA") return true;
+            if (tag === "INPUT") {
+                const type = (el as HTMLInputElement).type || "text";
+                return ["text", "search", "email", "password", "url", "tel", "number"].includes(type);
+            }
+            if (el.isContentEditable) return true;
+            return false;
+        };
+
+        const hasNestedScrollParent = (start: HTMLElement | null, stop: HTMLElement | null) => {
+            let node: HTMLElement | null = start;
+            while (node && node !== stop) {
+                if (node.hasAttribute("data-nested-scroll")) return true;
+                const { overflowY } = getComputedStyle(node);
+                if (
+                    (overflowY === "auto" || overflowY === "scroll") &&
+                    node.scrollHeight > node.clientHeight + 1
+                ) {
+                    return true;
+                }
+                node = node.parentElement;
+            }
+            return false;
+        };
+
+        const onWheel = (e: WheelEvent) => {
+            if (isTextInput(e.target)) return;
+            const panel = primaryScrollRef.current;
+            if (!panel) return;
+            const t = e.target;
+            if (!(t instanceof HTMLElement)) return;
+            // Sidebar: deja que haga scroll su propio nav / drawer
+            if (t.closest("[data-admin-sidebar]")) return;
+            if (panel.contains(t)) {
+                if (hasNestedScrollParent(t, panel)) return;
+                return;
+            }
+            if (panel.scrollHeight <= panel.clientHeight + 1) return;
+            e.preventDefault();
+            panel.scrollTop += e.deltaY;
+        };
+
+        document.addEventListener("wheel", onWheel, { passive: false, capture: true });
+        return () => document.removeEventListener("wheel", onWheel, { capture: true } as AddEventListenerOptions);
+    }, [loading, user, profile, isStaff]);
 
     const handleLogout = async () => {
         await signOut();
@@ -124,12 +211,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ];
 
     return (
-        <div className="min-h-screen flex flex-col md:flex-row bg-background text-slate-200 selection:bg-violet-500/30">
+        <div
+            data-admin-root
+            className="fixed inset-0 z-20 flex min-h-0 max-h-[100dvh] w-full flex-col overflow-hidden bg-background text-slate-200 selection:bg-violet-500/30 md:flex-row"
+        >
+            <div data-admin-sidebar className="contents md:block md:shrink-0">
             <Sidebar open={open} setOpen={setOpen}>
                 <SidebarBody className="justify-between gap-10">
-                    <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                         {/* Logo Area */}
-                        <div className="flex py-3 border-b border-white/8 items-center justify-center">
+                        <div className="flex shrink-0 py-3 border-b border-white/8 items-center justify-center">
                             <div className="flex flex-col items-center justify-center w-full">
                                 {open ? (
                                     <>
@@ -143,7 +234,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </div>
 
                         {/* Navigation */}
-                        <nav className="flex-1 px-1 py-4 flex flex-col items-stretch gap-0.5">
+                        <nav className="admin-sidebar-nav flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto overscroll-y-contain px-1 py-4 items-stretch [-webkit-overflow-scrolling:touch] md:min-h-0 md:[scrollbar-width:none] md:[&::-webkit-scrollbar]:hidden">
                             {menuItems.map((item) => {
                                 const isActive = pathname === item.href;
                                 return (
@@ -217,12 +308,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </SidebarBody>
             </Sidebar>
+            </div>
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden relative">
-
-
-                <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-16 md:top-0 z-40">
+            {/* Único scroll vertical explícito: #admin-primary-scroll (body queda fijo) */}
+            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                <div className="z-30 flex shrink-0 items-center justify-between border-b border-white/5 bg-zinc-950/95 px-4 py-3 backdrop-blur-md md:px-6">
                     <AdminGlobalSearch />
                     <div className="hidden md:flex items-center gap-4">
                         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
@@ -232,9 +322,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </div>
 
-                <main className="flex-1 overflow-y-auto p-4 md:p-6">
-                    {children}
-                </main>
+                <div
+                    id="admin-primary-scroll"
+                    ref={primaryScrollRef}
+                    className="admin-primary-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain p-4 pb-10 [-webkit-overflow-scrolling:touch] md:p-6 md:pb-12"
+                >
+                    <main className="min-w-0">{children}</main>
+                </div>
             </div>
         </div>
     );

@@ -57,7 +57,11 @@ const GET_SPORT_ACTIONS = (sport: string) => {
         ];
     }
     if (sport === 'Voleibol') {
-        return [{ value: 'punto', label: 'Punto', icon: '🏐', style: 'pill-blue' }];
+        return [
+            { value: 'punto', label: 'Punto', icon: '🏐', style: 'pill-blue' },
+            { value: 'tarjeta_amarilla', label: 'Amarilla', icon: '🟨', style: 'card-yellow' },
+            { value: 'tarjeta_roja', label: 'Roja', icon: '🟥', style: 'card-red' },
+        ];
     }
     if (sport === 'Tenis' || sport === 'Tenis de Mesa') {
         return [
@@ -80,6 +84,12 @@ const GET_SPORT_ACTIONS = (sport: string) => {
     }
     return [{ value: 'punto', label: 'Punto', icon: '➕', style: 'pill-blue' }];
 };
+
+/** Solo tarjetas: fair play tras partido finalizado (Fútbol / Voleibol). */
+const FAIR_PLAY_CARD_ACTIONS = [
+    { value: 'tarjeta_amarilla', label: 'Amarilla', icon: '🟨', style: 'card-yellow' },
+    { value: 'tarjeta_roja', label: 'Roja', icon: '🟥', style: 'card-red' },
+] as const;
 
 export default function MatchControlPage() {
     const params = useParams();
@@ -287,7 +297,9 @@ export default function MatchControlPage() {
                         <div className="mt-8 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center">
                             <AlertCircle size={20} className="shrink-0 text-white/30" />
                             <p className="text-sm font-bold text-white/40 uppercase tracking-widest">
-                                Partido finalizado — no se pueden registrar eventos desde acá
+                                {disciplinaName === 'Fútbol' || disciplinaName === 'Voleibol'
+                                    ? 'Partido finalizado — el marcador está cerrado; abajo podés registrar tarjetas (fair play).'
+                                    : 'Partido finalizado — no se pueden registrar eventos desde acá'}
                             </p>
                         </div>
                         <AdminMvpPicker
@@ -300,6 +312,28 @@ export default function MatchControlPage() {
                             profile={profile}
                             onSaved={fetchMatchDetails}
                         />
+                        {(disciplinaName === 'Fútbol' || disciplinaName === 'Voleibol') && (
+                            <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-8">
+                                <AdminEventCreator
+                                    match={match}
+                                    actions={[...FAIR_PLAY_CARD_ACTIONS]}
+                                    jugadoresA={jugadoresA}
+                                    jugadoresB={jugadoresB}
+                                    eventos={eventos}
+                                    onAddEvent={(data) =>
+                                        handleNuevoEvento(data.tipo, data.equipo, data.jugador_id, true)
+                                    }
+                                    onAddPlayer={handleAddPlayer}
+                                    disciplinaName={disciplinaName}
+                                />
+                                <AdminMatchTimeline
+                                    eventos={eventos}
+                                    match={match}
+                                    onDeleteEvent={(e) => setConfirmingDeletion(e)}
+                                    disciplinaName={disciplinaName}
+                                />
+                            </div>
+                        )}
                     </>
                 )}
 

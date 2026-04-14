@@ -18,7 +18,6 @@ import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 
 const BRACKET_SPORTS = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis'] as const;
 const GENDERS = [
-    { label: 'Todos', value: 'todos', icon: <Shield size={18} />, color: 'bg-violet-500/20 text-violet-400 border-violet-500/30' },
     { label: 'Masculino', value: 'masculino', icon: <Mars size={18} />, color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
     { label: 'Femenino', value: 'femenino', icon: <Venus size={18} />, color: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
 ] as const;
@@ -33,7 +32,7 @@ export default function ClasificacionPage() {
     const { matches, loading } = useMatches();
 
     const [selectedSport, setSelectedSport] = useState<string>('Fútbol');
-    const [selectedGender, setSelectedGender] = useState<string>('todos');
+    const [selectedGender, setSelectedGender] = useState<string>('masculino');
     const [selectedCategory, setSelectedCategory] = useState<string>('avanzado');
     const [hideTeamBrackets, setHideTeamBrackets] = useState<boolean>(false);
     const [hideTenisBrackets, setHideTenisBrackets] = useState<boolean>(false);
@@ -85,16 +84,18 @@ export default function ClasificacionPage() {
                 const [newGender, newCategory] = bestKey.split('-');
                 
                 if (newGender.toLowerCase() !== selectedGender.toLowerCase()) setSelectedGender(newGender);
-                if (isTenis && newCategory.toLowerCase() !== selectedCategory.toLowerCase()) setSelectedCategory(newCategory);
+                if (isTenis && newCategory.toLowerCase() !== selectedCategory.toLowerCase()) {
+                    setSelectedCategory(newCategory);
+                }
             }
         }
-    }, [selectedSport, matches, isTenis]);
+    }, [selectedSport, matches, isTenis, selectedGender, selectedCategory]);
 
     // Filter matches for the selected sport, gender and category (if tenis)
     const filteredMatches = useMemo(() => {
         return matches.filter(m => {
             const sportMatch = m.disciplinas?.name === selectedSport;
-            const genderMatch = selectedGender === 'todos' || (m.genero || 'masculino').toLowerCase() === selectedGender.toLowerCase();
+            const genderMatch = (m.genero || 'masculino').toLowerCase() === selectedGender.toLowerCase();
             const categoryMatch = !isTenis || (m.categoria || 'avanzado').toLowerCase() === selectedCategory.toLowerCase();
             const hasFase = m.fase != null;
             return sportMatch && genderMatch && categoryMatch && hasFase;

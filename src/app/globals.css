@@ -216,11 +216,40 @@ input,
   75% { transform: translate(-20px, -20px) scale(0.9) rotate(-270deg); border-radius: 75%; }
 }
 
-/* ── Mobile Bottom Nav: ensure content doesn't hide under the dock ── */
+/* ── Mobile Bottom Nav: sitio público (sin data-admin-root en body) ── */
 @media (max-width: 767px) {
-  main {
+  body:not(:has([data-admin-root])) main {
     padding-bottom: max(6.5rem, calc(5rem + env(safe-area-inset-bottom)));
   }
+}
+
+/*
+ * Admin: sin scroll en el documento (Chrome suele dejar una barra en `html`
+ * aunque el layout ponga `body` en fixed por JS). `:has` aplica en el mismo
+ * pintado que el árbol con `data-admin-root`.
+ */
+html:has([data-admin-root]) {
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html:has([data-admin-root]) body {
+  height: 100%;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Admin: barra de scroll del menú lateral invisible (sigue scrolleable con rueda) */
+[data-admin-root] nav.admin-sidebar-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+[data-admin-root] nav.admin-sidebar-nav::-webkit-scrollbar {
+  display: none;
 }
 
 /* Mask utility for right-fade scroll areas */

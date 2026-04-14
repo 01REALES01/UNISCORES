@@ -27,6 +27,7 @@ import {
 import { toast } from "sonner";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; icon: typeof Crown; description: string }> = {
     admin: {
@@ -64,7 +65,9 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
         icon: UserCheck,
         description: 'Atleta con perfil público y stats',
     },
-};export default function UsuariosPage() {
+};
+
+export default function UsuariosPage() {
     const searchParams = useSearchParams();
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [loading, setLoading] = useState(true);
@@ -325,14 +328,13 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
     }, [profiles, roleFilter, searchQuery]);
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 relative min-h-screen">
-            {/* Ambient Background */}
-            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-red-600/5 rounded-full blur-[80px] pointer-events-none" />
+        <div className="space-y-5 animate-in fade-in duration-500 relative pb-6 overflow-x-hidden">
+            <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-purple-600/[0.07] blur-[80px]" aria-hidden />
+            <div className="pointer-events-none absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-red-600/[0.05] blur-[70px]" aria-hidden />
 
-            <div className="relative z-10 space-y-6">
+            <div className="relative z-10 space-y-5">
                 {/* Header */}
-                <div className="relative overflow-hidden rounded-3xl bg-white/8/60 backdrop-blur-xl border border-white/5 p-6 sm:p-10">
+                <div className="relative overflow-hidden rounded-2xl border border-zinc-700/80 bg-zinc-900/90 p-5 sm:p-8 shadow-lg shadow-black/20">
                     <div className="absolute right-[-5%] top-[-20%] w-[300px] h-[300px] bg-purple-500/10 rounded-full blur-[60px] pointer-events-none" />
                     
                     <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -345,10 +347,10 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                     Solo Administradores
                                 </span>
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-black tracking-tighter bg-gradient-to-r from-white via-white to-white/40 bg-clip-text text-transparent leading-tight font-sans">
+                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
                                 Gestión de Usuarios
                             </h1>
-                            <p className="text-slate-500 mt-1.5 text-sm font-medium">
+                            <p className="text-slate-400 mt-1.5 text-sm font-medium">
                                 Administra roles y permisos de acceso al sistema
                             </p>
                         </div>
@@ -381,9 +383,9 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                             <button
                                 key={stat.label}
                                 onClick={() => setRoleFilter(roleFilter === stat.filter ? 'all' : stat.filter)}
-                                className={`relative group p-4 sm:p-5 rounded-2xl border text-left transition-all duration-300 overflow-hidden backdrop-blur-md ${isActive
-                                    ? 'border-white/15 bg-white/10 shadow-lg ring-1 ring-white/10'
-                                    : 'border-white/5 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/10'
+                                className={`relative group p-4 sm:p-5 rounded-2xl border text-left transition-colors overflow-hidden ${isActive
+                                    ? 'border-zinc-500 bg-zinc-800/90 shadow-md ring-1 ring-zinc-600'
+                                    : 'border-zinc-700/80 bg-zinc-900/80 hover:bg-zinc-800/90 hover:border-zinc-600'
                                     }`}
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
@@ -406,12 +408,12 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                 </div>
 
             {/* Filters & Search */}
-            <div className="relative overflow-hidden rounded-2xl bg-white/[0.12] backdrop-blur-3xl border border-white/30 p-4 shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+            <div className="rounded-2xl border border-zinc-700/80 bg-zinc-900/85 p-3 sm:p-4">
                 <SuggestiveSearch
                     value={searchQuery}
                     onChange={setSearchQuery}
                     suggestions={["Buscar por nombre...", "Buscar por correo...", "Encuentra un admin..."]}
-                    className="h-11 rounded-xl bg-white/5 border border-white/10 focus-within:border-white/60 focus-within:bg-white/10 focus-within:ring-4 focus-within:ring-white/10 transition-all w-full"
+                    className="h-11 rounded-xl bg-zinc-950 border border-zinc-600 focus-within:border-violet-500/70 focus-within:ring-2 focus-within:ring-violet-500/25 transition-all w-full"
                 />
             </div>
 
@@ -449,7 +451,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                     </div>
                 </div>
             ) : (
-                <div className="grid gap-4 lg:grid-cols-2 pb-20">
+                <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2">
                     {filteredProfiles.map((userProfile) => {
                         const isCurrentUser = userProfile.id === currentProfile?.id;
                         const isUpdating = updatingId === userProfile.id;
@@ -457,10 +459,10 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                         return (
                             <div
                                 key={userProfile.id}
-                                className={`group relative flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-2xl border transition-all duration-300 backdrop-blur-md ${isCurrentUser
-                                    ? 'border-purple-500/30 bg-purple-500/[0.03] shadow-lg shadow-purple-500/5'
-                                    : 'border-white/5 bg-white/8/40 hover:bg-white/8/60 hover:border-white/15'
-                                    } ${openDropdown === userProfile.id ? 'z-40' : 'z-10'}`}
+                                className={`group relative flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl border transition-colors ${isCurrentUser
+                                    ? 'border-purple-500/50 bg-purple-950/50 shadow-md shadow-purple-900/20'
+                                    : 'border-zinc-700/80 bg-zinc-900/90 hover:border-zinc-600 hover:bg-zinc-900'
+                                    } ${openDropdown === userProfile.id ? 'z-[120]' : 'z-10'}`}
                             >
                                 {/* Left Content */}
                                 <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -487,7 +489,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                         <button
                                             onClick={() => handleDeleteUser(userProfile.id, userProfile.email)}
                                             disabled={deletingId === userProfile.id}
-                                            className="opacity-0 group-hover:opacity-100 p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-all ml-2"
+                                            className="shrink-0 p-2 rounded-xl text-rose-400 hover:bg-rose-500/15 border border-transparent hover:border-rose-500/30 transition-all md:opacity-0 md:group-hover:opacity-100"
                                             title="Eliminar usuario"
                                         >
                                             {deletingId === userProfile.id ? (
@@ -502,9 +504,9 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                 {/* Right Content - Role Selector (Multiple Badges) */}
                                 <div className="relative shrink-0 w-full sm:w-[220px] mt-2 sm:mt-0">
                                     {isUpdating ? (
-                                        <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 h-11">
+                                        <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-950 border border-zinc-700 h-11">
                                             <Loader2 size={14} className="animate-spin text-slate-400" />
-                                            <span className="text-xs font-bold text-slate-400">Guardando...</span>
+                                            <span className="text-xs font-bold text-slate-300">Guardando...</span>
                                         </div>
                                     ) : (
                                         <>
@@ -513,9 +515,9 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                                     if (isCurrentUser) return;
                                                     setOpenDropdown(openDropdown === userProfile.id ? null : userProfile.id);
                                                 }}
-                                                className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border min-h-11 transition-all ${isCurrentUser
-                                                    ? 'opacity-60 cursor-not-allowed bg-black/20 border-white/5'
-                                                    : 'cursor-pointer hover:border-white/30 hover:bg-white/[0.05] border-white/10 bg-black/40'
+                                                className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border min-h-[2.75rem] transition-all ${isCurrentUser
+                                                    ? 'opacity-60 cursor-not-allowed bg-zinc-950/50 border-zinc-800'
+                                                    : 'cursor-pointer active:scale-[0.99] border-zinc-600 bg-zinc-950 hover:border-violet-500/50 hover:bg-zinc-900'
                                                     }`}
                                             >
                                                 <div className="flex flex-wrap gap-1 py-0.5">
@@ -523,7 +525,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                                         const cfg = ROLE_CONFIG[r];
                                                         const RIcon = cfg.icon;
                                                         return (
-                                                            <div key={r} className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border shadow-sm ${cfg.bg}`}>
+                                                            <div key={r} className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border border-zinc-600/60 bg-zinc-900/80 ${cfg.bg}`}>
                                                                 <RIcon size={10} className={cfg.color} />
                                                                 <span className={`text-[9px] font-black uppercase tracking-wider ${cfg.color}`}>{cfg.label}</span>
                                                             </div>
@@ -553,9 +555,9 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                                     </button>
 
                                                     {selectedDisciplina === userProfile.id && (
-                                                        <div className="mt-2 p-2 bg-white/5 rounded-xl border border-white/5 space-y-2 animate-in slide-in-from-top-2">
-                                                            <p className="text-[9px] font-black uppercase text-slate-500 px-2 tracking-widest">Selecciona tus deportes</p>
-                                                            <div className="grid grid-cols-1 gap-1 max-h-48 overflow-y-auto custom-scrollbar">
+                                                        <div className="mt-2 rounded-xl border border-zinc-700 bg-zinc-950 p-2 space-y-2">
+                                                            <p className="text-[9px] font-black uppercase text-zinc-500 px-2 tracking-widest">Selecciona tus deportes</p>
+                                                            <div data-nested-scroll className="grid grid-cols-1 gap-1 max-h-48 overflow-y-auto custom-scrollbar">
                                                                 {disciplinas.map(d => {
                                                                     const isChecked = (userDisciplinas[userProfile.id] || []).includes(d.id);
                                                                     return (
@@ -579,21 +581,35 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                                 </div>
                                             )}
 
-                                            {/* Dropdown Menu */}
+                                            {/* Dropdown Menu — panel opaco; móvil anclado abajo para scroll usable */}
                                             {openDropdown === userProfile.id && (
                                                 <>
-                                                    <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm sm:bg-transparent sm:backdrop-blur-none" onClick={() => setOpenDropdown(null)} />
-                                                    <div className="fixed sm:absolute left-1/2 sm:left-auto right-auto sm:right-0 top-1/2 sm:top-full mt-0 sm:mt-2 z-50 w-[90vw] sm:w-64 -translate-x-1/2 sm:translate-x-0 -translate-y-1/2 sm:translate-y-0 bg-white/8 border border-white/10 rounded-3xl shadow-2xl shadow-black p-3 sm:p-2 animate-in fade-in zoom-in-95 sm:slide-in-from-top-2 duration-200">
-                                                        <div className="flex items-center justify-between sm:block px-3 pt-2 pb-3 mb-2 border-b border-white/5 sm:border-0">
-                                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Gestión de Roles</p>
-                                                            <button 
+                                                    <div
+                                                        className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-[2px] sm:bg-black/50"
+                                                        aria-hidden
+                                                        onClick={() => setOpenDropdown(null)}
+                                                    />
+                                                    <div
+                                                        role="dialog"
+                                                        aria-modal="true"
+                                                        aria-labelledby={`role-panel-title-${userProfile.id}`}
+                                                        className="fixed z-[110] inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] max-h-[min(78dvh,520px)] flex flex-col overflow-hidden rounded-2xl border border-zinc-600 bg-zinc-950 shadow-2xl ring-1 ring-black/60 animate-in fade-in slide-in-from-bottom-3 duration-200 sm:absolute sm:inset-x-auto sm:inset-y-auto sm:left-auto sm:right-0 sm:bottom-auto sm:top-full sm:mt-2 sm:w-[min(calc(100vw-2rem),288px)] sm:max-h-[min(70vh,400px)] sm:translate-x-0 sm:translate-y-0 sm:zoom-in-95 sm:slide-in-from-top-2"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-700 bg-zinc-900 px-3 py-3 sm:py-2.5">
+                                                            <p id={`role-panel-title-${userProfile.id}`} className="text-[11px] font-black uppercase tracking-widest text-zinc-300">
+                                                                Roles
+                                                            </p>
+                                                            <button
+                                                                type="button"
                                                                 onClick={() => setOpenDropdown(null)}
-                                                                className="sm:hidden text-slate-500 hover:text-white"
+                                                                className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white sm:hidden"
+                                                                aria-label="Cerrar"
                                                             >
                                                                 <X size={18} />
                                                             </button>
                                                         </div>
-                                                        <div className="space-y-1 overflow-y-auto max-h-[60vh] sm:max-h-[350px] custom-scrollbar">
+                                                        <div data-nested-scroll className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-y-contain p-2 sm:p-2">
                                                             {(Object.keys(ROLE_CONFIG) as UserRole[]).map(role => {
                                                                 const config = ROLE_CONFIG[role];
                                                                 const Icon = config.icon;
@@ -617,31 +633,31 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                                                                     toggleRole(userProfile.id, role);
                                                                                 }
                                                                             }}
-                                                                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all text-left group ${isSelected
-                                                                                ? 'bg-white/10 border border-white/10'
-                                                                                : 'hover:bg-white/5 border border-transparent'
+                                                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors border ${isSelected
+                                                                                ? 'border-zinc-500 bg-zinc-800/90'
+                                                                                : 'border-transparent bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-600'
                                                                                 }`}
                                                                         >
-                                                                            <div className={`p-2 rounded-lg transition-colors ${isSelected ? config.bg : 'bg-black/30 group-hover:bg-black/50'}`}>
-                                                                                <Icon size={14} className={isSelected ? config.color : 'text-slate-500 group-hover:text-slate-300'} />
+                                                                            <div className={`p-2 rounded-lg shrink-0 ${isSelected ? 'bg-zinc-950 ' + config.bg : 'bg-zinc-950 border border-zinc-700'}`}>
+                                                                                <Icon size={14} className={isSelected ? config.color : 'text-zinc-400'} />
                                                                             </div>
-                                                                            <div className="flex-1">
-                                                                                <span className={`text-sm font-bold ${isSelected ? config.color : 'text-slate-300'}`}>{config.label}</span>
-                                                                                <p className="text-[10px] text-slate-500/80 leading-snug mt-0.5">
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-zinc-200'}`}>{config.label}</span>
+                                                                                <p className="text-[10px] text-zinc-500 leading-snug mt-0.5">
                                                                                     {isAthlete && isDeportistaActive && thisUserDiscs.length > 0
                                                                                         ? `${thisUserDiscs.length} deporte${thisUserDiscs.length > 1 ? 's' : ''} asignado${thisUserDiscs.length > 1 ? 's' : ''}`
                                                                                         : config.description}
                                                                                 </p>
                                                                             </div>
-                                                                            {isSelected && !isAthlete && <Check size={14} className={config.color} />}
-                                                                            {isAthlete && <ChevronDown size={14} className={isDeportistaActive ? 'text-emerald-400' : 'text-slate-400'} />}
+                                                                            {isSelected && !isAthlete && <Check size={14} className={cn(config.color, 'shrink-0')} />}
+                                                                            {isAthlete && <ChevronDown size={14} className={cn('shrink-0', isDeportistaActive ? 'text-emerald-400' : 'text-zinc-500')} />}
                                                                         </button>
 
                                                                         {/* Multi-sport picker: shows when user is deportista and panel is open */}
                                                                         {isAthlete && selectedDisciplina === userProfile.id && (
-                                                                            <div className="mx-1 p-2 bg-white/5 rounded-xl border border-white/5 space-y-2 animate-in slide-in-from-top-2">
-                                                                                <div className="flex items-center justify-between px-2">
-                                                                                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Deportes (multi-selección)</p>
+                                                                            <div className="mx-0.5 mb-1 rounded-xl border border-zinc-700 bg-zinc-900 p-2 space-y-2">
+                                                                                <div className="flex items-center justify-between px-1">
+                                                                                    <p className="text-[9px] font-black uppercase text-zinc-500 tracking-widest">Deportes</p>
                                                                                     {isDeportistaActive && (
                                                                                         <button
                                                                                             onClick={() => {
@@ -655,7 +671,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string; 
                                                                                         </button>
                                                                                     )}
                                                                                 </div>
-                                                                                <div className="grid grid-cols-1 gap-1 max-h-40 overflow-y-auto custom-scrollbar">
+                                                                                <div data-nested-scroll className="grid grid-cols-1 gap-1 max-h-40 overflow-y-auto custom-scrollbar">
                                                                                     {disciplinas.map(d => {
                                                                                         const isChecked = thisUserDiscs.includes(d.id);
                                                                                         return (

@@ -89,7 +89,7 @@ export const DesktopSidebar = ({
     return (
         <m.div
             className={cn(
-                "h-full px-3 py-3 hidden md:flex md:flex-col bg-background border-r border-white/8 flex-shrink-0",
+                "h-full min-h-0 px-3 py-3 hidden md:sticky md:top-0 md:self-start md:flex md:max-h-screen md:flex-col bg-background border-r border-white/8 flex-shrink-0",
                 className
             )}
             animate={{
@@ -151,7 +151,7 @@ export const MobileSidebar = ({
                                 >
                                     <X size={20} />
                                 </div>
-                                <div className="mt-8 flex-1 overflow-y-auto">
+                                <div className="mt-8 flex min-h-0 flex-1 flex-col overflow-hidden">
                                     {children}
                                 </div>
                             </div>

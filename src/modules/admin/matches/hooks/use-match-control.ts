@@ -329,8 +329,8 @@ export function useMatchControl(matchId: string) {
             }
         }
 
-        // Block events for expelled players (red card) in Fútbol
-        if (disciplinaName === 'Fútbol' && jugador_id) {
+        // Block events for expelled players (red card) in Fútbol y Voleibol
+        if ((disciplinaName === 'Fútbol' || disciplinaName === 'Voleibol') && jugador_id) {
             const hasRedCard = eventos.some(
                 e => e.tipo_evento === 'tarjeta_roja' && e.jugador_id_normalized === jugador_id
             );

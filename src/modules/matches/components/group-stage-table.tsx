@@ -174,9 +174,15 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                             <th className="text-center py-4 px-3 w-10">PP</th>
                             <th className="text-center py-4 px-3 w-10">{isVoley ? 'SG' : 'GF'}</th>
                             <th className="text-center py-4 px-3 w-10">{isVoley ? 'SP' : 'GC'}</th>
+                            {isVoley && (
+                                <>
+                                    <th className="text-center py-4 px-3 w-11" title="Puntos de rally anotados (suma de todos los sets del grupo)">PF</th>
+                                    <th className="text-center py-4 px-3 w-11" title="Puntos de rally recibidos (suma contra todos los rivales del grupo)">PR</th>
+                                </>
+                            )}
                             {isVoley && <th className="text-center py-4 px-3 w-14" title="Coeficiente de Puntos">CP</th>}
                             <th className="text-center py-4 px-3 w-10">{isVoley ? 'CS' : 'DIF'}</th>
-                            {isFutbol && (
+                            {(isFutbol || isVoley) && (
                                 <th className="text-center py-4 px-3 w-16" title="Fair Play">
                                     <div className="flex items-center justify-center gap-1">
                                         <Shield size={10} className="text-emerald-400/70" />
@@ -230,6 +236,12 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                                     <td className="text-center py-4 px-3 text-white/50 tabular-nums">{isVoley ? team.setsWon : team.pointsFor}</td>
                                     <td className="text-center py-4 px-3 text-white/50 tabular-nums">{isVoley ? team.setsLost : team.pointsAgainst}</td>
                                     {isVoley && (
+                                        <>
+                                            <td className="text-center py-4 px-3 text-white/70 font-bold tabular-nums" title="Puntos rally a favor">{team.gamePointsFor}</td>
+                                            <td className="text-center py-4 px-3 text-white/70 font-bold tabular-nums" title="Puntos rally en contra">{team.gamePointsAgainst}</td>
+                                        </>
+                                    )}
+                                    {isVoley && (
                                         <td className="text-center py-4 px-3 tabular-nums">
                                             <span className="text-white/40 italic">{(team.gamePointsAgainst === 0 ? team.gamePointsFor : team.gamePointsFor / team.gamePointsAgainst).toFixed(3)}</span>
                                         </td>
@@ -243,7 +255,7 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                                             </span>
                                         )}
                                     </td>
-                                    {isFutbol && (
+                                    {(isFutbol || isVoley) && (
                                         <td className="text-center py-4 px-3">
                                             <div className={cn(
                                                 "inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-black text-[11px] tabular-nums border",

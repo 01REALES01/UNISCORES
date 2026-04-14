@@ -48,10 +48,12 @@ export const AdminEventCreator = ({
   const isFutbol = disciplinaName === 'Fútbol';
   const needsPlayer = !isIndividualSport;
   const playerOptional = isVolleyball;
+  const isCardEvent =
+    nuevoEvento.tipo === 'tarjeta_amarilla' || nuevoEvento.tipo === 'tarjeta_roja';
 
-  // Players expelled by red card — cannot receive more events
+  // Players expelled by red card — cannot receive more events (fútbol y vóley)
   const expelledPlayerIds = new Set(
-    isFutbol
+    isFutbol || isVolleyball
       ? eventos
           .filter(e => e.tipo_evento === 'tarjeta_roja')
           .map(e => e.jugador_id_normalized)
@@ -59,8 +61,15 @@ export const AdminEventCreator = ({
       : []
   );
 
-  const canConfirm = nuevoEvento.tipo && nuevoEvento.equipo && (
-    nuevoEvento.jugador_id || isIndividualSport || (playerOptional && nuevoEvento.jugador_id === -1)
+  const canConfirm = Boolean(nuevoEvento.tipo && nuevoEvento.equipo) && (
+    isIndividualSport
+      ? true
+      : isCardEvent
+        ? Boolean(nuevoEvento.jugador_id && nuevoEvento.jugador_id !== -1)
+        : Boolean(
+            nuevoEvento.jugador_id ||
+            (playerOptional && nuevoEvento.jugador_id === -1)
+          )
   );
 
   const handleConfirm = () => {
@@ -168,10 +177,13 @@ export const AdminEventCreator = ({
           <div className={cn("transition-all duration-300", nuevoEvento.equipo ? "opacity-100" : "opacity-20 pointer-events-none blur-[1px]")}>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
               <p className="text-[9px] font-black uppercase text-white/25 tracking-[0.25em] flex items-center gap-2">
-                <StepBadge n={3} active={step === 3} sportColor={sportColor} /> Jugador {playerOptional && <span className="text-white/15 normal-case tracking-normal ml-1">(opcional)</span>}
+                <StepBadge n={3} active={step === 3} sportColor={sportColor} /> Jugador{' '}
+                {playerOptional && !isCardEvent && (
+                  <span className="text-white/15 normal-case tracking-normal ml-1">(opcional)</span>
+                )}
               </p>
               <div className="flex items-center gap-1.5 w-full sm:w-auto">
-                {playerOptional && (
+                {playerOptional && !isCardEvent && (
                   <button
                     onClick={() => setNuevoEvento({ ...nuevoEvento, jugador_id: -1 })}
                     className="flex-1 sm:flex-initial text-[8px] font-black uppercase tracking-widest px-3 py-2 rounded-lg border transition-all flex items-center justify-center gap-1"

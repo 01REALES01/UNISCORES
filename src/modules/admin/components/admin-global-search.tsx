@@ -145,7 +145,7 @@ export function AdminGlobalSearch() {
 
             {isOpen && (query.length >= 2) && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-[#12121c] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="max-h-[400px] overflow-y-auto overflow-x-hidden p-2 space-y-1">
+                    <div data-nested-scroll className="max-h-[400px] overflow-y-auto overflow-x-hidden p-2 space-y-1">
                         {searching && results.length === 0 && (
                             <div className="flex items-center gap-3 p-4">
                                 <Loader2 size={16} className="animate-spin text-violet-500" />
