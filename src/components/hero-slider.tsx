@@ -116,8 +116,12 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
     const sNameForScore = currentMatch.disciplinas?.name || '';
     const isLiveTenisCampo =
         currentMatch.estado === 'en_curso' && sNameForScore === 'Tenis';
-    const heroMainA = isLiveTenisCampo ? (scoreInfo.subScoreA ?? 0) : scoreInfo.scoreA;
-    const heroMainB = isLiveTenisCampo ? (scoreInfo.subScoreB ?? 0) : scoreInfo.scoreB;
+    const isLiveVolley =
+        currentMatch.estado === 'en_curso' && sNameForScore === 'Voleibol';
+    const heroMainA =
+        isLiveTenisCampo || isLiveVolley ? (scoreInfo.subScoreA ?? 0) : scoreInfo.scoreA;
+    const heroMainB =
+        isLiveTenisCampo || isLiveVolley ? (scoreInfo.subScoreB ?? 0) : scoreInfo.scoreB;
 
     return (
         <div className="relative w-full h-[320px] md:h-[380px] rounded-[2rem] overflow-hidden mb-8 group border border-white/10 shadow-2xl">
@@ -321,9 +325,15 @@ export function HeroSlider({ matches, activeFilter = 'todos' }: { matches: any[]
                                                             <div className="w-1.5 md:w-5 h-1 md:h-2 bg-white/20 rounded-full shrink-0" />
                                                             <span className="text-white text-left w-8 md:w-20">{heroMainB}</span>
                                                         </div>
-                                                        {isLiveTenisCampo && (
+                                                        {(isLiveTenisCampo || isLiveVolley) && (
                                                             <div className="text-[10px] md:text-xs font-black text-white/35 tabular-nums tracking-tight">
-                                                                {scoreInfo.labelA ?? '0'} · {scoreInfo.labelB ?? '0'}
+                                                                {isLiveVolley ? (
+                                                                    <>{`Sets ${scoreInfo.scoreA ?? 0}\u2013${scoreInfo.scoreB ?? 0}`}</>
+                                                                ) : (
+                                                                    <>
+                                                                        {scoreInfo.labelA ?? '0'} · {scoreInfo.labelB ?? '0'}
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>

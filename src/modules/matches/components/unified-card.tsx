@@ -16,6 +16,7 @@ export function UnifiedCard({
     statusIcon,
     statusColor,
     scoreDisplay,
+    scoreFooter,
     timeDisplay,
     highlightWinner = false
 }: {
@@ -24,6 +25,8 @@ export function UnifiedCard({
     statusIcon?: React.ReactNode,
     statusColor?: string,
     scoreDisplay?: { a: any, b: any },
+    /** Texto pequeño bajo el marcador (ej. sets en voleibol o parciales por set). */
+    scoreFooter?: string | null,
     timeDisplay?: string,
     highlightWinner?: boolean
 }) {
@@ -194,6 +197,11 @@ export function UnifiedCard({
                                             Empate
                                         </div>
                                     )}
+                                    {scoreFooter ? (
+                                        <p className="mt-2 max-w-[min(100%,220px)] text-center text-[9px] sm:text-[10px] font-bold leading-snug text-white/45 tabular-nums tracking-tight px-1">
+                                            {scoreFooter}
+                                        </p>
+                                    ) : null}
                                 </div>
                             )}
 

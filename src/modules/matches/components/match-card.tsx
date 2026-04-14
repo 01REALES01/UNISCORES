@@ -10,6 +10,7 @@ import { getCurrentScore } from "@/lib/sport-scoring";
 import { isAsyncMatch } from "@/lib/is-async-match";
 import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
 import { getMatchResult } from "@/modules/quiniela/helpers";
+import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
 import type { PartidoWithRelations as Partido } from '../types';
 import type { JornadaWithResults } from '@/hooks/use-jornadas';
 
@@ -37,6 +38,7 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
   const categoria = partido.categoria;
   const isSetSport = ['Tenis', 'Tenis de Mesa', 'Vóleibol', 'Voleibol', 'Bádminton', 'Badminton'].includes(sportName);
   const isTenisCampo = sportName === 'Tenis';
+  const isVolley = sportName === 'Voleibol';
   const isAsync = isAsyncMatch(partido);
   const matchResult = getMatchResult(partido);
 
@@ -158,6 +160,23 @@ export function LiveMatchCard({ partido }: { partido: Partido }) {
                     <span className="text-sm font-black text-red-500 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">
                       EN CURSO
                     </span>
+                  </div>
+                ) : isVolley && !isAsync ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className={cn(
+                        "flex items-center justify-center gap-1 md:gap-2 font-black tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] text-white text-3xl md:text-6xl"
+                      )}
+                    >
+                      <span>{subScoreA ?? 0}</span>
+                      <span className="text-slate-300/40 text-2xl md:text-4xl -mt-1 md:-mt-2">:</span>
+                      <span>{subScoreB ?? 0}</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-1 font-black tabular-nums text-white/45 text-[10px] md:text-xs tracking-tight">
+                      <span>Sets</span>
+                      <span className="text-white/25">·</span>
+                      <span>{`${scoreA ?? 0}\u2013${scoreB ?? 0}`}</span>
+                    </div>
                   </div>
                 ) : isTenisCampo ? (
                   <div className="flex flex-col items-center gap-1">
@@ -566,7 +585,7 @@ export function ResultCard({ partido }: { partido: Partido }) {
                     </div>
                     <div className="flex items-center gap-1.5 ml-2">
                       <span className={cn("text-xl font-black tabular-nums", matchResult === 'A' ? "text-white" : "text-slate-600")}>{primaryA}</span>
-                      {secondaryA !== undefined && secondaryA !== null && (
+                      {sportName !== 'Voleibol' && secondaryA !== undefined && secondaryA !== null && (
                         <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({secondaryA})</span>
                       )}
                     </div>
@@ -598,11 +617,16 @@ export function ResultCard({ partido }: { partido: Partido }) {
                     </div>
                     <div className="flex items-center gap-1.5 ml-2">
                       <span className={cn("text-xl font-black tabular-nums", matchResult === 'B' ? "text-white" : "text-slate-600")}>{primaryB}</span>
-                      {secondaryB !== undefined && secondaryB !== null && (
+                      {sportName !== 'Voleibol' && secondaryB !== undefined && secondaryB !== null && (
                         <span className="text-[9px] text-slate-600 font-bold self-end mb-0.5">({secondaryB})</span>
                       )}
                     </div>
                   </div>
+                  {sportName === 'Voleibol' && formatVolleyballSetsLine(partido.marcador_detalle) && (
+                    <div className="text-center text-[10px] font-bold text-white/40 tabular-nums tracking-tight border-t border-white/5 pt-2 mt-1 px-2 leading-snug">
+                      {formatVolleyballSetsLine(partido.marcador_detalle)}
+                    </div>
+                  )}
                 </>
               );
             })()}

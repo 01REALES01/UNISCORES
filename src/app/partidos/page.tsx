@@ -7,6 +7,7 @@ import { useMatches } from "@/hooks/use-matches";
 import { useJornadas } from "@/hooks/use-jornadas";
 import { SPORT_ACCENT, SPORT_BORDER, SPORT_GRADIENT, SPORT_GLOW, SPORT_EMOJI, SPORT_COLORS } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
 import { SportIcon } from "@/components/sport-icons";
 
 import { cn } from "@/lib/utils";
@@ -397,24 +398,33 @@ export default function PartidosPage() {
 
 function MatchCardEntry({ partido }: { partido: any }) {
     const sportName = partido.disciplinas?.name || 'Deporte';
-    const { scoreA, scoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
+    const { scoreA, scoreB, subScoreA, subScoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
+    const isVolley = sportName === 'Voleibol';
 
     if (partido.estado === 'en_curso') {
+        const setsLine = isVolley ? `Sets ${scoreA ?? 0}\u2013${scoreB ?? 0}` : null;
         return (
             <UnifiedCard
                 partido={partido}
                 statusLabel="LIVE"
-                scoreDisplay={{ a: scoreA, b: scoreB }}
+                scoreDisplay={
+                    isVolley
+                        ? { a: subScoreA ?? 0, b: subScoreB ?? 0 }
+                        : { a: scoreA, b: scoreB }
+                }
+                scoreFooter={setsLine}
             />
         );
     }
 
     if (partido.estado === 'finalizado') {
+        const voleySets = isVolley ? formatVolleyballSetsLine(partido.marcador_detalle) : null;
         return (
             <UnifiedCard
                 partido={partido}
                 statusLabel="FINALIZADO"
                 scoreDisplay={{ a: scoreA, b: scoreB }}
+                scoreFooter={voleySets ?? undefined}
                 highlightWinner={true}
             />
         );
