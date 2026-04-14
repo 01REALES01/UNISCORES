@@ -4,6 +4,11 @@ import useSWR from "swr";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import {
+    normalizeGenderLoose,
+    resolveAthleteGenderFromContext,
+    shouldIncludePartidoInProfileHistory,
+} from "@/lib/profile-match-filters";
 
 export interface PublicProfileData {
     profile: any;
@@ -71,18 +76,20 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
     const discIds = pdData.map((r: any) => r.disciplina_id);
     if (discIds.length === 0 && profile.athlete_disciplina_id) discIds.push(profile.athlete_disciplina_id);
 
+    const athleteGenderResolved = resolveAthleteGenderFromContext(jugRows, profile);
+    const athleteGenderNorm = normalizeGenderLoose(athleteGenderResolved);
+
     // Fetch Teams
     let athleteTeams: any[] = [];
     if (profile.carreras_ids?.length && discIds.length > 0) {
-        const athleteGenero = jugRows.find(j => j.genero)?.genero; 
         let delegQuery = supabase
             .from('delegaciones')
             .select('id, nombre, genero, carrera_ids, disciplina_id, disciplinas(name)')
             .in('disciplina_id', discIds)
             .overlaps('carrera_ids', profile.carreras_ids);
 
-        if (athleteGenero && athleteGenero !== 'mixto') {
-            delegQuery = delegQuery.in('genero', [athleteGenero, 'mixto']);
+        if (athleteGenderNorm === 'masculino' || athleteGenderNorm === 'femenino') {
+            delegQuery = delegQuery.in('genero', [athleteGenderNorm, 'mixto']);
         }
         const { data: delegs } = await delegQuery.abortSignal(sig);
         athleteTeams = delegs || [];
@@ -94,6 +101,26 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
     let finalHistory: any[] = [];
     const matchSideMap = new Map<string, 'a' | 'b'>();
     const matchIdSet = new Set<string>();
+    const matchIdsFromAthleteEvents = new Set<number | string>();
+    const matchIdsTrustedParticipation = new Set<number | string>();
+
+    const { data: rosterRows } = await supabase
+        .from('roster_partido')
+        .select(`
+            partido_id,
+            equipo:equipo_a_or_b,
+            jugadores!inner(profile_id)
+        `)
+        .eq('jugadores.profile_id', profileId)
+        .abortSignal(sig);
+
+    rosterRows?.forEach((r: any) => {
+        if (!r.partido_id) return;
+        matchIdSet.add(String(r.partido_id));
+        matchIdsTrustedParticipation.add(r.partido_id);
+        const side = r.equipo === 'equipo_a' ? 'a' : 'b';
+        matchSideMap.set(String(r.partido_id), side);
+    });
 
     if (jugIds.length > 0) {
         // Events
@@ -129,16 +156,18 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
             if (type === 'empate') s.empates++;
 
             if (ev.partido_id) {
-                matchIdSet.add(ev.partido_id);
-                if (ev.equipo === 'equipo_a') matchSideMap.set(ev.partido_id, 'a');
-                else if (ev.equipo === 'equipo_b') matchSideMap.set(ev.partido_id, 'b');
+                matchIdSet.add(String(ev.partido_id));
+                matchIdsFromAthleteEvents.add(ev.partido_id);
+                const pid = String(ev.partido_id);
+                if (ev.equipo === 'equipo_a') matchSideMap.set(pid, 'a');
+                else if (ev.equipo === 'equipo_b') matchSideMap.set(pid, 'b');
             }
         });
     }
 
     // Individual Matches
     const { data: indMatches } = await supabase.from('partidos').select('id').or(`athlete_a_id.eq.${profileId},athlete_b_id.eq.${profileId}`).abortSignal(sig);
-    indMatches?.forEach(m => matchIdSet.add(m.id));
+    indMatches?.forEach(m => matchIdSet.add(String(m.id)));
 
     // Team Matches (via Delegaciones)
     const dIds = athleteTeams.map(d => d.id);
@@ -148,14 +177,22 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
             .select('id')
             .or(`delegacion_a.in.(${dIds.join(',')}),delegacion_b.in.(${dIds.join(',')})`)
             .abortSignal(sig);
-        teamMatches?.forEach(m => matchIdSet.add(m.id));
+        teamMatches?.forEach(m => matchIdSet.add(String(m.id)));
     }
 
     // Fallback name-based individual
     const isIndiv = profile.athlete_disciplina_id && INDIVIDUAL_SPORTS_NAMES.includes(profile.disciplina?.name || '');
     if (isIndiv && profile.full_name) {
-        const { data: nameMatches } = await supabase.from('partidos').select('id').eq('disciplina_id', profile.athlete_disciplina_id).or(`equipo_a.ilike.${profile.full_name},equipo_b.ilike.${profile.full_name}`).abortSignal(sig);
-        nameMatches?.forEach(m => matchIdSet.add(m.id));
+        let nameQ = supabase
+            .from('partidos')
+            .select('id')
+            .eq('disciplina_id', profile.athlete_disciplina_id)
+            .or(`equipo_a.ilike.${profile.full_name},equipo_b.ilike.${profile.full_name}`);
+        if (athleteGenderNorm === 'masculino' || athleteGenderNorm === 'femenino') {
+            nameQ = nameQ.in('genero', [athleteGenderNorm, 'mixto']);
+        }
+        const { data: nameMatches } = await nameQ.abortSignal(sig);
+        nameMatches?.forEach(m => matchIdSet.add(String(m.id)));
     }
     // 4. Team Matches by Career IDs & Disciplines (Upcoming/Recent without events)
     const careerIdsMatch = profile.carreras_ids || [];
@@ -164,27 +201,40 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
         discIdsMatch.push(profile.athlete_disciplina_id);
     }
     if (careerIdsMatch.length > 0 && discIdsMatch.length > 0) {
-        const { data: qryRes } = await supabase
+        let broadQ = supabase
             .from('partidos')
             .select('id')
             .in('disciplina_id', discIdsMatch)
-            .or(`carrera_a_id.in.(${careerIdsMatch.join(',')}),carrera_b_id.in.(${careerIdsMatch.join(',')}),carrera_a_ids.ov.{${careerIdsMatch.join(',')}},carrera_b_ids.ov.{${careerIdsMatch.join(',')}}`)
-            .abortSignal(sig);
-        qryRes?.forEach(m => matchIdSet.add(m.id));
+            .or(`carrera_a_id.in.(${careerIdsMatch.join(',')}),carrera_b_id.in.(${careerIdsMatch.join(',')}),carrera_a_ids.ov.{${careerIdsMatch.join(',')}},carrera_b_ids.ov.{${careerIdsMatch.join(',')}}`);
+        if (athleteGenderNorm === 'masculino' || athleteGenderNorm === 'femenino') {
+            broadQ = broadQ.in('genero', [athleteGenderNorm, 'mixto']);
+        }
+        const { data: qryRes } = await broadQ.abortSignal(sig);
+        qryRes?.forEach(m => matchIdSet.add(String(m.id)));
     }
 
         // Full Match Details
         if (matchIdSet.size > 0) {
             const { data: matches } = await supabase
                 .from('partidos')
-                .select('id, fecha, equipo_a, equipo_b, estado, marcador_detalle, disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids')
+                .select('id, fecha, equipo_a, equipo_b, estado, marcador_detalle, disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, genero')
                 .in('id', Array.from(matchIdSet))
                 .order('fecha', { ascending: false })
                 .abortSignal(sig);
 
             if (matches) {
                 const careerIds = profile.carreras_ids || [];
-                finalHistory = matches.map((p: any) => {
+                const matchesFiltered = matches.filter((p: any) =>
+                    shouldIncludePartidoInProfileHistory({
+                        partido: p,
+                        profileId,
+                        athleteGenderResolved,
+                        matchIdsFromAthleteEvents,
+                        matchIdsTrustedParticipation,
+                    })
+                );
+
+                finalHistory = matchesFiltered.map((p: any) => {
                     const discId = p.disciplina_id;
                     if (!sportStatsMap[discId]) sportStatsMap[discId] = { goals: 0, pts3: 0, pts2: 0, pts1: 0, yellowCards: 0, redCards: 0, fouls: 0, totalEvents: 0, puntos: 0, sets: 0, victorias: 0, empates: 0, gold: 0, silver: 0, bronze: 0, wins: 0, losses: 0 };
                     const s = sportStatsMap[discId];
@@ -194,7 +244,7 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
                         const sportName = (Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name) || '';
                         const { scoreA, scoreB } = getCurrentScore(sportName, p.marcador_detalle || {});
 
-                        let side: 'a' | 'b' | null = matchSideMap.get(p.id) || null;
+                        let side: 'a' | 'b' | null = matchSideMap.get(String(p.id)) || null;
                         if (!side) {
                             if (p.athlete_a_id === profileId) side = 'a';
                             else if (p.athlete_b_id === profileId) side = 'b';

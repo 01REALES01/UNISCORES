@@ -27,6 +27,7 @@ import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/
 import { MatchTimeline } from '@/modules/matches/components/match-timeline';
 import { MatchStats } from '@/modules/matches/components/match-stats';
 import { getMatchResult } from "@/modules/quiniela/helpers";
+import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
 
 import UniqueLoading from "@/components/ui/morph-loading";
 
@@ -226,8 +227,20 @@ export default function PublicMatchDetail() {
         : faseFutbol === 'entretiempo' ? 'Entretiempo'
         : faseFutbol === 'segundo_tiempo' ? '2º Tiempo'
         : null;
-    const showExtra = sportName === 'Fútbol' ? !!extraFutbol : !!extra;
-    const displayExtra = sportName === 'Fútbol' ? extraFutbol : extra;
+    const volleySetsLine = sportName === 'Voleibol' ? formatVolleyballSetsLine(m.marcador_detalle) : null;
+    const volleySetActual = Number((m.marcador_detalle as Record<string, unknown> | null | undefined)?.set_actual ?? 1) || 1;
+    const displayExtra =
+        sportName === 'Fútbol'
+            ? extraFutbol
+            : sportName === 'Voleibol' && isLive
+                ? `Set ${volleySetActual} · Sets ${scoreA}\u2013${scoreB}`
+                : sportName === 'Voleibol' && isFinished
+                    ? (volleySetsLine || extra)
+                    : extra;
+    const showExtra = sportName === 'Fútbol' ? !!extraFutbol : !!displayExtra;
+    /** Marcador central: en voleibol en vivo = puntos del set actual; al finalizar (u otro estado) = sets ganados. */
+    const centerScoreA = sportName === 'Voleibol' && isLive ? (subScoreA ?? 0) : scoreA;
+    const centerScoreB = sportName === 'Voleibol' && isLive ? (subScoreB ?? 0) : scoreB;
     const sportColor = SPORT_COLORS[sportName] || '#10b981';
 
     const tenisDetalle = m.marcador_detalle || {};
@@ -630,9 +643,9 @@ export default function PublicMatchDetail() {
                                                 "flex items-center justify-center gap-2 sm:gap-6 font-black text-5xl sm:text-7xl tabular-nums tracking-tighter transition-all duration-300",
                                                 isLive ? "text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "text-white/80"
                                             )}>
-                                                <span className="w-12 sm:w-20 text-right flex-1">{scoreA}</span>
+                                                <span className="w-12 sm:w-20 text-right flex-1">{centerScoreA}</span>
                                                 <div className="w-3 sm:w-6 h-1 sm:h-2 bg-white/20 rounded-full shrink-0 mx-2" />
-                                                <span className="w-12 sm:w-20 text-left flex-1">{scoreB}</span>
+                                                <span className="w-12 sm:w-20 text-left flex-1">{centerScoreB}</span>
                                             </div>
                                             {sportName === 'Tenis' && (isLive || isFinished) && (tenisPuntoA || tenisPuntoB) && (
                                                 <div className="flex items-center justify-center gap-3 mt-1 text-xs sm:text-sm font-black tabular-nums text-white/40">

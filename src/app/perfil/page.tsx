@@ -38,6 +38,11 @@ import { SportIcon } from "@/shared/components/sport-icons";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 import { SPORT_ACCENT } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import {
+    normalizeGenderLoose,
+    resolveAthleteGenderFromContext,
+    shouldIncludePartidoInProfileHistory,
+} from "@/lib/profile-match-filters";
 
 export default function PerfilPage() {
     const router = useRouter();
@@ -192,8 +197,17 @@ export default function PerfilPage() {
         try {
             const matchIdSet = new Set<string>();
             const matchSideMap = new Map<string, 'a' | 'b'>(); // Track which side the user is on
+            const matchIdsTrustedParticipation = new Set<number | string>();
+            const matchIdsFromAthleteEvents = new Set<number | string>();
             const carreraIds = profile?.carreras_ids || [];
             const fullName = profile?.full_name;
+
+            const { data: jugRowsForGender } = await supabase
+                .from('jugadores')
+                .select('id, genero, disciplina_id, disciplinas(name)')
+                .eq('profile_id', id);
+            const athleteGenderResolved = resolveAthleteGenderFromContext(jugRowsForGender || [], profile);
+            const athleteGenderNorm = normalizeGenderLoose(athleteGenderResolved);
 
             // ── STEP 1: Matches where athlete is explicitly in roster ──────────
             const { data: teamMatches } = await supabase
@@ -208,13 +222,31 @@ export default function PerfilPage() {
 
             const jugRows = (teamMatches || []).map((d: any) => d.jugadores);
             teamMatches?.forEach((d: any) => {
-                matchIdSet.add(d.partido_id);
-                matchSideMap.set(d.partido_id, d.equipo === 'equipo_a' ? 'a' : 'b');
+                matchIdSet.add(String(d.partido_id));
+                matchIdsTrustedParticipation.add(d.partido_id);
+                matchSideMap.set(String(d.partido_id), d.equipo === 'equipo_a' ? 'a' : 'b');
             });
+
+            // ── STEP 1b: Eventos olímpicos (misma lógica que perfil público) ─────
+            const jugIds = (jugRowsForGender || []).map((j: any) => j.id);
+            if (jugIds.length > 0) {
+                const { data: evs } = await supabase
+                    .from('olympics_eventos')
+                    .select('partido_id, equipo')
+                    .in('jugador_id_normalized', jugIds);
+                evs?.forEach((ev: any) => {
+                    if (ev.partido_id) {
+                        matchIdSet.add(String(ev.partido_id));
+                        matchIdsFromAthleteEvents.add(ev.partido_id);
+                        if (ev.equipo === 'equipo_a') matchSideMap.set(String(ev.partido_id), 'a');
+                        else if (ev.equipo === 'equipo_b') matchSideMap.set(String(ev.partido_id), 'b');
+                    }
+                });
+            }
 
             // ── STEP 2: Team matches via Career overlap ─────────────────────────
             const INDIVIDUAL_SPORTS_NAMES = ['Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
-            const isIndividualAthlete = (jugRows || []).some((j: any) => {
+            const isIndividualAthlete = (jugRowsForGender || []).some((j: any) => {
                 const discName = (Array.isArray(j.disciplinas) ? j.disciplinas[0]?.name : j.disciplinas?.name) || '';
                 return INDIVIDUAL_SPORTS_NAMES.includes(discName);
             });
@@ -227,24 +259,38 @@ export default function PerfilPage() {
 
                 const pairs = (jugSearch || []).filter(j => j.carrera_id && j.disciplina_id);
                 for (const pair of pairs) {
-                    const { data: carMatches } = await supabase
+                    let carQ = supabase
                         .from('partidos')
                         .select('id')
                         .eq('disciplina_id', pair.disciplina_id)
                         .or(`carrera_a_id.eq.${pair.carrera_id},carrera_b_id.eq.${pair.carrera_id}`);
-                    carMatches?.forEach((m: any) => matchIdSet.add(m.id));
+                    if (athleteGenderNorm === 'masculino' || athleteGenderNorm === 'femenino') {
+                        carQ = carQ.in('genero', [athleteGenderNorm, 'mixto']);
+                    }
+                    const { data: carMatches } = await carQ;
+                    carMatches?.forEach((m: any) => matchIdSet.add(String(m.id)));
 
-                    const { data: delegRows } = await supabase
+                    let delegQ = supabase
                         .from('delegaciones')
                         .select('nombre')
                         .eq('disciplina_id', pair.disciplina_id)
                         .contains('carrera_ids', [pair.carrera_id]);
+                    if (athleteGenderNorm === 'masculino' || athleteGenderNorm === 'femenino') {
+                        delegQ = delegQ.in('genero', [athleteGenderNorm, 'mixto']);
+                    }
+                    const { data: delegRows } = await delegQ;
 
                     for (const deleg of (delegRows || [])) {
-                        const { data: mA } = await supabase.from('partidos').select('id').eq('disciplina_id', pair.disciplina_id).eq('equipo_a', deleg.nombre);
-                        const { data: mB } = await supabase.from('partidos').select('id').eq('disciplina_id', pair.disciplina_id).eq('equipo_b', deleg.nombre);
-                        mA?.forEach((m: any) => matchIdSet.add(m.id));
-                        mB?.forEach((m: any) => matchIdSet.add(m.id));
+                        let qA = supabase.from('partidos').select('id').eq('disciplina_id', pair.disciplina_id).eq('equipo_a', deleg.nombre);
+                        let qB = supabase.from('partidos').select('id').eq('disciplina_id', pair.disciplina_id).eq('equipo_b', deleg.nombre);
+                        if (athleteGenderNorm === 'masculino' || athleteGenderNorm === 'femenino') {
+                            qA = qA.in('genero', [athleteGenderNorm, 'mixto']);
+                            qB = qB.in('genero', [athleteGenderNorm, 'mixto']);
+                        }
+                        const { data: mA } = await qA;
+                        const { data: mB } = await qB;
+                        mA?.forEach((m: any) => matchIdSet.add(String(m.id)));
+                        mB?.forEach((m: any) => matchIdSet.add(String(m.id)));
                     }
                 }
             }
@@ -254,14 +300,14 @@ export default function PerfilPage() {
                 .from('partidos')
                 .select('id')
                 .or(`athlete_a_id.eq.${id},athlete_b_id.eq.${id}`);
-            indRows?.forEach((m: any) => matchIdSet.add(m.id));
+            indRows?.forEach((m: any) => matchIdSet.add(String(m.id)));
 
             // ── STEP 4: Name-based fallback for individual sports ──────────────
             if (isIndividualAthlete && fullName) {
                 const { data: nameA } = await supabase.from('partidos').select('id').ilike('equipo_a', fullName);
                 const { data: nameB } = await supabase.from('partidos').select('id').ilike('equipo_b', fullName);
-                nameA?.forEach((m: any) => matchIdSet.add(m.id));
-                nameB?.forEach((m: any) => matchIdSet.add(m.id));
+                nameA?.forEach((m: any) => matchIdSet.add(String(m.id)));
+                nameB?.forEach((m: any) => matchIdSet.add(String(m.id)));
             }
 
             if (matchIdSet.size === 0) {
@@ -272,14 +318,24 @@ export default function PerfilPage() {
             // ── FINAL: Fetch full details ───────────────────────────────────────
             const { data: matches } = await supabase
                 .from('partidos')
-                .select('id, fecha, equipo_a, equipo_b, estado, marcador_detalle, disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids')
+                .select('id, fecha, equipo_a, equipo_b, estado, marcador_detalle, disciplina_id, disciplinas(name), athlete_a_id, athlete_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, genero')
                 .in('id', [...matchIdSet])
                 .order('fecha', { ascending: false });
 
             if (!matches) { setHistory([]); return; }
 
+            const matchesFiltered = matches.filter((p: any) =>
+                shouldIncludePartidoInProfileHistory({
+                    partido: p,
+                    profileId: id,
+                    athleteGenderResolved,
+                    matchIdsFromAthleteEvents,
+                    matchIdsTrustedParticipation,
+                })
+            );
+
             const winLossBySport: Record<string, { wins: number, losses: number }> = {};
-            const formatted = matches.map((p: any) => {
+            const formatted = matchesFiltered.map((p: any) => {
                 const discId = p.disciplina_id;
                 if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
 
@@ -288,7 +344,7 @@ export default function PerfilPage() {
                     const sportName = (Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name) || '';
                     const { scoreA, scoreB } = getCurrentScore(sportName, det);
 
-                    let side: 'a' | 'b' | null = matchSideMap.get(p.id) || null;
+                    let side: 'a' | 'b' | null = matchSideMap.get(String(p.id)) || null;
                     if (!side) {
                         if (p.athlete_a_id === id) side = 'a';
                         else if (p.athlete_b_id === id) side = 'b';
@@ -501,7 +557,7 @@ export default function PerfilPage() {
                     {/* Hero Background Glow */}
                     <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-r from-red-600/5 via-blue-600/5 to-transparent blur-[120px] pointer-events-none" />
                     
-                    <div className="flex flex-col lg:flex-row items-center lg:items-center gap-8 lg:gap-12 relative z-10">
+                    <div className="flex flex-col lg:flex-row items-center lg:items-center gap-8 lg:gap-12 relative z-10 min-w-0">
                         {/* Avatar Hub */}
                         <div className="relative group shrink-0">
                             {isProjectCreator && (
@@ -522,8 +578,8 @@ export default function PerfilPage() {
                         </div>
 
                         {/* Text Content Hub */}
-                        <div className="flex-1 flex flex-col items-center text-center gap-6 w-full">
-                            <div className="space-y-4 w-full">
+                        <div className="flex-1 flex flex-col items-center text-center gap-6 w-full min-w-0">
+                            <div className="space-y-4 w-full min-w-0">
                                 <div className="flex flex-wrap items-center justify-center gap-2">
                                     {profile?.roles?.map((role: string) => renderRoleCard(role))}
                                     {isProjectCreator && (
@@ -544,8 +600,10 @@ export default function PerfilPage() {
                                     )}
                                 </div>
                                 <h1
+                                    lang="es"
                                     className={cn(
-                                        "text-2xl sm:text-5xl lg:text-8xl font-black font-sans tracking-tighter leading-[1.1] mb-2 drop-shadow-2xl break-all sm:break-words",
+                                        "w-full max-w-full min-w-0 text-balance hyphens-auto break-words font-black font-sans tracking-tight sm:tracking-tighter leading-snug sm:leading-[1.08] mb-2 drop-shadow-2xl",
+                                        "text-xl min-[400px]:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl",
                                         isProjectCreator
                                             ? "text-transparent bg-clip-text bg-gradient-to-b from-white via-amber-200 to-amber-500"
                                             : !profile?.name_color ? "text-white" : undefined

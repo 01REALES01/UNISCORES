@@ -32,6 +32,9 @@ export type Profile = {
     icon?: string;
   };
   name_color?: string | null;
+  /** Presente en DB para deportistas; usado p. ej. en filtrado de partidos por género */
+  genero?: string | null;
+  sexo?: string | null;
   is_public: boolean;
   created_at: string;
   updated_at?: string;

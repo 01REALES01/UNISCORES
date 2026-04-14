@@ -13,6 +13,24 @@ interface MatchStatsProps {
     sportName?: string;
 }
 
+/** MVP guardado en `marcador_detalle.mvp_jugador_id` (designación manual). */
+function resolveManualMvp(
+    match: Partido,
+    eventos: Evento[],
+    raw: unknown
+): { id: number; nombre: string; profile_id?: string | null } | null {
+    if (raw === null || raw === undefined || raw === "") return null;
+    const idNum = typeof raw === "number" ? raw : parseInt(String(raw), 10);
+    if (Number.isNaN(idNum)) return null;
+    const fromRoster = match.roster?.find((r) => r.jugador?.id === idNum)?.jugador;
+    if (fromRoster) return fromRoster;
+    for (const ev of eventos) {
+        const j = (ev as { jugadores?: { id: number; nombre: string; profile_id?: string | null } }).jugadores;
+        if (j?.id === idNum) return j;
+    }
+    return null;
+}
+
 // Comparative stat row helper
 const StatRow = ({ label, valueA, valueB, colorA, colorB }: { label: string, valueA: number, valueB: number, colorA: string, colorB: string }) => {
     const total = valueA + valueB || 1;
@@ -161,12 +179,21 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
         const leaderFreeThrows_B = allPlayersB.filter(p => p.pts1 > 0).sort((a, b) => b.pts1 - a.pts1)[0] || null;
         const leaderPoints_B = allPlayersB.filter(p => p.points > 0).sort((a, b) => b.points - a.points)[0] || null;
 
+        const md = match.marcador_detalle || {};
+        const manualMvp = resolveManualMvp(match, eventos, md.mvp_jugador_id);
+        const effectiveMvp = manualMvp ?? mvp;
+        const mvpIsManual = !!manualMvp;
+        const effectiveMvpPoints = mvpIsManual ? 0 : mvpPoints;
+
         return {
             teamA, teamB, mvp, mvpPoints, topScorersA, topScorersB,
             leaderTriples_A, leaderDoubles_A, leaderFreeThrows_A, leaderPoints_A,
-            leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B, leaderPoints_B
+            leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B, leaderPoints_B,
+            effectiveMvp,
+            mvpIsManual,
+            effectiveMvpPoints,
         };
-    }, [eventos, match.equipo_a]);
+    }, [eventos, match.equipo_a, match.marcador_detalle, match.roster]);
 
     const hasEvents = eventos.length > 0;
 
@@ -175,6 +202,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
 
     // ═══ VOLLEYBALL: only show sets won ═══
     if (isVolleyball) {
+        const { effectiveMvp, mvpIsManual, effectiveMvpPoints } = stats;
         const detalle = match.marcador_detalle || {};
         const setsA: number = detalle.sets_a ?? 0;
         const setsB: number = detalle.sets_b ?? 0;
@@ -316,6 +344,67 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                         );
                     })}
                 </div>
+
+                {effectiveMvp && (
+                    <div className="relative z-10 w-full pt-10 mt-2 border-t border-white/10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-5 px-1 flex items-center gap-3">
+                            <Trophy size={14} className="text-amber-500" /> Reconocimiento individual
+                        </p>
+                        <div className="relative group overflow-hidden p-[1.5px] rounded-[2.5rem] bg-gradient-to-br from-amber-200 via-amber-500 to-amber-900 shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:-translate-y-1">
+                            <Link
+                                href={
+                                    effectiveMvp.profile_id
+                                        ? `/perfil/${effectiveMvp.profile_id}`
+                                        : `/jugador/${effectiveMvp.id}`
+                                }
+                                className="block h-full relative z-10"
+                            >
+                                <div className="relative bg-gradient-to-br from-[#1a1409] via-[#0D0A05] to-black rounded-[2.4rem] p-7 sm:p-10 flex flex-col justify-between h-full min-h-[200px] overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                                    <div className="flex items-center justify-between mb-6 relative z-10">
+                                        <div className="px-5 py-2 rounded-2xl bg-amber-500 text-black text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_25px_rgba(245,158,11,0.4)] flex items-center gap-2">
+                                            <Crown size={14} /> Jugador más valioso
+                                        </div>
+                                        <Trophy size={28} className="text-amber-500/20 group-hover:scale-110 transition-all" />
+                                    </div>
+                                    <div className="flex items-center gap-6 relative z-10">
+                                        <div className="relative shrink-0">
+                                            <div className="absolute -inset-4 bg-amber-500/20 rounded-full blur-2xl animate-pulse" />
+                                            <Avatar
+                                                name={effectiveMvp.nombre}
+                                                className="w-20 h-20 sm:w-28 sm:h-28 border-[6px] border-amber-500/40 shadow-2xl bg-black ring-2 ring-amber-500/20"
+                                            />
+                                            <div className="absolute -bottom-2 -right-2 w-9 h-9 sm:w-10 sm:h-10 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg border-4 border-black">
+                                                <Star className="fill-black text-black" size={14} />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-2xl sm:text-4xl font-black text-white leading-tight mb-3 drop-shadow-2xl uppercase tracking-tighter">
+                                                {effectiveMvp.nombre}
+                                            </p>
+                                            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md">
+                                                {mvpIsManual ? (
+                                                    <span className="text-[10px] sm:text-xs font-black text-amber-500/80 uppercase tracking-widest leading-snug">
+                                                        Designación oficial · Voleibol
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-2xl font-black tabular-nums text-amber-500 leading-none">
+                                                            {effectiveMvpPoints}
+                                                        </span>
+                                                        <span className="text-[10px] font-black text-amber-500/60 uppercase tracking-widest">
+                                                            Puntos en eventos
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -323,9 +412,10 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
     // ═══ RENDIMIENTO GLOBAL SECTION ═══
     const isProgrammed = match.estado === 'programado';
 
-    const { teamA, teamB, mvp, mvpPoints, topScorersA, topScorersB,
+    const { teamA, teamB, topScorersA, topScorersB,
         leaderTriples_A, leaderDoubles_A, leaderFreeThrows_A, leaderPoints_A,
-        leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B, leaderPoints_B } = stats;
+        leaderTriples_B, leaderDoubles_B, leaderFreeThrows_B, leaderPoints_B,
+        effectiveMvp, mvpIsManual, effectiveMvpPoints } = stats;
     
     // Total calculation with safety fallback to 1 to avoid division by zero
     const totalGoals = teamA.goals + teamB.goals || 1;
@@ -470,13 +560,13 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
             <div className="flex flex-col gap-10 relative z-10 w-full pt-8 border-t border-white/5">
                 
                 {/* MVP Player Card - Hero Position */}
-                {mvp ? (
+                {effectiveMvp ? (
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-5 px-4 flex items-center gap-3">
                              <Trophy size={14} className="text-amber-500" /> RECONOCIMIENTO INDIVIDUAL
                         </p>
                         <div className="relative group overflow-hidden p-[1.5px] rounded-[2.5rem] bg-gradient-to-br from-amber-200 via-amber-500 to-amber-900 shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:-translate-y-1">
-                            <Link href={mvp.profile_id ? `/perfil/${mvp.profile_id}` : `/jugador/${mvp.id}`} className="block h-full relative z-10">
+                            <Link href={effectiveMvp.profile_id ? `/perfil/${effectiveMvp.profile_id}` : `/jugador/${effectiveMvp.id}`} className="block h-full relative z-10">
                                 <div className="relative bg-gradient-to-br from-[#1a1409] via-[#0D0A05] to-black rounded-[2.4rem] p-7 sm:p-10 flex flex-col justify-between h-full min-h-[240px] overflow-hidden">
                                     <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                                     
@@ -490,16 +580,24 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                                     <div className="flex items-center gap-8 relative z-10">
                                         <div className="relative shrink-0">
                                             <div className="absolute -inset-4 bg-amber-500/20 rounded-full blur-2xl animate-pulse" />
-                                            <Avatar name={mvp.nombre} className="w-20 h-20 sm:w-28 sm:h-28 border-[6px] border-amber-500/40 shadow-2xl bg-black ring-2 ring-amber-500/20" />
+                                            <Avatar name={effectiveMvp.nombre} className="w-20 h-20 sm:w-28 sm:h-28 border-[6px] border-amber-500/40 shadow-2xl bg-black ring-2 ring-amber-500/20" />
                                             <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg border-4 border-black">
                                                 <Star className="fill-black text-black" size={16} />
                                             </div>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-3xl sm:text-5xl font-black text-white leading-tight mb-3 drop-shadow-2xl uppercase tracking-tighter">{mvp.nombre}</p>
+                                            <p className="text-3xl sm:text-5xl font-black text-white leading-tight mb-3 drop-shadow-2xl uppercase tracking-tighter">{effectiveMvp.nombre}</p>
                                             <div className="inline-flex items-center gap-3 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md">
-                                                <span className="text-2xl font-black tabular-nums text-amber-500 leading-none">{mvpPoints}</span>
-                                                <span className="text-[10px] font-black text-amber-500/60 uppercase tracking-widest">{isBasketball ? 'PUNTOS TOTALES' : (isFootball ? 'GOLES MARCADOS' : 'IMPACTO')}</span>
+                                                {mvpIsManual ? (
+                                                    <span className="text-[10px] sm:text-xs font-black text-amber-500/80 uppercase tracking-widest leading-snug">
+                                                        {isFootball ? 'Designación oficial · Fútbol' : 'Designación oficial'}
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-2xl font-black tabular-nums text-amber-500 leading-none">{effectiveMvpPoints}</span>
+                                                        <span className="text-[10px] font-black text-amber-500/60 uppercase tracking-widest">{isBasketball ? 'PUNTOS TOTALES' : (isFootball ? 'GOLES MARCADOS' : 'IMPACTO')}</span>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

@@ -218,7 +218,7 @@ export default function PublicProfilePage() {
                     {/* Hero Background Glow */}
                     <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-r from-red-600/5 via-blue-600/5 to-transparent blur-[120px] pointer-events-none" />
                     
-                    <div className="flex flex-col lg:flex-row items-center lg:items-end gap-8 lg:gap-12 relative z-10">
+                    <div className="flex flex-col lg:flex-row items-center lg:items-end gap-8 lg:gap-12 relative z-10 min-w-0">
                         {/* Avatar Hub */}
                         <div className="relative group shrink-0">
                             {isProjectCreator && (
@@ -239,8 +239,8 @@ export default function PublicProfilePage() {
                         </div>
 
                         {/* Text Content Hub */}
-                        <div className="flex-1 flex flex-col items-center text-center gap-6 w-full">
-                            <div className="space-y-4 w-full">
+                        <div className="flex-1 flex flex-col items-center text-center gap-6 w-full min-w-0">
+                            <div className="space-y-4 w-full min-w-0">
                                 <div className="flex flex-wrap items-center justify-center gap-2">
                                     {profile.roles?.map((role: string) => renderRoleCard(role))}
                                     {isProjectCreator && (
@@ -261,8 +261,10 @@ export default function PublicProfilePage() {
                                     )}
                                 </div>
                                 <h1
+                                    lang="es"
                                     className={cn(
-                                        "text-2xl sm:text-5xl lg:text-8xl font-black font-sans tracking-tighter leading-[1.1] mb-2 drop-shadow-2xl break-all sm:break-words",
+                                        "w-full max-w-full min-w-0 text-balance hyphens-auto break-words font-black font-sans tracking-tight sm:tracking-tighter leading-snug sm:leading-[1.08] mb-2 drop-shadow-2xl",
+                                        "text-xl min-[400px]:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl",
                                         isProjectCreator
                                             ? "text-transparent bg-clip-text bg-gradient-to-b from-white via-violet-200 to-violet-500"
                                             : !profile.name_color ? "text-white" : undefined

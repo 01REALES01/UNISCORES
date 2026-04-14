@@ -22,6 +22,7 @@ import { BasquetEditor } from "@/modules/admin/matches/components/basquet-score-
 import { TenisEditor } from "@/modules/admin/matches/components/tenis-editor";
 import { MatchMetaEditor } from "@/modules/admin/matches/components/match-meta-editor";
 import { BasketballBulkStats } from "@/modules/admin/matches/components/basketball-bulk-stats";
+import { AdminMvpPicker } from "@/modules/admin/matches/components/admin-mvp-picker";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Evento } from "@/modules/matches/types";
@@ -282,12 +283,24 @@ export default function MatchControlPage() {
                 )}
 
                 {match.marcador_detalle?.tipo !== 'carrera' && match.estado === 'finalizado' && (
-                    <div className="mt-8 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center">
-                        <AlertCircle size={20} className="shrink-0 text-white/30" />
-                        <p className="text-sm font-bold text-white/40 uppercase tracking-widest">
-                            Partido finalizado — no se pueden registrar eventos desde acá
-                        </p>
-                    </div>
+                    <>
+                        <div className="mt-8 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center">
+                            <AlertCircle size={20} className="shrink-0 text-white/30" />
+                            <p className="text-sm font-bold text-white/40 uppercase tracking-widest">
+                                Partido finalizado — no se pueden registrar eventos desde acá
+                            </p>
+                        </div>
+                        <AdminMvpPicker
+                            matchId={matchId}
+                            disciplinaName={disciplinaName}
+                            estado={match.estado}
+                            marcador_detalle={match.marcador_detalle}
+                            jugadoresA={jugadoresA}
+                            jugadoresB={jugadoresB}
+                            profile={profile}
+                            onSaved={fetchMatchDetails}
+                        />
+                    </>
                 )}
 
                 {match.marcador_detalle?.tipo !== 'carrera' && match.estado !== 'finalizado' && (
