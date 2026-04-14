@@ -54,6 +54,8 @@ export type PartidoWithRelations = Partido & {
     equipo_a_or_b: string;
     jugador?: { id: number; nombre: string; profile_id?: string | null } | null;
   }> | null;
+  /** Resuelto en cliente cuando existe `marcador_detalle.mvp_jugador_id` (p. ej. vóley sin eventos del jugador). */
+  mvp_jugador?: { id: number; nombre: string; profile_id?: string | null } | null;
 };
 
 // ── Jugador ───────────────────────────────────────────────────────────────────

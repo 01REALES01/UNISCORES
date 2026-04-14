@@ -22,6 +22,8 @@ function resolveManualMvp(
     if (raw === null || raw === undefined || raw === "") return null;
     const idNum = typeof raw === "number" ? raw : parseInt(String(raw), 10);
     if (Number.isNaN(idNum)) return null;
+    const preloaded = (match as Partido & { mvp_jugador?: { id: number; nombre: string; profile_id?: string | null } | null }).mvp_jugador;
+    if (preloaded?.id === idNum) return preloaded;
     const fromRoster = match.roster?.find((r) => r.jugador?.id === idNum)?.jugador;
     if (fromRoster) return fromRoster;
     for (const ev of eventos) {
@@ -193,7 +195,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
             mvpIsManual,
             effectiveMvpPoints,
         };
-    }, [eventos, match.equipo_a, match.marcador_detalle, match.roster]);
+    }, [eventos, match.equipo_a, match.marcador_detalle, match.roster, (match as Partido & { mvp_jugador?: unknown }).mvp_jugador]);
 
     const hasEvents = eventos.length > 0;
 

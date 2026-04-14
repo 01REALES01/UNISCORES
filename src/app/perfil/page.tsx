@@ -302,10 +302,30 @@ export default function PerfilPage() {
                 .or(`athlete_a_id.eq.${id},athlete_b_id.eq.${id}`);
             indRows?.forEach((m: any) => matchIdSet.add(String(m.id)));
 
-            // ── STEP 4: Name-based fallback for individual sports ──────────────
+            // ── STEP 4: Name-based fallback for individual sports (solo su disciplina; evita otros deportes / cuadros)
             if (isIndividualAthlete && fullName) {
-                const { data: nameA } = await supabase.from('partidos').select('id').ilike('equipo_a', fullName);
-                const { data: nameB } = await supabase.from('partidos').select('id').ilike('equipo_b', fullName);
+                const indivJug = (jugRowsForGender || []).find((j: any) => {
+                    const discName = (Array.isArray(j.disciplinas) ? j.disciplinas[0]?.name : j.disciplinas?.name) || '';
+                    return INDIVIDUAL_SPORTS_NAMES.includes(discName);
+                });
+                const indivDiscId =
+                    (indivJug?.disciplina_id as number | undefined) ??
+                    (profile?.athlete_disciplina_id &&
+                    profile?.disciplina?.name &&
+                    INDIVIDUAL_SPORTS_NAMES.includes(profile.disciplina.name)
+                        ? profile.athlete_disciplina_id
+                        : undefined);
+                let qA = supabase.from('partidos').select('id').ilike('equipo_a', fullName);
+                let qB = supabase.from('partidos').select('id').ilike('equipo_b', fullName);
+                if (indivDiscId) {
+                    qA = qA.eq('disciplina_id', indivDiscId);
+                    qB = qB.eq('disciplina_id', indivDiscId);
+                }
+                if (athleteGenderNorm === 'masculino' || athleteGenderNorm === 'femenino') {
+                    qA = qA.in('genero', [athleteGenderNorm, 'mixto']);
+                    qB = qB.in('genero', [athleteGenderNorm, 'mixto']);
+                }
+                const [{ data: nameA }, { data: nameB }] = await Promise.all([qA, qB]);
                 nameA?.forEach((m: any) => matchIdSet.add(String(m.id)));
                 nameB?.forEach((m: any) => matchIdSet.add(String(m.id)));
             }

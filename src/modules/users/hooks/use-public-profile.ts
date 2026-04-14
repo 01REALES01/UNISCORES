@@ -24,6 +24,35 @@ export interface PublicProfileData {
 
 const INDIVIDUAL_SPORTS_NAMES = ['Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
 
+function disciplinaNombreDeFila(row: { disciplinas?: unknown }): string {
+    const d = row.disciplinas;
+    if (Array.isArray(d)) return (d[0] as { name?: string })?.name || '';
+    return (d as { name?: string } | undefined)?.name || '';
+}
+
+/** carrera + disciplina no identifica a un solo jugador en deportes individuales (misma carrera → todo el cuadro). */
+function collectIndividualDisciplinaIds(
+    jugRows: ReadonlyArray<{ disciplina_id?: number | null; disciplinas?: unknown }>,
+    pdData: ReadonlyArray<{ disciplina_id?: number | null; disciplinas?: unknown }>,
+    profile: { athlete_disciplina_id?: number | null; disciplina?: { name?: string } | null }
+): Set<number> {
+    const ids = new Set<number>();
+    for (const j of jugRows) {
+        if (j.disciplina_id && INDIVIDUAL_SPORTS_NAMES.includes(disciplinaNombreDeFila(j))) ids.add(j.disciplina_id);
+    }
+    for (const r of pdData) {
+        if (r.disciplina_id && INDIVIDUAL_SPORTS_NAMES.includes(disciplinaNombreDeFila(r))) ids.add(r.disciplina_id);
+    }
+    if (
+        profile.athlete_disciplina_id &&
+        profile.disciplina?.name &&
+        INDIVIDUAL_SPORTS_NAMES.includes(profile.disciplina.name)
+    ) {
+        ids.add(profile.athlete_disciplina_id);
+    }
+    return ids;
+}
+
 async function fetchPublicProfile(profileId: string, signal?: AbortSignal, currentUserId?: string) {
     const sig = signal ?? new AbortController().signal;
 
@@ -76,16 +105,19 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
     const discIds = pdData.map((r: any) => r.disciplina_id);
     if (discIds.length === 0 && profile.athlete_disciplina_id) discIds.push(profile.athlete_disciplina_id);
 
+    const individualDisciplinaIds = collectIndividualDisciplinaIds(jugRows, pdData, profile);
+    const teamSportDiscIds = discIds.filter((id) => !individualDisciplinaIds.has(id));
+
     const athleteGenderResolved = resolveAthleteGenderFromContext(jugRows, profile);
     const athleteGenderNorm = normalizeGenderLoose(athleteGenderResolved);
 
     // Fetch Teams
     let athleteTeams: any[] = [];
-    if (profile.carreras_ids?.length && discIds.length > 0) {
+    if (profile.carreras_ids?.length && teamSportDiscIds.length > 0) {
         let delegQuery = supabase
             .from('delegaciones')
             .select('id, nombre, genero, carrera_ids, disciplina_id, disciplinas(name)')
-            .in('disciplina_id', discIds)
+            .in('disciplina_id', teamSportDiscIds)
             .overlaps('carrera_ids', profile.carreras_ids);
 
         if (athleteGenderNorm === 'masculino' || athleteGenderNorm === 'femenino') {
@@ -180,13 +212,21 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
         teamMatches?.forEach(m => matchIdSet.add(String(m.id)));
     }
 
-    // Fallback name-based individual
-    const isIndiv = profile.athlete_disciplina_id && INDIVIDUAL_SPORTS_NAMES.includes(profile.disciplina?.name || '');
-    if (isIndiv && profile.full_name) {
+    // Fallback name-based individual (solo en la disciplina individual; evita mezclar deportes)
+    const nameFallbackDiscId =
+        jugRows.find((j) => j.disciplina_id && INDIVIDUAL_SPORTS_NAMES.includes(disciplinaNombreDeFila(j)))?.disciplina_id ??
+        pdData.find((r) => r.disciplina_id && INDIVIDUAL_SPORTS_NAMES.includes(disciplinaNombreDeFila(r)))?.disciplina_id ??
+        (profile.athlete_disciplina_id &&
+        profile.disciplina?.name &&
+        INDIVIDUAL_SPORTS_NAMES.includes(profile.disciplina.name)
+            ? profile.athlete_disciplina_id
+            : null);
+
+    if (nameFallbackDiscId && profile.full_name) {
         let nameQ = supabase
             .from('partidos')
             .select('id')
-            .eq('disciplina_id', profile.athlete_disciplina_id)
+            .eq('disciplina_id', nameFallbackDiscId)
             .or(`equipo_a.ilike.${profile.full_name},equipo_b.ilike.${profile.full_name}`);
         if (athleteGenderNorm === 'masculino' || athleteGenderNorm === 'femenino') {
             nameQ = nameQ.in('genero', [athleteGenderNorm, 'mixto']);
@@ -194,17 +234,18 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
         const { data: nameMatches } = await nameQ.abortSignal(sig);
         nameMatches?.forEach(m => matchIdSet.add(String(m.id)));
     }
-    // 4. Team Matches by Career IDs & Disciplines (Upcoming/Recent without events)
+    // 4. Team Matches by Career IDs & Disciplines (solo deportes de conjunto: carrera+disc no identifica a un tenista)
     const careerIdsMatch = profile.carreras_ids || [];
     const discIdsMatch = pdData.map((r: any) => r.disciplina_id);
     if (discIdsMatch.length === 0 && profile.athlete_disciplina_id) {
         discIdsMatch.push(profile.athlete_disciplina_id);
     }
-    if (careerIdsMatch.length > 0 && discIdsMatch.length > 0) {
+    const teamOnlyDiscIdsForBroad = discIdsMatch.filter((id: number) => !individualDisciplinaIds.has(id));
+    if (careerIdsMatch.length > 0 && teamOnlyDiscIdsForBroad.length > 0) {
         let broadQ = supabase
             .from('partidos')
             .select('id')
-            .in('disciplina_id', discIdsMatch)
+            .in('disciplina_id', teamOnlyDiscIdsForBroad)
             .or(`carrera_a_id.in.(${careerIdsMatch.join(',')}),carrera_b_id.in.(${careerIdsMatch.join(',')}),carrera_a_ids.ov.{${careerIdsMatch.join(',')}},carrera_b_ids.ov.{${careerIdsMatch.join(',')}}`);
         if (athleteGenderNorm === 'masculino' || athleteGenderNorm === 'femenino') {
             broadQ = broadQ.in('genero', [athleteGenderNorm, 'mixto']);

@@ -6,6 +6,26 @@ import { useEffect } from "react";
 import type { PartidoWithRelations } from "@/modules/matches/types";
 import { enrichPartidosCarreraShieldsFromDb } from "@/lib/match-carrera-shields";
 
+/** `mvp_jugador_id` en JSON no tiene FK: cargamos el jugador para la ficha pública (MVP en vóley, etc.). */
+async function fetchMvpJugadorRow(
+    marcadorDetalle: unknown,
+    signal: AbortSignal
+): Promise<{ id: number; nombre: string; profile_id?: string | null } | null> {
+    const md = (marcadorDetalle || {}) as Record<string, unknown>;
+    const raw = md.mvp_jugador_id;
+    if (raw === null || raw === undefined || raw === '') return null;
+    const idNum = typeof raw === 'number' ? raw : parseInt(String(raw), 10);
+    if (Number.isNaN(idNum)) return null;
+    const { data, error } = await supabase
+        .from('jugadores')
+        .select('id, nombre, profile_id')
+        .eq('id', idNum)
+        .abortSignal(signal)
+        .maybeSingle();
+    if (error || !data) return null;
+    return { id: data.id, nombre: data.nombre, profile_id: data.profile_id };
+}
+
 // Columnas con FK explícita según el schema confirmado:
 // partidos.disciplina_id → disciplinas
 // partidos.carrera_a_id / carrera_b_id → carreras
@@ -51,8 +71,10 @@ export function useMatch(id: number | string | null | undefined) {
                 const raw = data as unknown as PartidoWithRelations;
                 const enriched = await enrichPartidosCarreraShieldsFromDb(supabase, [raw]);
                 const result = enriched[0];
-                try { sessionStorage.setItem(`swr-match-${id}`, JSON.stringify(result)); } catch {}
-                return result;
+                const mvpRow = await fetchMvpJugadorRow(raw.marcador_detalle, controller.signal);
+                const withMvp = mvpRow ? { ...result, mvp_jugador: mvpRow } : result;
+                try { sessionStorage.setItem(`swr-match-${id}`, JSON.stringify(withMvp)); } catch {}
+                return withMvp;
             } finally {
                 clearTimeout(timeout);
             }
