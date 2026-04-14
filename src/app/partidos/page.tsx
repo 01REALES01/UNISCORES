@@ -29,6 +29,14 @@ const GENDERS = [
     { label: 'Femenino', value: 'femenino', icon: '♀' },
 ];
 
+/** YYYY-MM-DD en la zona horaria local (evita desfase vs UTC de `toISOString()`). */
+function localDateStr(d: Date = new Date()): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
 export default function PartidosPage() {
     const { user, profile, isStaff } = useAuth();
     const { matches: rawMatches, loading } = useMatches();
@@ -39,6 +47,7 @@ export default function PartidosPage() {
     const [filterVisible, setFilterVisible] = useState(true);
     const [loadTimeout, setLoadTimeout] = useState(false);
     const lastScrollY = useRef(0);
+    const hasScrolledToToday = useRef(false);
     // Derive unique sport names from all matches + jornadas
 
     const availableSports = useMemo(() => {
@@ -77,11 +86,11 @@ export default function PartidosPage() {
     // 3. Unified date-grouped feed (partidos + jornadas)
     const groupedMatches = useMemo(() => {
         const groups: Record<string, { partidos: any[], jornadas: any[] }> = {};
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = localDateStr();
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayStr = localDateStr(yesterday);
         const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        const tomorrowStr = localDateStr(tomorrow);
 
         filteredMatches.forEach(match => {
             const fecha = match.fecha.split('T')[0];
@@ -145,32 +154,26 @@ export default function PartidosPage() {
         return () => clearTimeout(t);
     }, [loading, rawMatches.length]);
 
-    // 5. Auto-scroll to today
+    // 5. Auto-scroll a “hoy” una sola vez al cargar (espera jornadas; alinea fecha con calendario local)
     useEffect(() => {
-        if (!loading && groupedMatches.length > 0) {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const targetDate = groupedMatches.find(g => g.fecha >= todayStr)?.fecha;
+        if (loading || jornadasLoading || groupedMatches.length === 0 || hasScrolledToToday.current) return;
+        hasScrolledToToday.current = true;
 
-            if (targetDate) {
-                setTimeout(() => {
-                    const element = document.getElementById(`date-${targetDate}`);
-                    if (element) {
-                        const isMobile = window.innerWidth < 768;
-                        const offset = isMobile ? 160 : 250;
-                        const bodyRect = document.body.getBoundingClientRect().top;
-                        const elementRect = element.getBoundingClientRect().top;
-                        const elementPosition = elementRect - bodyRect;
-                        const offsetPosition = elementPosition - offset;
+        const todayStr = localDateStr();
+        const todayGroup = groupedMatches.find((g) => g.isToday);
+        const targetDate = todayGroup?.fecha ?? groupedMatches.find((g) => g.fecha >= todayStr)?.fecha;
 
-                        window.scrollTo({
-                            top: offsetPosition,
-                            behavior: 'auto'
-                        });
-                    }
-                }, 100);
-            }
-        }
-    }, [loading, groupedMatches.length]);
+        if (!targetDate) return;
+
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const element = document.getElementById(`date-${targetDate}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+            }, 150);
+        });
+    }, [loading, jornadasLoading, groupedMatches]);
 
     return (
         <div className="min-h-screen bg-background text-white selection:bg-white/10 font-sans pb-20 relative">

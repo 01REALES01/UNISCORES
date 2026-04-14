@@ -305,7 +305,20 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                                         <span className={cn("text-[10px] font-black uppercase tracking-tight truncate", winnerA ? "text-white" : isFinished ? "text-white/30" : "text-white/55")}>{nameA}</span>
                                     </div>
                                     <div className="flex flex-col items-center justify-center w-[20%] relative z-10 shrink-0">
-                                        <span className="font-black text-[12px] tabular-nums">{scoreA}–{scoreB}</span>
+                                        <span className="font-black text-[12px] tabular-nums">
+                                            {isFinished || isLive ? (
+                                                `${scoreA}–${scoreB}`
+                                            ) : (
+                                                <span
+                                                    className={cn(
+                                                        "italic text-[10px] tracking-widest",
+                                                        light ? "text-slate-400" : "text-white/25"
+                                                    )}
+                                                >
+                                                    vs
+                                                </span>
+                                            )}
+                                        </span>
                                     </div>
                                     <div className="flex items-center gap-2 w-[40%] justify-end relative z-10">
                                         <span className={cn("text-[10px] font-black uppercase tracking-tight truncate text-right", winnerB ? "text-white" : isFinished ? "text-white/30" : "text-white/55")}>{nameB}</span>
