@@ -1,7 +1,7 @@
 import { SafeBackButton } from "@/shared/components/safe-back-button";
 import { cn } from "@/lib/utils";
 import { Activity, Trophy, RefreshCw, Loader2 } from "lucide-react";
-import { formatUltimaEdicion, stampAudit } from "@/lib/audit-helpers";
+import { formatUltimaEdicionAdmin, stampAudit } from "@/lib/audit-helpers";
 import { getMatchResult } from "@/modules/quiniela/helpers";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -18,7 +18,7 @@ interface AdminMatchHeaderProps {
 
 export const AdminMatchHeader = ({ match, disciplinaName, bgGradient, activeEditors, onRefresh }: AdminMatchHeaderProps) => {
   const [recalculating, setRecalculating] = useState(false);
-  const auditInfo = formatUltimaEdicion(match.marcador_detalle);
+  const auditInfo = formatUltimaEdicionAdmin(match);
   const isLive = match.estado === 'en_curso';
 
   const handleRecalculate = async () => {

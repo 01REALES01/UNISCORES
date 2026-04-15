@@ -33,40 +33,90 @@ export function stampAudit(
     };
 }
 
-/**
- * Formats the "last edited by" info for display.
- * Returns null if no audit data exists.
- */
-export function formatUltimaEdicion(detalle: Record<string, any> | null | undefined): {
+export type UltimaEdicionDisplay = {
     nombre: string;
     fecha: string;
     relativo: string;
-} | null {
-    const ue = detalle?.ultima_edicion as UltimaEdicion | undefined;
-    if (!ue?.fecha) return null;
+};
 
-    const date = new Date(ue.fecha);
+function relativoDesdeFecha(date: Date): string {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMin = Math.floor(diffMs / 60000);
     const diffH = Math.floor(diffMin / 60);
     const diffD = Math.floor(diffH / 24);
 
-    let relativo: string;
-    if (diffMin < 1) relativo = 'Justo ahora';
-    else if (diffMin < 60) relativo = `hace ${diffMin}m`;
-    else if (diffH < 24) relativo = `hace ${diffH}h`;
-    else if (diffD < 7) relativo = `hace ${diffD}d`;
-    else relativo = date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+    if (diffMin < 1) return 'Justo ahora';
+    if (diffMin < 60) return `hace ${diffMin}m`;
+    if (diffH < 24) return `hace ${diffH}h`;
+    if (diffD < 7) return `hace ${diffD}d`;
+    return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+}
+
+function fechaLegibleEsCo(date: Date): string {
+    return date.toLocaleString('es-CO', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+/**
+ * Formats the "last edited by" info for display.
+ * Returns null if no audit data exists.
+ */
+export function formatUltimaEdicion(detalle: Record<string, any> | null | undefined): UltimaEdicionDisplay | null {
+    const ue = detalle?.ultima_edicion as UltimaEdicion | undefined;
+    if (!ue?.fecha) return null;
+
+    const date = new Date(ue.fecha);
+    if (Number.isNaN(date.getTime())) return null;
 
     return {
         nombre: ue.nombre,
-        fecha: date.toLocaleString('es-CO', {
-            day: 'numeric', month: 'short', year: 'numeric',
-            hour: '2-digit', minute: '2-digit',
-        }),
-        relativo,
+        fecha: fechaLegibleEsCo(date),
+        relativo: relativoDesdeFecha(date),
     };
+}
+
+/**
+ * Admin partido: misma UI que antes del merge — prioriza `ultima_edicion` en JSON,
+ * si no existe usa `ultimo_update` del marcador o `updated_at` de la fila `partidos`.
+ */
+export function formatUltimaEdicionAdmin(match: {
+    marcador_detalle?: Record<string, any> | null;
+    updated_at?: string | null;
+}): UltimaEdicionDisplay | null {
+    const fromDetalle = formatUltimaEdicion(match.marcador_detalle);
+    if (fromDetalle) return fromDetalle;
+
+    const ultimo = match.marcador_detalle?.ultimo_update;
+    if (typeof ultimo === 'string' && ultimo.trim()) {
+        const date = new Date(ultimo);
+        if (!Number.isNaN(date.getTime())) {
+            return {
+                nombre: 'Marcador',
+                fecha: fechaLegibleEsCo(date),
+                relativo: relativoDesdeFecha(date),
+            };
+        }
+    }
+
+    const ua = match.updated_at;
+    if (typeof ua === 'string' && ua.trim()) {
+        const date = new Date(ua);
+        if (!Number.isNaN(date.getTime())) {
+            return {
+                nombre: 'Partido',
+                fecha: fechaLegibleEsCo(date),
+                relativo: relativoDesdeFecha(date),
+            };
+        }
+    }
+
+    return null;
 }
 /**
  * Stamps audit info into a JSON string for the `descripcion` column in olympics_eventos.

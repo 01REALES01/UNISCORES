@@ -22,8 +22,9 @@ export type TeamStanding = {
 
 export function compareStandings(a: TeamStanding, b: TeamStanding, sportName: string): number {
     if (sportName === 'Voleibol') {
-        if (b.won !== a.won) return b.won - a.won;
+        // PT (4/3/2/1) primero, luego PG; coincide con tabla de grupos habitual.
         if (b.points !== a.points) return b.points - a.points;
+        if (b.won !== a.won) return b.won - a.won;
         const ratioA = a.setsLost === 0 ? a.setsWon + 1 : a.setsWon / a.setsLost;
         const ratioB = b.setsLost === 0 ? b.setsWon + 1 : b.setsWon / b.setsLost;
         if (ratioB !== ratioA) return ratioB - ratioA;

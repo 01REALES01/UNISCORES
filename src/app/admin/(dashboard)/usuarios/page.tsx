@@ -204,7 +204,7 @@ export default function UsuariosPage() {
         } else {
             // ADD ROLE (Maximum 2 roles)
             if (updatedRoles.length >= 2) {
-                alert('Un usuario puede tener un máximo de 2 roles');
+                toast.error('Máximo 2 roles por usuario. Quitá uno (tocá de nuevo el rol marcado) para poder agregar otro.', { duration: 6000 });
                 return;
             }
             updatedRoles.push(targetRole);
@@ -593,23 +593,34 @@ export default function UsuariosPage() {
                                                         role="dialog"
                                                         aria-modal="true"
                                                         aria-labelledby={`role-panel-title-${userProfile.id}`}
-                                                        className="fixed z-[110] inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] max-h-[min(78dvh,520px)] flex flex-col overflow-hidden rounded-2xl border border-zinc-600 bg-zinc-950 shadow-2xl ring-1 ring-black/60 animate-in fade-in slide-in-from-bottom-3 duration-200 sm:absolute sm:inset-x-auto sm:inset-y-auto sm:left-auto sm:right-0 sm:bottom-auto sm:top-full sm:mt-2 sm:w-[min(calc(100vw-2rem),288px)] sm:max-h-[min(70vh,400px)] sm:translate-x-0 sm:translate-y-0 sm:zoom-in-95 sm:slide-in-from-top-2"
+                                                        className="fixed z-[110] inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] flex max-h-[min(88dvh,620px)] w-[min(calc(100vw-1.5rem),320px)] flex-col overflow-hidden rounded-2xl border border-zinc-600 bg-zinc-950 shadow-2xl ring-1 ring-black/60 animate-in fade-in slide-in-from-bottom-3 duration-200 sm:absolute sm:inset-x-auto sm:inset-y-auto sm:left-auto sm:right-0 sm:bottom-auto sm:top-full sm:mt-2 sm:w-[min(calc(100vw-2rem),320px)] sm:max-h-[min(86vh,580px)] sm:translate-x-0 sm:translate-y-0 sm:zoom-in-95 sm:slide-in-from-top-2"
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
                                                         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-700 bg-zinc-900 px-3 py-3 sm:py-2.5">
-                                                            <p id={`role-panel-title-${userProfile.id}`} className="text-[11px] font-black uppercase tracking-widest text-zinc-300">
-                                                                Roles
-                                                            </p>
+                                                            <div className="min-w-0">
+                                                                <p id={`role-panel-title-${userProfile.id}`} className="text-[11px] font-black uppercase tracking-widest text-zinc-300">
+                                                                    Roles
+                                                                </p>
+                                                                {(userProfile.roles?.length ?? 0) >= 2 && (
+                                                                    <p className="mt-1 text-[9px] font-semibold leading-snug text-amber-400/90">
+                                                                        Máx. 2 roles: quitá uno para poder agregar otro (p. ej. administrador).
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setOpenDropdown(null)}
-                                                                className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white sm:hidden"
+                                                                className="shrink-0 rounded-lg p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white sm:hidden"
                                                                 aria-label="Cerrar"
                                                             >
                                                                 <X size={18} />
                                                             </button>
                                                         </div>
-                                                        <div data-nested-scroll className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-y-contain p-2 sm:p-2">
+                                                        {/* Altura explícita: flex-1+min-h-0 fallaba con el panel absolute y dejaba ~2 filas visibles */}
+                                                        <div
+                                                            data-nested-scroll
+                                                            className="max-h-[min(72dvh,480px)] min-h-[200px] touch-pan-y space-y-1 overflow-y-auto overscroll-y-contain p-2 [-webkit-overflow-scrolling:touch] sm:max-h-[min(70vh,440px)] sm:min-h-[220px]"
+                                                        >
                                                             {(Object.keys(ROLE_CONFIG) as UserRole[]).map(role => {
                                                                 const config = ROLE_CONFIG[role];
                                                                 const Icon = config.icon;
@@ -671,7 +682,7 @@ export default function UsuariosPage() {
                                                                                         </button>
                                                                                     )}
                                                                                 </div>
-                                                                                <div data-nested-scroll className="grid grid-cols-1 gap-1 max-h-40 overflow-y-auto custom-scrollbar">
+                                                                                <div data-nested-scroll className="custom-scrollbar grid max-h-[min(40dvh,220px)] touch-pan-y grid-cols-1 gap-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] sm:max-h-48">
                                                                                     {disciplinas.map(d => {
                                                                                         const isChecked = thisUserDiscs.includes(d.id);
                                                                                         return (

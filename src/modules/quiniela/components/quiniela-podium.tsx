@@ -23,7 +23,8 @@ export const QuinielaPodium = ({ top3 }: QuinielaPodiumProps) => {
         if (!slot.profile) return <div key={idx} className="flex-1 opacity-0" />;
 
         const isWinner = slot.pos === 1;
-        const points = slot.profile.points || 0;
+        const weekPts = slot.profile.weekly_points ?? 0;
+        const totalPts = slot.profile.points ?? 0;
 
         return (
           <Link
@@ -73,10 +74,16 @@ export const QuinielaPodium = ({ top3 }: QuinielaPodiumProps) => {
                 {slot.profile.display_name?.split(' ')[0] || "Invitado"}
               </p>
               <div className={cn(
-                "px-3 py-1 rounded-full text-xs font-black font-sans flex items-center gap-1 shadow-lg",
-                isWinner ? "bg-amber-500 text-black" : "bg-white/5 text-slate-300 border border-white/5"
+                "flex min-w-[5.5rem] flex-col items-center gap-0.5 rounded-2xl px-2.5 py-2 text-center shadow-lg",
+                isWinner ? "bg-amber-500 text-black ring-2 ring-amber-300/50" : "border border-white/10 bg-white/5 text-slate-200"
               )}>
-                {points} <span className="text-[8px] opacity-70">PTS</span>
+                <span className={cn("text-[8px] font-black uppercase tracking-widest", isWinner ? "text-black/60" : "text-violet-300")}>
+                  Total
+                </span>
+                <span className="text-base font-black tabular-nums leading-none sm:text-lg">{totalPts}</span>
+                <span className={cn("mt-1 text-[9px] font-bold uppercase tracking-wide", isWinner ? "text-black/65" : "text-amber-400/90")}>
+                  Semana {weekPts}
+                </span>
               </div>
             </div>
           </Link>

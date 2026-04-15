@@ -29,7 +29,7 @@ function QuinielaContent() {
     const [activeTab, setActiveTab] = useState<'play' | 'history' | 'ranking'>('play');
     const [showDisclaimer, setShowDisclaimer] = useState(false);
 
-    const { matches, predictions, allPredictions, ranking, loading, userPublicProfile, handlePredict, stats } = useQuiniela();
+    const { matches, predictions, allPredictions, ranking, rankingWeekMeta, userWeeklyPoints, loading, userPublicProfile, handlePredict, stats } = useQuiniela();
 
     useEffect(() => {
         const t = searchParams.get("tab");
@@ -151,7 +151,16 @@ function QuinielaContent() {
                     />
                 )}
                 {activeTab === 'history' && <QuinielaHistoryTab predictions={predictions} matches={matches} />}
-                {activeTab === 'ranking' && <QuinielaRankingTab ranking={ranking} user={user} profile={profile} userPoints={userPublicProfile?.points || 0} />}
+                {activeTab === 'ranking' && (
+                    <QuinielaRankingTab
+                        ranking={ranking}
+                        rankingWeekMeta={rankingWeekMeta}
+                        userWeeklyPoints={userWeeklyPoints}
+                        userTotalPoints={userPublicProfile?.points ?? 0}
+                        user={user}
+                        profile={profile}
+                    />
+                )}
             </div>
         </div>
     );

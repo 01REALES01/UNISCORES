@@ -181,7 +181,8 @@ export function useMatchControl(matchId: string) {
                 marcador_detalle: auditDetalle(finalDetalle)
             })
             .eq('id', matchId);
-        setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: finalDetalle }) : null);
+        const auditedMin = auditDetalle(finalDetalle);
+        setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: auditedMin }) : null);
     }, [match, profile, matchId]);
 
     const registrarEventoSistema = useCallback(async (tipo: string, desc: string, minOverride?: number, periodOverride?: number) => {
@@ -366,9 +367,10 @@ export function useMatchControl(matchId: string) {
             if (tipo === 'punto_2') puntos = 2;
             if (tipo === 'punto_3') puntos = 3;
             const nuevoMarcador = addPoints(disciplinaName, currentDetalle, equipo as any, puntos);
-            await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
+            const auditedPts = auditDetalle(nuevoMarcador);
+            await supabase.from('partidos').update({ marcador_detalle: auditedPts }).eq('id', matchId);
             // Optimistic local update so scoreboard re-renders immediately
-            setMatch((prev: any) => prev ? { ...prev, marcador_detalle: nuevoMarcador } : null);
+            setMatch((prev: any) => prev ? { ...prev, marcador_detalle: auditedPts } : null);
 
             await logAction('UPDATE_SCORE', 'partido', matchId, {
                 tipo_evento: tipo,
@@ -379,8 +381,9 @@ export function useMatchControl(matchId: string) {
         } else if (tipo === 'set') {
             // 'set' button = manually advance to next set/period
             const nuevoMarcador = nextPeriod(disciplinaName, currentDetalle);
-            await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
-            setMatch((prev: any) => prev ? { ...prev, marcador_detalle: nuevoMarcador } : null);
+            const auditedPeriod = auditDetalle(nuevoMarcador);
+            await supabase.from('partidos').update({ marcador_detalle: auditedPeriod }).eq('id', matchId);
+            setMatch((prev: any) => prev ? { ...prev, marcador_detalle: auditedPeriod } : null);
 
             await logAction('CHANGE_PERIOD', 'partido', matchId, {
                 tipo_evento: 'set',
@@ -407,12 +410,13 @@ export function useMatchControl(matchId: string) {
         
         // Use the scoring engine to set points correctly according to the sport's structure
         const finalDetalle = setPoints(disciplinaName, currentDetalle, equipo, value);
-        
-        await supabase.from('partidos').update({ 
-            marcador_detalle: auditDetalle(finalDetalle)
+        const auditedScore = auditDetalle(finalDetalle);
+
+        await supabase.from('partidos').update({
+            marcador_detalle: auditedScore
         }).eq('id', matchId);
 
-        setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: finalDetalle }) : null);
+        setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: auditedScore }) : null);
 
         // Log Action
         await logAction('UPDATE_SCORE', 'partido', matchId, {
@@ -458,7 +462,7 @@ export function useMatchControl(matchId: string) {
                     return;
                 }
 
-                setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: detalleFinal }) : null);
+                setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: audited }) : null);
                 setMinutoActual(nuevoMinuto);
                 registrarEventoSistema('periodo', mensaje);
                 await logAction('CHANGE_PERIOD', 'partido', matchId, { mensaje });
@@ -490,6 +494,7 @@ export function useMatchControl(matchId: string) {
             }
 
             await supabase.from('partidos').update({ marcador_detalle: auditDetalle(detalleFinal) }).eq('id', matchId);
+            setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: auditDetalle(detalleFinal) }) : null);
             registrarEventoSistema('periodo', mensaje);
             await logAction('CHANGE_PERIOD', 'partido', matchId, { mensaje });
             toast.success(mensaje);
@@ -535,11 +540,13 @@ export function useMatchControl(matchId: string) {
             // If a team has won 2 sets, the match is over — finalize immediately
             if (sets_a >= 2 || sets_b >= 2) {
                 detalle.estado_cronometro = 'detenido';
+                const auditedFin = auditDetalle(detalle);
                 await supabase.from('partidos').update({
                     estado: 'finalizado',
-                    marcador_detalle: auditDetalle(detalle)
+                    marcador_detalle: auditedFin
                 }).eq('id', matchId);
                 invalidateCache('admin-partidos');
+                setMatch((prev: any) => (prev ? { ...prev, estado: 'finalizado', marcador_detalle: auditedFin } : null));
                 registrarEventoSistema('fin', `Partido finalizado — ${sets_a}-${sets_b} en sets`);
                 await logAction('UPDATE_MATCH', 'partido', matchId, {
                     nuevo_estado: 'finalizado',
@@ -552,7 +559,9 @@ export function useMatchControl(matchId: string) {
             // Otherwise advance to the next set
             detalle.set_actual = setNum;
 
-            await supabase.from('partidos').update({ marcador_detalle: auditDetalle(detalle) }).eq('id', matchId);
+            const auditedSet = auditDetalle(detalle);
+            await supabase.from('partidos').update({ marcador_detalle: auditedSet }).eq('id', matchId);
+            setMatch((prev: any) => (prev ? { ...prev, marcador_detalle: auditedSet } : null));
             registrarEventoSistema('periodo', `Set ${setNum}`);
             await logAction('CHANGE_PERIOD', 'partido', matchId, {
                 mensaje: `Set ${setNum}`,
@@ -584,11 +593,12 @@ export function useMatchControl(matchId: string) {
                 ultimo_update: new Date().toISOString()
             };
 
+            const auditedModo = auditDetalle(nuevoDetalle);
             await supabase.from('partidos').update({
-                marcador_detalle: auditDetalle(nuevoDetalle)
+                marcador_detalle: auditedModo
             }).eq('id', matchId);
 
-            setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: nuevoDetalle }) : null);
+            setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: auditedModo }) : null);
             registrarEventoSistema('modo_cambio', `Modo cambiado a ${newMode === 'en_vivo' ? 'En Vivo' : 'Asincrónico'}`);
 
             await logAction('UPDATE_MATCH', 'partido', matchId, {
@@ -753,8 +763,9 @@ export function useMatchControl(matchId: string) {
         const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
         const currentDetalle = freshMatch?.marcador_detalle || match.marcador_detalle || {};
         const nuevoMarcador = addPoints('Baloncesto', currentDetalle, equipo, totalPuntos);
-        await supabase.from('partidos').update({ marcador_detalle: auditDetalle(nuevoMarcador) }).eq('id', matchId);
-        setMatch((prev: any) => prev ? { ...prev, marcador_detalle: nuevoMarcador } : null);
+        const auditedBulk = auditDetalle(nuevoMarcador);
+        await supabase.from('partidos').update({ marcador_detalle: auditedBulk }).eq('id', matchId);
+        setMatch((prev: any) => prev ? { ...prev, marcador_detalle: auditedBulk } : null);
 
         await logAction('UPDATE_SCORE', 'partido', matchId, {
             tipo_evento: 'bulk_basketball',

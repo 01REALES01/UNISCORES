@@ -7,12 +7,16 @@ import { getMatchResult } from "@/modules/quiniela/helpers";
 import { enrichPartidosCarreraShieldsFromDb } from "@/lib/match-carrera-shields";
 import type { PartidoWithRelations } from "@/modules/matches/types";
 
+type RankingWeekMeta = { weekStart: string | null; weekEnd: string | null };
+
 export function useQuiniela() {
     const { user, profile } = useAuth();
     const [matches, setMatches] = useState<any[]>([]);
     const [predictions, setPredictions] = useState<any[]>([]);
     const [allPredictions, setAllPredictions] = useState<any[]>([]);
     const [ranking, setRanking] = useState<any[]>([]);
+    const [rankingWeekMeta, setRankingWeekMeta] = useState<RankingWeekMeta>({ weekStart: null, weekEnd: null });
+    const [userWeeklyPoints, setUserWeeklyPoints] = useState(0);
     const [loading, setLoading] = useState(true);
     const [userPublicProfile, setUserPublicProfile] = useState<any>(null);
 
@@ -20,12 +24,12 @@ export function useQuiniela() {
         if (!user) return;
         setLoading(true);
 
-        const [matchesRes, predsRes, allPredsRes, rankingRes, userPubRes] = await Promise.all([
+        const [matchesRes, predsRes, allPredsRes, userPubRes, rpcRes] = await Promise.all([
             safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url), delegacion_a_info:delegaciones!delegacion_a_id(escudo_url), delegacion_b_info:delegaciones!delegacion_b_id(escudo_url), atleta_a:profiles!athlete_a_id(full_name, avatar_url), atleta_b:profiles!athlete_b_id(full_name, avatar_url), roster_partido(equipo_a_or_b, jugador:jugadores(nombre))').order('fecha', { ascending: true }), 'quiniela-matches'),
             safeQuery(supabase.from('pronosticos').select('*').eq('user_id', user.id), 'quiniela-preds'),
             safeQuery(supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'), 'quiniela-allPreds'),
-            safeQuery(supabase.from('public_profiles').select('*, display_name, avatar_url, points, current_streak, max_streak, total_predictions, correct_predictions').order('points', { ascending: false }).limit(50), 'quiniela-ranking'),
             safeQuery(supabase.from('public_profiles').select('*').eq('id', user.id).single(), 'user-public-profile'),
+            supabase.rpc("quiniela_leaderboards"),
         ]);
 
         if (matchesRes.data) {
@@ -37,7 +41,33 @@ export function useQuiniela() {
         }
         if (predsRes.data) setPredictions(predsRes.data);
         if (allPredsRes.data) setAllPredictions(allPredsRes.data);
-        if (rankingRes.data) setRanking(rankingRes.data);
+
+        if (!rpcRes.error && rpcRes.data && Array.isArray((rpcRes.data as any).ranking)) {
+            const payload = rpcRes.data as { ranking: any[]; week_start?: string; week_end?: string };
+            setRanking(payload.ranking);
+            setRankingWeekMeta({
+                weekStart: payload.week_start ?? null,
+                weekEnd: payload.week_end ?? null,
+            });
+            const me = payload.ranking.find((r: any) => r.id === user.id);
+            setUserWeeklyPoints(Number(me?.weekly_points ?? 0));
+        } else {
+            const rankingRes = await safeQuery(
+                supabase.from("public_profiles").select("*, display_name, avatar_url, points, current_streak, max_streak, total_predictions, correct_predictions").order("points", { ascending: false }).limit(50),
+                "quiniela-ranking-fallback"
+            );
+            if (rankingRes.data) {
+                setRanking(
+                    (rankingRes.data as any[]).map((row) => ({
+                        ...row,
+                        weekly_points: 0,
+                    }))
+                );
+            } else setRanking([]);
+            setRankingWeekMeta({ weekStart: null, weekEnd: null });
+            setUserWeeklyPoints(0);
+        }
+
         if (userPubRes.data) setUserPublicProfile(userPubRes.data);
 
         setLoading(false);
@@ -52,9 +82,16 @@ export function useQuiniela() {
             .on('postgres_changes', { event: '*', schema: 'public', table: 'pronosticos' }, async () => {
                 const { data } = await safeQuery(supabase.from('pronosticos').select('match_id, winner_pick, prediction_type'), 'rt-allPreds');
                 if (data) setAllPredictions(data);
-                // Also refresh user predictions if needed
                 const { data: userPreds } = await supabase.from('pronosticos').select('*').eq('user_id', user.id);
                 if (userPreds) setPredictions(userPreds);
+                const { data: lb, error: lbErr } = await supabase.rpc("quiniela_leaderboards");
+                if (!lbErr && lb && Array.isArray((lb as any).ranking)) {
+                    const payload = lb as { ranking: any[]; week_start?: string; week_end?: string };
+                    setRanking(payload.ranking);
+                    setRankingWeekMeta({ weekStart: payload.week_start ?? null, weekEnd: payload.week_end ?? null });
+                    const me = payload.ranking.find((r: any) => r.id === user.id);
+                    setUserWeeklyPoints(Number(me?.weekly_points ?? 0));
+                }
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'partidos' }, async () => {
                 const { data } = await safeQuery(supabase.from('partidos').select('*, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url), delegacion_a_info:delegaciones!delegacion_a_id(escudo_url), delegacion_b_info:delegaciones!delegacion_b_id(escudo_url), atleta_a:profiles!athlete_a_id(full_name, avatar_url), atleta_b:profiles!athlete_b_id(full_name, avatar_url), roster_partido(equipo_a_or_b, jugador:jugadores(nombre))').order('fecha', { ascending: true }), 'rt-matches');
@@ -64,6 +101,14 @@ export function useQuiniela() {
                         data as PartidoWithRelations[]
                     );
                     setMatches(enriched.filter((m) => m.disciplinas?.name !== 'Natación'));
+                }
+                const { data: lb, error: lbErr } = await supabase.rpc("quiniela_leaderboards");
+                if (!lbErr && lb && Array.isArray((lb as any).ranking)) {
+                    const payload = lb as { ranking: any[]; week_start?: string; week_end?: string };
+                    setRanking(payload.ranking);
+                    setRankingWeekMeta({ weekStart: payload.week_start ?? null, weekEnd: payload.week_end ?? null });
+                    const me = payload.ranking.find((r: any) => r.id === user.id);
+                    setUserWeeklyPoints(Number(me?.weekly_points ?? 0));
                 }
             })
             .subscribe();
@@ -147,6 +192,8 @@ export function useQuiniela() {
         predictions,
         allPredictions,
         ranking,
+        rankingWeekMeta,
+        userWeeklyPoints,
         loading,
         userPublicProfile,
         handlePredict,

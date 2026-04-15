@@ -60,14 +60,17 @@ export const QuinielaRankingItem = ({ profile, rank, isMe, mode = 'leaders' }: Q
         {mode === 'leaders' && (
           <>
             <div className="flex items-baseline justify-end gap-1">
-              <span className="text-2xl font-black text-white tabular-nums font-sans">
-                {profile.points || 0}
+              <span className="text-2xl font-black text-amber-400 tabular-nums font-sans sm:text-[1.65rem]">
+                {profile.weekly_points ?? 0}
               </span>
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pts</span>
+              <span className="text-[10px] font-black text-amber-500/90 uppercase tracking-widest">Semana</span>
             </div>
-            <div className="flex items-center justify-end gap-1.5 mt-1">
-              <div className="h-1 w-12 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500/50" style={{ width: `${Math.min(100, (profile.points || 0) / 5)}%` }} />
+            <div className="mt-1 flex items-center justify-end gap-1.5">
+              <div className="h-1 w-14 bg-white/5 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-500/60"
+                  style={{ width: `${Math.min(100, ((profile.weekly_points ?? 0) / 20) * 100)}%` }}
+                />
               </div>
             </div>
           </>
