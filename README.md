@@ -46,12 +46,14 @@ pnpm install
 
 ### 3. Configurar Variables de Entorno
 
-Crea un archivo `.env.local` en la raíz del proyecto:
+Crea un archivo `.env.local` (o `.env`) en la raíz del proyecto. Usa [`.env.example`](./.env.example) como plantilla: copia el archivo y reemplaza los valores.
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=tu_supabase_url_aqui
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_supabase_anon_key_aqui
 ```
+
+En producción suele hacer falta también `SUPABASE_SERVICE_ROLE_KEY` (OAuth y rutas admin); está documentado en `.env.example`.
 
 **¿Dónde obtener estos valores?**
 
@@ -76,7 +78,9 @@ Ve a tu proyecto de Supabase → `SQL Editor` y ejecuta **en orden**:
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000)
+El script usa el **puerto 3001**. Abre [http://localhost:3001](http://localhost:3001).
+
+`npm run start` (producción local sin Docker) usa por defecto el **puerto 3000** salvo que definas `PORT`.
 
 ## 🔐 Acceso de Administrador
 
@@ -112,7 +116,7 @@ project_olympics/
 │   ├── schema.sql             # Schema principal de DB
 │   └── auth_setup.sql         # Configuración de autenticación
 ├── db_setup.sql               # Tablas auxiliares (jugadores, eventos)
-└── .env.local.example         # Plantilla de variables de entorno
+└── .env.example               # Plantilla de variables (sin secretos; versionada)
 ```
 
 ## 🎮 Uso
@@ -181,6 +185,33 @@ project_olympics/
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 5. Deploy 🚀
+
+## 🐳 Despliegue con Docker (OpenLab / servidor)
+
+Imagen de producción con salida **standalone** de Next.js (`output: "standalone"` en `next.config.ts`). El contenedor escucha por defecto el **puerto 3000** (`PORT=3000`). En OpenLab (`.uninorte.edu.co`) el proxy inverso HTTPS suele publicar un puerto del host hacia el **mismo puerto interno del contenedor**; coordina con infraestructura que el mapeo apunte al puerto que escucha la app (por defecto **3000**).
+
+**Build:** las variables `NEXT_PUBLIC_*` se inyectan en el bundle en tiempo de build. Pásalas como build args (o desde un `.env` solo en la máquina de build; no subas secretos al repo):
+
+```bash
+docker build -t project-olympics \
+  --build-arg NEXT_PUBLIC_SUPABASE_URL="https://xxxx.supabase.co" \
+  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="tu_anon_key" \
+  .
+```
+
+**Run:** en tiempo de arranque puedes pasar el resto de variables (por ejemplo `SUPABASE_SERVICE_ROLE_KEY`, VAPID opcional) con `--env-file`:
+
+```bash
+docker run --rm -p 3000:3000 --env-file .env project-olympics
+```
+
+**Compose (prueba local):** con un `.env` en la raíz que incluya al menos las `NEXT_PUBLIC_*` usadas arriba:
+
+```bash
+docker compose up --build
+```
+
+Listado completo de claves: [`.env.example`](./.env.example). Checklist Supabase, dominio final y plantilla de correo al profesor: [`docs/DEPLOY_OPENLAB.md`](./docs/DEPLOY_OPENLAB.md).
 
 ## 🐛 Troubleshooting
 

@@ -451,13 +451,14 @@ export default function PublicProfilePage() {
                                                 return (
                                                     <div className="grid grid-cols-3 gap-3">
                                                         {[
-                                                          { val: s.pts3 || 0, label: '3PT', color: 'text-violet-400' },
-                                                          { val: s.pts2 || 0, label: '2PT', color: 'text-violet-400' },
-                                                          { val: s.pts1 || 0, label: 'FT', color: 'text-violet-400' }
+                                                          { val: s.pts3 || 0, title: 'Triples', hint: '3 pts c/u', color: 'text-amber-400' },
+                                                          { val: s.pts2 || 0, title: 'Dobles', hint: '2 pts c/u', color: 'text-orange-400' },
+                                                          { val: s.pts1 || 0, title: 'Tiros libres', hint: '1 pt c/u', color: 'text-yellow-300' },
                                                         ].map((st, idx) => (
-                                                          <div key={idx} className="text-center bg-white/[0.03] rounded-2xl py-5 border border-white/5 hover:bg-white/10 transition-colors">
-                                                              <p className={cn("text-2xl font-black font-mono mb-1 drop-shadow-md", st.color)}>{st.val}</p>
-                                                              <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-widest">{st.label}</p>
+                                                          <div key={idx} className="text-center rounded-2xl border border-amber-500/15 bg-gradient-to-b from-amber-500/10 to-white/[0.02] py-4 px-2 hover:border-amber-400/30 transition-colors">
+                                                              <p className={cn("text-2xl font-black font-mono tabular-nums leading-none drop-shadow-md", st.color)}>{st.val}</p>
+                                                              <p className="mt-2 text-[10px] font-display font-black uppercase tracking-wide text-white/85">{st.title}</p>
+                                                              <p className="mt-0.5 text-[8px] font-bold text-amber-200/50">{st.hint}</p>
                                                           </div>
                                                         ))}
                                                     </div>
@@ -538,23 +539,23 @@ export default function PublicProfilePage() {
                                                 <div className="flex items-center justify-around py-5">
                                                     <div className="flex flex-col items-center group/item">
                                                         <p className="text-3xl font-black font-mono text-emerald-400 leading-none mb-2 drop-shadow-md group-hover/item:scale-110 transition-transform">{s.goals || 0}</p>
-                                                        <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Goles</p>
+                                                        <p className="text-[9px] font-display font-black uppercase tracking-wide text-emerald-200/75">Goles</p>
                                                     </div>
                                                     <div className="w-[1px] h-10 bg-white/10" />
                                                     <div className="flex flex-col items-center">
                                                         <div className="flex gap-2 mb-2">
-                                                            <div className="w-3 h-4 bg-violet-500 rounded-sm shadow-[0_0_15px_rgba(245,158,11,0.4)]" />
-                                                            <p className="text-lg font-black font-mono text-white leading-none">{s.yellowCards || 0}</p>
+                                                            <div className="h-4 w-3 rounded-sm bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.55)]" />
+                                                            <p className="text-lg font-black font-mono text-amber-100 leading-none tabular-nums">{s.yellowCards || 0}</p>
                                                         </div>
-                                                        <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Amarillas</p>
+                                                        <p className="text-[9px] font-display font-black uppercase tracking-wide text-amber-200/80">Amarillas</p>
                                                     </div>
                                                     <div className="w-[1px] h-10 bg-white/10" />
                                                     <div className="flex flex-col items-center">
                                                         <div className="flex gap-2 mb-2">
-                                                            <div className="w-3 h-4 bg-rose-600 rounded-sm shadow-[0_0_15px_rgba(225,29,72,0.4)]" />
-                                                            <p className="text-lg font-black font-mono text-white leading-none">{s.redCards || 0}</p>
+                                                            <div className="h-4 w-3 rounded-sm bg-rose-600 shadow-[0_0_12px_rgba(225,29,72,0.45)]" />
+                                                            <p className="text-lg font-black font-mono text-rose-100 leading-none tabular-nums">{s.redCards || 0}</p>
                                                         </div>
-                                                        <p className="text-[8px] font-display font-black text-white/30 uppercase tracking-[0.2em]">Rojas</p>
+                                                        <p className="text-[9px] font-display font-black uppercase tracking-wide text-rose-200/80">Rojas</p>
                                                     </div>
                                                 </div>
                                             );

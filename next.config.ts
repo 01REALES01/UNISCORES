@@ -6,6 +6,8 @@ const withBundleAnalyzer = bundleAnalyzer({
 });
 
 const nextConfig: NextConfig = {
+  /** Imagen Docker mínima: `next build` genera `.next/standalone` */
+  output: "standalone",
   images: {
     remotePatterns: [
       {

@@ -1,0 +1,17 @@
+# Prueba local antes de OpenLab. Crear `.env` en la raíz (ver `.env.example`).
+# Build: requiere NEXT_PUBLIC_* en el entorno o en un archivo `.env` cargado por compose.
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production

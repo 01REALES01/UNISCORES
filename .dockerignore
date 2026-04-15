@@ -1,0 +1,33 @@
+# dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# next
+.next
+out
+
+# env y secretos (el build usa ARG/ENV explícitos; no copiar .env al contexto)
+.env
+.env.*
+!.env.example
+
+# git / IDE
+.git
+.gitignore
+.cursor
+*.md
+!README.md
+
+# tests / misc
+coverage
+.jest-cache
+*.test.ts.snap
+scratch
+test_*.mjs
+test_*.js
+check_*.js
+clean_*.js
+fix_*.js
+get_env.mjs
