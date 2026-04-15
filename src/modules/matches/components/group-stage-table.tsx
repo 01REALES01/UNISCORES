@@ -163,7 +163,7 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
             </div>
 
             <div className="overflow-x-auto">
-                <table className="w-full text-xs min-w-[500px]">
+                <table className="w-full text-xs min-w-[560px]">
                     <thead>
                         <tr className={cn("text-[10px] sm:text-[10px] font-black uppercase tracking-[0.2em] border-b", light ? "bg-slate-50 border-slate-100 text-slate-400" : "bg-white/[0.02] border-white/5 text-white/30")}>
                             <th className="text-left py-4 px-6 sm:px-8">#</th>
@@ -175,13 +175,23 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                             <th className="text-center py-4 px-3 w-10">{isVoley ? 'SG' : 'GF'}</th>
                             <th className="text-center py-4 px-3 w-10">{isVoley ? 'SP' : 'GC'}</th>
                             {isVoley && (
+                                <th className="text-center py-4 px-3 w-11" title="Diferencia de sets (sets ganados − sets perdidos)">
+                                    DS
+                                </th>
+                            )}
+                            {isVoley && (
                                 <>
                                     <th className="text-center py-4 px-3 w-11" title="Puntos de rally anotados (suma de todos los sets del grupo)">PF</th>
                                     <th className="text-center py-4 px-3 w-11" title="Puntos de rally recibidos (suma contra todos los rivales del grupo)">PR</th>
                                 </>
                             )}
-                            {isVoley && <th className="text-center py-4 px-3 w-14" title="Coeficiente de Puntos">CP</th>}
-                            <th className="text-center py-4 px-3 w-10">{isVoley ? 'CS' : 'DIF'}</th>
+                            {isVoley && (
+                                <th className="text-center py-4 px-3 w-11" title="Diferencia de puntos de rally (PF − PR)">
+                                    DP
+                                </th>
+                            )}
+                            {isVoley && <th className="text-center py-4 px-3 w-14" title="Coeficiente de puntos de rally (PF ÷ PR)">CP</th>}
+                            <th className="text-center py-4 px-3 w-10" title={isVoley ? 'Coeficiente de sets (SG ÷ SP)' : undefined}>{isVoley ? 'CS' : 'DIF'}</th>
                             {(isFutbol || isVoley) && (
                                 <th className="text-center py-4 px-3 w-16" title="Fair Play">
                                     <div className="flex items-center justify-center gap-1">
@@ -197,6 +207,8 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                         {standings.map((team, idx) => {
                             const qualified = idx < 2;
                             const isQualifyLine = idx === 1 && standings.length > 2;
+                            const setDiff = isVoley ? team.setsWon - team.setsLost : 0;
+                            const rallyDiff = isVoley ? team.gamePointsFor - team.gamePointsAgainst : 0;
 
                             return (
                                 <tr key={team.team} className={cn("transition-all duration-300 hover:bg-white/[0.04]", qualified && "bg-white/[0.02]")}>
@@ -236,10 +248,24 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                                     <td className="text-center py-4 px-3 text-white/50 tabular-nums">{isVoley ? team.setsWon : team.pointsFor}</td>
                                     <td className="text-center py-4 px-3 text-white/50 tabular-nums">{isVoley ? team.setsLost : team.pointsAgainst}</td>
                                     {isVoley && (
+                                        <td className="text-center py-4 px-3 font-black tabular-nums">
+                                            <span className={setDiff > 0 ? "text-emerald-400" : setDiff < 0 ? "text-rose-400" : "text-white/35"}>
+                                                {setDiff > 0 ? `+${setDiff}` : setDiff}
+                                            </span>
+                                        </td>
+                                    )}
+                                    {isVoley && (
                                         <>
                                             <td className="text-center py-4 px-3 text-white/70 font-bold tabular-nums" title="Puntos rally a favor">{team.gamePointsFor}</td>
                                             <td className="text-center py-4 px-3 text-white/70 font-bold tabular-nums" title="Puntos rally en contra">{team.gamePointsAgainst}</td>
                                         </>
+                                    )}
+                                    {isVoley && (
+                                        <td className="text-center py-4 px-3 font-black tabular-nums">
+                                            <span className={rallyDiff > 0 ? "text-emerald-400" : rallyDiff < 0 ? "text-rose-400" : "text-white/35"}>
+                                                {rallyDiff > 0 ? `+${rallyDiff}` : rallyDiff}
+                                            </span>
+                                        </td>
                                     )}
                                     {isVoley && (
                                         <td className="text-center py-4 px-3 tabular-nums">
