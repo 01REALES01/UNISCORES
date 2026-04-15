@@ -5,7 +5,7 @@ import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatches } from "@/hooks/use-matches";
 import { useJornadas } from "@/hooks/use-jornadas";
-import { SPORT_ACCENT, SPORT_BORDER, SPORT_GRADIENT, SPORT_GLOW, SPORT_EMOJI, SPORT_COLORS } from "@/lib/constants";
+import { SPORT_ACCENT, SPORT_BORDER, SPORT_GRADIENT, SPORT_GLOW, SPORT_EMOJI, SPORT_COLORS, normalizeSportName } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
 import { SportIcon } from "@/components/sport-icons";
@@ -36,6 +36,16 @@ function localDateStr(d: Date = new Date()): string {
     const m = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
+}
+
+/** YYYY-MM-DD local para agrupar; evita crash si `fecha` / `scheduled_at` vienen vacíos (iOS / datos parciales). */
+function dateKeyFromIso(value: string | null | undefined): string | null {
+    if (value == null || typeof value !== "string") return null;
+    const t = value.trim();
+    if (!t) return null;
+    const head = t.includes("T") ? t.split("T")[0] : t.slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(head)) return null;
+    return head;
 }
 
 export default function PartidosPage() {
@@ -94,13 +104,15 @@ export default function PartidosPage() {
         const tomorrowStr = localDateStr(tomorrow);
 
         filteredMatches.forEach(match => {
-            const fecha = match.fecha.split('T')[0];
+            const fecha = dateKeyFromIso(match.fecha);
+            if (!fecha) return;
             if (!groups[fecha]) groups[fecha] = { partidos: [], jornadas: [] };
             groups[fecha].partidos.push(match);
         });
 
         filteredJornadas.forEach(j => {
-            const fecha = j.scheduled_at.split('T')[0];
+            const fecha = dateKeyFromIso(j.scheduled_at);
+            if (!fecha) return;
             if (!groups[fecha]) groups[fecha] = { partidos: [], jornadas: [] };
             groups[fecha].jornadas.push(j);
         });
@@ -120,8 +132,7 @@ export default function PartidosPage() {
             else if (isTomorrow) label = `Mañana — ${label}`;
 
             const stateOrder = { "en_curso": 0, "programado": 1, "finalizado": 2 };
-            const sorted = groups[fecha].partidos.sort((a, b) => {
-
+            const sorted = [...groups[fecha].partidos].sort((a, b) => {
                 const orderA = stateOrder[a.estado as keyof typeof stateOrder] ?? 99;
                 const orderB = stateOrder[b.estado as keyof typeof stateOrder] ?? 99;
                 if (orderA !== orderB) return orderA - orderB;
@@ -398,8 +409,9 @@ export default function PartidosPage() {
 
 function MatchCardEntry({ partido }: { partido: any }) {
     const sportName = partido.disciplinas?.name || 'Deporte';
-    const { scoreA, scoreB, subScoreA, subScoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
-    const isVolley = sportName === 'Voleibol';
+    const sportKey = normalizeSportName(sportName);
+    const { scoreA, scoreB, subScoreA, subScoreB } = getCurrentScore(sportKey, partido.marcador_detalle || {});
+    const isVolley = sportKey === 'Voleibol';
 
     if (partido.estado === 'en_curso') {
         const setsLine = isVolley ? `Sets ${scoreA ?? 0}\u2013${scoreB ?? 0}` : null;

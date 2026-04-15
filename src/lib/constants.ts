@@ -90,6 +90,20 @@ export const SPORT_EMOJI: Record<string, string> = {
     'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',
 };
 
+/** Variantes de nombre en DB / legado → clave canónica (registry, iconos, colores). */
+const SPORT_NAME_NORMALIZE_MAP: Record<string, string> = {
+    Vóleibol: 'Voleibol',
+    Volleyball: 'Voleibol',
+};
+
+/** Normaliza el nombre de disciplina para lookups (scoring, SPORT_*, iconos). */
+export function normalizeSportName(name: string | null | undefined): string {
+    if (name == null || typeof name !== 'string') return 'Deporte';
+    const t = name.trim();
+    if (!t) return 'Deporte';
+    return SPORT_NAME_NORMALIZE_MAP[t] ?? t;
+}
+
 // Olimpiadas 2026 - Clean Sport Styles (each sport has a unique color)
 export const SPORT_COLORS: Record<string, string> = {
     'Fútbol': '#10B981',

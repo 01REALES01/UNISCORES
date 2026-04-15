@@ -1,6 +1,6 @@
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { isAsyncMatch } from "@/lib/is-async-match";
-import { SPORT_ACCENT, SPORT_BORDER, SPORT_COLORS } from "@/lib/constants";
+import { SPORT_ACCENT, SPORT_BORDER, SPORT_COLORS, normalizeSportName } from "@/lib/constants";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { SportIcon } from "@/components/sport-icons";
 import { Avatar } from "@/components/ui-primitives";
@@ -32,6 +32,7 @@ export function UnifiedCard({
 }) {
     const router = useRouter();
     const sportName = partido.disciplinas?.name || 'Deporte';
+    const sportKey = normalizeSportName(sportName);
     const genero = (partido.genero || 'masculino').toLowerCase();
     const isAsync = isAsyncMatch(partido);
 
@@ -48,14 +49,14 @@ export function UnifiedCard({
     const displayNameB = getDisplayName(partido, 'b');
 
     const winnerA = highlightWinner && (
-        (sportName !== 'Ajedrez' && Number(scoreDisplay?.a) > Number(scoreDisplay?.b)) ||
-        (sportName === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'victoria_a')
+        (sportKey !== 'Ajedrez' && Number(scoreDisplay?.a) > Number(scoreDisplay?.b)) ||
+        (sportKey === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'victoria_a')
     );
     const winnerB = highlightWinner && (
-        (sportName !== 'Ajedrez' && Number(scoreDisplay?.b) > Number(scoreDisplay?.a)) ||
-        (sportName === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'victoria_b')
+        (sportKey !== 'Ajedrez' && Number(scoreDisplay?.b) > Number(scoreDisplay?.a)) ||
+        (sportKey === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'victoria_b')
     );
-    const isChessDraw = sportName === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'empate';
+    const isChessDraw = sportKey === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'empate';
 
     return (
         <Link href={`/partido/${partido.id}`} className="group block h-full relative z-10">
@@ -63,10 +64,10 @@ export function UnifiedCard({
                 onClick={() => router.push(`/partido/${partido.id}`)}
                 className={cn(
                 "relative h-full overflow-hidden rounded-[2.2rem] border transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-1 backdrop-blur-xl shadow-2xl",
-                SPORT_BORDER[sportName] || 'border-white/10',
+                SPORT_BORDER[sportKey] || 'border-white/10',
             )} style={{ 
-                background: `linear-gradient(135deg, ${SPORT_COLORS[sportName] || '#ffffff'}15 0%, rgba(255,255,255,0.02) 100%)`,
-                borderColor: `${SPORT_COLORS[sportName] || '#ffffff'}30`
+                background: `linear-gradient(135deg, ${SPORT_COLORS[sportKey] || '#ffffff'}15 0%, rgba(255,255,255,0.02) 100%)`,
+                borderColor: `${SPORT_COLORS[sportKey] || '#ffffff'}30`
             }}>
                 <div className="absolute -right-16 -bottom-16 w-48 h-48 opacity-[0.08] mix-blend-screen pointer-events-none group-hover:opacity-[0.12] transition-opacity duration-700">
                     <img src="/elementos/08.png" alt="" className="w-full h-full object-contain filter contrast-125 saturate-150" />
@@ -75,14 +76,16 @@ export function UnifiedCard({
                 <div className="absolute inset-0 bg-background mix-blend-overlay opacity-40 group-hover:opacity-30 transition-opacity" />
                 
                 <div className="absolute -right-[15%] -bottom-[20%] flex items-center justify-center pointer-events-none select-none opacity-[0.1] group-hover:opacity-[0.15] transition-all duration-1000 rotate-[-12deg]">
-                    <SportIcon sport={sportName} size={320} className={cn("transition-all duration-[1500ms] group-hover:scale-110 group-hover:rotate-[5deg]", SPORT_ACCENT[sportName] || 'text-white')} />
+                    {/* Tamaños moderados en móvil: iconos enormes + blur en Safari a veces provocan cuelgues al pintar muchas tarjetas (ej. solo Voleibol). */}
+                    <SportIcon sport={sportKey} size={140} className={cn("sm:hidden transition-all duration-[1500ms] group-hover:scale-110 group-hover:rotate-[5deg]", SPORT_ACCENT[sportKey] || 'text-white')} />
+                    <SportIcon sport={sportKey} size={280} className={cn("hidden sm:block transition-all duration-[1500ms] group-hover:scale-110 group-hover:rotate-[5deg]", SPORT_ACCENT[sportKey] || 'text-white')} />
                 </div>
 
                 <div className="relative p-7 sm:p-10 flex flex-col h-full justify-center">
                     <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-2.5">
-                            <div className={cn("w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner hover:bg-white/10 transition-colors")} style={{ borderColor: `${SPORT_COLORS[sportName] || '#ffffff'}30` }}>
-                                <SportIcon sport={sportName} size={15} variant="react" className="text-white transition-opacity group-hover:opacity-100 placeholder:grayscale" />
+                            <div className={cn("w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner hover:bg-white/10 transition-colors")} style={{ borderColor: `${SPORT_COLORS[sportKey] || '#ffffff'}30` }}>
+                                <SportIcon sport={sportKey} size={15} variant="react" className="text-white transition-opacity group-hover:opacity-100 placeholder:grayscale" />
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-[10px] md:text-[11px] font-bold font-display text-white tracking-widest leading-tight truncate">{sportName}</span>
@@ -94,16 +97,16 @@ export function UnifiedCard({
                             {statusLabel === 'LIVE' ? (
                                 isAsync
                                     ? <span className="text-[8px] font-black text-amber-400/60 uppercase tracking-widest px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">Sin cobertura</span>
-                                    : <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportName} />
+                                    : <PublicLiveTimer detalle={partido.marcador_detalle || {}} deporte={sportKey} />
                             ) : (
                                 <div 
                                     className={cn(
                                         "flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 shadow-inner transition-all"
                                     )}
                                     style={statusLabel === 'PROGRAMADO' ? { 
-                                        color: SPORT_COLORS[sportName], 
-                                        borderColor: `${SPORT_COLORS[sportName]}30`,
-                                        background: `${SPORT_COLORS[sportName]}10`
+                                        color: SPORT_COLORS[sportKey], 
+                                        borderColor: `${SPORT_COLORS[sportKey]}30`,
+                                        background: `${SPORT_COLORS[sportKey]}10`
                                     } : {}}
                                 >
                                     {statusIcon}
@@ -165,7 +168,7 @@ export function UnifiedCard({
                             )}>
                                 {displayNameA}
                             </span>
-                            {sportName === 'Ajedrez' && winnerA && (
+                            {sportKey === 'Ajedrez' && winnerA && (
                                 <div className="absolute top-14 bg-amber-500 text-black px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter shadow-lg z-20">
                                     Ganador
                                 </div>
@@ -179,20 +182,20 @@ export function UnifiedCard({
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center">
-                                    {sportName !== 'Ajedrez' && !isAsync && (
+                                    {sportKey !== 'Ajedrez' && !isAsync && (
                                         <div className="flex items-center justify-center gap-2.5 font-bold text-5xl sm:text-6xl text-white tracking-tighter tabular-nums mb-0.5 leading-none">
-                                            <span className={(winnerB && sportName !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.a}</span>
+                                            <span className={(winnerB && sportKey !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.a}</span>
                                             <span className="text-white/30 text-3xl -mt-1">:</span>
-                                            <span className={(winnerA && sportName !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.b}</span>
+                                            <span className={(winnerA && sportKey !== 'Ajedrez') ? "opacity-20" : ""}>{scoreDisplay?.b}</span>
                                         </div>
                                     )}
-                                    {sportName !== 'Ajedrez' && isAsync && (
+                                    {sportKey !== 'Ajedrez' && isAsync && (
                                         <div className="flex flex-col items-center gap-1">
                                             <span className="text-3xl sm:text-5xl font-black text-white/20 tracking-widest">VS</span>
                                             <span className="text-[8px] font-black text-amber-400/50 uppercase tracking-widest">En curso</span>
                                         </div>
                                     )}
-                                    {sportName === 'Ajedrez' && isChessDraw && (
+                                    {sportKey === 'Ajedrez' && isChessDraw && (
                                         <div className="bg-white/10 text-white/60 border border-white/20 px-2.5 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.2em] mb-2">
                                             Empate
                                         </div>
@@ -230,7 +233,7 @@ export function UnifiedCard({
                             )}>
                                 {displayNameB}
                             </span>
-                            {sportName === 'Ajedrez' && winnerB && (
+                            {sportKey === 'Ajedrez' && winnerB && (
                                 <div className="absolute top-14 bg-amber-500 text-black px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter shadow-lg z-20">
                                     Ganador
                                 </div>
@@ -241,7 +244,7 @@ export function UnifiedCard({
 
                      <div className={cn(
                         "mt-8 py-3 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center text-[11px] font-black uppercase tracking-[0.3em] transition-all duration-500 shadow-xl",
-                        SPORT_ACCENT[sportName] || 'text-white'
+                        SPORT_ACCENT[sportKey] || 'text-white'
                     )}>
                         <div className="flex items-center gap-3 drop-shadow-[0_0_8px_currentColor]">
                             Analizar Partido <MoveRight size={14} className="group-hover:translate-x-2 transition-transform" />

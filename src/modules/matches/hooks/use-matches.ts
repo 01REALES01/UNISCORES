@@ -23,10 +23,20 @@ const MATCH_COLUMNS = [
     'atleta_b:profiles!athlete_b_id(full_name, avatar_url)',
 ].join(', ');
 
+/** Evita que una petición lenta de `/partidos` sobrescriba una más nueva (corrige “vuelve el marcador viejo” al rato). */
+let partidosListFetchGen = 0;
+
 // ─── SWR Fetcher ─────────────────────────────────────────────────────────────
 const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
+    const myGen = ++partidosListFetchGen;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+    const assertStillCurrent = () => {
+        if (myGen !== partidosListFetchGen) {
+            throw new DOMException('Stale partidos fetch superseded', 'AbortError');
+        }
+    };
 
     try {
         const { data, error } = await supabase
@@ -65,6 +75,7 @@ const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
                 if (fallback.error) throw fallback.error;
                 const raw = (fallback.data || []) as unknown as PartidoWithRelations[];
                 const finalData = await enrichPartidosCarreraShieldsFromDb(supabase, raw);
+                assertStillCurrent();
                 if (typeof window !== 'undefined' && finalData.length > 0) {
                     try { sessionStorage.setItem('swr-global-matches', JSON.stringify(finalData)); } catch {}
                 }
@@ -75,12 +86,17 @@ const fetchMatches = async (): Promise<PartidoWithRelations[]> => {
         
         const raw = (data || []) as unknown as PartidoWithRelations[];
         const finalData = await enrichPartidosCarreraShieldsFromDb(supabase, raw);
+        assertStillCurrent();
         if (typeof window !== 'undefined' && finalData.length > 0) {
             try { sessionStorage.setItem('swr-global-matches', JSON.stringify(finalData)); } catch {}
         }
         return finalData;
     } catch (err: unknown) {
         clearTimeout(timeoutId);
+        // Petición superseded: no convertir en TIMEOUT (evita confusión en logs / UI).
+        if (err instanceof DOMException && err.name === 'AbortError' && err.message.includes('Stale')) {
+            throw err;
+        }
         if (err instanceof Error && err.name === 'AbortError') {
             throw new Error('TIMEOUT');
         }

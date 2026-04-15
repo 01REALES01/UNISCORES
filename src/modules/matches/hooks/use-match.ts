@@ -44,6 +44,9 @@ const MATCH_COLUMNS = [
     'roster:roster_partido(id, equipo_a_or_b, jugador:jugadores(id, nombre, profile_id))'
 ].join(', ');
 
+/** Por `id`: evita que un fetch lento del detalle pise uno más reciente (mismo síntoma que lista global). */
+const matchSingleFetchGen = new Map<string, number>();
+
 export function useMatch(id: number | string | null | undefined) {
     // sessionStorage fallback: survive mobile JS context discards
     let fallbackData: PartidoWithRelations | undefined;
@@ -58,6 +61,14 @@ export function useMatch(id: number | string | null | undefined) {
         id ? `match:${id}` : null,
         async () => {
             if (!id) return null;
+            const idKey = String(id);
+            const myGen = (matchSingleFetchGen.get(idKey) ?? 0) + 1;
+            matchSingleFetchGen.set(idKey, myGen);
+            const assertStillCurrent = () => {
+                if (matchSingleFetchGen.get(idKey) !== myGen) {
+                    throw new DOMException('Stale match fetch superseded', 'AbortError');
+                }
+            };
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 30_000);
             try {
@@ -73,6 +84,7 @@ export function useMatch(id: number | string | null | undefined) {
                 const result = enriched[0];
                 const mvpRow = await fetchMvpJugadorRow(raw.marcador_detalle, controller.signal);
                 const withMvp = mvpRow ? { ...result, mvp_jugador: mvpRow } : result;
+                assertStillCurrent();
                 try { sessionStorage.setItem(`swr-match-${id}`, JSON.stringify(withMvp)); } catch {}
                 return withMvp;
             } finally {

@@ -4,6 +4,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ISportService } from './types';
+import { normalizeSportName } from '@/lib/constants';
 import { FutbolService } from './services/futbol.service';
 import { BaloncestoService } from './services/baloncesto.service';
 import { VoleibolService } from './services/voleibol.service';
@@ -28,7 +29,8 @@ const registry: Record<string, ISportService> = {
  * Retorna `undefined` si el deporte no está registrado.
  */
 export function getSportService(deporte: string): ISportService | undefined {
-  return registry[deporte];
+  const key = normalizeSportName(deporte);
+  return registry[key];
 }
 
 // Re-exportar servicios concretos por si algún módulo los necesita directamente

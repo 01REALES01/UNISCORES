@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { mutate as swrGlobalMutate } from "swr";
 import { Button, Input, Badge, Avatar } from "@/components/ui-primitives";
 import { X, Save, Clock, Loader2, Plus, Play, Pause, Square, AlertCircle, Minus, Edit2, Check, Activity, ChevronRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +9,7 @@ import { addPoints, removePoints, setPoints, getCurrentScore, ScoreDetail, recal
 import { useAuth } from "@/hooks/useAuth";
 import { stampAudit, stampEventAudit, parseEventAudit } from "@/lib/audit-helpers";
 import { toast } from "sonner";
+import { normalizeSportName } from "@/lib/constants";
 
 type EditMatchModalProps = {
     match: any;
@@ -229,7 +231,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
 
     const openAdvancedEdit = () => {
         const d = localDetalle || {};
-        const sport = match.disciplinas?.name || '';
+        const sport = normalizeSportName(match.disciplinas?.name || '');
 
         setManualScoreA((d.total_a ?? d.goles_a ?? d.puntos_a ?? 0).toString());
         setManualScoreB((d.total_b ?? d.goles_b ?? d.puntos_b ?? 0).toString());
@@ -297,7 +299,8 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
     const saveAdvancedEdit = async () => {
         if (!match) return;
         setLoading(true);
-        const sport = match.disciplinas?.name || '';
+        const sport = normalizeSportName(match.disciplinas?.name || '');
+        const isSetSportAdvanced = sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa';
 
         // 1. Fetch LATEST state to avoid overwriting recent changes (like clock ticks)
         const { data: freshMatch } = await supabase
@@ -320,7 +323,7 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
         forcedDetalle.cuarto_actual = manualPeriod;
         forcedDetalle.tiempo_actual = manualPeriod;
 
-        if (sport === 'Voleibol' || sport === 'Tenis' || sport === 'Tenis de Mesa') {
+        if (isSetSportAdvanced) {
             forcedDetalle.sets = advancedSets;
         } else if (sport === 'Baloncesto') {
             forcedDetalle.cuartos = advancedSets;
@@ -328,9 +331,14 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
             forcedDetalle.tiempos = advancedFutbolTiempos;
         }
 
-        forcedDetalle = setPoints(sport, forcedDetalle, 'equipo_a', parseInt(manualScoreA) || 0);
-        forcedDetalle = setPoints(sport, forcedDetalle, 'equipo_b', parseInt(manualScoreB) || 0);
-        
+        // Voleibol/Tenis/TdM: el desglose por set ya está en `forcedDetalle.sets`. Llamar `setPoints` aquí
+        // pisaba el set activo con los números del “Marcador Global” (en voleibol `total_a` son puntos del set
+        // actual, no sets ganados) y corrompía el JSON guardado.
+        if (!isSetSportAdvanced) {
+            forcedDetalle = setPoints(sport, forcedDetalle, 'equipo_a', parseInt(manualScoreA) || 0);
+            forcedDetalle = setPoints(sport, forcedDetalle, 'equipo_b', parseInt(manualScoreB) || 0);
+        }
+
         // Final sanity re-calc
         forcedDetalle = recalculateTotals(sport, forcedDetalle);
 
@@ -346,6 +354,8 @@ export function EditMatchModal({ match, isOpen, onClose, profile }: EditMatchMod
         } else {
             setLocalDetalle(forcedDetalle);
             setMinutoActual(manualMinute);
+            void swrGlobalMutate('global:partidos');
+            void swrGlobalMutate(`match:${match.id}`);
             toast.success('Estado del partido actualizado con éxito');
             setShowAdvancedEdit(false);
         }

@@ -3,6 +3,7 @@
  * Used in cards, watermarks, filters, and throughout the app
  */
 import React from 'react';
+import { normalizeSportName } from '@/lib/constants';
 
 type IconProps = {
     size?: number;
@@ -61,8 +62,10 @@ const REACT_ICONS_MAP: Record<string, React.ElementType> = {
 };
 
 export function SportIcon({ sport, size = 24, className = '', variant = 'image' }: { sport: string, variant?: 'image' | 'react' } & IconProps) {
+    const sportKey = normalizeSportName(sport);
+
     if (variant === 'react') {
-        const IconComponent = REACT_ICONS_MAP[sport];
+        const IconComponent = REACT_ICONS_MAP[sportKey];
         if (IconComponent) return <IconComponent size={size} className={className} />;
         
         return (
@@ -73,9 +76,9 @@ export function SportIcon({ sport, size = 24, className = '', variant = 'image' 
         );
     }
 
-    const pngConfig = PNG_SPORTS[sport];
+    const pngConfig = PNG_SPORTS[sportKey];
     if (pngConfig) {
-        return <PngIcon src={pngConfig.src} alt={sport} size={size} scale={pngConfig.scale} className={className} />;
+        return <PngIcon src={pngConfig.src} alt={sportKey} size={size} scale={pngConfig.scale} className={className} />;
     }
 
     return (
