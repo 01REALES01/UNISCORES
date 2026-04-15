@@ -15,8 +15,10 @@ Sistema completo de gestión de eventos deportivos con transmisión en vivo, pan
 ## 📂 Estructura del repositorio
 
 - **`src/`** — Código fuente de la aplicación (Next.js, **TypeScript**). Es el núcleo del proyecto.
-- **`supabase/`** — Esquema base y migraciones SQL.
-- **`scripts/`** — Utilidades opcionales de desarrollo (Node one-off, pruebas de carga con k6). **No** intervienen en `npm run build`. Detalle: [`scripts/README.md`](./scripts/README.md).
+- **`supabase/`** — Esquema base y migraciones SQL versionadas.
+- **`scripts/`** — Utilidades de desarrollo (Node, SQL ad hoc, k6). **No** intervienen en `npm run build`. Detalle: [`scripts/README.md`](./scripts/README.md).
+- **`data/`** — Hojas Excel y datos de ejemplo para importación o pruebas ([`data/README.md`](./data/README.md)).
+- **`docs/`** — Documentación extra (arquitectura, despliegue OpenLab, notas internas en `docs/notes/`).
 
 ## 🛠️ Stack Tecnológico
 

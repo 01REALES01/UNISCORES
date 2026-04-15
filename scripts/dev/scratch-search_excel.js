@@ -2,8 +2,9 @@
 const XLSX = require('xlsx');
 const path = require('path');
 
-const filename = process.argv[2] || 'PROGRAMACION PRIMERA RONDA.xlsx';
-const filePath = path.resolve(filename);
+const defaultData = path.join(__dirname, '../../data/PROGRAMACION PRIMERA RONDA.xlsx');
+const filename = process.argv[2] || defaultData;
+const filePath = path.isAbsolute(filename) ? filename : path.resolve(process.cwd(), filename);
 
 try {
     const workbook = XLSX.readFile(filePath);

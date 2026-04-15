@@ -11,7 +11,11 @@ k6 run scripts/load-testing/load-test.js
 # Opcional: BASE_URL=https://tu-dominio.com
 ```
 
-Archivos: `load-test.js`, `load-test-phase1.js`, `load-test-stress.js`.
+Archivos: `load-test.js`, `load-test-phase1.js`, `load-test-stress.js`. Notas del plan de pruebas: `PLAN.md`.
+
+## `sql/`
+
+SQL **ad hoc** (no son migraciones versionadas de `supabase/migrations/`). Suelen haberse ejecutado una vez en el SQL Editor de Supabase o servir de referencia. Para el esquema oficial usa las migraciones con prefijo de fecha.
 
 ## `dev/`
 
@@ -24,6 +28,7 @@ Scripts **Node.js** ad-hoc usados durante el desarrollo (probar parsers, Supabas
 | Medallero / datos | `fix_medals.js`, `fix_medals2.js`, `clean_medallero.js` |
 | Otros | `modify_stats.js`, `update_colors.js`, `light_mode.js`, `test_match.js`, `test_news.js` |
 | Excel suelto (legado) | `scratch-search_excel.js` |
+| TypeScript / ESM sueltos | `check_athlete.ts`, `check_cols.ts`, `check_data.ts`, `check_derecho.ts`, `check_athlete.mjs`, `get_env.mjs`, `test_db.mjs`, `test_n.mjs`, `test_n10.mjs` (ejecutar con `npx ts-node` o `node` según el archivo) |
 
 Antes de ejecutar uno, revisa las primeras líneas del archivo: suelen indicar dependencias o rutas esperadas.
 
