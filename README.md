@@ -12,6 +12,12 @@ Sistema completo de gestión de eventos deportivos con transmisión en vivo, pan
 - 📊 **Registro de Eventos**: Goles, tarjetas, puntos (+1/+2/+3 para basketball)
 - 🎨 **UI Premium**: Diseño moderno con glassmorphism, gradientes dinámicos y animaciones
 
+## 📂 Estructura del repositorio
+
+- **`src/`** — Código fuente de la aplicación (Next.js, **TypeScript**). Es el núcleo del proyecto.
+- **`supabase/`** — Esquema base y migraciones SQL.
+- **`scripts/`** — Utilidades opcionales de desarrollo (Node one-off, pruebas de carga con k6). **No** intervienen en `npm run build`. Detalle: [`scripts/README.md`](./scripts/README.md).
+
 ## 🛠️ Stack Tecnológico
 
 - **Frontend**: Next.js 16 (App Router), React 19, TypeScript
