@@ -14,14 +14,14 @@ Sistema completo de gestión de eventos deportivos con transmisión en vivo, pan
 
 ## 🛠️ Stack Tecnológico
 
-- **Frontend**: Next.js 15 (App Router), React 19, TypeScript
+- **Frontend**: Next.js 16 (App Router), React 19, TypeScript
 - **Estilos**: Tailwind CSS
 - **Backend**: Supabase (PostgreSQL + Realtime + Auth)
-- **Deployment**: Vercel (recomendado)
+- **Despliegue**: [Vercel](https://vercel.com) (recomendado) o **Docker** (OpenLab / servidor propio; ver más abajo)
 
 ## 📋 Requisitos Previos
 
-- Node.js 18+ y npm/yarn/pnpm
+- Node.js **20+** recomendado (coincide con la imagen `node:20-alpine` del `Dockerfile`; 18+ suele funcionar en local)
 - Cuenta de Supabase (gratuita)
 - Git
 
@@ -82,6 +82,18 @@ El script usa el **puerto 3001**. Abre [http://localhost:3001](http://localhost:
 
 `npm run start` (producción local sin Docker) usa por defecto el **puerto 3000** salvo que definas `PORT`.
 
+## 🔌 Puertos y entornos (referencia)
+
+| Contexto | Comando / plataforma | Puerto por defecto | Cómo cambiarlo |
+|----------|----------------------|--------------------|----------------|
+| Desarrollo local | `npm run dev` ([`package.json`](./package.json)) | **3001** | Edita el script (`next dev -p …`) o usa `next dev -p 4000` manualmente. |
+| Producción local (sin Docker) | `npm run start` → `next start` | **3000** | Variable de entorno `PORT` (ej. `PORT=8080 npm run start`). |
+| Imagen Docker (este repo) | `node server.js` en el contenedor | **3000** | Al **arrancar** el contenedor: `-e PORT=8080` (y mapear el host al **mismo** puerto interno). El `Dockerfile` define `ENV PORT=3000` por defecto. |
+| Docker Compose (prueba local) | `docker compose up` | Publica **3000** en el host → **3000** en el contenedor | En [`docker-compose.yml`](./docker-compose.yml), clave `ports`: `"HOST:CONTAINER"` (ej. `"8080:3000"` si el proceso sigue escuchando 3000 dentro). |
+| Vercel | Despliegue gestionado | *No aplica* un puerto fijo tuyo | HTTPS y enrutamiento los gestiona Vercel; no interfiere con el puerto interno del contenedor Docker. |
+
+**Importante:** el **3000 del Docker** es el puerto **dentro del contenedor** (lo que escucha Node). En el servidor suele usarse un mapeo `PUERTO_HOST:PUERTO_CONTENEDOR` (ejemplo: `docker run -p 8443:3000 …` → en el navegador entras por `https://servidor:8443` o, más habitual, el proxy HTTPS termina en `8443` del host y reenvía al `3000` interno). OpenLab / infra elige el puerto del **host**; lo que debe coincidir es el **destino** del mapeo con el `PORT` del proceso dentro del contenedor.
+
 ## 🔐 Acceso de Administrador
 
 ### Crear Usuario Admin (Primera vez)
@@ -116,7 +128,12 @@ project_olympics/
 │   ├── schema.sql             # Schema principal de DB
 │   └── auth_setup.sql         # Configuración de autenticación
 ├── db_setup.sql               # Tablas auxiliares (jugadores, eventos)
-└── .env.example               # Plantilla de variables (sin secretos; versionada)
+├── Dockerfile                 # Imagen producción (Next standalone)
+├── docker-compose.yml         # Prueba local Docker
+├── .dockerignore
+├── .env.example               # Plantilla de variables (sin secretos; versionada)
+└── docs/
+    └── DEPLOY_OPENLAB.md      # Puntero OpenLab + colaboradores GitHub
 ```
 
 ## 🎮 Uso
@@ -176,21 +193,36 @@ project_olympics/
 - ✅ Compártelas solo con tu equipo por canales privados
 - ✅ Si alguien nuevo se une, el líder le comparte las credenciales
 
-## 🚢 Deployment (Vercel)
+## 🚢 Despliegue en Vercel
 
-1. Sube el código a GitHub
-2. Ve a [Vercel](https://vercel.com) → `Import Project`
-3. Conecta tu repo de GitHub
-4. Agrega las variables de entorno:
+Vercel y Docker son **caminos distintos**: puedes seguir usando Vercel para producción “rápida” y usar Docker solo para OpenLab / servidor propio. No hay conflicto de puertos: en Vercel no expones `3000` manualmente.
+
+1. Sube el código a GitHub.
+2. En [Vercel](https://vercel.com) → **Import Project** → conecta el repo.
+3. En **Settings → Environment Variables**, define al menos:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-5. Deploy 🚀
+4. Para OAuth, rutas admin y APIs que usen clave privilegiada, añade también `SUPABASE_SERVICE_ROLE_KEY` (y las opcionales de push si las usas). Lista alineada con [`.env.example`](./.env.example).
+5. Deploy. El dominio puede ser `*.vercel.app` o un dominio custom (configuración en Vercel).
 
-## 🐳 Despliegue con Docker (OpenLab / servidor)
+`output: "standalone"` en [`next.config.ts`](./next.config.ts) sirve principalmente para **contenerizar** la app; Vercel sigue construyendo el proyecto con su flujo habitual.
 
-Imagen de producción con salida **standalone** de Next.js (`output: "standalone"` en `next.config.ts`). El contenedor escucha por defecto el **puerto 3000** (`PORT=3000`). En OpenLab (`.uninorte.edu.co`) el proxy inverso HTTPS suele publicar un puerto del host hacia el **mismo puerto interno del contenedor**; coordina con infraestructura que el mapeo apunte al puerto que escucha la app (por defecto **3000**).
+## 🐳 Despliegue con Docker (OpenLab / servidor propio)
 
-**Build:** las variables `NEXT_PUBLIC_*` se inyectan en el bundle en tiempo de build. Pásalas como build args (o desde un `.env` solo en la máquina de build; no subas secretos al repo):
+### Qué incluye el repo
+
+| Archivo | Rol |
+|---------|-----|
+| [`Dockerfile`](./Dockerfile) | Multi-stage: dependencias → `next build` → imagen mínima que ejecuta `node server.js`. |
+| [`.dockerignore`](./.dockerignore) | Reduce contexto de build y evita copiar `node_modules`, `.git`, `.env*`, etc. |
+| [`docker-compose.yml`](./docker-compose.yml) | Prueba local: `build` + `ports` + `env_file: .env`. |
+| [`next.config.ts`](./next.config.ts) | `output: "standalone"` para generar `.next/standalone`. |
+
+### Build (`docker build`)
+
+- En el **stage builder**, las variables **`NEXT_PUBLIC_*`** deben existir durante `npm run build`, porque Next las incrusta en el bundle del cliente.
+- En este `Dockerfile` están declaradas como **`ARG` / `ENV`**: `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Ejemplo explícito con build args:
 
 ```bash
 docker build -t project-olympics \
@@ -199,19 +231,86 @@ docker build -t project-olympics \
   .
 ```
 
-**Run:** en tiempo de arranque puedes pasar el resto de variables (por ejemplo `SUPABASE_SERVICE_ROLE_KEY`, VAPID opcional) con `--env-file`:
+- Si construyes con **Compose**, los mismos valores se leen del entorno (típicamente un `.env` en la raíz **no commiteado**) porque `docker-compose.yml` pasa `args` desde `${NEXT_PUBLIC_SUPABASE_URL}` y `${NEXT_PUBLIC_SUPABASE_ANON_KEY}`.
+
+**Regla:** si cambias URL o anon key públicos, **reconstruye** la imagen (`docker build` de nuevo). No basta con reiniciar el contenedor.
+
+### Run (`docker run`)
+
+- Variables **solo de servidor** (p. ej. `SUPABASE_SERVICE_ROLE_KEY`, `VAPID_PRIVATE_KEY`, `PUSH_WEBHOOK_SECRET`) pueden ir en **runtime**; no hace falta recompilar por ellas.
+- Ejemplo mapeando el puerto del host **8080** al interno **3000** (el proceso sigue escuchando 3000 dentro del contenedor):
+
+```bash
+docker run --rm -p 8080:3000 --env-file .env project-olympics
+```
+
+- Si **dentro** del contenedor debes usar otro puerto (poco habitual), por ejemplo **4000**:
+
+```bash
+docker run --rm -p 8080:4000 -e PORT=4000 --env-file .env project-olympics
+```
+
+Aquí el segundo número de `-p` debe coincidir con `PORT`.
+
+- Ejemplo “todo en 3000” en máquina local (host y contenedor 3000):
 
 ```bash
 docker run --rm -p 3000:3000 --env-file .env project-olympics
 ```
 
-**Compose (prueba local):** con un `.env` en la raíz que incluya al menos las `NEXT_PUBLIC_*` usadas arriba:
+### Docker Compose
+
+- Requiere un archivo **`.env`** en la raíz (no versionado) con al menos las `NEXT_PUBLIC_*` para que el **build** reciba los `args`. Si no existe, crea uno a partir de [`.env.example`](./.env.example); sin él Compose suele fallar al resolver `env_file`.
+- Por defecto publica `3000:3000`. Para otro puerto en el host, por ejemplo `8443:3000`:
+
+```yaml
+ports:
+  - "8443:3000"
+```
 
 ```bash
 docker compose up --build
 ```
 
-Listado completo de claves: [`.env.example`](./.env.example). Checklist Supabase, dominio final y plantilla de correo al profesor: [`docs/DEPLOY_OPENLAB.md`](./docs/DEPLOY_OPENLAB.md).
+### OpenLab (`.uninorte.edu.co`) y proxy
+
+- Infraestructura suele colocar un **reverse proxy TLS** delante del contenedor. El proxy debe reenviar al **socket donde escucha Docker** (host:puerto) y ese destino debe coincidir con el **mapeo** `hostPort:containerPort`.
+- Coordina con **infraestructura / OpenLab**: **URL pública HTTPS**, **puerto o socket en el host** donde escucha el contenedor y certificados.
+- **Firewall:** abrir solo lo necesario entre proxy y contenedor.
+
+### Variables de entorno (detalle)
+
+Plantilla versionada: [`.env.example`](./.env.example). Resumen:
+
+| Variable | Build Docker | Run (runtime) | Uso |
+|----------|----------------|---------------|-----|
+| `NEXT_PUBLIC_SUPABASE_URL` | Sí (obligatoria) | Opcional duplicado | Cliente y servidor. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sí (obligatoria) | Opcional duplicado | Cliente y servidor. |
+| `SUPABASE_SERVICE_ROLE_KEY` | No | Sí si usas esas rutas | OAuth callback, admin, push con privilegios. |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No* | Sí si usas push | API push. |
+| `VAPID_PRIVATE_KEY` | No | Sí | API push. |
+| `PUSH_WEBHOOK_SECRET` | No | Sí | API push. |
+
+\*Solo haría falta en build si algún componente **cliente** importara esa variable; en este proyecto el uso principal es en rutas API.
+
+### Supabase y dominio de producción (HTTPS)
+
+Cuando la app tenga una **URL pública definitiva** (por ejemplo `https://<subdominio>.uninorte.edu.co` u otra que defina el hosting):
+
+1. **Supabase Dashboard** → **Authentication** → **URL configuration**:
+   - **Site URL:** la URL canónica pública (HTTPS).
+   - **Redirect URLs:** incluye patrones que cubran la app, por ejemplo:
+     - `https://<subdominio>.uninorte.edu.co/**`
+     - `https://<subdominio>.uninorte.edu.co/auth/callback` (callback OAuth / magic link de este proyecto).
+   - Si existen variantes (`www`, otro host), añádelas explícitamente.
+2. Si cambias de **proyecto** Supabase (otro dominio de proyecto / storage), revisa `images.remotePatterns` en [`next.config.ts`](./next.config.ts) para que coincida el hostname de imágenes.
+3. **Secretos:** nunca en Git; solo `.env.example`. El `.env` real va en el servidor (archivo no versionado, secret store del orquestador, etc.).
+
+### Verificación sugerida (Docker)
+
+1. `docker build` con los `--build-arg` correctos.
+2. `docker run` o `docker compose up` con `--env-file` / `.env` que incluya `SUPABASE_SERVICE_ROLE_KEY` si pruebas login admin u OAuth.
+3. Abrir la URL mapeada, comprobar home y flujo de auth sin errores de redirect.
 
 ## 🐛 Troubleshooting
 
@@ -226,6 +325,10 @@ Listado completo de claves: [`.env.example`](./.env.example). Checklist Supabase
 ### El cronómetro no avanza
 
 → Asegúrate de que `marcador_detalle` contenga `ultimo_update` (revisa que hayas guardado cambios en admin)
+
+### Docker / Compose no arranca o el build no ve `NEXT_PUBLIC_*`
+
+→ Comprueba que exista `.env` en la raíz con esas variables (Compose las pasa como `build.args`). Para `docker build` manual, usa `--build-arg` como en la sección anterior.
 
 ## 📝 Tareas Futuras
 
