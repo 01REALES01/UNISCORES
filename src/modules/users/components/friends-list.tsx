@@ -158,44 +158,48 @@ function PendingRequestCard({
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="flex items-center gap-5 p-5 rounded-[2rem] bg-violet-600/5 border border-violet-500/20 backdrop-blur-md shadow-2xl relative overflow-hidden"
+            className="flex flex-col gap-4 p-5 rounded-[2rem] bg-violet-600/5 border border-violet-500/20 backdrop-blur-md shadow-2xl relative overflow-hidden sm:flex-row sm:items-center sm:gap-5"
         >
             <div className="absolute top-0 right-0 p-2 opacity-10">
                 <Bell size={40} className="text-violet-400" />
             </div>
 
-            <Link href={`/perfil/${request.requester_id}`} className="shrink-0 relative z-10 hover:scale-105 transition-transform duration-500">
-                <Avatar
-                    name={requesterProfile?.full_name ?? '?'}
-                    src={requesterProfile?.avatar_url}
-                    className="w-14 h-14 rounded-2xl border border-violet-500/30"
-                />
-            </Link>
-
-            <div className="flex-1 min-w-0 relative z-10">
-                <Link
-                    href={`/perfil/${request.requester_id}`}
-                    className="text-[14px] font-black font-display text-white hover:text-violet-400 transition-colors block truncate tracking-tight"
-                >
-                    {requesterProfile?.full_name ?? 'Usuario'}
+            <div className="relative z-10 flex min-w-0 flex-1 items-start gap-4">
+                <Link href={`/perfil/${request.requester_id}`} className="shrink-0 hover:scale-105 transition-transform duration-500">
+                    <Avatar
+                        name={requesterProfile?.full_name ?? '?'}
+                        src={requesterProfile?.avatar_url}
+                        className="h-14 w-14 rounded-2xl border border-violet-500/30"
+                    />
                 </Link>
-                <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] font-display font-black text-violet-400/60 uppercase tracking-[0.2em]">Solicitud Entrante</span>
+
+                <div className="min-w-0 flex-1 pr-1">
+                    <span className="mb-1 block text-[10px] font-display font-black uppercase tracking-[0.2em] text-violet-400/70">
+                        Solicitud entrante
+                    </span>
+                    <Link
+                        href={`/perfil/${request.requester_id}`}
+                        className="block break-words text-[15px] font-black leading-snug tracking-tight text-white transition-colors hover:text-violet-400 sm:text-[14px] sm:leading-tight"
+                    >
+                        {requesterProfile?.full_name ?? 'Usuario'}
+                    </Link>
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0 relative z-10">
+            <div className="relative z-10 flex w-full shrink-0 items-stretch gap-2 sm:w-auto sm:justify-end">
                 <button
+                    type="button"
                     onClick={handleAccept}
                     disabled={!!acting}
-                    className="h-10 px-6 text-[10px] font-display font-black uppercase tracking-[0.2em] rounded-xl bg-violet-600 text-white shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:bg-violet-500 hover:scale-105 active:scale-95 transition-all flex items-center justify-center min-w-[100px]"
+                    className="flex h-11 min-h-[2.75rem] flex-1 items-center justify-center rounded-xl bg-violet-600 px-4 text-[10px] font-display font-black uppercase tracking-[0.15em] text-white shadow-[0_0_15px_rgba(139,92,246,0.3)] transition-all hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60 sm:flex-initial sm:min-w-[108px]"
                 >
                     {acting === 'accept' ? <Loader2 size={14} className="animate-spin" /> : 'ACEPTAR'}
                 </button>
                 <button
+                    type="button"
                     onClick={handleReject}
                     disabled={!!acting}
-                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/5 text-white/30 border border-white/10 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20 transition-all"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/30 transition-all hover:border-rose-500/20 hover:bg-rose-500/10 hover:text-rose-400 sm:h-10 sm:w-10"
                 >
                     {acting === 'reject' ? <Loader2 size={14} className="animate-spin" /> : <X size={16} />}
                 </button>
@@ -277,23 +281,30 @@ function UserSearchSection({ userId }: { userId: string }) {
                         {results.map(user => (
                             <div
                                 key={user.id}
-                                className="flex items-center gap-4 p-4 rounded-[1.5rem] bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-violet-500/20 transition-all group/result shadow-lg"
+                                className="flex flex-col gap-3 rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-4 shadow-lg transition-all hover:border-violet-500/20 hover:bg-white/[0.05] sm:flex-row sm:items-center sm:gap-4"
                             >
-                                <Link href={`/perfil/${user.id}`} className="shrink-0 hover:scale-105 transition-transform duration-500">
-                                    <Avatar name={user.full_name} src={user.avatar_url} className="w-12 h-12 rounded-xl border border-white/5" />
-                                </Link>
-                                <div className="flex-1 min-w-0">
-                                    <Link href={`/perfil/${user.id}`} className="text-[14px] font-black font-display hover:text-violet-400 transition-colors block truncate tracking-tight text-white">
-                                        {user.full_name}
+                                <div className="flex min-w-0 flex-1 items-start gap-3">
+                                    <Link href={`/perfil/${user.id}`} className="shrink-0 hover:scale-105 transition-transform duration-500">
+                                        <Avatar name={user.full_name} src={user.avatar_url} className="h-12 w-12 rounded-xl border border-white/5" />
                                     </Link>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black/40 border border-white/5">
-                                          <Trophy size={10} className="text-violet-400" />
-                                          <span className="text-[10px] font-mono font-bold text-white/40 tabular-nums">{user.points ?? 0}</span>
+                                    <div className="min-w-0 flex-1">
+                                        <Link
+                                            href={`/perfil/${user.id}`}
+                                            className="block break-words text-[15px] font-black leading-snug tracking-tight text-white transition-colors hover:text-violet-400 sm:text-[14px]"
+                                        >
+                                            {user.full_name}
+                                        </Link>
+                                        <div className="mt-1 flex items-center gap-2">
+                                            <div className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-black/40 px-2 py-0.5">
+                                                <Trophy size={10} className="text-violet-400" />
+                                                <span className="text-[10px] font-mono font-bold tabular-nums text-white/40">{user.points ?? 0}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <FriendButton currentUserId={userId} targetId={user.id} />
+                                <div className="w-full shrink-0 sm:w-auto sm:max-w-[min(100%,14rem)]">
+                                    <FriendButton currentUserId={userId} targetId={user.id} className="w-full justify-center sm:w-auto" />
+                                </div>
                             </div>
                         ))}
                     </motion.div>
