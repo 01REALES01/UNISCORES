@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
 import { Avatar } from "@/components/ui-primitives";
 import { getCurrentScore } from "@/lib/sport-scoring";
-import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
 import { isAsyncMatch } from "@/lib/is-async-match";
 import { getDisplayName } from "@/lib/sport-helpers";
 import {
@@ -262,11 +261,6 @@ function MatchRow({ partido }: { partido: Partido }) {
                   <span className={cn(winnerSide === "b" ? "text-white font-black" : "text-white/35")}>{scoreB}</span>
                 </div>
               )}
-              {isVolley && formatVolleyballSetsLine(det) ? (
-                <span className="text-[7px] sm:text-[8px] font-bold text-white/35 tabular-nums text-center max-w-[92px] sm:max-w-[110px] leading-tight line-clamp-2">
-                  {formatVolleyballSetsLine(det)}
-                </span>
-              ) : null}
               <span className="text-[8px] font-bold text-white/15 uppercase tracking-widest">Final</span>
             </div>
           ) : (
