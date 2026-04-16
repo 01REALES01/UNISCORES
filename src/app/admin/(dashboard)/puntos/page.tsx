@@ -395,7 +395,12 @@ function BracketVisibilityToggle({ configKey, label }: { configKey: string; labe
         setUpdating(true);
         const newValue = !hidden;
         const { error } = await supabase.from('site_config').upsert({ key: configKey, value: newValue, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-        if (!error) { setHidden(newValue); toast.success(newValue ? `${label}: oculto` : `${label}: visible`); }
+        if (!error) {
+            setHidden(newValue);
+            toast.success(newValue ? `${label}: oculto` : `${label}: visible`);
+        } else {
+            toast.error(`Error al guardar: ${error.message}`);
+        }
         setUpdating(false);
     };
 
