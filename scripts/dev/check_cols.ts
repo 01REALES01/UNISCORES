@@ -1,4 +1,4 @@
-import { supabase } from './src/lib/supabase';
+import { supabase } from "@/lib/supabase";
 async function run() {
   const { data, error } = await supabase.from('partidos').select('*').limit(1);
   if (data && data.length > 0) {

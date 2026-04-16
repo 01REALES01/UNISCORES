@@ -1,4 +1,4 @@
-import { supabase } from './src/lib/supabase';
+import { supabase } from "@/lib/supabase";
 async function run() {
   const { data: carreras } = await supabase.from('carreras').select('id, nombre').ilike('nombre', '%ciencia%datos%');
   console.log('Carreras:', carreras);
