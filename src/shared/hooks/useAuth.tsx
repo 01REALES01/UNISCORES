@@ -108,17 +108,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const result = await fetchProfileWithRetry(userId);
             if (!mountedRef.current) return null;
-            
-            setProfile(result);
-            
-            // Cache the result for next time
-            if (result && typeof window !== 'undefined') {
-                try {
-                    localStorage.setItem('auth-profile-cache', JSON.stringify(result));
-                } catch (e) { /* ignore storage errors */ }
-            } else if (!result && typeof window !== 'undefined') {
-                localStorage.removeItem('auth-profile-cache');
-            }
+
+            // No borrar el perfil por un fallo de red / timeout: si ya teníamos fila para este
+            // usuario, mantenerla hasta un fetch exitoso (evita "Acceso restringido" fantasma en admin).
+            setProfile((prev) => {
+                if (result) {
+                    if (typeof window !== 'undefined') {
+                        try {
+                            localStorage.setItem('auth-profile-cache', JSON.stringify(result));
+                        } catch {
+                            /* ignore storage errors */
+                        }
+                    }
+                    return result;
+                }
+                if (prev?.id === userId) {
+                    console.warn('[useAuth] Profile fetch returned empty; keeping last known profile for', userId);
+                    return prev;
+                }
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('auth-profile-cache');
+                }
+                return null;
+            });
 
             if (!result) console.warn('[useAuth] Profile not found after all retries for user:', userId);
             return result;
@@ -174,7 +186,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const currentUser = session?.user ?? null;
             setUser(currentUser);
 
-            if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+            // Refetch de perfil solo cuando tiene sentido (login / datos de usuario).
+            // TOKEN_REFRESHED ocurre a menudo; volver a pedir profiles en cada refresh provoca
+            // condiciones de carrera y parpadeos en admin sin aportar nada a los roles.
+            if (currentUser && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
                 await fetchProfile(currentUser.id);
             } else if (!currentUser) {
                 setProfile(null);
@@ -195,15 +210,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             console.log('[useAuth] App foregrounded — refreshing session...');
             try {
-                const { data: { user: refreshedUser } } = await supabase.auth.getUser();
+                const { data: { session } } = await supabase.auth.getSession();
                 if (!mountedRef.current) return;
+
+                if (session?.user) {
+                    setUser(session.user);
+                    await fetchProfile(session.user.id);
+                    return;
+                }
+
+                // Sin sesión local: validar con servidor; si la red falla, NO cerrar sesión.
+                const { data: { user: refreshedUser }, error } = await supabase.auth.getUser();
+                if (!mountedRef.current) return;
+
+                if (error) {
+                    console.warn('[useAuth] getUser on tab focus failed (keeping session):', error.message);
+                    return;
+                }
 
                 if (refreshedUser) {
                     setUser(refreshedUser);
-                    // Fetch profile in background without flipping 'loading' to true
                     await fetchProfile(refreshedUser.id);
                 } else if (userRef.current) {
-                    // User was logged in but session is gone now
                     setUser(null);
                     setProfile(null);
                     if (typeof window !== 'undefined') localStorage.removeItem('auth-profile-cache');
