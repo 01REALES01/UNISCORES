@@ -199,6 +199,10 @@ export function useMatches() {
             window.removeEventListener('app:revalidate', handleRevalidate);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (debounceTimer) clearTimeout(debounceTimer);
+            if (globalChannel) {
+                supabase.removeChannel(globalChannel);
+                globalChannel = null;
+            }
         };
     }, [mutate]);
 

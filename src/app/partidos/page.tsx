@@ -166,7 +166,7 @@ export default function PartidosPage() {
         return () => clearTimeout(t);
     }, [loading, rawMatches.length]);
 
-    // 5. Auto-scroll a “hoy” una sola vez al cargar (espera jornadas; alinea fecha con calendario local)
+    // 5. Auto-scroll a "hoy" una sola vez al cargar (espera jornadas; alinea fecha con calendario local)
     useEffect(() => {
         if (loading || jornadasLoading || groupedMatches.length === 0 || hasScrolledToToday.current) return;
         hasScrolledToToday.current = true;
@@ -177,14 +177,14 @@ export default function PartidosPage() {
 
         if (!targetDate) return;
 
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                const element = document.getElementById(`date-${targetDate}`);
-                if (element) {
-                    element.scrollIntoView({ behavior: "smooth", block: "start" });
-                }
-            }, 150);
-        });
+        const timer = setTimeout(() => {
+            const element = document.getElementById(`date-${targetDate}`);
+            if (element) {
+                // "instant" evita el scroll suave continuo que congela Safari en iOS
+                element.scrollIntoView({ behavior: "instant", block: "start" });
+            }
+        }, 150);
+        return () => clearTimeout(timer);
     }, [loading, jornadasLoading, groupedMatches]);
 
     return (
