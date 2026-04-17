@@ -136,6 +136,26 @@ export default function TenisBracketPage() {
     const [editSlot, setEditSlot] = useState(0);
     const [saving, setSaving] = useState(false);
 
+    // Tenis de Mesa grupos import
+    const [importingGrupos, setImportingGrupos] = useState(false);
+    const [importGruposResult, setImportGruposResult] = useState<{ inserted: number; linked: number; roster_rows: number; errors: string[] } | null>(null);
+
+    const handleImportGrupos = async () => {
+        if (!confirm('¿Confirmar importación de los 32 grupos de Tenis de Mesa? Esta acción solo debe ejecutarse una vez.')) return;
+        setImportingGrupos(true);
+        try {
+            const res = await fetch('/api/admin/import-tenis-mesa-grupos', { method: 'POST' });
+            const json = await res.json();
+            if (!res.ok) { toast.error(json.error ?? 'Error al importar grupos'); return; }
+            setImportGruposResult(json);
+            toast.success(json.message ?? `${json.inserted} partidos creados`);
+        } catch (e: any) {
+            toast.error('Error: ' + e.message);
+        } finally {
+            setImportingGrupos(false);
+        }
+    };
+
     // Direct query using disciplina_id FK (the only correct way to filter in PostgREST)
     const reload = useCallback(async () => {
         setLoading(true);
@@ -269,6 +289,50 @@ export default function TenisBracketPage() {
                     <h1 className="text-base font-black tracking-tight text-white">Bracket de Tenis</h1>
                     <p className="text-[11px] text-white/30">Gestión de llaves y asignación de partidos</p>
                 </div>
+            </div>
+
+            {/* Tenis de Mesa — Importar fase de grupos */}
+            <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                    <div>
+                        <p className="text-sm font-bold text-cyan-300">Tenis de Mesa — Fase de Grupos (17 abril)</p>
+                        <p className="text-[11px] text-white/30 mt-0.5">
+                            Crea los 126 partidos round-robin de los 32 grupos del PDF. Enlaza jugadores, perfiles y carreras automáticamente.
+                        </p>
+                    </div>
+                    <button
+                        onClick={handleImportGrupos}
+                        disabled={importingGrupos || !!importGruposResult}
+                        className="shrink-0 px-4 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 text-[11px] font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {importingGrupos && <Loader2 size={12} className="animate-spin" />}
+                        {importingGrupos ? 'Importando...' : importGruposResult ? '✓ Importado' : 'Importar grupos'}
+                    </button>
+                </div>
+                {importGruposResult && (
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-xl bg-white/5 border border-white/5 py-2">
+                            <p className="text-lg font-black text-white">{importGruposResult.inserted}</p>
+                            <p className="text-[9px] text-white/30 uppercase tracking-widest">partidos</p>
+                        </div>
+                        <div className="rounded-xl bg-white/5 border border-white/5 py-2">
+                            <p className="text-lg font-black text-emerald-400">{importGruposResult.linked}</p>
+                            <p className="text-[9px] text-white/30 uppercase tracking-widest">enlazados</p>
+                        </div>
+                        <div className="rounded-xl bg-white/5 border border-white/5 py-2">
+                            <p className="text-lg font-black text-violet-400">{importGruposResult.roster_rows}</p>
+                            <p className="text-[9px] text-white/30 uppercase tracking-widest">roster</p>
+                        </div>
+                    </div>
+                )}
+                {(importGruposResult?.errors?.length ?? 0) > 0 && (
+                    <details className="text-[10px] text-amber-400/60">
+                        <summary className="cursor-pointer">{importGruposResult.errors.length} jugadores sin enlazar (click para ver)</summary>
+                        <ul className="mt-1 space-y-0.5 max-h-32 overflow-y-auto pl-2">
+                            {importGruposResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+                        </ul>
+                    </details>
+                )}
             </div>
 
             {/* Filters */}
