@@ -159,7 +159,16 @@ export default function MedalleroPage() {
             results = results.filter(c => c.nombre.toLowerCase().includes(q));
         }
 
-        return results.sort((a, b) => b.won - a.won);
+        const winRate = (c: { won: number; played: number }) =>
+            c.played > 0 ? c.won / c.played : -1;
+
+        return results.sort((a, b) => {
+            const ra = winRate(a);
+            const rb = winRate(b);
+            if (rb !== ra) return rb - ra;
+            if (b.won !== a.won) return b.won - a.won;
+            return b.played - a.played;
+        });
     }, [carreras, partidos, sportFilter, genderFilter, searchQuery]);
 
     const isIndividualSelected = useMemo(() => {
