@@ -61,6 +61,8 @@ function buildMarcadorTenisMesa() {
     set_actual: 1,
     sets_a: 0,
     sets_b: 0,
+    puntos_a: 0,
+    puntos_b: 0,
     sets: { 1: { puntos_a: 0, puntos_b: 0 } },
   };
 }

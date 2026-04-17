@@ -304,14 +304,18 @@ export default function PartidosPage() {
         e.stopPropagation();
         setSavingTenis(true);
         try {
+            const prevDetalle = partido.marcador_detalle || {};
             const newDetalle = {
-                ...(partido.marcador_detalle || {}),
+                ...prevDetalle,
                 sets_a: tenisSetsA,
                 sets_b: tenisSetsB,
                 sets_total_a: tenisSetsA,
                 sets_total_b: tenisSetsB,
                 goles_a: tenisSetsA,
                 goles_b: tenisSetsB,
+                // required by DB trigger validate_marcador for 'tenis de mesa'
+                puntos_a: prevDetalle.puntos_a ?? 0,
+                puntos_b: prevDetalle.puntos_b ?? 0,
             };
             if (tenisEstado === 'finalizado') {
                 newDetalle.resultado_final = tenisSetsA > tenisSetsB ? 'victoria_a' : tenisSetsB > tenisSetsA ? 'victoria_b' : 'empate';
