@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // TenisMesaService — Tenis de Mesa (Ping-Pong)
-// Sets a 11 pts (diff ≥ 2); best-of-5 (gana con 3 sets)
+// Sets a 11 pts (diff ≥ 2); best-of-3 (gana con 2 sets, máx 3 sets)
+// En 10-10 se juega a diferencia de 2 (cubierto por la condición diff ≥ 2)
 // Auto-avanza set_actual cuando alguien gana el set actual
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ export class TenisMesaService extends BaseSportService {
 
   isFinished(detalle: ScoreDetail): boolean {
     const d = detalle as any;
-    return (d.sets_a || 0) >= 3 || (d.sets_b || 0) >= 3;
+    return (d.sets_a || 0) >= 2 || (d.sets_b || 0) >= 2;
   }
 
   addPoints(detalle: ScoreDetail, equipo: 'equipo_a' | 'equipo_b'): ScoreDetail {
@@ -111,9 +112,9 @@ export class TenisMesaService extends BaseSportService {
     d.total_b = cur.puntos_b || 0;
     d.goles_a = cur.puntos_a || 0; // alias
     d.goles_b = cur.puntos_b || 0;
-    const matchOver = setsA >= 3 || setsB >= 3;
+    const matchOver = setsA >= 2 || setsB >= 2;
 
-    if (!matchOver && this.setIsWon(cur.puntos_a || 0, cur.puntos_b || 0) && currentSet < 5) {
+    if (!matchOver && this.setIsWon(cur.puntos_a || 0, cur.puntos_b || 0) && currentSet < 3) {
       d.set_actual = currentSet + 1;
       // Inicializar el nuevo set si no existe
       if (!d.sets[d.set_actual]) {
@@ -128,11 +129,11 @@ export class TenisMesaService extends BaseSportService {
     return d;
   }
 
-  /** Avanza manualmente al siguiente set (máx 5); sin-op si ya terminó el partido */
+  /** Avanza manualmente al siguiente set (máx 3); sin-op si ya terminó el partido */
   override nextPeriod(detalle: ScoreDetail): ScoreDetail {
     const d = this.clone(detalle) as any;
     const set = d.set_actual || 1;
-    if (set < 5) {
+    if (set < 3) {
       d.set_actual = set + 1;
       if (!d.sets[d.set_actual]) {
         d.sets[d.set_actual] = { puntos_a: 0, puntos_b: 0 };

@@ -19,8 +19,9 @@ interface TenisEditorProps {
 // A set score row
 type SetScore = { a: number; b: number };
 
-// Max sets — igual para ambos deportes
-const MAX_SETS = 8;
+// Max sets por deporte
+const MAX_SETS_DEFAULT = 8;
+const MAX_SETS_TENIS_MESA = 3; // 2 regulares + 1 desempate
 
 // Is set complete/won — returns who won ('a' | 'b' | null)
 function setWinner(sport: string, a: number, b: number, matchFormat?: string): 'a' | 'b' | null {
@@ -50,7 +51,7 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
   const sport = match.disciplinas?.name || '';
   const sportColor = SPORT_COLORS[sport] || '#84cc16';
   const isTenisField = sport === 'Tenis';
-  const maxSets = MAX_SETS;
+  const maxSets = sport === 'Tenis de Mesa' ? MAX_SETS_TENIS_MESA : MAX_SETS_DEFAULT;
   // field names inside each set object
   const fieldA = isTenisField ? 'juegos_a' : 'puntos_a';
   const fieldB = isTenisField ? 'juegos_b' : 'puntos_b';
@@ -89,7 +90,7 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
   };
 
   const addSet = () => {
-    if (sets.length >= MAX_SETS) { toast.warning(`Máximo ${MAX_SETS} sets`); return; }
+    if (sets.length >= maxSets) { toast.warning(`Máximo ${maxSets} sets`); return; }
     setSets(prev => [...prev, { a: 0, b: 0 }]);
   };
 
@@ -346,7 +347,7 @@ export function TenisEditor({ match, profile, onSaved }: TenisEditorProps) {
           })}
 
           {/* Add set */}
-          {sets.length < MAX_SETS && (
+          {sets.length < maxSets && (
             <button
               type="button"
               onClick={addSet}
