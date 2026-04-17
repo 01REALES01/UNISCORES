@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Avatar } from "@/components/ui-primitives";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
-import { Plus, Calendar, Clock, Zap, Trash2, Search, TrendingUp, Trophy, Loader2, AlertTriangle, X, Users } from "lucide-react";
+import { Plus, Calendar, Zap, Trash2, Search, TrendingUp, Trophy, Loader2, AlertTriangle, X, Users } from "lucide-react";
 import { toast } from "sonner";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { CreateMatchModal } from "@/components/create-match-modal";
@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAuditLogger } from "@/hooks/useAuditLogger";
 import { cn } from "@/lib/utils";
 import { SPORT_EMOJI } from "@/lib/constants";
-import { getDisplayName, getCarreraName, getCarreraSubtitle } from "@/lib/sport-helpers";
+import { getDisplayName, getCarreraName } from "@/lib/sport-helpers";
 
 export default function PartidosPage() {
     const [partidos, setPartidos] = useState<any[]>([]);
@@ -33,6 +33,13 @@ export default function PartidosPage() {
     const [backfillingNatacion, setBackfillingNatacion] = useState(false);
     const [deletingTennis, setDeletingTennis] = useState(false);
     const [matchToDelete, setMatchToDelete] = useState<any>(null);
+
+    // Inline tenis de mesa sets editor
+    const [editingTenisMesa, setEditingTenisMesa] = useState<number | null>(null);
+    const [tenisSetsA, setTenisSetsA] = useState(0);
+    const [tenisSetsB, setTenisSetsB] = useState(0);
+    const [tenisEstado, setTenisEstado] = useState<string>('programado');
+    const [savingTenis, setSavingTenis] = useState(false);
     const router = useRouter();
     const { isPeriodista } = useAuth();
     const { logAction } = useAuditLogger();
@@ -283,6 +290,46 @@ export default function PartidosPage() {
     const finalizadosCount = partidos.filter(p => p.estado === 'finalizado').length;
     const uniqueSports = Array.from(new Set(partidos.map(p => p.disciplinas?.name).filter(Boolean)));
     const uniqueDates = Array.from(new Set(partidos.map(p => new Date(p.fecha).toISOString().slice(0, 10)))).sort();
+
+    const openTenisMesaEdit = (e: React.MouseEvent, partido: any) => {
+        e.stopPropagation();
+        const md = partido.marcador_detalle || {};
+        setTenisSetsA(md.sets_a ?? md.sets_total_a ?? 0);
+        setTenisSetsB(md.sets_b ?? md.sets_total_b ?? 0);
+        setTenisEstado(partido.estado || 'programado');
+        setEditingTenisMesa(partido.id);
+    };
+
+    const saveSetsResult = async (e: React.MouseEvent, partido: any) => {
+        e.stopPropagation();
+        setSavingTenis(true);
+        try {
+            const newDetalle = {
+                ...(partido.marcador_detalle || {}),
+                sets_a: tenisSetsA,
+                sets_b: tenisSetsB,
+                sets_total_a: tenisSetsA,
+                sets_total_b: tenisSetsB,
+                goles_a: tenisSetsA,
+                goles_b: tenisSetsB,
+            };
+            if (tenisEstado === 'finalizado') {
+                newDetalle.resultado_final = tenisSetsA > tenisSetsB ? 'victoria_a' : tenisSetsB > tenisSetsA ? 'victoria_b' : 'empate';
+            }
+            const { error } = await supabase.from('partidos').update({
+                marcador_detalle: newDetalle,
+                estado: tenisEstado,
+            }).eq('id', partido.id);
+            if (error) throw error;
+            toast.success('Resultado guardado');
+            setEditingTenisMesa(null);
+            await fetchPartidos();
+        } catch (err: any) {
+            toast.error(err.message || 'Error al guardar');
+        } finally {
+            setSavingTenis(false);
+        }
+    };
 
     const getScore = (p: any) => {
         const md = p.marcador_detalle || {};
@@ -536,10 +583,12 @@ export default function PartidosPage() {
                                     const isFinished = partido.estado === 'finalizado';
                                     const score = getScore(partido);
                                     const isCarrera = partido.marcador_detalle?.tipo === 'carrera';
+                                    const isTenisMesa = partido.disciplinas?.name === 'Tenis de Mesa';
+                                    const isEditingThis = editingTenisMesa === partido.id;
                                     return (
+                                        <div key={partido.id}>
                                         <div
-                                            key={partido.id}
-                                            onClick={() => router.push(`/admin/partidos/${partido.id}`)}
+                                            onClick={() => !isEditingThis && router.push(`/admin/partidos/${partido.id}`)}
                                             className="group flex items-center gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer transition-colors"
                                         >
                                             {/* Status dot */}
@@ -568,6 +617,7 @@ export default function PartidosPage() {
                                                 <p className="text-[10px] text-slate-600 mt-0.5">
                                                     {new Date(partido.fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                                                     {partido.lugar && <span className="ml-1.5">{partido.lugar}</span>}
+                                                    {partido.grupo && <span className="ml-1.5 text-slate-500">G{partido.grupo}</span>}
                                                     {partido.genero && partido.genero !== 'masculino' && <span className="ml-1.5 capitalize">{partido.genero}</span>}
                                                 </p>
                                             </div>
@@ -587,6 +637,21 @@ export default function PartidosPage() {
                                                 )}
                                             </div>
 
+                                            {/* Tenis de Mesa inline edit button */}
+                                            {isTenisMesa && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); isEditingThis ? setEditingTenisMesa(null) : openTenisMesaEdit(e, partido); }}
+                                                    className={cn(
+                                                        "shrink-0 px-2 py-1 rounded-md text-[10px] font-bold transition-colors opacity-0 group-hover:opacity-100",
+                                                        isEditingThis
+                                                            ? "bg-white/10 text-white opacity-100"
+                                                            : "text-cyan-400 hover:bg-cyan-500/10"
+                                                    )}
+                                                >
+                                                    {isEditingThis ? 'Cerrar' : 'Editar'}
+                                                </button>
+                                            )}
+
                                             {/* Delete */}
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setMatchToDelete(partido); }}
@@ -594,6 +659,76 @@ export default function PartidosPage() {
                                             >
                                                 {deletingId === partido.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                                             </button>
+                                        </div>
+
+                                        {/* Inline tenis de mesa sets editor */}
+                                        {isEditingThis && isTenisMesa && (
+                                            <div
+                                                onClick={e => e.stopPropagation()}
+                                                className="px-4 py-3 bg-cyan-500/[0.04] border-t border-cyan-500/10 space-y-3"
+                                            >
+                                                {/* Sets counters */}
+                                                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                                                    {/* Team A */}
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] text-slate-400 truncate font-medium">{getDisplayName(partido, 'a')}</p>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <button onClick={() => setTenisSetsA(Math.max(0, tenisSetsA - 1))} className="w-7 h-7 rounded-md bg-white/5 hover:bg-white/10 text-white font-bold text-sm flex items-center justify-center transition-colors">−</button>
+                                                            <span className="text-2xl font-black text-white w-8 text-center tabular-nums">{tenisSetsA}</span>
+                                                            <button onClick={() => setTenisSetsA(Math.min(2, tenisSetsA + 1))} className="w-7 h-7 rounded-md bg-cyan-600/60 hover:bg-cyan-500/80 text-white font-bold text-sm flex items-center justify-center transition-colors">+</button>
+                                                        </div>
+                                                    </div>
+
+                                                    <span className="text-slate-600 font-black text-sm">sets</span>
+
+                                                    {/* Team B */}
+                                                    <div className="space-y-1 text-right">
+                                                        <p className="text-[10px] text-slate-400 truncate font-medium">{getDisplayName(partido, 'b')}</p>
+                                                        <div className="flex items-center gap-1.5 justify-end">
+                                                            <button onClick={() => setTenisSetsB(Math.max(0, tenisSetsB - 1))} className="w-7 h-7 rounded-md bg-white/5 hover:bg-white/10 text-white font-bold text-sm flex items-center justify-center transition-colors">−</button>
+                                                            <span className="text-2xl font-black text-white w-8 text-center tabular-nums">{tenisSetsB}</span>
+                                                            <button onClick={() => setTenisSetsB(Math.min(2, tenisSetsB + 1))} className="w-7 h-7 rounded-md bg-cyan-600/60 hover:bg-cyan-500/80 text-white font-bold text-sm flex items-center justify-center transition-colors">+</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Estado selector */}
+                                                <div className="flex gap-1.5">
+                                                    {(['programado', 'en_curso', 'finalizado'] as const).map(e => (
+                                                        <button
+                                                            key={e}
+                                                            onClick={() => setTenisEstado(e)}
+                                                            className={cn(
+                                                                "px-2.5 py-1 rounded-md text-[10px] font-bold transition-colors",
+                                                                tenisEstado === e
+                                                                    ? e === 'finalizado' ? "bg-emerald-600/80 text-white" : e === 'en_curso' ? "bg-rose-600/80 text-white" : "bg-slate-600 text-white"
+                                                                    : "bg-white/5 text-slate-500 hover:text-white"
+                                                            )}
+                                                        >
+                                                            {e === 'programado' ? 'Programado' : e === 'en_curso' ? 'En Curso' : 'Finalizado'}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                {/* Actions */}
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={(e) => saveSetsResult(e, partido)}
+                                                        disabled={savingTenis}
+                                                        className="flex-1 h-8 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white text-xs font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                                                    >
+                                                        {savingTenis ? <Loader2 size={11} className="animate-spin" /> : null}
+                                                        Guardar
+                                                    </button>
+                                                    <button
+                                                        onClick={e => { e.stopPropagation(); setEditingTenisMesa(null); }}
+                                                        className="px-3 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-bold transition-colors"
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                         </div>
                                     );
                                 })}
