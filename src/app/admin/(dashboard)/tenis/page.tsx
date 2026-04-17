@@ -325,11 +325,11 @@ export default function TenisBracketPage() {
                         </div>
                     </div>
                 )}
-                {(importGruposResult?.errors?.length ?? 0) > 0 && (
+                {importGruposResult && (importGruposResult.errors?.length ?? 0) > 0 && (
                     <details className="text-[10px] text-amber-400/60">
-                        <summary className="cursor-pointer">{importGruposResult.errors.length} jugadores sin enlazar (click para ver)</summary>
+                        <summary className="cursor-pointer">{(importGruposResult.errors ?? []).length} jugadores sin enlazar (click para ver)</summary>
                         <ul className="mt-1 space-y-0.5 max-h-32 overflow-y-auto pl-2">
-                            {importGruposResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+                            {(importGruposResult.errors ?? []).map((e, i) => <li key={i}>{e}</li>)}
                         </ul>
                     </details>
                 )}
