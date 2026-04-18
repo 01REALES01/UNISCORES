@@ -239,8 +239,10 @@ export default function PublicMatchDetail() {
                     : extra;
     const showExtra = sportName === 'Fútbol' ? !!extraFutbol : !!displayExtra;
     /** Marcador central: en voleibol en vivo = puntos del set actual; al finalizar (u otro estado) = sets ganados. */
-    const centerScoreA = sportName === 'Voleibol' && isLive ? (subScoreA ?? 0) : scoreA;
-    const centerScoreB = sportName === 'Voleibol' && isLive ? (subScoreB ?? 0) : scoreB;
+    const centerScoreA = sportName === 'Tenis de Mesa' ? (subScoreA ?? 0)
+        : sportName === 'Voleibol' && isLive ? (subScoreA ?? 0) : scoreA;
+    const centerScoreB = sportName === 'Tenis de Mesa' ? (subScoreB ?? 0)
+        : sportName === 'Voleibol' && isLive ? (subScoreB ?? 0) : scoreB;
     const sportColor = SPORT_COLORS[sportName] || '#10b981';
 
     const tenisDetalle = m.marcador_detalle || {};

@@ -293,9 +293,9 @@ export const PredictionCard = ({
                       <span className="text-2xl">{isFinished ? 'FIN' : 'VS'}</span>
                     ) : (
                       <>
-                        <span>{scoreInfo.scoreA}</span>
+                        <span>{match.disciplinas?.name === 'Tenis de Mesa' ? (scoreInfo.subScoreA ?? 0) : scoreInfo.scoreA}</span>
                         <span className="text-white/20">:</span>
-                        <span>{scoreInfo.scoreB}</span>
+                        <span>{match.disciplinas?.name === 'Tenis de Mesa' ? (scoreInfo.subScoreB ?? 0) : scoreInfo.scoreB}</span>
                       </>
                     )}
                   </div>
