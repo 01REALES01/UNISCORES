@@ -431,17 +431,21 @@ export function ResultCard({ partido }: { partido: Partido }) {
   const router = useRouter();
   const sportName = partido.disciplinas?.name || 'Deporte';
   const { scoreA, scoreB, subScoreA, subScoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
-  const winnerA = scoreA > scoreB;
-  const isDraw = scoreA === scoreB;
+  const _compA = sportName === 'Tenis de Mesa' ? (subScoreA ?? 0) : scoreA;
+  const _compB = sportName === 'Tenis de Mesa' ? (subScoreB ?? 0) : scoreB;
+  const winnerA = _compA > _compB;
+  const isDraw = _compA === _compB;
   const genero = (partido.genero || 'masculino').toLowerCase();
   const categoria = partido.categoria;
   const isSetSport = ['Tenis', 'Tenis de Mesa', 'Voleibol', 'Vóleibol', 'Bádminton', 'Badminton'].includes(sportName);
   
-  // New unified scoring: scoreA/B are primary, subScoreA/B are secondary
-  const primaryA = scoreA;
-  const primaryB = scoreB;
-  const secondaryA = subScoreA;
-  const secondaryB = subScoreB;
+  // For Tenis de Mesa: scoreA/B = puntos del set actual (irrelevante en finalizado),
+  // subScoreA/B = sets ganados (lo que queremos mostrar como resultado final).
+  const isTenisMesa = sportName === 'Tenis de Mesa';
+  const primaryA = isTenisMesa ? (subScoreA ?? 0) : scoreA;
+  const primaryB = isTenisMesa ? (subScoreB ?? 0) : scoreB;
+  const secondaryA = isTenisMesa ? undefined : subScoreA;
+  const secondaryB = isTenisMesa ? undefined : subScoreB;
 
   return (
     <Link href={`/partido/${partido.id}`} className="group block relative z-10">
