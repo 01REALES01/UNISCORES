@@ -337,6 +337,15 @@ export default function PartidosPage() {
 
     const getScore = (p: any) => {
         const md = p.marcador_detalle || {};
+        const sport = p.disciplinas?.name;
+        // For set-based sports read sets won directly (goles_a is overwritten with
+        // current-set points by recalculateTotals, so it would show wrong values)
+        if (sport === 'Tenis de Mesa' || sport === 'Voleibol') {
+            return {
+                a: md.sets_a ?? md.sets_total_a ?? 0,
+                b: md.sets_b ?? md.sets_total_b ?? 0,
+            };
+        }
         return {
             a: md.goles_a ?? md.total_a ?? md.sets_a ?? 0,
             b: md.goles_b ?? md.total_b ?? md.sets_b ?? 0,
