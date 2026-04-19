@@ -12,7 +12,7 @@ import { overlayCarreraEscudoFromDelegationAlias } from "@/lib/carrera-delegacio
 
 const MATCH_COLUMNS = `
   id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle,
-  fase, grupo, bracket_order, delegacion_a, delegacion_b,
+  fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id,
   carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids,
   disciplinas(name, icon),
   carrera_a:carreras!carrera_a_id(nombre, escudo_url),
@@ -73,20 +73,59 @@ async function fetchCarreraProfile(carreraId: number) {
 
         const carreraWithEscudo = await overlayCarreraEscudoFromDelegationAlias(supabase, carrera);
 
-        // 2. Fetch all matches where this carrera participates (either side).
-        const { data: matchesData, error: matchesErr } = await supabase
+        // Delegaciones que incluyen esta carrera (equipos combinados: varias carreras → un equipo).
+        const { data: delegLinks } = await supabase
+            .from('delegaciones')
+            .select('id')
+            .or(`carrera_ids.cs.{${carreraId}}`)
+            .abortSignal(controller.signal);
+        const delegIdsForMatches = [
+            ...new Set((delegLinks || []).map((d: { id: number }) => d.id).filter(Boolean)),
+        ];
+
+        // Dos consultas y merge. Con ORDER BY fecha DESC, un límite bajo corta los partidos **más viejos**
+        // (los primeros que se jugaron en la temporada) si hay muchos encuentros recientes/futuros.
+        // PostgREST suele permitir hasta ~1000 filas por request; subir en el servidor si hace falta más.
+        const MATCH_FETCH_LIMIT = 1000;
+
+        const { data: byCarreraArrays, error: errArrays } = await supabase
             .from('partidos')
             .select(MATCH_COLUMNS)
             .or(`carrera_a_ids.cs.{${carreraId}},carrera_b_ids.cs.{${carreraId}}`)
             .abortSignal(controller.signal)
             .order('fecha', { ascending: false })
-            .limit(40);
+            .limit(MATCH_FETCH_LIMIT);
 
-        if (matchesErr) console.error('[useCarreraProfile] Matches error:', matchesErr);
-        const matchesSorted = ((matchesData || []) as any[]).sort(
+        if (errArrays) console.error('[useCarreraProfile] Matches (arrays):', errArrays);
+
+        let byDelegacion: any[] = [];
+        if (delegIdsForMatches.length > 0) {
+            const list = delegIdsForMatches.join(',');
+            const { data: dDeleg, error: errDeleg } = await supabase
+                .from('partidos')
+                .select(MATCH_COLUMNS)
+                .or(`delegacion_a_id.in.(${list}),delegacion_b_id.in.(${list})`)
+                .abortSignal(controller.signal)
+                .order('fecha', { ascending: false })
+                .limit(MATCH_FETCH_LIMIT);
+
+            if (errDeleg) console.error('[useCarreraProfile] Matches (delegación):', errDeleg);
+            else byDelegacion = dDeleg || [];
+        }
+
+        const seenId = new Set<number>();
+        const mergedRaw = [...(byCarreraArrays || []), ...byDelegacion];
+        const matchesDeduped = mergedRaw.filter((m: any) => {
+            if (!m?.id || seenId.has(m.id)) return false;
+            seenId.add(m.id);
+            return true;
+        });
+        const matchesSorted = matchesDeduped.sort(
             (a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
         );
-        const matches = await enrichPartidosCarreraShieldsFromDb(supabase, matchesSorted as any);
+        /** Tras merge, mostramos bastante historial (fútbol/basket tempranos en la jornada). */
+        const matchesTrimmed = matchesSorted.slice(0, 600);
+        const matches = await enrichPartidosCarreraShieldsFromDb(supabase, matchesTrimmed as any);
 
         // 3. Fetch news for this carrera
         const { data: newsData } = await supabase
@@ -183,7 +222,7 @@ export function useCarreraProfile(carreraId: number | null): CarreraProfile {
     }
 
     const { data, error, isLoading, mutate } = useSWR(
-        carreraId ? `carrera-profile-v4:${carreraId}` : null,
+        carreraId ? `carrera-profile-v7:${carreraId}` : null,
         () => fetchCarreraProfile(carreraId!),
         {
             fallbackData,

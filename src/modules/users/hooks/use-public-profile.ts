@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import {
     normalizeGenderLoose,
+    normalizePartidoEstado,
     resolveAthleteGenderFromContext,
     shouldIncludePartidoInProfileHistory,
 } from "@/lib/profile-match-filters";
@@ -279,7 +280,7 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
                     const discId = p.disciplina_id;
                     if (!sportStatsMap[discId]) sportStatsMap[discId] = { goals: 0, pts3: 0, pts2: 0, pts1: 0, yellowCards: 0, redCards: 0, fouls: 0, totalEvents: 0, puntos: 0, sets: 0, victorias: 0, empates: 0, gold: 0, silver: 0, bronze: 0, wins: 0, losses: 0 };
                     const s = sportStatsMap[discId];
-                    const normalizedEstado = (p.estado || '').toLowerCase().trim();
+                    const normalizedEstado = normalizePartidoEstado(p.estado);
 
                     if (normalizedEstado === 'finalizado') {
                         const sportName = (Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name) || '';
@@ -306,7 +307,7 @@ async function fetchPublicProfile(profileId: string, signal?: AbortSignal, curre
                         equipo_a: p.equipo_a,
                         equipo_b: p.equipo_b,
                         marcador_final: p.marcador_detalle,
-                        estado: (p.estado || '').toLowerCase().trim()
+                        estado: normalizePartidoEstado(p.estado)
                     };
                 });
             }

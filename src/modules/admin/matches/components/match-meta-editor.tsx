@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
+import { mutate as swrMutate } from 'swr';
 import { X, Search, Loader2, UserX, Check, Plus, Save } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -117,6 +118,18 @@ function ModalCrearAtleta({
 }
 
 const INDIVIDUAL_SPORTS = ['Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
+
+const FASE_PRESETS = ['grupos', 'cuartos', 'semifinal', 'tercer_puesto', 'final'] as const;
+
+function coerceFaseForUi(raw: unknown): string {
+    if (raw == null) return '';
+    const s = String(raw).trim();
+    if (!s) return '';
+    const k = s.toLowerCase();
+    if (k === 'grupo' || k === 'grupos') return 'grupos';
+    if ((FASE_PRESETS as readonly string[]).includes(k)) return k;
+    return s;
+}
 
 type ProfileResult = { 
   id: string; 
@@ -394,6 +407,8 @@ async function resolverDelegacionId(carreraId: number | null, match: any): Promi
   return data?.id ?? null;
 }
 
+const GRUPO_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'] as const;
+
 export function MatchMetaEditor({ match, profile: _profile, onClose, onSaved }: MatchMetaEditorProps) {
   const sport = match.disciplinas?.name || '';
   const isIndividual = INDIVIDUAL_SPORTS.includes(sport);
@@ -408,6 +423,12 @@ export function MatchMetaEditor({ match, profile: _profile, onClose, onSaved }: 
   const [fecha, setFecha] = useState(match.fecha ? toLocalDT(match.fecha) : '');
   const [lugar, setLugar] = useState(match.lugar || '');
 
+  const [fase, setFase] = useState(() => coerceFaseForUi(match.fase));
+  const [grupo, setGrupo] = useState(() => (match.grupo != null ? String(match.grupo).trim().toUpperCase() : ''));
+  const [bracketOrder, setBracketOrder] = useState(() =>
+    match.bracket_order != null && match.bracket_order !== '' ? String(match.bracket_order) : ''
+  );
+
   // Athlete state (individual sports) — properly normalized from join data
   const [atletaA, setAtletaA] = useState<ProfileResult | null>(() => normalizarAtleta(match, 'a'));
   const [atletaB, setAtletaB] = useState<ProfileResult | null>(() => normalizarAtleta(match, 'b'));
@@ -421,6 +442,25 @@ export function MatchMetaEditor({ match, profile: _profile, onClose, onSaved }: 
         fecha: fecha ? new Date(fecha).toISOString() : match.fecha,
         lugar: lugar.trim() || null,
       };
+
+      if (!isIndividual) {
+        const faseVal = fase.trim();
+        updates.fase = faseVal || null;
+        if (faseVal === 'grupos') {
+          updates.grupo = grupo.trim() ? grupo.trim().toUpperCase().slice(0, 8) : null;
+          updates.bracket_order = null;
+        } else if (faseVal) {
+          updates.grupo = null;
+          const bo = bracketOrder.trim();
+          updates.bracket_order = bo ? parseInt(bo, 10) : null;
+          if (updates.bracket_order !== null && Number.isNaN(updates.bracket_order)) {
+            updates.bracket_order = null;
+          }
+        } else {
+          updates.grupo = null;
+          updates.bracket_order = null;
+        }
+      }
 
       if (isIndividual) {
         // Resolve carrera + delegacion for both sides in parallel
@@ -464,6 +504,9 @@ export function MatchMetaEditor({ match, profile: _profile, onClose, onSaved }: 
 
       const { error } = await supabase.from('partidos').update(updates).eq('id', match.id);
       if (error) throw error;
+
+      swrMutate('global:partidos');
+      swrMutate(`match:${match.id}`);
 
       // ─── Sync Roster (for individual athletes' visibility in their profiles) ───
       // We sync roster_partido to ensure the nominal player profile displays this match.
@@ -530,6 +573,67 @@ export function MatchMetaEditor({ match, profile: _profile, onClose, onSaved }: 
               className="w-full h-11 bg-white/[0.04] border border-white/10 rounded-xl px-4 text-sm text-white font-bold outline-none focus:border-indigo-500/50 transition-colors placeholder:text-white/20"
             />
           </div>
+
+          {!isIndividual && (
+            <div className="space-y-3 border-t border-white/5 pt-4">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400/90">Torneo</p>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">Fase</label>
+                <select
+                  value={fase}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setFase(v);
+                    if (v !== 'grupos') setGrupo('');
+                  }}
+                  className="w-full h-11 bg-white/[0.04] border border-white/10 rounded-xl px-3 text-xs text-white font-bold outline-none focus:border-indigo-500/50"
+                >
+                  <option value="">Sin fase</option>
+                  <option value="grupos">Fase de grupos</option>
+                  <option value="cuartos">Cuartos de final</option>
+                  <option value="semifinal">Semifinal</option>
+                  <option value="tercer_puesto">Tercer puesto</option>
+                  <option value="final">Final</option>
+                  {fase && !(FASE_PRESETS as readonly string[]).includes(fase.toLowerCase()) ? (
+                    <option value={fase}>{fase}</option>
+                  ) : null}
+                </select>
+              </div>
+              {fase === 'grupos' && (
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">Grupo</label>
+                  <select
+                    value={grupo || ''}
+                    onChange={(e) => setGrupo(e.target.value)}
+                    className="w-full h-11 bg-white/[0.04] border border-white/10 rounded-xl px-3 text-xs text-white font-black outline-none focus:border-indigo-500/50 text-center"
+                  >
+                    <option value="">—</option>
+                    {GRUPO_LETTERS.map((g) => (
+                      <option key={g} value={g}>
+                        Grupo {g}
+                      </option>
+                    ))}
+                    {grupo && !GRUPO_LETTERS.includes(grupo as (typeof GRUPO_LETTERS)[number]) ? (
+                      <option value={grupo}>Grupo {grupo}</option>
+                    ) : null}
+                  </select>
+                </div>
+              )}
+              {!!fase && fase !== 'grupos' && (
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">Orden en llave</label>
+                  <input
+                    type="number"
+                    min={1}
+                    placeholder="#"
+                    value={bracketOrder}
+                    onChange={(e) => setBracketOrder(e.target.value)}
+                    className="w-full h-11 bg-white/[0.04] border border-white/10 rounded-xl px-4 text-sm text-white font-black outline-none focus:border-indigo-500/50 text-center"
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Athlete pickers — individual sports only */}
           {isIndividual && (

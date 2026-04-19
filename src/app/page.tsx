@@ -18,17 +18,20 @@ const SuggestiveSearch = dynamic(() => import('@/components/ui/suggestive-search
   ssr: false,
   loading: () => <div className="h-12 w-full rounded-2xl bg-white/5 backdrop-blur-md animate-pulse" />
 });
-const NewsListCard = dynamic(() => import('@/components/news-card').then(mod => mod.NewsListCard), {
+/** Importar el módulo real (no el shim `components/news-card`) evita ChunkLoadError con Webpack tras HMR / reinicios. */
+const newsCardMod = () => import('@/modules/news/components/news-card');
+
+const NewsListCard = dynamic(() => newsCardMod().then((mod) => mod.NewsListCard), {
   ssr: false,
   loading: () => <NewsListSkeleton />
 });
 
-const NewsCompactHero = dynamic(() => import('@/components/news-card').then(mod => mod.NewsCompactHero), {
+const NewsCompactHero = dynamic(() => newsCardMod().then((mod) => mod.NewsCompactHero), {
   ssr: false,
   loading: () => <NewsListSkeleton />
 });
 
-const NewsGridCard = dynamic(() => import('@/components/news-card').then(mod => mod.NewsGridCard), {
+const NewsGridCard = dynamic(() => newsCardMod().then((mod) => mod.NewsGridCard), {
   ssr: false,
   loading: () => <NewsListSkeleton />
 });

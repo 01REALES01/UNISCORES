@@ -79,6 +79,32 @@ export function useMatchControl(matchId: string) {
         let idsA = m.carrera_a_id ? [m.carrera_a_id] : [];
         let idsB = m.carrera_b_id ? [m.carrera_b_id] : [];
 
+        if (Array.isArray(m.carrera_a_ids) && m.carrera_a_ids.length > 0) {
+            idsA = [...new Set([...idsA, ...m.carrera_a_ids])];
+        }
+        if (Array.isArray(m.carrera_b_ids) && m.carrera_b_ids.length > 0) {
+            idsB = [...new Set([...idsB, ...m.carrera_b_ids])];
+        }
+
+        const delegAid = (m as Partido & { delegacion_a_id?: number | null }).delegacion_a_id;
+        const delegBid = (m as Partido & { delegacion_b_id?: number | null }).delegacion_b_id;
+
+        const [delegByIdA, delegByIdB] = await Promise.all([
+            delegAid
+                ? supabase.from('delegaciones').select('carrera_ids').eq('id', delegAid).maybeSingle()
+                : Promise.resolve({ data: null as { carrera_ids?: number[] } | null }),
+            delegBid
+                ? supabase.from('delegaciones').select('carrera_ids').eq('id', delegBid).maybeSingle()
+                : Promise.resolve({ data: null as { carrera_ids?: number[] } | null }),
+        ]);
+
+        if (delegByIdA.data?.carrera_ids?.length) {
+            idsA = [...new Set([...idsA, ...delegByIdA.data.carrera_ids])];
+        }
+        if (delegByIdB.data?.carrera_ids?.length) {
+            idsB = [...new Set([...idsB, ...delegByIdB.data.carrera_ids])];
+        }
+
         const { data: delegARows } = await supabase.from('delegaciones').select('carrera_ids').ilike('nombre', m.equipo_a ?? '').limit(1);
         const { data: delegBRows } = await supabase.from('delegaciones').select('carrera_ids').ilike('nombre', m.equipo_b ?? '').limit(1);
         const delegA = delegARows?.[0];
@@ -87,27 +113,105 @@ export function useMatchControl(matchId: string) {
         if (delegA?.carrera_ids?.length) idsA = [...new Set([...idsA, ...delegA.carrera_ids])];
         if (delegB?.carrera_ids?.length) idsB = [...new Set([...idsB, ...delegB.carrera_ids])];
 
+        // Si el nombre en `equipo_*` no matchea pero sí `delegacion_*` (texto mostrado en ficha)
+        if (m.delegacion_a && m.delegacion_a.trim() !== (m.equipo_a ?? '').trim()) {
+            const { data: dAlt } = await supabase
+                .from('delegaciones')
+                .select('carrera_ids')
+                .ilike('nombre', m.delegacion_a.trim())
+                .limit(1);
+            if (dAlt?.[0]?.carrera_ids?.length) {
+                idsA = [...new Set([...idsA, ...dAlt[0].carrera_ids])];
+            }
+        }
+        if (m.delegacion_b && m.delegacion_b.trim() !== (m.equipo_b ?? '').trim()) {
+            const { data: dAlt } = await supabase
+                .from('delegaciones')
+                .select('carrera_ids')
+                .ilike('nombre', m.delegacion_b.trim())
+                .limit(1);
+            if (dAlt?.[0]?.carrera_ids?.length) {
+                idsB = [...new Set([...idsB, ...dAlt[0].carrera_ids])];
+            }
+        }
+
         const allCarreraIds = [...new Set([...idsA, ...idsB])];
 
-        let virtualProcessed: any[] = [];
-        if (allCarreraIds.length > 0) {
-            let jugadoresQuery = supabase
-                .from('jugadores')
-                .select('*')
-                .eq('disciplina_id', m.disciplina_id)
-                .in('carrera_id', allCarreraIds);
-            if (m.genero) jugadoresQuery = jugadoresQuery.eq('genero', m.genero);
-            const { data: jugadores } = await jugadoresQuery;
+        /** Alineado con perfiles de equipo/carrera: género flexible en cliente */
+        const matchesGeneroPartido = (j: { genero?: string | null; sexo?: string | null }) => {
+            const targetGen = (m.genero || '').toLowerCase().trim();
+            if (!targetGen) return true;
+            const jg = (j.genero || j.sexo || '').toLowerCase().trim();
+            if (!jg) return true;
+            if (targetGen.startsWith('masc') && (jg.startsWith('masc') || jg === 'm')) return true;
+            if (targetGen.startsWith('feme') && (jg.startsWith('feme') || jg === 'f')) return true;
+            return jg === targetGen;
+        };
 
-            if (jugadores) {
-                virtualProcessed = jugadores.map(j => ({
-                    id: j.id,
-                    roster_id: null, // Virtual, belongs to delegation
-                    nombre: j.nombre,
-                    numero: j.numero,
-                    equipo: (idsA.includes(j.carrera_id) ? 'equipo_a' : 'equipo_b') as 'equipo_a' | 'equipo_b',
-                    profile_id: j.profile_id
-                }));
+        const toVirtualRow = (j: any, equipo: 'equipo_a' | 'equipo_b') => ({
+            id: j.id,
+            roster_id: null as number | null,
+            nombre: j.nombre,
+            numero: j.numero,
+            equipo,
+            profile_id: j.profile_id,
+        });
+
+        let virtualProcessed: any[] = [];
+
+        // 2a Por carrera (varios intentos si la disciplina en BD no coincide con el partido)
+        if (allCarreraIds.length > 0) {
+            const runCarreraQuery = async (mode: 'strict_disc' | 'loose_disc' | 'any_disc') => {
+                let q = supabase.from('jugadores').select('*').in('carrera_id', allCarreraIds);
+                if (mode === 'strict_disc' && m.disciplina_id != null) {
+                    q = q.eq('disciplina_id', m.disciplina_id);
+                } else if (mode === 'loose_disc' && m.disciplina_id != null) {
+                    q = q.or(`disciplina_id.eq.${m.disciplina_id},disciplina_id.is.null`);
+                }
+                const { data } = await q;
+                return (data || []).filter(matchesGeneroPartido);
+            };
+
+            let rows = await runCarreraQuery('strict_disc');
+            if (rows.length === 0 && m.disciplina_id != null) {
+                rows = await runCarreraQuery('loose_disc');
+            }
+            if (rows.length === 0) {
+                rows = await runCarreraQuery('any_disc');
+            }
+
+            virtualProcessed = rows.map((j) =>
+                toVirtualRow(
+                    j,
+                    idsA.includes(j.carrera_id) ? 'equipo_a' : 'equipo_b'
+                )
+            );
+        }
+
+        // 2b Por delegacion_id en jugadores (misma fuente que plantilla del equipo — muchas filas solo tienen esto)
+        const fetchVirtualByDelegacion = async (
+            delegId: number | null | undefined,
+            equipo: 'equipo_a' | 'equipo_b'
+        ) => {
+            if (!delegId) return [] as any[];
+            let q = supabase.from('jugadores').select('*').eq('delegacion_id', delegId);
+            if (m.disciplina_id != null) {
+                q = q.or(`disciplina_id.eq.${m.disciplina_id},disciplina_id.is.null`);
+            }
+            const { data } = await q;
+            return (data || []).filter(matchesGeneroPartido).map((j) => toVirtualRow(j, equipo));
+        };
+
+        const [virtDelegA, virtDelegB] = await Promise.all([
+            fetchVirtualByDelegacion(delegAid, 'equipo_a'),
+            fetchVirtualByDelegacion(delegBid, 'equipo_b'),
+        ]);
+
+        const seenVirt = new Set(virtualProcessed.map((x) => x.id));
+        for (const row of [...virtDelegA, ...virtDelegB]) {
+            if (!seenVirt.has(row.id)) {
+                seenVirt.add(row.id);
+                virtualProcessed.push(row);
             }
         }
 

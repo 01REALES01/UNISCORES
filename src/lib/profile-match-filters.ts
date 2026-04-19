@@ -83,3 +83,12 @@ export function shouldIncludePartidoInProfileHistory(opts: {
 
   return matchGenderCompatibleWithAthlete(p.genero, athleteGenderResolved);
 }
+
+/** Normaliza `estado` del partido para comparar (programado, finalizado, en_curso, etc.). */
+export function normalizePartidoEstado(estado: string | null | undefined): string {
+  return (estado ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}

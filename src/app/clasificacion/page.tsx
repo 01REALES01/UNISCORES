@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatches } from "@/hooks/use-matches";
-import { GroupStageTable } from "@/components/group-stage-table";
+import { GroupStageTable, GRUPO_PLACEHOLDER_SIN_ETIQUETA } from "@/components/group-stage-table";
 import { BracketTree } from "@/components/bracket-tree";
 import { SPORT_ACCENT, SPORT_GRADIENT, SPORT_BORDER, DEPORTES_INDIVIDUALES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,34 @@ const CATEGORIES = [
     { label: 'Intermedio', value: 'intermedio' },
     { label: 'Avanzado', value: 'avanzado' },
 ] as const;
+
+function normalizeFaseKey(fase: unknown): string {
+    if (fase == null) return '';
+    return String(fase).trim().toLowerCase();
+}
+
+/** Incluye partidos con fase definida o con grupo asignado (a veces el grupo se guarda y fase queda vacía). */
+function hasClassificationMeta(m: { fase?: unknown; grupo?: unknown }): boolean {
+    if (m.fase != null && String(m.fase).trim() !== '') return true;
+    if (m.grupo != null && String(m.grupo).trim() !== '') return true;
+    return false;
+}
+
+/** Fase de grupos: valor normalizado o inferencia por grupo cuando fase falta. */
+function isGroupStagePhase(m: { fase?: unknown; grupo?: unknown }): boolean {
+    const nf = normalizeFaseKey(m.fase);
+    const hasGrupo = m.grupo != null && String(m.grupo).trim() !== '';
+    if (nf === 'grupos' || nf === 'grupo') return true;
+    if (nf === '' && hasGrupo) return true;
+    return false;
+}
+
+function normalizeGrupoLabel(raw: unknown): string | null {
+    if (raw == null) return null;
+    const s = String(raw).trim();
+    if (!s) return null;
+    return s.toUpperCase();
+}
 
 export default function ClasificacionPage() {
     const { user, profile, isStaff } = useAuth();
@@ -97,8 +125,7 @@ export default function ClasificacionPage() {
             const sportMatch = m.disciplinas?.name === selectedSport;
             const genderMatch = (m.genero || 'masculino').toLowerCase() === selectedGender.toLowerCase();
             const categoryMatch = !isTenis || (m.categoria || 'avanzado').toLowerCase() === selectedCategory.toLowerCase();
-            const hasFase = m.fase != null;
-            return sportMatch && genderMatch && categoryMatch && hasFase;
+            return sportMatch && genderMatch && categoryMatch && hasClassificationMeta(m);
         });
     }, [matches, selectedSport, selectedGender, selectedCategory, isTenis]);
 
@@ -106,10 +133,10 @@ export default function ClasificacionPage() {
     const groupMatches = useMemo(() => {
         if (matches.length === 0) return [];
         return filteredMatches.filter((m: any) => {
-            if (m.fase !== 'grupos') return false;
-            
-            const a = String(m.equipo_a).toUpperCase();
-            const b = String(m.equipo_b).toUpperCase();
+            if (!isGroupStagePhase(m)) return false;
+
+            const a = String(m.delegacion_a || m.equipo_a || '').toUpperCase();
+            const b = String(m.delegacion_b || m.equipo_b || '').toUpperCase();
             
             if (/^\d+$/.test(a) || /^\d+$/.test(b)) return false;
             
@@ -121,16 +148,21 @@ export default function ClasificacionPage() {
     }, [filteredMatches]);
 
     const bracketMatches = useMemo(() => {
-        return filteredMatches.filter(m => m.fase !== 'grupos');
+        return filteredMatches.filter(m => !isGroupStagePhase(m));
     }, [filteredMatches]);
 
-    // Get unique groups
+    // Get unique groups (normalizado A/B/…; partidos con fase grupos pero sin `grupo` → bucket aparte)
     const groups = useMemo(() => {
         const g = new Set<string>();
+        let hasSinEtiqueta = false;
         groupMatches.forEach(m => {
-            if (m.grupo) g.add(m.grupo);
+            const label = normalizeGrupoLabel(m.grupo);
+            if (label) g.add(label);
+            else hasSinEtiqueta = true;
         });
-        return Array.from(g).sort();
+        const sorted = Array.from(g).sort();
+        if (hasSinEtiqueta) sorted.push(GRUPO_PLACEHOLDER_SIN_ETIQUETA);
+        return sorted;
     }, [groupMatches]);
 
     const [carreras, setCarreras] = useState<any[]>([]);
@@ -264,7 +296,8 @@ export default function ClasificacionPage() {
         if (groups.length < 2) return [];
         const thirds: TeamStanding[] = [];
         groups.forEach(grupo => {
-            const gMatches = groupMatches.filter(m => m.grupo === grupo);
+            if (grupo === GRUPO_PLACEHOLDER_SIN_ETIQUETA) return;
+            const gMatches = groupMatches.filter((m) => normalizeGrupoLabel(m.grupo) === grupo);
             const s = calculateStandings(gMatches, selectedSport, fairPlayData, teamIdMap);
             if (s.length >= 3) {
                 thirds.push(s[2]); // 3rd place is index 2
@@ -438,7 +471,12 @@ export default function ClasificacionPage() {
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {groups.map((grupo) => {
-                                        const gMatches = groupMatches.filter(m => m.grupo === grupo);
+                                        const gMatches = groupMatches.filter((m) => {
+                                            if (grupo === GRUPO_PLACEHOLDER_SIN_ETIQUETA) {
+                                                return !normalizeGrupoLabel(m.grupo);
+                                            }
+                                            return normalizeGrupoLabel(m.grupo) === grupo;
+                                        });
                                         return (
                                             <GroupStageTable
                                                 key={grupo}

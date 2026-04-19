@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Edit3, X, Info } from "lucide-react";
 import { Button, Card } from "@/components/ui-primitives";
@@ -23,6 +23,7 @@ import { TenisEditor } from "@/modules/admin/matches/components/tenis-editor";
 import { MatchMetaEditor } from "@/modules/admin/matches/components/match-meta-editor";
 import { BasketballBulkStats } from "@/modules/admin/matches/components/basketball-bulk-stats";
 import { AdminMvpPicker } from "@/modules/admin/matches/components/admin-mvp-picker";
+import { AdminQuickBench } from "@/modules/admin/matches/components/admin-quick-bench";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Evento } from "@/modules/matches/types";
@@ -127,6 +128,24 @@ export default function MatchControlPage() {
     const [fullEditorTab, setFullEditorTab] = useState<'marcador' | 'eventos' | 'jugadores'>('marcador');
     const [showMetaEditor, setShowMetaEditor] = useState(false);
     const [showReview, setShowReview] = useState(false);
+    const [eventBenchMode, setEventBenchMode] = useState<'quick' | 'classic'>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                return sessionStorage.getItem('admin-match-bench-mode') === 'classic' ? 'classic' : 'quick';
+            } catch {
+                return 'quick';
+            }
+        }
+        return 'quick';
+    });
+
+    useEffect(() => {
+        try {
+            sessionStorage.setItem('admin-match-bench-mode', eventBenchMode);
+        } catch {
+            /* ignore */
+        }
+    }, [eventBenchMode]);
 
     const handleAddPlayer = async (team: string, data: { nombre: string; numero: string; profile_id: string }) => {
         if (!match) return null;
@@ -192,11 +211,51 @@ export default function MatchControlPage() {
     );
 
     const disciplinaName = match.disciplinas?.name || 'Fútbol';
+    const isQuickBenchSport = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
+
+    /** Actualiza `jugadores.numero` (vale para próximos partidos de la misma base). */
+    const handleUpdateJugadorNumero = async (jugadorId: number, raw: string) => {
+        const t = raw.trim();
+        let numero: number | null = null;
+        if (t !== '') {
+            const n = parseInt(t, 10);
+            if (Number.isNaN(n) || n < 0 || n > 999) {
+                toast.error('Número inválido (0–999 o vacío para sin número)');
+                return;
+            }
+            numero = n;
+        }
+        const { error } = await supabase.from('jugadores').update({ numero }).eq('id', jugadorId);
+        if (error) {
+            toast.error(error.message);
+            return;
+        }
+        await fetchJugadores();
+        toast.success('Dorsal guardado en la base de jugadores');
+    };
+
+    const handleRemovePlayerFromRoster = async (rosterId: number) => {
+        const { error } = await supabase.from('roster_partido').delete().eq('id', rosterId);
+        if (error) {
+            toast.error(error.message);
+            return;
+        }
+        await fetchJugadores();
+        toast.success('Jugador quitado del partido');
+    };
+
     const isTeamSport = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
     const isTenisSport = ['Tenis', 'Tenis de Mesa'].includes(disciplinaName);
     const bgGradient = DISCIPLINES_COLORS[disciplinaName] || 'from-slate-700 to-slate-900';
     const actions = GET_SPORT_ACTIONS(disciplinaName);
     const { scoreA, scoreB } = getCurrentScore(disciplinaName, match.marcador_detalle || {});
+
+    /** Vóley + modo cancha: bitácora solo si ya hay al menos un punto atribuido a jugador */
+    const showVolleyballQuickTimeline =
+        disciplinaName !== 'Voleibol' ||
+        eventos.some(
+            (e) => e.tipo_evento === 'punto' && e.jugador_id_normalized != null
+        );
 
     return (
         <div className="min-h-screen bg-background pb-24 text-white">
@@ -280,17 +339,19 @@ export default function MatchControlPage() {
                     />
                 )}
 
-                {match.marcador_detalle?.tipo !== 'carrera' && match.estado !== 'finalizado' && (
-                    <AdminPlayerRoster
-                        match={match}
-                        jugadoresA={jugadoresA}
-                        jugadoresB={jugadoresB}
-                        matchId={matchId}
-                        onPlayersUpdated={fetchJugadores}
-                        disciplinaName={disciplinaName}
-                        onAddPlayer={handleAddPlayer}
-                    />
-                )}
+                {match.marcador_detalle?.tipo !== 'carrera' &&
+                    match.estado !== 'finalizado' &&
+                    !(isQuickBenchSport && eventBenchMode === 'quick') && (
+                        <AdminPlayerRoster
+                            match={match}
+                            jugadoresA={jugadoresA}
+                            jugadoresB={jugadoresB}
+                            matchId={matchId}
+                            onPlayersUpdated={fetchJugadores}
+                            disciplinaName={disciplinaName}
+                            onAddPlayer={handleAddPlayer}
+                        />
+                    )}
 
                 {match.marcador_detalle?.tipo !== 'carrera' && match.estado === 'finalizado' && (
                     <>
@@ -338,25 +399,90 @@ export default function MatchControlPage() {
                 )}
 
                 {match.marcador_detalle?.tipo !== 'carrera' && match.estado !== 'finalizado' && (
-                <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-8">
-                    <AdminEventCreator
-                        match={match}
-                        actions={actions}
-                        jugadoresA={jugadoresA}
-                        jugadoresB={jugadoresB}
-                        eventos={eventos}
-                        onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id)}
-                        onAddPlayer={handleAddPlayer}
-                        disciplinaName={disciplinaName}
-                    />
+                    <>
+                        {isQuickBenchSport && (
+                            <div className="mt-8 mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
+                                    Registrar eventos
+                                </p>
+                                <div className="flex w-full sm:w-auto rounded-xl border border-white/10 p-0.5 bg-black/40 gap-0.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setEventBenchMode('quick')}
+                                        className={`flex-1 min-h-[44px] rounded-lg px-4 text-[10px] font-black uppercase tracking-wide transition-all touch-manipulation ${
+                                            eventBenchMode === 'quick'
+                                                ? 'bg-indigo-600 text-white shadow-md'
+                                                : 'text-white/50 hover:text-white/80'
+                                        }`}
+                                    >
+                                        Modo cancha
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEventBenchMode('classic')}
+                                        className={`flex-1 min-h-[44px] rounded-lg px-4 text-[10px] font-black uppercase tracking-wide transition-all touch-manipulation ${
+                                            eventBenchMode === 'classic'
+                                                ? 'bg-indigo-600 text-white shadow-md'
+                                                : 'text-white/50 hover:text-white/80'
+                                        }`}
+                                    >
+                                        Modo clásico
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {isQuickBenchSport && eventBenchMode === 'quick' ? (
+                            <div className="mt-4 -mx-5 flex w-auto max-w-none flex-col gap-8 px-2 sm:-mx-6 sm:px-3 md:mx-0 md:w-full md:max-w-full md:px-0">
+                                <AdminQuickBench
+                                    match={match}
+                                    jugadoresA={jugadoresA}
+                                    jugadoresB={jugadoresB}
+                                    eventos={eventos}
+                                    actions={actions}
+                                    disciplinaName={disciplinaName}
+                                    onAddEvent={(data) =>
+                                        void handleNuevoEvento(data.tipo, data.equipo, data.jugador_id)
+                                    }
+                                    onAddPlayer={handleAddPlayer}
+                                    onUpdatePlayerNumero={handleUpdateJugadorNumero}
+                                    onRemovePlayerFromRoster={handleRemovePlayerFromRoster}
+                                />
+                                {showVolleyballQuickTimeline && (
+                                    <div className="w-full border-t border-white/10 pt-8">
+                                        <AdminMatchTimeline
+                                            eventos={eventos}
+                                            match={match}
+                                            onDeleteEvent={(e) => setConfirmingDeletion(e)}
+                                            disciplinaName={disciplinaName}
+                                            layoutStacked
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-4">
+                                <AdminEventCreator
+                                    match={match}
+                                    actions={actions}
+                                    jugadoresA={jugadoresA}
+                                    jugadoresB={jugadoresB}
+                                    eventos={eventos}
+                                    onAddEvent={(data) =>
+                                        handleNuevoEvento(data.tipo, data.equipo, data.jugador_id)
+                                    }
+                                    onAddPlayer={handleAddPlayer}
+                                    disciplinaName={disciplinaName}
+                                />
 
-                    <AdminMatchTimeline
-                        eventos={eventos}
-                        match={match}
-                        onDeleteEvent={(e) => setConfirmingDeletion(e)}
-                        disciplinaName={disciplinaName}
-                    />
-                </div>
+                                <AdminMatchTimeline
+                                    eventos={eventos}
+                                    match={match}
+                                    onDeleteEvent={(e) => setConfirmingDeletion(e)}
+                                    disciplinaName={disciplinaName}
+                                />
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 

@@ -40,6 +40,7 @@ import { SPORT_ACCENT } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import {
     normalizeGenderLoose,
+    normalizePartidoEstado,
     resolveAthleteGenderFromContext,
     shouldIncludePartidoInProfileHistory,
 } from "@/lib/profile-match-filters";
@@ -147,28 +148,56 @@ export default function PerfilPage() {
         if (data) setCarreras(data);
     };
 
+    /** Misma fuente que el perfil público (`olympics_eventos` + jugadores), no la tabla legacy `eventos`. */
     const fetchDetailedStats = async (id: string) => {
         try {
-            const { data: events } = await supabase
-                .from('eventos')
-                .select('tipo_evento, jugadores!inner(profile_id, disciplina_id)')
-                .eq('jugadores.profile_id', id);
-            
+            const { data: jugRows } = await supabase
+                .from('jugadores')
+                .select('id, disciplina_id')
+                .eq('profile_id', id);
+
+            const jugIds = (jugRows || []).map((j) => j.id);
+            if (jugIds.length === 0) {
+                return;
+            }
+
+            const jugDisc: Record<number, number> = {};
+            (jugRows || []).forEach((j: { id: number; disciplina_id?: number | null }) => {
+                if (j.disciplina_id != null) jugDisc[j.id] = j.disciplina_id;
+            });
+
+            const { data: evs } = await supabase
+                .from('olympics_eventos')
+                .select('tipo_evento, jugador_id_normalized')
+                .in('jugador_id_normalized', jugIds);
+
             const statsMap: Record<string, any> = {};
 
-            events?.forEach(ev => {
-                const discId = (ev.jugadores as any)?.disciplina_id;
-                if (!discId) return;
+            evs?.forEach((ev: { tipo_evento: string; jugador_id_normalized: number }) => {
+                const discId = jugDisc[ev.jugador_id_normalized];
+                if (discId == null) return;
 
                 if (!statsMap[discId]) {
                     statsMap[discId] = {
-                        goals: 0, pts3: 0, pts2: 0, pts1: 0,
-                        yellowCards: 0, redCards: 0, fouls: 0, totalEvents: 0,
-                        puntos: 0, sets: 0, victorias: 0, empates: 0,
-                        gold: 0, silver: 0, bronze: 0,
+                        goals: 0,
+                        pts3: 0,
+                        pts2: 0,
+                        pts1: 0,
+                        yellowCards: 0,
+                        redCards: 0,
+                        fouls: 0,
+                        totalEvents: 0,
+                        puntos: 0,
+                        sets: 0,
+                        victorias: 0,
+                        empates: 0,
+                        gold: 0,
+                        silver: 0,
+                        bronze: 0,
+                        wins: 0,
+                        losses: 0,
                     };
                 }
-
                 const s = statsMap[discId];
                 const type = ev.tipo_evento.toLowerCase();
                 s.totalEvents++;
@@ -176,17 +205,18 @@ export default function PerfilPage() {
                 if (type === 'punto_3' || type.includes('triple')) s.pts3++;
                 if (type === 'punto_2' || type.includes('doble')) s.pts2++;
                 if (type === 'punto_1' || type.includes('libre')) s.pts1++;
-                if (type.includes('amarilla')) s.yellowCards++;
-                if (type.includes('roja')) s.redCards++;
+                if (type.includes('amarilla') || type === 'tarjeta_amarilla') s.yellowCards++;
+                if (type.includes('roja') || type === 'tarjeta_roja') s.redCards++;
                 if (type === 'falta') s.fouls++;
                 if (type === 'punto') s.puntos++;
                 if (type === 'set') s.sets++;
-                if (type === 'victoria') { if (discId) s.victorias++; else s.gold++; }
+                if (type === 'victoria') s.victorias++;
                 if (type === 'segundo') s.silver++;
                 if (type === 'tercero') s.bronze++;
                 if (type === 'empate') s.empates++;
             });
-            setSportStatsMap(prev => ({ ...prev, ...statsMap }));
+
+            setSportStatsMap((prev) => ({ ...prev, ...statsMap }));
         } catch (err) {
             console.error("Error fetching detailed stats:", err);
         }
@@ -359,7 +389,7 @@ export default function PerfilPage() {
                 const discId = p.disciplina_id;
                 if (!winLossBySport[discId]) winLossBySport[discId] = { wins: 0, losses: 0 };
 
-                if (p.estado === 'finalizado') {
+                if (normalizePartidoEstado(p.estado) === 'finalizado') {
                     const det = p.marcador_detalle || {};
                     const sportName = (Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name) || '';
                     const { scoreA, scoreB } = getCurrentScore(sportName, det);
@@ -385,7 +415,7 @@ export default function PerfilPage() {
                     disciplina: (Array.isArray(p.disciplinas) ? p.disciplinas[0]?.name : p.disciplinas?.name),
                     equipo_a: p.equipo_a,
                     equipo_b: p.equipo_b,
-                    estado: p.estado,
+                    estado: normalizePartidoEstado(p.estado),
                     marcador_final: p.marcador_detalle
                 };
             });
@@ -416,8 +446,15 @@ export default function PerfilPage() {
         setFriendsCount(count || 0);
     };
 
-    const upcomingMatches = history.filter(h => h.estado === 'programado' || h.estado === 'en_curso').sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-    const recentResults = history.filter(h => h.estado === 'finalizado').sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    const upcomingMatches = history
+        .filter((h) => {
+            const e = normalizePartidoEstado(h.estado);
+            return e === 'programado' || e === 'en_curso';
+        })
+        .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    const recentResults = history
+        .filter((h) => normalizePartidoEstado(h.estado) === 'finalizado')
+        .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
     const fetchFollowers = async () => {
         if (!user?.id) return;
@@ -1068,25 +1105,28 @@ export default function PerfilPage() {
                                 <div className="flex flex-col gap-4">
                                     {upcomingMatches.map((h, i) => (
                                         <Link key={i} href={`/partido/${h.id}`} className="block">
-                                            <div className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-violet-500/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
-                                                <div className="flex items-center gap-6 relative z-10">
-                                                    <div className="w-12 h-12 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-violet-400 group-hover:border-violet-500/30 transition-all shadow-inner">
+                                            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 sm:gap-6 bg-black/40 border border-white/5 p-4 sm:p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-violet-500/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
+                                                <div className="flex gap-4 min-w-0 relative z-10">
+                                                    <div className="w-12 h-12 shrink-0 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-violet-400 group-hover:border-violet-500/30 transition-all shadow-inner">
                                                         <div className="-rotate-45">{getSportIcon(h.disciplina)}</div>
                                                     </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-1.5">
-                                                            <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.25em]">{h.disciplina}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-4">
-                                                            <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_a}</p>
-                                                            <span className="text-[10px] font-display font-black text-white/15">VS</span>
-                                                            <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_b}</p>
+                                                    <div className="min-w-0 flex-1 space-y-2">
+                                                        <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.25em]">{h.disciplina}</span>
+                                                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:gap-3 sm:flex-wrap">
+                                                            <p className="text-[13px] sm:text-[14px] font-black text-white/90 font-display tracking-tight break-words hyphens-auto leading-snug">{h.equipo_a}</p>
+                                                            <span className="text-[10px] font-display font-black text-white/15 shrink-0 hidden sm:inline">VS</span>
+                                                            <span className="text-[9px] font-black text-white/15 sm:hidden text-center">vs</span>
+                                                            <p className="text-[13px] sm:text-[14px] font-black text-white/90 font-display tracking-tight break-words hyphens-auto leading-snug">{h.equipo_b}</p>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex flex-col items-end">
-                                                    <span className="text-[14px] font-black text-white font-mono">{new Date(h.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                    <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">{new Date(h.fecha).toLocaleDateString()}</span>
+                                                <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 pt-3 sm:pt-0 border-t border-white/5 sm:border-0 shrink-0">
+                                                    <time dateTime={h.fecha} className="text-[15px] sm:text-[14px] font-black text-white font-mono tabular-nums">
+                                                        {new Date(h.fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                                                    </time>
+                                                    <span className="text-[11px] sm:text-[9px] font-bold text-white/35 sm:text-white/25 uppercase tracking-wide text-right leading-tight max-w-[70%] sm:max-w-none">
+                                                        {new Date(h.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </Link>
@@ -1114,25 +1154,26 @@ export default function PerfilPage() {
                                         const icon = getSportIcon(h.disciplina);
                                         return (
                                             <Link key={i} href={`/partido/${h.id}`} className="block">
-                                                <div className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-white/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
-                                                    <div className="flex items-center gap-6 relative z-10">
-                                                        <div className="w-12 h-12 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all shadow-inner">
+                                                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 sm:gap-6 bg-black/40 border border-white/5 p-4 sm:p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-white/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
+                                                    <div className="flex gap-4 min-w-0 relative z-10">
+                                                        <div className="w-12 h-12 shrink-0 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all shadow-inner">
                                                             <div className="-rotate-45">{icon}</div>
                                                         </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-3 mb-1.5 ">
-                                                                <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.25em]">{h.disciplina}</span>
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
-                                                                <span className="text-[10px] font-mono font-bold text-white/20 uppercase tabular-nums">{new Date(h.fecha).toLocaleDateString()}</span>
+                                                        <div className="min-w-0 flex-1 space-y-2">
+                                                            <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono font-bold text-white/25 uppercase tabular-nums">
+                                                                <span className="font-display font-black tracking-[0.2em]">{h.disciplina}</span>
+                                                                <span className="text-white/15">·</span>
+                                                                <span>{new Date(h.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                                                             </div>
-                                                            <div className="flex items-center gap-4">
-                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_a}</p>
-                                                              <span className="text-[10px] font-display font-black text-white/15">VS</span>
-                                                              <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_b}</p>
+                                                            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:gap-3 sm:flex-wrap">
+                                                              <p className="text-[13px] sm:text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors break-words hyphens-auto leading-snug">{h.equipo_a}</p>
+                                                              <span className="text-[10px] font-display font-black text-white/15 shrink-0 hidden sm:inline">VS</span>
+                                                              <span className="text-[9px] font-black text-white/15 sm:hidden text-center">vs</span>
+                                                              <p className="text-[13px] sm:text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors break-words hyphens-auto leading-snug">{h.equipo_b}</p>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white">
+                                                    <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white justify-self-center sm:justify-self-end w-fit max-w-full mx-auto sm:mx-0">
                                                         {scoreA} <span className="text-white/20 mx-1">-</span> {scoreB}
                                                     </div>
                                                 </div>

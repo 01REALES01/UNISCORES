@@ -29,6 +29,9 @@ const GROUP_COLORS: Record<string, { bg: string; text: string; border: string; g
 };
 const DEFAULT_GROUP_COLOR = { bg: 'bg-white/5', text: 'text-white/50', border: 'border-white/10', glow: '' };
 
+/** Clasificación: partidos de fase grupos con `grupo` vacío; se muestran en tabla aparte. */
+export const GRUPO_PLACEHOLDER_SIN_ETIQUETA = '\u2014';
+
 function PositionBadge({ idx }: { idx: number }) {
     if (idx === 0) return (
         <div className="w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-black border border-amber-400/30 bg-amber-400/10 text-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.15)]">1</div>
@@ -50,6 +53,7 @@ interface GroupStageTableProps {
 }
 
 export function GroupStageTable({ matches, sportName, grupo, light = false, teamIdMap = {} }: GroupStageTableProps) {
+    const isUngroupedBucket = grupo === GRUPO_PLACEHOLDER_SIN_ETIQUETA;
     const [fairPlayData, setFairPlayData] = useState<Record<string, number>>({});
     const matchIds = useMemo(() => matches.map(m => m.id), [matches]);
 
@@ -100,20 +104,22 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
         fetchFairPlay();
     }, [fetchFairPlay]);
 
-    // Real-time subscription: re-fetch whenever a card event is inserted/deleted/updated
+    // Real-time: solo filas de estos partidos (sin filtro, Postgres envía todos los eventos → pesado en red/UI).
+    const MAX_REALTIME_IDS = 120;
     useEffect(() => {
         if (matchIds.length === 0) return;
+        if (matchIds.length > MAX_REALTIME_IDS) return;
 
+        const filter = `partido_id=in.(${matchIds.join(',')})`;
         const channel = supabase
-            .channel(`fairplay-group-${grupo}-${matchIds.join('-')}`)
+            .channel(`fairplay-${isUngroupedBucket ? 'ungrouped' : grupo}-${matchIds.length}-${matchIds[0]}`)
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table: 'olympics_eventos' },
+                { event: '*', schema: 'public', table: 'olympics_eventos', filter },
                 (payload: any) => {
                     const FP_TYPES = ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play'];
                     const record = payload.new || payload.old;
-                    // Only re-fetch if it's a relevant event for one of our matches
-                    if (record && matchIds.includes(record.partido_id) && FP_TYPES.includes(record.tipo_evento)) {
+                    if (record && FP_TYPES.includes(record.tipo_evento)) {
                         fetchFairPlay();
                     }
                 }
@@ -121,11 +127,11 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
-    }, [matchIds, grupo, fetchFairPlay]);
+    }, [matchIds, grupo, isUngroupedBucket, fetchFairPlay]);
 
     const standings = useMemo(() => calculateStandings(matches, sportName, fairPlayData, teamIdMap), [matches, sportName, fairPlayData, teamIdMap]);
 
-    const gc = GROUP_COLORS[grupo?.toUpperCase()] || DEFAULT_GROUP_COLOR;
+    const gc = isUngroupedBucket ? DEFAULT_GROUP_COLOR : (GROUP_COLORS[grupo?.toUpperCase()] || DEFAULT_GROUP_COLOR);
     const played = matches.filter(m => m.estado === 'finalizado').length;
     const total  = matches.length;
     const isVoley = sportName === 'Voleibol';
@@ -142,11 +148,13 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
             )}>
                 <div className="flex items-center gap-3">
                     <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center border font-black text-xl font-display shadow-inner shrink-0", gc.bg, gc.border, gc.text)}>
-                        {grupo}
+                        {isUngroupedBucket ? '?' : grupo}
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h3 className={cn("font-display font-black text-lg tracking-tight", light ? "text-slate-900" : "text-white")}>Grupo {grupo}</h3>
+                            <h3 className={cn("font-display font-black text-lg tracking-tight", light ? "text-slate-900" : "text-white")}>
+                                {isUngroupedBucket ? 'Grupo sin etiqueta' : `Grupo ${grupo}`}
+                            </h3>
                             <SportIcon sport={sportName} size={16} className="opacity-40" />
                         </div>
                         <p className={cn("text-[10px] font-bold uppercase tracking-widest mt-0.5", light ? "text-slate-400" : "text-white/30")}>
@@ -332,7 +340,7 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                         const iconB = m.atleta_b?.avatar_url || m.carrera_b?.escudo_url || m.delegacion_b_info?.escudo_url || mapB.avatarUrl || mapB.escudoUrl;
 
                         return (
-                            <Link href={`/partido/${m.id}`} key={m.id} className="block group/m">
+                            <Link href={`/partido/${m.id}`} prefetch={false} key={m.id} className="block group/m">
                                 <div className={cn("relative flex items-center justify-between px-3.5 py-2.5 rounded-xl border transition-all duration-200 overflow-hidden", isLive ? "bg-emerald-500/8 border-emerald-500/25" : light ? "bg-white border-slate-100" : "bg-white/[0.03] border-white/8")}>
                                     <div className="flex items-center gap-2 w-[40%] relative z-10">
                                         <div className="w-5 h-5 rounded-md bg-white/5 border border-white/10 flex items-center justify-center p-0.5 shrink-0">

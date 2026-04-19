@@ -369,24 +369,27 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                                         </div>
                                         <Trophy size={28} className="text-amber-500/20 group-hover:scale-110 transition-all" />
                                     </div>
-                                    <div className="flex items-center gap-6 relative z-10">
-                                        <div className="relative shrink-0">
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 relative z-10 w-full">
+                                        <div className="relative shrink-0 mx-auto sm:mx-0">
                                             <div className="absolute -inset-4 bg-amber-500/20 rounded-full blur-2xl animate-pulse" />
                                             <Avatar
                                                 name={effectiveMvp.nombre}
-                                                className="w-20 h-20 sm:w-28 sm:h-28 border-[6px] border-amber-500/40 shadow-2xl bg-black ring-2 ring-amber-500/20"
+                                                className="w-24 h-24 sm:w-28 sm:h-28 border-[6px] border-amber-500/40 shadow-2xl bg-black ring-2 ring-amber-500/20"
                                             />
                                             <div className="absolute -bottom-2 -right-2 w-9 h-9 sm:w-10 sm:h-10 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg border-4 border-black">
                                                 <Star className="fill-black text-black" size={14} />
                                             </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-2xl sm:text-4xl font-black text-white leading-tight mb-3 drop-shadow-2xl uppercase tracking-tighter">
+                                        <div className="flex-1 min-w-0 w-full text-center sm:text-left">
+                                            <p
+                                                lang="es"
+                                                className="text-xl min-[380px]:text-2xl sm:text-3xl md:text-4xl font-black text-white leading-[1.12] mb-3 sm:mb-4 drop-shadow-2xl uppercase tracking-tight break-words hyphens-auto text-balance px-1 sm:px-0 max-w-full"
+                                            >
                                                 {effectiveMvp.nombre}
                                             </p>
-                                            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md">
+                                            <div className="inline-flex flex-wrap items-center justify-center sm:justify-start gap-3 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md max-w-full">
                                                 {mvpIsManual ? (
-                                                    <span className="text-[10px] sm:text-xs font-black text-amber-500/80 uppercase tracking-widest leading-snug">
+                                                    <span className="text-[10px] sm:text-xs font-black text-amber-500/80 uppercase tracking-widest leading-snug text-center sm:text-left">
                                                         Designación oficial · Voleibol
                                                     </span>
                                                 ) : (
@@ -569,29 +572,34 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                         </p>
                         <div className="relative group overflow-hidden p-[1.5px] rounded-[2.5rem] bg-gradient-to-br from-amber-200 via-amber-500 to-amber-900 shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:-translate-y-1">
                             <Link href={effectiveMvp.profile_id ? `/perfil/${effectiveMvp.profile_id}` : `/jugador/${effectiveMvp.id}`} className="block h-full relative z-10">
-                                <div className="relative bg-gradient-to-br from-[#1a1409] via-[#0D0A05] to-black rounded-[2.4rem] p-7 sm:p-10 flex flex-col justify-between h-full min-h-[240px] overflow-hidden">
+                                <div className="relative bg-gradient-to-br from-[#1a1409] via-[#0D0A05] to-black rounded-[2.4rem] p-6 sm:p-10 flex flex-col justify-between h-full min-h-[260px] sm:min-h-[240px] overflow-hidden">
                                     <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                                     
-                                    <div className="flex items-center justify-between mb-8 relative z-10">
-                                        <div className="px-5 py-2 rounded-2xl bg-amber-500 text-black text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_25px_rgba(245,158,11,0.4)] flex items-center gap-2">
-                                            <Crown size={14} /> JUGADOR MÁS VALIOSO
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 sm:mb-8 relative z-10">
+                                        <div className="px-4 sm:px-5 py-2 rounded-2xl bg-amber-500 text-black text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] shadow-[0_0_25px_rgba(245,158,11,0.4)] flex items-center gap-2 max-w-full">
+                                            <Crown size={14} className="shrink-0" /> <span className="leading-tight">JUGADOR MÁS VALIOSO</span>
                                         </div>
-                                        <Trophy size={32} className="text-amber-500/20 group-hover:scale-125 group-hover:text-amber-500/40 transition-all duration-500" />
+                                        <Trophy size={28} className="text-amber-500/20 group-hover:scale-125 group-hover:text-amber-500/40 transition-all duration-500 shrink-0 hidden sm:block" />
                                     </div>
                                     
-                                    <div className="flex items-center gap-8 relative z-10">
-                                        <div className="relative shrink-0">
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 relative z-10 w-full">
+                                        <div className="relative shrink-0 mx-auto sm:mx-0">
                                             <div className="absolute -inset-4 bg-amber-500/20 rounded-full blur-2xl animate-pulse" />
-                                            <Avatar name={effectiveMvp.nombre} className="w-20 h-20 sm:w-28 sm:h-28 border-[6px] border-amber-500/40 shadow-2xl bg-black ring-2 ring-amber-500/20" />
+                                            <Avatar name={effectiveMvp.nombre} className="w-28 h-28 sm:w-32 sm:h-32 border-[6px] border-amber-500/40 shadow-2xl bg-black ring-2 ring-amber-500/20" />
                                             <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg border-4 border-black">
                                                 <Star className="fill-black text-black" size={16} />
                                             </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-3xl sm:text-5xl font-black text-white leading-tight mb-3 drop-shadow-2xl uppercase tracking-tighter">{effectiveMvp.nombre}</p>
-                                            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md">
+                                        <div className="flex-1 min-w-0 w-full text-center sm:text-left pb-1">
+                                            <p
+                                                lang="es"
+                                                className="text-2xl min-[400px]:text-3xl sm:text-4xl md:text-5xl font-black text-white leading-[1.1] mb-3 sm:mb-4 drop-shadow-2xl uppercase tracking-tight break-words hyphens-auto text-balance px-1 sm:px-0"
+                                            >
+                                                {effectiveMvp.nombre}
+                                            </p>
+                                            <div className="inline-flex flex-wrap items-center justify-center sm:justify-start gap-3 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md max-w-full">
                                                 {mvpIsManual ? (
-                                                    <span className="text-[10px] sm:text-xs font-black text-amber-500/80 uppercase tracking-widest leading-snug">
+                                                    <span className="text-[10px] sm:text-xs font-black text-amber-500/80 uppercase tracking-widest leading-snug text-center sm:text-left">
                                                         {isFootball ? 'Designación oficial · Fútbol' : 'Designación oficial'}
                                                     </span>
                                                 ) : (

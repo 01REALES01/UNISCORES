@@ -41,6 +41,7 @@ import { isCreator, hasAuraBadge, hasMvpBadge, SPORT_ACCENT } from "@/lib/consta
 import { SportIcon } from "@/shared/components/sport-icons";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 import { getCurrentScore } from "@/lib/sport-scoring";
+import { normalizePartidoEstado } from "@/lib/profile-match-filters";
 
 export default function PublicProfilePage() {
     const params = useParams();
@@ -162,8 +163,15 @@ export default function PublicProfilePage() {
         );
     }
 
-    const upcomingMatches = history.filter(h => h.estado === 'programado' || h.estado === 'en_curso').sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-    const recentResults = history.filter(h => h.estado === 'finalizado').sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    const upcomingMatches = history
+        .filter((h) => {
+            const e = normalizePartidoEstado(h.estado);
+            return e === 'programado' || e === 'en_curso';
+        })
+        .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    const recentResults = history
+        .filter((h) => normalizePartidoEstado(h.estado) === 'finalizado')
+        .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
     const isDeportista = profile.roles?.includes('deportista');
     
@@ -726,38 +734,46 @@ export default function PublicProfilePage() {
                                     <div className="flex flex-col gap-4">
                                         {upcomingMatches.map((h, i) => {
                                             const icon = getSportIcon(h.disciplina);
-                                            const isLive = h.estado === 'en_curso';
+                                            const isLive = normalizePartidoEstado(h.estado) === 'en_curso';
 
                                             return (
                                                 <Link key={i} href={`/partido/${h.id}`} className="block">
                                                     <div className={cn(
-                                                        "flex items-center justify-between bg-black/40 border p-6 rounded-[2rem] transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden",
+                                                        "grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 sm:gap-6 bg-black/40 border p-4 sm:p-6 rounded-[2rem] transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden",
                                                         isLive ? "border-emerald-500/40 bg-emerald-500/5" : "border-white/5 hover:border-white/20 hover:bg-white/[0.05]"
                                                     )}>
-                                                        <div className="flex items-center gap-6 relative z-10">
+                                                        <div className="flex gap-4 min-w-0 relative z-10">
                                                             <div className={cn(
-                                                                "w-12 h-12 rotate-45 rounded-xl border flex items-center justify-center transition-all shadow-inner",
+                                                                "w-12 h-12 shrink-0 rotate-45 rounded-xl border flex items-center justify-center transition-all shadow-inner",
                                                                 isLive ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : "bg-white/5 border-white/10 text-white/40 group-hover:text-violet-400 group-hover:border-violet-500/30"
                                                             )}>
                                                                 <div className="-rotate-45">{icon}</div>
                                                             </div>
-                                                            <div>
-                                                                <div className="flex items-center gap-3 mb-1.5">
+                                                            <div className="min-w-0 flex-1 space-y-2">
+                                                                <div className="flex flex-wrap items-center gap-2">
                                                                     <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.15em]">{h.disciplina}</span>
                                                                     {isLive && (
                                                                         <Badge className="bg-emerald-500 text-black font-black text-[8px] animate-pulse">EN VIVO</Badge>
                                                                     )}
                                                                 </div>
-                                                                <div className="flex items-center gap-4">
-                                                                <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_a}</p>
-                                                                <span className="text-[10px] font-display font-black text-white/15">VS</span>
-                                                                <p className="text-[14px] font-black text-white/90 font-display tracking-tight">{h.equipo_b}</p>
+                                                                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:gap-3 sm:flex-wrap">
+                                                                    <p className="text-[13px] sm:text-[14px] font-black text-white/90 font-display tracking-tight break-words hyphens-auto leading-snug">{h.equipo_a}</p>
+                                                                    <span className="text-[10px] font-display font-black text-white/20 shrink-0 hidden sm:inline">VS</span>
+                                                                    <span className="text-[9px] font-black text-white/15 sm:hidden text-center">vs</span>
+                                                                    <p className="text-[13px] sm:text-[14px] font-black text-white/90 font-display tracking-tight break-words hyphens-auto leading-snug">{h.equipo_b}</p>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="flex flex-col items-end">
-                                                            <span className="text-[14px] font-black text-white font-mono">{new Date(h.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                            <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">{new Date(h.fecha).toLocaleDateString()}</span>
+                                                        <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 pt-3 sm:pt-0 border-t border-white/5 sm:border-0 shrink-0">
+                                                            <time
+                                                                dateTime={h.fecha}
+                                                                className="text-[15px] sm:text-[14px] font-black text-white font-mono tabular-nums"
+                                                            >
+                                                                {new Date(h.fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                                                            </time>
+                                                            <span className="text-[11px] sm:text-[9px] font-bold text-white/35 sm:text-white/25 uppercase tracking-wide text-right leading-tight max-w-[70%] sm:max-w-none">
+                                                                {new Date(h.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </Link>
@@ -796,26 +812,27 @@ export default function PublicProfilePage() {
 
                                             return (
                                                 <Link key={i} href={`/partido/${h.id}`} className="block">
-                                                    <div className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-white/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 sm:gap-6 bg-black/40 border border-white/5 p-4 sm:p-6 rounded-[2rem] hover:bg-white/[0.05] hover:border-white/20 transition-all hover:scale-[1.01] group cursor-pointer shadow-lg relative overflow-hidden">
                                                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-                                                        <div className="flex items-center gap-6 relative z-10">
-                                                            <div className="w-12 h-12 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all shadow-inner">
+                                                        <div className="flex gap-4 min-w-0 relative z-10">
+                                                            <div className="w-12 h-12 shrink-0 rotate-45 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all shadow-inner">
                                                                 <div className="-rotate-45">{icon}</div>
                                                             </div>
-                                                            <div>
-                                                                <div className="flex items-center gap-3 mb-1.5 ">
-                                                                    <span className="text-[10px] font-display font-black text-white/20 uppercase tracking-[0.25em]">{h.disciplina}</span>
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
-                                                                    <span className="text-[10px] font-mono font-bold text-white/20 uppercase tabular-nums">{new Date(h.fecha).toLocaleDateString()}</span>
+                                                            <div className="min-w-0 flex-1 space-y-2">
+                                                                <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono font-bold text-white/25 uppercase tabular-nums">
+                                                                    <span className="font-display font-black tracking-[0.2em]">{h.disciplina}</span>
+                                                                    <span className="text-white/15">·</span>
+                                                                    <span>{new Date(h.fecha).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                                                                 </div>
-                                                                <div className="flex items-center gap-4">
-                                                                  <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_a}</p>
-                                                                  <span className="text-[10px] font-display font-black text-white/15">VS</span>
-                                                                  <p className="text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors">{h.equipo_b}</p>
+                                                                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:gap-3 sm:flex-wrap">
+                                                                  <p className="text-[13px] sm:text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors break-words hyphens-auto leading-snug">{h.equipo_a}</p>
+                                                                  <span className="text-[10px] font-display font-black text-white/15 shrink-0 hidden sm:inline">VS</span>
+                                                                  <span className="text-[9px] font-black text-white/15 sm:hidden text-center">vs</span>
+                                                                  <p className="text-[13px] sm:text-[14px] font-black text-white/90 font-display tracking-tight group-hover:text-white transition-colors break-words hyphens-auto leading-snug">{h.equipo_b}</p>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white">
+                                                        <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white justify-self-center sm:justify-self-end w-fit max-w-full mx-auto sm:mx-0">
                                                             {scoreA} <span className="text-white/20 mx-1">-</span> {scoreB}
                                                         </div>
                                                     </div>

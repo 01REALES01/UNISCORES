@@ -8,6 +8,8 @@ interface AdminMatchTimelineProps {
   match: any;
   onDeleteEvent: (event: any) => void;
   disciplinaName: string;
+  /** Debajo del modo cancha: más alto y adaptable al viewport */
+  layoutStacked?: boolean;
 }
 
 const EVENT_EMOJIS: Record<string, string> = {
@@ -20,12 +22,19 @@ export const AdminMatchTimeline = ({
   eventos,
   match,
   onDeleteEvent,
-  disciplinaName
+  disciplinaName,
+  layoutStacked = false,
 }: AdminMatchTimelineProps) => {
   const sportColor = SPORT_COLORS[disciplinaName] || '#6366f1';
 
   return (
-    <div className="rounded-[2rem] border overflow-hidden backdrop-blur-sm relative h-[600px] flex flex-col"
+    <div
+      className={cn(
+        "rounded-[2rem] border overflow-hidden backdrop-blur-sm relative flex flex-col w-full",
+        layoutStacked
+          ? "min-h-[380px] h-[55vh] max-h-[720px]"
+          : "h-[600px]"
+      )}
       style={{ borderColor: `${sportColor}10`, background: `linear-gradient(to bottom, ${sportColor}06, transparent)` }}>
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
 
@@ -60,6 +69,11 @@ export const AdminMatchTimeline = ({
             const isSystem = e.equipo === 'sistema';
             const isTeamA = e.equipo === 'equipo_a';
             const emoji = EVENT_EMOJIS[e.tipo_evento] || '📌';
+            const isVoley = disciplinaName === 'Voleibol';
+            const volleyPuntoConJugador =
+              isVoley &&
+              e.tipo_evento === 'punto' &&
+              e.jugador_id_normalized != null;
 
             return (
               <div key={e.id}
@@ -77,14 +91,26 @@ export const AdminMatchTimeline = ({
 
                 {/* Content */}
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-sm">{emoji}</span>
                     <p className="font-black text-[10px] uppercase tracking-tight text-white/70">
                       {e.tipo_evento.replace(/_/g, ' ')}
                     </p>
                     {e.periodo && (
                       <span className="text-[8px] font-black px-1.5 py-0.5 rounded text-white/25 uppercase"
-                        style={{ background: `${sportColor}10` }}>P{e.periodo}</span>
+                        style={{ background: `${sportColor}10` }}>
+                        {isVoley ? `SET ${e.periodo}` : `P${e.periodo}`}
+                      </span>
+                    )}
+                    {volleyPuntoConJugador && (
+                      <span
+                        className="inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded text-cyan-300/90 uppercase tabular-nums"
+                        style={{ background: `${sportColor}18`, borderColor: `${sportColor}30` }}
+                        title="Minuto de juego al registrar el punto"
+                      >
+                        <Clock size={10} className="shrink-0 opacity-80" />
+                        {e.minuto != null ? `${e.minuto}'` : '—'}
+                      </span>
                     )}
                   </div>
                   {e.jugadores && (
