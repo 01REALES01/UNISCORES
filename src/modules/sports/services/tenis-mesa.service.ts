@@ -21,17 +21,21 @@ export class TenisMesaService extends BaseSportService {
     const set = d.set_actual || 1;
     const setsA = d.sets_total_a ?? d.sets_a ?? 0;
     const setsB = d.sets_total_b ?? d.sets_b ?? 0;
-    const s = d.sets?.[set] || {};
+    const s =
+      d.sets?.[set] ??
+      d.sets?.[String(set)] ??
+      {};
     const pA = s.puntos_a ?? d.puntos_a ?? d.total_a ?? d.goles_a ?? 0;
     const pB = s.puntos_b ?? d.puntos_b ?? d.total_b ?? d.goles_b ?? 0;
-    
+
+    // Misma convención que Voleibol / tarjetas partidos: score = sets ganados, sub = rally del set actual.
     return {
-      scoreA: pA,
-      scoreB: pB,
-      subScoreA: setsA,
-      subScoreB: setsB,
-      extra: `${setsA}–${setsB} · Set ${set}`,
-      subLabel: 'Sets',
+      scoreA: setsA,
+      scoreB: setsB,
+      subScoreA: pA,
+      subScoreB: pB,
+      extra: `Set ${set} · ${pA}–${pB}`,
+      subLabel: 'PTS',
     };
   }
 

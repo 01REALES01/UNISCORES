@@ -85,25 +85,15 @@ function MatchRow({ partido }: { partido: Partido }) {
   const isVolley = sportName === "Voleibol";
   const isTenisCampo = sportName === "Tenis";
   const isTenisMesa = sportName === "Tenis de Mesa";
-  // Sets ganados en el partido (voleibol / tenis campo: scoreA; tenis mesa: subScore)
-  const matchSetsA = isVolley || isTenisCampo ? scoreA : isTenisMesa ? subScoreA : null;
-  const matchSetsB = isVolley || isTenisCampo ? scoreB : isTenisMesa ? subScoreB : null;
-  // Marcador “grande” en vivo: rally del set (voleibol), juegos en el set (tenis campo), puntos rally (tenis mesa)
-  const livePrimaryA = isVolley ? subScoreA : isTenisCampo ? subScoreA : isTenisMesa ? scoreA : null;
-  const livePrimaryB = isVolley ? subScoreB : isTenisCampo ? subScoreB : isTenisMesa ? scoreB : null;
+  // Sets ganados: scoreA/B (voleibol, tenis campo, tenis de mesa — mismo contrato que getCurrentScore)
+  const matchSetsA = isVolley || isTenisCampo || isTenisMesa ? scoreA : null;
+  const matchSetsB = isVolley || isTenisCampo || isTenisMesa ? scoreB : null;
+  // En vivo, marcador grande: puntos/juegos del período actual (subScore)
+  const livePrimaryA = isVolley || isTenisMesa ? subScoreA : isTenisCampo ? subScoreA : null;
+  const livePrimaryB = isVolley || isTenisMesa ? subScoreB : isTenisCampo ? subScoreB : null;
 
-  const finalScoreA =
-    isFinished && isSetSport
-      ? isTenisMesa
-        ? subScoreA ?? scoreA ?? 0
-        : scoreA ?? 0
-      : scoreA ?? 0;
-  const finalScoreB =
-    isFinished && isSetSport
-      ? isTenisMesa
-        ? subScoreB ?? scoreB ?? 0
-        : scoreB ?? 0
-      : scoreB ?? 0;
+  const finalScoreA = scoreA ?? 0;
+  const finalScoreB = scoreB ?? 0;
 
   const winnerSide =
     isFinished && finalScoreA !== finalScoreB

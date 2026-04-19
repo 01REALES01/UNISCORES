@@ -3,9 +3,9 @@
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
-    Upload, CheckCircle, XCircle, AlertTriangle,
-    FileSpreadsheet, Calendar, Users, ChevronDown, ChevronRight,
-    Play, RotateCcw
+    CheckCircle, XCircle, AlertTriangle,
+    FileSpreadsheet, Calendar, ChevronDown, ChevronRight,
+    Play, RotateCcw, Swords,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,30 @@ interface ParseError {
     sheet: string;
     row: number;
     message: string;
+}
+
+interface AjedrezDryRunResult {
+    dry_run: true;
+    matches_found: number;
+    numero_ronda: number;
+    genero: string;
+    fase: string;
+    sample: Array<{ slot_a: string; slot_b: string; fecha: string; lugar: string }>;
+    parse_errors: ParseError[];
+}
+
+interface AjedrezCommitResult {
+    success: true;
+    partidos_creados: number;
+    partidos_skipped: number;
+    numero_ronda: number;
+    genero: string;
+    fase: string;
+    roster_rows: number;
+    perfiles_vinculados: number;
+    parse_errors: ParseError[];
+    commit_errors: string[];
+    roster_unlinked: string[];
 }
 
 type Step = 'upload' | 'preview' | 'done';
@@ -111,6 +135,14 @@ export default function FixturePage() {
     const [purgeKeyword, setPurgeKeyword] = useState('');
     const [purging, setPurging] = useState(false);
 
+    const [ajedrezNumero, setAjedrezNumero] = useState(1);
+    const [ajedrezGenero, setAjedrezGenero] = useState<'masculino' | 'femenino' | 'mixto'>('masculino');
+    const [ajedrezPendingFile, setAjedrezPendingFile] = useState<File | null>(null);
+    const [ajedrezPreview, setAjedrezPreview] = useState<AjedrezDryRunResult | null>(null);
+    const [ajedrezResult, setAjedrezResult] = useState<AjedrezCommitResult | null>(null);
+    const [ajedrezLoading, setAjedrezLoading] = useState(false);
+    const ajedrezInputRef = useRef<HTMLInputElement>(null);
+
     // ── Step 1: dry-run ──────────────────────────────────────────────────────
     const runDryRun = useCallback(async (file: File) => {
         setLoading(true);
@@ -178,6 +210,63 @@ export default function FixturePage() {
     };
 
     const hasBlockers = (preview?.match_issues.length ?? 0) > 0;
+
+    const runAjedrezDryRun = useCallback(async (file: File) => {
+        setAjedrezLoading(true);
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('numero_ronda', String(ajedrezNumero));
+            fd.append('genero', ajedrezGenero);
+            fd.append('dry_run', 'true');
+            const res = await fetch('/api/admin/import-ajedrez-ronda', { method: 'POST', body: fd });
+            const json = await res.json();
+            if (!res.ok) {
+                toast.error(json.error ?? 'Error al analizar el Excel de Ajedrez');
+                return;
+            }
+            setAjedrezPendingFile(file);
+            setAjedrezPreview(json as AjedrezDryRunResult);
+            setAjedrezResult(null);
+            toast.success(`${json.matches_found} emparejamientos detectados (vista previa)`);
+        } catch (e: unknown) {
+            const err = e as { message?: string };
+            toast.error('Error de red: ' + (err.message ?? ''));
+        } finally {
+            setAjedrezLoading(false);
+        }
+    }, [ajedrezNumero, ajedrezGenero]);
+
+    const commitAjedrez = async () => {
+        if (!ajedrezPendingFile) return;
+        setAjedrezLoading(true);
+        try {
+            const fd = new FormData();
+            fd.append('file', ajedrezPendingFile);
+            fd.append('numero_ronda', String(ajedrezNumero));
+            fd.append('genero', ajedrezGenero);
+            const res = await fetch('/api/admin/import-ajedrez-ronda', { method: 'POST', body: fd });
+            const json = await res.json();
+            if (!res.ok) {
+                toast.error(json.error ?? 'Error al importar Ajedrez');
+                return;
+            }
+            setAjedrezResult(json as AjedrezCommitResult);
+            setAjedrezPreview(null);
+            toast.success(`${json.partidos_creados} partidos de Ajedrez creados`);
+        } catch (e: unknown) {
+            const err = e as { message?: string };
+            toast.error('Error: ' + (err.message ?? ''));
+        } finally {
+            setAjedrezLoading(false);
+        }
+    };
+
+    const resetAjedrez = () => {
+        setAjedrezPendingFile(null);
+        setAjedrezPreview(null);
+        setAjedrezResult(null);
+    };
 
     const handlePurge = async () => {
         if (purgeKeyword !== 'BORRAR') return;
@@ -259,6 +348,135 @@ export default function FixturePage() {
                             </li>
                         ))}
                     </ul>
+                </div>
+
+                {/* Ajedrez: una ronda del torneo suizo por archivo */}
+                <div className="rounded-2xl border border-violet-500/20 bg-violet-500/[0.03] p-4 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                            <Swords size={18} className="text-violet-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-white font-black text-sm">Importar Ajedrez (ronda)</h2>
+                            <p className="text-white/30 text-xs">
+                                Un Excel por ronda (RD1, RD2…). Calendario General (bloque Ajedrez) o tabla con columnas Blancas / Negras.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="space-y-1">
+                            <span className="text-[10px] font-bold text-white/40 uppercase">Nº ronda torneo</span>
+                            <input
+                                type="number"
+                                min={1}
+                                value={ajedrezNumero}
+                                onChange={(e) => {
+                                    setAjedrezNumero(Math.max(1, parseInt(e.target.value, 10) || 1));
+                                    resetAjedrez();
+                                }}
+                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+                            />
+                        </label>
+                        <label className="space-y-1">
+                            <span className="text-[10px] font-bold text-white/40 uppercase">Género</span>
+                            <select
+                                value={ajedrezGenero}
+                                onChange={(e) => {
+                                    setAjedrezGenero(e.target.value as 'masculino' | 'femenino' | 'mixto');
+                                    resetAjedrez();
+                                }}
+                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+                            >
+                                <option value="masculino">Masculino</option>
+                                <option value="femenino">Femenino</option>
+                                <option value="mixto">Mixto</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <input
+                            ref={ajedrezInputRef}
+                            type="file"
+                            accept=".xlsx,.xls"
+                            className="hidden"
+                            onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) runAjedrezDryRun(f);
+                                e.target.value = '';
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => ajedrezInputRef.current?.click()}
+                            disabled={ajedrezLoading}
+                            className="px-4 py-2 rounded-xl bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 text-violet-300 text-sm font-bold transition-colors disabled:opacity-50"
+                        >
+                            {ajedrezLoading ? 'Analizando…' : 'Elegir Excel y vista previa'}
+                        </button>
+                        {ajedrezPreview && (
+                            <>
+                                <span className="text-xs text-white/40">
+                                    {ajedrezPreview.matches_found} partidos · {ajedrezPreview.fase}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={commitAjedrez}
+                                    disabled={ajedrezLoading}
+                                    className="px-4 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-sm font-bold"
+                                >
+                                    Importar a la BD
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={resetAjedrez}
+                                    className="text-xs text-white/30 hover:text-white/50"
+                                >
+                                    Cancelar
+                                </button>
+                            </>
+                        )}
+                    </div>
+                    {ajedrezPreview?.sample && ajedrezPreview.sample.length > 0 && (
+                        <div className="rounded-lg border border-white/5 bg-black/20 p-3 text-xs text-white/50 space-y-1">
+                            <p className="text-[10px] font-bold text-white/40 uppercase">Muestra</p>
+                            {ajedrezPreview.sample.map((row, i) => (
+                                <p key={i}>
+                                    {row.slot_a} vs {row.slot_b} — {row.lugar}
+                                </p>
+                            ))}
+                        </div>
+                    )}
+                    {(ajedrezPreview?.parse_errors?.length ?? 0) > 0 && (
+                        <IssueList
+                            title="Avisos de parseo (Ajedrez)"
+                            items={ajedrezPreview!.parse_errors.map((e) => `Fila ${e.row}: ${e.message}`)}
+                            icon={AlertTriangle}
+                            color="text-amber-400 border-amber-500/20 bg-amber-500/05"
+                        />
+                    )}
+                    {ajedrezResult && (
+                        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs space-y-1">
+                            <p className="text-emerald-400 font-bold">
+                                Creados: {ajedrezResult.partidos_creados} · Omitidos (duplicado): {ajedrezResult.partidos_skipped}
+                            </p>
+                            <p className="text-white/50">
+                                Roster: {ajedrezResult.roster_rows} · Perfiles vinculados en partido: {ajedrezResult.perfiles_vinculados}
+                            </p>
+                            {ajedrezResult.roster_unlinked.length > 0 && (
+                                <div className="pt-2 border-t border-white/10">
+                                    <p className="text-amber-400 font-bold mb-1">No enlazados (revisar jugadores o nombres en Excel)</p>
+                                    <ul className="max-h-24 overflow-y-auto space-y-0.5 text-white/40">
+                                        {ajedrezResult.roster_unlinked.slice(0, 15).map((line, i) => (
+                                            <li key={i}>{line}</li>
+                                        ))}
+                                    </ul>
+                                    {ajedrezResult.roster_unlinked.length > 15 && (
+                                        <p className="text-white/30">+{ajedrezResult.roster_unlinked.length - 15} más</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Danger box */}

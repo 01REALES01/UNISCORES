@@ -12,6 +12,7 @@ import UniqueLoading from "@/components/ui/morph-loading";
 import { PulseHeader } from "@/modules/estadisticas/components/pulse-header";
 import { LeaderboardTable, type LeaderboardEntry } from "@/modules/estadisticas/components/leaderboard-table";
 import { PopularityRanking, type TopCareer, type TopUser } from "@/modules/estadisticas/components/popularity-ranking";
+import { fetchAllOlympicsEventosRows } from "@/lib/leaderboard-scorers";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ function getPointValue(tipo: string): number {
     const t = tipo.toLowerCase();
     if (t === 'punto_3') return 3;
     if (t === 'punto_2') return 2;
+    if (t === 'anotacion') return 2;
     return 1;
 }
 
@@ -63,16 +65,25 @@ export default function EstadisticasPage() {
         setLoading(true);
         try {
             // 1. Fetch raw data without complex joins first to be safe
-            const [allMatchesRes, eventosRes, topCareersRes, topUsersRes, disciplinesRes] = await Promise.all([
+            const [allMatchesRes, topCareersRes, topUsersRes, disciplinesRes] = await Promise.all([
                 supabase.from('partidos').select('id, estado, disciplina_id, carrera_a_id, carrera_b_id, genero'),
-                supabase.from('olympics_eventos').select('tipo_evento, partido_id, equipo, jugador_id_normalized'),
                 supabase.from('carreras').select('id, nombre, escudo_url, followers_count').order('followers_count', { ascending: false }).limit(10),
                 supabase.from('profiles').select('id, full_name, avatar_url, followers_count').order('followers_count', { ascending: false }).limit(10),
                 supabase.from('disciplinas').select('id, name')
             ]);
 
+            const eventosRows = await fetchAllOlympicsEventosRows(
+                supabase,
+                'tipo_evento, partido_id, equipo, jugador_id, jugador_id_normalized'
+            );
+
             // 2. Fetch all required players with their profile and career info
-            const playerIds = Array.from(new Set((eventosRes.data || []).map(e => e.jugador_id_normalized).filter(Boolean)));
+            const playerIds = Array.from(new Set(
+                eventosRows.map((e) => {
+                    const jid = (e.jugador_id_normalized ?? e.jugador_id) as number | null | undefined;
+                    return jid;
+                }).filter((id): id is number => typeof id === 'number' && id > 0)
+            ));
             const { data: playersData } = await supabase.from('jugadores').select('id, nombre, profile_id, carrera_id, profiles(avatar_url)').in('id', playerIds);
             const playerMap = new Map(playersData?.map(j => [j.id, j]));
 
@@ -86,9 +97,10 @@ export default function EstadisticasPage() {
             const profileByName = new Map(allProfiles?.map(p => [p.full_name?.toLowerCase(), p]));
 
             const matches = (allMatchesRes.data || []).map(m => ({ ...m, disciplina_name: discMap.get(m.disciplina_id) }));
-            const allEvents = (eventosRes.data || []).map(e => {
+            const allEvents = (eventosRows || []).map(e => {
                 const match = matches.find(m => m.id === e.partido_id);
-                const player = playerMap.get(e.jugador_id_normalized);
+                const jid = (e.jugador_id_normalized ?? e.jugador_id) as number | undefined;
+                const player = jid ? playerMap.get(jid) : undefined;
                 
                 if (player && match) {
                     // Enrich player object for leaderboards
@@ -178,7 +190,7 @@ export default function EstadisticasPage() {
         filteredEventos.filter(e => {
             const sport = e.partidos?.disciplina_name || '';
             const type = e.tipo_evento?.toLowerCase() || '';
-            return sport.includes('Baloncesto') && (type.startsWith('punto') || type === 'puntos');
+            return sport.includes('Baloncesto') && (type.startsWith('punto') || type === 'puntos' || type === 'anotacion');
         }).forEach(e => {
             const j = e.jugadores;
             if (!j || !e.partidos) return;

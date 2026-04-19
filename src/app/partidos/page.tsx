@@ -412,16 +412,18 @@ function MatchCardEntry({ partido }: { partido: any }) {
     const sportKey = normalizeSportName(sportName);
     const { scoreA, scoreB, subScoreA, subScoreB } = getCurrentScore(sportKey, partido.marcador_detalle || {});
     const isVolley = sportKey === 'Voleibol';
-    const isTenisMesa = sportName === 'Tenis de Mesa';
+    const isTenisMesa = sportKey === 'Tenis de Mesa';
+    /** En vivo: marcador grande = puntos del set; pie = sets ganados (como voleibol). */
+    const setBasedLive = isVolley || isTenisMesa;
 
     if (partido.estado === 'en_curso') {
-        const setsLine = isVolley ? `Sets ${scoreA ?? 0}\u2013${scoreB ?? 0}` : null;
+        const setsLine = setBasedLive ? `Sets ${scoreA ?? 0}\u2013${scoreB ?? 0}` : null;
         return (
             <UnifiedCard
                 partido={partido}
                 statusLabel="LIVE"
                 scoreDisplay={
-                    (isVolley || isTenisMesa)
+                    setBasedLive
                         ? { a: subScoreA ?? 0, b: subScoreB ?? 0 }
                         : { a: scoreA, b: scoreB }
                 }
@@ -436,11 +438,7 @@ function MatchCardEntry({ partido }: { partido: any }) {
             <UnifiedCard
                 partido={partido}
                 statusLabel="FINALIZADO"
-                scoreDisplay={
-                    isTenisMesa
-                        ? { a: subScoreA ?? 0, b: subScoreB ?? 0 }
-                        : { a: scoreA, b: scoreB }
-                }
+                scoreDisplay={{ a: scoreA, b: scoreB }}
                 scoreFooter={voleySets ?? undefined}
                 highlightWinner={true}
             />

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { safeQuery } from "@/lib/supabase-query";
 import { useAuth } from "@/hooks/useAuth";
 import { MainNavbar } from "@/components/main-navbar";
 import { Avatar } from "@/components/ui-primitives";
@@ -16,19 +15,14 @@ import { SPORT_COLORS, SPORT_EMOJI, SPORT_ACCENT } from "@/lib/constants";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import UniqueLoading from "@/components/ui/morph-loading";
+import {
+    aggregateScorersFromEvents,
+    fetchScoringEventsForLeaderboard,
+    type AggregatedScorer,
+    type JugadorRow,
+} from "@/lib/leaderboard-scorers";
 
-type Scorer = {
-    jugador_id: number;
-    nombre: string;
-    numero: number | null;
-    profile_id: string | null;
-    disciplina: string;
-    genero: string;
-    goles: number;
-    puntos_totales: number;
-    partidos_jugados: number;
-    mejor_partido: number;
-};
+type Scorer = AggregatedScorer;
 
 export default function LideresPage() {
     const { user, profile, isStaff } = useAuth();
@@ -42,86 +36,33 @@ export default function LideresPage() {
     const fetchScorers = async () => {
         setLoading(true);
 
-        // Try the view first, fallback to direct query
-        let data: Scorer[] = [];
+        const rawEvents = await fetchScoringEventsForLeaderboard(supabase);
 
-        const viewResult = await safeQuery(
-            supabase.from('view_top_scorers').select('*'),
-            'lideres-view'
-        );
+        const ids = new Set<number>();
+        for (const e of rawEvents) {
+            const jid = e.jugador_id_normalized ?? e.jugador_id;
+            if (jid != null) ids.add(jid);
+        }
 
-        if (viewResult.data && viewResult.data.length > 0) {
-            data = viewResult.data;
-        } else {
-            // Fallback: compute from olympics_eventos directly
-            const { data: eventos } = await supabase
-                .from('olympics_eventos')
-                .select(`
-                    tipo_evento, partido_id, equipo,
-                    jugadores(id, nombre, numero, profile_id, genero),
-                    partidos(estado, disciplinas(name))
-                `)
-                .in('tipo_evento', ['gol', 'punto', 'punto_1', 'punto_2', 'punto_3']);
-
-            if (eventos && eventos.length > 0) {
-                const map = new Map<string, Scorer>();
-
-                for (const e of eventos as any[]) {
-                    const j = e.jugadores;
-                    const p = e.partidos;
-                    if (!j || !p || p.estado !== 'finalizado') continue;
-
-                    const disc = p.disciplinas?.name || 'Desconocido';
-                    const key = `${j.id}-${disc}`;
-
-                    if (!map.has(key)) {
-                        map.set(key, {
-                            jugador_id: j.id,
-                            nombre: j.nombre,
-                            numero: j.numero,
-                            profile_id: j.profile_id,
-                            disciplina: disc,
-                            genero: j.genero || 'masculino',
-                            goles: 0,
-                            puntos_totales: 0,
-                            partidos_jugados: 0,
-                            mejor_partido: 0,
-                        });
-                    }
-
-                    const s = map.get(key)!;
-                    const pts = e.tipo_evento === 'gol' ? 1
-                        : e.tipo_evento === 'punto' ? 1
-                        : e.tipo_evento === 'punto_1' ? 1
-                        : e.tipo_evento === 'punto_2' ? 2
-                        : e.tipo_evento === 'punto_3' ? 3 : 0;
-
-                    if (e.tipo_evento === 'gol') s.goles++;
-                    s.puntos_totales += pts;
-                }
-
-                // Count distinct matches per player
-                const matchMap = new Map<string, Set<number>>();
-                for (const e of eventos as any[]) {
-                    const j = e.jugadores;
-                    const p = e.partidos;
-                    if (!j || !p || p.estado !== 'finalizado') continue;
-                    const disc = p.disciplinas?.name || 'Desconocido';
-                    const key = `${j.id}-${disc}`;
-                    if (!matchMap.has(key)) matchMap.set(key, new Set());
-                    matchMap.get(key)!.add(e.partido_id);
-                }
-
-                for (const [key, matches] of matchMap) {
-                    const s = map.get(key);
-                    if (s) s.partidos_jugados = matches.size;
-                }
-
-                data = Array.from(map.values())
-                    .filter(s => s.puntos_totales > 0)
-                    .sort((a, b) => b.puntos_totales - a.puntos_totales);
+        const jugadoresById = new Map<number, JugadorRow>();
+        const idList = [...ids];
+        const CHUNK = 300;
+        for (let i = 0; i < idList.length; i += CHUNK) {
+            const slice = idList.slice(i, i + CHUNK);
+            const { data: jrows, error: jErr } = await supabase
+                .from("jugadores")
+                .select("id, nombre, numero, profile_id, genero")
+                .in("id", slice);
+            if (jErr) {
+                console.warn("[lideres] jugadores:", jErr.message);
+                continue;
+            }
+            for (const j of jrows || []) {
+                jugadoresById.set(j.id, j as JugadorRow);
             }
         }
+
+        const data = aggregateScorersFromEvents(rawEvents, jugadoresById);
 
         setScorers(data);
 

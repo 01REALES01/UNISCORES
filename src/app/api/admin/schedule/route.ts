@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteSupabase } from '@/lib/supabase-route-handler';
 import { parseScheduleExcel } from '@/lib/schedule-parser';
 import type { ScheduleMatch, ScheduleTeam, ScheduleJornada } from '@/lib/schedule-parser';
+import { AjedrezService } from '@/modules/sports/services/ajedrez.service';
 
 export const maxDuration = 60;
 
@@ -258,6 +259,11 @@ export async function POST(request: NextRequest) {
             continue;
         }
 
+        const isAjedrez = match.sport.toLowerCase() === 'ajedrez';
+        const marcadorAjedrez = isAjedrez
+            ? (AjedrezService.initDetalle(1) as unknown as Record<string, unknown>)
+            : undefined;
+
         const { error: insertError } = await supabase
             .from('partidos')
             .insert({
@@ -274,6 +280,7 @@ export async function POST(request: NextRequest) {
                 // left NULL — assigned later via the team-assignment panel
                 carrera_a_ids: [],
                 carrera_b_ids: [],
+                ...(marcadorAjedrez ? { marcador_detalle: marcadorAjedrez } : {}),
             });
 
         if (insertError) {

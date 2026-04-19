@@ -154,6 +154,8 @@ project_olympics/
 4. Iniciar cronómetro, registrar eventos (goles, tarjetas, etc.)
 5. Agregar jugadores sobre la marcha
 
+**Ajedrez (torneo suizo, una partida por emparejamiento por ronda):** sube **un Excel por ronda** desde **Admin → Cargar fixture** en la sección *Importar Ajedrez (ronda)*. Puedes usar el mismo formato que el Calendario General (bloque deporte *Ajedrez* y filas `Vs`) o una tabla simple en la primera hoja con columnas de jugadores **Blancas** y **Negras** (también acepta variantes como *Blanco* / *Negro*). Indica el número de ronda del torneo y el género; primero *vista previa* y luego *Importar a la BD*. El sistema crea `partidos` con marcador de una sola ronda interna, upsert de `jornadas`, intenta enlazar `jugadores` y `roster_partido` por nombre (y perfil si existe); los nombres que no coincidan aparecen en la respuesta como *no enlazados* para corregir el Excel o el alta en `jugadores`. La ruta equivalente es `POST /api/admin/import-ajedrez-ronda` (`FormData`: `file`, `numero_ronda`, `genero`, opcional `dry_run=true`).
+
 ### Como Espectador
 
 1. Ve a la página principal (`/`)

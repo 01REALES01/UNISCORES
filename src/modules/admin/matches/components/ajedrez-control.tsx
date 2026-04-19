@@ -32,6 +32,7 @@ export function AjedrezControl({ matchId, match, onUpdate, profile }: AjedrezCon
     const detalle = match.marcador_detalle || {};
     const rondaActual = detalle.ronda_actual || 1;
     const totalRondas = detalle.total_rondas || 3;
+    const singleRondaSuizo = totalRondas === 1;
     const rondas: Record<string, { resultado: AjedrezRondaResultado }> = detalle.rondas || {};
     const isLocked = match.estado === 'finalizado';
     const allDone = service.isFinished(detalle);
@@ -70,7 +71,11 @@ export function AjedrezControl({ matchId, match, onUpdate, profile }: AjedrezCon
 
     const handleFinalizar = async () => {
         if (!allDone) {
-            toast.error('Registra el resultado de todas las rondas antes de finalizar');
+            toast.error(
+                singleRondaSuizo
+                    ? 'Registra el resultado del partido antes de finalizar'
+                    : 'Registra el resultado de todas las rondas antes de finalizar'
+            );
             return;
         }
         if (!confirm('¿Finalizar el partido? Esto registrará el resultado final.')) return;
@@ -116,28 +121,34 @@ export function AjedrezControl({ matchId, match, onUpdate, profile }: AjedrezCon
                 </div>
                 <div className="text-center space-y-1">
                     <p className="text-[10px] font-black uppercase tracking-widest text-white/30">
-                        Ronda {Math.min(rondaActual, totalRondas)} / {totalRondas}
+                        {singleRondaSuizo
+                            ? 'Una partida (suizo)'
+                            : `Ronda ${Math.min(rondaActual, totalRondas)} / ${totalRondas}`}
                     </p>
-                    <div className="flex justify-center gap-1">
-                        {Array.from({ length: totalRondas }, (_, i) => {
-                            const r = rondas[String(i + 1)];
-                            const res = r?.resultado;
-                            return (
-                                <div
-                                    key={i}
-                                    className={cn(
-                                        "w-3 h-3 rounded-full border",
-                                        res === 'victoria_a' ? "bg-emerald-500 border-emerald-500" :
-                                        res === 'victoria_b' ? "bg-blue-500 border-blue-500" :
-                                        res === 'empate' ? "bg-amber-500 border-amber-500" :
-                                        i + 1 === rondaActual ? "bg-white/20 border-white/40 animate-pulse" :
-                                        "bg-white/5 border-white/10"
-                                    )}
-                                />
-                            );
-                        })}
-                    </div>
-                    <p className="text-[9px] font-black uppercase text-white/20">Historial</p>
+                    {!singleRondaSuizo && (
+                        <>
+                            <div className="flex justify-center gap-1">
+                                {Array.from({ length: totalRondas }, (_, i) => {
+                                    const r = rondas[String(i + 1)];
+                                    const res = r?.resultado;
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={cn(
+                                                "w-3 h-3 rounded-full border",
+                                                res === 'victoria_a' ? "bg-emerald-500 border-emerald-500" :
+                                                res === 'victoria_b' ? "bg-blue-500 border-blue-500" :
+                                                res === 'empate' ? "bg-amber-500 border-amber-500" :
+                                                i + 1 === rondaActual ? "bg-white/20 border-white/40 animate-pulse" :
+                                                "bg-white/5 border-white/10"
+                                            )}
+                                        />
+                                    );
+                                })}
+                            </div>
+                            <p className="text-[9px] font-black uppercase text-white/20">Historial</p>
+                        </>
+                    )}
                 </div>
                 <div className="text-center">
                     <p className="text-xs font-black uppercase tracking-widest text-white/40 mb-1 truncate">{equipoB}</p>
@@ -146,8 +157,8 @@ export function AjedrezControl({ matchId, match, onUpdate, profile }: AjedrezCon
                 </div>
             </div>
 
-            {/* Ronda historial detallado */}
-            {Object.keys(rondas).length > 0 && (
+            {/* Ronda historial detallado (omitido si una sola ronda suizo) */}
+            {!singleRondaSuizo && Object.keys(rondas).length > 0 && (
                 <div className="flex flex-wrap gap-2">
                     {Array.from({ length: totalRondas }, (_, i) => {
                         const n = i + 1;
@@ -179,7 +190,7 @@ export function AjedrezControl({ matchId, match, onUpdate, profile }: AjedrezCon
             {!isLocked && !allDone && (
                 <div className="space-y-3">
                     <p className="text-[11px] font-black uppercase tracking-widest text-white/40">
-                        Resultado — Ronda {rondaActual}
+                        {singleRondaSuizo ? 'Resultado del partido' : `Resultado — Ronda ${rondaActual}`}
                     </p>
                     <div className="grid grid-cols-3 gap-3">
                         {/* Gana A */}
@@ -243,7 +254,7 @@ export function AjedrezControl({ matchId, match, onUpdate, profile }: AjedrezCon
                     )}
                 >
                     <Flag size={18} className="mr-2" />
-                    {finalizing ? 'Finalizando...' : allDone ? 'Finalizar Partido' : `Quedan ${totalRondas - Object.values(rondas).filter(r => r.resultado !== null).length} rondas`}
+                    {finalizing ? 'Finalizando...' : allDone ? 'Finalizar Partido' : singleRondaSuizo ? 'Registra el resultado para finalizar' : `Quedan ${totalRondas - Object.values(rondas).filter(r => r.resultado !== null).length} rondas`}
                 </Button>
             )}
 

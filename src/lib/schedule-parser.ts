@@ -42,6 +42,10 @@ export interface ScheduleMatch {
     sheet: string;
     /** Source row index (0-based) */
     row: number;
+    /**
+     * Solo Ajedrez (export Swiss / emparejamientos): resultado en Excel (p. ej. columna Resultado).
+     */
+    ajedrez_resultado?: 'victoria_a' | 'victoria_b' | 'empate';
 }
 
 export interface ScheduleTeam {
