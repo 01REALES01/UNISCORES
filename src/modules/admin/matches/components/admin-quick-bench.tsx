@@ -7,16 +7,18 @@ import {
   Check,
   CircleDot,
   Flag,
+  Hash,
   Pencil,
   Square,
   Trash2,
+  User,
   UserPlus,
   Volleyball,
   X,
 } from "lucide-react";
 import { Avatar } from "@/components/ui-primitives";
 import { cn } from "@/lib/utils";
-import { getDisplayName } from "@/lib/sport-helpers";
+import { getCarreraName, getDisplayName } from "@/lib/sport-helpers";
 import { SPORT_COLORS } from "@/lib/constants";
 import { PlayerSearchForm } from "./player-search-form";
 import type { Evento } from "@/modules/matches/types";
@@ -29,6 +31,7 @@ export type QuickBenchAction = {
 };
 
 type TeamId = "equipo_a" | "equipo_b";
+type PlantillaVista = "numeros" | "nombres";
 
 type Props = {
   match: any;
@@ -123,17 +126,21 @@ export function AdminQuickBench({
 }: Props) {
   const sportColor = SPORT_COLORS[disciplinaName] || "#6366f1";
   const isVolleyball = disciplinaName === "Voleibol";
-  const isFutbol = disciplinaName === "Fútbol";
+  const isFutbolOrFutsal = disciplinaName === "Fútbol" || disciplinaName === "Futsal";
+  /** Móvil: Lado A / B para vóley, fútbol, futsal y baloncesto (un panel a la vez, menos scroll). */
+  const canchaOneSideOnMobile = ['Voleibol', 'Fútbol', 'Futsal', 'Baloncesto'].includes(
+    disciplinaName
+  );
 
   const expelledIds = useMemo(() => {
-    if (!isFutbol && !isVolleyball) return new Set<number>();
+    if (!isFutbolOrFutsal && !isVolleyball) return new Set<number>();
     return new Set(
       eventos
         .filter((e) => e.tipo_evento === "tarjeta_roja")
         .map((e) => e.jugador_id_normalized)
         .filter((id): id is number => id != null)
     );
-  }, [eventos, isFutbol, isVolleyball]);
+  }, [eventos, isFutbolOrFutsal, isVolleyball]);
 
   const [selected, setSelected] = useState<{ team: TeamId; jugadorId: number } | null>(null);
   const [addingTeam, setAddingTeam] = useState<TeamId | null>(null);
@@ -142,6 +149,13 @@ export function AdminQuickBench({
   const [savingNumero, setSavingNumero] = useState(false);
   const [saving, setSaving] = useState(false);
   const savingLock = useRef(false);
+  /** Móvil: un bando a la vez para no scrollear tanto (md+ sigue viendo ambos). */
+  const [canchaSide, setCanchaSide] = useState<"A" | "B">("A");
+  /** Por equipo: cancha móvil suele ir a números; “nombres” para leer apellidos. */
+  const [plantillaVista, setPlantillaVista] = useState<Record<TeamId, PlantillaVista>>({
+    equipo_a: "numeros",
+    equipo_b: "numeros",
+  });
 
   useEffect(() => {
     if (!selected) return;
@@ -355,6 +369,9 @@ export function AdminQuickBench({
         ? jugadores.find((x) => x.id === selected.jugadorId)
         : undefined;
     const canQuitarBar = Boolean(selectedJugador?.roster_id);
+    const vista = plantillaVista[team];
+    const alguienEditaDorsalAqui =
+      editingPlayerId != null && jugadores.some((x) => x.id === editingPlayerId);
 
     const plantillaBlock = (
       <section aria-label="Plantilla">
@@ -371,11 +388,65 @@ export function AdminQuickBench({
             title="Nuevo jugador"
           />
         ) : (
-          <ul className="grid grid-cols-2 gap-2" role="list">
+          <>
+            <div
+              className="mb-3 rounded-2xl border-2 border-amber-400/50 bg-amber-500/15 p-1.5 shadow-lg shadow-amber-900/30"
+              role="group"
+              aria-label="Cómo ver la plantilla"
+            >
+              <p className="px-1 pb-1.5 text-center text-[8px] font-black uppercase tracking-[0.2em] text-amber-200/90">
+                Toca para cambiar
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPlantillaVista((p) => ({ ...p, [team]: "numeros" }))}
+                  aria-pressed={vista === "numeros"}
+                  className={cn(
+                    "flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-xl border-2 px-2 py-2.5 text-center transition-all touch-manipulation active:scale-[0.99]",
+                    vista === "numeros"
+                      ? "border-amber-200 bg-amber-500 text-zinc-900 shadow-md"
+                      : "border-white/20 bg-black/30 text-white/50 hover:text-white/90"
+                  )}
+                >
+                  <Hash className="h-5 w-5 shrink-0" strokeWidth={2.5} aria-hidden />
+                  <span className="text-[10px] font-black uppercase leading-tight">
+                    Ver solo
+                    <br />
+                    números
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPlantillaVista((p) => ({ ...p, [team]: "nombres" }))}
+                  aria-pressed={vista === "nombres"}
+                  className={cn(
+                    "flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-xl border-2 px-2 py-2.5 text-center transition-all touch-manipulation active:scale-[0.99]",
+                    vista === "nombres"
+                      ? "border-cyan-200 bg-cyan-500 text-zinc-900 shadow-md"
+                      : "border-white/20 bg-black/30 text-white/50 hover:text-white/90"
+                  )}
+                >
+                  <User className="h-5 w-5 shrink-0" strokeWidth={2.5} aria-hidden />
+                  <span className="text-[10px] font-black uppercase leading-tight">Ver nombres</span>
+                </button>
+              </div>
+            </div>
+            <ul
+              className={cn(
+                "grid gap-2",
+                vista === "numeros" && !alguienEditaDorsalAqui
+                  ? "grid-cols-3 sm:grid-cols-4"
+                  : "grid-cols-2"
+              )}
+              role="list"
+            >
             {jugadores.map((j) => {
               const expelled = expelledIds.has(j.id);
               const active = hasSelection && selected?.jugadorId === j.id;
               const isEditing = editingPlayerId === j.id;
+              const soloNumeros = vista === "numeros" && !isEditing;
+              const labelNumero = expelled ? "Expulsado" : j.numero != null ? String(j.numero) : "—";
 
               return (
                 <li
@@ -403,11 +474,40 @@ export function AdminQuickBench({
                         setSelected(expelled ? null : { team, jugadorId: j.id })
                       }
                       aria-pressed={active}
+                      title={soloNumeros ? j.nombre : undefined}
+                      aria-label={
+                        soloNumeros
+                          ? `Jugador ${labelNumero}, ${j.nombre}. ${active ? "Seleccionado" : "Seleccionar para acciones"}.`
+                          : undefined
+                      }
                       className={cn(
-                        "flex min-h-0 w-full min-w-0 flex-col items-stretch gap-1.5 rounded-lg px-1 py-1 text-left touch-manipulation",
+                        "flex w-full min-w-0 flex-col items-stretch touch-manipulation",
+                        soloNumeros
+                          ? "min-h-[3.5rem] items-center justify-center gap-0 rounded-lg py-1.5"
+                          : "min-h-0 gap-1.5 rounded-lg px-1 py-1 text-left",
                         expelled && "cursor-not-allowed"
                       )}
                     >
+                      {soloNumeros ? (
+                        <>
+                          <span className="sr-only">{j.nombre}</span>
+                          <span
+                            className={cn(
+                              "font-mono font-black leading-none tracking-tight",
+                              active ? "text-white" : "text-white"
+                            )}
+                            style={{ fontSize: "clamp(1.35rem, 5.5vw, 1.85rem)" }}
+                          >
+                            {expelled ? "×" : j.numero ?? "–"}
+                          </span>
+                          {expelled && (
+                            <span className="text-[6px] font-black uppercase text-rose-400" aria-hidden>
+                              Baja
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <>
                       <span
                         className="flex h-6 w-full shrink-0 items-center justify-center rounded-md font-mono text-[10px] font-black leading-none"
                         style={{
@@ -432,21 +532,30 @@ export function AdminQuickBench({
                           Expulsado
                         </span>
                       )}
+                        </>
+                      )}
                     </button>
 
                     {onUpdatePlayerNumero && (
-                      <div className="border-t border-white/10 pt-2">
+                      <div
+                        className={cn("border-t border-white/10 pt-2", soloNumeros && "pt-1")}
+                      >
                         <button
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
                             openNumeroEditor(j);
                           }}
-                          className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border-2 border-white/20 bg-white/[0.08] px-2 text-[10px] font-black uppercase tracking-wide text-white shadow-sm transition-colors active:scale-[0.98] touch-manipulation"
+                          className={cn(
+                            "flex w-full items-center justify-center border-2 border-white/20 bg-white/[0.08] text-white shadow-sm transition-colors active:scale-[0.98] touch-manipulation",
+                            soloNumeros
+                              ? "min-h-[40px] gap-0 rounded-lg px-1"
+                              : "min-h-[44px] gap-1.5 rounded-xl px-2 text-[10px] font-black uppercase tracking-wide"
+                          )}
                           aria-label="Cambiar dorsal"
                         >
-                          <Pencil size={17} strokeWidth={2.5} className="shrink-0 text-white" />
-                          <span className="truncate">Dorsal</span>
+                          <Pencil size={soloNumeros ? 16 : 17} strokeWidth={2.5} className="shrink-0 text-white" />
+                          {!soloNumeros && <span className="truncate">Dorsal</span>}
                         </button>
                       </div>
                     )}
@@ -508,6 +617,7 @@ export function AdminQuickBench({
               </li>
             )}
           </ul>
+          </>
         )}
       </section>
     );
@@ -616,18 +726,68 @@ export function AdminQuickBench({
     );
   };
 
+  const carreraA = getCarreraName(match, "a") || getDisplayName(match, "a") || "Lado A";
+  const carreraB = getCarreraName(match, "b") || getDisplayName(match, "b") || "Lado B";
+
   return (
     <div className="w-full max-w-full space-y-5">
       <p className="px-0.5 text-[10px] font-bold uppercase tracking-wide text-white/35">
         {isVolleyball
           ? "Vóley: plantilla arriba en cada equipo; punto rally o punto a jugador; bitácora con minuto solo si registrás puntos a jugador."
-          : "Todo en este bloque: partido, dorsal, alta y baja del partido. Bitácora abajo."}
+          : disciplinaName === "Baloncesto"
+            ? "Basket: +1 / +2 / +3 a jugador elegido; faltas y cambios. En móvil, Lado A / B para no scrollear entre equipos."
+            : "Todo en este bloque: partido, dorsal, alta y baja del partido. Bitácora abajo."}
       </p>
 
-      <div className="flex w-full flex-col gap-5">
-        {renderTeamPanel("equipo_a", jugadoresA)}
-        {renderTeamPanel("equipo_b", jugadoresB)}
-      </div>
+      {canchaOneSideOnMobile ? (
+        <>
+          <div className="md:hidden">
+            <p className="text-center text-[8px] font-black uppercase tracking-[0.2em] text-white/30 mb-2">
+              Mostrar bando
+            </p>
+            <div className="mb-3 flex w-full gap-0.5 rounded-2xl border border-white/10 bg-black/35 p-0.5">
+              <button
+                type="button"
+                onClick={() => setCanchaSide("A")}
+                className={cn(
+                  "flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-[0.85rem] px-1.5 py-2 text-center transition-all",
+                  canchaSide === "A" ? "bg-indigo-600 text-white shadow-md" : "text-white/40 hover:text-white/70"
+                )}
+              >
+                <span className="text-[8px] font-black uppercase tracking-widest">Lado A</span>
+                <span className="line-clamp-2 w-full break-words text-[10px] font-bold leading-tight">
+                  {carreraA}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCanchaSide("B")}
+                className={cn(
+                  "flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-[0.85rem] px-1.5 py-2 text-center transition-all",
+                  canchaSide === "B" ? "bg-indigo-600 text-white shadow-md" : "text-white/40 hover:text-white/70"
+                )}
+              >
+                <span className="text-[8px] font-black uppercase tracking-widest">Lado B</span>
+                <span className="line-clamp-2 w-full break-words text-[10px] font-bold leading-tight">
+                  {carreraB}
+                </span>
+              </button>
+            </div>
+            {canchaSide === "A" && renderTeamPanel("equipo_a", jugadoresA)}
+            {canchaSide === "B" && renderTeamPanel("equipo_b", jugadoresB)}
+          </div>
+
+          <div className="hidden w-full flex-col gap-5 md:flex">
+            {renderTeamPanel("equipo_a", jugadoresA)}
+            {renderTeamPanel("equipo_b", jugadoresB)}
+          </div>
+        </>
+      ) : (
+        <div className="flex w-full flex-col gap-5">
+          {renderTeamPanel("equipo_a", jugadoresA)}
+          {renderTeamPanel("equipo_b", jugadoresB)}
+        </div>
+      )}
     </div>
   );
 }

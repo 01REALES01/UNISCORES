@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, Loader2, Edit3, X, Info } from "lucide-react";
+import { AlertCircle, CircleDot, Loader2, Edit3, Info, Volleyball, X } from "lucide-react";
 import { Button, Card } from "@/components/ui-primitives";
 import { useAuth } from "@/hooks/useAuth";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
@@ -24,6 +24,8 @@ import { MatchMetaEditor } from "@/modules/admin/matches/components/match-meta-e
 import { BasketballBulkStats } from "@/modules/admin/matches/components/basketball-bulk-stats";
 import { AdminMvpPicker } from "@/modules/admin/matches/components/admin-mvp-picker";
 import { AdminQuickBench } from "@/modules/admin/matches/components/admin-quick-bench";
+import { SPORT_COLORS } from "@/lib/constants";
+import { getCarreraName, getDisplayName } from "@/lib/sport-helpers";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Evento } from "@/modules/matches/types";
@@ -31,6 +33,7 @@ import type { Evento } from "@/modules/matches/types";
 // Local UI Constants
 const DISCIPLINES_COLORS: Record<string, string> = {
     'Fútbol': 'from-emerald-500 to-emerald-900',
+    'Futsal': 'from-emerald-600 to-emerald-900',
     'Baloncesto': 'from-orange-500 to-orange-800',
     'Voleibol': 'from-red-500 to-red-800',
     'Tenis': 'from-lime-500 to-lime-800',
@@ -40,7 +43,7 @@ const DISCIPLINES_COLORS: Record<string, string> = {
 };
 
 const GET_SPORT_ACTIONS = (sport: string) => {
-    if (sport === 'Fútbol') {
+    if (sport === 'Fútbol' || sport === 'Futsal') {
         return [
             { value: 'gol', label: 'GOL', icon: '⚽', style: 'pill-green' },
             { value: 'tarjeta_amarilla', label: 'Amarilla', icon: '🟨', style: 'card-yellow' },
@@ -149,6 +152,53 @@ export default function MatchControlPage() {
         }
     }, [eventBenchMode]);
 
+    const canchaQuickLock = useRef(false);
+    const fireVoleyRally = useCallback(
+        (equipo: "equipo_a" | "equipo_b") => {
+            if (canchaQuickLock.current || !profile) return;
+            canchaQuickLock.current = true;
+            const done = () => {
+                setTimeout(() => {
+                    canchaQuickLock.current = false;
+                }, 250);
+            };
+            Promise.resolve(handleNuevoEvento("punto", equipo, null))
+                .catch(() => undefined)
+                .finally(done);
+        },
+        [handleNuevoEvento, profile]
+    );
+    const fireFutbolGol = useCallback(
+        (equipo: "equipo_a" | "equipo_b") => {
+            if (canchaQuickLock.current || !profile) return;
+            canchaQuickLock.current = true;
+            const done = () => {
+                setTimeout(() => {
+                    canchaQuickLock.current = false;
+                }, 250);
+            };
+            Promise.resolve(handleNuevoEvento("gol", equipo, null))
+                .catch(() => undefined)
+                .finally(done);
+        },
+        [handleNuevoEvento, profile]
+    );
+    const fireBasketPunto = useCallback(
+        (tipo: "punto_2" | "punto_3", equipo: "equipo_a" | "equipo_b") => {
+            if (canchaQuickLock.current || !profile) return;
+            canchaQuickLock.current = true;
+            const done = () => {
+                setTimeout(() => {
+                    canchaQuickLock.current = false;
+                }, 250);
+            };
+            Promise.resolve(handleNuevoEvento(tipo, equipo, null))
+                .catch(() => undefined)
+                .finally(done);
+        },
+        [handleNuevoEvento, profile]
+    );
+
     const handleAddPlayer = async (team: string, data: { nombre: string; numero: string; profile_id: string }) => {
         if (!match) return null;
         try {
@@ -213,7 +263,7 @@ export default function MatchControlPage() {
     );
 
     const disciplinaName = match.disciplinas?.name || 'Fútbol';
-    const isQuickBenchSport = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
+    const isQuickBenchSport = ['Fútbol', 'Futsal', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
 
     /** Actualiza `jugadores.numero` (vale para próximos partidos de la misma base). */
     const handleUpdateJugadorNumero = async (jugadorId: number, raw: string) => {
@@ -246,7 +296,7 @@ export default function MatchControlPage() {
         toast.success('Jugador quitado del partido');
     };
 
-    const isTeamSport = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
+    const isTeamSport = ['Fútbol', 'Futsal', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
     const isTenisSport = ['Tenis', 'Tenis de Mesa'].includes(disciplinaName);
     const bgGradient = DISCIPLINES_COLORS[disciplinaName] || 'from-slate-700 to-slate-900';
     const actions = GET_SPORT_ACTIONS(disciplinaName);
@@ -258,6 +308,14 @@ export default function MatchControlPage() {
         eventos.some(
             (e) => e.tipo_evento === 'punto' && e.jugador_id_normalized != null
         );
+
+    const canchaQuickDisabled =
+        !profile || match.estado === "cancelado" || match.estado === "finalizado";
+    const canchaAccent = SPORT_COLORS[disciplinaName] || "#f97316";
+    /** Lado A/B: carrera o delegación (misma lógica que ficha pública) */
+    const canchaCarreraA = getCarreraName(match, "a") || getDisplayName(match, "a") || "Lado A";
+    const canchaCarreraB = getCarreraName(match, "b") || getDisplayName(match, "b") || "Lado B";
+    const isFutbolCancha = disciplinaName === "Fútbol" || disciplinaName === "Futsal";
 
     return (
         <div className="min-h-screen bg-background pb-24 text-white">
@@ -360,7 +418,7 @@ export default function MatchControlPage() {
                         <div className="mt-8 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center">
                             <AlertCircle size={20} className="shrink-0 text-white/30" />
                             <p className="text-sm font-bold text-white/40 uppercase tracking-widest">
-                                {disciplinaName === 'Fútbol' || disciplinaName === 'Voleibol'
+                                {disciplinaName === 'Fútbol' || disciplinaName === 'Futsal' || disciplinaName === 'Voleibol'
                                     ? 'Partido finalizado — el marcador está cerrado; abajo podés registrar tarjetas (fair play).'
                                     : 'Partido finalizado — no se pueden registrar eventos desde acá'}
                             </p>
@@ -375,7 +433,7 @@ export default function MatchControlPage() {
                             profile={profile}
                             onSaved={fetchMatchDetails}
                         />
-                        {(disciplinaName === 'Fútbol' || disciplinaName === 'Voleibol') && (
+                        {(disciplinaName === 'Fútbol' || disciplinaName === 'Futsal' || disciplinaName === 'Voleibol') && (
                             <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-8">
                                 <AdminEventCreator
                                     match={match}
@@ -402,6 +460,178 @@ export default function MatchControlPage() {
 
                 {match.marcador_detalle?.tipo !== 'carrera' && match.estado !== 'finalizado' && (
                     <>
+                        {isQuickBenchSport && disciplinaName === "Voleibol" && !canchaQuickDisabled && (
+                            <div className="mt-6 mb-1 w-full max-w-2xl mx-auto">
+                                <p className="text-center text-[9px] font-bold uppercase tracking-[0.18em] text-white/40 mb-2.5 max-w-md mx-auto leading-relaxed">
+                                    Tocá el bando — +1 al rally. Con partido aún <span className="text-white/55">programado</span> queda
+                                    <span className="text-white/60"> en curso </span>sin tocar <span className="text-cyan-400/90">Iniciar partido</span>.
+                                </p>
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5">
+                                    <button
+                                        type="button"
+                                        disabled={canchaQuickDisabled}
+                                        onClick={() => fireVoleyRally("equipo_a")}
+                                        aria-label={`+1 al rally, ${canchaCarreraA}`}
+                                        className="flex min-h-[64px] w-full items-stretch justify-start gap-3 rounded-2xl border-2 px-3.5 py-3 text-left transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg"
+                                        style={{
+                                            borderColor: `${canchaAccent}66`,
+                                            background: `linear-gradient(145deg, ${canchaAccent}22, rgba(0,0,0,0.45))`,
+                                        }}
+                                    >
+                                        <span className="flex h-11 w-11 shrink-0 self-center items-center justify-center rounded-xl border border-white/20 bg-white/5">
+                                            <Volleyball className="h-5 w-5" strokeWidth={2.2} style={{ color: canchaAccent }} />
+                                        </span>
+                                        <span className="min-w-0 flex-1 flex flex-col justify-center">
+                                            <span className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 break-words">
+                                                {canchaCarreraA}
+                                            </span>
+                                            <span className="mt-0.5 text-[9px] font-bold tracking-wide text-white/45">
+                                                +1 al rally
+                                            </span>
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={canchaQuickDisabled}
+                                        onClick={() => fireVoleyRally("equipo_b")}
+                                        aria-label={`+1 al rally, ${canchaCarreraB}`}
+                                        className="flex min-h-[64px] w-full items-stretch justify-start gap-3 rounded-2xl border-2 px-3.5 py-3 text-left transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg"
+                                        style={{
+                                            borderColor: `${canchaAccent}66`,
+                                            background: `linear-gradient(145deg, ${canchaAccent}22, rgba(0,0,0,0.45))`,
+                                        }}
+                                    >
+                                        <span className="flex h-11 w-11 shrink-0 self-center items-center justify-center rounded-xl border border-white/20 bg-white/5">
+                                            <Volleyball className="h-5 w-5" strokeWidth={2.2} style={{ color: canchaAccent }} />
+                                        </span>
+                                        <span className="min-w-0 flex-1 flex flex-col justify-center">
+                                            <span className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 break-words">
+                                                {canchaCarreraB}
+                                            </span>
+                                            <span className="mt-0.5 text-[9px] font-bold tracking-wide text-white/45">
+                                                +1 al rally
+                                            </span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {isQuickBenchSport && disciplinaName === "Baloncesto" && !canchaQuickDisabled && (
+                            <div className="mt-6 mb-1 w-full max-w-2xl mx-auto">
+                                <p className="text-center text-[9px] font-bold uppercase tracking-[0.18em] text-white/40 mb-2.5 max-w-md mx-auto leading-relaxed">
+                                    Puntos al marcador (sin jugador en planilla). Con partido <span className="text-white/55">programado</span> pasa a
+                                    <span className="text-white/60"> en curso </span>sin tocar <span className="text-amber-400/90">Iniciar partido</span>.
+                                </p>
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5">
+                                    <div className="flex flex-col gap-2 rounded-2xl border-2 px-3.5 py-3 shadow-lg" style={{ borderColor: `${canchaAccent}66`, background: `linear-gradient(145deg, ${canchaAccent}18, rgba(0,0,0,0.45))` }}>
+                                        <span className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 break-words">
+                                            {canchaCarreraA}
+                                        </span>
+                                        <div className="flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                disabled={canchaQuickDisabled}
+                                                onClick={() => fireBasketPunto("punto_2", "equipo_a")}
+                                                aria-label={`+2, ${canchaCarreraA}`}
+                                                className="flex min-h-[48px] min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none"
+                                            >
+                                                +2
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={canchaQuickDisabled}
+                                                onClick={() => fireBasketPunto("punto_3", "equipo_a")}
+                                                aria-label={`+3, ${canchaCarreraA}`}
+                                                className="flex min-h-[48px] min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none"
+                                            >
+                                                +3
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-2 rounded-2xl border-2 px-3.5 py-3 shadow-lg" style={{ borderColor: `${canchaAccent}66`, background: `linear-gradient(145deg, ${canchaAccent}18, rgba(0,0,0,0.45))` }}>
+                                        <span className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 break-words">
+                                            {canchaCarreraB}
+                                        </span>
+                                        <div className="flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                disabled={canchaQuickDisabled}
+                                                onClick={() => fireBasketPunto("punto_2", "equipo_b")}
+                                                aria-label={`+2, ${canchaCarreraB}`}
+                                                className="flex min-h-[48px] min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none"
+                                            >
+                                                +2
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={canchaQuickDisabled}
+                                                onClick={() => fireBasketPunto("punto_3", "equipo_b")}
+                                                aria-label={`+3, ${canchaCarreraB}`}
+                                                className="flex min-h-[48px] min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none"
+                                            >
+                                                +3
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {isQuickBenchSport && isFutbolCancha && !canchaQuickDisabled && (
+                            <div className="mt-6 mb-1 w-full max-w-2xl mx-auto">
+                                <p className="text-center text-[9px] font-bold uppercase tracking-[0.18em] text-white/40 mb-2.5 max-w-md mx-auto leading-relaxed">
+                                    Gol al marcador (sin jugador). Con partido <span className="text-white/55">programado</span> pasa a
+                                    <span className="text-white/60"> en curso </span>sin tocar <span className="text-emerald-400/90">Iniciar partido</span>.
+                                </p>
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5">
+                                    <button
+                                        type="button"
+                                        disabled={canchaQuickDisabled}
+                                        onClick={() => fireFutbolGol("equipo_a")}
+                                        aria-label={`Gol, ${canchaCarreraA}`}
+                                        className="flex min-h-[64px] w-full items-stretch justify-start gap-3 rounded-2xl border-2 px-3.5 py-3 text-left transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg"
+                                        style={{
+                                            borderColor: `${canchaAccent}66`,
+                                            background: `linear-gradient(145deg, ${canchaAccent}18, rgba(0,0,0,0.45))`,
+                                        }}
+                                    >
+                                        <span className="flex h-11 w-11 shrink-0 self-center items-center justify-center rounded-xl border border-white/20 bg-white/5">
+                                            <CircleDot className="h-5 w-5" strokeWidth={2.2} style={{ color: canchaAccent }} />
+                                        </span>
+                                        <span className="min-w-0 flex-1 flex flex-col justify-center">
+                                            <span className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 break-words">
+                                                {canchaCarreraA}
+                                            </span>
+                                            <span className="mt-0.5 text-[9px] font-bold tracking-wide text-white/45">
+                                                +1 gol (equipo)
+                                            </span>
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={canchaQuickDisabled}
+                                        onClick={() => fireFutbolGol("equipo_b")}
+                                        aria-label={`Gol, ${canchaCarreraB}`}
+                                        className="flex min-h-[64px] w-full items-stretch justify-start gap-3 rounded-2xl border-2 px-3.5 py-3 text-left transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg"
+                                        style={{
+                                            borderColor: `${canchaAccent}66`,
+                                            background: `linear-gradient(145deg, ${canchaAccent}18, rgba(0,0,0,0.45))`,
+                                        }}
+                                    >
+                                        <span className="flex h-11 w-11 shrink-0 self-center items-center justify-center rounded-xl border border-white/20 bg-white/5">
+                                            <CircleDot className="h-5 w-5" strokeWidth={2.2} style={{ color: canchaAccent }} />
+                                        </span>
+                                        <span className="min-w-0 flex-1 flex flex-col justify-center">
+                                            <span className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 break-words">
+                                                {canchaCarreraB}
+                                            </span>
+                                            <span className="mt-0.5 text-[9px] font-bold tracking-wide text-white/45">
+                                                +1 gol (equipo)
+                                            </span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         {isQuickBenchSport && (
                             <div className="mt-8 mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
@@ -520,7 +750,7 @@ export default function MatchControlPage() {
             />
 
             {showFullEditor && (() => {
-                const tabLabel = disciplinaName === 'Baloncesto' ? 'Cuartos' : disciplinaName === 'Fútbol' ? 'Tiempos' : 'Sets / Marcador';
+                const tabLabel = disciplinaName === 'Baloncesto' ? 'Cuartos' : (disciplinaName === 'Fútbol' || disciplinaName === 'Futsal') ? 'Tiempos' : 'Sets / Marcador';
                 const tabs: { id: 'marcador' | 'eventos' | 'jugadores'; label: string }[] = [
                     { id: 'marcador' as const, label: tabLabel },
                     { id: 'eventos' as const, label: 'Eventos' },
@@ -586,7 +816,7 @@ export default function MatchControlPage() {
                                                     Los <span className="text-white font-bold">+1 / +2 / +3</span> por jugador y la <span className="text-white font-bold">edición manual por cuarto</span> guardan en la base de datos.
                                                     Tras <span className="text-white font-bold">Confirmar marcador</span> (manual), el tablero grande de arriba se actualiza.
                                                 </p>
-                                            ) : disciplinaName === 'Fútbol' ? (
+                                            ) : disciplinaName === 'Fútbol' || disciplinaName === 'Futsal' ? (
                                                 <p className="text-slate-200/95">
                                                     Los eventos (gol, tarjeta…) y el <span className="text-white font-bold">marcador manual de goles</span> guardan en la base de datos.
                                                     Tras <span className="text-white font-bold">Confirmar marcador</span> (manual), el tablero grande de arriba se actualiza.
@@ -622,7 +852,7 @@ export default function MatchControlPage() {
                                             profile={profile}
                                             onSaved={fetchMatchDetails}
                                         />
-                                    ) : disciplinaName === 'Fútbol' ? (
+                                    ) : disciplinaName === 'Fútbol' || disciplinaName === 'Futsal' ? (
                                         <FutbolEditor
                                             match={match}
                                             eventos={eventos}

@@ -52,7 +52,7 @@ export function useMatchControl(matchId: string) {
         const m = currentMatch || match;
         if (!m) return;
 
-        const isColectivo = ['Fútbol', 'Baloncesto', 'Voleibol'].includes(m.disciplinas?.name || '');
+        const isColectivo = ['Fútbol', 'Futsal', 'Baloncesto', 'Voleibol'].includes(m.disciplinas?.name || '');
 
         // 1. Fetch EXPLICIT Roster (From roster_partido table)
         const { data: explicitRoster } = await supabase
@@ -426,16 +426,28 @@ export function useMatchControl(matchId: string) {
                 return;
             }
 
-            if (match.estado !== 'en_curso') {
-                if (!(match.estado === 'programado' && tipo === 'cambio')) {
-                    toast.error('Solo se pueden registrar eventos de juego en partidos EN CURSO.');
-                    return;
-                }
+            // Primer evento de juego en programado → en curso (sin tocar "Iniciar partido"):
+            // Vóley: punto | Fútbol / Futsal: gol | Baloncesto: punto_1/2/3
+            const inicioJuegoDesdeProgramado =
+                match.estado === 'programado' &&
+                (
+                    (disciplinaName === 'Voleibol' && tipo === 'punto') ||
+                    ((disciplinaName === 'Fútbol' || disciplinaName === 'Futsal') && tipo === 'gol') ||
+                    (disciplinaName === 'Baloncesto' && (tipo === 'punto_1' || tipo === 'punto_2' || tipo === 'punto_3'))
+                );
+
+            if (match.estado === 'programado' && !inicioJuegoDesdeProgramado && tipo !== 'cambio') {
+                toast.error('Solo se pueden registrar eventos de juego en partidos EN CURSO.');
+                return;
+            }
+            if (match.estado !== 'en_curso' && match.estado !== 'programado') {
+                toast.error('Solo se pueden registrar eventos de juego en partidos EN CURSO.');
+                return;
             }
         }
 
         // Block events for expelled players (red card) in Fútbol y Voleibol
-        if ((disciplinaName === 'Fútbol' || disciplinaName === 'Voleibol') && jugador_id) {
+        if ((disciplinaName === 'Fútbol' || disciplinaName === 'Futsal' || disciplinaName === 'Voleibol') && jugador_id) {
             const hasRedCard = eventos.some(
                 e => e.tipo_evento === 'tarjeta_roja' && e.jugador_id_normalized === jugador_id
             );
@@ -471,16 +483,58 @@ export function useMatchControl(matchId: string) {
             if (tipo === 'punto_2') puntos = 2;
             if (tipo === 'punto_3') puntos = 3;
             const nuevoMarcador = addPoints(disciplinaName, currentDetalle, equipo as any, puntos);
-            const auditedPts = auditDetalle(nuevoMarcador);
-            await supabase.from('partidos').update({ marcador_detalle: auditedPts }).eq('id', matchId);
+            const wasProgramadoAutoInicio =
+                match.estado === 'programado' &&
+                (
+                    (disciplinaName === 'Voleibol' && tipo === 'punto') ||
+                    ((disciplinaName === 'Fútbol' || disciplinaName === 'Futsal') && tipo === 'gol') ||
+                    (disciplinaName === 'Baloncesto' && (tipo === 'punto_1' || tipo === 'punto_2' || tipo === 'punto_3'))
+                );
+            let toSave: any = nuevoMarcador;
+            if (wasProgramadoAutoInicio) {
+                toSave = {
+                    ...nuevoMarcador,
+                    tiempo_inicio: (nuevoMarcador as any).tiempo_inicio || new Date().toISOString(),
+                    estado_cronometro: (nuevoMarcador as any).estado_cronometro || 'pausado',
+                    modo_registro: (nuevoMarcador as any).modo_registro || 'en_vivo',
+                };
+            }
+            const auditedPts = auditDetalle(toSave);
+            const updatePartido: Record<string, unknown> = { marcador_detalle: auditedPts };
+            if (wasProgramadoAutoInicio) updatePartido.estado = 'en_curso';
+            await supabase.from('partidos').update(updatePartido).eq('id', matchId);
             // Optimistic local update so scoreboard re-renders immediately
-            setMatch((prev: any) => prev ? { ...prev, marcador_detalle: auditedPts } : null);
+            setMatch((prev: any) =>
+                prev
+                    ? {
+                          ...prev,
+                          estado: wasProgramadoAutoInicio ? 'en_curso' : prev.estado,
+                          marcador_detalle: auditedPts,
+                      }
+                    : null
+            );
+            if (wasProgramadoAutoInicio) {
+                const inicioMsg =
+                    disciplinaName === 'Voleibol'
+                        ? 'Inicio del partido (primer rally de vóleibol)'
+                        : disciplinaName === 'Baloncesto'
+                          ? 'Inicio del partido (primera anotación de baloncesto)'
+                          : 'Inicio del partido (primer gol de fútbol / futsal)';
+                void registrarEventoSistema('inicio', inicioMsg, 0, 1);
+                const toastMsg =
+                    disciplinaName === 'Voleibol'
+                        ? 'Punto anotado · partido en curso (no hace falta tocar "Iniciar partido")'
+                        : disciplinaName === 'Baloncesto'
+                          ? 'Puntos al marcador · partido en curso (no hace falta tocar "Iniciar partido")'
+                          : 'Gol anotado · partido en curso (no hace falta tocar "Iniciar partido")';
+                toast.success(toastMsg, { duration: 3000 });
+            }
 
             await logAction('UPDATE_SCORE', 'partido', matchId, {
                 tipo_evento: tipo,
                 equipo: equipo,
                 puntos: puntos,
-                nuevo_marcador: nuevoMarcador
+                nuevo_marcador: toSave
             });
         } else if (tipo === 'set') {
             // 'set' button = manually advance to next set/period

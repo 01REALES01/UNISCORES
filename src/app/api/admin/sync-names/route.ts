@@ -70,15 +70,26 @@ export async function POST() {
             return NextResponse.json({ updated: 0, message: 'No hay jugadores vinculados a perfiles.' });
         }
 
-        // Fetch profiles that still have a username-style full_name (no spaces)
+        // Fetch profiles in chunks: .in() con cientos de UUIDs puede dejar un URL de PostgREST
+        // demasiado largo y fallar con "TypeError: fetch failed" (no es un error de RLS clásico).
         const profileIds = Array.from(nameMap.keys());
-        const { data: profiles, error: profErr } = await supabase
-            .from('profiles')
-            .select('id, full_name')
-            .in('id', profileIds);
+        const IN_CHUNK = 100;
+        const profiles: { id: string; full_name: string | null }[] = [];
+        for (let i = 0; i < profileIds.length; i += IN_CHUNK) {
+            const batch = profileIds.slice(i, i + IN_CHUNK);
+            const { data: chunk, error: profErr } = await supabase
+                .from('profiles')
+                .select('id, full_name')
+                .in('id', batch);
 
-        if (profErr || !profiles) {
-            return NextResponse.json({ error: `Error al leer profiles: ${profErr?.message}` }, { status: 500 });
+            if (profErr) {
+                console.error('[sync-names] batch profiles', i, profErr);
+                return NextResponse.json(
+                    { error: `Error al leer profiles: ${profErr.message}` },
+                    { status: 500 }
+                );
+            }
+            if (chunk?.length) profiles.push(...chunk);
         }
 
         // Only update profiles whose full_name has no space (= still a username)
@@ -116,8 +127,10 @@ export async function POST() {
             errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
         });
 
-    } catch (err: any) {
-        console.error('[sync-names] Error:', err.message);
-        return NextResponse.json({ error: 'Error interno del servidor', details: err.message }, { status: 500 });
+    } catch (err: unknown) {
+        const e = err as { message?: string; cause?: unknown };
+        const detail = e?.cause != null ? `${e.message || 'Error'} — ${String(e.cause)}` : (e?.message || 'Error desconocido');
+        console.error('[sync-names]', err);
+        return NextResponse.json({ error: 'Error interno del servidor', details: detail }, { status: 500 });
     }
 }
