@@ -9,6 +9,7 @@ import { getCurrentScore } from "@/lib/sport-scoring";
 import { SportIcon } from "@/components/sport-icons";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Search, Activity, LayoutGrid } from "lucide-react";
+import { ResilienceUI } from "@/components/resilience-ui";
 import { UnifiedCard } from "@/modules/matches/components/unified-card";
 import { JornadaCard } from "@/modules/matches/components/match-card";
 
