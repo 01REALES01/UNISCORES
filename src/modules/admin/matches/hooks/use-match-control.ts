@@ -416,14 +416,14 @@ export function useMatchControl(matchId: string) {
         }
     };
 
-    const handleNuevoEvento = async (tipo: string, equipo: string, jugador_id: number | null, bypassFinalized = false, overrides?: { minuto?: number; periodo?: number }) => {
-        if (!match || !profile) return;
+    const handleNuevoEvento = async (tipo: string, equipo: string, jugador_id: number | null, bypassFinalized = false, overrides?: { minuto?: number; periodo?: number }): Promise<boolean> => {
+        if (!match || !profile) return false;
         const disciplinaName = match.disciplinas?.name || 'Deporte';
 
         if (!bypassFinalized) {
             if (match.estado === 'finalizado' || match.estado === 'cancelado') {
                 toast.error('No se pueden registrar eventos en partidos ya finalizados.');
-                return;
+                return false;
             }
 
             // Primer evento de juego en programado → en curso (sin tocar "Iniciar partido"):
@@ -438,11 +438,11 @@ export function useMatchControl(matchId: string) {
 
             if (match.estado === 'programado' && !inicioJuegoDesdeProgramado && tipo !== 'cambio') {
                 toast.error('Solo se pueden registrar eventos de juego en partidos EN CURSO.');
-                return;
+                return false;
             }
             if (match.estado !== 'en_curso' && match.estado !== 'programado') {
                 toast.error('Solo se pueden registrar eventos de juego en partidos EN CURSO.');
-                return;
+                return false;
             }
         }
 
@@ -453,7 +453,7 @@ export function useMatchControl(matchId: string) {
             );
             if (hasRedCard) {
                 toast.error('Este jugador fue expulsado (tarjeta roja). No se le pueden asignar más eventos.');
-                return;
+                return false;
             }
         }
 
@@ -472,7 +472,7 @@ export function useMatchControl(matchId: string) {
 
         if (error) {
             toast.error('No se pudo guardar el evento: ' + error.message);
-            return;
+            return false;
         }
 
         const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
@@ -556,6 +556,7 @@ export function useMatchControl(matchId: string) {
             });
         }
         fetchEventos();
+        return true;
     };
 
     const handleManualScoreUpdate = async (field: string, value: number) => {

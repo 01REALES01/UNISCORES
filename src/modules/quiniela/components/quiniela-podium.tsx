@@ -50,6 +50,7 @@ export const QuinielaPodium = ({ top3 }: QuinielaPodiumProps) => {
               <div className="relative">
                 <Avatar
                   name={slot.profile.display_name || slot.profile.email}
+                  src={slot.profile.avatar_url}
                   className={cn(
                     "shadow-2xl transition-all duration-500 border-2",
                     isWinner

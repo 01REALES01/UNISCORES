@@ -2,8 +2,10 @@ import { useMemo, useState } from "react";
 import { Trophy, Users, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuinielaHeader } from "./quiniela-header";
+import { QuinielaPastPodiums } from "./quiniela-past-podiums";
 import { QuinielaPodium } from "./quiniela-podium";
 import { QuinielaRankingItem } from "./quiniela-ranking-item";
+import type { QuinielaPodiumWeek } from "./quiniela-past-podiums";
 import { formatQuinielaWeekRangeEs } from "@/modules/quiniela/lib/week-label";
 
 interface QuinielaRankingTabProps {
@@ -13,6 +15,7 @@ interface QuinielaRankingTabProps {
     userTotalPoints: number;
     user: any;
     profile: any;
+    podiumHistory: QuinielaPodiumWeek[];
 }
 
 export function QuinielaRankingTab({
@@ -22,6 +25,7 @@ export function QuinielaRankingTab({
     userTotalPoints,
     user,
     profile,
+    podiumHistory,
 }: QuinielaRankingTabProps) {
     const [rankingSubTab, setRankingSubTab] = useState<'leaders' | 'streaks' | 'consistency'>('leaders');
 
@@ -47,6 +51,8 @@ export function QuinielaRankingTab({
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
             <QuinielaHeader user={user} profile={profile} totalPoints={userTotalPoints} weeklyPoints={userWeeklyPoints} />
+
+            <QuinielaPastPodiums weeks={podiumHistory ?? []} />
 
             <div className="bg-zinc-950/40 backdrop-blur-3xl rounded-[3.5rem] border border-white/10 overflow-hidden shadow-2xl relative">
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] pointer-events-none" />

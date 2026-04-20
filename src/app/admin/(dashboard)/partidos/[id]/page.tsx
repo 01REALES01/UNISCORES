@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, CircleDot, Loader2, Edit3, Info, Volleyball, X } from "lucide-react";
+import { AlertCircle, Check, CircleDot, Loader2, Edit3, Info, Volleyball, X } from "lucide-react";
 import { Button, Card } from "@/components/ui-primitives";
 import { useAuth } from "@/hooks/useAuth";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
@@ -25,6 +25,7 @@ import { BasketballBulkStats } from "@/modules/admin/matches/components/basketba
 import { AdminMvpPicker } from "@/modules/admin/matches/components/admin-mvp-picker";
 import { AdminQuickBench } from "@/modules/admin/matches/components/admin-quick-bench";
 import { SPORT_COLORS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import { getCarreraName, getDisplayName } from "@/lib/sport-helpers";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -152,9 +153,27 @@ export default function MatchControlPage() {
         }
     }, [eventBenchMode]);
 
+    /** Micro-confirmación en los botones rápidos de cancha (+rally, gol, +2/+3) cuando el evento se guarda. */
+    const [canchaQuickAck, setCanchaQuickAck] = useState<string | null>(null);
+    const canchaAckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const flashCanchaQuick = useCallback((id: string) => {
+        if (canchaAckTimerRef.current) clearTimeout(canchaAckTimerRef.current);
+        setCanchaQuickAck(id);
+        canchaAckTimerRef.current = setTimeout(() => {
+            setCanchaQuickAck(null);
+            canchaAckTimerRef.current = null;
+        }, 850);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (canchaAckTimerRef.current) clearTimeout(canchaAckTimerRef.current);
+        };
+    }, []);
+
     const canchaQuickLock = useRef(false);
     const fireVoleyRally = useCallback(
-        (equipo: "equipo_a" | "equipo_b") => {
+        async (equipo: "equipo_a" | "equipo_b") => {
             if (canchaQuickLock.current || !profile) return;
             canchaQuickLock.current = true;
             const done = () => {
@@ -162,14 +181,19 @@ export default function MatchControlPage() {
                     canchaQuickLock.current = false;
                 }, 250);
             };
-            Promise.resolve(handleNuevoEvento("punto", equipo, null))
-                .catch(() => undefined)
-                .finally(done);
+            try {
+                const ok = await handleNuevoEvento("punto", equipo, null);
+                if (ok) flashCanchaQuick(equipo === "equipo_a" ? "rally-a" : "rally-b");
+            } catch {
+                /* error ya notificado en el handler */
+            } finally {
+                done();
+            }
         },
-        [handleNuevoEvento, profile]
+        [handleNuevoEvento, profile, flashCanchaQuick]
     );
     const fireFutbolGol = useCallback(
-        (equipo: "equipo_a" | "equipo_b") => {
+        async (equipo: "equipo_a" | "equipo_b") => {
             if (canchaQuickLock.current || !profile) return;
             canchaQuickLock.current = true;
             const done = () => {
@@ -177,14 +201,19 @@ export default function MatchControlPage() {
                     canchaQuickLock.current = false;
                 }, 250);
             };
-            Promise.resolve(handleNuevoEvento("gol", equipo, null))
-                .catch(() => undefined)
-                .finally(done);
+            try {
+                const ok = await handleNuevoEvento("gol", equipo, null);
+                if (ok) flashCanchaQuick(equipo === "equipo_a" ? "gol-a" : "gol-b");
+            } catch {
+                /* error ya notificado en el handler */
+            } finally {
+                done();
+            }
         },
-        [handleNuevoEvento, profile]
+        [handleNuevoEvento, profile, flashCanchaQuick]
     );
     const fireBasketPunto = useCallback(
-        (tipo: "punto_2" | "punto_3", equipo: "equipo_a" | "equipo_b") => {
+        async (tipo: "punto_2" | "punto_3", equipo: "equipo_a" | "equipo_b") => {
             if (canchaQuickLock.current || !profile) return;
             canchaQuickLock.current = true;
             const done = () => {
@@ -192,11 +221,18 @@ export default function MatchControlPage() {
                     canchaQuickLock.current = false;
                 }, 250);
             };
-            Promise.resolve(handleNuevoEvento(tipo, equipo, null))
-                .catch(() => undefined)
-                .finally(done);
+            const tag =
+                (equipo === "equipo_a" ? "a" : "b") + (tipo === "punto_2" ? "2" : "3");
+            try {
+                const ok = await handleNuevoEvento(tipo, equipo, null);
+                if (ok) flashCanchaQuick(`bask-${tag}`);
+            } catch {
+                /* error ya notificado en el handler */
+            } finally {
+                done();
+            }
         },
-        [handleNuevoEvento, profile]
+        [handleNuevoEvento, profile, flashCanchaQuick]
     );
 
     const handleAddPlayer = async (team: string, data: { nombre: string; numero: string; profile_id: string }) => {
@@ -470,18 +506,30 @@ export default function MatchControlPage() {
                                     <button
                                         type="button"
                                         disabled={canchaQuickDisabled}
-                                        onClick={() => fireVoleyRally("equipo_a")}
+                                        onClick={() => void fireVoleyRally("equipo_a")}
                                         aria-label={`+1 al rally, ${canchaCarreraA}`}
-                                        className="flex min-h-[64px] w-full items-stretch justify-start gap-3 rounded-2xl border-2 px-3.5 py-3 text-left transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg"
+                                        className={cn(
+                                            "relative flex min-h-[64px] w-full items-stretch justify-start gap-3 overflow-hidden rounded-2xl border-2 px-3.5 py-3 text-left transition-all duration-200 active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg",
+                                            canchaQuickAck === "rally-a" &&
+                                                "ring-2 ring-emerald-400/85 ring-offset-2 ring-offset-zinc-950 shadow-[0_0_28px_rgba(52,211,153,0.32)]"
+                                        )}
                                         style={{
                                             borderColor: `${canchaAccent}66`,
                                             background: `linear-gradient(145deg, ${canchaAccent}22, rgba(0,0,0,0.45))`,
                                         }}
                                     >
+                                        {canchaQuickAck === "rally-a" && (
+                                            <span
+                                                className="pointer-events-none absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-emerald-400 text-zinc-950 shadow-md"
+                                                aria-hidden
+                                            >
+                                                <Check className="h-4 w-4" strokeWidth={3} />
+                                            </span>
+                                        )}
                                         <span className="flex h-11 w-11 shrink-0 self-center items-center justify-center rounded-xl border border-white/20 bg-white/5">
                                             <Volleyball className="h-5 w-5" strokeWidth={2.2} style={{ color: canchaAccent }} />
                                         </span>
-                                        <span className="min-w-0 flex-1 flex flex-col justify-center">
+                                        <span className="min-w-0 flex-1 flex flex-col justify-center pr-1">
                                             <span className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 break-words">
                                                 {canchaCarreraA}
                                             </span>
@@ -493,18 +541,30 @@ export default function MatchControlPage() {
                                     <button
                                         type="button"
                                         disabled={canchaQuickDisabled}
-                                        onClick={() => fireVoleyRally("equipo_b")}
+                                        onClick={() => void fireVoleyRally("equipo_b")}
                                         aria-label={`+1 al rally, ${canchaCarreraB}`}
-                                        className="flex min-h-[64px] w-full items-stretch justify-start gap-3 rounded-2xl border-2 px-3.5 py-3 text-left transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg"
+                                        className={cn(
+                                            "relative flex min-h-[64px] w-full items-stretch justify-start gap-3 overflow-hidden rounded-2xl border-2 px-3.5 py-3 text-left transition-all duration-200 active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg",
+                                            canchaQuickAck === "rally-b" &&
+                                                "ring-2 ring-emerald-400/85 ring-offset-2 ring-offset-zinc-950 shadow-[0_0_28px_rgba(52,211,153,0.32)]"
+                                        )}
                                         style={{
                                             borderColor: `${canchaAccent}66`,
                                             background: `linear-gradient(145deg, ${canchaAccent}22, rgba(0,0,0,0.45))`,
                                         }}
                                     >
+                                        {canchaQuickAck === "rally-b" && (
+                                            <span
+                                                className="pointer-events-none absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-emerald-400 text-zinc-950 shadow-md"
+                                                aria-hidden
+                                            >
+                                                <Check className="h-4 w-4" strokeWidth={3} />
+                                            </span>
+                                        )}
                                         <span className="flex h-11 w-11 shrink-0 self-center items-center justify-center rounded-xl border border-white/20 bg-white/5">
                                             <Volleyball className="h-5 w-5" strokeWidth={2.2} style={{ color: canchaAccent }} />
                                         </span>
-                                        <span className="min-w-0 flex-1 flex flex-col justify-center">
+                                        <span className="min-w-0 flex-1 flex flex-col justify-center pr-1">
                                             <span className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 break-words">
                                                 {canchaCarreraB}
                                             </span>
@@ -531,19 +591,43 @@ export default function MatchControlPage() {
                                             <button
                                                 type="button"
                                                 disabled={canchaQuickDisabled}
-                                                onClick={() => fireBasketPunto("punto_2", "equipo_a")}
+                                                onClick={() => void fireBasketPunto("punto_2", "equipo_a")}
                                                 aria-label={`+2, ${canchaCarreraA}`}
-                                                className="flex min-h-[48px] min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none"
+                                                className={cn(
+                                                    "relative flex min-h-[48px] min-w-0 flex-1 items-center justify-center overflow-hidden rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all duration-200 active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none",
+                                                    canchaQuickAck === "bask-a2" &&
+                                                        "ring-2 ring-emerald-400/85 ring-offset-2 ring-offset-zinc-950"
+                                                )}
                                             >
+                                                {canchaQuickAck === "bask-a2" && (
+                                                    <span
+                                                        className="pointer-events-none absolute right-0.5 top-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400 text-zinc-950"
+                                                        aria-hidden
+                                                    >
+                                                        <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
+                                                    </span>
+                                                )}
                                                 +2
                                             </button>
                                             <button
                                                 type="button"
                                                 disabled={canchaQuickDisabled}
-                                                onClick={() => fireBasketPunto("punto_3", "equipo_a")}
+                                                onClick={() => void fireBasketPunto("punto_3", "equipo_a")}
                                                 aria-label={`+3, ${canchaCarreraA}`}
-                                                className="flex min-h-[48px] min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none"
+                                                className={cn(
+                                                    "relative flex min-h-[48px] min-w-0 flex-1 items-center justify-center overflow-hidden rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all duration-200 active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none",
+                                                    canchaQuickAck === "bask-a3" &&
+                                                        "ring-2 ring-emerald-400/85 ring-offset-2 ring-offset-zinc-950"
+                                                )}
                                             >
+                                                {canchaQuickAck === "bask-a3" && (
+                                                    <span
+                                                        className="pointer-events-none absolute right-0.5 top-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400 text-zinc-950"
+                                                        aria-hidden
+                                                    >
+                                                        <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
+                                                    </span>
+                                                )}
                                                 +3
                                             </button>
                                         </div>
@@ -556,19 +640,43 @@ export default function MatchControlPage() {
                                             <button
                                                 type="button"
                                                 disabled={canchaQuickDisabled}
-                                                onClick={() => fireBasketPunto("punto_2", "equipo_b")}
+                                                onClick={() => void fireBasketPunto("punto_2", "equipo_b")}
                                                 aria-label={`+2, ${canchaCarreraB}`}
-                                                className="flex min-h-[48px] min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none"
+                                                className={cn(
+                                                    "relative flex min-h-[48px] min-w-0 flex-1 items-center justify-center overflow-hidden rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all duration-200 active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none",
+                                                    canchaQuickAck === "bask-b2" &&
+                                                        "ring-2 ring-emerald-400/85 ring-offset-2 ring-offset-zinc-950"
+                                                )}
                                             >
+                                                {canchaQuickAck === "bask-b2" && (
+                                                    <span
+                                                        className="pointer-events-none absolute right-0.5 top-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400 text-zinc-950"
+                                                        aria-hidden
+                                                    >
+                                                        <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
+                                                    </span>
+                                                )}
                                                 +2
                                             </button>
                                             <button
                                                 type="button"
                                                 disabled={canchaQuickDisabled}
-                                                onClick={() => fireBasketPunto("punto_3", "equipo_b")}
+                                                onClick={() => void fireBasketPunto("punto_3", "equipo_b")}
                                                 aria-label={`+3, ${canchaCarreraB}`}
-                                                className="flex min-h-[48px] min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none"
+                                                className={cn(
+                                                    "relative flex min-h-[48px] min-w-0 flex-1 items-center justify-center overflow-hidden rounded-xl border-2 border-white/20 bg-white/5 px-3 text-sm font-black text-white transition-all duration-200 active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none",
+                                                    canchaQuickAck === "bask-b3" &&
+                                                        "ring-2 ring-emerald-400/85 ring-offset-2 ring-offset-zinc-950"
+                                                )}
                                             >
+                                                {canchaQuickAck === "bask-b3" && (
+                                                    <span
+                                                        className="pointer-events-none absolute right-0.5 top-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400 text-zinc-950"
+                                                        aria-hidden
+                                                    >
+                                                        <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
+                                                    </span>
+                                                )}
                                                 +3
                                             </button>
                                         </div>
@@ -586,18 +694,30 @@ export default function MatchControlPage() {
                                     <button
                                         type="button"
                                         disabled={canchaQuickDisabled}
-                                        onClick={() => fireFutbolGol("equipo_a")}
+                                        onClick={() => void fireFutbolGol("equipo_a")}
                                         aria-label={`Gol, ${canchaCarreraA}`}
-                                        className="flex min-h-[64px] w-full items-stretch justify-start gap-3 rounded-2xl border-2 px-3.5 py-3 text-left transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg"
+                                        className={cn(
+                                            "relative flex min-h-[64px] w-full items-stretch justify-start gap-3 overflow-hidden rounded-2xl border-2 px-3.5 py-3 text-left transition-all duration-200 active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg",
+                                            canchaQuickAck === "gol-a" &&
+                                                "ring-2 ring-emerald-400/85 ring-offset-2 ring-offset-zinc-950 shadow-[0_0_28px_rgba(52,211,153,0.32)]"
+                                        )}
                                         style={{
                                             borderColor: `${canchaAccent}66`,
                                             background: `linear-gradient(145deg, ${canchaAccent}18, rgba(0,0,0,0.45))`,
                                         }}
                                     >
+                                        {canchaQuickAck === "gol-a" && (
+                                            <span
+                                                className="pointer-events-none absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-emerald-400 text-zinc-950 shadow-md"
+                                                aria-hidden
+                                            >
+                                                <Check className="h-4 w-4" strokeWidth={3} />
+                                            </span>
+                                        )}
                                         <span className="flex h-11 w-11 shrink-0 self-center items-center justify-center rounded-xl border border-white/20 bg-white/5">
                                             <CircleDot className="h-5 w-5" strokeWidth={2.2} style={{ color: canchaAccent }} />
                                         </span>
-                                        <span className="min-w-0 flex-1 flex flex-col justify-center">
+                                        <span className="min-w-0 flex-1 flex flex-col justify-center pr-1">
                                             <span className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 break-words">
                                                 {canchaCarreraA}
                                             </span>
@@ -609,18 +729,30 @@ export default function MatchControlPage() {
                                     <button
                                         type="button"
                                         disabled={canchaQuickDisabled}
-                                        onClick={() => fireFutbolGol("equipo_b")}
+                                        onClick={() => void fireFutbolGol("equipo_b")}
                                         aria-label={`Gol, ${canchaCarreraB}`}
-                                        className="flex min-h-[64px] w-full items-stretch justify-start gap-3 rounded-2xl border-2 px-3.5 py-3 text-left transition-all active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg"
+                                        className={cn(
+                                            "relative flex min-h-[64px] w-full items-stretch justify-start gap-3 overflow-hidden rounded-2xl border-2 px-3.5 py-3 text-left transition-all duration-200 active:scale-[0.99] touch-manipulation disabled:opacity-40 disabled:pointer-events-none shadow-lg",
+                                            canchaQuickAck === "gol-b" &&
+                                                "ring-2 ring-emerald-400/85 ring-offset-2 ring-offset-zinc-950 shadow-[0_0_28px_rgba(52,211,153,0.32)]"
+                                        )}
                                         style={{
                                             borderColor: `${canchaAccent}66`,
                                             background: `linear-gradient(145deg, ${canchaAccent}18, rgba(0,0,0,0.45))`,
                                         }}
                                     >
+                                        {canchaQuickAck === "gol-b" && (
+                                            <span
+                                                className="pointer-events-none absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-emerald-400 text-zinc-950 shadow-md"
+                                                aria-hidden
+                                            >
+                                                <Check className="h-4 w-4" strokeWidth={3} />
+                                            </span>
+                                        )}
                                         <span className="flex h-11 w-11 shrink-0 self-center items-center justify-center rounded-xl border border-white/20 bg-white/5">
                                             <CircleDot className="h-5 w-5" strokeWidth={2.2} style={{ color: canchaAccent }} />
                                         </span>
-                                        <span className="min-w-0 flex-1 flex flex-col justify-center">
+                                        <span className="min-w-0 flex-1 flex flex-col justify-center pr-1">
                                             <span className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 break-words">
                                                 {canchaCarreraB}
                                             </span>

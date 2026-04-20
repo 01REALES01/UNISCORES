@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { getMatchResult } from "@/modules/quiniela/helpers";
 import { enrichPartidosCarreraShieldsFromDb } from "@/lib/match-carrera-shields";
+import type { QuinielaPodiumWeek } from "@/modules/quiniela/components/quiniela-past-podiums";
 import type { PartidoWithRelations } from "@/modules/matches/types";
 
 type RankingWeekMeta = { weekStart: string | null; weekEnd: string | null };
@@ -19,6 +20,7 @@ export function useQuiniela() {
     const [userWeeklyPoints, setUserWeeklyPoints] = useState(0);
     const [loading, setLoading] = useState(true);
     const [userPublicProfile, setUserPublicProfile] = useState<any>(null);
+    const [podiumHistory, setPodiumHistory] = useState<QuinielaPodiumWeek[]>([]);
 
     const fetchData = useCallback(async () => {
         if (!user) return;
@@ -69,6 +71,24 @@ export function useQuiniela() {
         }
 
         if (userPubRes.data) setUserPublicProfile(userPubRes.data);
+
+        try {
+            const { error: snapErr } = await supabase.rpc("quiniela_snapshot_completed_weeks");
+            if (snapErr) console.warn("quiniela_snapshot_completed_weeks", snapErr);
+        } catch {
+            /* no bloquea la quiniela */
+        }
+        const { data: historyRaw, error: histErr } = await supabase.rpc("quiniela_podium_history", {
+            p_limit: 12,
+        } as { p_limit: number });
+        if (histErr) {
+            console.warn("quiniela_podium_history", histErr);
+            setPodiumHistory([]);
+        } else {
+            setPodiumHistory(
+                historyRaw && Array.isArray(historyRaw) ? (historyRaw as QuinielaPodiumWeek[]) : []
+            );
+        }
 
         setLoading(false);
     }, [user]);
@@ -198,6 +218,7 @@ export function useQuiniela() {
         userPublicProfile,
         handlePredict,
         stats,
+        podiumHistory,
         refresh: fetchData
     };
 }
