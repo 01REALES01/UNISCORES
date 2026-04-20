@@ -12,7 +12,11 @@ import UniqueLoading from "@/components/ui/morph-loading";
 import { PulseHeader } from "@/modules/estadisticas/components/pulse-header";
 import { LeaderboardTable, type LeaderboardEntry } from "@/modules/estadisticas/components/leaderboard-table";
 import { PopularityRanking, type TopCareer, type TopUser } from "@/modules/estadisticas/components/popularity-ranking";
-import { fetchAllOlympicsEventosRows } from "@/lib/leaderboard-scorers";
+import {
+    BOTA_FUTBOL_FUTSAL_DISC,
+    fetchAllOlympicsEventosRows,
+    getScorerLeaderboardMergeKey,
+} from "@/lib/leaderboard-scorers";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -84,7 +88,7 @@ export default function EstadisticasPage() {
                     return jid;
                 }).filter((id): id is number => typeof id === 'number' && id > 0)
             ));
-            const { data: playersData } = await supabase.from('jugadores').select('id, nombre, profile_id, carrera_id, profiles(avatar_url)').in('id', playerIds);
+            const { data: playersData } = await supabase.from('jugadores').select('id, nombre, profile_id, carrera_id, genero, profiles(avatar_url)').in('id', playerIds);
             const playerMap = new Map(playersData?.map(j => [j.id, j]));
 
             const { data: allCareers } = await supabase.from('carreras').select('id, nombre, escudo_url');
@@ -162,8 +166,8 @@ export default function EstadisticasPage() {
         // We'll use a slightly different approach: we need player info and career info
         // which was already fetched and stored in the 'eventos' objects in fetchAll.
 
-        // ⚽ Goleadores
-        const soccerMap = new Map<number, LeaderboardEntry>();
+        // ⚽ Goleadores (misma clave: profile, o carrera+nombre+género partido+disc — evita 3+3 por doble ficha)
+        const soccerMap = new Map<string, LeaderboardEntry>();
         filteredEventos.filter(e => {
             const type = e.tipo_evento?.toLowerCase() || '';
             const sport = e.partidos?.disciplina_name || '';
@@ -171,9 +175,19 @@ export default function EstadisticasPage() {
         }).forEach(e => {
             const j = e.jugadores;
             if (!j || !e.partidos) return;
-
-            if (!soccerMap.has(j.id)) {
-                soccerMap.set(j.id, {
+            const mergeKey = getScorerLeaderboardMergeKey(
+                {
+                    id: j.id,
+                    nombre: j.nombre,
+                    profile_id: j.profile_id ?? null,
+                    carrera_id: (j as { carrera_id?: number | null }).carrera_id,
+                    genero: (j as { genero?: string | null }).genero ?? null,
+                },
+                BOTA_FUTBOL_FUTSAL_DISC,
+                (e.partidos as { genero?: string | null } | null)?.genero
+            );
+            if (!soccerMap.has(mergeKey)) {
+                soccerMap.set(mergeKey, {
                     id: j.id, rank: 0, nombre: j.nombre, 
                     avatar_url: j.avatar_url,
                     profile_id: j.profile_id, 
@@ -181,12 +195,19 @@ export default function EstadisticasPage() {
                     escudo_url: j.escudo_url,
                     value: 0
                 });
+            } else {
+                const cur = soccerMap.get(mergeKey)!;
+                if (j.id < cur.id) {
+                    cur.id = j.id;
+                    cur.nombre = j.nombre;
+                    if (j.profile_id) cur.profile_id = j.profile_id;
+                }
             }
-            soccerMap.get(j.id)!.value++;
+            soccerMap.get(mergeKey)!.value++;
         });
 
         // 🏀 Anotadores Basket
-        const basketMap = new Map<number, LeaderboardEntry>();
+        const basketMap = new Map<string, LeaderboardEntry>();
         filteredEventos.filter(e => {
             const sport = e.partidos?.disciplina_name || '';
             const type = e.tipo_evento?.toLowerCase() || '';
@@ -194,9 +215,19 @@ export default function EstadisticasPage() {
         }).forEach(e => {
             const j = e.jugadores;
             if (!j || !e.partidos) return;
-
-            if (!basketMap.has(j.id)) {
-                basketMap.set(j.id, {
+            const mergeKey = getScorerLeaderboardMergeKey(
+                {
+                    id: j.id,
+                    nombre: j.nombre,
+                    profile_id: j.profile_id ?? null,
+                    carrera_id: (j as { carrera_id?: number | null }).carrera_id,
+                    genero: (j as { genero?: string | null }).genero ?? null,
+                },
+                'Baloncesto',
+                (e.partidos as { genero?: string | null } | null)?.genero
+            );
+            if (!basketMap.has(mergeKey)) {
+                basketMap.set(mergeKey, {
                     id: j.id, rank: 0, nombre: j.nombre, 
                     avatar_url: j.avatar_url,
                     profile_id: j.profile_id, 
@@ -204,12 +235,19 @@ export default function EstadisticasPage() {
                     escudo_url: j.escudo_url,
                     value: 0
                 });
+            } else {
+                const cur = basketMap.get(mergeKey)!;
+                if (j.id < cur.id) {
+                    cur.id = j.id;
+                    cur.nombre = j.nombre;
+                    if (j.profile_id) cur.profile_id = j.profile_id;
+                }
             }
-            basketMap.get(j.id)!.value += getPointValue(e.tipo_evento);
+            basketMap.get(mergeKey)!.value += getPointValue(e.tipo_evento);
         });
 
         // 🟨 Tarjeteadores
-        const cardMap = new Map<number, LeaderboardEntry & { yellow: number, red: number }>();
+        const cardMap = new Map<string, LeaderboardEntry & { yellow: number, red: number }>();
         filteredEventos.filter(e => {
             const sport = e.partidos?.disciplina_name || '';
             const type = e.tipo_evento?.toLowerCase() || '';
@@ -217,9 +255,19 @@ export default function EstadisticasPage() {
         }).forEach(e => {
             const j = e.jugadores;
             if (!j || !e.partidos) return;
-
-            if (!cardMap.has(j.id)) {
-                cardMap.set(j.id, {
+            const mergeKey = getScorerLeaderboardMergeKey(
+                {
+                    id: j.id,
+                    nombre: j.nombre,
+                    profile_id: j.profile_id ?? null,
+                    carrera_id: (j as { carrera_id?: number | null }).carrera_id,
+                    genero: (j as { genero?: string | null }).genero ?? null,
+                },
+                BOTA_FUTBOL_FUTSAL_DISC,
+                (e.partidos as { genero?: string | null } | null)?.genero
+            );
+            if (!cardMap.has(mergeKey)) {
+                cardMap.set(mergeKey, {
                     id: j.id, rank: 0, nombre: j.nombre, 
                     avatar_url: j.avatar_url,
                     profile_id: j.profile_id, 
@@ -227,8 +275,15 @@ export default function EstadisticasPage() {
                     escudo_url: j.escudo_url,
                     value: 0, yellow: 0, red: 0
                 });
+            } else {
+                const cur = cardMap.get(mergeKey)!;
+                if (j.id < cur.id) {
+                    cur.id = j.id;
+                    cur.nombre = j.nombre;
+                    if (j.profile_id) cur.profile_id = j.profile_id;
+                }
             }
-            const p = cardMap.get(j.id)!;
+            const p = cardMap.get(mergeKey)!;
             const t = e.tipo_evento?.toLowerCase();
             if (t === 'tarjeta_amarilla') { p.yellow++; p.value += 1; }
             else if (t === 'tarjeta_roja') { p.red++; p.value += 3; }

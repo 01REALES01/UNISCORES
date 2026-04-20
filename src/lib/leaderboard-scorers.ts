@@ -60,8 +60,45 @@ export type JugadorRow = {
   nombre: string;
   numero: number | null;
   profile_id: string | null;
+  carrera_id?: number | null;
   genero: string | null;
 };
+
+/**
+ * Une filas de `jugadores` que son la misma persona (doble alta en rooster):
+ * 1) mismo `profile_id` → misma clave
+ * 2) sin profile: mismo `carrera` + `nombre` + `género` + `disciplina` (evita 3+3 duplicado)
+ * 3) resto: id estable (no fusionar)
+ */
+export function getScorerLeaderboardMergeKey(
+  j: {
+    id: number;
+    nombre: string;
+    profile_id: string | null;
+    carrera_id?: number | null;
+    genero: string | null;
+  },
+  disciplina: string,
+  /** Género del partido: prioridad sobre el campo del jugador (misma carrera, torneo fem/masc). */
+  generoPartido?: string | null
+): string {
+  const d = (disciplina || '').trim();
+  const g = (generoPartido || j.genero || 'masculino').toLowerCase();
+  if (j.profile_id) {
+    return `p|${j.profile_id}|${d}`;
+  }
+  if (j.carrera_id != null && (j.nombre || '').trim()) {
+    const n = j.nombre
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ');
+    return `c|${j.carrera_id}|${n}|${g}|${d}`;
+  }
+  return `i|${j.id}|${d}`;
+}
+
+/** Bota de oro en /estadisticas: misma clave aunque el partido sea Fútbol o Futsal. */
+export const BOTA_FUTBOL_FUTSAL_DISC = '__BotaFutbolFutsal__';
 
 export type AggregatedScorer = {
   jugador_id: number;
@@ -83,8 +120,8 @@ export type RawScoringEvent = {
   jugador_id_normalized: number | null;
   /** PostgREST puede devolver objeto o array de 1 elemento en !inner */
   partidos:
-    | { estado: string; disciplinas: { name: string } | { name: string }[] | null }
-    | { estado: string; disciplinas: { name: string } | { name: string }[] | null }[]
+    | { estado: string; genero?: string | null; disciplinas: { name: string } | { name: string }[] | null }
+    | { estado: string; genero?: string | null; disciplinas: { name: string } | { name: string }[] | null }[]
     | null;
 };
 
@@ -105,6 +142,7 @@ export async function fetchScoringEventsForLeaderboard(
         jugador_id_normalized,
         partidos!inner (
           estado,
+          genero,
           disciplinas ( name )
         )
       `
@@ -128,7 +166,9 @@ export async function fetchScoringEventsForLeaderboard(
 
 function normalizePartido(
   p: RawScoringEvent['partidos']
-): { estado: string; disciplinas: { name: string } | { name: string }[] | null } | null {
+):
+  | { estado: string; genero?: string | null; disciplinas: { name: string } | { name: string }[] | null }
+  | null {
   if (p == null) return null;
   const row = Array.isArray(p) ? p[0] : p;
   return row ?? null;
@@ -178,8 +218,20 @@ export function aggregateScorersFromEvents(
     const j = jugadoresById.get(jid);
     if (!j) continue;
 
+    const pRow = normalizePartido(e.partidos);
+    const generoP = pRow?.genero ?? null;
     const disc = disciplinaNombre(e.partidos);
-    const key = `${jid}-${disc}`;
+    const key = getScorerLeaderboardMergeKey(
+      {
+        id: j.id,
+        nombre: j.nombre,
+        profile_id: j.profile_id,
+        carrera_id: j.carrera_id,
+        genero: j.genero,
+      },
+      disc,
+      generoP
+    );
 
     if (!byKey.has(key)) {
       byKey.set(key, {
@@ -188,7 +240,7 @@ export function aggregateScorersFromEvents(
         numero: j.numero,
         profile_id: j.profile_id,
         disciplina: disc,
-        genero: (j.genero || 'masculino').toLowerCase(),
+        genero: (generoP || j.genero || 'masculino').toLowerCase(),
         goles: 0,
         puntos_totales: 0,
         partidos: new Set(),
@@ -197,6 +249,15 @@ export function aggregateScorersFromEvents(
     }
 
     const row = byKey.get(key)!;
+    if (j.id < row.jugador_id) {
+      row.jugador_id = j.id;
+      row.nombre = j.nombre;
+      row.numero = j.numero;
+    }
+    if (j.profile_id) row.profile_id = j.profile_id;
+    if (generoP) row.genero = generoP.toLowerCase();
+    else if (!row.genero && j.genero) row.genero = (j.genero || 'masculino').toLowerCase();
+
     const inc = ptsTipo;
     if (e.tipo_evento === 'gol') row.goles++;
     row.puntos_totales += inc;

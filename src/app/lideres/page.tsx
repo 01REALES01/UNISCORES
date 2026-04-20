@@ -51,7 +51,7 @@ export default function LideresPage() {
             const slice = idList.slice(i, i + CHUNK);
             const { data: jrows, error: jErr } = await supabase
                 .from("jugadores")
-                .select("id, nombre, numero, profile_id, genero")
+                .select("id, nombre, numero, profile_id, genero, carrera_id")
                 .in("id", slice);
             if (jErr) {
                 console.warn("[lideres] jugadores:", jErr.message);
