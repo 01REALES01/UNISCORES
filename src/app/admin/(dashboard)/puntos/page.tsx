@@ -412,6 +412,71 @@ function BracketVisibilityToggle({ configKey, label }: { configKey: string; labe
     );
 }
 
+function FixEAUDVoleibolTab({ isAdmin }: { isAdmin: boolean }) {
+    const [fixing, setFixing] = useState(false);
+    const [result, setResult] = useState<any>(null);
+
+    const handleFix = async () => {
+        if (!window.confirm('¿Convertir "Diseño Gráfico" → "EAUD" en Voleibol Masculino? Esta operación renombrará la delegación e incluirá Arquitectura y Diseño Industrial.')) return;
+        setFixing(true);
+        try {
+            const res = await fetch('/api/admin/fix-eaud-voleibol', { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            setResult(data);
+            toast.success(`✅ ${data.message}`);
+        } catch (e: any) {
+            toast.error('Error: ' + e.message);
+            setResult(null);
+        } finally {
+            setFixing(false);
+        }
+    };
+
+    if (!isAdmin) return <div className="text-white/40 text-sm py-8 text-center">Solo admins pueden ejecutar esta operación.</div>;
+
+    return (
+        <div className="space-y-5">
+            <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6">
+                <p className="text-white/60 text-sm mb-4">
+                    Convierte la delegación "Diseño Gráfico" en Voleibol Masculino a "EAUD", combinándola con Arquitectura y Diseño Industrial como aparece en los otros deportes. El roster mostrará jugadores de las 3 carreras y los puntos olímpicos se contabilizarán correctamente para cada carrera.
+                </p>
+                <button
+                    onClick={handleFix}
+                    disabled={fixing}
+                    className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-300 font-black text-sm uppercase tracking-widest hover:bg-violet-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <RefreshCw size={16} className={fixing ? 'animate-spin' : ''} />
+                    {fixing ? 'Procesando...' : 'Convertir a EAUD'}
+                </button>
+            </div>
+
+            {result && (
+                <div className={`rounded-2xl border p-4 ${result.ok ? 'bg-emerald-500/5 border-emerald-500/15' : 'bg-rose-500/5 border-rose-500/15'}`}>
+                    <p className={`text-sm font-bold mb-3 ${result.ok ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {result.ok ? '✅ Operación completada' : '❌ Error'}
+                    </p>
+                    {result.ok && result.action_taken && (
+                        <div className="space-y-2 text-xs text-white/60">
+                            <div>
+                                <p className="font-semibold text-white/80">Delegación actualizada:</p>
+                                <p>Nombre: {result.delegacion_updated?.nombre}</p>
+                                <p>Carreras: {result.delegacion_updated?.carrera_ids?.length} IDs</p>
+                            </div>
+                            <div>
+                                <p className="font-semibold text-white/80">Partidos actualizados: {result.partidos_updated}</p>
+                            </div>
+                        </div>
+                    )}
+                    {result.ok && !result.action_taken && (
+                        <p className="text-xs text-white/60">{result.message}</p>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 function FairPlayAdminTab() {
     const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
     const [selectedDisc, setSelectedDisc] = useState<number | null>(null);
@@ -468,7 +533,7 @@ function FairPlayAdminTab() {
 
 export default function PuntosAdminPage() {
     const { isAdmin } = useAuth();
-    const [tab, setTab] = useState<'clasificacion' | 'sync' | 'config' | 'general' | 'fairplay'>('clasificacion');
+    const [tab, setTab] = useState<'clasificacion' | 'sync' | 'config' | 'general' | 'fairplay' | 'fix-eaud'>('clasificacion');
     const tabs = [
         { id: 'clasificacion', label: 'Clasificación', icon: Trophy },
         ...(isAdmin ? [
@@ -476,6 +541,7 @@ export default function PuntosAdminPage() {
             { id: 'config', label: 'Configurar Puntos', icon: Settings },
             { id: 'general', label: 'Ajustes Generales', icon: LayoutDashboard },
             { id: 'fairplay', label: 'Fair Play', icon: Shield },
+            { id: 'fix-eaud', label: 'EAUD Voleibol', icon: RefreshCw },
         ] : []),
     ] as const;
 
@@ -496,6 +562,7 @@ export default function PuntosAdminPage() {
                 {tab === 'clasificacion' && <ClasificacionTab />}
                 {tab === 'sync' && <SyncDataTab isAdmin={isAdmin} />}
                 {tab === 'config' && <PuntosConfigTab isAdmin={isAdmin} />}
+                {tab === 'fix-eaud' && <FixEAUDVoleibolTab isAdmin={isAdmin} />}
                 {tab === 'general' && (
                     <div className="space-y-6">
                         <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">

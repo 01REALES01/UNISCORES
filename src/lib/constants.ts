@@ -68,6 +68,7 @@ export const CARRERAS_UNINORTE = [
 // Each member carrera receives full Olympic points independently.
 export const EQUIPO_NOMBRE_TO_CARRERAS: Record<string, string[]> = {
     'DCPRI':                               ['Derecho', 'Ciencia Política y Gobierno', 'Relaciones Internacionales'],
+    'EAUD':                                ['Diseño Gráfico', 'Arquitectura', 'Diseño Industrial'],
     'INGENIERÍA MECÁNICA':                 ['Ingeniería Mecánica'],
     'MEDICINA':                            ['Medicina'],
     'INGENIERÍA INDUSTRIAL':               ['Ingeniería Industrial'],
