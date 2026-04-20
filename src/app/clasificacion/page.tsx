@@ -195,7 +195,7 @@ export default function ClasificacionPage() {
                 .from('olympics_eventos')
                 .select('tipo_evento, equipo, descripcion, partido_id')
                 .in('partido_id', matchIds)
-                .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play']);
+                .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play', 'falta_tecnica', 'falta_antideportiva']);
 
             if (data) {
                 const counts: Record<string, number> = {};
@@ -216,6 +216,8 @@ export default function ClasificacionPage() {
                     if (e.tipo_evento === 'tarjeta_roja') counts[resolvedTeam] -= 100;
                     if (e.tipo_evento === 'expulsion_delegado') counts[resolvedTeam] -= 100;
                     if (e.tipo_evento === 'mal_comportamiento') counts[resolvedTeam] -= 100;
+                    if (e.tipo_evento === 'falta_tecnica') counts[resolvedTeam] -= 50;
+                    if (e.tipo_evento === 'falta_antideportiva') counts[resolvedTeam] -= 100;
                     if (e.tipo_evento === 'ajuste_fair_play') counts[resolvedTeam] += Number(e.descripcion ?? 0);
                 });
                 setFairPlayData(counts);

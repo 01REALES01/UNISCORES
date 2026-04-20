@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         .from('olympics_eventos')
         .select('tipo_evento, equipo')
         .in('partido_id', matchIds)
-        .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento']);
+        .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'falta_tecnica', 'falta_antideportiva']);
 
     const fairPlayData: Record<string, number> = {};
     // Initialize all teams with base 2000
@@ -100,6 +100,8 @@ export async function POST(request: NextRequest) {
         if (e.tipo_evento === 'tarjeta_roja') fairPlayData[team] -= 100;
         if (e.tipo_evento === 'expulsion_delegado') fairPlayData[team] -= 100;
         if (e.tipo_evento === 'mal_comportamiento') fairPlayData[team] -= 100;
+        if (e.tipo_evento === 'falta_tecnica') fairPlayData[team] -= 50;
+        if (e.tipo_evento === 'falta_antideportiva') fairPlayData[team] -= 100;
     });
 
     // Compute standings per group

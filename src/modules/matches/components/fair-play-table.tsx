@@ -109,7 +109,7 @@ export function FairPlayTable({ genero, sportName, teamIdMap = {} }: FairPlayTab
                 .from('olympics_eventos')
                 .select('tipo_evento, equipo, descripcion, partido_id')
                 .in('partido_id', matchIds)
-                .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play']);
+                .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play', 'falta_tecnica', 'falta_antideportiva']);
 
             (eventos ?? []).forEach((e: any) => {
                 const rawTeam = e.equipo;
@@ -121,6 +121,8 @@ export function FairPlayTable({ genero, sportName, teamIdMap = {} }: FairPlayTab
                 else if (e.tipo_evento === 'tarjeta_roja') { scores[team] -= 100; rojas[team]++; }
                 else if (e.tipo_evento === 'expulsion_delegado') { scores[team] -= 100; otros[team]++; }
                 else if (e.tipo_evento === 'mal_comportamiento') { scores[team] -= 100; otros[team]++; }
+                else if (e.tipo_evento === 'falta_tecnica') { scores[team] -= 50; amarillas[team]++; }
+                else if (e.tipo_evento === 'falta_antideportiva') { scores[team] -= 100; rojas[team]++; }
                 else if (e.tipo_evento === 'ajuste_fair_play') { scores[team] += Number(e.descripcion ?? 0); otros[team]++; }
             });
 

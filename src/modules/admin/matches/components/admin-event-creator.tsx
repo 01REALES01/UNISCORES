@@ -49,7 +49,8 @@ export const AdminEventCreator = ({
   const needsPlayer = !isIndividualSport;
   const playerOptional = isVolleyball;
   const isCardEvent =
-    nuevoEvento.tipo === 'tarjeta_amarilla' || nuevoEvento.tipo === 'tarjeta_roja';
+    nuevoEvento.tipo === 'tarjeta_amarilla' || nuevoEvento.tipo === 'tarjeta_roja' ||
+    nuevoEvento.tipo === 'falta_tecnica' || nuevoEvento.tipo === 'falta_antideportiva';
 
   // Players expelled by red card — cannot receive more events (fútbol y vóley)
   const expelledPlayerIds = new Set(

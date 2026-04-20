@@ -87,6 +87,8 @@ export type TipoEvento =
   | 'set'
   | 'cambio'
   | 'falta'
+  | 'falta_tecnica'
+  | 'falta_antideportiva'
   | 'sistema'
   | string; // fallback para tipos no catalogados
 

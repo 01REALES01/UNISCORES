@@ -54,6 +54,8 @@ const GET_SPORT_ACTIONS = (sport: string) => {
             { value: 'punto_2', label: '+2', icon: '2️⃣', style: 'circle-orange' },
             { value: 'punto_3', label: '+3', icon: '3️⃣', style: 'circle-orange-fire' },
             { value: 'falta', label: 'Falta', icon: '⛔', style: 'pill-neutral' },
+            { value: 'falta_tecnica', label: 'Técnica', icon: '🟨', style: 'card-yellow' },
+            { value: 'falta_antideportiva', label: 'Antideportiva', icon: '🟥', style: 'card-red' },
             { value: 'cambio', label: 'Cambio', icon: '🔄', style: 'pill-neutral' },
         ];
     }
