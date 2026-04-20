@@ -32,6 +32,8 @@ const DEFAULT_GROUP_COLOR = { bg: 'bg-white/5', text: 'text-white/50', border: '
 /** Clasificación: partidos de fase grupos con `grupo` vacío; se muestran en tabla aparte. */
 export const GRUPO_PLACEHOLDER_SIN_ETIQUETA = '\u2014';
 
+const INDIVIDUAL_SPORTS = ['Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
+
 function PositionBadge({ idx }: { idx: number }) {
     if (idx === 0) return (
         <div className="w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-black border border-amber-400/30 bg-amber-400/10 text-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.15)]">1</div>
@@ -57,6 +59,8 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
     const [fairPlayData, setFairPlayData] = useState<Record<string, number>>({});
     const matchIds = useMemo(() => matches.map(m => m.id), [matches]);
 
+    const isIndividualSport = INDIVIDUAL_SPORTS.includes(sportName);
+
     const fetchFairPlay = useCallback(async () => {
         if (matchIds.length === 0) return;
 
@@ -64,8 +68,8 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
         // Events store 'equipo_a'/'equipo_b' as literals, not the real name
         const teamNameByMatchAndSide: Record<string, string> = {};
         matches.forEach(m => {
-            const a = m.delegacion_a || m.equipo_a;
-            const b = m.delegacion_b || m.equipo_b;
+            const a = isIndividualSport ? (m.equipo_a || m.delegacion_a) : (m.delegacion_a || m.equipo_a);
+            const b = isIndividualSport ? (m.equipo_b || m.delegacion_b) : (m.delegacion_b || m.equipo_b);
             if (a) teamNameByMatchAndSide[`${m.id}_equipo_a`] = a;
             if (b) teamNameByMatchAndSide[`${m.id}_equipo_b`] = b;
         });
@@ -79,8 +83,8 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
         if (!error && data) {
             const counts: Record<string, number> = {};
             matches.forEach(m => {
-                const a = m.delegacion_a || m.equipo_a;
-                const b = m.delegacion_b || m.equipo_b;
+                const a = isIndividualSport ? (m.equipo_a || m.delegacion_a) : (m.delegacion_a || m.equipo_a);
+                const b = isIndividualSport ? (m.equipo_b || m.delegacion_b) : (m.delegacion_b || m.equipo_b);
                 if (a && !counts[a]) counts[a] = 2000;
                 if (b && !counts[b]) counts[b] = 2000;
             });
@@ -97,7 +101,7 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
             });
             setFairPlayData(counts);
         }
-    }, [matchIds, matches]);
+    }, [matchIds, matches, isIndividualSport]);
 
     // Initial load + re-fetch when matches prop changes
     useEffect(() => {
@@ -331,8 +335,8 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
                         const winnerB = isFinished && scoreB > scoreA;
                         
                         // Fallback icon logic using teamIdMap
-                        const nameA = m.delegacion_a || m.equipo_a || '';
-                        const nameB = m.delegacion_b || m.equipo_b || '';
+                        const nameA = (isIndividualSport ? (m.equipo_a || m.delegacion_a) : (m.delegacion_a || m.equipo_a)) || '';
+                        const nameB = (isIndividualSport ? (m.equipo_b || m.delegacion_b) : (m.delegacion_b || m.equipo_b)) || '';
                         const mapA = teamIdMap[nameA.trim().toLowerCase()] || {};
                         const mapB = teamIdMap[nameB.trim().toLowerCase()] || {};
                         

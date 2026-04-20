@@ -39,17 +39,20 @@ export function compareStandings(a: TeamStanding, b: TeamStanding, sportName: st
     return b.fairPlayPoints - a.fairPlayPoints;
 }
 
+const INDIVIDUAL_SPORTS = ['Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
+
 export function calculateStandings(
-    matches: any[], 
-    sportName: string, 
+    matches: any[],
+    sportName: string,
     fairPlayData: Record<string, number> = {},
     nameToIdMap: Record<string, { teamId?: string; athleteId?: string; avatarUrl?: string; escudoUrl?: string }> = {}
 ): TeamStanding[] {
     const teams: Record<string, TeamStanding> = {};
+    const isIndividualSport = INDIVIDUAL_SPORTS.includes(sportName);
 
     matches.forEach((m) => {
-        const teamA = m.delegacion_a || m.equipo_a;
-        const teamB = m.delegacion_b || m.equipo_b;
+        const teamA = isIndividualSport ? (m.equipo_a || m.delegacion_a) : (m.delegacion_a || m.equipo_a);
+        const teamB = isIndividualSport ? (m.equipo_b || m.delegacion_b) : (m.delegacion_b || m.equipo_b);
         const teamAId = m.carrera_a_id || m.athlete_a_id;
         const teamBId = m.carrera_b_id || m.athlete_b_id;
         const isIndividual = !!m.athlete_a_id;

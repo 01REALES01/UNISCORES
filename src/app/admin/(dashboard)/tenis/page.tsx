@@ -156,6 +156,25 @@ export default function TenisBracketPage() {
         }
     };
 
+    // Fix Tennis Avanzado Femenino grupos
+    const [fixingTennisFem, setFixingTennisFem] = useState(false);
+    const [fixTennisFemResult, setFixTennisFemResult] = useState<{ inserted: number; skipped: number } | null>(null);
+
+    const handleFixTennisFem = async () => {
+        setFixingTennisFem(true);
+        try {
+            const res = await fetch('/api/admin/fix-tennis-femenino-grupos', { method: 'POST' });
+            const json = await res.json();
+            if (!res.ok) { toast.error(json.error ?? 'Error al completar grupos'); return; }
+            setFixTennisFemResult(json);
+            toast.success(`${json.inserted} partidos creados, ${json.skipped} ya existían`);
+        } catch (e: any) {
+            toast.error('Error: ' + e.message);
+        } finally {
+            setFixingTennisFem(false);
+        }
+    };
+
     // Direct query using disciplina_id FK (the only correct way to filter in PostgREST)
     const reload = useCallback(async () => {
         setLoading(true);
@@ -332,6 +351,38 @@ export default function TenisBracketPage() {
                             {(importGruposResult.errors ?? []).map((e, i) => <li key={i}>{e}</li>)}
                         </ul>
                     </details>
+                )}
+            </div>
+
+            {/* Tenis — Completar Avanzado Femenino grupos */}
+            <div className="rounded-2xl border border-rose-500/20 bg-rose-500/[0.04] p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                    <div>
+                        <p className="text-sm font-bold text-rose-300">Tenis — Completar Avanzado Femenino</p>
+                        <p className="text-[11px] text-white/30 mt-0.5">
+                            Completa los partidos faltantes para los 3 grupos de Avanzado Femenino (9 partidos totales).
+                        </p>
+                    </div>
+                    <button
+                        onClick={handleFixTennisFem}
+                        disabled={fixingTennisFem}
+                        className="shrink-0 px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 text-[11px] font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {fixingTennisFem && <Loader2 size={12} className="animate-spin" />}
+                        {fixingTennisFem ? 'Completando...' : fixTennisFemResult ? '✓ Completado' : 'Completar grupos'}
+                    </button>
+                </div>
+                {fixTennisFemResult && (
+                    <div className="grid grid-cols-2 gap-2 text-center">
+                        <div className="rounded-xl bg-white/5 border border-white/5 py-2">
+                            <p className="text-lg font-black text-white">{fixTennisFemResult.inserted}</p>
+                            <p className="text-[9px] text-white/30 uppercase tracking-widest">creados</p>
+                        </div>
+                        <div className="rounded-xl bg-white/5 border border-white/5 py-2">
+                            <p className="text-lg font-black text-emerald-400">{fixTennisFemResult.skipped}</p>
+                            <p className="text-[9px] text-white/30 uppercase tracking-widest">ya existían</p>
+                        </div>
+                    </div>
                 )}
             </div>
 
