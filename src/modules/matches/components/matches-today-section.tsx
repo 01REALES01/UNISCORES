@@ -63,7 +63,7 @@ function getShieldUrl(partido: Partido, side: "a" | "b") {
 
 // ── Single match row ─────────────────────────────────────────────────────────
 
-function MatchRow({ partido }: { partido: Partido }) {
+export function MatchRow({ partido }: { partido: Partido }) {
   const sportName = partido.disciplinas?.name || "Deporte";
   const isLive = partido.estado === "en_curso";
   const isFinished = partido.estado === "finalizado";

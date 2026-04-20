@@ -16,7 +16,7 @@ import { calculateStandings, compareStandings, type TeamStanding } from "@/modul
 import { SportIcon } from "@/components/sport-icons";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 
-const BRACKET_SPORTS = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis'] as const;
+const BRACKET_SPORTS = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Ajedrez'] as const;
 const GENDERS = [
     { label: 'Masculino', value: 'masculino', icon: <Mars size={18} />, color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
     { label: 'Femenino', value: 'femenino', icon: <Venus size={18} />, color: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
@@ -65,6 +65,7 @@ export default function ClasificacionPage() {
     const [hideTeamBrackets, setHideTeamBrackets] = useState<boolean>(false);
     const [hideTenisBrackets, setHideTenisBrackets] = useState<boolean>(false);
     const isTenis = selectedSport === 'Tenis';
+    const isAjedrez = selectedSport === 'Ajedrez';
     const isTeamSport = ['Fútbol', 'Voleibol', 'Baloncesto'].includes(selectedSport);
 
     // Fetch site configuration + realtime updates
@@ -306,6 +307,68 @@ export default function ClasificacionPage() {
         return thirds.sort((a, b) => compareStandings(a, b, selectedSport));
     }, [groups, groupMatches, selectedSport, fairPlayData, teamIdMap]);
 
+    // ── Chess standings ────────────────────────────────────────────────────────
+    const chessStandings = useMemo(() => {
+        if (!isAjedrez) return [];
+
+        const chessMatches = matches.filter(m =>
+            m.disciplinas?.name === 'Ajedrez' &&
+            m.estado === 'finalizado' &&
+            (m.genero || 'masculino').toLowerCase() === selectedGender.toLowerCase()
+        );
+
+        const normKey = (s: string) =>
+            s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+        const players: Record<string, {
+            name: string; carreraName: string;
+            avatarUrl: string | null; escudoUrl: string | null;
+            wins: number; draws: number; losses: number; played: number;
+        }> = {};
+
+        const getOrCreate = (key: string, name: string, carreraName: string, avatarUrl: string | null, escudoUrl: string | null) => {
+            if (!players[key]) players[key] = { name, carreraName, avatarUrl, escudoUrl, wins: 0, draws: 0, losses: 0, played: 0 };
+            // Update with richer data if available
+            if (avatarUrl && !players[key].avatarUrl) players[key].avatarUrl = avatarUrl;
+            if (escudoUrl && !players[key].escudoUrl) players[key].escudoUrl = escudoUrl;
+            if (carreraName && !players[key].carreraName) players[key].carreraName = carreraName;
+            return players[key];
+        };
+
+        chessMatches.forEach(m => {
+            const md = (m.marcador_detalle || {}) as any;
+            const totalA = Number(md.total_a ?? 0);
+            const totalB = Number(md.total_b ?? 0);
+
+            const nameA = (m as any).atleta_a?.full_name || m.equipo_a || '';
+            const nameB = (m as any).atleta_b?.full_name || m.equipo_b || '';
+            if (!nameA || !nameB) return;
+
+            // Use normalized name as dedup key so linked/unlinked entries merge correctly
+            const keyA = normKey(nameA);
+            const keyB = normKey(nameB);
+
+            const carreraA = (m as any).carrera_a?.nombre || '';
+            const carreraB = (m as any).carrera_b?.nombre || '';
+            const avatarA = (m as any).atleta_a?.avatar_url || null;
+            const avatarB = (m as any).atleta_b?.avatar_url || null;
+            const escudoA = (m as any).carrera_a?.escudo_url || null;
+            const escudoB = (m as any).carrera_b?.escudo_url || null;
+
+            const pA = getOrCreate(keyA, nameA, carreraA, avatarA, escudoA);
+            const pB = getOrCreate(keyB, nameB, carreraB, avatarB, escudoB);
+            pA.played++; pB.played++;
+
+            if (totalA > totalB) { pA.wins++; pB.losses++; }
+            else if (totalB > totalA) { pB.wins++; pA.losses++; }
+            else { pA.draws++; pB.draws++; }
+        });
+
+        return Object.values(players)
+            .map(p => ({ ...p, pts: p.wins + p.draws * 0.5 }))
+            .sort((a, b) => b.pts - a.pts || b.wins - a.wins || a.losses - b.losses);
+    }, [isAjedrez, matches, selectedGender]);
+
     const accent = "text-violet-400";
     const border = "border-violet-500/20";
 
@@ -456,6 +519,104 @@ export default function ClasificacionPage() {
                         <div className="w-8 h-8 border-2 border-violet-100 border-t-violet-600 rounded-full animate-spin" />
                         <p className="text-slate-400 text-xs mt-4 uppercase tracking-widest font-bold">Cargando clasificación...</p>
                     </div>
+                ) : isAjedrez ? (
+                    /* ── CHESS STANDINGS ── */
+                    <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 bg-[#281345]/60 rounded-[2.5rem] p-6 md:p-8 border border-white/[0.04]">
+                        <div className="flex items-center gap-3 mb-6">
+                            <SportIcon sport="Ajedrez" size={22} className="text-violet-400" />
+                            <h2 className="text-2xl font-display font-black tracking-tight text-white">Tabla de Ajedrez</h2>
+                            <div className="flex-1 h-px bg-gradient-to-r from-violet-100 to-transparent ml-4" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-white/20">
+                                {chessStandings.reduce((s, p) => s + p.played, 0) / 2 | 0} partidas finalizadas
+                            </span>
+                        </div>
+
+                        {chessStandings.length === 0 ? (
+                            <div className="text-center py-16 text-white/20 text-sm font-bold">No hay partidas finalizadas.</div>
+                        ) : (
+                            <div className="rounded-2xl border border-white/8 overflow-hidden">
+                                {/* Header */}
+                                <div className="grid grid-cols-[40px_1fr_auto_32px_32px_32px_48px] gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20 text-center">#</span>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Jugador</span>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20 text-center hidden sm:block">PJ</span>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500/60 text-center">V</span>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/30 text-center">E</span>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-red-500/60 text-center">D</span>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-violet-400/80 text-center">Pts</span>
+                                </div>
+
+                                {chessStandings.map((p, idx) => {
+                                    const isTop3 = idx < 3;
+                                    const medalEmoji = ['🥇', '🥈', '🥉'][idx] ?? null;
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className={cn(
+                                                "grid grid-cols-[40px_1fr_auto_32px_32px_32px_48px] gap-2 px-4 py-3.5 border-b border-white/5 last:border-0 items-center transition-colors",
+                                                isTop3 ? "bg-white/[0.02]" : ""
+                                            )}
+                                        >
+                                            {/* Position */}
+                                            <div className="flex items-center justify-center">
+                                                {medalEmoji
+                                                    ? <span className="text-lg leading-none">{medalEmoji}</span>
+                                                    : <span className="text-xs font-black text-white/20 tabular-nums">#{idx + 1}</span>
+                                                }
+                                            </div>
+
+                                            {/* Player + carrera */}
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                {p.escudoUrl
+                                                    ? <img src={p.escudoUrl} alt="" className="w-7 h-7 rounded-full object-cover shrink-0 bg-white/5" />
+                                                    : p.avatarUrl
+                                                        ? <img src={p.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover shrink-0 bg-white/5" />
+                                                        : <div className="w-7 h-7 rounded-full bg-white/5 shrink-0 flex items-center justify-center text-[10px] font-black text-white/20">{p.name.charAt(0)}</div>
+                                                }
+                                                <div className="min-w-0">
+                                                    <span className={cn("text-sm font-bold block truncate", isTop3 ? "text-white" : "text-white/60")}>
+                                                        {p.name}
+                                                    </span>
+                                                    {p.carreraName && (
+                                                        <span className="text-[10px] font-bold text-white/25 uppercase tracking-wide truncate block">{p.carreraName}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* PJ */}
+                                            <span className="text-xs font-black tabular-nums text-white/25 text-center hidden sm:block">{p.played}</span>
+
+                                            {/* V */}
+                                            <span className="text-xs font-black tabular-nums text-emerald-400/80 text-center">{p.wins}</span>
+
+                                            {/* E */}
+                                            <span className="text-xs font-black tabular-nums text-white/30 text-center">{p.draws}</span>
+
+                                            {/* D */}
+                                            <span className="text-xs font-black tabular-nums text-red-400/70 text-center">{p.losses}</span>
+
+                                            {/* Pts */}
+                                            <div className="text-center">
+                                                <span className={cn(
+                                                    "text-sm font-black tabular-nums",
+                                                    isTop3 ? "text-violet-300" : "text-white/30"
+                                                )}>
+                                                    {p.pts % 1 === 0 ? p.pts : p.pts.toFixed(1)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* Legend */}
+                        <div className="flex items-center gap-4 mt-4 px-1">
+                            <span className="text-[9px] font-bold text-white/15 uppercase tracking-widest">V = Victoria (1pt)</span>
+                            <span className="text-[9px] font-bold text-white/15 uppercase tracking-widest">E = Empate (0.5pt)</span>
+                            <span className="text-[9px] font-bold text-white/15 uppercase tracking-widest">D = Derrota (0pt)</span>
+                        </div>
+                    </section>
                 ) : (
                     <div className="space-y-12">
                         {/* ── GROUP STAGE ── */}

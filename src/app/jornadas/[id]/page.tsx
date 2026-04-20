@@ -7,8 +7,10 @@ import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { SportIcon } from "@/components/sport-icons";
 import { cn } from "@/lib/utils";
-import { MapPin, Trophy, Users, ChevronLeft } from "lucide-react";
+import { MapPin, Users } from "lucide-react";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
+import { MatchRow } from "@/modules/matches/components/matches-today-section";
+import type { PartidoWithRelations } from "@/modules/matches/types";
 
 interface JornadaResultado {
     jugador_id: number | null;
@@ -51,7 +53,10 @@ export default function JornadaPublicPage() {
     const { id } = useParams<{ id: string }>();
     const { user, profile, isStaff } = useAuth();
     const [jornada, setJornada] = useState<Jornada | null>(null);
+    const [partidos, setPartidos] = useState<PartidoWithRelations[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filterGenero, setFilterGenero] = useState<'masculino' | 'femenino' | null>(null);
+    const [filterFase, setFilterFase] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchJornada() {
@@ -69,7 +74,40 @@ export default function JornadaPublicPage() {
                 .eq('id', id)
                 .single();
 
-            setJornada((data as any) ?? null);
+            const j = (data as any) ?? null;
+            setJornada(j);
+
+            if (j) {
+                const sportName = (j.disciplinas as any)?.name ?? '';
+                const isChess = sportName === 'Ajedrez';
+
+                // For chess, fetch ALL partidos for the discipline regardless of genero
+                // (Jornada Única covers both masculino and femenino rounds).
+                // For other disciplines, filter by genero as usual.
+                let pQuery = supabase
+                    .from('partidos')
+                    .select(`
+                        *,
+                        disciplinas(name),
+                        carrera_a:carreras!carrera_a_id(nombre, escudo_url),
+                        carrera_b:carreras!carrera_b_id(nombre, escudo_url),
+                        atleta_a:profiles!athlete_a_id(id, full_name, avatar_url),
+                        atleta_b:profiles!athlete_b_id(id, full_name, avatar_url)
+                    `)
+                    .eq('disciplina_id', j.disciplina_id);
+
+                if (!isChess) {
+                    pQuery = pQuery.eq('genero', j.genero);
+                }
+
+                const { data: pData } = await pQuery
+                    .order('genero', { ascending: true })
+                    .order('fase', { ascending: true })
+                    .order('fecha', { ascending: true });
+
+                setPartidos((pData as any[]) ?? []);
+            }
+
             setLoading(false);
         }
 
@@ -85,9 +123,42 @@ export default function JornadaPublicPage() {
     }, [id]);
 
     const sportName = (jornada?.disciplinas as any)?.name ?? '';
+    const isAjedrez = sportName === 'Ajedrez';
     const sortedResults = jornada
         ? [...jornada.jornada_resultados].sort((a, b) => a.posicion - b.posicion)
         : [];
+
+    // All fases available (for filter pills)
+    const allFases = isAjedrez
+        ? [...new Set(partidos.map(p => (p as any).fase ?? 'Ronda 1'))].sort((a, b) => {
+            const numA = parseInt(a.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.replace(/\D/g, '')) || 0;
+            return numA - numB;
+        })
+        : [];
+
+    // Apply filters
+    const filteredPartidos = partidos.filter(p => {
+        if (filterGenero && (p as any).genero !== filterGenero) return false;
+        if (filterFase && ((p as any).fase ?? 'Ronda 1') !== filterFase) return false;
+        return true;
+    });
+
+    // Group chess matches by round (fase)
+    const matchesByFase = isAjedrez
+        ? filteredPartidos.reduce<Record<string, PartidoWithRelations[]>>((acc, p) => {
+            const key = (p as any).fase ?? 'Ronda 1';
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(p);
+            return acc;
+        }, {})
+        : {};
+
+    const fasesOrdenadas = Object.keys(matchesByFase).sort((a, b) => {
+        const numA = parseInt(a.replace(/\D/g, '')) || 0;
+        const numB = parseInt(b.replace(/\D/g, '')) || 0;
+        return numA - numB;
+    });
 
     return (
         <div className="min-h-screen bg-background text-white selection:bg-white/10 font-sans pb-20 relative">
@@ -134,12 +205,14 @@ export default function JornadaPublicPage() {
                                         {jornada.nombre ?? `Ronda ${jornada.numero}`}
                                     </h1>
                                     <p className="text-white/40 text-sm mt-2 flex flex-wrap gap-x-3 gap-y-1 items-center">
-                                        <span className={cn(
-                                            "text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border",
-                                            jornada.genero === 'femenino' ? "bg-pink-500/10 border-pink-500/20 text-pink-400" : "bg-blue-500/10 border-blue-500/20 text-blue-400"
-                                        )}>
-                                            {jornada.genero}
-                                        </span>
+                                        {!isAjedrez && (
+                                            <span className={cn(
+                                                "text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border",
+                                                jornada.genero === 'femenino' ? "bg-pink-500/10 border-pink-500/20 text-pink-400" : "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                                            )}>
+                                                {jornada.genero}
+                                            </span>
+                                        )}
                                         <span>
                                             {new Date(jornada.scheduled_at).toLocaleString('es-CO', {
                                                 weekday: 'long', day: 'numeric', month: 'long',
@@ -160,102 +233,167 @@ export default function JornadaPublicPage() {
                             </div>
                         </div>
 
-                        {/* Pending banner */}
-                        {jornada.estado !== 'finalizado' && (
-                            <div className={cn(
-                                "rounded-2xl border px-4 py-3 text-sm font-medium flex items-center gap-3",
-                                jornada.estado === 'en_curso'
-                                    ? "bg-amber-500/10 border-amber-500/20 text-amber-300"
-                                    : "bg-white/5 border-white/10 text-white/40"
-                            )}>
-                                {jornada.estado === 'en_curso' ? (
-                                    <><div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" /> Evento en curso — los resultados se actualizarán al finalizar.</>
-                                ) : (
-                                    <><div className="w-2 h-2 rounded-full bg-white/20 shrink-0" /> Los resultados estarán disponibles cuando finalice la jornada.</>
+                        {/* ── AJEDREZ: filtros de género y ronda ── */}
+                        {isAjedrez && (
+                            <div className="space-y-3">
+                                {/* Gender filter */}
+                                <div className="flex items-center gap-2">
+                                    {(['femenino', 'masculino'] as const).map(g => (
+                                        <button
+                                            key={g}
+                                            onClick={() => setFilterGenero(prev => prev === g ? null : g)}
+                                            className={cn(
+                                                "text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border transition-all",
+                                                filterGenero === g
+                                                    ? g === 'femenino'
+                                                        ? "bg-pink-500/20 border-pink-500/40 text-pink-300"
+                                                        : "bg-blue-500/20 border-blue-500/40 text-blue-300"
+                                                    : "bg-white/5 border-white/10 text-white/30 hover:text-white/50 hover:border-white/20"
+                                            )}
+                                        >
+                                            {g === 'femenino' ? '♀ Femenino' : '♂ Masculino'}
+                                        </button>
+                                    ))}
+                                </div>
+                                {/* Round filter */}
+                                {allFases.length > 1 && (
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        {allFases.map(fase => (
+                                            <button
+                                                key={fase}
+                                                onClick={() => setFilterFase(prev => prev === fase ? null : fase)}
+                                                className={cn(
+                                                    "text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border transition-all",
+                                                    filterFase === fase
+                                                        ? "bg-white/15 border-white/30 text-white"
+                                                        : "bg-white/5 border-white/10 text-white/30 hover:text-white/50 hover:border-white/20"
+                                                )}
+                                            >
+                                                {fase}
+                                            </button>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         )}
 
-                        {/* Results table */}
-                        {sortedResults.length > 0 ? (
-                            <div className="rounded-[2rem] border border-white/10 overflow-hidden bg-white/[0.02] backdrop-blur-xl">
-                                {/* Table header */}
-                                <div className="grid grid-cols-[48px_1fr_1fr_64px] gap-3 px-5 py-3 border-b border-white/5 bg-white/[0.02]">
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20 text-center">#</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Jugador</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Programa</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20 text-center">Pts</span>
-                                </div>
-
-                                {sortedResults.map((r, idx) => {
-                                    const medal = MEDAL_EMOJIS[r.posicion - 1];
-                                    const carreraNombre = (r.carreras as any)?.nombre ?? '—';
-                                    const jugadorNombre = (r.jugadores as any)?.nombre ?? null;
-                                    const escudoUrl = (r.carreras as any)?.escudo_url ?? null;
-                                    const isTop3 = r.posicion <= 3;
-
-                                    return (
-                                        <div
-                                            key={`${r.carrera_id}-${r.posicion}`}
-                                            className={cn(
-                                                "grid grid-cols-[48px_1fr_1fr_64px] gap-3 px-5 py-4 border-b border-white/5 last:border-0 items-center transition-colors",
-                                                isTop3 ? "bg-white/[0.02]" : ""
-                                            )}
-                                        >
-                                            {/* Position */}
-                                            <div className="flex items-center justify-center">
-                                                {medal ? (
-                                                    <span className="text-xl leading-none">{medal}</span>
-                                                ) : (
-                                                    <span className="text-sm font-black text-white/20 tabular-nums">#{r.posicion}</span>
-                                                )}
-                                            </div>
-
-                                            {/* Jugador */}
-                                            <div className="min-w-0">
-                                                {jugadorNombre ? (
-                                                    <span className={cn("text-sm font-bold truncate block", isTop3 ? "text-white" : "text-white/60")}>
-                                                        {jugadorNombre}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-xs text-white/20 italic">—</span>
-                                                )}
-                                            </div>
-
-                                            {/* Programa */}
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                {escudoUrl && (
-                                                    <img src={escudoUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0 bg-white/5" />
-                                                )}
-                                                <span className={cn("text-[11px] font-bold uppercase tracking-wider truncate", isTop3 ? "text-white" : "text-white/40")}>
-                                                    {carreraNombre}
+                        {/* ── AJEDREZ: partidos por ronda ── */}
+                        {isAjedrez && (
+                            partidos.length === 0 ? (
+                                <div className="text-center py-16 text-white/20 text-sm">No hay partidos registrados.</div>
+                            ) : (
+                                <div className="space-y-6">
+                                    {fasesOrdenadas.map(fase => (
+                                        <div key={fase} className="rounded-[2rem] border border-white/8 overflow-hidden bg-black/20 backdrop-blur-xl">
+                                            {/* Round header */}
+                                            <div className="px-5 py-3 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{fase}</span>
+                                                <span className="text-[9px] font-bold text-white/20">
+                                                    {matchesByFase[fase].filter(p => (p as any).estado === 'finalizado').length}/{matchesByFase[fase].length} finalizados
                                                 </span>
                                             </div>
-
-                                            {/* Puntos */}
-                                            <div className="text-center">
-                                                {r.puntos_olimpicos != null ? (
-                                                    <span className={cn("text-sm font-black tabular-nums", isTop3 ? "text-emerald-400" : "text-white/30")}>
-                                                        {r.puntos_olimpicos}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-white/10 text-xs">—</span>
-                                                )}
+                                            {/* Match rows */}
+                                            <div>
+                                                {matchesByFase[fase].map(p => (
+                                                    <MatchRow key={p.id} partido={p} />
+                                                ))}
                                             </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        ) : jornada.estado === 'finalizado' ? (
-                            <div className="text-center py-16 text-white/20 text-sm">No hay resultados registrados.</div>
-                        ) : null}
+                                    ))}
+                                </div>
+                            )
+                        )}
 
-                        {/* Participant count if not finalized */}
-                        {jornada.estado !== 'finalizado' && sortedResults.length > 0 && (
-                            <div className="flex items-center gap-3 text-white/30 text-sm">
-                                <Users size={16} />
-                                <span>{sortedResults.length} participante{sortedResults.length !== 1 ? 's' : ''} registrado{sortedResults.length !== 1 ? 's' : ''}</span>
-                            </div>
+                        {/* ── OTHER SPORTS: racing results table ── */}
+                        {!isAjedrez && (
+                            <>
+                                {jornada.estado !== 'finalizado' && (
+                                    <div className={cn(
+                                        "rounded-2xl border px-4 py-3 text-sm font-medium flex items-center gap-3",
+                                        jornada.estado === 'en_curso'
+                                            ? "bg-amber-500/10 border-amber-500/20 text-amber-300"
+                                            : "bg-white/5 border-white/10 text-white/40"
+                                    )}>
+                                        {jornada.estado === 'en_curso' ? (
+                                            <><div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" /> Evento en curso — los resultados se actualizarán al finalizar.</>
+                                        ) : (
+                                            <><div className="w-2 h-2 rounded-full bg-white/20 shrink-0" /> Los resultados estarán disponibles cuando finalice la jornada.</>
+                                        )}
+                                    </div>
+                                )}
+
+                                {sortedResults.length > 0 ? (
+                                    <div className="rounded-[2rem] border border-white/10 overflow-hidden bg-white/[0.02] backdrop-blur-xl">
+                                        <div className="grid grid-cols-[48px_1fr_1fr_64px] gap-3 px-5 py-3 border-b border-white/5 bg-white/[0.02]">
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-white/20 text-center">#</span>
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Jugador</span>
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Programa</span>
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-white/20 text-center">Pts</span>
+                                        </div>
+
+                                        {sortedResults.map((r, idx) => {
+                                            const medal = MEDAL_EMOJIS[r.posicion - 1];
+                                            const carreraNombre = (r.carreras as any)?.nombre ?? '—';
+                                            const jugadorNombre = (r.jugadores as any)?.nombre ?? null;
+                                            const escudoUrl = (r.carreras as any)?.escudo_url ?? null;
+                                            const isTop3 = r.posicion <= 3;
+
+                                            return (
+                                                <div
+                                                    key={`${r.carrera_id}-${r.posicion}`}
+                                                    className={cn(
+                                                        "grid grid-cols-[48px_1fr_1fr_64px] gap-3 px-5 py-4 border-b border-white/5 last:border-0 items-center transition-colors",
+                                                        isTop3 ? "bg-white/[0.02]" : ""
+                                                    )}
+                                                >
+                                                    <div className="flex items-center justify-center">
+                                                        {medal ? (
+                                                            <span className="text-xl leading-none">{medal}</span>
+                                                        ) : (
+                                                            <span className="text-sm font-black text-white/20 tabular-nums">#{r.posicion}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        {jugadorNombre ? (
+                                                            <span className={cn("text-sm font-bold truncate block", isTop3 ? "text-white" : "text-white/60")}>
+                                                                {jugadorNombre}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-white/20 italic">—</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        {escudoUrl && (
+                                                            <img src={escudoUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0 bg-white/5" />
+                                                        )}
+                                                        <span className={cn("text-[11px] font-bold uppercase tracking-wider truncate", isTop3 ? "text-white" : "text-white/40")}>
+                                                            {carreraNombre}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        {r.puntos_olimpicos != null ? (
+                                                            <span className={cn("text-sm font-black tabular-nums", isTop3 ? "text-emerald-400" : "text-white/30")}>
+                                                                {r.puntos_olimpicos}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-white/10 text-xs">—</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : jornada.estado === 'finalizado' ? (
+                                    <div className="text-center py-16 text-white/20 text-sm">No hay resultados registrados.</div>
+                                ) : null}
+
+                                {jornada.estado !== 'finalizado' && sortedResults.length > 0 && (
+                                    <div className="flex items-center gap-3 text-white/30 text-sm">
+                                        <Users size={16} />
+                                        <span>{sortedResults.length} participante{sortedResults.length !== 1 ? 's' : ''} registrado{sortedResults.length !== 1 ? 's' : ''}</span>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 )}

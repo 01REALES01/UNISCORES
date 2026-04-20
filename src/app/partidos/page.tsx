@@ -5,22 +5,12 @@ import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatches } from "@/hooks/use-matches";
 import { useJornadas } from "@/hooks/use-jornadas";
-import { SPORT_ACCENT, SPORT_BORDER, SPORT_GRADIENT, SPORT_GLOW, SPORT_EMOJI, SPORT_COLORS, normalizeSportName } from "@/lib/constants";
 import { getCurrentScore } from "@/lib/sport-scoring";
-import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
 import { SportIcon } from "@/components/sport-icons";
-
 import { cn } from "@/lib/utils";
-import {
-    Calendar as CalendarIcon, Search, Activity,
-    LayoutGrid
-} from "lucide-react";
+import { Calendar as CalendarIcon, Search, Activity, LayoutGrid } from "lucide-react";
 import { UnifiedCard } from "@/modules/matches/components/unified-card";
-import { Avatar, Badge, Button } from "@/components/ui-primitives";
-import { getDisplayName, getCarreraSubtitle } from "@/lib/sport-helpers";
-import { PublicLiveTimer } from "@/components/public-live-timer";
 import { JornadaCard } from "@/modules/matches/components/match-card";
-import { ResilienceUI } from "@/components/resilience-ui";
 
 
 // --- Types ---
@@ -29,24 +19,6 @@ const GENDERS = [
     { label: 'Masculino', value: 'masculino', icon: '♂' },
     { label: 'Femenino', value: 'femenino', icon: '♀' },
 ];
-
-/** YYYY-MM-DD en la zona horaria local (evita desfase vs UTC de `toISOString()`). */
-function localDateStr(d: Date = new Date()): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-}
-
-/** YYYY-MM-DD local para agrupar; evita crash si `fecha` / `scheduled_at` vienen vacíos (iOS / datos parciales). */
-function dateKeyFromIso(value: string | null | undefined): string | null {
-    if (value == null || typeof value !== "string") return null;
-    const t = value.trim();
-    if (!t) return null;
-    const head = t.includes("T") ? t.split("T")[0] : t.slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(head)) return null;
-    return head;
-}
 
 export default function PartidosPage() {
     const { user, profile, isStaff } = useAuth();
@@ -72,6 +44,7 @@ export default function PartidosPage() {
     const filteredMatches = useMemo(() => {
         const q = searchQuery.toLowerCase();
         return rawMatches.filter(m => {
+            if (m.disciplinas?.name === 'Ajedrez') return false;
             if (selectedSport !== "Todos" && m.disciplinas?.name !== selectedSport) return false;
             const matchGender = (m.genero || 'masculino').toLowerCase();
             if (selectedGender !== 'todos' && matchGender !== selectedGender.toLowerCase() && matchGender !== 'mixto') return false;
@@ -97,22 +70,20 @@ export default function PartidosPage() {
     // 3. Unified date-grouped feed (partidos + jornadas)
     const groupedMatches = useMemo(() => {
         const groups: Record<string, { partidos: any[], jornadas: any[] }> = {};
-        const todayStr = localDateStr();
+        const todayStr = new Date().toISOString().split('T')[0];
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = localDateStr(yesterday);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
         const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = localDateStr(tomorrow);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
         filteredMatches.forEach(match => {
-            const fecha = dateKeyFromIso(match.fecha);
-            if (!fecha) return;
+            const fecha = match.fecha.split('T')[0];
             if (!groups[fecha]) groups[fecha] = { partidos: [], jornadas: [] };
             groups[fecha].partidos.push(match);
         });
 
         filteredJornadas.forEach(j => {
-            const fecha = dateKeyFromIso(j.scheduled_at);
-            if (!fecha) return;
+            const fecha = j.scheduled_at.split('T')[0];
             if (!groups[fecha]) groups[fecha] = { partidos: [], jornadas: [] };
             groups[fecha].jornadas.push(j);
         });
@@ -132,7 +103,8 @@ export default function PartidosPage() {
             else if (isTomorrow) label = `Mañana — ${label}`;
 
             const stateOrder = { "en_curso": 0, "programado": 1, "finalizado": 2 };
-            const sorted = [...groups[fecha].partidos].sort((a, b) => {
+            const sorted = groups[fecha].partidos.sort((a, b) => {
+
                 const orderA = stateOrder[a.estado as keyof typeof stateOrder] ?? 99;
                 const orderB = stateOrder[b.estado as keyof typeof stateOrder] ?? 99;
                 if (orderA !== orderB) return orderA - orderB;
@@ -160,32 +132,28 @@ export default function PartidosPage() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // 5. Auto-scroll to today — only once, after both data sources are ready
     useEffect(() => {
         if (!loading || rawMatches.length > 0) { setLoadTimeout(false); return; }
         const t = setTimeout(() => setLoadTimeout(true), 10000);
         return () => clearTimeout(t);
     }, [loading, rawMatches.length]);
 
-    // 5. Auto-scroll a "hoy" una sola vez al cargar (espera jornadas; alinea fecha con calendario local)
+    // 5. Auto-scroll to today
     useEffect(() => {
-        if (loading || jornadasLoading || groupedMatches.length === 0 || hasScrolledToToday.current) return;
-        hasScrolledToToday.current = true;
+        if (loading || jornadasLoading || groupedMatches.length === 0) return;
+        if (hasScrolledToToday.current) return;
 
-        const todayStr = localDateStr();
-        const todayGroup = groupedMatches.find((g) => g.isToday);
-        const targetDate = todayGroup?.fecha ?? groupedMatches.find((g) => g.fecha >= todayStr)?.fecha;
-
+        const todayStr = new Date().toISOString().split('T')[0];
+        const targetDate = groupedMatches.find(g => g.fecha >= todayStr)?.fecha;
         if (!targetDate) return;
 
-        const timer = setTimeout(() => {
-            const element = document.getElementById(`date-${targetDate}`);
-            if (element) {
-                // "instant" evita el scroll suave continuo que congela Safari en iOS
-                element.scrollIntoView({ behavior: "instant", block: "start" });
-            }
-        }, 150);
-        return () => clearTimeout(timer);
-    }, [loading, jornadasLoading, groupedMatches]);
+        hasScrolledToToday.current = true;
+        setTimeout(() => {
+            document.getElementById(`date-${targetDate}`)
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 350);
+    }, [loading, jornadasLoading, groupedMatches.length]);
 
     return (
         <div className="min-h-screen bg-background text-white selection:bg-white/10 font-sans pb-20 relative">
@@ -409,37 +377,24 @@ export default function PartidosPage() {
 
 function MatchCardEntry({ partido }: { partido: any }) {
     const sportName = partido.disciplinas?.name || 'Deporte';
-    const sportKey = normalizeSportName(sportName);
-    const { scoreA, scoreB, subScoreA, subScoreB } = getCurrentScore(sportKey, partido.marcador_detalle || {});
-    const isVolley = sportKey === 'Voleibol';
-    const isTenisMesa = sportKey === 'Tenis de Mesa';
-    /** En vivo: marcador grande = puntos del set; pie = sets ganados (como voleibol). */
-    const setBasedLive = isVolley || isTenisMesa;
+    const { scoreA, scoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
 
     if (partido.estado === 'en_curso') {
-        const setsLine = setBasedLive ? `Sets ${scoreA ?? 0}\u2013${scoreB ?? 0}` : null;
         return (
             <UnifiedCard
                 partido={partido}
                 statusLabel="LIVE"
-                scoreDisplay={
-                    setBasedLive
-                        ? { a: subScoreA ?? 0, b: subScoreB ?? 0 }
-                        : { a: scoreA, b: scoreB }
-                }
-                scoreFooter={setsLine}
+                scoreDisplay={{ a: scoreA, b: scoreB }}
             />
         );
     }
 
     if (partido.estado === 'finalizado') {
-        const voleySets = isVolley ? formatVolleyballSetsLine(partido.marcador_detalle) : null;
         return (
             <UnifiedCard
                 partido={partido}
                 statusLabel="FINALIZADO"
                 scoreDisplay={{ a: scoreA, b: scoreB }}
-                scoreFooter={voleySets ?? undefined}
                 highlightWinner={true}
             />
         );
