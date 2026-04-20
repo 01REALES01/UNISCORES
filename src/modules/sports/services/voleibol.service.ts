@@ -146,6 +146,11 @@ export class VoleibolService extends BaseSportService {
       (pA >= minPtsCurrent && pA - pB >= 2) || (pB >= minPtsCurrent && pB - pA >= 2);
     const matchOver = setsA >= 3 || setsB >= 3 || setsA >= 2 || setsB >= 2;
 
+    if (matchOver) {
+      if (setsA > setsB) d.resultado_final = 'victoria_a';
+      else if (setsB > setsA) d.resultado_final = 'victoria_b';
+    }
+
     if (!matchOver && setWon && currentSet < 5) {
       d.set_actual = currentSet + 1;
       if (!d.sets) d.sets = {};

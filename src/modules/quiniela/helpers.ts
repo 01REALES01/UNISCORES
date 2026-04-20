@@ -29,6 +29,22 @@ export const getMatchResult = (match: any): 'A' | 'B' | 'DRAW' | null => {
     return 'DRAW'; // Winner might be a 3rd party in a multi-competitor race
   }
 
+  // Deportes a sets: el ganador del encuentro viene de sets_a / sets_b (igual que clasificación
+  // y el trigger de quiniela en BD). `resultado_final` no se mantiene en voleibol y puede quedar
+  // obsoleto y contradecer los sets — no debe mandar sobre el marcador.
+  const setBasedSports = ['Voleibol', 'Tenis', 'Tenis de Mesa'] as const;
+  if ((setBasedSports as readonly string[]).includes(sportName)) {
+    const sa = Number(md.sets_a ?? md.sets_total_a ?? 0);
+    const sb = Number(md.sets_b ?? md.sets_total_b ?? 0);
+    if (match.estado === 'finalizado') {
+      if (sa > sb) return 'A';
+      if (sb > sa) return 'B';
+      // 0–0 u empate raro: seguir con resultado_final / fallback
+    } else {
+      return null;
+    }
+  }
+
   // 2. Explicit outcome (Ajedrez, Tenis, Voleibol etc often set this on save)
   const rf = md.resultado_final;
   if (rf === 'victoria_a') return 'A';
