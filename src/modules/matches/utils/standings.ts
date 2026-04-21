@@ -33,6 +33,18 @@ export function compareStandings(a: TeamStanding, b: TeamStanding, sportName: st
         if (pRatioB !== pRatioA) return pRatioB - pRatioA;
         return b.fairPlayPoints - a.fairPlayPoints;
     }
+    if (sportName === 'Baloncesto') {
+        // 1. Puntos totales (tabla), 2. Fair Play, 3. Diferencia de cestas
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.fairPlayPoints !== a.fairPlayPoints) return b.fairPlayPoints - a.fairPlayPoints;
+        return b.diff - a.diff;
+    }
+    if (sportName === 'Fútbol') {
+        // 1. Puntos totales (tabla), 2. Fair Play, 3. Diferencia de gol
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.fairPlayPoints !== a.fairPlayPoints) return b.fairPlayPoints - a.fairPlayPoints;
+        return b.diff - a.diff;
+    }
     if (b.points !== a.points) return b.points - a.points;
     if (b.diff !== a.diff) return b.diff - a.diff;
     if (b.pointsFor !== a.pointsFor) return b.pointsFor - a.pointsFor;

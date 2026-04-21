@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteSupabase } from '@/lib/supabase-route-handler';
 import { getBracketConfig } from '@/lib/bracket-config';
 import { calculateStandings, compareStandings, type TeamStanding } from '@/modules/matches/utils/standings';
+import { DI_RULES, BASELINE } from '@/modules/matches/utils/deporte-integral';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/admin/sorteo/resolver
@@ -77,31 +78,59 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
     }
 
-    // Fetch fair play data for tiebreakers
+    // Fetch fair play data for tiebreakers (same logic as clasificacion page)
     const matchIds = groupMatches.map(m => m.id);
-    const { data: fairPlayEvents } = await supabase
-        .from('olympics_eventos')
-        .select('tipo_evento, equipo')
-        .in('partido_id', matchIds)
-        .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'falta_tecnica', 'falta_antideportiva']);
 
-    const fairPlayData: Record<string, number> = {};
-    // Initialize all teams with base 2000
+    // Build side → team name lookup (events store 'equipo_a'/'equipo_b', not the real name)
+    const teamNameByMatchAndSide: Record<string, string> = {};
     groupMatches.forEach(m => {
         const tA = m.delegacion_a || m.equipo_a;
         const tB = m.delegacion_b || m.equipo_b;
-        if (tA && !fairPlayData[tA]) fairPlayData[tA] = 2000;
-        if (tB && !fairPlayData[tB]) fairPlayData[tB] = 2000;
+        if (tA) teamNameByMatchAndSide[`${m.id}_equipo_a`] = tA;
+        if (tB) teamNameByMatchAndSide[`${m.id}_equipo_b`] = tB;
     });
-    (fairPlayEvents || []).forEach(e => {
-        const team = e.equipo;
-        if (!team || !fairPlayData[team]) return;
-        if (e.tipo_evento === 'tarjeta_amarilla') fairPlayData[team] -= 50;
-        if (e.tipo_evento === 'tarjeta_roja') fairPlayData[team] -= 100;
-        if (e.tipo_evento === 'expulsion_delegado') fairPlayData[team] -= 100;
-        if (e.tipo_evento === 'mal_comportamiento') fairPlayData[team] -= 100;
-        if (e.tipo_evento === 'falta_tecnica') fairPlayData[team] -= 50;
-        if (e.tipo_evento === 'falta_antideportiva') fairPlayData[team] -= 100;
+
+    const sportRules = DI_RULES[disciplina.name.toLowerCase()] ?? {};
+    const genericDeductions: Record<string, number> = {
+        tarjeta_amarilla: -50,
+        tarjeta_roja: -100,
+        expulsion_delegado: -100,
+        mal_comportamiento: -100,
+        falta_tecnica: -50,
+        falta_antideportiva: -100,
+    };
+    const allFpTypes = [
+        'tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento',
+        'ajuste_fair_play', 'falta_tecnica', 'falta_antideportiva',
+        'falta_tecnica_personal', 'descalificacion_directa_jugador', 'descalificacion_directa_personal',
+        'sancion_adicional', 'expulsion_torneo_jugador', 'expulsion_torneo_personal',
+    ];
+
+    const { data: fairPlayEvents } = await supabase
+        .from('olympics_eventos')
+        .select('tipo_evento, equipo, descripcion, partido_id')
+        .in('partido_id', matchIds)
+        .in('tipo_evento', allFpTypes);
+
+    const fairPlayData: Record<string, number> = {};
+    groupMatches.forEach(m => {
+        const tA = m.delegacion_a || m.equipo_a;
+        const tB = m.delegacion_b || m.equipo_b;
+        if (tA && !(tA in fairPlayData)) fairPlayData[tA] = BASELINE;
+        if (tB && !(tB in fairPlayData)) fairPlayData[tB] = BASELINE;
+    });
+    (fairPlayEvents || []).forEach((e: any) => {
+        const side = e.equipo;
+        if (!side) return;
+        // Resolve side ('equipo_a'/'equipo_b') to actual team name
+        const team = teamNameByMatchAndSide[`${e.partido_id}_${side}`] ?? side;
+        if (!(team in fairPlayData)) fairPlayData[team] = BASELINE;
+        if (e.tipo_evento === 'ajuste_fair_play') {
+            fairPlayData[team] += Number(e.descripcion ?? 0);
+            return;
+        }
+        const deduction = sportRules[e.tipo_evento] ?? genericDeductions[e.tipo_evento];
+        if (deduction !== undefined) fairPlayData[team] += deduction;
     });
 
     // Compute standings per group
