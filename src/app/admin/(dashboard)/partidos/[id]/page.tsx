@@ -24,6 +24,7 @@ import { MatchMetaEditor } from "@/modules/admin/matches/components/match-meta-e
 import { BasketballBulkStats } from "@/modules/admin/matches/components/basketball-bulk-stats";
 import { AdminMvpPicker } from "@/modules/admin/matches/components/admin-mvp-picker";
 import { AdminQuickBench } from "@/modules/admin/matches/components/admin-quick-bench";
+import { BasquetDeporteIntegral } from "@/modules/admin/matches/components/basquet-deporte-integral";
 import { SPORT_COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { getCarreraName, getDisplayName } from "@/lib/sport-helpers";
@@ -131,7 +132,7 @@ export default function MatchControlPage() {
     const [isEditingScore, setIsEditingScore] = useState(false);
     const [confirmingDeletion, setConfirmingDeletion] = useState<Evento | null>(null);
     const [showFullEditor, setShowFullEditor] = useState(false);
-    const [fullEditorTab, setFullEditorTab] = useState<'marcador' | 'eventos' | 'jugadores'>('marcador');
+    const [fullEditorTab, setFullEditorTab] = useState<'marcador' | 'eventos' | 'jugadores' | 'deporte_integral'>('marcador');
     const [showMetaEditor, setShowMetaEditor] = useState(false);
     const [showReview, setShowReview] = useState(false);
     const [eventBenchMode, setEventBenchMode] = useState<'quick' | 'classic'>(() => {
@@ -883,10 +884,11 @@ export default function MatchControlPage() {
 
             {showFullEditor && (() => {
                 const tabLabel = disciplinaName === 'Baloncesto' ? 'Cuartos' : (disciplinaName === 'Fútbol' || disciplinaName === 'Futsal') ? 'Tiempos' : 'Sets / Marcador';
-                const tabs: { id: 'marcador' | 'eventos' | 'jugadores'; label: string }[] = [
+                const tabs: { id: 'marcador' | 'eventos' | 'jugadores' | 'deporte_integral'; label: string }[] = [
                     { id: 'marcador' as const, label: tabLabel },
                     { id: 'eventos' as const, label: 'Eventos' },
                     { id: 'jugadores' as const, label: 'Jugadores' },
+                    ...(disciplinaName === 'Baloncesto' ? [{ id: 'deporte_integral' as const, label: 'Dep. Integral' }] : []),
                 ];
                 const activeTab = fullEditorTab;
 
@@ -1052,6 +1054,20 @@ export default function MatchControlPage() {
                                         onPlayersUpdated={fetchJugadores}
                                         disciplinaName={disciplinaName}
                                         onAddPlayer={handleAddPlayer}
+                                    />
+                                </div>
+                            )}
+
+                            {activeTab === 'deporte_integral' && disciplinaName === 'Baloncesto' && (
+                                <div className="max-w-lg mx-auto pt-3">
+                                    <BasquetDeporteIntegral
+                                        partidoId={parseInt(matchId)}
+                                        equipoA={canchaCarreraA}
+                                        equipoB={canchaCarreraB}
+                                        rosterA={jugadoresA}
+                                        rosterB={jugadoresB}
+                                        eventos={eventos as any}
+                                        onRefresh={fetchMatchDetails}
                                     />
                                 </div>
                             )}

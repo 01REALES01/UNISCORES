@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Shield, AlertTriangle, Square, ChevronRight } from "lucide-react";
+import { DI_RULES, BASELINE, getDIRows } from "@/modules/matches/utils/deporte-integral";
 
 interface TeamFairPlay {
     team: string;
@@ -25,6 +26,8 @@ interface FairPlayTableProps {
 export function FairPlayTable({ genero, sportName, teamIdMap = {} }: FairPlayTableProps) {
     const [data, setData] = useState<TeamFairPlay[]>([]);
     const [loading, setLoading] = useState(false);
+
+    const sportRules = DI_RULES[sportName.toLowerCase()] ?? null;
 
     useEffect(() => {
         if (!sportName) return;
@@ -92,8 +95,8 @@ export function FairPlayTable({ genero, sportName, teamIdMap = {} }: FairPlayTab
             grupoPartidos.forEach((p: any) => {
                 const a = p.delegacion_a || p.equipo_a;
                 const b = p.delegacion_b || p.equipo_b;
-                if (a && !(a in scores)) { scores[a] = 2000; amarillas[a] = 0; rojas[a] = 0; otros[a] = 0; }
-                if (b && !(b in scores)) { scores[b] = 2000; amarillas[b] = 0; rojas[b] = 0; otros[b] = 0; }
+                if (a && !(a in scores)) { scores[a] = BASELINE; amarillas[a] = 0; rojas[a] = 0; otros[a] = 0; }
+                if (b && !(b in scores)) { scores[b] = BASELINE; amarillas[b] = 0; rojas[b] = 0; otros[b] = 0; }
             });
 
             // Build lookup: partido_id + '_equipo_a' → real team name
@@ -105,25 +108,62 @@ export function FairPlayTable({ genero, sportName, teamIdMap = {} }: FairPlayTab
                 if (b) teamNameByMatchAndSide[`${p.id}_equipo_b`] = b;
             });
 
+            // Determine sport-specific rules (fallback to generic values)
+            const sportKey = sportName.toLowerCase();
+            const sportRules = DI_RULES[sportKey];
+            const genericDeductions: Record<string, number> = {
+                tarjeta_amarilla: -50,
+                tarjeta_roja: -100,
+                expulsion_delegado: -100,
+                mal_comportamiento: -100,
+                falta_tecnica: -50,
+                falta_antideportiva: -100,
+            };
+            // All types to query: generic + sport-specific new types
+            const allTypes = [
+                'tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento',
+                'ajuste_fair_play', 'falta_tecnica', 'falta_antideportiva',
+                'falta_tecnica_personal', 'descalificacion_directa_jugador', 'descalificacion_directa_personal',
+                'sancion_adicional', 'expulsion_torneo_jugador', 'expulsion_torneo_personal',
+            ];
+
             const { data: eventos } = await supabase
                 .from('olympics_eventos')
                 .select('tipo_evento, equipo, descripcion, partido_id')
                 .in('partido_id', matchIds)
-                .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play', 'falta_tecnica', 'falta_antideportiva']);
+                .in('tipo_evento', allTypes);
 
             (eventos ?? []).forEach((e: any) => {
                 const rawTeam = e.equipo;
                 if (!rawTeam) return;
-                // Resolve 'equipo_a'/'equipo_b' to real team name
                 const team = teamNameByMatchAndSide[`${e.partido_id}_${rawTeam}`] || rawTeam;
-                if (!(team in scores)) { scores[team] = 2000; amarillas[team] = 0; rojas[team] = 0; otros[team] = 0; }
-                if (e.tipo_evento === 'tarjeta_amarilla') { scores[team] -= 50; amarillas[team]++; }
-                else if (e.tipo_evento === 'tarjeta_roja') { scores[team] -= 100; rojas[team]++; }
-                else if (e.tipo_evento === 'expulsion_delegado') { scores[team] -= 100; otros[team]++; }
-                else if (e.tipo_evento === 'mal_comportamiento') { scores[team] -= 100; otros[team]++; }
-                else if (e.tipo_evento === 'falta_tecnica') { scores[team] -= 50; amarillas[team]++; }
-                else if (e.tipo_evento === 'falta_antideportiva') { scores[team] -= 100; rojas[team]++; }
-                else if (e.tipo_evento === 'ajuste_fair_play') { scores[team] += Number(e.descripcion ?? 0); otros[team]++; }
+                if (!(team in scores)) { scores[team] = BASELINE; amarillas[team] = 0; rojas[team] = 0; otros[team] = 0; }
+
+                if (e.tipo_evento === 'ajuste_fair_play') {
+                    scores[team] += Number(e.descripcion ?? 0);
+                    otros[team]++;
+                    return;
+                }
+
+                // Sport-specific rules take precedence over generic
+                let deduction: number | undefined;
+                if (sportRules) {
+                    deduction = sportRules[e.tipo_evento];
+                }
+                if (deduction === undefined) {
+                    deduction = genericDeductions[e.tipo_evento];
+                }
+                if (deduction === undefined) return;
+
+                scores[team] += deduction;
+                const abs = Math.abs(deduction);
+                if (abs <= 10 || e.tipo_evento === 'tarjeta_amarilla' || e.tipo_evento === 'falta_tecnica') {
+                    amarillas[team]++;
+                } else if (abs >= 100 || e.tipo_evento === 'tarjeta_roja') {
+                    rojas[team]++;
+                } else {
+                    otros[team]++;
+                }
             });
 
             const normalize = (n: string) => n.toLowerCase().trim().replace(/^ing\.?\s*/, 'ingeniería ').replace(/^lic\.?\s*/, 'licenciatura ').replace(/^odont\.?\s*/, 'odontología ').replace(/\s+/g, ' ');
@@ -278,18 +318,31 @@ export function FairPlayTable({ genero, sportName, teamIdMap = {} }: FairPlayTab
 
             {/* Legend */}
             <div className="px-5 py-3 border-t border-white/5 bg-white/[0.01] flex flex-wrap gap-x-4 gap-y-1.5">
-                <div className="flex items-center gap-1.5">
-                    <Square size={8} className="text-amber-400 fill-amber-400 shrink-0" />
-                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">Amarilla −50</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <Square size={8} className="text-rose-400 fill-rose-400 shrink-0" />
-                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">Roja −100</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <AlertTriangle size={8} className="text-orange-400 shrink-0" />
-                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">Expulsión / Mal comportamiento −100</span>
-                </div>
+                {sportRules ? (
+                    getDIRows(sportName).map(({ id, label, penalty }) => (
+                        <div key={id} className="flex items-center gap-1.5">
+                            <Square size={8} className="text-white/20 fill-white/20 shrink-0" />
+                            <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">
+                                {label} {penalty}
+                            </span>
+                        </div>
+                    ))
+                ) : (
+                    <>
+                        <div className="flex items-center gap-1.5">
+                            <Square size={8} className="text-amber-400 fill-amber-400 shrink-0" />
+                            <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">Amarilla −50</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <Square size={8} className="text-rose-400 fill-rose-400 shrink-0" />
+                            <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">Roja −100</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <AlertTriangle size={8} className="text-orange-400 shrink-0" />
+                            <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">Expulsión / Mal comportamiento −100</span>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

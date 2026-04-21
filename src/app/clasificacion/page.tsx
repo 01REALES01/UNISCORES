@@ -13,6 +13,7 @@ import { FairPlayTable } from "@/modules/matches/components/fair-play-table";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { calculateStandings, compareStandings, type TeamStanding } from "@/modules/matches/utils/standings";
+import { DI_RULES, BASELINE } from "@/modules/matches/utils/deporte-integral";
 import { SportIcon } from "@/components/sport-icons";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 
@@ -192,34 +193,47 @@ export default function ClasificacionPage() {
                 if (b) teamNameByMatchAndSide[`${m.id}_equipo_b`] = b;
             });
 
+            const sportRules = DI_RULES[selectedSport.toLowerCase()];
+            const genericDeductions: Record<string, number> = {
+                tarjeta_amarilla: -50,
+                tarjeta_roja: -100,
+                expulsion_delegado: -100,
+                mal_comportamiento: -100,
+                falta_tecnica: -50,
+                falta_antideportiva: -100,
+            };
+            const allTypes = [
+                'tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento',
+                'ajuste_fair_play', 'falta_tecnica', 'falta_antideportiva',
+                'falta_tecnica_personal', 'descalificacion_directa_jugador', 'descalificacion_directa_personal',
+                'sancion_adicional', 'expulsion_torneo_jugador', 'expulsion_torneo_personal',
+            ];
+
             const { data } = await supabase
                 .from('olympics_eventos')
                 .select('tipo_evento, equipo, descripcion, partido_id')
                 .in('partido_id', matchIds)
-                .in('tipo_evento', ['tarjeta_amarilla', 'tarjeta_roja', 'expulsion_delegado', 'mal_comportamiento', 'ajuste_fair_play', 'falta_tecnica', 'falta_antideportiva']);
+                .in('tipo_evento', allTypes);
 
             if (data) {
                 const counts: Record<string, number> = {};
-                // Initialize all teams with baseline 2000
                 filteredMatches.forEach(m => {
                     const a = m.delegacion_a || m.equipo_a;
                     const b = m.delegacion_b || m.equipo_b;
-                    if (a && !(a in counts)) counts[a] = 2000;
-                    if (b && !(b in counts)) counts[b] = 2000;
+                    if (a && !(a in counts)) counts[a] = BASELINE;
+                    if (b && !(b in counts)) counts[b] = BASELINE;
                 });
                 data.forEach((e: any) => {
                     const team = e.equipo;
                     if (!team) return;
-                    // Resolve 'equipo_a'/'equipo_b' to real team name
                     const resolvedTeam = teamNameByMatchAndSide[`${e.partido_id}_${team}`] || team;
-                    if (!(resolvedTeam in counts)) counts[resolvedTeam] = 2000;
-                    if (e.tipo_evento === 'tarjeta_amarilla') counts[resolvedTeam] -= 50;
-                    if (e.tipo_evento === 'tarjeta_roja') counts[resolvedTeam] -= 100;
-                    if (e.tipo_evento === 'expulsion_delegado') counts[resolvedTeam] -= 100;
-                    if (e.tipo_evento === 'mal_comportamiento') counts[resolvedTeam] -= 100;
-                    if (e.tipo_evento === 'falta_tecnica') counts[resolvedTeam] -= 50;
-                    if (e.tipo_evento === 'falta_antideportiva') counts[resolvedTeam] -= 100;
-                    if (e.tipo_evento === 'ajuste_fair_play') counts[resolvedTeam] += Number(e.descripcion ?? 0);
+                    if (!(resolvedTeam in counts)) counts[resolvedTeam] = BASELINE;
+                    if (e.tipo_evento === 'ajuste_fair_play') {
+                        counts[resolvedTeam] += Number(e.descripcion ?? 0);
+                        return;
+                    }
+                    const deduction = sportRules?.[e.tipo_evento] ?? genericDeductions[e.tipo_evento];
+                    if (deduction !== undefined) counts[resolvedTeam] += deduction;
                 });
                 setFairPlayData(counts);
             }
