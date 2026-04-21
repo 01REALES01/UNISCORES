@@ -128,6 +128,12 @@ export default function MatchControlPage() {
         fetchMatchDetails
     } = useMatchControl(matchId);
 
+    /** Refetch partido/eventos/jugadores sin pantalla de carga (evita desmontar el modal “Edición completa”). */
+    const refreshMatchSilently = useCallback(
+        () => fetchMatchDetails({ silent: true }),
+        [fetchMatchDetails]
+    );
+
     const [isEndingMatch, setIsEndingMatch] = useState(false);
     const [isEditingScore, setIsEditingScore] = useState(false);
     const [confirmingDeletion, setConfirmingDeletion] = useState<Evento | null>(null);
@@ -273,7 +279,7 @@ export default function MatchControlPage() {
             });
             if (rErr) throw rErr;
 
-            fetchJugadores();
+            void fetchJugadores(match);
             toast.success("Jugador añadido");
             return jId;
         } catch (error: any) {
@@ -319,7 +325,7 @@ export default function MatchControlPage() {
             toast.error(error.message);
             return;
         }
-        await fetchJugadores();
+        await fetchJugadores(match);
         toast.success('Dorsal guardado en la base de jugadores');
     };
 
@@ -329,7 +335,7 @@ export default function MatchControlPage() {
             toast.error(error.message);
             return;
         }
-        await fetchJugadores();
+        await fetchJugadores(match);
         toast.success('Jugador quitado del partido');
     };
 
@@ -383,7 +389,7 @@ export default function MatchControlPage() {
                         match={match}
                         profile={profile}
                         onClose={() => setShowMetaEditor(false)}
-                        onSaved={fetchMatchDetails}
+                        onSaved={refreshMatchSilently}
                     />
                 )}
 
@@ -405,7 +411,7 @@ export default function MatchControlPage() {
                         <RaceControl
                           matchId={matchId}
                           detalle={match.marcador_detalle}
-                          onUpdate={fetchMatchDetails}
+                          onUpdate={refreshMatchSilently}
                           isLocked={match.estado === 'finalizado'}
                           profile={profile}
                           disciplinaId={match.disciplina_id}
@@ -418,7 +424,7 @@ export default function MatchControlPage() {
                         <AjedrezControl
                           matchId={matchId}
                           match={match}
-                          onUpdate={fetchMatchDetails}
+                          onUpdate={refreshMatchSilently}
                           profile={profile}
                         />
                     </Card>
@@ -444,7 +450,7 @@ export default function MatchControlPage() {
                             jugadoresA={jugadoresA}
                             jugadoresB={jugadoresB}
                             matchId={matchId}
-                            onPlayersUpdated={fetchJugadores}
+                            onPlayersUpdated={() => void fetchJugadores(match)}
                             disciplinaName={disciplinaName}
                             onAddPlayer={handleAddPlayer}
                         />
@@ -468,7 +474,7 @@ export default function MatchControlPage() {
                             jugadoresA={jugadoresA}
                             jugadoresB={jugadoresB}
                             profile={profile}
-                            onSaved={fetchMatchDetails}
+                            onSaved={refreshMatchSilently}
                         />
                         {(disciplinaName === 'Fútbol' || disciplinaName === 'Futsal' || disciplinaName === 'Voleibol') && (
                             <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-8">
@@ -973,7 +979,7 @@ export default function MatchControlPage() {
                                             jugadoresA={jugadoresA}
                                             jugadoresB={jugadoresB}
                                             profile={profile}
-                                            onSaved={fetchMatchDetails}
+                                            onSaved={refreshMatchSilently}
                                             onAddEvent={(tipo, equipo, jugadorId, bypass, overrides) =>
                                                 handleNuevoEvento(tipo, equipo, jugadorId, bypass, overrides)
                                             }
@@ -984,7 +990,7 @@ export default function MatchControlPage() {
                                         <ScoreBreakdownEditor
                                             match={match}
                                             profile={profile}
-                                            onSaved={fetchMatchDetails}
+                                            onSaved={refreshMatchSilently}
                                         />
                                     ) : disciplinaName === 'Fútbol' || disciplinaName === 'Futsal' ? (
                                         <FutbolEditor
@@ -993,7 +999,7 @@ export default function MatchControlPage() {
                                             jugadoresA={jugadoresA}
                                             jugadoresB={jugadoresB}
                                             profile={profile}
-                                            onSaved={fetchMatchDetails}
+                                            onSaved={refreshMatchSilently}
                                             onAddEvent={(tipo, equipo, jugadorId, bypass, overrides) =>
                                                 handleNuevoEvento(tipo, equipo, jugadorId, bypass, overrides)
                                             }
@@ -1004,7 +1010,7 @@ export default function MatchControlPage() {
                                         <TenisEditor
                                             match={match}
                                             profile={profile}
-                                            onSaved={fetchMatchDetails}
+                                            onSaved={refreshMatchSilently}
                                         />
                                     ) : null}
                                 </div>
@@ -1051,7 +1057,7 @@ export default function MatchControlPage() {
                                         jugadoresA={jugadoresA}
                                         jugadoresB={jugadoresB}
                                         matchId={matchId}
-                                        onPlayersUpdated={fetchJugadores}
+                                        onPlayersUpdated={() => void fetchJugadores(match)}
                                         disciplinaName={disciplinaName}
                                         onAddPlayer={handleAddPlayer}
                                     />

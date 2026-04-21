@@ -233,9 +233,10 @@ export function useMatchControl(matchId: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [matchId]);
 
-    const fetchMatchDetails = useCallback(async () => {
+    const fetchMatchDetails = useCallback(async (opts?: { silent?: boolean }) => {
+        const silent = opts?.silent === true;
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             const timeout = new Promise<never>((_, reject) =>
                 setTimeout(() => reject(new Error('TIMEOUT')), 10000)
             );
@@ -258,7 +259,7 @@ export function useMatchControl(matchId: string) {
             console.error(err);
             setErrorCtx(err.message === 'TIMEOUT' ? 'Tiempo de espera agotado. Vuelve a intentarlo.' : err.message);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }, [matchId, fetchJugadores, fetchEventos]);
 

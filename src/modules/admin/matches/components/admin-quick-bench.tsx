@@ -127,7 +127,7 @@ export function AdminQuickBench({
   const sportColor = SPORT_COLORS[disciplinaName] || "#6366f1";
   const isVolleyball = disciplinaName === "Voleibol";
   const isFutbolOrFutsal = disciplinaName === "Fútbol" || disciplinaName === "Futsal";
-  /** Móvil: Lado A / B para vóley, fútbol, futsal y baloncesto (un panel a la vez, menos scroll). */
+  /** Vóley / fútbol / futsal / basket: Lado A / B (un panel a la vez, menos scroll; mismo patrón en web y móvil). */
   const canchaOneSideOnMobile = ['Voleibol', 'Fútbol', 'Futsal', 'Baloncesto'].includes(
     disciplinaName
   );
@@ -149,7 +149,7 @@ export function AdminQuickBench({
   const [savingNumero, setSavingNumero] = useState(false);
   const [saving, setSaving] = useState(false);
   const savingLock = useRef(false);
-  /** Móvil: un bando a la vez para no scrollear tanto (md+ sigue viendo ambos). */
+  /** Un bando a la vez (toggle arriba). */
   const [canchaSide, setCanchaSide] = useState<"A" | "B">("A");
   /** Por equipo: cancha móvil suele ir a números; “nombres” para leer apellidos. */
   const [plantillaVista, setPlantillaVista] = useState<Record<TeamId, PlantillaVista>>({
@@ -735,13 +735,13 @@ export function AdminQuickBench({
         {isVolleyball
           ? "Vóley: plantilla arriba en cada equipo; punto rally o punto a jugador; bitácora con minuto solo si registrás puntos a jugador."
           : disciplinaName === "Baloncesto"
-            ? "Basket: +1 / +2 / +3 a jugador elegido; faltas y cambios. En móvil, Lado A / B para no scrollear entre equipos."
+            ? "Basket: +1 / +2 / +3 a jugador elegido; faltas y cambios. Lado A / B para alternar equipos sin scrollear."
             : "Todo en este bloque: partido, dorsal, alta y baja del partido. Bitácora abajo."}
       </p>
 
       {canchaOneSideOnMobile ? (
         <>
-          <div className="md:hidden">
+          <div className="w-full">
             <p className="text-center text-[8px] font-black uppercase tracking-[0.2em] text-white/30 mb-2">
               Mostrar bando
             </p>
@@ -775,11 +775,6 @@ export function AdminQuickBench({
             </div>
             {canchaSide === "A" && renderTeamPanel("equipo_a", jugadoresA)}
             {canchaSide === "B" && renderTeamPanel("equipo_b", jugadoresB)}
-          </div>
-
-          <div className="hidden w-full flex-col gap-5 md:flex">
-            {renderTeamPanel("equipo_a", jugadoresA)}
-            {renderTeamPanel("equipo_b", jugadoresB)}
           </div>
         </>
       ) : (
