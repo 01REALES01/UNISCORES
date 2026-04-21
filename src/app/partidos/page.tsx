@@ -45,7 +45,7 @@ export default function PartidosPage() {
     const filteredMatches = useMemo(() => {
         const q = searchQuery.toLowerCase();
         return rawMatches.filter(m => {
-            if (m.disciplinas?.name === 'Ajedrez') return false;
+            if (m.disciplinas?.name === 'Ajedrez' || m.disciplinas?.name === 'Tenis de Mesa') return false;
             if (selectedSport !== "Todos" && m.disciplinas?.name !== selectedSport) return false;
             const matchGender = (m.genero || 'masculino').toLowerCase();
             if (selectedGender !== 'todos' && matchGender !== selectedGender.toLowerCase() && matchGender !== 'mixto') return false;

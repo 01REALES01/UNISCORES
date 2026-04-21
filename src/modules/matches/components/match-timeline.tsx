@@ -36,7 +36,7 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
 
       <div className="relative max-w-2xl mx-auto py-4 overflow-hidden">
         {/* Vertical Line - Centered */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-white/20 via-white/10 to-transparent -translate-x-1/2" />
+        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/15 -translate-x-1/2" />
 
         {eventos.length === 0 ? (
           <div className="py-16 text-center text-slate-500 bg-white/[0.02] rounded-[2rem] border border-white/5 border-dashed relative z-10">
@@ -85,12 +85,6 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
 
               return (
                 <div key={e.id || idx} className="relative flex items-center min-h-[90px] group/item">
-                  {/* Event icon indicator - Centered */}
-                  <div className="absolute left-1/2 -translate-x-1/2 z-20">
-                    <div className="w-9 h-9 rounded-full bg-[#111] border border-white/10 flex items-center justify-center shadow-2xl ring-[6px] ring-[#0a0805] group-hover/item:scale-110 transition-transform duration-300">
-                      <span className="relative z-10">{eventIcon}</span>
-                    </div>
-                  </div>
 
                   {/* LEFT SIDE (Team A) */}
                   <div className={cn(

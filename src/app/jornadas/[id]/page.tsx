@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { MainNavbar } from "@/components/main-navbar";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { MapPin, Users } from "lucide-react";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
 import { MatchRow } from "@/modules/matches/components/matches-today-section";
+import { JORNADA_SPORTS } from "@/lib/constants";
 import type { PartidoWithRelations } from "@/modules/matches/types";
 
 interface JornadaResultado {
@@ -79,11 +80,10 @@ export default function JornadaPublicPage() {
 
             if (j) {
                 const sportName = (j.disciplinas as any)?.name ?? '';
-                const isChess = sportName === 'Ajedrez';
+                const isJornada = JORNADA_SPORTS.includes(sportName);
 
-                // For chess, fetch ALL partidos for the discipline regardless of genero
-                // (Jornada Única covers both masculino and femenino rounds).
-                // For other disciplines, filter by genero as usual.
+                // For jornada sports (Ajedrez, Tenis de Mesa), fetch ALL partidos
+                // for the discipline regardless of genero.
                 let pQuery = supabase
                     .from('partidos')
                     .select(`
@@ -96,8 +96,17 @@ export default function JornadaPublicPage() {
                     `)
                     .eq('disciplina_id', j.disciplina_id);
 
-                if (!isChess) {
+                if (!isJornada) {
                     pQuery = pQuery.eq('genero', j.genero);
+                }
+
+                // For non-chess jornada sports, filter partidos by the jornada's date
+                // so each jornada only shows its own matches
+                if (isJornada && sportName !== 'Ajedrez') {
+                    const jornadaDate = j.scheduled_at.split('T')[0];
+                    pQuery = pQuery
+                        .gte('fecha', `${jornadaDate}T00:00:00`)
+                        .lt('fecha', `${jornadaDate}T23:59:59`);
                 }
 
                 const { data: pData } = await pQuery
@@ -124,17 +133,28 @@ export default function JornadaPublicPage() {
 
     const sportName = (jornada?.disciplinas as any)?.name ?? '';
     const isAjedrez = sportName === 'Ajedrez';
+    const isJornadaSport = JORNADA_SPORTS.includes(sportName);
     const sortedResults = jornada
         ? [...jornada.jornada_resultados].sort((a, b) => a.posicion - b.posicion)
         : [];
 
+    // Logical ordering for fases
+    const FASE_ORDER: Record<string, number> = {
+        grupos: 0, primera_ronda: 1, dieciseisavos: 2, octavos: 3,
+        cuartos: 4, semifinal: 5, tercer_puesto: 6, final: 7,
+    };
+    const FASE_LABELS: Record<string, string> = {
+        grupos: 'Fase de Grupos', primera_ronda: '32avos de Final',
+        dieciseisavos: '16avos de Final', octavos: 'Octavos de Final',
+        cuartos: 'Cuartos de Final', semifinal: 'Semifinal',
+        tercer_puesto: 'Tercer Puesto', final: 'Final',
+    };
+    const faseOrder = (f: string) => FASE_ORDER[f] ?? (parseInt(f.replace(/\D/g, '')) || 99);
+    const faseLabel = (f: string) => FASE_LABELS[f] ?? f;
+
     // All fases available (for filter pills)
-    const allFases = isAjedrez
-        ? [...new Set(partidos.map(p => (p as any).fase ?? 'Ronda 1'))].sort((a, b) => {
-            const numA = parseInt(a.replace(/\D/g, '')) || 0;
-            const numB = parseInt(b.replace(/\D/g, '')) || 0;
-            return numA - numB;
-        })
+    const allFases = isJornadaSport
+        ? [...new Set(partidos.map(p => (p as any).fase ?? 'Ronda 1'))].sort((a, b) => faseOrder(a) - faseOrder(b))
         : [];
 
     // Apply filters
@@ -144,21 +164,41 @@ export default function JornadaPublicPage() {
         return true;
     });
 
-    // Group chess matches by round (fase)
-    const matchesByFase = isAjedrez
-        ? filteredPartidos.reduce<Record<string, PartidoWithRelations[]>>((acc, p) => {
+    // Group matches: for "grupos" fase, sub-group by grupo number; otherwise by fase
+    const sections = useMemo(() => {
+        if (!isJornadaSport) return [];
+        const result: { key: string; label: string; matches: PartidoWithRelations[] }[] = [];
+
+        // Sort fases logically
+        const byFase = filteredPartidos.reduce<Record<string, PartidoWithRelations[]>>((acc, p) => {
             const key = (p as any).fase ?? 'Ronda 1';
             if (!acc[key]) acc[key] = [];
             acc[key].push(p);
             return acc;
-        }, {})
-        : {};
+        }, {});
 
-    const fasesOrdenadas = Object.keys(matchesByFase).sort((a, b) => {
-        const numA = parseInt(a.replace(/\D/g, '')) || 0;
-        const numB = parseInt(b.replace(/\D/g, '')) || 0;
-        return numA - numB;
-    });
+        const sortedFases = Object.keys(byFase).sort((a, b) => faseOrder(a) - faseOrder(b));
+
+        for (const fase of sortedFases) {
+            const matches = byFase[fase];
+            if (fase === 'grupos') {
+                // Sub-group by grupo number
+                const byGrupo = matches.reduce<Record<string, PartidoWithRelations[]>>((acc, p) => {
+                    const g = (p as any).grupo ?? '?';
+                    if (!acc[g]) acc[g] = [];
+                    acc[g].push(p);
+                    return acc;
+                }, {});
+                const sortedGrupos = Object.keys(byGrupo).sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
+                for (const g of sortedGrupos) {
+                    result.push({ key: `grupos-${g}`, label: `Grupo ${g}`, matches: byGrupo[g] });
+                }
+            } else {
+                result.push({ key: fase, label: faseLabel(fase), matches });
+            }
+        }
+        return result;
+    }, [filteredPartidos, isJornadaSport]);
 
     return (
         <div className="min-h-screen bg-background text-white selection:bg-white/10 font-sans pb-20 relative">
@@ -205,7 +245,7 @@ export default function JornadaPublicPage() {
                                         {jornada.nombre ?? `Ronda ${jornada.numero}`}
                                     </h1>
                                     <p className="text-white/40 text-sm mt-2 flex flex-wrap gap-x-3 gap-y-1 items-center">
-                                        {!isAjedrez && (
+                                        {!isJornadaSport && (
                                             <span className={cn(
                                                 "text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border",
                                                 jornada.genero === 'femenino' ? "bg-pink-500/10 border-pink-500/20 text-pink-400" : "bg-blue-500/10 border-blue-500/20 text-blue-400"
@@ -233,10 +273,11 @@ export default function JornadaPublicPage() {
                             </div>
                         </div>
 
-                        {/* ── AJEDREZ: filtros de género y ronda ── */}
-                        {isAjedrez && (
+                        {/* ── JORNADA SPORTS: filtros de fase ── */}
+                        {isJornadaSport && (
                             <div className="space-y-3">
-                                {/* Gender filter */}
+                                {/* Gender filter (only for Ajedrez which mixes genders) */}
+                                {isAjedrez && (
                                 <div className="flex items-center gap-2">
                                     {(['femenino', 'masculino'] as const).map(g => (
                                         <button
@@ -255,9 +296,21 @@ export default function JornadaPublicPage() {
                                         </button>
                                     ))}
                                 </div>
-                                {/* Round filter */}
+                                )}
+                                {/* Fase filter */}
                                 {allFases.length > 1 && (
                                     <div className="flex items-center gap-2 flex-wrap">
+                                        <button
+                                            onClick={() => setFilterFase(null)}
+                                            className={cn(
+                                                "text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border transition-all",
+                                                filterFase === null
+                                                    ? "bg-white/15 border-white/30 text-white"
+                                                    : "bg-white/5 border-white/10 text-white/30 hover:text-white/50 hover:border-white/20"
+                                            )}
+                                        >
+                                            Todos
+                                        </button>
                                         {allFases.map(fase => (
                                             <button
                                                 key={fase}
@@ -269,7 +322,7 @@ export default function JornadaPublicPage() {
                                                         : "bg-white/5 border-white/10 text-white/30 hover:text-white/50 hover:border-white/20"
                                                 )}
                                             >
-                                                {fase}
+                                                {faseLabel(fase)}
                                             </button>
                                         ))}
                                     </div>
@@ -277,24 +330,24 @@ export default function JornadaPublicPage() {
                             </div>
                         )}
 
-                        {/* ── AJEDREZ: partidos por ronda ── */}
-                        {isAjedrez && (
+                        {/* ── JORNADA SPORTS: partidos por fase ── */}
+                        {isJornadaSport && (
                             partidos.length === 0 ? (
                                 <div className="text-center py-16 text-white/20 text-sm">No hay partidos registrados.</div>
                             ) : (
                                 <div className="space-y-6">
-                                    {fasesOrdenadas.map(fase => (
-                                        <div key={fase} className="rounded-[2rem] border border-white/8 overflow-hidden bg-black/20 backdrop-blur-xl">
-                                            {/* Round header */}
+                                    {sections.map(section => (
+                                        <div key={section.key} className="rounded-[2rem] border border-white/8 overflow-hidden bg-black/20 backdrop-blur-xl">
+                                            {/* Section header */}
                                             <div className="px-5 py-3 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-                                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{fase}</span>
+                                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{section.label}</span>
                                                 <span className="text-[9px] font-bold text-white/20">
-                                                    {matchesByFase[fase].filter(p => (p as any).estado === 'finalizado').length}/{matchesByFase[fase].length} finalizados
+                                                    {section.matches.filter(p => (p as any).estado === 'finalizado').length}/{section.matches.length} finalizados
                                                 </span>
                                             </div>
                                             {/* Match rows */}
                                             <div>
-                                                {matchesByFase[fase].map(p => (
+                                                {section.matches.map(p => (
                                                     <MatchRow key={p.id} partido={p} />
                                                 ))}
                                             </div>
@@ -305,7 +358,7 @@ export default function JornadaPublicPage() {
                         )}
 
                         {/* ── OTHER SPORTS: racing results table ── */}
-                        {!isAjedrez && (
+                        {!isJornadaSport && (
                             <>
                                 {jornada.estado !== 'finalizado' && (
                                     <div className={cn(
