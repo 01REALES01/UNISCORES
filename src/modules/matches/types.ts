@@ -35,6 +35,7 @@ export type Partido = {
   athlete_b_id?: string;
   responsable_id?: string;
   last_edited_by?: string;
+  stream_url?: string | null;
   updated_at?: string;
   created_at?: string;
 };

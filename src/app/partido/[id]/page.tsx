@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Badge, Avatar, Button } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink, Edit3 } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink, Edit3, Play, Youtube } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -28,10 +28,12 @@ import { MatchTimeline } from '@/modules/matches/components/match-timeline';
 import { MatchStats } from '@/modules/matches/components/match-stats';
 import { getMatchResult } from "@/modules/quiniela/helpers";
 import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
+import { MatchStream } from "@/modules/matches/components/match-stream";
 
 import UniqueLoading from "@/components/ui/morph-loading";
 
 export default function PublicMatchDetail() {
+    const [showStream, setShowStream] = useState(false);
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -849,6 +851,34 @@ export default function PublicMatchDetail() {
                                 <span className="text-xs sm:text-sm font-bold text-white/80 tracking-wide">{m.lugar || 'Coliseo Central'}</span>
                             </div>
                         </div>
+
+                        {/* YouTube Stream Section */}
+                        {m.stream_url && (
+                            <div className="mt-8 flex flex-col items-center gap-6 px-4 animate-in fade-in slide-in-from-top-4 duration-700">
+                                <button
+                                    onClick={() => setShowStream(!showStream)}
+                                    className={cn(
+                                        "group relative flex items-center gap-3 px-8 py-4 rounded-full border transition-all duration-500 overflow-hidden shadow-2xl active:scale-95",
+                                        showStream 
+                                            ? "bg-white text-black border-white" 
+                                            : "bg-red-600/10 border-red-500/30 text-red-400 hover:bg-red-600/20 hover:border-red-500/50"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "absolute inset-0 opacity-20 pointer-events-none transition-opacity",
+                                        showStream ? "bg-gradient-to-r from-red-500 to-red-800" : ""
+                                    )} />
+                                    {showStream ? <Youtube size={20} className="relative z-10" /> : <Play size={20} className="relative z-10 fill-current" />}
+                                    <span className="relative z-10 text-xs sm:text-sm font-black uppercase tracking-[0.25em]">
+                                        {showStream ? "OCULTAR TRANSMISIóN" : "VER EN VIVO"}
+                                    </span>
+                                </button>
+
+                                {showStream && (
+                                    <MatchStream url={m.stream_url} className="w-full max-w-4xl" />
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 

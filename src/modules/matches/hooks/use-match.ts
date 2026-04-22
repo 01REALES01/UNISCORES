@@ -33,7 +33,7 @@ async function fetchMvpJugadorRow(
 // Nota: jugador_a_id / jugador_b_id NO existen en partidos.
 //       Los jugadores nominales se obtienen vía roster_partido.
 const MATCH_COLUMNS = [
-    'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, athlete_a_id, athlete_b_id',
+    'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, athlete_a_id, athlete_b_id, stream_url',
     'disciplinas:disciplina_id(id, name)',
     'carrera_a:carreras!carrera_a_id(id, nombre, escudo_url)',
     'carrera_b:carreras!carrera_b_id(id, nombre, escudo_url)',

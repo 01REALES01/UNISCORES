@@ -432,6 +432,7 @@ export function MatchMetaEditor({ match, profile: _profile, onClose, onSaved }: 
   // Athlete state (individual sports) — properly normalized from join data
   const [atletaA, setAtletaA] = useState<ProfileResult | null>(() => normalizarAtleta(match, 'a'));
   const [atletaB, setAtletaB] = useState<ProfileResult | null>(() => normalizarAtleta(match, 'b'));
+  const [streamUrl, setStreamUrl] = useState(match.stream_url || '');
 
   const [saving, setSaving] = useState(false);
 
@@ -441,6 +442,7 @@ export function MatchMetaEditor({ match, profile: _profile, onClose, onSaved }: 
       const updates: Record<string, any> = {
         fecha: fecha ? new Date(fecha).toISOString() : match.fecha,
         lugar: lugar.trim() || null,
+        stream_url: streamUrl.trim() || null,
       };
 
       if (!isIndividual) {
@@ -572,6 +574,21 @@ export function MatchMetaEditor({ match, profile: _profile, onClose, onSaved }: 
               placeholder="Ej: Cancha 3, Pabellón Norte…"
               className="w-full h-11 bg-white/[0.04] border border-white/10 rounded-xl px-4 text-sm text-white font-bold outline-none focus:border-indigo-500/50 transition-colors placeholder:text-white/20"
             />
+          </div>
+
+          {/* YouTube Stream URL */}
+          <div className="space-y-1.5 border-t border-white/5 pt-4">
+            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400">Streaming (En Vivo)</label>
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">URL de YouTube</label>
+              <input
+                type="text"
+                value={streamUrl}
+                onChange={e => setStreamUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="w-full h-11 bg-white/[0.04] border border-white/10 rounded-xl px-4 text-sm text-white font-bold outline-none focus:border-indigo-500/50 transition-colors placeholder:text-white/20"
+              />
+            </div>
           </div>
 
           {!isIndividual && (
