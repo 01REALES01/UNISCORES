@@ -152,8 +152,8 @@ export default function PartidosPage() {
         hasScrolledToToday.current = true;
         setTimeout(() => {
             document.getElementById(`date-${targetDate}`)
-                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 350);
+                ?.scrollIntoView({ behavior: 'instant', block: 'start' });
+        }, 50);
     }, [loading, jornadasLoading, groupedMatches.length]);
 
     return (
