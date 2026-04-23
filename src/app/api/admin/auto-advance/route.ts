@@ -7,8 +7,13 @@ import { calculateStandings, compareStandings } from '@/modules/matches/utils/st
 // ─── Auto-advance logic: when all matches in a phase are finalized, automatically
 // advance teams/players to the next round.
 
+// Ordered from earliest to latest elimination round
+const ELIM_PHASES = ['primera_ronda', 'dieciseisavos', 'octavos', 'cuartos', 'semifinal', 'final'] as const;
+
 const NEXT_FASE: Record<string, string> = {
   grupos: 'cuartos',    // Config may override (some sports go to semifinal or octavos)
+  primera_ronda: 'dieciseisavos',
+  dieciseisavos: 'octavos',
   octavos: 'cuartos',
   cuartos: 'semifinal',
   semifinal: 'final',
@@ -105,15 +110,11 @@ export async function POST(request: NextRequest) {
     } else if (currentFase === 'final') {
       advanceSuccess = await calculateFinalPositions(supabase, disciplina_id, genero, sportName, categoria);
       nextFase = 'posiciones';
-    } else if (['cuartos', 'octavos', 'semifinal'].includes(currentFase)) {
-      advanceSuccess = await advanceBracketWinners(supabase, disciplina_id, genero, currentFase, sportName, categoria);
-      if (advanceSuccess) {
-        nextFase = NEXT_FASE[currentFase] || 'final';
-      }
-    } else if (currentFase === 'primera_ronda') {
-      advanceSuccess = await advanceBracketWinners(supabase, disciplina_id, genero, currentFase, sportName, categoria);
-      if (advanceSuccess) {
-        nextFase = 'octavos';
+    } else if (['primera_ronda', 'dieciseisavos', 'octavos', 'cuartos', 'semifinal'].includes(currentFase)) {
+      const result = await advanceBracketWinners(supabase, disciplina_id, genero, currentFase, sportName, categoria);
+      if (result) {
+        advanceSuccess = true;
+        nextFase = result;
       }
     }
 
@@ -256,6 +257,7 @@ async function handleGroupAdvancement(
 }
 
 // ─── Advance winners from current bracket phase to next phase
+// Returns the actual next phase name on success, or null on failure.
 async function advanceBracketWinners(
   supabase: any,
   disciplina_id: number,
@@ -263,7 +265,7 @@ async function advanceBracketWinners(
   currentFase: string,
   sportName: string,
   categoria?: string
-): Promise<boolean> {
+): Promise<string | null> {
   try {
     // Fetch all finalized matches in current phase
     let finalizedQuery = supabase
@@ -278,30 +280,46 @@ async function advanceBracketWinners(
 
     if (matchError || !finalized?.length) {
       console.warn('No finalized matches in bracket');
-      return false;
+      return null;
     }
 
-    const nextFase = NEXT_FASE[currentFase];
-    if (!nextFase) {
-      console.warn(`No next fase for ${currentFase}`);
-      return false;
+    // Find the actual next phase: walk ELIM_PHASES from currentFase until we find
+    // one that has matches in the DB. This handles varying bracket depths
+    // (e.g. primera_ronda→octavos when dieciseisavos don't exist).
+    const currentIdx = ELIM_PHASES.indexOf(currentFase as any);
+    let nextFase: string | null = null;
+    let nextRoundMatches: any[] | null = null;
+
+    for (let i = currentIdx + 1; i < ELIM_PHASES.length; i++) {
+      const candidate = ELIM_PHASES[i];
+      let q = supabase
+        .from('partidos')
+        .select('*')
+        .eq('disciplina_id', disciplina_id)
+        .eq('genero', genero)
+        .eq('fase', candidate)
+        .order('bracket_order', { ascending: true });
+      if (categoria) q = q.eq('categoria', categoria);
+      const { data, error } = await q;
+      if (!error && data?.length) {
+        nextFase = candidate;
+        nextRoundMatches = data;
+        break;
+      }
     }
 
-    // Fetch next round matches to populate
-    let nextQuery = supabase
-      .from('partidos')
-      .select('*')
-      .eq('disciplina_id', disciplina_id)
-      .eq('genero', genero)
-      .eq('fase', nextFase)
-      .order('bracket_order', { ascending: true });
-    if (categoria) nextQuery = nextQuery.eq('categoria', categoria);
-    const { data: nextRoundMatches, error: nextError } = await nextQuery;
-
-    if (nextError || !nextRoundMatches?.length) {
-      console.warn('No next round matches found');
-      return false;
+    if (!nextFase || !nextRoundMatches?.length) {
+      console.warn(`No next round matches found after ${currentFase}`);
+      return null;
     }
+
+    // Deduplicate: if multiple matches share the same bracket_order, keep only the first
+    const seenOrders = new Set<number>();
+    const uniqueNextRound = nextRoundMatches.filter((m: any) => {
+      if (seenOrders.has(m.bracket_order)) return false;
+      seenOrders.add(m.bracket_order);
+      return true;
+    });
 
     const isIndividual = INDIVIDUAL_SPORTS.includes(sportName);
 
@@ -324,10 +342,10 @@ async function advanceBracketWinners(
       const side = `equipo_${ab}`;  // 'equipo_a' or 'equipo_b'
 
       // Find corresponding next-round match
-      const nextMatch = nextRoundMatches.find((m: any) => m.bracket_order === nextSlot);
+      const nextMatch = uniqueNextRound.find((m: any) => m.bracket_order === nextSlot);
       if (!nextMatch) continue;
 
-      // Skip if this slot is already correctly filled (e.g. seed pre-placed by import)
+      // Skip if this slot is already correctly filled (e.g. seed pre-placed by import or previous run)
       const currentValue = nextMatch[side];
       if (currentValue && currentValue !== 'TBD' && currentValue === winnerTeam) continue;
 
@@ -352,14 +370,17 @@ async function advanceBracketWinners(
 
       if (updateError) {
         console.error(`Failed to advance winner to ${nextMatch.id}:`, updateError);
-        return false;
+        return null;
       }
+
+      // Update in-memory state so subsequent iterations see the filled slot
+      nextMatch[side] = winnerTeam;
     }
 
-    return true;
+    return nextFase;
   } catch (err: any) {
     console.error('Bracket advancement error:', err);
-    return false;
+    return null;
   }
 }
 

@@ -8,7 +8,7 @@ import { GroupStageTable, GRUPO_PLACEHOLDER_SIN_ETIQUETA } from "@/components/gr
 import { BracketTree } from "@/components/bracket-tree";
 import { SPORT_ACCENT, SPORT_GRADIENT, SPORT_BORDER, DEPORTES_INDIVIDUALES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { Trophy, Users, Swords, ShieldAlert, GraduationCap, Mars, Venus, Shield, ChevronDown, Filter, Target, History, RefreshCcw } from "lucide-react";
+import { Trophy, Users, Swords, ShieldAlert, GraduationCap, Mars, Venus, Shield, ChevronDown, ChevronRight, Filter, Target, History, RefreshCcw } from "lucide-react";
 import { FairPlayTable } from "@/modules/matches/components/fair-play-table";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -17,7 +17,7 @@ import { DI_RULES, BASELINE } from "@/modules/matches/utils/deporte-integral";
 import { SportIcon } from "@/components/sport-icons";
 import { InstitutionalBanner } from "@/shared/components/institutional-banner";
 
-const BRACKET_SPORTS = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Ajedrez'] as const;
+const BRACKET_SPORTS = ['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez'] as const;
 const GENDERS = [
     { label: 'Masculino', value: 'masculino', icon: <Mars size={18} />, color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
     { label: 'Femenino', value: 'femenino', icon: <Venus size={18} />, color: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
@@ -66,8 +66,12 @@ export default function ClasificacionPage() {
     const [hideTeamBrackets, setHideTeamBrackets] = useState<boolean>(false);
     const [hideTenisBrackets, setHideTenisBrackets] = useState<boolean>(false);
     const isTenis = selectedSport === 'Tenis';
+    const isTenisMesa = selectedSport === 'Tenis de Mesa';
     const isAjedrez = selectedSport === 'Ajedrez';
     const isTeamSport = ['Fútbol', 'Voleibol', 'Baloncesto'].includes(selectedSport);
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+    // Reset expanded groups when sport changes
+    useEffect(() => { setExpandedGroups(new Set()); }, [selectedSport]);
 
     // Fetch site configuration + realtime updates
     useEffect(() => {
@@ -150,8 +154,14 @@ export default function ClasificacionPage() {
     }, [filteredMatches]);
 
     const bracketMatches = useMemo(() => {
-        return filteredMatches.filter(m => !isGroupStagePhase(m));
-    }, [filteredMatches]);
+        const nonGroup = filteredMatches.filter(m => !isGroupStagePhase(m));
+        // Tenis de Mesa: only show cuartos onward (skip primera_ronda, dieciseisavos, octavos)
+        if (isTenisMesa) {
+            const skipPhases = ['primera_ronda', 'dieciseisavos', 'octavos'];
+            return nonGroup.filter(m => !skipPhases.includes(normalizeFaseKey(m.fase)));
+        }
+        return nonGroup;
+    }, [filteredMatches, isTenisMesa]);
 
     // Get unique groups (normalizado A/B/…; partidos con fase grupos pero sin `grupo` → bucket aparte)
     const groups = useMemo(() => {
@@ -162,7 +172,11 @@ export default function ClasificacionPage() {
             if (label) g.add(label);
             else hasSinEtiqueta = true;
         });
-        const sorted = Array.from(g).sort();
+        const sorted = Array.from(g).sort((a, b) => {
+            const na = Number(a), nb = Number(b);
+            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+            return a.localeCompare(b);
+        });
         if (hasSinEtiqueta) sorted.push(GRUPO_PLACEHOLDER_SIN_ETIQUETA);
         return sorted;
     }, [groupMatches]);
@@ -644,28 +658,108 @@ export default function ClasificacionPage() {
                                         Fase de Grupos
                                     </h2>
                                     <div className="flex-1 h-px bg-gradient-to-r from-violet-100 to-transparent ml-4" />
+                                    {isTenisMesa && (
+                                        <button
+                                            onClick={() => {
+                                                if (expandedGroups.size === groups.length) setExpandedGroups(new Set());
+                                                else setExpandedGroups(new Set(groups));
+                                            }}
+                                            className="text-[10px] font-bold text-violet-400 hover:text-violet-300 transition-colors uppercase tracking-widest shrink-0"
+                                        >
+                                            {expandedGroups.size === groups.length ? 'Colapsar todos' : 'Expandir todos'}
+                                        </button>
+                                    )}
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {groups.map((grupo) => {
-                                        const gMatches = groupMatches.filter((m) => {
-                                            if (grupo === GRUPO_PLACEHOLDER_SIN_ETIQUETA) {
-                                                return !normalizeGrupoLabel(m.grupo);
-                                            }
-                                            return normalizeGrupoLabel(m.grupo) === grupo;
-                                        });
-                                        return (
-                                            <GroupStageTable
-                                                key={grupo}
-                                                matches={gMatches}
-                                                sportName={selectedSport}
-                                                grupo={grupo}
-                                                light={false}
-                                                teamIdMap={teamIdMap}
-                                            />
-                                        );
-                                    })}
-                                </div>
+                                {isTenisMesa ? (
+                                    /* ── Collapsed accordion for 32 groups ── */
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                        {groups.map((grupo) => {
+                                            const gMatches = groupMatches.filter((m) => {
+                                                if (grupo === GRUPO_PLACEHOLDER_SIN_ETIQUETA) return !normalizeGrupoLabel(m.grupo);
+                                                return normalizeGrupoLabel(m.grupo) === grupo;
+                                            });
+                                            const isExpanded = expandedGroups.has(grupo);
+                                            // Quick standings preview for collapsed state
+                                            const standings = calculateStandings(gMatches, selectedSport, fairPlayData, teamIdMap);
+                                            const allFinalized = gMatches.length > 0 && gMatches.every(m => m.estado === 'finalizado');
+
+                                            return (
+                                                <div key={grupo} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+                                                    <button
+                                                        onClick={() => {
+                                                            const next = new Set(expandedGroups);
+                                                            if (isExpanded) next.delete(grupo);
+                                                            else next.add(grupo);
+                                                            setExpandedGroups(next);
+                                                        }}
+                                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors"
+                                                    >
+                                                        <div className={cn(
+                                                            "transition-transform duration-200",
+                                                            isExpanded && "rotate-90"
+                                                        )}>
+                                                            <ChevronRight size={14} className="text-violet-400" />
+                                                        </div>
+                                                        <span className="text-xs font-black uppercase tracking-widest text-violet-400">
+                                                            Grupo {grupo}
+                                                        </span>
+                                                        {allFinalized && (
+                                                            <span className="text-[8px] font-bold text-emerald-400/60 uppercase tracking-widest">Finalizado</span>
+                                                        )}
+                                                        <div className="flex-1" />
+                                                        {/* Compact standings preview when collapsed */}
+                                                        {!isExpanded && standings.length > 0 && (
+                                                            <div className="flex items-center gap-2">
+                                                                {standings.slice(0, 2).map((s, i) => (
+                                                                    <span key={i} className={cn(
+                                                                        "text-[10px] font-bold truncate max-w-[100px]",
+                                                                        i === 0 ? "text-amber-400/80" : "text-white/30"
+                                                                    )}>
+                                                                        {i + 1}. {s.team.split(' ').slice(0, 2).join(' ')}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                    {isExpanded && (
+                                                        <div className="px-2 pb-3">
+                                                            <GroupStageTable
+                                                                matches={gMatches}
+                                                                sportName={selectedSport}
+                                                                grupo={grupo}
+                                                                light={false}
+                                                                teamIdMap={teamIdMap}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    /* ── Standard grid for other sports ── */
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {groups.map((grupo) => {
+                                            const gMatches = groupMatches.filter((m) => {
+                                                if (grupo === GRUPO_PLACEHOLDER_SIN_ETIQUETA) {
+                                                    return !normalizeGrupoLabel(m.grupo);
+                                                }
+                                                return normalizeGrupoLabel(m.grupo) === grupo;
+                                            });
+                                            return (
+                                                <GroupStageTable
+                                                    key={grupo}
+                                                    matches={gMatches}
+                                                    sportName={selectedSport}
+                                                    grupo={grupo}
+                                                    light={false}
+                                                    teamIdMap={teamIdMap}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </section>
                         )}
 
