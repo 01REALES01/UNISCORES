@@ -31,7 +31,6 @@ export default function PartidosPage() {
     const [filterVisible, setFilterVisible] = useState(true);
     const [loadTimeout, setLoadTimeout] = useState(false);
     const lastScrollY = useRef(0);
-    const hasScrolledToToday = useRef(false);
     // Derive unique sport names from all matches + jornadas
 
     const availableSports = useMemo(() => {
@@ -140,21 +139,19 @@ export default function PartidosPage() {
         return () => clearTimeout(t);
     }, [loading, rawMatches.length]);
 
-    // 5. Auto-scroll to today
+    // 5. Scroll to today on load and on filter change
     useEffect(() => {
         if (loading || jornadasLoading || groupedMatches.length === 0) return;
-        if (hasScrolledToToday.current) return;
 
         const todayStr = new Date().toISOString().split('T')[0];
         const targetDate = groupedMatches.find(g => g.fecha >= todayStr)?.fecha;
         if (!targetDate) return;
 
-        hasScrolledToToday.current = true;
         setTimeout(() => {
             document.getElementById(`date-${targetDate}`)
                 ?.scrollIntoView({ behavior: 'instant', block: 'start' });
         }, 50);
-    }, [loading, jornadasLoading, groupedMatches.length]);
+    }, [loading, jornadasLoading, selectedSport, selectedGender]);
 
     return (
         <div className="min-h-screen bg-background text-white selection:bg-white/10 font-sans pb-20 relative">
