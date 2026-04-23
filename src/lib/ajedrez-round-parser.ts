@@ -41,7 +41,7 @@ export function normalizeSwissPlayerName(raw: string): string {
   return t;
 }
 
-/** "1 - 0" / "0 - 1" / medias tablas */
+/** "1 - 0" / "0 - 1" / medias tablas / forfeit SwissManager ("+ -", "- +") / valor único */
 function parseResultadoCelda(raw: unknown): 'victoria_a' | 'victoria_b' | 'empate' | null {
   let s = String(raw ?? '')
     .trim()
@@ -49,13 +49,27 @@ function parseResultadoCelda(raw: unknown): 'victoria_a' | 'victoria_b' | 'empat
     .replace(/½/g, '0.5')
     .replace(/1\/2/gi, '0.5');
   if (!s) return null;
-  const m = s.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/);
-  if (!m) return null;
-  const a = parseFloat(m[1]);
-  const b = parseFloat(m[2]);
-  if (a === 1 && b === 0) return 'victoria_a';
-  if (a === 0 && b === 1) return 'victoria_b';
-  if (a === 0.5 && b === 0.5) return 'empate';
+
+  // Forfeit SwissManager: "+ -" (blancas ganan por incomparecencia) o "- +" (negras ganan)
+  if (/^\+\s*[-–]/.test(s)) return 'victoria_a';
+  if (/^[-–]\s*\+/.test(s)) return 'victoria_b';
+
+  // Formato "1 - 0", "0 - 1", "0.5 - 0.5"
+  const m = s.match(/^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$/);
+  if (m) {
+    const a = parseFloat(m[1]);
+    const b = parseFloat(m[2]);
+    if (a === 1 && b === 0) return 'victoria_a';
+    if (a === 0 && b === 1) return 'victoria_b';
+    if (a === 0.5 && b === 0.5) return 'empate';
+    return null;
+  }
+
+  // Valor único: solo el punto del jugador de blancas (export compacto de SwissManager)
+  if (s === '1') return 'victoria_a';
+  if (s === '0') return 'victoria_b';
+  if (s === '0.5') return 'empate';
+
   return null;
 }
 
@@ -222,8 +236,13 @@ export function parseAjedrezSimpleTable(
     const rawB = String(row[iNegro] ?? '').trim();
     const slotA = normalizeSwissPlayerName(rawA);
     const slotB = normalizeSwissPlayerName(rawB);
-    if (!slotA || !slotB) {
-      errors.push({ sheet: sheetName, row: r, message: 'Fila sin jugador blancas/negras' });
+    if (!slotA) {
+      errors.push({ sheet: sheetName, row: r, message: 'Fila sin jugador blancas' });
+      continue;
+    }
+    // Filas sin rival real (bye, sin emparejar, etc.) → se omiten silenciosamente
+    const BYE_PATTERNS = /^(bye|sin\s*emparejar|unparied|absent|forfeit|half[\s-]point[\s-]bye)$/i;
+    if (!slotB || BYE_PATTERNS.test(slotB)) {
       continue;
     }
 

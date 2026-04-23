@@ -221,20 +221,31 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { error: jornadaErr } = await supabase.from('jornadas').upsert(
-      {
-        disciplina_id: ajedrezId,
-        genero,
-        numero: numeroRonda,
-        nombre: jornadaNombre,
-        scheduled_at: first.scheduled_at,
-        lugar: first.venue || 'Por definir',
-      },
-      { onConflict: 'disciplina_id,genero,numero' }
-    );
+    // Reuse existing "Jornada Única" (mixto, numero=1) instead of creating per-round jornadas.
+    // All ajedrez partidos appear there since the public page queries by disciplina_id only.
+    const { data: existingJornada } = await supabase
+      .from('jornadas')
+      .select('id')
+      .eq('disciplina_id', ajedrezId)
+      .order('numero', { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
-    if (jornadaErr) {
-      return NextResponse.json({ error: `Jornada: ${jornadaErr.message}` }, { status: 500 });
+    if (!existingJornada) {
+      const { error: jornadaErr } = await supabase.from('jornadas').upsert(
+        {
+          disciplina_id: ajedrezId,
+          genero: 'mixto',
+          numero: 1,
+          nombre: 'Jornada Única',
+          scheduled_at: first.scheduled_at,
+          lugar: first.venue || 'Por definir',
+        },
+        { onConflict: 'disciplina_id,genero,numero' }
+      );
+      if (jornadaErr) {
+        return NextResponse.json({ error: `Jornada: ${jornadaErr.message}` }, { status: 500 });
+      }
     }
 
     let created = 0;

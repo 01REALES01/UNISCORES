@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { CalendarDays, RefreshCw, ChevronRight } from "lucide-react";
+import { CalendarDays, RefreshCw, ChevronRight, Upload, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SPORT_EMOJI } from "@/lib/constants";
+import { AjedrezImportModal } from "@/modules/admin/matches/components/ajedrez-import-modal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,8 @@ export default function JornadasPage() {
     const [loading, setLoading] = useState(true);
     const [sportFilter, setSportFilter] = useState<string>('all');
     const [generoFilter, setGeneroFilter] = useState<string>('all');
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -61,6 +64,15 @@ export default function JornadasPage() {
     }, []);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    async function deleteJornada(e: React.MouseEvent, id: number, nombre: string) {
+        e.preventDefault();
+        if (!confirm(`¿Eliminar jornada "${nombre}"? Esta acción no se puede deshacer.`)) return;
+        setDeletingId(id);
+        await supabase.from('jornadas').delete().eq('id', id);
+        setDeletingId(null);
+        fetchData();
+    }
 
     const sports = Array.from(new Set(jornadas.map(j => (j.disciplinas as any)?.name).filter(Boolean)));
 
@@ -81,6 +93,14 @@ export default function JornadasPage() {
 
     return (
         <div className="space-y-6">
+            {/* Import Modal */}
+            {showImportModal && (
+                <AjedrezImportModal
+                    onClose={() => setShowImportModal(false)}
+                    onSuccess={() => { setShowImportModal(false); fetchData(); }}
+                />
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -92,14 +112,23 @@ export default function JornadasPage() {
                         <p className="text-white/30 text-xs">Ajedrez y Tenis de Mesa</p>
                     </div>
                 </div>
-                <button
-                    onClick={fetchData}
-                    disabled={loading}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-white/70 text-xs font-bold transition-colors disabled:opacity-40"
-                >
-                    <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-                    Actualizar
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowImportModal(true)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 text-violet-300 text-xs font-bold transition-colors"
+                    >
+                        <Upload size={12} />
+                        Importar Excel Ajedrez
+                    </button>
+                    <button
+                        onClick={fetchData}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-white/70 text-xs font-bold transition-colors disabled:opacity-40"
+                    >
+                        <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+                        Actualizar
+                    </button>
+                </div>
             </div>
 
             {/* Filters */}
@@ -155,33 +184,41 @@ export default function JornadasPage() {
                             </h2>
                             <div className="space-y-2">
                                 {items.map(j => (
-                                    <Link
-                                        key={j.id}
-                                        href={`/admin/jornadas/${j.id}`}
-                                        className="flex items-center justify-between px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-violet-500/30 hover:bg-white/5 transition-all group"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="text-2xl font-black text-white/20 w-8 text-center">
-                                                {j.numero}
+                                    <div key={j.id} className="relative group">
+                                        <Link
+                                            href={`/admin/jornadas/${j.id}`}
+                                            className="flex items-center justify-between px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-violet-500/30 hover:bg-white/5 transition-all group/link"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-2xl font-black text-white/20 w-8 text-center">
+                                                    {j.numero}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-white">
+                                                        {j.nombre ?? `Ronda ${j.numero}`}
+                                                        <span className="ml-2 text-xs font-normal capitalize text-white/30">{j.genero}</span>
+                                                    </p>
+                                                    <p className="text-xs text-white/30 mt-0.5">
+                                                        {formatDate(j.scheduled_at)}
+                                                        {j.lugar ? ` · ${j.lugar}` : ''}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-white">
-                                                    {j.nombre ?? `Ronda ${j.numero}`}
-                                                    <span className="ml-2 text-xs font-normal capitalize text-white/30">{j.genero}</span>
-                                                </p>
-                                                <p className="text-xs text-white/30 mt-0.5">
-                                                    {formatDate(j.scheduled_at)}
-                                                    {j.lugar ? ` · ${j.lugar}` : ''}
-                                                </p>
+                                            <div className="flex items-center gap-3">
+                                                <span className={cn("px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border", estadoBadge(j.estado))}>
+                                                    {estadoLabel(j.estado)}
+                                                </span>
+                                                <ChevronRight size={14} className="text-white/20 group-hover/link:text-white/50 transition-colors" />
                                             </div>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className={cn("px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border", estadoBadge(j.estado))}>
-                                                {estadoLabel(j.estado)}
-                                            </span>
-                                            <ChevronRight size={14} className="text-white/20 group-hover:text-white/50 transition-colors" />
-                                        </div>
-                                    </Link>
+                                        </Link>
+                                        <button
+                                            onClick={(e) => deleteJornada(e, j.id, j.nombre ?? `Ronda ${j.numero}`)}
+                                            disabled={deletingId === j.id}
+                                            className="absolute right-14 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg bg-red-500/10 hover:bg-red-500/25 border border-red-500/20 text-red-400 disabled:opacity-30"
+                                        >
+                                            <Trash2 size={13} />
+                                        </button>
+                                    </div>
                                 ))}
                             </div>
                         </div>

@@ -47,7 +47,7 @@ interface AjedrezDryRunResult {
     numero_ronda: number;
     genero: string;
     fase: string;
-    sample: Array<{ slot_a: string; slot_b: string; fecha: string; lugar: string }>;
+    sample: Array<{ slot_a: string; slot_b: string; fecha: string; lugar: string; resultado_excel: string | null }>;
     parse_errors: ParseError[];
 }
 
@@ -440,8 +440,16 @@ export default function FixturePage() {
                         <div className="rounded-lg border border-white/5 bg-black/20 p-3 text-xs text-white/50 space-y-1">
                             <p className="text-[10px] font-bold text-white/40 uppercase">Muestra</p>
                             {ajedrezPreview.sample.map((row, i) => (
-                                <p key={i}>
-                                    {row.slot_a} vs {row.slot_b} — {row.lugar}
+                                <p key={i} className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-white/60">{row.slot_a}</span>
+                                    <span className="text-white/20">vs</span>
+                                    <span className="text-white/60">{row.slot_b}</span>
+                                    <span className="text-white/20">·</span>
+                                    {row.resultado_excel
+                                        ? <span className="text-emerald-400/80 font-bold">{row.resultado_excel.replace('victoria_a', '1 - 0').replace('victoria_b', '0 - 1').replace('empate', '½ - ½')}</span>
+                                        : <span className="text-white/20 italic">sin resultado</span>
+                                    }
+                                    <span className="text-white/15">· {row.lugar}</span>
                                 </p>
                             ))}
                         </div>

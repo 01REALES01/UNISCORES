@@ -149,18 +149,26 @@ export default function JornadaPublicPage() {
         cuartos: 'Cuartos de Final', semifinal: 'Semifinal',
         tercer_puesto: 'Tercer Puesto', final: 'Final',
     };
+
+    // Normalize "ronda_torneo_N" → "Ronda N" so Swiss rounds merge with regular round labels
+    function normalizeFase(f: string): string {
+        const m = f.match(/^ronda_torneo_(\d+)$/i);
+        if (m) return `Ronda ${m[1]}`;
+        return f;
+    }
+
     const faseOrder = (f: string) => FASE_ORDER[f] ?? (parseInt(f.replace(/\D/g, '')) || 99);
     const faseLabel = (f: string) => FASE_LABELS[f] ?? f;
 
-    // All fases available (for filter pills)
+    // All fases available (for filter pills), using normalized values
     const allFases = isJornadaSport
-        ? [...new Set(partidos.map(p => (p as any).fase ?? 'Ronda 1'))].sort((a, b) => faseOrder(a) - faseOrder(b))
+        ? [...new Set(partidos.map(p => normalizeFase((p as any).fase ?? 'Ronda 1')))].sort((a, b) => faseOrder(a) - faseOrder(b))
         : [];
 
-    // Apply filters
+    // Apply filters (compare against normalized fase)
     const filteredPartidos = partidos.filter(p => {
         if (filterGenero && (p as any).genero !== filterGenero) return false;
-        if (filterFase && ((p as any).fase ?? 'Ronda 1') !== filterFase) return false;
+        if (filterFase && normalizeFase((p as any).fase ?? 'Ronda 1') !== filterFase) return false;
         return true;
     });
 
@@ -169,9 +177,9 @@ export default function JornadaPublicPage() {
         if (!isJornadaSport) return [];
         const result: { key: string; label: string; matches: PartidoWithRelations[] }[] = [];
 
-        // Sort fases logically
+        // Sort fases logically, grouped by normalized key
         const byFase = filteredPartidos.reduce<Record<string, PartidoWithRelations[]>>((acc, p) => {
-            const key = (p as any).fase ?? 'Ronda 1';
+            const key = normalizeFase((p as any).fase ?? 'Ronda 1');
             if (!acc[key]) acc[key] = [];
             acc[key].push(p);
             return acc;

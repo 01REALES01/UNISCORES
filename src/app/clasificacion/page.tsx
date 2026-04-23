@@ -56,6 +56,76 @@ function normalizeGrupoLabel(raw: unknown): string | null {
     return s.toUpperCase();
 }
 
+// Final standings from Olimpiadas Interprogramas UniNorte 2026 – Ajedrez (17/04/2026)
+const AJEDREZ_FINAL: Record<'masculino' | 'femenino', { rank: number; name: string; programa: string; pts: number; bh: number; sb: number }[]> = {
+    masculino: [
+        { rank: 1,  name: 'Valera Padilla, Federico Jose',        programa: 'Negocios Internacionales',          pts: 5.5, bh: 24.5, sb: 21.75 },
+        { rank: 2,  name: 'Sanchez Cabarcas, Samuel Alejandro',   programa: 'Ingeniería Mecánica',               pts: 5.5, bh: 21,   sb: 17.75 },
+        { rank: 3,  name: 'Zuleta Castro, Sebastian Daniel',      programa: 'Ingeniería Sistemas y Computación', pts: 5.5, bh: 19.5, sb: 17.25 },
+        { rank: 4,  name: 'Montaña Tovar, Juan Camilo',           programa: 'Relaciones Internacionales',        pts: 5,   bh: 23,   sb: 17.00 },
+        { rank: 5,  name: 'Berty Diaz, Eloy David',               programa: 'Ingeniería Sistemas y Computación', pts: 5,   bh: 22.5, sb: 17.50 },
+        { rank: 6,  name: 'Rico Ramirez, Cristian David',         programa: 'Ingeniería Mecánica',               pts: 5,   bh: 21,   sb: 17.50 },
+        { rank: 7,  name: 'Gutierrez Gutierrez, David Alejandro', programa: 'Ingeniería Sistemas y Computación', pts: 5,   bh: 20.5, sb: 11.00 },
+        { rank: 8,  name: 'De La Cruz Blanquicet, Miguel Angel',  programa: 'Psicología',                        pts: 4,   bh: 22,   sb: 13.50 },
+        { rank: 9,  name: 'Forero Pacheco, Andres Alonso',        programa: 'Ingeniería Sistemas y Computación', pts: 4,   bh: 22,   sb: 10.50 },
+        { rank: 10, name: 'Torres Colmenares, Sahid Fernando',    programa: 'Ingeniería Sistemas y Computación', pts: 4,   bh: 19.5, sb: 9.50  },
+        { rank: 11, name: 'Barrios Montero, Breynner Alfonso',    programa: 'Derecho',                           pts: 4,   bh: 19.5, sb: 9.00  },
+        { rank: 11, name: 'Solano Zambrano, Ivan Alejandro',      programa: 'Medicina',                          pts: 4,   bh: 19.5, sb: 9.00  },
+        { rank: 13, name: 'Cartusciello Andrade, Nicolas Andres', programa: 'Ingeniería Industrial',             pts: 4,   bh: 17.5, sb: 8.00  },
+        { rank: 14, name: 'Navarro Castilla, Pedro Jose',         programa: 'Ingeniería Industrial',             pts: 4,   bh: 17,   sb: 8.00  },
+        { rank: 15, name: 'Verdezza Caballero, Alberto Alejandro',programa: 'Ingeniería Civil',                  pts: 4,   bh: 17,   sb: 7.50  },
+        { rank: 16, name: 'Cordoba Castro, Daniel Enrique Alexander', programa: 'Negocios Internacionales',     pts: 4,   bh: 16,   sb: 5.00  },
+        { rank: 17, name: 'Arango Merlano, Juan Pablo',           programa: 'Ciencia de Datos',                  pts: 4,   bh: 15.5, sb: 7.50  },
+        { rank: 18, name: 'Morales Martinez, Angel Mario',        programa: 'Psicología',                        pts: 3.5, bh: 27,   sb: 13.75 },
+        { rank: 19, name: 'Sanjuan De Caro, Javier Dario',        programa: 'Ingeniería Mecánica',               pts: 3,   bh: 23,   sb: 10.00 },
+        { rank: 20, name: 'Arenas Puello, Isaac David',           programa: 'Ingeniería Mecánica',               pts: 3,   bh: 22,   sb: 10.00 },
+        { rank: 21, name: 'Sanchez Peñaloza, Juan Miguel',        programa: 'Ciencia de Datos',                  pts: 3,   bh: 21.5, sb: 8.00  },
+        { rank: 22, name: 'Acosta Teran, Diego Andres',           programa: 'Ingeniería Eléctrica',              pts: 3,   bh: 20.5, sb: 6.50  },
+        { rank: 23, name: 'Perez Merlano, David Andres',          programa: 'Ingeniería Biomédica',              pts: 3,   bh: 19.5, sb: 6.50  },
+        { rank: 24, name: 'Cadena Martinez, Ivan Esteban',        programa: 'Ingeniería Civil',                  pts: 3,   bh: 18.5, sb: 6.00  },
+        { rank: 25, name: 'Rivera Garcia, Juan Daniel',           programa: 'Ingeniería Industrial',             pts: 3,   bh: 17,   sb: 6.00  },
+        { rank: 26, name: 'Timms Ruiz, Jorge David',              programa: 'Negocios Internacionales',          pts: 3,   bh: 17,   sb: 5.00  },
+        { rank: 27, name: 'Lambraño Lopez, Alfredo Luis',         programa: 'Ingeniería Mecánica',               pts: 3,   bh: 15.5, sb: 5.50  },
+        { rank: 28, name: 'Morron Manrique, Samuel David',        programa: 'Negocios Internacionales',          pts: 3,   bh: 13,   sb: 5.00  },
+        { rank: 29, name: 'Maloof Martinez, Salomon',             programa: 'Ingeniería Mecánica',               pts: 2.5, bh: 23,   sb: 8.75  },
+        { rank: 30, name: 'Olivo Villalba, Aldair Orlando',       programa: 'Ingeniería Mecánica',               pts: 2.5, bh: 20,   sb: 5.75  },
+        { rank: 31, name: 'Imitola Rueda, Jorge David',           programa: 'Ingeniería Sistemas y Computación', pts: 2.5, bh: 20,   sb: 4.75  },
+        { rank: 32, name: 'Ortiz Zabaleta, Alejandro',            programa: 'Ingeniería Mecánica',               pts: 2.5, bh: 19.5, sb: 4.75  },
+        { rank: 33, name: 'Anaya Diaz, Jhon Jairo',               programa: 'Ingeniería Mecánica',               pts: 2.5, bh: 19,   sb: 6.25  },
+        { rank: 34, name: 'Diaz Calderon, Jose David',            programa: 'Derecho',                           pts: 2.5, bh: 18,   sb: 4.25  },
+        { rank: 35, name: 'Vergara Galvis, Andres Camilo',        programa: 'Medicina',                          pts: 2.5, bh: 17,   sb: 6.25  },
+        { rank: 36, name: 'Trujillo Romero, Juan Sebastian',      programa: 'Ingeniería Electrónica',            pts: 2.5, bh: 11.5, sb: 2.25  },
+        { rank: 37, name: 'Montalvo Rojano, Jose Josue',          programa: 'Ingeniería Electrónica',            pts: 2,   bh: 22.5, sb: 5.00  },
+        { rank: 38, name: 'Lopez Bertel, Moises David',           programa: 'Ingeniería Mecánica',               pts: 2,   bh: 20.5, sb: 3.00  },
+        { rank: 39, name: 'Cortes Nuñez, Miguel Alejandro',       programa: 'Ingeniería Sistemas y Computación', pts: 2,   bh: 17,   sb: 4.00  },
+        { rank: 40, name: 'Castro Salas, Jose Angel',             programa: 'Medicina',                          pts: 2,   bh: 17,   sb: 3.00  },
+        { rank: 41, name: 'Celedon Manga, Emmanuel David',        programa: 'Medicina',                          pts: 2,   bh: 15.5, sb: 1.50  },
+        { rank: 42, name: 'Agamez Madera, Kennier Andres',        programa: 'Ingeniería Civil',                  pts: 2,   bh: 15,   sb: 4.00  },
+        { rank: 43, name: 'Peña Duarte, Daniel David',            programa: 'Medicina',                          pts: 2,   bh: 15,   sb: 1.50  },
+        { rank: 44, name: 'Lubo Villa, Kevin Javier',             programa: 'Ingeniería Industrial',             pts: 1.5, bh: 15.5, sb: 3.25  },
+        { rank: 45, name: 'Yaber Robles, Kennet Javid',           programa: 'Ingeniería Civil',                  pts: 1.5, bh: 14.5, sb: 0.75  },
+        { rank: 46, name: 'Fontanilla Camargo, Esteban',          programa: 'Ingeniería Mecánica',               pts: 1.5, bh: 13,   sb: 1.25  },
+        { rank: 47, name: 'Ricardo Arrieta, Samuel David',        programa: 'Ingeniería Sistemas y Computación', pts: 1.5, bh: 11.5, sb: 2.75  },
+        { rank: 48, name: 'Padilla Garcia, Oliver De Jesus',      programa: 'Ingeniería Eléctrica',              pts: 1,   bh: 17,   sb: 1.50  },
+        { rank: 49, name: 'Rovira Melo, Rafael Augusto',          programa: 'Ingeniería Mecánica',               pts: 1,   bh: 16.5, sb: 1.50  },
+        { rank: 50, name: 'Visbal Lux, Christian Rafael',         programa: 'Ingeniería Electrónica',            pts: 1,   bh: 15,   sb: 1.00  },
+        { rank: 51, name: 'Gonzalez Franco, Cristian David',      programa: 'Ingeniería Sistemas y Computación', pts: 1,   bh: 13.5, sb: 1.50  },
+        { rank: 52, name: 'Ladeus Cubides, Santiago Eliu',        programa: 'Ciencia Política y Gobierno',       pts: 0.5, bh: 13,   sb: 0.25  },
+        { rank: 53, name: 'Calderon Arroyo, Juan Carlos',         programa: 'Ingeniería Sistemas y Computación', pts: 0.5, bh: 12,   sb: 0.25  },
+    ],
+    femenino: [
+        { rank: 1, name: 'Albor Rebolledo, Andrea Maria',       programa: 'Medicina',                          pts: 6,   bh: 17,   sb: 18.00 },
+        { rank: 2, name: 'Tamara Zedan, Maria Camila',          programa: 'Ingeniería Sistemas y Computación', pts: 5,   bh: 19.5, sb: 14.00 },
+        { rank: 3, name: 'Valencia Barrios, Luna Valentina',    programa: 'Medicina',                          pts: 4,   bh: 18,   sb: 6.00  },
+        { rank: 4, name: 'Sanguino Cuello, Dariana',            programa: 'Ingeniería Sistemas y Computación', pts: 4,   bh: 16.5, sb: 4.00  },
+        { rank: 5, name: 'Lozano Cuadrado, Natalia',            programa: 'Derecho',                           pts: 3,   bh: 20.5, sb: 6.00  },
+        { rank: 6, name: 'Gonzalez Marchena, Mariana',          programa: 'Ingeniería Mecánica',               pts: 2,   bh: 17,   sb: 2.00  },
+        { rank: 7, name: 'Gamero Molina, Marianella',           programa: 'Ingeniería Mecánica',               pts: 1,   bh: 20,   sb: 1.00  },
+        { rank: 8, name: 'Sanchez De Los Reyes, Gloria Isella', programa: 'Ingeniería Mecánica',               pts: 1,   bh: 17.5, sb: 3.00  },
+        { rank: 9, name: 'Acuña Perez, Marisell',               programa: 'Comunicación Social y Periodismo',  pts: 0,   bh: 18,   sb: 0.00  },
+    ],
+};
+
 export default function ClasificacionPage() {
     const { user, profile, isStaff } = useAuth();
     const { matches, loading } = useMatches();
@@ -543,94 +613,85 @@ export default function ClasificacionPage() {
                             <h2 className="text-2xl font-display font-black tracking-tight text-white">Tabla de Ajedrez</h2>
                             <div className="flex-1 h-px bg-gradient-to-r from-violet-100 to-transparent ml-4" />
                             <span className="text-[9px] font-black uppercase tracking-widest text-white/20">
-                                {chessStandings.reduce((s, p) => s + p.played, 0) / 2 | 0} partidas finalizadas
+                                Clasificación Final · 6 Rondas
                             </span>
                         </div>
 
-                        {chessStandings.length === 0 ? (
-                            <div className="text-center py-16 text-white/20 text-sm font-bold">No hay partidas finalizadas.</div>
-                        ) : (
-                            <div className="rounded-2xl border border-white/8 overflow-hidden">
-                                {/* Header */}
-                                <div className="grid grid-cols-[40px_1fr_auto_32px_32px_32px_48px] gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20 text-center">#</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Jugador</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20 text-center hidden sm:block">PJ</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500/60 text-center">V</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/30 text-center">E</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-red-500/60 text-center">D</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-violet-400/80 text-center">Pts</span>
-                                </div>
+                        {(() => {
+                            const genderKey = selectedGender === 'femenino' ? 'femenino' : 'masculino';
+                            const rows = AJEDREZ_FINAL[genderKey];
+                            if (!rows.length) return (
+                                <div className="text-center py-16 text-white/20 text-sm font-bold">No hay resultados disponibles.</div>
+                            );
+                            return (
+                                <div className="rounded-2xl border border-white/8 overflow-hidden">
+                                    {/* Header */}
+                                    <div className="grid grid-cols-[40px_1fr_52px_56px_56px] gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-white/20 text-center">#</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Jugador</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-violet-400/80 text-center">Pts</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-white/30 text-center">BH</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-white/20 text-center">SB</span>
+                                    </div>
 
-                                {chessStandings.map((p, idx) => {
-                                    const isTop3 = idx < 3;
-                                    const medalEmoji = ['🥇', '🥈', '🥉'][idx] ?? null;
-                                    return (
-                                        <div
-                                            key={idx}
-                                            className={cn(
-                                                "grid grid-cols-[40px_1fr_auto_32px_32px_32px_48px] gap-2 px-4 py-3.5 border-b border-white/5 last:border-0 items-center transition-colors",
-                                                isTop3 ? "bg-white/[0.02]" : ""
-                                            )}
-                                        >
-                                            {/* Position */}
-                                            <div className="flex items-center justify-center">
-                                                {medalEmoji
-                                                    ? <span className="text-lg leading-none">{medalEmoji}</span>
-                                                    : <span className="text-xs font-black text-white/20 tabular-nums">#{idx + 1}</span>
-                                                }
-                                            </div>
+                                    {rows.map((p, idx) => {
+                                        const isTop3 = idx < 3;
+                                        const medalEmoji = ['🥇', '🥈', '🥉'][idx] ?? null;
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={cn(
+                                                    "grid grid-cols-[40px_1fr_52px_56px_56px] gap-2 px-4 py-3.5 border-b border-white/5 last:border-0 items-center transition-colors",
+                                                    isTop3 ? "bg-white/[0.02]" : ""
+                                                )}
+                                            >
+                                                {/* Position */}
+                                                <div className="flex items-center justify-center">
+                                                    {medalEmoji
+                                                        ? <span className="text-lg leading-none">{medalEmoji}</span>
+                                                        : <span className="text-xs font-black text-white/20 tabular-nums">#{p.rank}</span>
+                                                    }
+                                                </div>
 
-                                            {/* Player + carrera */}
-                                            <div className="flex items-center gap-2.5 min-w-0">
-                                                {p.escudoUrl
-                                                    ? <img src={p.escudoUrl} alt="" className="w-7 h-7 rounded-full object-cover shrink-0 bg-white/5" />
-                                                    : p.avatarUrl
-                                                        ? <img src={p.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover shrink-0 bg-white/5" />
-                                                        : <div className="w-7 h-7 rounded-full bg-white/5 shrink-0 flex items-center justify-center text-[10px] font-black text-white/20">{p.name.charAt(0)}</div>
-                                                }
+                                                {/* Player + programa */}
                                                 <div className="min-w-0">
                                                     <span className={cn("text-sm font-bold block truncate", isTop3 ? "text-white" : "text-white/60")}>
                                                         {p.name}
                                                     </span>
-                                                    {p.carreraName && (
-                                                        <span className="text-[10px] font-bold text-white/25 uppercase tracking-wide truncate block">{p.carreraName}</span>
-                                                    )}
+                                                    <span className="text-[10px] font-bold text-white/25 uppercase tracking-wide truncate block">{p.programa}</span>
                                                 </div>
-                                            </div>
 
-                                            {/* PJ */}
-                                            <span className="text-xs font-black tabular-nums text-white/25 text-center hidden sm:block">{p.played}</span>
+                                                {/* Pts */}
+                                                <div className="text-center">
+                                                    <span className={cn(
+                                                        "text-sm font-black tabular-nums",
+                                                        isTop3 ? "text-violet-300" : "text-white/30"
+                                                    )}>
+                                                        {p.pts % 1 === 0 ? p.pts : p.pts.toFixed(1)}
+                                                    </span>
+                                                </div>
 
-                                            {/* V */}
-                                            <span className="text-xs font-black tabular-nums text-emerald-400/80 text-center">{p.wins}</span>
+                                                {/* BH */}
+                                                <span className="text-xs font-black tabular-nums text-white/25 text-center">
+                                                    {p.bh % 1 === 0 ? p.bh : p.bh.toFixed(1)}
+                                                </span>
 
-                                            {/* E */}
-                                            <span className="text-xs font-black tabular-nums text-white/30 text-center">{p.draws}</span>
-
-                                            {/* D */}
-                                            <span className="text-xs font-black tabular-nums text-red-400/70 text-center">{p.losses}</span>
-
-                                            {/* Pts */}
-                                            <div className="text-center">
-                                                <span className={cn(
-                                                    "text-sm font-black tabular-nums",
-                                                    isTop3 ? "text-violet-300" : "text-white/30"
-                                                )}>
-                                                    {p.pts % 1 === 0 ? p.pts : p.pts.toFixed(1)}
+                                                {/* SB */}
+                                                <span className="text-xs font-black tabular-nums text-white/20 text-center">
+                                                    {p.sb.toFixed(2)}
                                                 </span>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })()}
 
                         {/* Legend */}
                         <div className="flex items-center gap-4 mt-4 px-1">
-                            <span className="text-[9px] font-bold text-white/15 uppercase tracking-widest">V = Victoria (1pt)</span>
-                            <span className="text-[9px] font-bold text-white/15 uppercase tracking-widest">E = Empate (0.5pt)</span>
-                            <span className="text-[9px] font-bold text-white/15 uppercase tracking-widest">D = Derrota (0pt)</span>
+                            <span className="text-[9px] font-bold text-white/15 uppercase tracking-widest">Pts = Puntos Swiss</span>
+                            <span className="text-[9px] font-bold text-white/15 uppercase tracking-widest">BH = Buchholz</span>
+                            <span className="text-[9px] font-bold text-white/15 uppercase tracking-widest">SB = Sonneborn-Berger</span>
                         </div>
                     </section>
                 ) : (
