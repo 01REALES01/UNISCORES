@@ -239,43 +239,39 @@ export async function POST(request: NextRequest) {
 
     const resolvedMatches: { match_id: number; team_a: string; team_b: string }[] = [];
 
-    if (config.type === 'unified_table') {
-        // Seeding: 1st vs last, 2nd vs second-to-last, etc.
-        const n = config.totalQualified;
-        for (let i = 0; i < Math.min(elimMatches.length, n / 2); i++) {
-            const teamA = qualifiedTeams[i];
-            const teamB = qualifiedTeams[n - 1 - i];
+    // Parse a placeholder like "1ro. GRUPO A" → TeamStanding for 1st place of Group A
+    const parseSlot = (slot: string): TeamStanding | undefined => {
+        const upper = slot.toUpperCase();
+        const posMatch = upper.match(/^(\d+)/);
+        const grupoMatch = upper.match(/GRUPO\s*([A-Z])/);
+        if (!posMatch || !grupoMatch) return undefined;
+        const pos = parseInt(posMatch[1], 10) - 1;
+        const grupo = grupoMatch[1];
+        return (standingsByGroup[grupo] || [])[pos];
+    };
+
+    // Shared resolution: read placeholder from each bracket match to assign the
+    // correct teams to the correct llave/time slot as defined in the Excel fixture.
+    const resolveByPlaceholder = async () => {
+        for (const match of elimMatches) {
+            const teamA = parseSlot(match.equipo_a || '');
+            const teamB = parseSlot(match.equipo_b || '');
             if (!teamA || !teamB) continue;
 
-            await assignMatch(elimMatches[i].id, teamA, teamB);
+            await assignMatch(match.id, teamA, teamB);
             resolvedMatches.push({
-                match_id: elimMatches[i].id,
+                match_id: match.id,
                 team_a: teamA.team,
                 team_b: teamB.team,
             });
         }
+    };
+
+    if (config.type === 'unified_table') {
+        await resolveByPlaceholder();
 
     } else if (config.type === 'direct_cross') {
-        // 1A vs 2B (match 0), 1B vs 2A (match 1)
-        const standingsA = standingsByGroup['A'] || [];
-        const standingsB = standingsByGroup['B'] || [];
-
-        const crosses: [TeamStanding, TeamStanding][] = [
-            [standingsA[0], standingsB[1]], // 1A vs 2B
-            [standingsB[0], standingsA[1]], // 1B vs 2A
-        ];
-
-        for (let i = 0; i < Math.min(elimMatches.length, crosses.length); i++) {
-            const [teamA, teamB] = crosses[i];
-            if (!teamA || !teamB) continue;
-
-            await assignMatch(elimMatches[i].id, teamA, teamB);
-            resolvedMatches.push({
-                match_id: elimMatches[i].id,
-                team_a: teamA.team,
-                team_b: teamB.team,
-            });
-        }
+        await resolveByPlaceholder();
 
     } else if (config.type === 'single_group_final') {
         // Top 2 → final
