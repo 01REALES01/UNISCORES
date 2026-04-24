@@ -12,6 +12,7 @@ import { Calendar as CalendarIcon, Search, Activity, LayoutGrid } from "lucide-r
 import { ResilienceUI } from "@/components/resilience-ui";
 import { UnifiedCard } from "@/modules/matches/components/unified-card";
 import { JornadaCard } from "@/modules/matches/components/match-card";
+import { JORNADA_SPORTS } from "@/lib/constants";
 
 
 // --- Types ---
@@ -44,7 +45,7 @@ export default function PartidosPage() {
     const filteredMatches = useMemo(() => {
         const q = searchQuery.toLowerCase();
         return rawMatches.filter(m => {
-            if (m.disciplinas?.name === 'Ajedrez' || m.disciplinas?.name === 'Tenis de Mesa') return false;
+            if (m.disciplinas?.name && JORNADA_SPORTS.includes(m.disciplinas.name)) return false;
             if (selectedSport !== "Todos" && m.disciplinas?.name !== selectedSport) return false;
             const matchGender = (m.genero || 'masculino').toLowerCase();
             if (selectedGender !== 'todos' && matchGender !== selectedGender.toLowerCase() && matchGender !== 'mixto') return false;

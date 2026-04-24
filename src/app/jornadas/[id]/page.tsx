@@ -7,9 +7,11 @@ import { MainNavbar } from "@/components/main-navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { SportIcon } from "@/components/sport-icons";
 import { cn } from "@/lib/utils";
-import { MapPin, Users } from "lucide-react";
+import { MapPin, Users, Timer, Play, Youtube, PlayCircle } from "lucide-react";
+import Link from "next/link";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
 import { MatchRow } from "@/modules/matches/components/matches-today-section";
+import { MatchStream } from "@/modules/matches/components/match-stream";
 import { JORNADA_SPORTS } from "@/lib/constants";
 import type { PartidoWithRelations } from "@/modules/matches/types";
 
@@ -32,6 +34,7 @@ interface Jornada {
     scheduled_at: string;
     lugar: string | null;
     estado: 'programado' | 'en_curso' | 'finalizado';
+    stream_url: string | null;
     disciplinas: { name: string } | null;
     jornada_resultados: JornadaResultado[];
 }
@@ -56,6 +59,7 @@ export default function JornadaPublicPage() {
     const [jornada, setJornada] = useState<Jornada | null>(null);
     const [partidos, setPartidos] = useState<PartidoWithRelations[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showStream, setShowStream] = useState(false);
     const [filterGenero, setFilterGenero] = useState<'masculino' | 'femenino' | null>(null);
     const [filterFase, setFilterFase] = useState<string | null>(null);
 
@@ -64,7 +68,7 @@ export default function JornadaPublicPage() {
             const { data } = await supabase
                 .from('jornadas')
                 .select(`
-                    id, disciplina_id, genero, numero, nombre, scheduled_at, lugar, estado,
+                    id, disciplina_id, genero, numero, nombre, scheduled_at, lugar, estado, stream_url,
                     disciplinas(name),
                     jornada_resultados(
                         jugador_id, carrera_id, posicion, puntos_olimpicos, notas,
@@ -96,7 +100,9 @@ export default function JornadaPublicPage() {
                     `)
                     .eq('disciplina_id', j.disciplina_id);
 
-                if (!isJornada) {
+                const isNatacionSport = sportName === 'Natación';
+
+                if (!isJornada || isNatacionSport) {
                     pQuery = pQuery.eq('genero', j.genero);
                 }
 
@@ -133,6 +139,7 @@ export default function JornadaPublicPage() {
 
     const sportName = (jornada?.disciplinas as any)?.name ?? '';
     const isAjedrez = sportName === 'Ajedrez';
+    const isNatacion = sportName === 'Natación';
     const isJornadaSport = JORNADA_SPORTS.includes(sportName);
     const sortedResults = jornada
         ? [...jornada.jornada_resultados].sort((a, b) => a.posicion - b.posicion)
@@ -273,8 +280,37 @@ export default function JornadaPublicPage() {
                             </div>
                         </div>
 
+                        {/* Stream en vivo */}
+                        {jornada.stream_url && (
+                            <div className="mt-6 flex flex-col items-center gap-5 animate-in fade-in slide-in-from-top-4 duration-700">
+                                <button
+                                    onClick={() => setShowStream(!showStream)}
+                                    className={cn(
+                                        "group relative flex items-center gap-3 px-8 py-4 rounded-full border transition-all duration-500 overflow-hidden shadow-2xl active:scale-95",
+                                        showStream
+                                            ? "bg-white text-black border-white"
+                                            : jornada.estado === 'finalizado'
+                                                ? "bg-indigo-600/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-600/20 hover:border-indigo-500/50"
+                                                : "bg-red-600/10 border-red-500/30 text-red-400 hover:bg-red-600/20 hover:border-red-500/50"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "absolute inset-0 opacity-20 pointer-events-none transition-opacity",
+                                        showStream ? "bg-gradient-to-r from-red-500 to-red-800" : ""
+                                    )} />
+                                    {showStream ? <Youtube size={20} className="relative z-10" /> : (jornada.estado === 'finalizado' ? <PlayCircle size={20} className="relative z-10" /> : <Play size={20} className="relative z-10 fill-current" />)}
+                                    <span className="relative z-10 text-xs sm:text-sm font-black uppercase tracking-[0.25em]">
+                                        {showStream ? "OCULTAR TRANSMISIÓN" : jornada.estado === 'finalizado' ? "VER REPETICIÓN" : "VER EN VIVO"}
+                                    </span>
+                                </button>
+                                {showStream && (
+                                    <MatchStream url={jornada.stream_url} className="w-full" />
+                                )}
+                            </div>
+                        )}
+
                         {/* ── JORNADA SPORTS: filtros de fase ── */}
-                        {isJornadaSport && (
+                        {isJornadaSport && !isNatacion && (
                             <div className="space-y-3">
                                 {/* Gender filter (only for Ajedrez which mixes genders) */}
                                 {isAjedrez && (
@@ -330,8 +366,69 @@ export default function JornadaPublicPage() {
                             </div>
                         )}
 
-                        {/* ── JORNADA SPORTS: partidos por fase ── */}
-                        {isJornadaSport && (
+                        {/* ── NATACIÓN: race cards ── */}
+                        {isNatacion && (
+                            partidos.length === 0 ? (
+                                <div className="text-center py-16 text-white/20 text-sm">No hay carreras registradas.</div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {partidos.map(p => {
+                                        const det = (p as any).marcador_detalle || {};
+                                        const participantes = Array.isArray(det.participantes) ? det.participantes : [];
+                                        const isFinished = (p as any).estado === 'finalizado';
+                                        const isLive = (p as any).estado === 'en_curso';
+                                        const top3 = isFinished
+                                            ? [...participantes].sort((a: any, b: any) => (a.posicion ?? 99) - (b.posicion ?? 99)).slice(0, 3)
+                                            : [];
+                                        return (
+                                            <Link key={p.id} href={`/partido/${p.id}`} className="group block">
+                                                <div className={cn(
+                                                    "rounded-2xl border overflow-hidden transition-all",
+                                                    isLive
+                                                        ? "border-sky-500/40 bg-sky-500/[0.04]"
+                                                        : "border-white/[0.06] bg-white/[0.02] hover:border-sky-500/20 hover:bg-white/[0.04]"
+                                                )}>
+                                                    <div className="px-4 py-3 flex items-center justify-between">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <Timer size={14} className="text-sky-400/60" />
+                                                            <span className="text-sm font-black text-white tracking-tight">
+                                                                {det.distancia} {det.estilo}
+                                                            </span>
+                                                        </div>
+                                                        {isLive ? (
+                                                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-sky-500/20 border border-sky-500/30 rounded-full">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                                                                <span className="text-[8px] font-black text-sky-300 uppercase tracking-widest">En Curso</span>
+                                                            </div>
+                                                        ) : isFinished ? (
+                                                            <span className="text-[9px] font-black text-emerald-400/60 uppercase tracking-widest">Finalizado</span>
+                                                        ) : (
+                                                            <span className="text-[9px] font-bold text-white/20">{participantes.length} atletas</span>
+                                                        )}
+                                                    </div>
+                                                    {isFinished && top3.length > 0 && (
+                                                        <div className="px-4 pb-3 flex flex-col gap-1">
+                                                            {top3.map((athlete: any, idx: number) => (
+                                                                <div key={idx} className="flex items-center gap-2 text-[11px]">
+                                                                    <span>{['🥇', '🥈', '🥉'][idx]}</span>
+                                                                    <span className="font-bold text-white/70 truncate flex-1">{athlete.nombre}</span>
+                                                                    {athlete.tiempo && (
+                                                                        <span className="font-mono font-black text-sky-400 text-[10px]">{athlete.tiempo}</span>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            )
+                        )}
+
+                        {/* ── OTHER JORNADA SPORTS: partidos por fase ── */}
+                        {isJornadaSport && !isNatacion && (
                             partidos.length === 0 ? (
                                 <div className="text-center py-16 text-white/20 text-sm">No hay partidos registrados.</div>
                             ) : (

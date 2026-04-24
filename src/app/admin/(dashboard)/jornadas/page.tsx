@@ -89,7 +89,7 @@ export default function JornadasPage() {
                     </div>
                     <div>
                         <h1 className="text-white font-black text-xl">Jornadas</h1>
-                        <p className="text-white/30 text-xs">Ajedrez y Tenis de Mesa</p>
+                        <p className="text-white/30 text-xs">Ajedrez, Tenis de Mesa y Natación</p>
                     </div>
                 </div>
                 <button

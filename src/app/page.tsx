@@ -58,6 +58,7 @@ import { LiveMatchCard, UpcomingMatchCard, ResultCard } from '@/modules/matches/
 import { MatchFilters } from '@/modules/matches/components/match-filters';
 import { LiveMatchesSection } from '@/modules/matches/components/live-matches-section';
 import { MatchesTodaySection } from '@/modules/matches/components/matches-today-section';
+import { LiveStreamBanner } from '@/modules/matches/components/live-stream-banner';
 import { AboutFooter } from '@/shared/components/about-footer';
 import { InstitutionalBanner } from '@/shared/components/institutional-banner';
 
@@ -83,6 +84,23 @@ export default function Home() {
     const { data } = await supabase.from('delegaciones').select('nombre, carrera_ids');
     return data ?? [];
   }, { revalidateOnFocus: false, dedupingInterval: 300000 });
+
+  // Jornadas con stream activo (en_curso)
+  const { data: streamingJornadas = [] } = useSWR('jornadas:streaming', async () => {
+    const { data } = await supabase
+      .from('jornadas')
+      .select('id, nombre, numero, stream_url, estado, disciplinas:disciplina_id(name)')
+      .eq('estado', 'en_curso')
+      .not('stream_url', 'is', null);
+    return (data ?? []) as unknown as Array<{
+      id: number;
+      nombre: string | null;
+      numero: number;
+      stream_url: string | null;
+      estado: string;
+      disciplinas: { name: string } | null;
+    }>;
+  }, { revalidateOnFocus: false, dedupingInterval: 15000 });
 
   const delegacionCarreraMap = useMemo(() => {
     const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -353,6 +371,9 @@ export default function Home() {
   const finishedMatches = displayPartidos.filter(p => p.estado === 'finalizado');
   const recentFinished = [...finishedMatches].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
+  // Partidos en vivo con stream activo (para el banner)
+  const liveWithStream = liveMatches.filter(p => !!p.stream_url);
+
   return (
     <div className="min-h-screen bg-background text-white font-sans selection:bg-violet-500/30">
       <SplashScreen />
@@ -455,6 +476,12 @@ export default function Home() {
                 </div>
               );
             })()}
+
+            {/* BANNER: Transmitido en Vivo Ahora */}
+            <LiveStreamBanner
+              partidos={liveWithStream}
+              jornadas={streamingJornadas}
+            />
 
             {/* QUINIELA CTA BANNER - HYBRID */}
             <div className="relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl group cursor-pointer mb-8 bg-gradient-to-br from-white/10 to-white/[0.02] backdrop-blur-xl">

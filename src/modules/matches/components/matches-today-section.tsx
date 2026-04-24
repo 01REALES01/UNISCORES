@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui-primitives";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { isAsyncMatch } from "@/lib/is-async-match";
 import { getDisplayName } from "@/lib/sport-helpers";
+import { ChevronRight, Timer } from "lucide-react";
 import {
   SPORT_COLORS,
   SPORT_BORDER,
@@ -320,6 +321,98 @@ export function MatchRow({ partido }: { partido: Partido }) {
   );
 }
 
+// ── Natación collapsible jornada group ───────────────────────────────────────
+
+function NatacionGenderGroup({ label, matches }: { label: string; matches: Partido[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasLive = matches.some(m => m.estado === "en_curso");
+  const finishedCount = matches.filter(m => m.estado === "finalizado").length;
+
+  return (
+    <div className="relative z-10">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-3 transition-all border-b border-white/[0.04]",
+          expanded ? "bg-white/[0.03]" : "hover:bg-white/[0.02]"
+        )}
+      >
+        <ChevronRight size={13} className={cn("text-white/30 transition-transform shrink-0", expanded && "rotate-90")} />
+        <span className={cn(
+          "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border",
+          label === "Femenino"
+            ? "bg-pink-500/10 border-pink-500/20 text-pink-400"
+            : "bg-blue-500/10 border-blue-500/20 text-blue-400"
+        )}>
+          {label}
+        </span>
+        <span className="text-[10px] font-bold text-white/25 ml-auto">
+          {matches.length} carrera{matches.length !== 1 ? "s" : ""}
+        </span>
+        {hasLive && (
+          <div className="flex items-center gap-1 px-2 py-0.5 bg-sky-500/20 border border-sky-500/30 rounded-full">
+            <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+            <span className="text-[8px] font-black text-sky-300 uppercase tracking-widest">Live</span>
+          </div>
+        )}
+        {!hasLive && finishedCount > 0 && (
+          <span className="text-[9px] font-bold text-emerald-400/50">{finishedCount}/{matches.length}</span>
+        )}
+      </button>
+      {expanded && (
+        <div className="px-3 py-2 flex flex-col gap-1.5 border-b border-white/[0.04]">
+          {matches.map(p => {
+            const det = (p as any).marcador_detalle || {};
+            const participantes = Array.isArray(det.participantes) ? det.participantes : [];
+            const isFinished = p.estado === "finalizado";
+            const isLive = p.estado === "en_curso";
+            const top3 = isFinished
+              ? [...participantes].sort((a: any, b: any) => (a.posicion ?? 99) - (b.posicion ?? 99)).slice(0, 3)
+              : [];
+            return (
+              <Link key={p.id} href={`/partido/${p.id}`} className="group/race block">
+                <div className={cn(
+                  "rounded-xl border px-3 py-2 transition-all",
+                  isLive
+                    ? "border-sky-500/30 bg-sky-500/[0.04]"
+                    : "border-white/[0.05] bg-white/[0.01] hover:border-sky-500/15 hover:bg-white/[0.03]"
+                )}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Timer size={12} className="text-sky-400/50" />
+                      <span className="text-[12px] font-black text-white/80">{det.distancia} {det.estilo}</span>
+                    </div>
+                    {isLive ? (
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-sky-500/20 border border-sky-500/30 rounded-full">
+                        <div className="w-1 h-1 rounded-full bg-sky-400 animate-pulse" />
+                        <span className="text-[7px] font-black text-sky-300 uppercase tracking-widest">En Curso</span>
+                      </div>
+                    ) : isFinished ? (
+                      <span className="text-[8px] font-black text-emerald-400/50 uppercase tracking-widest">Final</span>
+                    ) : (
+                      <span className="text-[8px] font-bold text-white/15">{participantes.length} atletas</span>
+                    )}
+                  </div>
+                  {isFinished && top3.length > 0 && (
+                    <div className="flex items-center gap-3 mt-1.5 pl-5">
+                      {top3.map((a: any, i: number) => (
+                        <span key={i} className="text-[10px] text-white/50 truncate">
+                          {["🥇", "🥈", "🥉"][i]} <span className="font-bold">{a.nombre?.split(" ")[0]}</span>
+                          {a.tiempo && <span className="text-sky-400/70 font-mono ml-0.5">{a.tiempo}</span>}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Sport group card ─────────────────────────────────────────────────────────
 
 function SportGroup({
@@ -331,6 +424,7 @@ function SportGroup({
 }) {
   const hasLive = matches.some((m) => m.estado === "en_curso");
   const accentColor = SPORT_COLORS[sportName] || "#a78bfa";
+  const isNatacion = sportName === "Natación";
 
   // Map sport names to public image icons
   const customIconMap: Record<string, string> = {
@@ -344,6 +438,16 @@ function SportGroup({
   };
 
   const customIcon = customIconMap[sportName];
+
+  const natacionGroups = useMemo(() => {
+    if (!isNatacion) return [];
+    const fem = matches.filter(m => (m.genero || "").toLowerCase() === "femenino");
+    const masc = matches.filter(m => (m.genero || "").toLowerCase() !== "femenino");
+    const groups: { label: string; matches: Partido[] }[] = [];
+    if (fem.length > 0) groups.push({ label: "Femenino", matches: fem });
+    if (masc.length > 0) groups.push({ label: "Masculino", matches: masc });
+    return groups;
+  }, [matches, isNatacion]);
 
   return (
     <div
@@ -422,16 +526,22 @@ function SportGroup({
             </div>
           )}
           <span className="text-[10px] font-bold text-white/25 tracking-wider">
-            {matches.length} {matches.length === 1 ? "partido" : "partidos"}
+            {matches.length} {isNatacion ? "carreras" : matches.length === 1 ? "partido" : "partidos"}
           </span>
         </div>
       </div>
 
-      {/* Match rows */}
+      {/* Match rows or Natación jornada groups */}
       <div className="relative z-10">
-        {matches.map((match) => (
-          <MatchRow key={match.id} partido={match} />
-        ))}
+        {isNatacion ? (
+          natacionGroups.map(g => (
+            <NatacionGenderGroup key={g.label} label={g.label} matches={g.matches} />
+          ))
+        ) : (
+          matches.map((match) => (
+            <MatchRow key={match.id} partido={match} />
+          ))
+        )}
       </div>
     </div>
   );

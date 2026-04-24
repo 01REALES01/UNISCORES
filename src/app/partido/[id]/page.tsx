@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Badge, Avatar, Button } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink, Edit3, Play, Youtube } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink, Edit3, Play, Youtube, PlayCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -861,16 +861,18 @@ export default function PublicMatchDetail() {
                                         "group relative flex items-center gap-3 px-8 py-4 rounded-full border transition-all duration-500 overflow-hidden shadow-2xl active:scale-95",
                                         showStream 
                                             ? "bg-white text-black border-white" 
-                                            : "bg-red-600/10 border-red-500/30 text-red-400 hover:bg-red-600/20 hover:border-red-500/50"
+                                            : m.estado === 'finalizado'
+                                                ? "bg-indigo-600/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-600/20 hover:border-indigo-500/50"
+                                                : "bg-red-600/10 border-red-500/30 text-red-400 hover:bg-red-600/20 hover:border-red-500/50"
                                     )}
                                 >
                                     <div className={cn(
                                         "absolute inset-0 opacity-20 pointer-events-none transition-opacity",
                                         showStream ? "bg-gradient-to-r from-red-500 to-red-800" : ""
                                     )} />
-                                    {showStream ? <Youtube size={20} className="relative z-10" /> : <Play size={20} className="relative z-10 fill-current" />}
+                                    {showStream ? <Youtube size={20} className="relative z-10" /> : (m.estado === 'finalizado' ? <PlayCircle size={20} className="relative z-10" /> : <Play size={20} className="relative z-10 fill-current" />)}
                                     <span className="relative z-10 text-xs sm:text-sm font-black uppercase tracking-[0.25em]">
-                                        {showStream ? "OCULTAR TRANSMISIóN" : "VER EN VIVO"}
+                                        {showStream ? "OCULTAR TRANSMISIÓN" : m.estado === 'finalizado' ? "VER REPETICIÓN" : "VER EN VIVO"}
                                     </span>
                                 </button>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ChevronLeft, Plus, Trash2, Save, CheckCircle, Loader2 } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, Save, CheckCircle, Loader2, Youtube } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -20,6 +20,7 @@ interface Jornada {
     scheduled_at: string;
     lugar: string | null;
     estado: 'programado' | 'en_curso' | 'finalizado';
+    stream_url: string | null;
     disciplinas: { name: string } | null;
 }
 
@@ -51,6 +52,8 @@ export default function JornadaDetailPage() {
     const [carreras, setCarreras] = useState<Carrera[]>([]);
     const [jugadores, setJugadores] = useState<Jugador[]>([]);
     const [rows, setRows] = useState<ResultRow[]>([]);
+    const [streamUrl, setStreamUrl] = useState('');
+    const [savingStream, setSavingStream] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [finalizing, setFinalizing] = useState(false);
@@ -60,7 +63,7 @@ export default function JornadaDetailPage() {
 
         const [jornadaRes, carrerasRes, jugadoresRes, resultadosRes] = await Promise.all([
             supabase.from('jornadas')
-                .select('id, disciplina_id, genero, numero, nombre, scheduled_at, lugar, estado, disciplinas(name)')
+                .select('id, disciplina_id, genero, numero, nombre, scheduled_at, lugar, estado, stream_url, disciplinas(name)')
                 .eq('id', id)
                 .single(),
             supabase.from('carreras').select('id, nombre').order('nombre'),
@@ -73,7 +76,9 @@ export default function JornadaDetailPage() {
                 .order('posicion'),
         ]);
 
-        setJornada((jornadaRes.data as any) ?? null);
+        const jornadaData = (jornadaRes.data as any) ?? null;
+        setJornada(jornadaData);
+        setStreamUrl(jornadaData?.stream_url ?? '');
         setCarreras(carrerasRes.data ?? []);
         setJugadores(jugadoresRes.data ?? []);
 
@@ -163,6 +168,22 @@ export default function JornadaDetailPage() {
         }
     }
 
+    async function saveStream() {
+        setSavingStream(true);
+        try {
+            const { error } = await supabase
+                .from('jornadas')
+                .update({ stream_url: streamUrl.trim() || null })
+                .eq('id', id);
+            if (error) throw error;
+            toast.success('URL de streaming guardada');
+        } catch (err: any) {
+            toast.error('Error: ' + err.message);
+        } finally {
+            setSavingStream(false);
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
@@ -208,6 +229,36 @@ export default function JornadaDetailPage() {
                     Esta jornada está finalizada. Puedes editar los resultados, pero deberás volver a guardar para actualizar el medallero.
                 </div>
             )}
+
+            {/* ── Stream URL ─────────────────────────────────────────────── */}
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 rounded-lg bg-red-600/20 text-red-400">
+                        <Youtube size={14} />
+                    </div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400">Streaming en Vivo</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <input
+                        type="text"
+                        value={streamUrl}
+                        onChange={e => setStreamUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        className="flex-1 h-10 bg-white/[0.04] border border-white/10 rounded-xl px-4 text-sm text-white font-bold outline-none focus:border-indigo-500/50 transition-colors placeholder:text-white/20"
+                    />
+                    <button
+                        onClick={saveStream}
+                        disabled={savingStream}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 shrink-0"
+                    >
+                        {savingStream ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                        Guardar
+                    </button>
+                </div>
+                <p className="text-[9px] text-white/20 font-bold">
+                    Pega la URL de YouTube. Se mostrará el botón &quot;Ver en Vivo&quot; en la página pública de esta jornada.
+                </p>
+            </div>
 
             {/* Results table */}
             <div className="space-y-3">

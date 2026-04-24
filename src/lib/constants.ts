@@ -19,7 +19,7 @@ export const NATACION_PUNTOS: Record<number, number> = { 1: 5, 2: 3, 3: 1 };
 export const RACE_SPORTS = ['Natación'];
 
 // Sports modeled as Jornadas (multi-participant sessions) instead of 1v1 partidos
-export const JORNADA_SPORTS = ['Ajedrez', 'Tenis de Mesa'];
+export const JORNADA_SPORTS = ['Ajedrez', 'Tenis de Mesa', 'Natación'];
 
 export function isRaceSport(sportName?: string): boolean {
     if (!sportName) return false;
