@@ -48,12 +48,17 @@ export function UnifiedCard({
     const displayNameA = getDisplayName(partido, 'a');
     const displayNameB = getDisplayName(partido, 'b');
 
+    const md = partido.marcador_detalle || {};
+    const hasPenales = md.penales_a != null && md.penales_b != null;
+    const penalesWinnerA = hasPenales && md.penales_a > md.penales_b;
+    const penalesWinnerB = hasPenales && md.penales_b > md.penales_a;
+
     const winnerA = highlightWinner && (
-        (sportKey !== 'Ajedrez' && Number(scoreDisplay?.a) > Number(scoreDisplay?.b)) ||
+        (sportKey !== 'Ajedrez' && (Number(scoreDisplay?.a) > Number(scoreDisplay?.b) || (Number(scoreDisplay?.a) === Number(scoreDisplay?.b) && penalesWinnerA))) ||
         (sportKey === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'victoria_a')
     );
     const winnerB = highlightWinner && (
-        (sportKey !== 'Ajedrez' && Number(scoreDisplay?.b) > Number(scoreDisplay?.a)) ||
+        (sportKey !== 'Ajedrez' && (Number(scoreDisplay?.b) > Number(scoreDisplay?.a) || (Number(scoreDisplay?.a) === Number(scoreDisplay?.b) && penalesWinnerB))) ||
         (sportKey === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'victoria_b')
     );
     const isChessDraw = sportKey === 'Ajedrez' && partido.marcador_detalle?.resultado_final === 'empate';

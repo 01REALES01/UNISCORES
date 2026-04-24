@@ -74,9 +74,10 @@ function MatchRow({ match, carreraName }: { match: any; carreraName?: string }) 
     // Winner calculations
     const scoreNumA = typeof scoreA === 'number' ? scoreA : parseInt(scoreA) || 0;
     const scoreNumB = typeof scoreB === 'number' ? scoreB : parseInt(scoreB) || 0;
-    const isDraw = isFinal && scoreNumA === scoreNumB;
-    const winnerA = isFinal && scoreNumA > scoreNumB;
-    const winnerB = isFinal && scoreNumB > scoreNumA;
+    const hasPenales = det.penales_a != null && det.penales_b != null;
+    const isDraw = isFinal && scoreNumA === scoreNumB && !hasPenales;
+    const winnerA = isFinal && (scoreNumA > scoreNumB || (scoreNumA === scoreNumB && hasPenales && det.penales_a > det.penales_b));
+    const winnerB = isFinal && (scoreNumB > scoreNumA || (scoreNumA === scoreNumB && hasPenales && det.penales_b > det.penales_a));
 
     return (
         <Link href={`/partido/${match.id}`} className="block group/match">
@@ -160,6 +161,11 @@ function MatchRow({ match, carreraName }: { match: any; carreraName?: string }) 
                         ) : (
                             <div className="text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tighter mb-1 mt-1 font-mono">
                                 {new Date(match.fecha).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                            </div>
+                        )}
+                        {hasPenales && (
+                            <div className="text-[9px] font-bold text-violet-400/70 tabular-nums tracking-tight mt-1">
+                                Pen. {det.penales_a}–{det.penales_b}
                             </div>
                         )}
                         {match.genero && (

@@ -231,15 +231,17 @@ export default function PublicMatchDetail() {
         : null;
     const volleySetsLine = sportName === 'Voleibol' ? formatVolleyballSetsLine(m.marcador_detalle) : null;
     const volleySetActual = Number((m.marcador_detalle as Record<string, unknown> | null | undefined)?.set_actual ?? 1) || 1;
+    const hasPenales = m.marcador_detalle?.penales_a != null && m.marcador_detalle?.penales_b != null;
+    const penalesLine = hasPenales ? `Pen. ${m.marcador_detalle.penales_a}–${m.marcador_detalle.penales_b}` : null;
     const displayExtra =
         sportName === 'Fútbol'
-            ? extraFutbol
+            ? (isFinished && penalesLine ? penalesLine : extraFutbol)
             : sportName === 'Voleibol' && isLive
                 ? `Set ${volleySetActual} · Sets ${scoreA}\u2013${scoreB}`
                 : sportName === 'Voleibol' && isFinished
                     ? (volleySetsLine || extra)
                     : extra;
-    const showExtra = sportName === 'Fútbol' ? !!extraFutbol : !!displayExtra;
+    const showExtra = sportName === 'Fútbol' ? !!(extraFutbol || (isFinished && penalesLine)) : !!displayExtra;
     /** Marcador central: en voleibol en vivo = puntos del set actual; al finalizar (u otro estado) = sets ganados. */
     const centerScoreA = sportName === 'Tenis de Mesa' ? (subScoreA ?? 0)
         : sportName === 'Voleibol' && isLive ? (subScoreA ?? 0) : scoreA;

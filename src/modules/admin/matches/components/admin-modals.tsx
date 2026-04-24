@@ -10,6 +10,7 @@ interface AdminModalsProps {
   onCloseEnding: () => void;
   onConfirmEnding: () => void;
   onConfirmWO?: (ganador: 'equipo_a' | 'equipo_b') => void;
+  onConfirmPenales?: (penalesA: number, penalesB: number) => void;
   isEditingScore: boolean;
   onCloseEditing: () => void;
   match: any;
@@ -29,6 +30,7 @@ export const AdminModals = ({
   onCloseEnding,
   onConfirmEnding,
   onConfirmWO,
+  onConfirmPenales,
   isEditingScore,
   onCloseEditing,
   match,
@@ -43,6 +45,10 @@ export const AdminModals = ({
   eventos,
 }: AdminModalsProps) => {
   const [showWOModal, setShowWOModal] = useState(false);
+  const [showPenalesModal, setShowPenalesModal] = useState(false);
+  const [penalesA, setPenalesA] = useState(0);
+  const [penalesB, setPenalesB] = useState(0);
+  const isFutbol = disciplinaName === 'Fútbol' || disciplinaName === 'Futsal';
   return (
     <>
       {isEndingMatch && !showWOModal && (
@@ -59,6 +65,9 @@ export const AdminModals = ({
             <div className="grid grid-cols-2 gap-4">
               <Button variant="ghost" className="h-14 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black uppercase tracking-widest text-xs" onClick={onCloseEnding}>Cancelar</Button>
               <Button className="h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest shadow-xl shadow-emerald-600/20 text-xs" onClick={onConfirmEnding}>Normal</Button>
+              {isFutbol && (
+                <Button className="h-14 col-span-2 rounded-2xl bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/30 text-violet-200 font-black uppercase tracking-widest text-xs" onClick={() => { setPenalesA(0); setPenalesB(0); setShowPenalesModal(true); }}>Penales</Button>
+              )}
               <Button className="h-14 col-span-2 rounded-2xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-200 font-black uppercase tracking-widest text-xs" onClick={() => setShowWOModal(true)}>W.O. (Walkover)</Button>
             </div>
           </Card>
@@ -109,6 +118,65 @@ export const AdminModals = ({
                 variant="ghost"
                 className="w-full h-12 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black uppercase tracking-widest text-sm"
                 onClick={() => setShowWOModal(false)}
+              >
+                Atrás
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {showPenalesModal && (
+        <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+          <Card className="relative bg-background border-violet-500/30 p-10 max-w-sm w-full rounded-[3rem] animate-in zoom-in-95 shadow-[0_0_100px_rgba(139,92,246,0.15)] overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-violet-600 to-purple-600" />
+            <div className="w-20 h-20 rounded-3xl bg-violet-600/10 flex items-center justify-center mx-auto mb-6 border border-violet-500/20">
+                <Trophy size={48} className="text-violet-400" />
+            </div>
+            <div className="text-center mb-8">
+              <h2 className="text-xl font-black uppercase tracking-tight text-white mb-3 italic">Tanda de Penales</h2>
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6">Ingresa el resultado de los penales</p>
+            </div>
+            <div className="space-y-4 mb-8">
+              {(['a', 'b'] as const).map(side => (
+                <div key={side} className="flex items-center justify-between bg-white/[0.03] p-4 rounded-2xl border border-white/5">
+                  <span className="text-xs font-black text-white truncate max-w-[140px] uppercase">{getDisplayName(match, side)}</span>
+                  <div className="flex items-center gap-3 bg-black/40 p-1.5 rounded-xl border border-white/10 shadow-inner">
+                    <button
+                      onClick={() => side === 'a' ? setPenalesA(Math.max(0, penalesA - 1)) : setPenalesB(Math.max(0, penalesB - 1))}
+                      className="w-10 h-10 rounded-lg border flex items-center justify-center text-white/25 hover:text-violet-400 hover:border-violet-400/30 transition-all active:scale-95 font-bold text-lg"
+                    >−</button>
+                    <span className="text-3xl font-black tabular-nums text-white min-w-[36px] text-center">{side === 'a' ? penalesA : penalesB}</span>
+                    <button
+                      onClick={() => side === 'a' ? setPenalesA(penalesA + 1) : setPenalesB(penalesB + 1)}
+                      className="w-10 h-10 rounded-lg bg-violet-600/20 hover:bg-violet-500/30 flex items-center justify-center text-violet-300 transition-all active:scale-95 font-bold text-lg"
+                    >+</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {penalesA === penalesB && (
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3 mb-6 flex gap-3">
+                <AlertCircle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-[10px] text-amber-200/80 leading-relaxed">Los penales no pueden quedar empatados.</p>
+              </div>
+            )}
+            <div className="space-y-3">
+              <Button
+                className="w-full h-12 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-black uppercase tracking-widest text-sm disabled:opacity-40"
+                disabled={penalesA === penalesB}
+                onClick={() => {
+                  if (onConfirmPenales) onConfirmPenales(penalesA, penalesB);
+                  setShowPenalesModal(false);
+                  onCloseEnding();
+                }}
+              >
+                Finalizar con Penales
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full h-12 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black uppercase tracking-widest text-sm"
+                onClick={() => setShowPenalesModal(false)}
               >
                 Atrás
               </Button>

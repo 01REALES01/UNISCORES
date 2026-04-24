@@ -59,5 +59,11 @@ export const getMatchResult = (match: any): 'A' | 'B' | 'DRAW' | null => {
   if (a > b) return 'A';
   if (b > a) return 'B';
 
+  // 4. Penalty shootout tiebreaker
+  if (md.penales_a != null && md.penales_b != null) {
+    if (md.penales_a > md.penales_b) return 'A';
+    if (md.penales_b > md.penales_a) return 'B';
+  }
+
   return 'DRAW';
 };

@@ -404,9 +404,17 @@ export default function PerfilPage() {
                         else if (carreraIds.includes(p.carrera_b_id)) side = 'b';
                     }
 
-                    if (side === 'a' && scoreA > scoreB) winLossBySport[discId].wins++;
-                    else if (side === 'b' && scoreB > scoreA) winLossBySport[discId].wins++;
-                    else if (side && scoreA !== scoreB) winLossBySport[discId].losses++;
+                    const penA = det.penales_a ?? null;
+                    const penB = det.penales_b ?? null;
+                    const sideWins = side === 'a'
+                        ? (scoreA > scoreB || (scoreA === scoreB && penA != null && penA > penB))
+                        : (scoreB > scoreA || (scoreA === scoreB && penB != null && penB > penA));
+                    const sideLoses = side === 'a'
+                        ? (scoreB > scoreA || (scoreA === scoreB && penB != null && penB > penA))
+                        : (scoreA > scoreB || (scoreA === scoreB && penA != null && penA > penB));
+
+                    if (side && sideWins) winLossBySport[discId].wins++;
+                    else if (side && sideLoses) winLossBySport[discId].losses++;
                 }
 
                 return {
@@ -1173,8 +1181,13 @@ export default function PerfilPage() {
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white justify-self-center sm:justify-self-end w-fit max-w-full mx-auto sm:mx-0">
-                                                        {scoreA} <span className="text-white/20 mx-1">-</span> {scoreB}
+                                                    <div className="flex flex-col items-center justify-self-center sm:justify-self-end w-fit max-w-full mx-auto sm:mx-0">
+                                                        <div className="bg-black/60 border border-white/10 px-6 py-3 rounded-2xl text-[18px] font-black font-mono tabular-nums shadow-inner group-hover:border-white/20 ring-1 ring-white/5 drop-shadow-md text-white">
+                                                            {scoreA} <span className="text-white/20 mx-1">-</span> {scoreB}
+                                                        </div>
+                                                        {h.marcador_final?.penales_a != null && h.marcador_final?.penales_b != null && (
+                                                            <span className="text-[9px] font-bold text-violet-400/70 tabular-nums mt-1">Pen. {h.marcador_final.penales_a}–{h.marcador_final.penales_b}</span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </Link>

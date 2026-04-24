@@ -834,6 +834,64 @@ export function useMatchControl(matchId: string) {
         }
     };
 
+    const confirmarFinalizarConPenales = async (penalesA: number, penalesB: number) => {
+        if (!match || !profile) return;
+        setCronometroActivo(false);
+        const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
+        const nuevoDetalle = {
+            ...(freshMatch?.marcador_detalle || match.marcador_detalle || {}),
+            estado_cronometro: 'detenido',
+            penales_a: penalesA,
+            penales_b: penalesB,
+            ultimo_update: new Date().toISOString()
+        };
+
+        const sportName = match.disciplinas?.name || 'Fútbol';
+        const finalDetalle = nuevoDetalle.modo_registro === 'asincronico'
+            ? nuevoDetalle
+            : recalculateTotals(sportName, nuevoDetalle);
+
+        const { error } = await supabase.from('partidos').update({
+            estado: 'finalizado',
+            marcador_detalle: auditDetalle(finalDetalle)
+        }).eq('id', matchId);
+
+        if (!error) {
+            invalidateCache('admin-partidos');
+            registrarEventoSistema('fin', `Partido finalizado por penales (${penalesA}-${penalesB})`);
+
+            await logAction('UPDATE_MATCH', 'partido', matchId, {
+                nuevo_estado: 'finalizado',
+                penales: { a: penalesA, b: penalesB },
+                marcador_final: finalDetalle
+            });
+
+            try {
+                const autoAdvRes = await fetch('/api/admin/auto-advance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        partido_id: matchId,
+                        disciplina_id: match.disciplina_id,
+                        genero: match.genero,
+                    }),
+                });
+                const autoAdvData = await autoAdvRes.json();
+                if (autoAdvData.advanced && autoAdvData.next_fase) {
+                    toast.success(`🏆 ${autoAdvData.message}`);
+                }
+            } catch {
+                // non-critical
+            }
+
+            toast.success(`Partido finalizado — Penales ${penalesA}-${penalesB}`);
+            return true;
+        } else {
+            toast.error("Error al finalizar: " + error.message);
+            return false;
+        }
+    };
+
     const finalizarPorWO = async (equipo_ganador: 'equipo_a' | 'equipo_b') => {
         if (!match || !profile) return;
 
@@ -979,6 +1037,7 @@ export function useMatchControl(matchId: string) {
         handleCambiarFaseFutbol,
         handleCambiarSetDirecto,
         confirmarFinalizar,
+        confirmarFinalizarConPenales,
         finalizarPorWO,
         requestDeleteEvento,
         fetchJugadores,

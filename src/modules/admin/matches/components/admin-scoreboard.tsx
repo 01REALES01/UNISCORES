@@ -285,8 +285,15 @@ export const AdminScoreboard = ({
               </div>
               
               {isFinal && (
-                <div className="px-5 py-2 rounded-full border text-[10px] font-black text-white/40 uppercase tracking-[0.3em]" style={{ borderColor: `${sportColor}15`, background: `${sportColor}06` }}>
-                  Finalizado
+                <div className="flex flex-col items-center gap-2">
+                  <div className="px-5 py-2 rounded-full border text-[10px] font-black text-white/40 uppercase tracking-[0.3em]" style={{ borderColor: `${sportColor}15`, background: `${sportColor}06` }}>
+                    Finalizado
+                  </div>
+                  {detalle.penales_a != null && detalle.penales_b != null && (
+                    <span className="text-[10px] font-black text-violet-400/80 uppercase tracking-widest">
+                      Pen. {detalle.penales_a}–{detalle.penales_b}
+                    </span>
+                  )}
                 </div>
               )}
             </div>

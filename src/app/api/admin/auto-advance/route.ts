@@ -329,7 +329,9 @@ async function advanceBracketWinners(
       const md = match.marcador_detalle || {};
       const scoreA = md.goles_a ?? md.sets_a ?? md.total_a ?? md.puntos_a ?? 0;
       const scoreB = md.goles_b ?? md.sets_b ?? md.total_b ?? md.puntos_b ?? 0;
-      const winnerA = scoreA > scoreB;
+      const winnerA = scoreA !== scoreB
+        ? scoreA > scoreB
+        : (md.penales_a ?? 0) > (md.penales_b ?? 0);
 
       const winnerTeam = winnerA ? match.equipo_a : match.equipo_b;
       const winnerDelegacion = winnerA ? match.delegacion_a_id : match.delegacion_b_id;
@@ -375,6 +377,47 @@ async function advanceBracketWinners(
 
       // Update in-memory state so subsequent iterations see the filled slot
       nextMatch[side] = winnerTeam;
+    }
+
+    // When advancing from semifinal, also place losers into tercer_puesto match
+    if (currentFase === 'semifinal') {
+      let tercerQuery = supabase
+        .from('partidos')
+        .select('*')
+        .eq('disciplina_id', disciplina_id)
+        .eq('genero', genero)
+        .eq('fase', 'tercer_puesto');
+      if (categoria) tercerQuery = tercerQuery.eq('categoria', categoria);
+      const { data: tercerMatches } = await tercerQuery;
+      const tercerMatch = tercerMatches?.[0];
+
+      if (tercerMatch) {
+        const sortedSemis = [...finalized].sort((a, b) => a.bracket_order - b.bracket_order);
+        for (let i = 0; i < sortedSemis.length; i++) {
+          const semi = sortedSemis[i];
+          const md = semi.marcador_detalle || {};
+          const sA = md.goles_a ?? md.sets_a ?? md.total_a ?? md.puntos_a ?? 0;
+          const sB = md.goles_b ?? md.sets_b ?? md.total_b ?? md.puntos_b ?? 0;
+          const loserIsA = sA !== sB ? sA < sB : (md.penales_a ?? 0) < (md.penales_b ?? 0);
+
+          const loserTeam = loserIsA ? semi.equipo_a : semi.equipo_b;
+          const loserDelegacion = loserIsA ? semi.delegacion_a_id : semi.delegacion_b_id;
+          const loserCarrera = loserIsA ? semi.carrera_a_id : semi.carrera_b_id;
+          const loserAthlete = loserIsA ? semi.athlete_a_id : semi.athlete_b_id;
+
+          const side3 = i === 0 ? 'a' : 'b';
+          const updates3: any = { [`equipo_${side3}`]: loserTeam };
+          if (loserDelegacion) updates3[`delegacion_${side3}_id`] = loserDelegacion;
+          if (loserCarrera) updates3[`carrera_${side3}_id`] = loserCarrera;
+          if (isIndividual && loserAthlete) updates3[`athlete_${side3}_id`] = loserAthlete;
+
+          await supabase
+            .from('partidos')
+            .update(updates3)
+            .eq('id', tercerMatch.id);
+        }
+        console.log('Losers placed into tercer_puesto match');
+      }
     }
 
     return nextFase;
@@ -423,9 +466,12 @@ async function calculateFinalPositions(
     const md = finalMatch.marcador_detalle || {};
     const scoreA = md.goles_a ?? md.sets_a ?? md.total_a ?? md.puntos_a ?? 0;
     const scoreB = md.goles_b ?? md.sets_b ?? md.total_b ?? md.puntos_b ?? 0;
+    const finalWinnerA = scoreA !== scoreB
+      ? scoreA > scoreB
+      : (md.penales_a ?? 0) > (md.penales_b ?? 0);
 
-    const firstTeam = scoreA > scoreB ? finalMatch.equipo_a : finalMatch.equipo_b;
-    const secondTeam = scoreA > scoreB ? finalMatch.equipo_b : finalMatch.equipo_a;
+    const firstTeam = finalWinnerA ? finalMatch.equipo_a : finalMatch.equipo_b;
+    const secondTeam = finalWinnerA ? finalMatch.equipo_b : finalMatch.equipo_a;
     const thirdTeam = tercerMatch ? (
       (tercerMatch.marcador_detalle?.goles_a ?? 0) > (tercerMatch.marcador_detalle?.goles_b ?? 0)
         ? tercerMatch.equipo_a

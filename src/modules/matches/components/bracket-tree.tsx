@@ -118,10 +118,12 @@ function BracketMatchCard({ match, fase, light = false }: {
     const isByeB = rawTeamB?.toUpperCase() === 'BYE' || rawTeamB?.toUpperCase() === 'TBD';
     const teamA = isByeA ? 'Por Definir' : rawTeamA;
     const teamB = isByeB ? 'Por Definir' : rawTeamB;
+    const md = match.marcador_detalle || {};
     const isLive = match.estado === 'en_curso';
     const isFinished = match.estado === 'finalizado';
-    const winnerA = isFinished && scoreA > scoreB;
-    const winnerB = isFinished && scoreB > scoreA;
+    const hasPenales = md.penales_a != null && md.penales_b != null;
+    const winnerA = isFinished && (scoreA > scoreB || (scoreA === scoreB && hasPenales && md.penales_a > md.penales_b));
+    const winnerB = isFinished && (scoreB > scoreA || (scoreA === scoreB && hasPenales && md.penales_b > md.penales_a));
 
     // Score display: for tennis show "2-1" style summary if both sets played
     const showScore = isFinished || isLive;
@@ -242,6 +244,18 @@ function BracketMatchCard({ match, fase, light = false }: {
                         )}
                     </div>
                 </div>
+
+                {/* Penalty indicator */}
+                {isFinished && hasPenales && (
+                    <div className={cn(
+                        "border-t px-3 py-1 flex items-center justify-center",
+                        light ? "bg-violet-50/60 border-slate-100" : "bg-violet-500/5 border-white/5"
+                    )}>
+                        <span className={cn("text-[8px] font-black tracking-widest uppercase tabular-nums", light ? "text-violet-500" : "text-violet-400/70")}>
+                            Pen. {md.penales_a}–{md.penales_b}
+                        </span>
+                    </div>
+                )}
 
                 {/* Footer: date for scheduled, VS for pending TBD */}
                 {match.estado === 'programado' && !isByeA && !isByeB && (

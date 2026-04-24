@@ -389,11 +389,16 @@ function MatchCardEntry({ partido }: { partido: any }) {
     }
 
     if (partido.estado === 'finalizado') {
+        const md = partido.marcador_detalle || {};
+        const penalesFooter = md.penales_a != null && md.penales_b != null
+            ? `Pen. ${md.penales_a}–${md.penales_b}`
+            : null;
         return (
             <UnifiedCard
                 partido={partido}
                 statusLabel="FINALIZADO"
                 scoreDisplay={{ a: scoreA, b: scoreB }}
+                scoreFooter={penalesFooter}
                 highlightWinner={true}
             />
         );

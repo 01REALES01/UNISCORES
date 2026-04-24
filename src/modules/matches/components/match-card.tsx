@@ -431,10 +431,12 @@ export function ResultCard({ partido }: { partido: Partido }) {
   const router = useRouter();
   const sportName = partido.disciplinas?.name || 'Deporte';
   const { scoreA, scoreB, subScoreA, subScoreB } = getCurrentScore(sportName, partido.marcador_detalle || {});
+  const md = partido.marcador_detalle || {};
   const _compA = sportName === 'Tenis de Mesa' ? (subScoreA ?? 0) : scoreA;
   const _compB = sportName === 'Tenis de Mesa' ? (subScoreB ?? 0) : scoreB;
-  const winnerA = _compA > _compB;
-  const isDraw = _compA === _compB;
+  const hasPenales = md.penales_a != null && md.penales_b != null;
+  const winnerA = _compA > _compB || (_compA === _compB && hasPenales && md.penales_a > md.penales_b);
+  const isDraw = _compA === _compB && !hasPenales;
   const genero = (partido.genero || 'masculino').toLowerCase();
   const categoria = partido.categoria;
   const isSetSport = ['Tenis', 'Tenis de Mesa', 'Voleibol', 'Vóleibol', 'Bádminton', 'Badminton'].includes(sportName);
@@ -629,6 +631,11 @@ export function ResultCard({ partido }: { partido: Partido }) {
                   {sportName === 'Voleibol' && formatVolleyballSetsLine(partido.marcador_detalle) && (
                     <div className="text-center text-[10px] font-bold text-white/40 tabular-nums tracking-tight border-t border-white/5 pt-2 mt-1 px-2 leading-snug">
                       {formatVolleyballSetsLine(partido.marcador_detalle)}
+                    </div>
+                  )}
+                  {hasPenales && (
+                    <div className="text-center text-[10px] font-bold text-violet-400/70 tabular-nums tracking-tight border-t border-white/5 pt-2 mt-1 px-2">
+                      Pen. {md.penales_a}–{md.penales_b}
                     </div>
                   )}
                 </>

@@ -122,6 +122,7 @@ export default function MatchControlPage() {
         handleCambiarFaseFutbol,
         handleCambiarSetDirecto,
         confirmarFinalizar,
+        confirmarFinalizarConPenales,
         finalizarPorWO,
         requestDeleteEvento,
         fetchJugadores,
@@ -866,6 +867,10 @@ export default function MatchControlPage() {
                 }}
                 onConfirmWO={async (ganador: 'equipo_a' | 'equipo_b') => {
                     await finalizarPorWO(ganador);
+                    setIsEndingMatch(false);
+                }}
+                onConfirmPenales={async (penalesA: number, penalesB: number) => {
+                    await confirmarFinalizarConPenales(penalesA, penalesB);
                     setIsEndingMatch(false);
                 }}
                 isEditingScore={isEditingScore}

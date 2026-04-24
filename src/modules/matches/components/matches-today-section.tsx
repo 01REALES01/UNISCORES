@@ -96,9 +96,10 @@ export function MatchRow({ partido }: { partido: Partido }) {
   const finalScoreA = scoreA ?? 0;
   const finalScoreB = scoreB ?? 0;
 
+  const hasPenales = det.penales_a != null && det.penales_b != null;
   const winnerSide =
-    isFinished && finalScoreA !== finalScoreB
-      ? finalScoreA > finalScoreB
+    isFinished && (finalScoreA !== finalScoreB || hasPenales)
+      ? (finalScoreA > finalScoreB || (finalScoreA === finalScoreB && hasPenales && det.penales_a > det.penales_b))
         ? "a"
         : "b"
       : null;
@@ -253,6 +254,11 @@ export function MatchRow({ partido }: { partido: Partido }) {
                 </div>
               )}
               <span className="text-[8px] font-bold text-white/15 uppercase tracking-widest">Final</span>
+              {hasPenales && (
+                <span className="text-[8px] font-bold text-violet-400 tabular-nums">
+                  Pen. {det.penales_a}–{det.penales_b}
+                </span>
+              )}
             </div>
           ) : (
             <div className={cn(
@@ -413,15 +419,79 @@ function NatacionGenderGroup({ label, matches }: { label: string; matches: Parti
   );
 }
 
+// ── Phase importance (lower = more important) ───────────────────────────────
+
+const FASE_PRIORITY: Record<string, number> = {
+  final: 0,
+  tercer_puesto: 1,
+  semifinal: 2,
+  cuartos: 3,
+  octavos: 4,
+  dieciseisavos: 5,
+  primera_ronda: 6,
+  grupos: 7,
+};
+
+const FASE_LABEL: Record<string, string> = {
+  final: "Final",
+  tercer_puesto: "Tercer Puesto",
+  semifinal: "Semifinal",
+  cuartos: "Cuartos de Final",
+  octavos: "Octavos de Final",
+  dieciseisavos: "Dieciseisavos",
+  primera_ronda: "Primera Ronda",
+  grupos: "Fase de Grupos",
+};
+
+function getFasePriority(fase?: string | null) {
+  if (!fase) return 99;
+  return FASE_PRIORITY[fase] ?? 50;
+}
+
+function getFaseLabel(fase?: string | null) {
+  if (!fase) return null;
+  return FASE_LABEL[fase] ?? fase;
+}
+
 // ── Sport group card ─────────────────────────────────────────────────────────
 
 function SportGroup({
   sportName,
-  matches,
+  matches: rawMatches,
 }: {
   sportName: string;
   matches: Partido[];
 }) {
+  const matches = useMemo(() =>
+    [...rawMatches].sort((a, b) => {
+      // Live always first
+      if (a.estado === "en_curso" && b.estado !== "en_curso") return -1;
+      if (b.estado === "en_curso" && a.estado !== "en_curso") return 1;
+      // Then by phase importance
+      const faseDiff = getFasePriority(a.fase) - getFasePriority(b.fase);
+      if (faseDiff !== 0) return faseDiff;
+      // Then by time
+      return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
+    }),
+    [rawMatches]
+  );
+
+  const faseGroups = useMemo(() => {
+    const groups: { fase: string | null; label: string | null; matches: Partido[] }[] = [];
+    let currentFase: string | undefined;
+    for (const m of matches) {
+      const f = m.fase || null;
+      if (f !== currentFase || groups.length === 0) {
+        currentFase = f ?? undefined;
+        groups.push({ fase: f, label: getFaseLabel(f), matches: [] });
+      }
+      groups[groups.length - 1].matches.push(m);
+    }
+    return groups;
+  }, [matches]);
+
+  const hasMultipleFases = faseGroups.length > 1 || (faseGroups.length === 1 && faseGroups[0].label != null);
+
   const hasLive = matches.some((m) => m.estado === "en_curso");
   const accentColor = SPORT_COLORS[sportName] || "#a78bfa";
   const isNatacion = sportName === "Natación";
@@ -536,6 +606,28 @@ function SportGroup({
         {isNatacion ? (
           natacionGroups.map(g => (
             <NatacionGenderGroup key={g.label} label={g.label} matches={g.matches} />
+          ))
+        ) : hasMultipleFases ? (
+          faseGroups.map((g, i) => (
+            <div key={g.fase ?? i}>
+              {g.label && (
+                <div className="flex items-center gap-2 px-4 py-1.5" style={{
+                  background: i === 0 ? undefined : `linear-gradient(90deg, ${accentColor}10 0%, transparent 60%)`,
+                  borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : undefined,
+                }}>
+                  <span
+                    className="text-[9px] font-black uppercase tracking-[0.2em]"
+                    style={{ color: `${accentColor}90` }}
+                  >
+                    {g.label}
+                  </span>
+                  <div className="flex-1 h-px" style={{ backgroundColor: `${accentColor}15` }} />
+                </div>
+              )}
+              {g.matches.map((match) => (
+                <MatchRow key={match.id} partido={match} />
+              ))}
+            </div>
           ))
         ) : (
           matches.map((match) => (

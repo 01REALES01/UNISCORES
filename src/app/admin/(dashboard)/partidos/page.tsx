@@ -328,6 +328,26 @@ export default function PartidosPage() {
             toast.success('Resultado guardado');
             setEditingTenisMesa(null);
             await fetchPartidos();
+
+            if (tenisEstado === 'finalizado') {
+                try {
+                    const res = await fetch('/api/admin/auto-advance', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            partido_id: partido.id,
+                            disciplina_id: partido.disciplina_id,
+                            genero: partido.genero,
+                        }),
+                    });
+                    const advData = await res.json();
+                    if (advData.advanced && advData.next_fase) {
+                        toast.success(`🏆 ${advData.message}`);
+                    }
+                } catch {
+                    // non-critical
+                }
+            }
         } catch (err: any) {
             toast.error(err.message || 'Error al guardar');
         } finally {
