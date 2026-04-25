@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteSupabase } from '@/lib/supabase-route-handler';
 import { getBracketConfig } from '@/lib/bracket-config';
-import { calculateStandings, compareStandings, type TeamStanding } from '@/modules/matches/utils/standings';
+import { calculateStandings, compareStandings, teamSideLabelForStandings, type TeamStanding } from '@/modules/matches/utils/standings';
 import { DI_RULES, BASELINE } from '@/modules/matches/utils/deporte-integral';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -181,20 +181,22 @@ export async function POST(request: NextRequest) {
         qualifiedTeams = standings.slice(0, config.qualifyPerGroup);
     }
 
-    // Build a lookup: team name → delegacion info from group matches
+    // Mismo criterio que calculateStandings / auto-advance: clave = nombre mostrado en la tabla
     const teamToDelegacion = new Map<string, { id: number; carrera_ids: number[] }>();
     for (const m of groupMatches) {
-        if (m.delegacion_a && m.delegacion_a_id) {
-            teamToDelegacion.set(m.delegacion_a, {
-                id: m.delegacion_a_id,
-                carrera_ids: m.carrera_a_ids || [],
-            });
+        if (m.delegacion_a_id) {
+            const v = { id: m.delegacion_a_id, carrera_ids: m.carrera_a_ids || [] };
+            const la = teamSideLabelForStandings(m, 'a');
+            teamToDelegacion.set(la, v);
+            if (m.delegacion_a && m.delegacion_a !== la) teamToDelegacion.set(m.delegacion_a, v);
+            if (m.equipo_a && m.equipo_a !== la) teamToDelegacion.set(m.equipo_a, v);
         }
-        if (m.delegacion_b && m.delegacion_b_id) {
-            teamToDelegacion.set(m.delegacion_b, {
-                id: m.delegacion_b_id,
-                carrera_ids: m.carrera_b_ids || [],
-            });
+        if (m.delegacion_b_id) {
+            const v = { id: m.delegacion_b_id, carrera_ids: m.carrera_b_ids || [] };
+            const lb = teamSideLabelForStandings(m, 'b');
+            teamToDelegacion.set(lb, v);
+            if (m.delegacion_b && m.delegacion_b !== lb) teamToDelegacion.set(m.delegacion_b, v);
+            if (m.equipo_b && m.equipo_b !== lb) teamToDelegacion.set(m.equipo_b, v);
         }
     }
 
@@ -271,7 +273,46 @@ export async function POST(request: NextRequest) {
         await resolveByPlaceholder();
 
     } else if (config.type === 'direct_cross') {
-        await resolveByPlaceholder();
+        if (qualifiedTeams.length < 4) {
+            return NextResponse.json(
+                {
+                    error:
+                        'direct_cross requiere 4 equipos clasificados (top por grupo). Revisa que cada grupo tenga al menos 2 equipos y las tablas de posiciones.',
+                },
+                { status: 400 }
+            );
+        }
+        if (elimMatches.length < 2) {
+            return NextResponse.json(
+                {
+                    error: `Se esperan al menos 2 partidos en fase ${config.eliminatoryPhase} (p. ej. 2 semis). Revisa el import del fixture.`,
+                },
+                { status: 400 }
+            );
+        }
+        // 1A vs 2B, 1B vs 2A — qualifiedTeams = [1A, 2A, 1B, 2B] por orden de grupos
+        const semi1a = qualifiedTeams[0];
+        const semi1b = qualifiedTeams[3];
+        const semi2a = qualifiedTeams[2];
+        const semi2b = qualifiedTeams[1];
+        if (!semi1a?.team || !semi1b?.team || !semi2a?.team || !semi2b?.team) {
+            return NextResponse.json(
+                { error: 'Datos de equipos clasificados incompletos; no se puede resolver el cruce.' },
+                { status: 400 }
+            );
+        }
+        await assignMatch(elimMatches[0].id, semi1a, semi1b);
+        resolvedMatches.push({
+            match_id: elimMatches[0].id,
+            team_a: semi1a.team,
+            team_b: semi1b.team,
+        });
+        await assignMatch(elimMatches[1].id, semi2a, semi2b);
+        resolvedMatches.push({
+            match_id: elimMatches[1].id,
+            team_a: semi2a.team,
+            team_b: semi2b.team,
+        });
 
     } else if (config.type === 'single_group_final') {
         // Top 2 → final
