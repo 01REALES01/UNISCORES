@@ -43,6 +43,28 @@ type AthletePick = {
     profile_id?: string | null;
 };
 
+/** FK embed en .select() a veces tipa como fila única o como array según el cliente generado. */
+function normalizeJoinedCarrera(
+    c: { nombre: string } | { nombre: string }[] | null | undefined
+): { nombre: string } | null {
+    if (c == null) return null;
+    return Array.isArray(c) ? (c[0] ?? null) : c;
+}
+
+type ProfileSearchRow = {
+    id: string;
+    full_name: string;
+    avatar_url?: string | null;
+    carrera?: { nombre: string } | { nombre: string }[] | null;
+};
+
+type JugadorSearchRow = {
+    id: number;
+    nombre: string;
+    profile_id: string | null;
+    carrera?: { nombre: string } | { nombre: string }[] | null;
+};
+
 async function participanteFromAthletePick(
     p: AthletePick,
     carril: number | undefined
@@ -316,38 +338,36 @@ export function RaceControl({
 
             const [profilesRes, jugadoresRes] = await Promise.all([pQuery.limit(24), jQuery.limit(24)]);
 
-            const profiles = profilesRes.data || [];
-            const players = jugadoresRes.data || [];
+            const profiles = (profilesRes.data ?? []) as ProfileSearchRow[];
+            const players = (jugadoresRes.data ?? []) as JugadorSearchRow[];
             const unified: AthletePick[] = [];
             const seenProfileIds = new Set<string>();
 
-            profiles.forEach((p: { id: string; full_name: string; avatar_url?: string; carrera?: { nombre: string } }) => {
+            profiles.forEach((p) => {
                 unified.push({
                     id: p.id,
                     full_name: p.full_name,
                     avatar_url: p.avatar_url,
-                    carrera: p.carrera,
+                    carrera: normalizeJoinedCarrera(p.carrera),
                     source: "profile",
                     badge: "Cuenta activa",
                 });
                 seenProfileIds.add(p.id);
             });
 
-            players.forEach(
-                (j: { id: number; nombre: string; profile_id: string | null; carrera?: { nombre: string } | null }) => {
-                    if (j.profile_id && seenProfileIds.has(j.profile_id)) return;
-                    unified.push({
-                        id: String(j.id),
-                        realId: j.id,
-                        full_name: j.nombre,
-                        avatar_url: null,
-                        carrera: j.carrera,
-                        source: "jugador",
-                        badge: "Acta / jugadores",
-                        profile_id: j.profile_id,
-                    });
-                }
-            );
+            players.forEach((j) => {
+                if (j.profile_id && seenProfileIds.has(j.profile_id)) return;
+                unified.push({
+                    id: String(j.id),
+                    realId: j.id,
+                    full_name: j.nombre,
+                    avatar_url: null,
+                    carrera: normalizeJoinedCarrera(j.carrera),
+                    source: "jugador",
+                    badge: "Acta / jugadores",
+                    profile_id: j.profile_id,
+                });
+            });
 
             setAthleteResults(unified);
         } catch (e) {
