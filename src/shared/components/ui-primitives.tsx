@@ -109,6 +109,31 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
     );
 }
 
+/** Acepta solo lo que `next/image` puede resolver; evita `Failed to construct 'URL': Invalid URL` por DB sucia. */
+function normalizeAvatarSrc(input: string | null | undefined): string | null {
+  if (input == null) return null;
+  const t = String(input).trim();
+  if (!t || t === "null" || t === "undefined") return null;
+
+  if (t.startsWith("data:")) return t;
+  if (t.startsWith("/")) {
+    return t.length > 1 ? t : null;
+  }
+  if (/^https?:\/\//i.test(t) || t.startsWith("//")) {
+    try {
+      const u = t.startsWith("//") ? `https:${t}` : t;
+      new URL(u);
+      return t;
+    } catch {
+      return null;
+    }
+  }
+  if (t.includes("/") || t.includes(".") || /^[a-z0-9_-]+$/i.test(t)) {
+    return `/${t.replace(/^\/+/, "")}`;
+  }
+  return null;
+}
+
 // ===== AVATAR =====
 export function Avatar({
     name,
@@ -129,6 +154,7 @@ export function Avatar({
 
     const safeName = name || "?";
     const initials = safeName.substring(0, 2).toUpperCase();
+    const imageSrc = normalizeAvatarSrc(src);
 
     // Generate consistent color based on name
     const colors = [
@@ -143,13 +169,13 @@ export function Avatar({
     return (
         <div className={cn(
             "rounded-full flex items-center justify-center font-bold text-white overflow-hidden flex-shrink-0",
-            !src && colors[colorIndex],
+            !imageSrc && colors[colorIndex],
             sizes[size],
             className
         )}>
-            {src ? (
+            {imageSrc ? (
                 <Image
-                    src={src}
+                    src={imageSrc}
                     alt={safeName}
                     width={size === "lg" ? 64 : size === "sm" ? 32 : 48}
                     height={size === "lg" ? 64 : size === "sm" ? 32 : 48}

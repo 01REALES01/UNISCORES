@@ -1,3 +1,21 @@
+/** Disciplinas y modelos de marcador que no deben entrar en la quiniela (ganador A/B). */
+export function isPartidoQuinielaEligible(match: any): boolean {
+  if (!match) return false;
+  const md = match.marcador_detalle;
+  const tipo =
+    md && typeof md === 'object' && 'tipo' in md
+      ? String((md as { tipo?: unknown }).tipo ?? '')
+      : '';
+  if (tipo === 'carrera') return false;
+  const raw = String(match.disciplinas?.name ?? '');
+  const sport = raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  if (sport.includes('natacion')) return false;
+  return true;
+}
+
 // ─── Helper: Determine actual match result ───
 /**
  * Detects the winner (Side A or Side B) across ALL sport models.

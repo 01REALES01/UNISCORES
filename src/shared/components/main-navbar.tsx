@@ -5,11 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { 
-    HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Shield, 
-    User as UserIcon, BarChart3, LogOut, Swords, 
+import {
+    HomeIcon, Gamepad2, Newspaper, MapPin, Trophy, Shield,
+    User as UserIcon, BarChart3, LogOut, Swords,
     Calendar as CalendarIcon, TrendingUp, Heart, Menu, X,
-    ChevronRight
+    ChevronRight, Tv
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
@@ -130,6 +130,14 @@ export function MainNavbar({ user, profile, isStaff }: MainNavbarProps) {
 
                     {/* 3. RIGHT: User / Notifications */}
                     <div className="flex-1 flex items-center justify-end order-3 gap-2 sm:gap-4">
+                        <Link
+                            href="/tv/resultados"
+                            title="Cartelera TV"
+                            className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-2 text-[11px] font-black uppercase tracking-wider text-white/60 hover:bg-violet-500/15 hover:text-violet-300 hover:border-violet-500/30 transition-all"
+                        >
+                            <Tv size={15} />
+                            <span className="hidden lg:inline">TV</span>
+                        </Link>
                         {user && <NotificationBell />}
                         <div className="flex items-center gap-2">
                             {!user ? (

@@ -26,7 +26,7 @@ import { parseEventAudit } from "@/lib/audit-helpers";
 import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
 import { MatchTimeline } from '@/modules/matches/components/match-timeline';
 import { MatchStats } from '@/modules/matches/components/match-stats';
-import { getMatchResult } from "@/modules/quiniela/helpers";
+import { getMatchResult, isPartidoQuinielaEligible } from "@/modules/quiniela/helpers";
 import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
 import { MatchStream } from "@/modules/matches/components/match-stream";
 
@@ -116,6 +116,10 @@ export default function PublicMatchDetail() {
             return;
         }
         if (!m) return;
+        if (!isPartidoQuinielaEligible(m)) {
+            toast.error("Esta prueba no participa en Acierta y Gana");
+            return;
+        }
         const isPast = new Date(m.fecha) < new Date();
         if (m.estado !== 'programado' || isPast) {
             toast.error("Este partido ya no acepta predicciones");
@@ -218,6 +222,7 @@ export default function PublicMatchDetail() {
     const isAsync = isAsyncMatch(m);
     const isFinished = m.estado === 'finalizado';
     const sportName = m.disciplinas?.name || 'Deporte';
+    const quinielaEligible = isPartidoQuinielaEligible(m);
     const matchResult = getMatchResult(m);
     const sportEmoji = getSportEmoji(sportName);
     const { scoreA, scoreB, subScoreA, subScoreB, extra, subLabel } = getCurrentScore(sportName, m.marcador_detalle || {});
@@ -889,7 +894,24 @@ export default function PublicMatchDetail() {
                 <div className="relative overflow-hidden rounded-[2.5rem] bg-white/[0.03] backdrop-blur-3xl border border-white/10 p-8 mb-8 shadow-2xl shadow-black/60 animate-in fade-in slide-in-from-bottom-5 duration-700">
                     <div className="absolute inset-0 p-[1px] bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
                     <div className="absolute -right-20 -top-20 w-48 h-48 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none" />
-                    
+
+                    {!quinielaEligible ? (
+                        <div className="relative z-10 flex flex-col gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className={cn("p-3 rounded-2xl bg-white/5 border border-white/10 shadow-xl", SPORT_ACCENT[sportName] || 'text-white')}>
+                                    <BarChart3 size={24} className="drop-shadow-[0_0_8px_currentColor]" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-white tracking-widest uppercase">Acierta y Gana</h3>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">No aplica a esta prueba</p>
+                                </div>
+                            </div>
+                            <p className="text-sm text-slate-300 leading-relaxed">
+                                La quiniela es por ganador entre dos bandos (A o B). Natación y otras pruebas por clasificación o tiempo no entran en Acierta y Gana.
+                            </p>
+                        </div>
+                    ) : (
+                    <>
                     <div className="relative z-10 flex items-center justify-between gap-4 mb-8">
                         <div className="flex items-center gap-4">
                             <div className={cn("p-3 rounded-2xl bg-white/5 border border-white/10 shadow-xl", SPORT_ACCENT[sportName] || 'text-white')}>
@@ -1063,6 +1085,8 @@ export default function PublicMatchDetail() {
                             </Link>
                         </div>
                     ) : null}
+                    </>
+                    )}
                 </div>
 
                 {sportName !== 'Voleibol' && !isAsync && (

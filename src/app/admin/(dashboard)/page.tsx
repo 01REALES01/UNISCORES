@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import { Card, Avatar } from "@/components/ui-primitives";
-import { Activity, Calendar, Trophy, Users, TrendingUp, Zap, Clock, ArrowUpRight, History } from "lucide-react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { Avatar } from "@/components/ui-primitives";
+import { Activity, Calendar, Trophy, TrendingUp, Zap, Clock, ArrowUpRight, History, ChevronRight, Pencil } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import Link from "next/link";
@@ -10,6 +10,29 @@ import { getCurrentScore } from "@/lib/sport-scoring";
 
 import type { PartidoWithRelations as Partido } from '@/modules/matches/types';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { cn } from "@/lib/utils";
+
+function isPartidoToday(fechaIso: string): boolean {
+    const d = new Date(fechaIso);
+    if (Number.isNaN(d.getTime())) return false;
+    const now = new Date();
+    return (
+        d.getFullYear() === now.getFullYear() &&
+        d.getMonth() === now.getMonth() &&
+        d.getDate() === now.getDate()
+    );
+}
+
+const DEFAULT_DISCIPLINES_ORDER = [
+    "Fútbol",
+    "Futsal",
+    "Baloncesto",
+    "Voleibol",
+    "Tenis",
+    "Tenis de Mesa",
+    "Ajedrez",
+    "Natación",
+] as const;
 
 export default function AdminDashboard() {
     const [partidos, setPartidos] = useState<Partido[]>([]);
@@ -19,6 +42,7 @@ export default function AdminDashboard() {
     const fetchAttemptRef = useRef(0);
     const [loadTimeout, setLoadTimeout] = useState(false);
     const { loading: authLoading } = useAuth();
+    const [selectedDiscipline, setSelectedDiscipline] = useState<string | null>(null);
 
     const fetchData = useCallback(async () => {
         const { data } = await safeQuery(
@@ -86,6 +110,26 @@ export default function AdminDashboard() {
     const programados = partidos.filter(p => p.estado === 'programado');
     const disciplinasSet = new Set(partidos.map(p => p.disciplinas?.name).filter(Boolean));
 
+    const orderedDisciplines = useMemo(() => {
+        const extras = [...disciplinasSet].filter(
+            (d): d is string => !!d && !DEFAULT_DISCIPLINES_ORDER.includes(d as (typeof DEFAULT_DISCIPLINES_ORDER)[number])
+        );
+        extras.sort((a, b) => a.localeCompare(b, "es"));
+        return [...DEFAULT_DISCIPLINES_ORDER, ...extras];
+    }, [disciplinasSet]);
+
+    const partidosHoy = useMemo(
+        () => partidos.filter((p) => p.fecha && isPartidoToday(p.fecha)),
+        [partidos]
+    );
+
+    const partidosHoyDisciplina = useMemo(() => {
+        if (!selectedDiscipline) return [];
+        return partidosHoy
+            .filter((p) => p.disciplinas?.name === selectedDiscipline)
+            .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    }, [partidosHoy, selectedDiscipline]);
+
     const stats = [
         {
             name: "En Curso",
@@ -127,10 +171,22 @@ export default function AdminDashboard() {
 
     const getSportEmoji = (name: string) => {
         const map: Record<string, string> = {
-            'Fútbol': '⚽', 'Baloncesto': '🏀', 'Voleibol': '🏐',
-            'Tenis': '🎾', 'Tenis de Mesa': '🏓', 'Ajedrez': '♟️', 'Natación': '🏊',
+            Fútbol: "⚽",
+            Futsal: "⚽",
+            Baloncesto: "🏀",
+            Voleibol: "🏐",
+            Tenis: "🎾",
+            "Tenis de Mesa": "🏓",
+            Ajedrez: "♟️",
+            Natación: "🏊",
         };
-        return map[name] || '🏅';
+        return map[name] || "🏅";
+    };
+
+    const estadoLabel = (estado: string) => {
+        if (estado === "en_curso") return { text: "En curso", className: "bg-rose-500/15 text-rose-300 border-rose-500/25" };
+        if (estado === "finalizado") return { text: "Finalizado", className: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+        return { text: "Programado", className: "bg-white/5 text-slate-400 border-white/10" };
     };
 
     // Importar al inicio del archivo (nota: esto requiere mover el import arriba, lo haré en el bloque diff completo)
@@ -339,37 +395,143 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* Disciplines Overview — horizontal badges */}
+            {/* Disciplinas: acceso rápido a partidos de hoy + edición */}
             <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
-                <div className="flex items-center gap-1.5 mb-3">
-                    <Trophy size={13} className="text-slate-500" />
-                    <h3 className="text-xs font-bold text-slate-300">Disciplinas</h3>
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-3">
+                    <div className="flex items-center gap-1.5">
+                        <Trophy size={13} className="text-amber-500/80" />
+                        <h3 className="text-xs font-bold text-slate-300">Disciplinas — hoy</h3>
+                    </div>
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                        Toca una disciplina · partidos del día · abrir para editar
+                    </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    {['Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'].map(sport => {
-                        const count = partidos.filter(p => p.disciplinas?.name === sport).length;
-                        const liveCount = partidos.filter(p => p.disciplinas?.name === sport && p.estado === 'en_curso').length;
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                    {orderedDisciplines.map((sport) => {
+                        const count = partidos.filter((p) => p.disciplinas?.name === sport).length;
+                        const liveCount = partidos.filter((p) => p.disciplinas?.name === sport && p.estado === "en_curso").length;
+                        const hoyCount = partidosHoy.filter((p) => p.disciplinas?.name === sport).length;
+                        const isOpen = selectedDiscipline === sport;
                         return (
-                            <div
+                            <button
                                 key={sport}
-                                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs ${
+                                type="button"
+                                onClick={() => setSelectedDiscipline((prev) => (prev === sport ? null : sport))}
+                                className={cn(
+                                    "relative flex flex-col items-stretch gap-1 rounded-xl border px-3 py-2.5 text-left transition-all active:scale-[0.99]",
                                     liveCount > 0
-                                        ? 'border-rose-500/30 bg-rose-500/5 text-rose-300'
+                                        ? "border-rose-500/35 bg-rose-500/[0.07] text-rose-100"
                                         : count > 0
-                                        ? 'border-white/8 bg-white/[0.03] text-slate-400'
-                                        : 'border-white/5 text-slate-600'
-                                }`}
-                            >
-                                {liveCount > 0 && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                                          ? "border-white/10 bg-white/[0.04] text-slate-200 hover:border-violet-500/35 hover:bg-violet-500/10"
+                                          : "border-white/[0.06] bg-transparent text-slate-500 hover:border-white/10",
+                                    isOpen && "ring-2 ring-violet-500/50 border-violet-500/40"
                                 )}
-                                <span>{getSportEmoji(sport)}</span>
-                                <span className="font-medium">{sport}</span>
-                                <span className="font-bold">{count}</span>
-                            </div>
+                            >
+                                <div className="flex items-center justify-between gap-1">
+                                    <span className="text-lg leading-none">{getSportEmoji(sport)}</span>
+                                    {liveCount > 0 && (
+                                        <span className="flex h-2 w-2 shrink-0 rounded-full bg-rose-500 animate-pulse" title="Hay partido en vivo" />
+                                    )}
+                                    <ChevronRight
+                                        size={14}
+                                        className={cn(
+                                            "ml-auto shrink-0 text-slate-500 transition-transform",
+                                            isOpen && "rotate-90 text-violet-400"
+                                        )}
+                                    />
+                                </div>
+                                <span className="text-xs font-bold leading-tight line-clamp-2">{sport}</span>
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                    <span className={hoyCount > 0 ? "text-violet-300/90" : ""}>Hoy: {hoyCount}</span>
+                                    <span className="text-slate-600">·</span>
+                                    <span>Total: {count}</span>
+                                </div>
+                            </button>
                         );
                     })}
                 </div>
+
+                {selectedDiscipline && (
+                    <div className="mt-4 rounded-xl border border-violet-500/20 bg-violet-500/[0.06] p-3">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                            <p className="text-xs font-black uppercase tracking-wide text-white">
+                                {getSportEmoji(selectedDiscipline)} {selectedDiscipline} — partidos hoy
+                            </p>
+                            <Link
+                                href={`/admin/partidos?disciplina=${encodeURIComponent(selectedDiscipline)}`}
+                                className="text-[10px] font-bold uppercase tracking-wider text-violet-300 hover:text-white"
+                            >
+                                Ver en lista
+                            </Link>
+                        </div>
+                        {partidosHoyDisciplina.length === 0 ? (
+                            <p className="text-xs text-slate-500 py-4 text-center">
+                                No hay partidos programados hoy para esta disciplina.
+                            </p>
+                        ) : (
+                            <ul className="space-y-1.5">
+                                {partidosHoyDisciplina.map((p) => {
+                                    const score = getScore(p);
+                                    const st = estadoLabel(p.estado);
+                                    const hora = new Date(p.fecha).toLocaleTimeString("es-CO", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                    });
+                                    return (
+                                        <li key={p.id}>
+                                            <Link
+                                                href={`/admin/partidos/${p.id}`}
+                                                className="flex items-center gap-2 rounded-lg border border-white/5 bg-black/25 px-2.5 py-2 hover:border-violet-400/40 hover:bg-white/[0.06] transition-colors"
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        <Avatar
+                                                            name={p.carrera_a?.nombre || p.equipo_a}
+                                                            src={p.carrera_a?.escudo_url || p.delegacion_a_info?.escudo_url}
+                                                            size="sm"
+                                                            className="h-5 w-5 shrink-0 border border-white/10 bg-black/40"
+                                                        />
+                                                        <span className="text-xs font-semibold text-slate-200 truncate">
+                                                            {p.carrera_a?.nombre || p.equipo_a}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-0.5 flex items-center gap-1.5 min-w-0">
+                                                        <Avatar
+                                                            name={p.carrera_b?.nombre || p.equipo_b}
+                                                            src={p.carrera_b?.escudo_url || p.delegacion_b_info?.escudo_url}
+                                                            size="sm"
+                                                            className="h-5 w-5 shrink-0 border border-white/10 bg-black/40"
+                                                        />
+                                                        <span className="text-xs text-slate-500 truncate">
+                                                            {p.carrera_b?.nombre || p.equipo_b}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex shrink-0 flex-col items-end gap-1">
+                                                    <span
+                                                        className={cn(
+                                                            "rounded-md border px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider",
+                                                            st.className
+                                                        )}
+                                                    >
+                                                        {st.text}
+                                                    </span>
+                                                    <span className="text-[10px] font-mono text-slate-500">{hora}</span>
+                                                    {p.estado === "finalizado" || p.estado === "en_curso" ? (
+                                                        <span className="text-xs font-black tabular-nums text-slate-300">
+                                                            {score.a} — {score.b}
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+                                                <Pencil size={14} className="shrink-0 text-violet-400/70" aria-hidden />
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

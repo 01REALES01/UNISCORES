@@ -132,21 +132,21 @@ export const MobileSidebar = ({
                 <AnimatePresence>
                     {open && (
                         <m.div
-                            initial={{ x: "-100%", opacity: 0 }}
+                            initial={{ x: "100%", opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: "-100%", opacity: 0 }}
+                            exit={{ x: "100%", opacity: 0 }}
                             transition={{
                                 duration: 0.3,
                                 ease: "easeInOut",
                             }}
                             className={cn(
-                                "fixed h-full w-[240px] inset-y-0 left-0 bg-background p-5 z-[100] flex flex-col justify-between border-r border-white/8",
+                                "fixed h-full w-[min(280px,85vw)] inset-y-0 right-0 bg-background p-5 z-[100] flex flex-col justify-between border-l border-white/8 shadow-2xl shadow-black/40",
                                 className
                             )}
                         >
                             <div className="flex flex-col h-full relative">
                                 <div
-                                    className="absolute right-0 top-0 z-50 text-white/50 hover:text-white cursor-pointer p-2"
+                                    className="absolute left-0 top-0 z-50 text-white/50 hover:text-white cursor-pointer p-2"
                                     onClick={() => setOpen(false)}
                                 >
                                     <X size={20} />

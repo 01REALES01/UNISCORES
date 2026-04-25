@@ -36,6 +36,21 @@ const NewsGridCard = dynamic(() => newsCardMod().then((mod) => mod.NewsGridCard)
   loading: () => <NewsListSkeleton />
 });
 
+/** Solo cliente: evita hydration mismatch (SWR + sessionStorage en useMatches vs SSR vacío). */
+const MatchesTodaySection = dynamic(
+  () => import("@/modules/matches/components/matches-today-section").then((m) => m.MatchesTodaySection),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 animate-pulse space-y-4">
+        <div className="h-6 w-40 bg-white/10 rounded-lg" />
+        <div className="h-10 w-full max-w-md bg-white/5 rounded-2xl" />
+        <div className="h-32 bg-white/5 rounded-xl" />
+      </div>
+    ),
+  }
+);
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -57,7 +72,6 @@ import type { PartidoWithRelations as Partido } from '@/modules/matches/types';
 import { LiveMatchCard, UpcomingMatchCard, ResultCard } from '@/modules/matches/components/match-card';
 import { MatchFilters } from '@/modules/matches/components/match-filters';
 import { LiveMatchesSection } from '@/modules/matches/components/live-matches-section';
-import { MatchesTodaySection } from '@/modules/matches/components/matches-today-section';
 import { LiveStreamBanner } from '@/modules/matches/components/live-stream-banner';
 import { AboutFooter } from '@/shared/components/about-footer';
 import { InstitutionalBanner } from '@/shared/components/institutional-banner';

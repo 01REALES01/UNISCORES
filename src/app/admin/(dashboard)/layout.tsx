@@ -3,7 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Trophy, LayoutDashboard, Calendar, Users, LogOut, Menu, X, Zap, Shield, BarChart3, Newspaper, Loader2, Upload, ListOrdered, Shuffle, ClipboardList, BookOpen, CalendarDays, Swords } from "lucide-react";
+import { Trophy, LayoutDashboard, Calendar, Users, LogOut, Menu, X, Zap, Shield, BarChart3, Newspaper, Loader2, Upload, ListOrdered, Shuffle, ClipboardList, BookOpen, CalendarDays, Swords, GitBranch } from "lucide-react";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -203,6 +203,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             { name: "Puntos", href: "/admin/puntos", icon: Trophy },
             { name: "Fixture", href: "/admin/fixture", icon: ListOrdered },
             { name: "Sorteo", href: "/admin/sorteo", icon: Shuffle },
+            { name: "Brackets", href: "/admin/brackets", icon: GitBranch },
             { name: "Inscripciones", href: "/admin/inscripciones", icon: ClipboardList },
             { name: "Directorio", href: "/admin/directorio", icon: BookOpen },
             { name: "Jugadores", href: "/admin/jugadores", icon: Users },

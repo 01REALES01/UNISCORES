@@ -414,6 +414,7 @@ export default function MatchControlPage() {
                           detalle={match.marcador_detalle}
                           onUpdate={refreshMatchSilently}
                           isLocked={match.estado === 'finalizado'}
+                          matchEstado={match.estado}
                           profile={profile}
                           disciplinaId={match.disciplina_id}
                           genero={match.genero}

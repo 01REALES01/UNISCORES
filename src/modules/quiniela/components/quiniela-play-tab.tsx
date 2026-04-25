@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { SPORT_ACCENT } from "@/lib/constants";
 import { SportIcon } from "@/components/sport-icons";
 import { PredictionCard } from "./prediction-card";
+import { isPartidoQuinielaEligible } from "../helpers";
 
 const PLAY_SPORT_FILTERS = ['todos', 'Fútbol', 'Baloncesto', 'Voleibol', 'Tenis', 'Tenis de Mesa', 'Ajedrez'] as const;
 const PLAY_GENDER_FILTERS = ['todos', 'masculino', 'femenino'] as const;
@@ -93,6 +94,7 @@ export function QuinielaPlayTab({ matches, predictions, allPredictions, onPredic
 
     // Filter matches (sport, gender, placeholder exclusion)
     const baseFilteredMatches = useMemo(() => matches.filter(m => {
+        if (!isPartidoQuinielaEligible(m)) return false;
         if (sportFilter !== 'todos' && m.disciplinas?.name !== sportFilter) return false;
         if (genderFilter !== 'todos' && (m.genero || 'masculino').toLowerCase() !== genderFilter.toLowerCase()) return false;
 

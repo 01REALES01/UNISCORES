@@ -26,10 +26,39 @@ type PartidoLike = {
     equipo_b: string;
     delegacion_a?: string;
     delegacion_b?: string;
-    carrera_a?: { nombre: string } | null;
-    carrera_b?: { nombre: string } | null;
+    carrera_a?: { nombre: string; escudo_url?: string | null } | null;
+    carrera_b?: { nombre: string; escudo_url?: string | null } | null;
+    delegacion_a_info?: { escudo_url?: string } | null;
+    delegacion_b_info?: { escudo_url?: string } | null;
+    atleta_a?: { avatar_url?: string } | null;
+    atleta_b?: { avatar_url?: string } | null;
     disciplinas?: { name: string } | null;
 };
+
+/**
+ * URL de imagen para un lado del partido (avatar en individuales, escudo de carrera o delegación).
+ * Coherente con calendario y listados de partidos. El nombre de disciplina queda por si hace falta ramificar.
+ */
+export function getMatchSideImageUrl(
+    _sport: string,
+    side: 'a' | 'b',
+    partido: PartidoLike
+): string | undefined {
+    if (side === 'a') {
+        return (
+            partido.atleta_a?.avatar_url ||
+            partido.carrera_a?.escudo_url ||
+            partido.delegacion_a_info?.escudo_url ||
+            undefined
+        );
+    }
+    return (
+        partido.atleta_b?.avatar_url ||
+        partido.carrera_b?.escudo_url ||
+        partido.delegacion_b_info?.escudo_url ||
+        undefined
+    );
+}
 
 /**
  * Retorna el nombre para MOSTRAR en la UI (lo que el usuario ve como "participante").

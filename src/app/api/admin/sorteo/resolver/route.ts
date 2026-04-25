@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteSupabase } from '@/lib/supabase-route-handler';
-import { getBracketConfig } from '@/lib/bracket-config';
+import { getBracketConfig, normalizeBracketGrupoKey } from '@/lib/bracket-config';
 import { calculateStandings, compareStandings, teamSideLabelForStandings, type TeamStanding } from '@/modules/matches/utils/standings';
 import { DI_RULES, BASELINE } from '@/modules/matches/utils/deporte-integral';
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         .from('partidos')
         .select('id, equipo_a, equipo_b, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_ids, carrera_b_ids, estado, grupo, marcador_detalle, genero')
         .eq('disciplina_id', disciplina_id)
-        .eq('genero', genero)
+        .ilike('genero', genero.trim())
         .eq('fase', 'grupos');
 
     if (!groupMatches || groupMatches.length === 0) {
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     // Compute standings per group
     const standingsByGroup: Record<string, TeamStanding[]> = {};
     for (const grupo of config.groups) {
-        const gMatches = groupMatches.filter(m => m.grupo === grupo);
+        const gMatches = groupMatches.filter((m) => normalizeBracketGrupoKey(m.grupo) === grupo);
         // Add disciplinas mock for calculateStandings (it doesn't use it, but matches need it for score extraction)
         const enriched = gMatches.map(m => ({ ...m, disciplinas: { name: disciplina.name } }));
         standingsByGroup[grupo] = calculateStandings(enriched, disciplina.name, fairPlayData);
@@ -186,14 +186,14 @@ export async function POST(request: NextRequest) {
     for (const m of groupMatches) {
         if (m.delegacion_a_id) {
             const v = { id: m.delegacion_a_id, carrera_ids: m.carrera_a_ids || [] };
-            const la = teamSideLabelForStandings(m, 'a');
+            const la = teamSideLabelForStandings(m, 'a', disciplina.name);
             teamToDelegacion.set(la, v);
             if (m.delegacion_a && m.delegacion_a !== la) teamToDelegacion.set(m.delegacion_a, v);
             if (m.equipo_a && m.equipo_a !== la) teamToDelegacion.set(m.equipo_a, v);
         }
         if (m.delegacion_b_id) {
             const v = { id: m.delegacion_b_id, carrera_ids: m.carrera_b_ids || [] };
-            const lb = teamSideLabelForStandings(m, 'b');
+            const lb = teamSideLabelForStandings(m, 'b', disciplina.name);
             teamToDelegacion.set(lb, v);
             if (m.delegacion_b && m.delegacion_b !== lb) teamToDelegacion.set(m.delegacion_b, v);
             if (m.equipo_b && m.equipo_b !== lb) teamToDelegacion.set(m.equipo_b, v);
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
         .from('partidos')
         .select('id, equipo_a, equipo_b, fase, bracket_order')
         .eq('disciplina_id', disciplina_id)
-        .eq('genero', genero)
+        .ilike('genero', genero.trim())
         .eq('fase', config.eliminatoryPhase)
         .order('bracket_order', { ascending: true });
 

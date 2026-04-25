@@ -53,6 +53,16 @@ export function compareStandings(a: TeamStanding, b: TeamStanding, sportName: st
 
 const INDIVIDUAL_SPORTS = ['Tenis', 'Tenis de Mesa', 'Ajedrez', 'Natación'];
 
+/** Misma etiqueta de equipo que usa `calculateStandings` (p. ej. delegación vs carrera). */
+export function teamSideLabelForStandings(match: any, side: 'a' | 'b', sportNameOverride?: string): string {
+    const sport = sportNameOverride ?? match?.disciplinas?.name ?? '';
+    const isIndividualSport = INDIVIDUAL_SPORTS.includes(sport);
+    if (side === 'a') {
+        return String(isIndividualSport ? (match.equipo_a || match.delegacion_a || '') : (match.delegacion_a || match.equipo_a || ''));
+    }
+    return String(isIndividualSport ? (match.equipo_b || match.delegacion_b || '') : (match.delegacion_b || match.equipo_b || ''));
+}
+
 export function calculateStandings(
     matches: any[],
     sportName: string,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
@@ -8,7 +8,7 @@ import { Avatar } from "@/components/ui-primitives";
 import { getCurrentScore } from "@/lib/sport-scoring";
 import { isAsyncMatch } from "@/lib/is-async-match";
 import { getDisplayName } from "@/lib/sport-helpers";
-import { ChevronRight, Timer } from "lucide-react";
+import { ChevronLeft, ChevronRight, Timer } from "lucide-react";
 import {
   SPORT_COLORS,
   SPORT_BORDER,
@@ -650,12 +650,66 @@ function isTomorrow(fecha: string) {
   );
 }
 
-function formatMatchdayLabel(fecha: string) {
-  const d = new Date(fecha);
-  const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
-  const str = d.toLocaleDateString('es-CO', options);
-  // Capitalize first letter
-  return str.charAt(0).toUpperCase() + str.slice(1);
+/** Día calendario en hora Colombia (Bogotá) para un instante ISO. */
+function bogotaYmdFromIso(fecha: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(fecha));
+}
+
+function parseYmd(s: string): { y: number; m: number; d: number } {
+  const [y, m, d] = s.split("-").map(Number);
+  return { y, m, d };
+}
+
+/** Suma días a un YYYY-MM-DD (calendario civil) y devuelve YYYY-MM-DD en Bogotá. */
+function bogotaYmdAddDays(ymd: string, delta: number): string {
+  const { y, m, d } = parseYmd(ymd);
+  const base = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  base.setUTCDate(base.getUTCDate() + delta);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(base);
+}
+
+function dayChipLabel(ymd: string, todayYmd: string): string {
+  if (ymd === todayYmd) return "Hoy";
+  if (ymd === bogotaYmdAddDays(todayYmd, 1)) return "Mañana";
+  if (ymd === bogotaYmdAddDays(todayYmd, -1)) return "Ayer";
+  const { y, m, d } = parseYmd(ymd);
+  const inst = new Date(Date.UTC(y, m - 1, d, 17, 0, 0));
+  return new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })
+    .format(inst)
+    .replace(/\.$/, "");
+}
+
+type DayBucket = {
+  ymd: string;
+  label: string;
+};
+
+function buildDayBuckets(rows: Partido[], todayYmd: string): DayBucket[] {
+  const set = new Set<string>();
+  for (const p of rows) {
+    if (p.estado === "cancelado") continue;
+    set.add(bogotaYmdFromIso(p.fecha));
+  }
+  const ymds = [...set].sort((a, b) => a.localeCompare(b));
+  return ymds.map((ymd) => ({
+    ymd,
+    label: dayChipLabel(ymd, todayYmd),
+  }));
 }
 
 // ── Main section ─────────────────────────────────────────────────────────────
@@ -664,53 +718,70 @@ interface MatchesTodaySectionProps {
   matches: Partido[];
 }
 
+/** Fingerprint estable: el padre suele pasar un `matches` nuevo en cada render (misma data). */
+function matchesCalFingerprint(rows: Partido[]) {
+  let h = 0;
+  for (const m of rows) {
+    h = (h * 33 + m.id) | 0;
+    const f = m.fecha || "";
+    for (let i = 0; i < f.length; i++) h = (h * 33 + f.charCodeAt(i)) | 0;
+    h = (h * 33 + (m.estado === "cancelado" ? 1 : 0)) | 0;
+  }
+  return `${h}:${rows.length}`;
+}
+
 export function MatchesTodaySection({ matches }: MatchesTodaySectionProps) {
-  // Determine which matches to show: Today -> Live -> Next Day with matches
-  const { todayMatches, displayDate, isFallback } = useMemo(() => {
-    // 1. Check for real today's matches
-    const today = matches.filter(
-      (m) => isToday(m.fecha) && m.estado !== "cancelado"
-    );
+  const todayYmd = bogotaYmdFromIso(new Date().toISOString());
+  const calFp = matchesCalFingerprint(matches);
+  const dayBuckets = useMemo(() => {
+    return buildDayBuckets(matches, todayYmd);
+    // `calFp` condensa el calendario; sin esto, `matches` (nueva ref. cada render en Home) rehacía `dayBuckets` y re-ejecutaba efectos que reseteaban el día.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calFp, todayYmd]);
+  const [dayIdx, setDayIdx] = useState(0);
+  const didInitDay = useRef(false);
+  const dayScrollRef = useRef<HTMLDivElement | null>(null);
+  const lastCalFp = useRef<string | null>(null);
 
-    // 2. Check for ANY live matches (might be from other dates)
-    const live = matches.filter((m) => m.estado === "en_curso");
-
-    if (today.length > 0 || live.length > 0) {
-      // Merge unique matches from today and live
-      const seen = new Set<string>();
-      const combined = [...today, ...live].filter(m => {
-        if (seen.has(m.id.toString())) return false;
-        seen.add(m.id.toString());
-        return true;
-      });
-      return { todayMatches: combined, displayDate: null, isFallback: false };
+  // Init / clamp al cambiar el calendario. `dayBuckets` debe ser estable (misma ref.) si `calFp` no cambia,
+  // o este efecto se re-ejecuta en cada flecha y puede pelearse con setDayIdx.
+  useEffect(() => {
+    if (dayBuckets.length === 0) {
+      setDayIdx(0);
+      return;
     }
+    setDayIdx((prev) => {
+      const safe = Math.min(Math.max(0, prev), dayBuckets.length - 1);
+      if (lastCalFp.current !== calFp) {
+        lastCalFp.current = calFp;
+        if (!didInitDay.current) {
+          didInitDay.current = true;
+          let i = dayBuckets.findIndex((d) => d.ymd === todayYmd);
+          if (i < 0) {
+            i = dayBuckets.findIndex((d) => d.ymd >= todayYmd);
+            if (i < 0) i = dayBuckets.length - 1;
+          }
+          return i;
+        }
+      }
+      return safe;
+    });
+  }, [calFp, dayBuckets, todayYmd]);
 
-    // 3. Fallback: Find the next date with matches
-    const upcoming = matches
-      .filter(m => new Date(m.fecha) > new Date() && m.estado === "programado")
-      .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+  const activeDay = dayBuckets[dayIdx];
 
-    if (upcoming.length > 0) {
-      const firstMatchDate = upcoming[0].fecha;
-      const nextDayMatches = upcoming.filter(m => {
-        const d1 = new Date(m.fecha);
-        const d2 = new Date(firstMatchDate);
-        return d1.getFullYear() === d2.getFullYear() &&
-               d1.getMonth() === d2.getMonth() &&
-               d1.getDate() === d2.getDate();
-      });
-      return { todayMatches: nextDayMatches, displayDate: firstMatchDate, isFallback: true };
-    }
+  const scopeMatches = useMemo(() => {
+    if (!activeDay) return [];
+    return matches.filter((m) => {
+      if (m.estado === "cancelado") return false;
+      return bogotaYmdFromIso(m.fecha) === activeDay.ymd;
+    });
+  }, [matches, activeDay]);
 
-    return { todayMatches: [], displayDate: null, isFallback: false };
-  }, [matches]);
+  const todayMatches = scopeMatches;
 
-  // Group by sport, sorted: sports with live matches first
   const groupedBySport = useMemo(() => {
     const groups = new Map<string, Partido[]>();
-
-    // Sort: live first, then upcoming by time, then finished
     const sorted = [...todayMatches].sort((a, b) => {
       if (a.estado === "en_curso" && b.estado !== "en_curso") return -1;
       if (b.estado === "en_curso" && a.estado !== "en_curso") return 1;
@@ -725,7 +796,6 @@ export function MatchesTodaySection({ matches }: MatchesTodaySectionProps) {
       groups.get(sport)!.push(match);
     }
 
-    // Sort groups: sports with live matches first
     const entries = [...groups.entries()].sort(([, a], [, b]) => {
       const aLive = a.some((m) => m.estado === "en_curso");
       const bLive = b.some((m) => m.estado === "en_curso");
@@ -739,29 +809,48 @@ export function MatchesTodaySection({ matches }: MatchesTodaySectionProps) {
 
   const hasAnyLive = todayMatches.some((m) => m.estado === "en_curso");
 
-  // Determine Labels
-  const sectionLabel = hasAnyLive 
-    ? "Acción en vivo" 
-    : isFallback 
-      ? (isTomorrow(displayDate!) ? "Mañana" : "Próxima Jornada")
-      : "Jornada del día";
+  const isSelectedToday = activeDay?.ymd === todayYmd;
 
-  const sectionSubtitle = isFallback && displayDate 
-    ? formatMatchdayLabel(displayDate) 
-    : "Partidos";
+  const sectionLabel = hasAnyLive
+    ? "Acción en vivo"
+    : isSelectedToday
+    ? "Jornada del día"
+    : "Calendario";
+
+  const goDayPrev = useCallback(() => setDayIdx((i) => Math.max(0, i - 1)), []);
+  const goDayNext = useCallback(() => {
+    setDayIdx((i) => (dayBuckets.length ? Math.min(dayBuckets.length - 1, i + 1) : 0));
+  }, [dayBuckets.length]);
+
+  // Scroll al chip activo vía `data-ymd` (sin ref por índice: menos churn en el DOM con flechas).
+  const activeYmd = dayBuckets[dayIdx]?.ymd;
+  useLayoutEffect(() => {
+    if (!activeYmd) return;
+    const id = requestAnimationFrame(() => {
+      const scroller = dayScrollRef.current;
+      if (!scroller) return;
+      const el = scroller.querySelector<HTMLElement>(`[data-ymd="${activeYmd}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [activeYmd, dayIdx]);
 
   return (
     <section className="animate-in slide-in-from-bottom-6 fade-in duration-700">
-      <div className="flex flex-col gap-1 mb-6 px-1">
-        <p className={cn(
-          "font-display text-xs font-bold bg-clip-text text-transparent tracking-[0.3em]",
-          hasAnyLive ? "bg-gradient-to-r from-red-400 to-red-600" : "bg-gradient-to-r from-emerald-400 to-emerald-600"
-        )}>
+      <div className="flex flex-col gap-1 mb-4 px-1">
+        <p
+          className={cn(
+            "font-display text-xs font-bold bg-clip-text text-transparent tracking-[0.3em]",
+            hasAnyLive
+              ? "bg-gradient-to-r from-red-400 to-red-600"
+              : "bg-gradient-to-r from-emerald-400 to-emerald-600"
+          )}
+        >
           {sectionLabel}
         </p>
         <div className="flex items-center gap-4">
           <h2 className="text-4xl md:text-6xl font-black tracking-tighter font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm">
-            {isFallback ? sectionSubtitle : "Partidos"}
+            Partidos
           </h2>
           {hasAnyLive && (
             <span className="flex items-center gap-1.5 text-[9px] font-black text-white bg-red-500 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse uppercase tracking-widest h-fit">
@@ -771,10 +860,83 @@ export function MatchesTodaySection({ matches }: MatchesTodaySectionProps) {
         </div>
       </div>
 
+      {dayBuckets.length > 0 && (
+        <div className="mb-6 space-y-2 px-0.5">
+          <p className="text-[10px] font-medium text-white/45 sm:text-[11px]">
+            Navegá por <strong className="text-white/60">día</strong> (partidos en calendario, hora Colombia). Flechas: días
+            con partido previo/siguiente; o elige un día.
+          </p>
+          <div className="relative -mx-1 sm:mx-0">
+            <div className="flex items-stretch justify-center gap-1.5 sm:gap-2">
+              <button
+                type="button"
+                onClick={goDayPrev}
+                disabled={dayIdx <= 0}
+                className="flex h-12 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.04] text-white/80 transition-colors active:scale-[0.98] sm:h-[52px] sm:w-11 disabled:pointer-events-none disabled:opacity-25"
+                aria-label="Día con partidos, anterior en el calendario"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <div
+                ref={dayScrollRef}
+                className="no-scrollbar flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto overflow-y-hidden py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                role="tablist"
+                aria-label="Elegir día con partidos"
+              >
+                {dayBuckets.map((d, idx) => {
+                  const isActive = idx === dayIdx;
+                  return (
+                    <button
+                      key={d.ymd}
+                      type="button"
+                      data-ymd={d.ymd}
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setDayIdx(idx)}
+                      className={cn(
+                        "snap-center min-h-[48px] w-[min(9.5rem,44vw)] shrink-0 touch-manipulation rounded-2xl border-2 px-2.5 py-2 text-center transition-all active:scale-[0.99] sm:min-h-[52px] sm:w-auto sm:min-w-[6.5rem] sm:px-4",
+                        isActive
+                          ? "border-amber-400/90 bg-amber-500/15 text-amber-100 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                          : "border-white/12 bg-white/[0.04] text-white/55 hover:border-white/20 hover:text-white/85"
+                      )}
+                    >
+                      <span className="block text-[7px] font-black uppercase tracking-widest text-white/40 sm:text-[8px]">
+                        Día
+                      </span>
+                      <span className="mt-0.5 block line-clamp-2 text-[11px] font-bold leading-tight text-white/95 sm:text-sm">
+                        {d.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={goDayNext}
+                disabled={dayIdx >= dayBuckets.length - 1}
+                className="flex h-12 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.04] text-white/80 transition-colors active:scale-[0.98] sm:h-[52px] sm:w-11 disabled:pointer-events-none disabled:opacity-25"
+                aria-label="Día con partidos, siguiente en el calendario"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="mt-1.5 text-right text-[9px] font-bold tabular-nums text-white/35" aria-live="polite">
+              {dayBuckets.length > 0 ? dayIdx + 1 : 0} / {dayBuckets.length} días con partidos
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-4">
-        {groupedBySport.map(([sport, sportMatches]) => (
-          <SportGroup key={sport} sportName={sport} matches={sportMatches} />
-        ))}
+        {groupedBySport.length > 0 ? (
+          groupedBySport.map(([sport, sportMatches]) => (
+            <SportGroup key={sport} sportName={sport} matches={sportMatches} />
+          ))
+        ) : dayBuckets.length === 0 ? (
+          <p className="px-1 text-sm text-white/30">No hay partidos publicados aún.</p>
+        ) : (
+          <p className="px-1 text-sm text-white/30">No hay partidos en el día seleccionado.</p>
+        )}
       </div>
     </section>
   );

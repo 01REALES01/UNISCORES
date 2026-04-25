@@ -37,6 +37,9 @@ export function useMatchControl(matchId: string) {
     // Presence
     const [activeEditors, setActiveEditors] = useState<any[]>([]);
 
+    /** Evita que un refetch antiguo (p. ej. tras varios guardados seguidos) sobrescriba datos nuevos en estado. */
+    const matchFetchSeqRef = useRef(0);
+
     const auditDetalle = (detalle: any) => stampAudit(detalle, profile);
 
     const fetchEventos = useCallback(async () => {
@@ -235,6 +238,7 @@ export function useMatchControl(matchId: string) {
 
     const fetchMatchDetails = useCallback(async (opts?: { silent?: boolean }) => {
         const silent = opts?.silent === true;
+        const seq = ++matchFetchSeqRef.current;
         try {
             if (!silent) setLoading(true);
             const timeout = new Promise<never>((_, reject) =>
@@ -248,6 +252,8 @@ export function useMatchControl(matchId: string) {
 
             const { data, error } = await Promise.race([query, timeout]);
             if (error) throw error;
+            if (seq !== matchFetchSeqRef.current) return;
+
             setMatch(data as Partido);
 
             const detalle = data.marcador_detalle || {};
@@ -255,11 +261,14 @@ export function useMatchControl(matchId: string) {
             if (detalle.estado_cronometro === 'corriendo') setCronometroActivo(true);
 
             await Promise.all([fetchJugadores(data as Partido), fetchEventos()]);
+            if (seq !== matchFetchSeqRef.current) return;
         } catch (err: any) {
             console.error(err);
-            setErrorCtx(err.message === 'TIMEOUT' ? 'Tiempo de espera agotado. Vuelve a intentarlo.' : err.message);
+            if (seq === matchFetchSeqRef.current) {
+                setErrorCtx(err.message === 'TIMEOUT' ? 'Tiempo de espera agotado. Vuelve a intentarlo.' : err.message);
+            }
         } finally {
-            if (!silent) setLoading(false);
+            if (!silent && seq === matchFetchSeqRef.current) setLoading(false);
         }
     }, [matchId, fetchJugadores, fetchEventos]);
 
@@ -347,7 +356,23 @@ export function useMatchControl(matchId: string) {
                 table: 'partidos',
                 filter: `id=eq.${matchId}`
             }, (payload: any) => {
-                setMatch((prev: any) => prev ? ({ ...prev, ...payload.new }) : payload.new);
+                const marcadorTs = (d: any) => {
+                    const f = d?.ultima_edicion?.fecha;
+                    if (!f) return 0;
+                    const t = new Date(f).getTime();
+                    return Number.isNaN(t) ? 0 : t;
+                };
+                setMatch((prev: any) => {
+                    if (!prev) return payload.new;
+                    const inc = payload.new?.marcador_detalle;
+                    const cur = prev.marcador_detalle;
+                    if (inc && cur) {
+                        const ti = marcadorTs(inc);
+                        const tc = marcadorTs(cur);
+                        if (ti > 0 && tc > 0 && ti < tc) return prev;
+                    }
+                    return { ...prev, ...payload.new };
+                });
                 if (payload.new.marcador_detalle) {
                     const newDetalle = payload.new.marcador_detalle;
                     if (newDetalle.estado_cronometro === 'corriendo') setCronometroActivo(true);
@@ -927,6 +952,24 @@ export function useMatchControl(matchId: string) {
                 ganador: equipo_ganador,
                 marcador_final: marcador_detalle
             });
+
+            try {
+                const autoAdvRes = await fetch('/api/admin/auto-advance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        partido_id: matchId,
+                        disciplina_id: match.disciplina_id,
+                        genero: match.genero,
+                    }),
+                });
+                const autoAdvData = await autoAdvRes.json();
+                if (autoAdvData.advanced && autoAdvData.next_fase) {
+                    toast.success(`🏆 ${autoAdvData.message}`);
+                }
+            } catch {
+                // non-critical
+            }
 
             toast.success(`Partido finalizado por W.O. — ${equipo_ganador === 'equipo_a' ? match.equipo_a : match.equipo_b} gana`);
             return true;

@@ -87,3 +87,20 @@ export function getBracketConfig(sportName: string, genero: string): BracketConf
 
 /** Sports that have bracket configurations */
 export const SORTEO_SPORTS = ['Fútbol', 'Baloncesto', 'Voleibol'] as const;
+
+/**
+ * Normaliza el texto de `partidos.grupo` desde Excel/BD ("Grupo A", "GROUP B", "A ")
+ * a la letra usada en BRACKET_CONFIGS (`A`, `B`, …). Si no se reconoce, devuelve null.
+ */
+export function normalizeBracketGrupoKey(raw: string | null | undefined): string | null {
+    if (raw == null) return null;
+    const s = String(raw).trim();
+    if (!s) return null;
+    const upper = s.toUpperCase();
+    const labeled = upper.match(/GRUPO\s*([A-Z])\b/);
+    if (labeled) return labeled[1];
+    if (/^[A-Z]$/i.test(s)) return s.toUpperCase();
+    const tail = upper.match(/([A-Z])\s*$/);
+    if (tail) return tail[1];
+    return null;
+}

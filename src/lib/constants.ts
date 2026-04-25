@@ -45,6 +45,7 @@ export const CARRERAS_UNINORTE = [
     'Diseño Gráfico',
     'Diseño Industrial',
     'Economía',
+    'Enfermería',
     'Geología',
     'Ingeniería Civil',
     'Ingeniería de Sistemas',

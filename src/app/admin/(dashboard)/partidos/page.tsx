@@ -65,6 +65,8 @@ export default function PartidosPage() {
     useEffect(() => {
         const q = searchParams.get('search');
         if (q !== null) setSearchQuery(q);
+        const disc = searchParams.get('disciplina');
+        if (disc) setSportFilter(disc);
     }, [searchParams]);
 
     useEffect(() => {

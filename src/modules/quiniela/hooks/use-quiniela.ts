@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { safeQuery } from "@/lib/supabase-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { getMatchResult } from "@/modules/quiniela/helpers";
+import { getMatchResult, isPartidoQuinielaEligible } from "@/modules/quiniela/helpers";
 import { enrichPartidosCarreraShieldsFromDb } from "@/lib/match-carrera-shields";
 import type { QuinielaPodiumWeek } from "@/modules/quiniela/components/quiniela-past-podiums";
 import type { PartidoWithRelations } from "@/modules/matches/types";
@@ -141,6 +141,10 @@ export function useQuiniela() {
 
         const targetMatch = matches.find(m => m.id === matchId);
         if (targetMatch) {
+            if (!isPartidoQuinielaEligible(targetMatch)) {
+                toast.error("Esta prueba no participa en Acierta y Gana");
+                return;
+            }
             const isPast = new Date(targetMatch.fecha) < new Date();
             if (targetMatch.estado !== 'programado' || isPast) {
                 toast.error("Este partido ya no acepta predicciones");
