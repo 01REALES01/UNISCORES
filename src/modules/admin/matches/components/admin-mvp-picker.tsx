@@ -51,12 +51,15 @@ export function AdminMvpPicker({
     const isFutbolLike =
         n.includes("futbol") ||
         n.includes("fútbol") ||
+        n.includes("futsal") ||
         n.includes("micro") ||
         n.includes("sala");
     const isDrawFutbol = isFutbolLike && golesA === 0 && golesB === 0;
     const isVolley = disciplinaName === "Voleibol";
 
-    const visible = estado === "finalizado" && (isVolley || isDrawFutbol);
+    // Vóley: MVP siempre manual al finalizar. Fútbol (y similares): manual opcional en cualquier
+    // marcador — si no guardás nada, la ficha pública sigue usando el MVP inferido por eventos.
+    const visible = estado === "finalizado" && (isVolley || isFutbolLike);
 
     if (!visible) return null;
 
@@ -104,7 +107,9 @@ export function AdminMvpPicker({
                     <p className="text-[11px] text-white/45 font-bold mt-0.5 leading-snug">
                         {isVolley
                             ? "Tras finalizar el partido, podés designar al MVP. Se muestra en la ficha pública del partido."
-                            : "Marcador 0–0: elegí al MVP para que figure en la página pública del partido."}
+                            : isDrawFutbol
+                              ? "Marcador 0–0: elegí al MVP para que figure en la página pública del partido."
+                              : "Si no guardás nada, el MVP se calcula por los eventos. Podés elegir otro jugador y guardar para reemplazarlo en la ficha pública."}
                     </p>
                 </div>
             </div>
