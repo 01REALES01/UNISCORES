@@ -70,6 +70,15 @@ export const BRACKET_CONFIGS: Record<string, BracketConfig> = {
         eliminatoryPhase: 'semifinal',
     },
 
+    // Fútbol Fem: 2 grupos, top 2 each = 4 → direct cross → semis
+    'Fútbol|femenino': {
+        type: 'direct_cross',
+        groups: ['A', 'B'],
+        qualifyPerGroup: 2,
+        totalQualified: 4,
+        eliminatoryPhase: 'semifinal',
+    },
+
     // Baloncesto Fem: 6 teams in 1 group, top 2 → final
     'Baloncesto|femenino': {
         type: 'single_group_final',

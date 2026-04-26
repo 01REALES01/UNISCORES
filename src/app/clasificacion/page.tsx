@@ -764,27 +764,9 @@ export default function ClasificacionPage() {
                         )}
 
 
-                        {/* ── FAIR PLAY ── */}
-                        {!DEPORTES_INDIVIDUALES.includes(selectedSport) && filteredMatches.length > 0 && (
-                            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400 bg-[#1a1340]/50 rounded-[2.5rem] p-6 md:p-8 border border-emerald-500/[0.06]">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <Shield size={22} className="text-emerald-500" />
-                                    <h2 className="text-2xl font-display font-black tracking-tight text-white">
-                                        Fair Play
-                                    </h2>
-                                    <div className="flex-1 h-px bg-gradient-to-r from-emerald-100 to-transparent ml-4" />
-                                </div>
-                                <FairPlayTable
-                                    genero={selectedGender}
-                                    sportName={selectedSport}
-                                    teamIdMap={teamIdMap}
-                                />
-                            </section>
-                        )}
-
                         {/* ── KNOCKOUT STAGE ── */}
                         {bracketMatches.length > 0 && !(isTeamSport && hideTeamBrackets) && !(isTenis && hideTenisBrackets) && (
-                            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-500 bg-[#1e0f3a]/60 rounded-[2.5rem] p-6 md:p-8 border border-violet-500/[0.06]">
+                            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400 bg-[#1e0f3a]/60 rounded-[2.5rem] p-6 md:p-8 border border-violet-500/[0.06]">
                                 <div className="flex items-center gap-3 mb-6">
                                     <Swords size={22} className="text-violet-500" />
                                     <h2 className="text-2xl font-display font-black tracking-tight text-white">
@@ -800,6 +782,24 @@ export default function ClasificacionPage() {
                                         light={false}
                                     />
                                 </div>
+                            </section>
+                        )}
+
+                        {/* ── FAIR PLAY ── */}
+                        {!DEPORTES_INDIVIDUALES.includes(selectedSport) && filteredMatches.length > 0 && (
+                            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-500 bg-[#1a1340]/50 rounded-[2.5rem] p-6 md:p-8 border border-emerald-500/[0.06]">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <Shield size={22} className="text-emerald-500" />
+                                    <h2 className="text-2xl font-display font-black tracking-tight text-white">
+                                        Fair Play
+                                    </h2>
+                                    <div className="flex-1 h-px bg-gradient-to-r from-emerald-100 to-transparent ml-4" />
+                                </div>
+                                <FairPlayTable
+                                    genero={selectedGender}
+                                    sportName={selectedSport}
+                                    teamIdMap={teamIdMap}
+                                />
                             </section>
                         )}
                     </div>

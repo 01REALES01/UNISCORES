@@ -136,7 +136,7 @@ export function GroupStageTable({ matches, sportName, grupo, light = false, team
     const standings = useMemo(() => calculateStandings(matches, sportName, fairPlayData, teamIdMap), [matches, sportName, fairPlayData, teamIdMap]);
 
     const gc = isUngroupedBucket ? DEFAULT_GROUP_COLOR : (GROUP_COLORS[grupo?.toUpperCase()] || DEFAULT_GROUP_COLOR);
-    const played = matches.filter(m => m.estado === 'finalizado').length;
+    const played = matches.filter(m => m.estado === 'finalizado' || m.estado === 'en_curso').length;
     const total  = matches.length;
     const isVoley = sportName === 'Voleibol';
     const isFutbol = sportName === 'Fútbol';

@@ -337,6 +337,8 @@ async function advanceBracketWinners(
       return null;
     }
 
+
+
     const isIndividual = INDIVIDUAL_SPORTS.includes(sportName);
 
     // ── Index finalized results by grupo key AND bracket_order ────────────────

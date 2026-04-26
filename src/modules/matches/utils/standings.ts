@@ -144,7 +144,7 @@ export function calculateStandings(
             }
         }
 
-        if (m.estado === 'finalizado') {
+        if (m.estado === 'finalizado' || m.estado === 'en_curso') {
             const md = m.marcador_detalle || {};
             let scoreA = 0;
             let scoreB = 0;

@@ -112,8 +112,10 @@ function BracketMatchCard({ match, fase, light = false }: {
     }
 
     const { scoreA, scoreB } = getScoreFromMatch(match);
-    const rawTeamA = match.delegacion_a || match.equipo_a;
-    const rawTeamB = match.delegacion_b || match.equipo_b;
+    const sport = match.disciplinas?.name || '';
+    const isIndividual = sport === 'Tenis de Mesa' || sport === 'Tenis';
+    const rawTeamA = isIndividual ? match.equipo_a : (match.delegacion_a || match.equipo_a);
+    const rawTeamB = isIndividual ? match.equipo_b : (match.delegacion_b || match.equipo_b);
     const isByeA = rawTeamA?.toUpperCase() === 'BYE' || rawTeamA?.toUpperCase() === 'TBD';
     const isByeB = rawTeamB?.toUpperCase() === 'BYE' || rawTeamB?.toUpperCase() === 'TBD';
     const teamA = isByeA ? 'Por Definir' : rawTeamA;
@@ -498,14 +500,7 @@ export function BracketTree({ matches, sportName, light = false }: BracketTreePr
                                 />
 
                                 {roundIdx < displayRounds.length - 1 && (
-                                    isTenis
-                                        ? <div className="w-4 flex-shrink-0" />
-                                        : <RoundConnector
-                                            pairCount={pairCount}
-                                            pairHeight={pairHeight}
-                                            light={light}
-                                            isFinalConnector={isNextFinal}
-                                        />
+                                    <div className="w-4 flex-shrink-0" />
                                 )}
                             </div>
                         );

@@ -241,15 +241,23 @@ export async function POST(request: NextRequest) {
 
     const resolvedMatches: { match_id: number; team_a: string; team_b: string }[] = [];
 
-    // Parse a placeholder like "1ro. GRUPO A" → TeamStanding for 1st place of Group A
+    // Parse a placeholder like "1ro. GRUPO A" or "1ro. TABLA" → TeamStanding
     const parseSlot = (slot: string): TeamStanding | undefined => {
-        const upper = slot.toUpperCase();
+        const upper = slot.toUpperCase().trim();
         const posMatch = upper.match(/^(\d+)/);
-        const grupoMatch = upper.match(/GRUPO\s*([A-Z])/);
-        if (!posMatch || !grupoMatch) return undefined;
+        if (!posMatch) return undefined;
         const pos = parseInt(posMatch[1], 10) - 1;
-        const grupo = grupoMatch[1];
-        return (standingsByGroup[grupo] || [])[pos];
+
+        const grupoMatch = upper.match(/GRUPO\s*([A-Z])/);
+        if (grupoMatch) {
+            return (standingsByGroup[grupoMatch[1]] || [])[pos];
+        }
+
+        if (upper.includes('TABLA')) {
+            return qualifiedTeams[pos];
+        }
+
+        return undefined;
     };
 
     // Shared resolution: read placeholder from each bracket match to assign the

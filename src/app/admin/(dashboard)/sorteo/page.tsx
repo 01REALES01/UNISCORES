@@ -67,6 +67,10 @@ export default function SorteoPage() {
     const [saving, setSaving] = useState(false);
     const [resolving, setResolving] = useState(false);
     const [resetting, setResetting] = useState(false);
+    const [resettingPlaceholders, setResettingPlaceholders] = useState(false);
+    const [forcingAdvance, setForcingAdvance] = useState(false);
+    const [forceAdvanceFase, setForceAdvanceFase] = useState<string>('cuartos');
+    const [forceAdvanceResult, setForceAdvanceResult] = useState<{ next_fase: string } | null>(null);
 
     // Local assignment state: slot_label → delegacion_id
     const [assignments, setAssignments] = useState<Record<string, number>>({});
@@ -233,6 +237,32 @@ export default function SorteoPage() {
         }
     }
 
+    async function handleResetPlaceholders() {
+        if (!disciplinaId) return;
+        if (!window.confirm('¿Restaurar los placeholders del bracket (ej. "1ro. GRUPO A")? Esto permite volver a correr el resolver.')) return;
+
+        setResettingPlaceholders(true);
+        try {
+            const res = await fetch('/api/admin/sorteo/resolver/reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ disciplina_id: disciplinaId, genero: selectedGender }),
+            });
+            const json = await res.json();
+            if (!res.ok) {
+                toast.error(json.error || 'Error al restaurar placeholders');
+                return;
+            }
+            toast.success(`Placeholders restaurados en ${json.reset_matches.length} partido(s). Ya puedes correr el resolver.`);
+            setResolveResult(null);
+            fetchData();
+        } catch {
+            toast.error('Error de conexión');
+        } finally {
+            setResettingPlaceholders(false);
+        }
+    }
+
     async function handleResolve() {
         if (!disciplinaId) return;
         setResolving(true);
@@ -267,9 +297,38 @@ export default function SorteoPage() {
         resolved_matches: { match_id: number; team_a: string; team_b: string }[];
     } | null>(null);
 
+    async function handleForceAdvance() {
+        if (!disciplinaId) return;
+        if (!window.confirm(`¿Forzar avance desde "${forceAdvanceFase}"? Esto leerá los ganadores de los partidos finalizados en esa fase y los asignará a la siguiente ronda.`)) return;
+
+        setForcingAdvance(true);
+        setForceAdvanceResult(null);
+        try {
+            const res = await fetch('/api/admin/auto-advance/force', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ disciplina_id: disciplinaId, genero: selectedGender, fase: forceAdvanceFase }),
+            });
+            const json = await res.json();
+            console.log('[force-advance] response:', JSON.stringify(json, null, 2));
+            if (!res.ok) {
+                toast.error(json.error || json.message || 'Error al forzar avance');
+                return;
+            }
+            toast.success(`✅ ${json.message}`);
+            setForceAdvanceResult(json);
+            fetchData();
+        } catch {
+            toast.error('Error de conexión');
+        } finally {
+            setForcingAdvance(false);
+        }
+    }
+
     // Reset resolve result when sport/gender changes
     useEffect(() => {
         setResolveResult(null);
+        setForceAdvanceResult(null);
     }, [selectedSport, selectedGender]);
 
     // ── Render ──────────────────────────────────────────────────────────────
@@ -549,24 +608,39 @@ export default function SorteoPage() {
                             )}
                         </div>
 
-                        {/* Resolve Button */}
-                        <button
-                            onClick={handleResolve}
-                            disabled={resolving || !data.group_complete}
-                            className={cn(
-                                "flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all",
-                                data.group_complete
-                                    ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30"
-                                    : "bg-white/5 text-white/30 cursor-not-allowed"
-                            )}
-                        >
-                            {resolving ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <Zap size={16} />
-                            )}
-                            {resolving ? 'Resolviendo...' : 'Resolver Bracket Automáticamente'}
-                        </button>
+                        {/* Resolve + Reset Placeholder Buttons */}
+                        <div className="flex flex-wrap items-center gap-3">
+                            <button
+                                onClick={handleResolve}
+                                disabled={resolving || !data.group_complete}
+                                className={cn(
+                                    "flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all",
+                                    data.group_complete
+                                        ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30"
+                                        : "bg-white/5 text-white/30 cursor-not-allowed"
+                                )}
+                            >
+                                {resolving ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Zap size={16} />
+                                )}
+                                {resolving ? 'Resolviendo...' : 'Resolver Bracket Automáticamente'}
+                            </button>
+
+                            <button
+                                onClick={handleResetPlaceholders}
+                                disabled={resettingPlaceholders || resolving}
+                                className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                {resettingPlaceholders ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <RotateCcw size={16} />
+                                )}
+                                {resettingPlaceholders ? 'Restaurando...' : 'Restaurar Placeholders'}
+                            </button>
+                        </div>
 
                         {!data.group_complete && (
                             <p className="text-xs text-white/20 mt-2">
@@ -640,6 +714,58 @@ export default function SorteoPage() {
                                         ))}
                                     </div>
                                 </div>
+                            </div>
+                        )}
+                    </section>
+
+                    {/* ── Section 3: Force Bracket Advance ── */}
+                    <section className="border-t border-white/5 pt-8">
+                        <div className="flex items-center gap-3 mb-4">
+                            <Zap size={16} className="text-violet-400" />
+                            <h2 className="text-lg font-black uppercase tracking-wider text-white/80">
+                                Forzar Avance de Bracket
+                            </h2>
+                            <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent ml-3" />
+                        </div>
+
+                        <p className="text-xs text-white/30 mb-4">
+                            Usa esto si los partidos de una fase eliminatoria ya están finalizados pero la siguiente ronda aún muestra "GANADOR LLAVE X". Lee los ganadores de la fase seleccionada y los asigna automáticamente.
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="relative">
+                                <select
+                                    value={forceAdvanceFase}
+                                    onChange={e => setForceAdvanceFase(e.target.value)}
+                                    className="appearance-none bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 pr-8"
+                                >
+                                    <option value="cuartos">Cuartos de Final → Semifinal</option>
+                                    <option value="semifinal">Semifinal → Final</option>
+                                    <option value="octavos">Octavos → Cuartos</option>
+                                </select>
+                                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+                            </div>
+
+                            <button
+                                onClick={handleForceAdvance}
+                                disabled={forcingAdvance}
+                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                {forcingAdvance ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Zap size={16} />
+                                )}
+                                {forcingAdvance ? 'Avanzando...' : 'Forzar Avance'}
+                            </button>
+                        </div>
+
+                        {forceAdvanceResult && (
+                            <div className="mt-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                                <Check size={14} className="text-violet-400 flex-shrink-0" />
+                                <span className="text-sm text-violet-300">
+                                    Avance completado: <strong>{forceAdvanceFase}</strong> → <strong>{forceAdvanceResult.next_fase}</strong>
+                                </span>
                             </div>
                         )}
                     </section>
