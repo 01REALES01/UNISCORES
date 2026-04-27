@@ -22,7 +22,7 @@ const MATCH_COLUMNS = `
 `.replace(/\s+/g, ' ').trim();
 
 const NEWS_COLUMNS = `
-  id, titulo, contenido, imagen_url, categoria, created_at, published, autor_nombre, carrera,
+  id, titulo, contenido, imagen_url, categoria, created_at, published, autor_nombre, carrera, instagram_url,
   partidos(equipo_a, equipo_b, disciplinas(name),
     carrera_a:carreras!carrera_a_id(nombre, escudo_url),
     carrera_b:carreras!carrera_b_id(nombre, escudo_url))

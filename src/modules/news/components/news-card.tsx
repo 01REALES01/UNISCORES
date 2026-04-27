@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { Clock, ChevronRight, Trophy, GraduationCap } from "lucide-react";
+import { Clock, ChevronRight, Trophy, GraduationCap, Instagram } from "lucide-react";
 
 import type { Noticia } from '@/modules/news/types';
 export type { Noticia };
@@ -13,6 +13,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string
     entrevista: { label: 'Entrevista', color: 'text-emerald-400', bg: 'bg-emerald-500/15 border-emerald-500/20' },
     analisis: { label: 'Análisis', color: 'text-purple-400', bg: 'bg-purple-500/15 border-purple-500/20' },
     flash: { label: 'Flash', color: 'text-amber-400', bg: 'bg-amber-500/15 border-amber-500/20' },
+    instagram: { label: 'Instagram', color: 'text-pink-400', bg: 'bg-gradient-to-r from-pink-500/15 to-purple-500/15 border-pink-500/20' },
 };
 
 function getReadTime(content: string): string {
@@ -94,7 +95,8 @@ export function NewsHeroCard({ noticia }: { noticia: Noticia }) {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a0816] via-transparent to-transparent opacity-60" />
                 <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 transform transition-transform duration-500 group-hover:-translate-y-2">
                     <div className="flex flex-wrap items-center gap-3 mb-4">
-                        <span className={cn("inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest border", cat.bg, cat.color)}>
+                        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest border", cat.bg, cat.color)}>
+                            {noticia.categoria === 'instagram' && <Instagram size={12} />}
                             {cat.label}
                         </span>
                         {noticia.carrera && (
@@ -125,7 +127,7 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
 
     return (
         <Link href={`/noticias/${noticia.id}`} className="group block">
-            <div className="flex gap-4 sm:gap-6 bg-transparent rounded-2xl p-2 sm:p-3 hover:bg-white/[0.04] transition-all duration-300 border border-transparent hover:border-white/5">
+            <div className={cn("flex gap-4 sm:gap-6 bg-transparent rounded-2xl p-2 sm:p-3 hover:bg-white/[0.04] transition-all duration-300 border border-transparent hover:border-white/5", noticia.categoria === 'instagram' && "hover:border-pink-500/10")}>
                 <div className="w-[110px] h-[90px] sm:w-[160px] sm:h-[120px] rounded-2xl overflow-hidden shrink-0 relative bg-white/8 border border-white/5 shadow-lg">
                     {noticia.imagen_url ? (
                         <Image
@@ -134,16 +136,26 @@ export function NewsListCard({ noticia }: { noticia: Noticia }) {
                             fill
                             className="object-cover group-hover:scale-110 transition-transform duration-700"
                         />
+                    ) : noticia.categoria === 'instagram' ? (
+                        <div className="w-full h-full bg-gradient-to-br from-pink-900/40 via-purple-900/40 to-orange-900/30 flex items-center justify-center">
+                            <Instagram size={28} className="text-white/20" />
+                        </div>
                     ) : (
                         <div className="w-full h-full bg-gradient-to-br from-red-900/30 to-[#17130D] flex items-center justify-center">
                             <Trophy size={24} className="text-white/20" />
+                        </div>
+                    )}
+                    {noticia.categoria === 'instagram' && (
+                        <div className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-gradient-to-br from-pink-500 via-purple-500 to-orange-400 flex items-center justify-center shadow-lg">
+                            <Instagram size={12} className="text-white" />
                         </div>
                     )}
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-center sm:py-1">
                     <div>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
-                            <span className={cn("text-[9px] sm:text-[10px] font-black tracking-wide", cat.color)}>
+                            <span className={cn("text-[9px] sm:text-[10px] font-black tracking-wide flex items-center gap-1", cat.color)}>
+                                {noticia.categoria === 'instagram' && <Instagram size={10} />}
                                 {cat.label}
                             </span>
                             {noticia.carrera && (

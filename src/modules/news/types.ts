@@ -2,7 +2,7 @@
 // Módulo News — Tipos centralizados
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type NoticiaCategoria = 'cronica' | 'entrevista' | 'analisis' | 'flash';
+export type NoticiaCategoria = 'cronica' | 'entrevista' | 'analisis' | 'flash' | 'instagram';
 
 export type Noticia = {
   id: string;
@@ -13,6 +13,7 @@ export type Noticia = {
   autor_nombre: string;
   partido_id?: number | null;
   carrera?: string | null;
+  instagram_url?: string | null;
   published: boolean;
   created_at: string;
   updated_at?: string;

@@ -17,6 +17,7 @@ const CATEGORIES = [
     { value: 'entrevista', label: 'Entrevista', desc: 'Conversación con un deportista o figura' },
     { value: 'analisis', label: 'Análisis', desc: 'Análisis táctico o estadístico' },
     { value: 'flash', label: 'Flash', desc: 'Noticia breve y concisa' },
+    { value: 'instagram', label: 'Instagram', desc: 'Post de Instagram vinculado' },
 ];
 
 export default function NuevaNoticiaPage() {
@@ -38,6 +39,7 @@ export default function NuevaNoticiaPage() {
         autor_nombre: 'Redacción',
         partido_id: '' as string,
         carrera: '' as string,
+        instagram_url: '',
         published: false,
     });
 
@@ -137,6 +139,7 @@ export default function NuevaNoticiaPage() {
             autor_nombre: form.autor_nombre.trim() || 'Redacción',
             partido_id: form.partido_id ? parseInt(form.partido_id, 10) : null,
             carrera: form.carrera.trim() || null,
+            instagram_url: form.instagram_url.trim() || null,
             published: publish || form.published,
         };
 
@@ -349,6 +352,31 @@ export default function NuevaNoticiaPage() {
                             <option key={c} value={c}>{c}</option>
                         ))}
                     </select>
+                </div>
+
+                {/* Instagram URL */}
+                <div className="sm:col-span-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-white/30 block mb-3 flex items-center gap-2">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                        Vincular Post de Instagram (opcional)
+                    </label>
+                    <div className={cn(
+                        "rounded-2xl p-[1px] transition-all",
+                        form.instagram_url ? "bg-gradient-to-r from-pink-500 via-purple-500 to-orange-400" : "bg-transparent"
+                    )}>
+                        <input
+                            value={form.instagram_url}
+                            onChange={(e) => setForm(prev => ({ ...prev, instagram_url: e.target.value }))}
+                            placeholder="https://www.instagram.com/p/CODIGO_DEL_POST/"
+                            className="w-full bg-[#0a0816] border border-white/10 rounded-2xl text-sm text-white/70 px-4 py-3 focus:outline-none focus:border-pink-500/30 transition-all placeholder:text-white/15"
+                        />
+                    </div>
+                    {form.instagram_url && (
+                        <p className="mt-2 text-[10px] font-bold text-pink-400/60 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
+                            El post se mostrará embebido dentro del artículo
+                        </p>
+                    )}
                 </div>
             </div>
         </div>

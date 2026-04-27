@@ -11,6 +11,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SportIcon } from "@/components/sport-icons";
 import { NewsReactions } from "@/components/news-reactions";
+import { InstagramEmbed } from "@/modules/news/components/instagram-embed";
 import UniqueLoading from "@/components/ui/morph-loading";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
 
@@ -19,6 +20,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string
     entrevista: { label: 'Entrevista', color: 'text-emerald-400', bg: 'bg-emerald-500/15 border-emerald-500/20' },
     analisis: { label: 'Análisis', color: 'text-purple-400', bg: 'bg-purple-500/15 border-purple-500/20' },
     flash: { label: 'Flash', color: 'text-amber-400', bg: 'bg-amber-500/15 border-amber-500/20' },
+    instagram: { label: 'Instagram', color: 'text-pink-400', bg: 'bg-gradient-to-r from-pink-500/15 to-purple-500/15 border-pink-500/20' },
 };
 
 export default function NoticiaDetailPage() {
@@ -40,7 +42,7 @@ export default function NoticiaDetailPage() {
 
             const { data, error } = await safeQuery<any>(
                 supabase.from('noticias')
-                    .select('id, titulo, contenido, imagen_url, categoria, autor_nombre, partido_id, carrera, published, created_at, partidos(id, equipo_a, equipo_b, fecha, estado, lugar, marcador_detalle, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url))')
+                    .select('id, titulo, contenido, imagen_url, categoria, autor_nombre, partido_id, carrera, instagram_url, published, created_at, partidos(id, equipo_a, equipo_b, fecha, estado, lugar, marcador_detalle, disciplinas(name), carrera_a:carreras!carrera_a_id(nombre, escudo_url), carrera_b:carreras!carrera_b_id(nombre, escudo_url))')
                     .eq('id', id)
                     .single(),
                 'noticia-detail'
@@ -270,6 +272,13 @@ export default function NoticiaDetailPage() {
                                     ))}
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Instagram Embed */}
+                    {noticia.instagram_url && (
+                        <div className="mb-16">
+                            <InstagramEmbed url={noticia.instagram_url} variant="full" />
                         </div>
                     )}
 

@@ -2,16 +2,18 @@
 
 import { useState, useMemo } from "react";
 import { NewsHeroCard, NewsListCard } from "@/components/news-card";
-import { GraduationCap, Filter, Newspaper } from "lucide-react";
+import { InstagramFeedCard } from "@/modules/news/components/instagram-feed-card";
+import { GraduationCap, Filter, Newspaper, Instagram } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Noticia } from "@/modules/news/types";
 
 const CATEGORIES = [
-    { key: "todas", label: "Todas" },
-    { key: "cronica", label: "Crónicas" },
-    { key: "entrevista", label: "Entrevistas" },
-    { key: "analisis", label: "Análisis" },
-    { key: "flash", label: "Flash" },
+    { key: "todas", label: "Todas", icon: null },
+    { key: "cronica", label: "Crónicas", icon: null },
+    { key: "entrevista", label: "Entrevistas", icon: null },
+    { key: "analisis", label: "Análisis", icon: null },
+    { key: "flash", label: "Flash", icon: null },
+    { key: "instagram", label: "Instagram", icon: Instagram },
 ];
 
 interface NewsFiltersProps {
@@ -36,8 +38,9 @@ export function NewsFilters({ noticias }: NewsFiltersProps) {
         return true;
     });
 
-    const featured = filtered[0];
-    const rest = filtered.slice(1);
+    // Separate the first non-instagram item as featured
+    const featured = filtered.find(n => n.categoria !== 'instagram');
+    const rest = filtered.filter(n => n !== featured);
 
     return (
         <>
@@ -51,12 +54,15 @@ export function NewsFilters({ noticias }: NewsFiltersProps) {
                                 key={cat.key}
                                 onClick={() => setCategoryFilter(cat.key)}
                                 className={cn(
-                                    "font-display px-5 py-2.5 rounded-2xl text-[12px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-300",
+                                    "font-display px-5 py-2.5 rounded-2xl text-[12px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-300 flex items-center gap-1.5",
                                     categoryFilter === cat.key
-                                        ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                                        ? cat.key === 'instagram'
+                                            ? "bg-gradient-to-r from-pink-500 via-purple-500 to-orange-400 text-white border-pink-500/30 shadow-[0_0_20px_rgba(236,72,153,0.2)]"
+                                            : "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                                         : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white/80"
                                 )}
                             >
+                                {cat.icon && <cat.icon size={14} />}
                                 {cat.label}
                             </button>
                         ))}
@@ -87,7 +93,7 @@ export function NewsFilters({ noticias }: NewsFiltersProps) {
             {filtered.length === 0 && (
                 <div className="text-center py-20 flex flex-col items-center animate-in zoom-in-95 duration-700">
                     <img src="/elementos/09.png" alt="" className="w-24 h-24 object-contain mb-6 opacity-80 drop-shadow-xl" />
-                    <h3 className="font-display text-2xl font-black text-[#F5F5DC] mb-2 uppercase tracking-tight">Sin Publicaciones</h3>
+                    <h3 className="font-display text-2xl font-black text-white/80 mb-2 uppercase tracking-tight">Sin Publicaciones</h3>
                     <p className="text-sm text-white/40 font-medium max-w-sm">
                         {categoryFilter !== "todas" || carreraFilter !== "todas"
                             ? "No hay noticias con estos filtros. Prueba cambiándolos."
@@ -99,16 +105,21 @@ export function NewsFilters({ noticias }: NewsFiltersProps) {
             {/* Feed */}
             {filtered.length > 0 && (
                 <div className="space-y-6">
+                    {/* Featured hero (only for non-instagram articles) */}
                     {featured && <NewsHeroCard noticia={featured} />}
 
                     {rest.length > 0 && (
                         <div>
-                            <h2 className="font-display text-sm font-black uppercase tracking-widest text-[#F5F5DC] mb-4 flex items-center gap-2">
+                            <h2 className="font-display text-sm font-black uppercase tracking-widest text-white/40 mb-4 flex items-center gap-2">
                                 <Filter size={14} className="text-emerald-400" /> MÁS NOTICIAS
                             </h2>
-                            <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-6">
                                 {rest.map((n) => (
-                                    <NewsListCard key={n.id} noticia={n} />
+                                    n.categoria === 'instagram' && n.instagram_url ? (
+                                        <InstagramFeedCard key={n.id} noticia={n} />
+                                    ) : (
+                                        <NewsListCard key={n.id} noticia={n} />
+                                    )
                                 ))}
                             </div>
                         </div>
