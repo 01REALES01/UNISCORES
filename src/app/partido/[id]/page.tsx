@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Badge, Avatar, Button } from "@/components/ui-primitives";
 import { PublicLiveTimer } from "@/components/public-live-timer";
-import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink, Edit3, Play, Youtube, PlayCircle } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Trophy, Calendar, Share2, AlignLeft, Users, BarChart3, Flame, Lock, HandMetal, CheckCircle, Handshake, Crown, ExternalLink, Edit3, Play, Youtube, PlayCircle, ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ import { parseEventAudit } from "@/lib/audit-helpers";
 import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
 import { MatchTimeline } from '@/modules/matches/components/match-timeline';
 import { MatchStats } from '@/modules/matches/components/match-stats';
+import { BasketballScoreboard } from '@/modules/matches/components/basketball-scoreboard';
 import { getMatchResult, isPartidoQuinielaEligible } from "@/modules/quiniela/helpers";
 import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
 import { MatchStream } from "@/modules/matches/components/match-stream";
@@ -34,6 +35,7 @@ import UniqueLoading from "@/components/ui/morph-loading";
 
 export default function PublicMatchDetail() {
     const [showStream, setShowStream] = useState(false);
+    const [showTimeline, setShowTimeline] = useState(true);
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -99,6 +101,11 @@ export default function PublicMatchDetail() {
         const iv = setInterval(() => setTick(t => t + 1), 30000);
         return () => clearInterval(iv);
     }, []);
+
+    // ─── Hide timeline by default for basketball ────────────────────────────────
+    useEffect(() => {
+        if (match?.disciplinas?.name === 'Baloncesto') setShowTimeline(false);
+    }, [match?.disciplinas?.name]);
 
     // ─── Voting Logic ───────────────────────────────────────────────────────────
     const [saving, setSaving] = useState(false);
@@ -228,6 +235,7 @@ export default function PublicMatchDetail() {
     const { scoreA, scoreB, subScoreA, subScoreB, extra, subLabel } = getCurrentScore(sportName, m.marcador_detalle || {});
     const generoMatch = m.genero || 'masculino';
     const hasTimer = ['Fútbol', 'Baloncesto', 'Futsal', 'Fútbol Sala'].includes(sportName);
+    const isBasketball = sportName === 'Baloncesto';
     // Para fútbol mostramos la fase si el admin la seteó (1º Tiempo / Entretiempo / 2º Tiempo)
     const faseFutbol = m.marcador_detalle?.fase_futbol as 'primer_tiempo' | 'entretiempo' | 'segundo_tiempo' | undefined;
     const extraFutbol = faseFutbol === 'primer_tiempo' ? '1º Tiempo'
@@ -1089,7 +1097,48 @@ export default function PublicMatchDetail() {
                     )}
                 </div>
 
-                {sportName !== 'Voleibol' && !isAsync && (
+                {isBasketball && !isAsync && (
+                    <BasketballScoreboard
+                        match={m}
+                        sportColor={SPORT_COLORS['Baloncesto'] || '#F59E0B'}
+                    />
+                )}
+
+                {isBasketball && !isAsync && (
+                <div className="mt-8">
+                    <MatchStats
+                        match={m}
+                        eventos={eventos}
+                        sportName={sportName}
+                    />
+                </div>
+                )}
+
+                {isBasketball && !isAsync && (
+                    <>
+                        <button
+                            onClick={() => setShowTimeline(v => !v)}
+                            className="w-full mt-6 flex items-center justify-between px-6 py-4 rounded-2xl border border-white/10 bg-white/[0.03] text-white/50 hover:text-white/80 hover:bg-white/[0.06] transition-all"
+                        >
+                            <div className="flex items-center gap-3">
+                                <AlignLeft size={15} />
+                                <span className="text-[11px] font-black uppercase tracking-[0.3em]">Minuto a Minuto</span>
+                            </div>
+                            <ChevronDown size={16} className={cn("transition-transform duration-300", showTimeline && "rotate-180")} />
+                        </button>
+                        {showTimeline && (
+                            <div className="mt-2">
+                                <MatchTimeline
+                                    match={m}
+                                    eventos={eventos}
+                                    sportName={sportName}
+                                />
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {sportName !== 'Voleibol' && !isBasketball && !isAsync && (
                     <MatchTimeline
                         match={m}
                         eventos={eventos}
@@ -1097,7 +1146,7 @@ export default function PublicMatchDetail() {
                     />
                 )}
 
-                {!isAsync && (
+                {!isBasketball && !isAsync && (
                 <div className="mt-8">
                     <MatchStats
                         match={m}
