@@ -33,14 +33,6 @@ export const BRACKET_CONFIGS: Record<string, BracketConfig> = {
         totalQualified: 8,
         eliminatoryPhase: 'cuartos',
     },
-    // Mismo criterio que masc hasta confirmar fixture; validar placeholders del Excel
-    'Fútbol|femenino': {
-        type: 'unified_table',
-        groups: ['A', 'B', 'C', 'D'],
-        qualifyPerGroup: 2,
-        totalQualified: 8,
-        eliminatoryPhase: 'cuartos',
-    },
 
     // Baloncesto Masc: 3 grupos, top 2 + 2 best thirds = 8 → unified table → cuartos
     'Baloncesto|masculino': {
