@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCarreraProfile } from "@/modules/users/hooks/use-carrera-profile";
 import { MainNavbar } from "@/components/main-navbar";
 import { NewsListCard } from "@/components/news-card";
+import { InstagramFeedCard } from "@/modules/news/components/instagram-feed-card";
 import { FollowCareerButton } from "@/modules/careers/components/follow-career-button";
 import { SportIcon } from "@/components/sport-icons";
 import { Avatar, Badge, Button } from "@/shared/components/ui-primitives";
@@ -684,7 +685,7 @@ export default function CarreraProfilePage() {
 
                     {activeTab === "noticias" && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
-                            {news.length === 0 ? <EmptyState icon={<Newspaper size={48} />} title="Sin noticias" description="Aún no hay publicaciones para esta carrera." /> : news.map((n: any) => <NewsListCard key={n.id} noticia={n} />)}
+                            {news.length === 0 ? <EmptyState icon={<Newspaper size={48} />} title="Sin noticias" description="Aún no hay publicaciones para esta carrera." /> : news.map((n: any) => n.categoria === 'instagram' && n.instagram_url ? <InstagramFeedCard key={n.id} noticia={n} /> : <NewsListCard key={n.id} noticia={n} />)}
                         </motion.div>
                     )}
 

@@ -33,6 +33,7 @@ export const BRACKET_CONFIGS: Record<string, BracketConfig> = {
         totalQualified: 8,
         eliminatoryPhase: 'cuartos',
     },
+
     // Baloncesto Masc: 3 grupos, top 2 + 2 best thirds = 8 → unified table → cuartos
     'Baloncesto|masculino': {
         type: 'unified_table',

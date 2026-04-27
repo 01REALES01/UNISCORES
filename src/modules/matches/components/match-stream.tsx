@@ -19,7 +19,7 @@ export function MatchStream({ url, className }: MatchStreamProps) {
         }
 
         // Regex para capturar IDs de YouTube en varios formatos
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|live\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*$/;
         const match = url.match(regExp);
 
         if (match && match[2].length === 11) {

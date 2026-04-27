@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { safeQuery } from "@/lib/supabase-query";
+import { safeQuery, safeMutation, invalidateCache } from "@/lib/supabase-query";
 import { Button, Badge } from "@/components/ui-primitives";
-import { Plus, Newspaper, Trash2, Edit, Eye, EyeOff, Loader2, Clock } from "lucide-react";
+import { Plus, Newspaper, Trash2, Edit, Eye, EyeOff, Loader2, Clock, Instagram, X, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,7 @@ const CAT_COLORS: Record<string, string> = {
     entrevista: 'text-emerald-400',
     analisis: 'text-purple-400',
     flash: 'text-amber-400',
+    instagram: 'text-pink-400',
 };
 
 export default function AdminNoticiasPage() {
@@ -37,13 +38,25 @@ export default function AdminNoticiasPage() {
     const [noticias, setNoticias] = useState<Noticia[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [showIgForm, setShowIgForm] = useState(false);
+    const [igUrl, setIgUrl] = useState('');
+    const [igCarrera, setIgCarrera] = useState('');
+    const [igSaving, setIgSaving] = useState(false);
+    const [carreras, setCarreras] = useState<string[]>([]);
 
     const fetchNoticias = async () => {
-        const { data } = await safeQuery(
-            supabase.from('noticias').select('*').order('created_at', { ascending: false }),
-            'admin-noticias'
-        );
-        if (data) setNoticias(data as Noticia[]);
+        const [noticiasRes, carrerasRes] = await Promise.all([
+            safeQuery(
+                supabase.from('noticias').select('*').order('created_at', { ascending: false }),
+                'admin-noticias'
+            ),
+            safeQuery(
+                supabase.from('medallero').select('equipo_nombre').order('equipo_nombre'),
+                'admin-carreras-ig'
+            ),
+        ]);
+        if (noticiasRes.data) setNoticias(noticiasRes.data as Noticia[]);
+        if (carrerasRes.data) setCarreras(carrerasRes.data.map((c: any) => c.equipo_nombre).filter(Boolean));
         setLoading(false);
     };
 
@@ -110,13 +123,107 @@ export default function AdminNoticiasPage() {
                     </h1>
                     <p className="text-sm text-slate-400 mt-1">{noticias.length} artículos</p>
                 </div>
-                <Button
-                    onClick={() => router.push('/admin/noticias/nueva')}
-                    className="gap-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white"
-                >
-                    <Plus size={18} /> Nueva Noticia
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        onClick={() => setShowIgForm(!showIgForm)}
+                        variant={showIgForm ? "outline" : "default"}
+                        className={cn(
+                            "gap-2 transition-all",
+                            showIgForm
+                                ? "border-pink-500/30 text-pink-400 hover:bg-pink-500/10"
+                                : "bg-gradient-to-r from-pink-500 via-purple-500 to-orange-400 text-white hover:opacity-90"
+                        )}
+                    >
+                        {showIgForm ? <X size={16} /> : <Instagram size={16} />}
+                        {showIgForm ? 'Cancelar' : 'Post de IG'}
+                    </Button>
+                    <Button
+                        onClick={() => router.push('/admin/noticias/nueva')}
+                        className="gap-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white"
+                    >
+                        <Plus size={18} /> Nueva Noticia
+                    </Button>
+                </div>
             </div>
+
+            {/* Quick Instagram Post Form */}
+            {showIgForm && (
+                <div className="relative overflow-hidden rounded-2xl border border-pink-500/20 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-orange-400/5 p-6 animate-in slide-in-from-top-4 duration-300">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 via-purple-500 to-orange-400 flex items-center justify-center shadow-lg">
+                            <Instagram size={20} className="text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-wider">Publicar Post de Instagram</h3>
+                            <p className="text-[10px] text-white/30 font-bold">Pega la URL y se publicará directamente en el feed</p>
+                        </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1">
+                            <div className={cn(
+                                "rounded-xl p-[1px] transition-all",
+                                igUrl ? "bg-gradient-to-r from-pink-500 via-purple-500 to-orange-400" : "bg-transparent"
+                            )}>
+                                <input
+                                    value={igUrl}
+                                    onChange={(e) => setIgUrl(e.target.value)}
+                                    placeholder="https://www.instagram.com/p/CODIGO..."
+                                    className="w-full bg-black/60 border border-white/10 rounded-xl text-sm text-white px-4 py-3 focus:outline-none placeholder:text-white/20"
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                        <select
+                            value={igCarrera}
+                            onChange={(e) => setIgCarrera(e.target.value)}
+                            className="bg-black/60 border border-white/10 rounded-xl text-xs text-white/60 px-4 py-3 focus:outline-none appearance-none cursor-pointer min-w-[160px]"
+                        >
+                            <option value="">Sin carrera</option>
+                            {carreras.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <Button
+                            disabled={!igUrl.includes('instagram.com') || igSaving}
+                            onClick={async () => {
+                                if (!igUrl.includes('instagram.com')) {
+                                    toast.error('URL de Instagram inválida');
+                                    return;
+                                }
+                                setIgSaving(true);
+                                const shortcode = igUrl.match(/instagram\.com\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/)?.[1] || '';
+                                const { error } = await safeMutation(
+                                    supabase.from('noticias').insert({
+                                        titulo: `Post de Instagram${igCarrera ? ` — ${igCarrera}` : ''}`,
+                                        contenido: '',
+                                        categoria: 'instagram',
+                                        instagram_url: igUrl.trim(),
+                                        carrera: igCarrera || null,
+                                        autor_nombre: 'Instagram',
+                                        published: true,
+                                    }),
+                                    'crear-ig-post'
+                                );
+                                if (error) {
+                                    toast.error('Error: ' + error.message);
+                                } else {
+                                    toast.success('¡Post de Instagram publicado!');
+                                    invalidateCache('home-noticias');
+                                    logAction('CREATE_IG_POST', 'noticia', undefined, { url: igUrl, carrera: igCarrera });
+                                    setIgUrl('');
+                                    setIgCarrera('');
+                                    setShowIgForm(false);
+                                    fetchNoticias();
+                                }
+                                setIgSaving(false);
+                            }}
+                            className="gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:opacity-90 shrink-0 px-6"
+                        >
+                            {igSaving ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                            Publicar
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {/* List */}
             {noticias.length === 0 ? (
@@ -134,7 +241,11 @@ export default function AdminNoticiasPage() {
                         >
                             {/* Thumbnail */}
                             <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-white/5">
-                                {n.imagen_url ? (
+                                {n.categoria === 'instagram' ? (
+                                    <div className="w-full h-full bg-gradient-to-br from-pink-900/40 via-purple-900/40 to-orange-900/30 flex items-center justify-center">
+                                        <Instagram size={20} className="text-white/30" />
+                                    </div>
+                                ) : n.imagen_url ? (
                                     <img src={n.imagen_url} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center">

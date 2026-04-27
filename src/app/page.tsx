@@ -36,6 +36,11 @@ const NewsGridCard = dynamic(() => newsCardMod().then((mod) => mod.NewsGridCard)
   loading: () => <NewsListSkeleton />
 });
 
+const InstagramCompactCard = dynamic(
+  () => import('@/modules/news/components/instagram-feed-card').then((mod) => mod.InstagramCompactCard),
+  { ssr: false, loading: () => <NewsListSkeleton /> }
+);
+
 /** Solo cliente: evita hydration mismatch (SWR + sessionStorage en useMatches vs SSR vacío). */
 const MatchesTodaySection = dynamic(
   () => import("@/modules/matches/components/matches-today-section").then((m) => m.MatchesTodaySection),
@@ -600,17 +605,25 @@ export default function Home() {
               {[1, 2].map(i => <NewsListSkeleton key={i} />)}
             </div>
           ) : filteredNews.length > 0 ? (
-            <div className={cn(
-              "relative z-10 grid gap-4 sm:gap-6",
-              filteredNews.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"
-            )}>
-              {filteredNews.length === 1 ? (
-                <NewsCompactHero noticia={filteredNews[0]} />
-              ) : (
-                filteredNews.map(noticia => (
-                  <NewsGridCard key={noticia.id} noticia={noticia} />
-                ))
-              )}
+            <div className="relative z-10 flex flex-col gap-4 sm:gap-6">
+              {/* Instagram posts render full-width */}
+              {filteredNews.filter(n => n.categoria === 'instagram' && n.instagram_url).map(noticia => (
+                <InstagramCompactCard key={noticia.id} noticia={noticia} />
+              ))}
+
+              {/* Regular news in grid */}
+              {(() => {
+                const regularNews = filteredNews.filter(n => n.categoria !== 'instagram' || !n.instagram_url);
+                if (regularNews.length === 0) return null;
+                if (regularNews.length === 1) return <NewsCompactHero noticia={regularNews[0]} />;
+                return (
+                  <div className={cn("grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2")}>
+                    {regularNews.map(noticia => (
+                      <NewsGridCard key={noticia.id} noticia={noticia} />
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div className="text-center py-10 bg-black/20 border border-white/5 rounded-2xl relative z-10 backdrop-blur-sm">
