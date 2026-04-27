@@ -72,7 +72,7 @@ export const PredictionCard = ({
     if (!winnerPick) return;
 
     const hasBonusBet = showBonus && hasBonus && (winnerPick !== 'DRAW' || sportName === 'Fútbol') && (
-      (sportName === 'Fútbol' && bonusGolesA !== null && bonusGolesB !== null) ||
+      sportName === 'Fútbol' ||
       (sportName === 'Voleibol' && bonusGolesA !== null && bonusGolesB !== null) ||
       (sportName === 'Baloncesto' && marginPick !== null)
     );
@@ -81,10 +81,10 @@ export const PredictionCard = ({
       prediction_type: hasBonusBet ? 'score' : 'winner',
       winner_pick: winnerPick,
       goles_a: hasBonusBet
-        ? (sportName === 'Baloncesto' ? (marginPick === 'CLOSE' ? 0 : 1) : bonusGolesA)
+        ? (sportName === 'Baloncesto' ? (marginPick === 'CLOSE' ? 0 : 1) : (bonusGolesA ?? 0))
         : null,
       goles_b: hasBonusBet
-        ? (sportName === 'Baloncesto' ? null : bonusGolesB)
+        ? (sportName === 'Baloncesto' ? null : (bonusGolesB ?? 0))
         : null,
     });
   };
