@@ -41,7 +41,7 @@ const MATCH_COLUMNS = [
     'atleta_b:profiles!athlete_b_id(id, full_name, avatar_url, carrera:carrera_id(id, nombre, escudo_url))',
     'delegacion_a_info:delegaciones!delegacion_a_id(id, escudo_url)',
     'delegacion_b_info:delegaciones!delegacion_b_id(id, escudo_url)',
-    'roster:roster_partido(id, equipo_a_or_b, jugador:jugadores(id, nombre, profile_id))'
+    'roster:roster_partido(id, equipo_a_or_b, es_titular, jugador:jugadores(id, nombre, numero, profile_id))'
 ].join(', ');
 
 /** Por `id`: evita que un fetch lento del detalle pise uno más reciente (mismo síntoma que lista global). */

@@ -30,6 +30,8 @@ import { BasketballScoreboard } from '@/modules/matches/components/basketball-sc
 import { getMatchResult, isPartidoQuinielaEligible } from "@/modules/quiniela/helpers";
 import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
 import { MatchStream } from "@/modules/matches/components/match-stream";
+import { LineupDisplay } from "@/modules/matches/components/lineup-display";
+import { BasketballLineupDisplay } from "@/modules/matches/components/basketball-lineup-display";
 
 import UniqueLoading from "@/components/ui/morph-loading";
 
@@ -1097,6 +1099,14 @@ export default function PublicMatchDetail() {
                     )}
                 </div>
 
+                {isBasketball && !isAsync && m.fase?.toLowerCase() === 'final' && (
+                    <BasketballLineupDisplay
+                        match={m}
+                        eventos={eventos}
+                        sportColor={SPORT_COLORS['Baloncesto'] || '#F59E0B'}
+                    />
+                )}
+
                 {isBasketball && !isAsync && (
                     <BasketballScoreboard
                         match={m}
@@ -1136,6 +1146,10 @@ export default function PublicMatchDetail() {
                             </div>
                         )}
                     </>
+                )}
+
+                {sportName === 'Fútbol' && m.fase?.toLowerCase() === 'final' && (
+                    <LineupDisplay match={m} sportColor={sportColor} />
                 )}
 
                 {sportName !== 'Voleibol' && !isBasketball && !isAsync && (

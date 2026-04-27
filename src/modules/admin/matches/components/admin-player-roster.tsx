@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Avatar } from "@/components/ui-primitives";
-import { Users, Plus, Trash2, ChevronDown, UserCheck } from "lucide-react";
+import { Users, Plus, Trash2, ChevronDown, UserCheck, Star } from "lucide-react";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -36,6 +36,20 @@ export const AdminPlayerRoster = ({
 
     const resetAddForm = () => {
         setAddingTeam(null);
+    };
+
+    const handleToggleTitular = async (player: any) => {
+        const rosterId = player.roster_id;
+        if (!rosterId) return;
+        const { error } = await supabase
+            .from("roster_partido")
+            .update({ es_titular: !player.es_titular })
+            .eq("id", rosterId);
+        if (!error) {
+            onPlayersUpdated();
+        } else {
+            toast.error(`Error: ${error.message}`);
+        }
     };
 
     const handleDelete = async (player: any) => {
@@ -105,6 +119,19 @@ export const AdminPlayerRoster = ({
                                     </span>
                                 )}
                             </div>
+                            <button
+                                type="button"
+                                title={p.es_titular ? "Quitar titular" : "Marcar titular"}
+                                onClick={() => void handleToggleTitular(p)}
+                                className={cn(
+                                    "shrink-0 rounded-lg p-1.5 transition-all",
+                                    p.es_titular
+                                        ? "text-emerald-400 hover:text-emerald-300"
+                                        : "text-white/0 group-hover/p:text-white/20 hover:!text-white/50"
+                                )}
+                            >
+                                <Star size={12} className={p.es_titular ? "fill-current" : ""} />
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => void handleDelete(p)}
@@ -190,6 +217,8 @@ export const AdminPlayerRoster = ({
                         </h3>
                         <p className="mt-0.5 text-[9px] font-bold text-white/20">
                             {jugadoresA.length + jugadoresB.length} registrados
+                            {" · "}
+                            {[...jugadoresA, ...jugadoresB].filter(j => j.es_titular).length} titulares
                         </p>
                     </div>
                 </div>
