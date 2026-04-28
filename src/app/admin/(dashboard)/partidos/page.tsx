@@ -677,7 +677,7 @@ export default function PartidosPage() {
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); isEditingThis ? setEditingTenisMesa(null) : openTenisMesaEdit(e, partido); }}
                                                     className={cn(
-                                                        "shrink-0 px-2 py-1 rounded-md text-[10px] font-bold transition-colors opacity-0 group-hover:opacity-100",
+                                                        "shrink-0 px-2 py-1 rounded-md text-[10px] font-bold transition-colors sm:opacity-0 sm:group-hover:opacity-100",
                                                         isEditingThis
                                                             ? "bg-white/10 text-white opacity-100"
                                                             : "text-cyan-400 hover:bg-cyan-500/10"
@@ -690,7 +690,7 @@ export default function PartidosPage() {
                                             {/* Delete */}
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setMatchToDelete(partido); }}
-                                                className="shrink-0 p-1.5 rounded-md text-slate-700 hover:text-rose-400 hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                                                className="shrink-0 p-1.5 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors sm:opacity-0 sm:group-hover:opacity-100"
                                             >
                                                 {deletingId === partido.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                                             </button>
