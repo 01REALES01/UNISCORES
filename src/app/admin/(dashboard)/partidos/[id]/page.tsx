@@ -1147,7 +1147,7 @@ export default function MatchControlPage() {
                     disciplinaName={disciplinaName}
                     onClose={() => setShowSpecificStatsEditor(false)}
                     onAddEvent={async (tipo, equipo, jugadorId) => {
-                        const ok = await handleNuevoEvento(tipo, equipo, jugadorId);
+                        const ok = await handleNuevoEvento(tipo, equipo, jugadorId, true);
                         return ok;
                     }}
                 />
