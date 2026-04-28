@@ -47,7 +47,17 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
           // This ensures: 1) post-match events appear BEFORE the finalization banner,
           // 2) there is only ONE finalization banner even if the admin re-finalized.
           // Filter out mode-change events (they are admin-only) and separate 'fin' events
-          const publicEvents = eventos.filter(e => e.tipo_evento !== 'modo_cambio');
+          // Stat-only events: tracked for the stats panel but should NOT appear in the timeline
+          const STAT_ONLY_EVENTS = new Set([
+            'posesion',
+            'tiro', 'tiro_al_arco', 'tiro_esquina',
+            'falta_cometida',
+            'rebote', 'robo', 'asistencia',
+            'ace', 'bloqueo', 'ataque_directo',
+          ]);
+          const publicEvents = eventos.filter(e =>
+            e.tipo_evento !== 'modo_cambio' && !STAT_ONLY_EVENTS.has(e.tipo_evento)
+          );
           const finEvent = publicEvents.find(e => e.equipo === 'sistema' && e.tipo_evento === 'fin');
           const otherEvents = publicEvents.filter(e => !(e.equipo === 'sistema' && e.tipo_evento === 'fin'));
           const orderedEvents = finEvent ? [...otherEvents, finEvent] : otherEvents;
@@ -71,6 +81,16 @@ export function MatchTimeline({ match, eventos, sportName }: MatchTimelineProps)
               else if (e.tipo_evento === 'punto_3') { eventIcon = <span className="text-[11px] font-black text-white">+3</span>; eventLabel = 'Triple'; }
               else if (e.tipo_evento === 'punto') { eventIcon = <span className="text-base">🏐</span>; eventLabel = 'Punto'; }
               else if (e.tipo_evento === 'set') { eventIcon = <span className="text-sm">🏆</span>; eventLabel = 'Set'; }
+              else if (e.tipo_evento === 'ace') { eventIcon = <span className="text-base">🎯</span>; eventLabel = 'Ace'; }
+              else if (e.tipo_evento === 'bloqueo') { eventIcon = <span className="text-base">🧱</span>; eventLabel = 'Bloqueo'; }
+              else if (e.tipo_evento === 'ataque_directo') { eventIcon = <span className="text-base">💥</span>; eventLabel = 'Ataque Directo'; }
+              else if (e.tipo_evento === 'tiro') { eventIcon = <span className="text-base">🦶</span>; eventLabel = 'Tiro'; }
+              else if (e.tipo_evento === 'tiro_al_arco') { eventIcon = <span className="text-base">🥅</span>; eventLabel = 'Tiro al Arco'; }
+              else if (e.tipo_evento === 'falta_cometida') { eventIcon = <span className="text-base">⚠️</span>; eventLabel = 'Falta'; }
+              else if (e.tipo_evento === 'tiro_esquina') { eventIcon = <span className="text-base">🚩</span>; eventLabel = 'Córner'; }
+              else if (e.tipo_evento === 'rebote') { eventIcon = <span className="text-base">🏀</span>; eventLabel = 'Rebote'; }
+              else if (e.tipo_evento === 'robo') { eventIcon = <span className="text-base">🤏</span>; eventLabel = 'Robo'; }
+              else if (e.tipo_evento === 'asistencia') { eventIcon = <span className="text-base">🤝</span>; eventLabel = 'Asistencia'; }
 
               if (isSystem) {
                 const auditData = parseEventAudit(e.descripcion);

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, Check, CircleDot, Loader2, Edit3, Info, Volleyball, X } from "lucide-react";
+import { AlertCircle, Check, CircleDot, Loader2, Edit3, Info, Volleyball, X, Settings, BarChart3, Target } from "lucide-react";
 import { Button, Card } from "@/components/ui-primitives";
 import { useAuth } from "@/hooks/useAuth";
 import { SafeBackButton } from "@/shared/components/safe-back-button";
@@ -24,6 +24,7 @@ import { MatchMetaEditor } from "@/modules/admin/matches/components/match-meta-e
 import { BasketballBulkStats } from "@/modules/admin/matches/components/basketball-bulk-stats";
 import { AdminMvpPicker } from "@/modules/admin/matches/components/admin-mvp-picker";
 import { AdminQuickBench } from "@/modules/admin/matches/components/admin-quick-bench";
+import { AdminSpecificStatsEditor } from "@/modules/admin/matches/components/admin-specific-stats-editor";
 import { BasquetDeporteIntegral } from "@/modules/admin/matches/components/basquet-deporte-integral";
 import { SPORT_COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,11 @@ const GET_SPORT_ACTIONS = (sport: string) => {
             { value: 'tarjeta_amarilla', label: 'Amarilla', icon: '🟨', style: 'card-yellow' },
             { value: 'tarjeta_roja', label: 'Roja', icon: '🟥', style: 'card-red' },
             { value: 'cambio', label: 'Cambio', icon: '🔄', style: 'pill-neutral' },
+            { value: 'tiro', label: 'Tiro', icon: '🦶', style: 'pill-neutral', stat: true },
+            { value: 'tiro_al_arco', label: 'Al arco', icon: '🥅', style: 'pill-neutral', stat: true },
+            { value: 'falta_cometida', label: 'Falta', icon: '⚠️', style: 'pill-neutral', stat: true },
+            { value: 'tiro_esquina', label: 'Córner', icon: '🚩', style: 'pill-neutral', stat: true },
+            { value: 'posesion', label: 'Posesión', icon: '📊', style: 'pill-neutral', stat: true },
         ];
     }
     if (sport === 'Baloncesto') {
@@ -62,6 +68,9 @@ const GET_SPORT_ACTIONS = (sport: string) => {
             { value: 'falta_tecnica', label: 'Técnica', icon: '🟨', style: 'card-yellow' },
             { value: 'falta_antideportiva', label: 'Antideportiva', icon: '🟥', style: 'card-red' },
             { value: 'cambio', label: 'Cambio', icon: '🔄', style: 'pill-neutral' },
+            { value: 'rebote', label: 'Rebote', icon: '🏀', style: 'pill-neutral', stat: true },
+            { value: 'robo', label: 'Robo', icon: '🤏', style: 'pill-neutral', stat: true },
+            { value: 'asistencia', label: 'Asistencia', icon: '🤝', style: 'pill-neutral', stat: true },
         ];
     }
     if (sport === 'Voleibol') {
@@ -69,6 +78,9 @@ const GET_SPORT_ACTIONS = (sport: string) => {
             { value: 'punto', label: 'Punto', icon: '🏐', style: 'pill-blue' },
             { value: 'tarjeta_amarilla', label: 'Amarilla', icon: '🟨', style: 'card-yellow' },
             { value: 'tarjeta_roja', label: 'Roja', icon: '🟥', style: 'card-red' },
+            { value: 'ace', label: 'Ace', icon: '🎯', style: 'pill-neutral', stat: true },
+            { value: 'bloqueo', label: 'Bloqueo', icon: '🧱', style: 'pill-neutral', stat: true },
+            { value: 'ataque_directo', label: 'Ataque', icon: '💥', style: 'pill-neutral', stat: true },
         ];
     }
     if (sport === 'Tenis' || sport === 'Tenis de Mesa') {
@@ -99,6 +111,37 @@ const FAIR_PLAY_CARD_ACTIONS = [
     { value: 'tarjeta_roja', label: 'Roja', icon: '🟥', style: 'card-red' },
 ] as const;
 
+const SPORT_STAT_OPTIONS: Record<string, { value: string; label: string }[]> = {
+    'Fútbol': [
+        { value: 'tiro', label: 'Tiros' },
+        { value: 'tiro_al_arco', label: 'Tiros al arco' },
+        { value: 'falta_cometida', label: 'Faltas' },
+        { value: 'tiro_esquina', label: 'Córners' },
+        { value: 'posesion', label: 'Posesión' },
+    ],
+    'Futsal': [
+        { value: 'tiro', label: 'Tiros' },
+        { value: 'tiro_al_arco', label: 'Tiros al arco' },
+        { value: 'falta_cometida', label: 'Faltas' },
+        { value: 'tiro_esquina', label: 'Córners' },
+        { value: 'posesion', label: 'Posesión' },
+    ],
+    'Baloncesto': [
+        { value: 'rebote', label: 'Rebotes' },
+        { value: 'robo', label: 'Robos' },
+        { value: 'asistencia', label: 'Asistencias' },
+        { value: 'bloqueo', label: 'Bloqueos' },
+        { value: 'falta', label: 'Faltas' },
+    ],
+    'Voleibol': [
+        { value: 'ace', label: 'Aces' },
+        { value: 'bloqueo', label: 'Bloqueos' },
+        { value: 'ataque_directo', label: 'Ataques directos' },
+    ],
+};
+
+type StatsConfig = { enabled: boolean; visible: string[] };
+
 export default function MatchControlPage() {
     const params = useParams();
     const router = useRouter();
@@ -126,7 +169,8 @@ export default function MatchControlPage() {
         finalizarPorWO,
         requestDeleteEvento,
         fetchJugadores,
-        fetchMatchDetails
+        fetchMatchDetails,
+        setMatch
     } = useMatchControl(matchId);
 
     /** Refetch partido/eventos/jugadores sin pantalla de carga (evita desmontar el modal “Edición completa”). */
@@ -138,10 +182,14 @@ export default function MatchControlPage() {
     const [isEndingMatch, setIsEndingMatch] = useState(false);
     const [isEditingScore, setIsEditingScore] = useState(false);
     const [confirmingDeletion, setConfirmingDeletion] = useState<Evento | null>(null);
+    const [confirmingDeleteMatch, setConfirmingDeleteMatch] = useState(false);
+    const [deletingMatch, setDeletingMatch] = useState(false);
     const [showFullEditor, setShowFullEditor] = useState(false);
     const [fullEditorTab, setFullEditorTab] = useState<'marcador' | 'eventos' | 'jugadores' | 'deporte_integral'>('marcador');
     const [showMetaEditor, setShowMetaEditor] = useState(false);
     const [showReview, setShowReview] = useState(false);
+    const [showStatsConfig, setShowStatsConfig] = useState(false);
+    const [showSpecificStatsEditor, setShowSpecificStatsEditor] = useState(false);
     const [eventBenchMode, setEventBenchMode] = useState<'quick' | 'classic'>(() => {
         if (typeof window !== 'undefined') {
             try {
@@ -290,6 +338,25 @@ export default function MatchControlPage() {
         }
     };
 
+    const handleDeleteMatch = async () => {
+        if (!match) return;
+        setDeletingMatch(true);
+        try {
+            await supabase.from('olympics_eventos').delete().eq('partido_id', match.id);
+            await supabase.from('roster_partido').delete().eq('partido_id', match.id);
+            await supabase.from('pronosticos').delete().eq('match_id', match.id);
+            await supabase.from('noticias').update({ partido_id: null }).eq('partido_id', match.id);
+            const { error } = await supabase.from('partidos').delete().eq('id', match.id);
+            if (error) throw error;
+            toast.success('Partido eliminado');
+            router.push('/admin/partidos');
+        } catch (err: any) {
+            toast.error('Error al eliminar: ' + err.message);
+            setDeletingMatch(false);
+            setConfirmingDeleteMatch(false);
+        }
+    };
+
     if (loading) return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
             <Loader2 className="w-12 h-12 text-red-500 animate-spin" />
@@ -308,6 +375,49 @@ export default function MatchControlPage() {
 
     const disciplinaName = match.disciplinas?.name || 'Fútbol';
     const isQuickBenchSport = ['Fútbol', 'Futsal', 'Baloncesto', 'Voleibol'].includes(disciplinaName);
+    const sportStatOptions = SPORT_STAT_OPTIONS[disciplinaName] || [];
+    const statsConfig: StatsConfig = match.marcador_detalle?.stats_config || { enabled: false, visible: [] };
+
+    const handleSaveStatsConfig = async (config: StatsConfig) => {
+        if (!match) return;
+        
+        // Use a safe copy and ensure required fields for DB triggers
+        let currentDetalle = { ...(match.marcador_detalle || {}) };
+        
+        // 🛡️ Pre-emptive structure initialization for DB consistency (Triggers)
+        if (disciplinaName === 'Baloncesto') {
+            if (currentDetalle.puntos_a === undefined) currentDetalle.puntos_a = 0;
+            if (currentDetalle.puntos_b === undefined) currentDetalle.puntos_b = 0;
+            if (currentDetalle.total_a === undefined) currentDetalle.total_a = 0;
+            if (currentDetalle.total_b === undefined) currentDetalle.total_b = 0;
+            if (currentDetalle.cuarto_actual === undefined) currentDetalle.cuarto_actual = 1;
+        } else if (disciplinaName === 'Fútbol' || disciplinaName === 'Futsal') {
+            if (currentDetalle.goles_a === undefined) currentDetalle.goles_a = 0;
+            if (currentDetalle.goles_b === undefined) currentDetalle.goles_b = 0;
+            if (currentDetalle.tiempo_actual === undefined) currentDetalle.tiempo_actual = 1;
+        } else if (disciplinaName === 'Voleibol') {
+            if (currentDetalle.sets_a === undefined) currentDetalle.sets_a = 0;
+            if (currentDetalle.sets_b === undefined) currentDetalle.sets_b = 0;
+            if (currentDetalle.set_actual === undefined) currentDetalle.set_actual = 1;
+        }
+
+        const detalleFinal = { ...currentDetalle, stats_config: config };
+        
+        // 1. Optimistic update (immediate UI feedback)
+        setMatch(prev => prev ? { ...prev, marcador_detalle: detalleFinal } : null);
+
+        // 2. Database update
+        const { error } = await supabase.from('partidos').update({ marcador_detalle: detalleFinal }).eq('id', matchId);
+        
+        if (error) {
+            toast.error('No se pudo guardar: ' + error.message);
+            // Rollback only on error
+            refreshMatchSilently();
+            return;
+        }
+        
+        toast.success(config.enabled ? 'Estadísticas activadas' : 'Estadísticas desactivadas');
+    };
 
     /** Actualiza `jugadores.numero` (vale para próximos partidos de la misma base). */
     const handleUpdateJugadorNumero = async (jugadorId: number, raw: string) => {
@@ -376,13 +486,22 @@ export default function MatchControlPage() {
                         <span>📅 {match.fecha ? new Date(match.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : 'Sin fecha'}</span>
                         <span>📍 {match.lugar || 'Sin lugar'}</span>
                     </div>
-                    <button
-                        onClick={() => setShowMetaEditor(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all active:scale-95 shrink-0"
-                    >
-                        <Edit3 size={11} />
-                        Editar
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            onClick={() => setShowMetaEditor(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all active:scale-95"
+                        >
+                            <Edit3 size={11} />
+                            Editar
+                        </button>
+                        <button
+                            onClick={() => setConfirmingDeleteMatch(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/5 hover:bg-rose-500/15 border border-rose-500/20 text-[9px] font-black uppercase tracking-widest text-rose-500/50 hover:text-rose-400 transition-all active:scale-95"
+                        >
+                            <X size={11} />
+                            Eliminar
+                        </button>
+                    </div>
                 </div>
 
                 {showMetaEditor && (
@@ -395,7 +514,30 @@ export default function MatchControlPage() {
                 )}
 
                 {(isTeamSport || isTenisSport) && (
-                    <div className="flex items-stretch sm:items-center justify-stretch sm:justify-end mb-4 -mt-2">
+                    <div className="flex items-stretch sm:items-center justify-stretch sm:justify-end gap-2 mb-4 -mt-2">
+                        {sportStatOptions.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setShowStatsConfig(v => !v)}
+                                className={cn(
+                                    "flex w-full sm:w-auto items-center justify-center gap-2 min-h-[48px] px-5 rounded-xl active:scale-[0.99] transition-colors text-sm font-black uppercase tracking-wide border-2 touch-manipulation",
+                                    statsConfig.enabled
+                                        ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-300/50 shadow-lg shadow-emerald-900/30"
+                                        : "bg-white/5 hover:bg-white/10 text-white/50 border-white/10"
+                                )}
+                            >
+                                <BarChart3 size={18} className="shrink-0" />
+                                Stats
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => setShowSpecificStatsEditor(true)}
+                            className="flex w-full sm:w-auto items-center justify-center gap-2 min-h-[48px] px-5 rounded-xl bg-orange-600 hover:bg-orange-500 active:scale-[0.99] transition-all text-sm font-black uppercase tracking-wide text-white border-2 border-orange-300/50 shadow-lg shadow-orange-900/30 touch-manipulation"
+                        >
+                            <Target size={18} className="shrink-0" />
+                            Registrar Acción
+                        </button>
                         <button
                             type="button"
                             onClick={() => setShowFullEditor(true)}
@@ -406,7 +548,69 @@ export default function MatchControlPage() {
                         </button>
                     </div>
                 )}
-                
+
+                {showStatsConfig && sportStatOptions.length > 0 && (
+                    <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div 
+                            className="flex items-center justify-between mb-4 cursor-pointer group/toggle"
+                            onClick={() => {
+                                const allValues = sportStatOptions.map(o => o.value);
+                                handleSaveStatsConfig({ 
+                                    enabled: !statsConfig.enabled, 
+                                    visible: statsConfig.enabled ? statsConfig.visible : allValues 
+                                });
+                            }}
+                        >
+                            <div className="flex items-center gap-3">
+                                <BarChart3 size={16} className={cn("transition-colors", statsConfig.enabled ? "text-emerald-400" : "text-white/40")} />
+                                <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/70 group-hover/toggle:text-white transition-colors">
+                                    Tabla de estadísticas
+                                </h4>
+                            </div>
+                            <div
+                                className={cn(
+                                    "relative w-12 h-7 rounded-full transition-all duration-300 border shadow-inner",
+                                    statsConfig.enabled
+                                        ? "bg-emerald-500 border-emerald-400 shadow-emerald-900/40"
+                                        : "bg-white/10 border-white/20"
+                                )}
+                            >
+                                <div className={cn(
+                                    "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-lg transition-all duration-300 transform",
+                                    statsConfig.enabled ? "translate-x-[20px]" : "translate-x-0.5"
+                                )} />
+                            </div>
+                        </div>
+                        {statsConfig.enabled && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
+                                {sportStatOptions.map(opt => {
+                                    const isOn = statsConfig.visible.includes(opt.value);
+                                    return (
+                                        <button
+                                            key={opt.value}
+                                            type="button"
+                                            onClick={() => {
+                                                const newVisible = isOn
+                                                    ? statsConfig.visible.filter(v => v !== opt.value)
+                                                    : [...statsConfig.visible, opt.value];
+                                                handleSaveStatsConfig({ ...statsConfig, visible: newVisible });
+                                            }}
+                                            className={cn(
+                                                "px-3 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-wide transition-all",
+                                                isOn
+                                                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                                                    : "bg-white/5 border-white/10 text-white/30"
+                                            )}
+                                        >
+                                            {isOn ? '✓ ' : ''}{opt.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {match.marcador_detalle?.tipo === 'carrera' ? (
                     <Card className="p-8 mb-12">
                         <RaceControl
@@ -487,7 +691,7 @@ export default function MatchControlPage() {
                                     jugadoresB={jugadoresB}
                                     eventos={eventos}
                                     onAddEvent={(data) =>
-                                        handleNuevoEvento(data.tipo, data.equipo, data.jugador_id, true)
+                                        handleNuevoEvento(data.tipo, data.equipo, data.jugador_id, true, data.descripcion ? { descripcion: data.descripcion } : undefined)
                                     }
                                     onAddPlayer={handleAddPlayer}
                                     disciplinaName={disciplinaName}
@@ -841,7 +1045,7 @@ export default function MatchControlPage() {
                                     jugadoresB={jugadoresB}
                                     eventos={eventos}
                                     onAddEvent={(data) =>
-                                        handleNuevoEvento(data.tipo, data.equipo, data.jugador_id)
+                                        handleNuevoEvento(data.tipo, data.equipo, data.jugador_id, false, data.descripcion ? { descripcion: data.descripcion } : undefined)
                                     }
                                     onAddPlayer={handleAddPlayer}
                                     disciplinaName={disciplinaName}
@@ -893,6 +1097,55 @@ export default function MatchControlPage() {
                     setConfirmingDeletion(null);
                 }}
             />
+
+            {confirmingDeleteMatch && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !deletingMatch && setConfirmingDeleteMatch(false)} />
+                    <div className="relative z-10 w-full max-w-sm rounded-3xl border border-rose-500/30 bg-zinc-950 p-8 shadow-2xl shadow-rose-500/10 flex flex-col gap-6">
+                        <div className="flex flex-col items-center text-center gap-3">
+                            <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                                <X size={24} className="text-rose-400" />
+                            </div>
+                            <h3 className="text-lg font-black text-white uppercase tracking-wide">¿Eliminar partido?</h3>
+                            <p className="text-sm text-white/40 leading-relaxed">
+                                <span className="text-white/70 font-bold">{match.equipo_a} vs {match.equipo_b}</span>
+                                <br />Se eliminarán todos los eventos, roster y pronósticos asociados. Esta acción no se puede deshacer.
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setConfirmingDeleteMatch(false)}
+                                disabled={deletingMatch}
+                                className="flex-1 h-12 rounded-2xl border border-white/10 bg-white/5 text-sm font-black text-white/60 hover:text-white hover:bg-white/10 transition-all disabled:opacity-40"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleDeleteMatch}
+                                disabled={deletingMatch}
+                                className="flex-1 h-12 rounded-2xl bg-rose-600 hover:bg-rose-500 text-sm font-black text-white transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
+                            >
+                                {deletingMatch ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
+                                {deletingMatch ? 'Eliminando...' : 'Eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showSpecificStatsEditor && (
+                <AdminSpecificStatsEditor
+                    match={match}
+                    jugadoresA={jugadoresA}
+                    jugadoresB={jugadoresB}
+                    disciplinaName={disciplinaName}
+                    onClose={() => setShowSpecificStatsEditor(false)}
+                    onAddEvent={async (tipo, equipo, jugadorId) => {
+                        const ok = await handleNuevoEvento(tipo, equipo, jugadorId);
+                        return ok;
+                    }}
+                />
+            )}
 
             {showFullEditor && (() => {
                 const tabLabel = disciplinaName === 'Baloncesto' ? 'Cuartos' : (disciplinaName === 'Fútbol' || disciplinaName === 'Futsal') ? 'Tiempos' : 'Sets / Marcador';
@@ -1031,7 +1284,7 @@ export default function MatchControlPage() {
                                             jugadoresA={jugadoresA}
                                             jugadoresB={jugadoresB}
                                             eventos={eventos}
-                                            onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id, true)}
+                                            onAddEvent={(data) => handleNuevoEvento(data.tipo, data.equipo, data.jugador_id, true, data.descripcion ? { descripcion: data.descripcion } : undefined)}
                                             onAddPlayer={handleAddPlayer}
                                             disciplinaName={disciplinaName}
                                         />

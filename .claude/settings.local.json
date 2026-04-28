@@ -4,7 +4,10 @@
       "Bash(grep -l \"olympics_eventos\" \"/c/Users/H.P VICTUS/OneDrive/Escritorio/Uniscore/project_olympics\"/supabase/*.sql)",
       "Bash(grep -n \"use client\\\\|useEffect\\\\|supabase\\\\.\\\\|safeQuery\\\\|realtime\\\\|subscribe\" /Users/reales/Desktop/project_olympics/src/app/partido/[id]/page.tsx)",
       "Bash(ls -la /Users/orlandopalma/Documents/GitHub/project_olympics/.env*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Read(//Users/orlandopalma/Desktop/**)",
+      "Bash(node -e ' *)",
+      "Bash(node /tmp/insert_bracket.js)"
     ]
   }
 }

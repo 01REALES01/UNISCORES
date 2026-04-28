@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import type { PartidoWithRelations as Partido, Evento } from '@/modules/matches/types';
 import { cn } from '@/lib/utils';
 import { Avatar, Badge } from '@/components/ui-primitives';
-import { Trophy, Star, Activity, Flame, Target, Users, Crown } from 'lucide-react';
+import { Trophy, Star, Activity, Flame, Target, Users, Crown, ChevronDown, ChevronUp } from 'lucide-react';
 import { SPORT_COLORS, SPORT_GRADIENT } from '@/lib/constants';
 
 interface MatchStatsProps {
@@ -67,6 +67,64 @@ const StatRow = ({ label, valueA, valueB, colorA, colorB }: { label: string, val
     );
 };
 
+// Possession Hero Banner (Football)
+const PossessionHeroBanner = ({ valueA, valueB, colorA }: { valueA: number; valueB: number; colorA: string }) => {
+    const total = valueA + valueB || 100;
+    const pctA = Math.round((valueA / total) * 100);
+    const pctB = 100 - pctA;
+    return (
+        <div className="flex flex-col gap-3 pb-6 border-b border-white/[0.07]">
+            <p className="text-center text-[11px] font-semibold tracking-[0.3em] text-white/40 uppercase">Posesión</p>
+            <div className="relative h-14 rounded-full overflow-hidden flex shadow-xl">
+                <div
+                    className="h-full flex items-center justify-start pl-5 transition-all duration-1000 shrink-0"
+                    style={{ width: `${pctA}%`, backgroundColor: colorA }}
+                >
+                    <span className="text-white font-black text-lg leading-none drop-shadow">{pctA} %</span>
+                </div>
+                <div
+                    className="h-full flex items-center justify-end pr-5 flex-1 transition-all duration-1000"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.93)' }}
+                >
+                    <span className="text-black font-black text-lg leading-none">{pctB} %</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Simple stat row — value | label | value (Football style, image reference)
+const SimpleStatRow = ({ label, valueA, valueB, colorA }: { label: string; valueA: number; valueB: number; colorA: string }) => {
+    const aIsHigher = valueA > valueB;
+    const bIsHigher = valueB > valueA;
+    return (
+        <div className="flex items-center py-3 gap-2">
+            <div className="w-20 flex justify-start items-center shrink-0">
+                {aIsHigher ? (
+                    <span
+                        className="inline-flex items-center justify-center min-w-[38px] px-3 py-1 rounded-full text-white font-black text-sm shadow-lg"
+                        style={{ backgroundColor: colorA }}
+                    >
+                        {valueA}
+                    </span>
+                ) : (
+                    <span className="text-white/75 font-semibold text-sm">{valueA}</span>
+                )}
+            </div>
+            <span className="flex-1 text-center text-[12px] sm:text-[13px] text-white/50 font-medium tracking-wide">{label}</span>
+            <div className="w-20 flex justify-end items-center shrink-0">
+                {bIsHigher ? (
+                    <span className="inline-flex items-center justify-center min-w-[38px] px-3 py-1 rounded-full bg-white text-black font-black text-sm shadow-lg">
+                        {valueB}
+                    </span>
+                ) : (
+                    <span className="text-white/75 font-semibold text-sm">{valueB}</span>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // Basketball leader card helper
 const LeaderCard = ({ label, player, count, color }: { label: string, player: any, count: number, color: string }) => {
     if (!player) return (
@@ -107,20 +165,205 @@ const LeaderCard = ({ label, player, count, color }: { label: string, player: an
     );
 };
 
+// Basketball Team Stats Table Component
+const BasketballPlayerTable = ({ 
+    teamName, 
+    players, 
+    color,
+    isGuest = false 
+}: { 
+    teamName: string, 
+    players: any[], 
+    color: string,
+    isGuest?: boolean
+}) => {
+    const [isExpanded, setIsExpanded] = React.useState(false);
+    const displayedPlayers = isExpanded ? players : players.slice(0, 5);
+
+    if (players.length === 0) return null;
+
+    return (
+        <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between px-1">
+                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/70 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                    {teamName}
+                </h3>
+                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{players.length} JUGADORES</span>
+            </div>
+            
+            <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="bg-white/[0.04] border-b border-white/5">
+                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40">Jugador</th>
+                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12">PTS</th>
+                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10">REB</th>
+                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10">AST</th>
+                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10 text-amber-400/80">BLQ</th>
+                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10 pr-4 text-emerald-400">ROB</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.03]">
+                        {displayedPlayers.map((p, idx) => (
+                            <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
+                                <td className="py-3 px-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative flex-shrink-0">
+                                            <Avatar
+                                                src={p.profile.avatar_url || p.profile.profile_id}
+                                                name={p.profile.nombre}
+                                                className="w-8 h-8 border border-white/10"
+                                            />
+                                            {idx === 0 && !isExpanded && (
+                                                <div className="absolute -top-1 -left-1 bg-amber-500 rounded-full p-0.5 shadow-lg border border-black/50">
+                                                    <Crown size={8} className="text-black" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors">
+                                                {p.profile.nombre.split(' ').slice(-1)[0]} {p.profile.numero ? `#${p.profile.numero}` : ''}
+                                            </span>
+                                            <span className="text-[8px] font-medium text-white/30 uppercase truncate">
+                                                {p.profile.nombre.split(' ').slice(0, 1)[0]}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-white">{p.points}</td>
+                                <td className="py-3 px-2 text-xs font-bold tabular-nums text-center text-white/60">{p.rebotes}</td>
+                                <td className="py-3 px-2 text-xs font-bold tabular-nums text-center text-white/60">{p.asistencias}</td>
+                                <td className="py-3 px-2 text-xs font-black tabular-nums text-center text-amber-500/60">{p.bloqueos}</td>
+                                <td className="py-3 px-2 text-xs font-black tabular-nums text-center pr-4 text-emerald-500/80">{p.robos}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                
+                {players.length > 5 && (
+                    <button 
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="w-full py-3 bg-white/[0.03] hover:bg-white/[0.06] transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white border-t border-white/5"
+                    >
+                        {isExpanded ? (
+                            <>Ver menos <ChevronUp size={12} /></>
+                        ) : (
+                            <>Ver todos ({players.length - 5} más) <ChevronDown size={12} /></>
+                        )}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Volleyball Team Stats Table Component
+const VolleyballPlayerTable = ({ 
+    teamName, 
+    players, 
+    color 
+}: { 
+    teamName: string, 
+    players: any[], 
+    color: string 
+}) => {
+    const [isExpanded, setIsExpanded] = React.useState(false);
+    const displayedPlayers = isExpanded ? players : players.slice(0, 5);
+
+    if (players.length === 0) return null;
+
+    return (
+        <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between px-1">
+                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/70 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                    {teamName}
+                </h3>
+                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{players.length} JUGADORES</span>
+            </div>
+            
+            <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="bg-white/[0.04] border-b border-white/5">
+                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40">Jugador</th>
+                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 text-emerald-400">ACE</th>
+                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 text-amber-400">BLQ</th>
+                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 pr-4 text-sky-400">ATA</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.03]">
+                        {displayedPlayers.map((p, idx) => (
+                            <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
+                                <td className="py-3 px-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative flex-shrink-0">
+                                            <Avatar
+                                                src={p.profile.avatar_url || p.profile.profile_id}
+                                                name={p.profile.nombre}
+                                                className="w-8 h-8 border border-white/10"
+                                            />
+                                            {idx === 0 && !isExpanded && (
+                                                <div className="absolute -top-1 -left-1 bg-amber-500 rounded-full p-0.5 shadow-lg border border-black/50">
+                                                    <Crown size={8} className="text-black" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors">
+                                                {p.profile.nombre.split(' ').slice(-1)[0]} {p.profile.numero ? `#${p.profile.numero}` : ''}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-emerald-500/80">{p.aces}</td>
+                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-amber-500/80">{p.bloqueos}</td>
+                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center pr-4 text-sky-500/80">{p.ataquesDirectos}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                
+                {players.length > 5 && (
+                    <button 
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="w-full py-3 bg-white/[0.03] hover:bg-white/[0.06] transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white border-t border-white/5"
+                    >
+                        {isExpanded ? (
+                            <>Ver menos <ChevronUp size={12} /></>
+                        ) : (
+                            <>Ver todos ({players.length - 5} más) <ChevronDown size={12} /></>
+                        )}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
 export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
     const router = useRouter();
     const isBasketball = sportName?.toLowerCase().includes('baloncesto') || sportName?.toLowerCase().includes('basket');
     const isFootball = sportName?.toLowerCase().includes('futbol') || sportName?.toLowerCase().includes('fútbol') || sportName?.toLowerCase().includes('micro') || sportName?.toLowerCase().includes('sala');
     const isVolleyball = sportName === 'Voleibol';
+    const statsConfig = match.marcador_detalle?.stats_config as { enabled: boolean; visible: string[] } | undefined;
+    const isStatVisible = (stat: string) => statsConfig?.enabled && statsConfig.visible.includes(stat);
 
     const stats = useMemo(() => {
-        const teamA = { 
-            goals: 0, fouls: 0, yellowCards: 0, redCards: 0, pts1: 0, pts2: 0, pts3: 0, 
-            players: {} as Record<string, { points: number, goals: number, pts1: number, pts2: number, pts3: number, profile: any }> 
+        const teamA = {
+            goals: 0, fouls: 0, yellowCards: 0, redCards: 0, pts1: 0, pts2: 0, pts3: 0,
+            tiros: 0, tirosAlArco: 0, faltasCometidas: 0, tirosEsquina: 0,
+            aces: 0, bloqueos: 0, ataquesDirectos: 0,
+            rebotes: 0, robos: 0, asistencias: 0,
+            players: {} as Record<string, { points: number, goals: number, pts1: number, pts2: number, pts3: number, rebotes: number, robos: number, asistencias: number, aces: number, bloqueos: number, ataquesDirectos: number, profile: any }>
         };
-        const teamB = { 
-            goals: 0, fouls: 0, yellowCards: 0, redCards: 0, pts1: 0, pts2: 0, pts3: 0, 
-            players: {} as Record<string, { points: number, goals: number, pts1: number, pts2: number, pts3: number, profile: any }> 
+        const teamB = {
+            goals: 0, fouls: 0, yellowCards: 0, redCards: 0, pts1: 0, pts2: 0, pts3: 0,
+            tiros: 0, tirosAlArco: 0, faltasCometidas: 0, tirosEsquina: 0,
+            aces: 0, bloqueos: 0, ataquesDirectos: 0,
+            rebotes: 0, robos: 0, asistencias: 0,
+            players: {} as Record<string, { points: number, goals: number, pts1: number, pts2: number, pts3: number, rebotes: number, robos: number, asistencias: number, aces: number, bloqueos: number, ataquesDirectos: number, profile: any }>
         };
 
         let mvp: any = null;
@@ -132,6 +375,8 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
             const team = isTeamA ? teamA : teamB;
             
             let pointsGained = 0;
+            const eventIsPoint = ['gol', 'anotacion', 'punto', 'punto_1', 'punto_2', 'punto_3', 'ace', 'bloqueo', 'ataque_directo' ].includes(ev.tipo_evento);
+            
             if (['gol', 'anotacion', 'punto'].includes(ev.tipo_evento)) {
                 team.goals += 1; pointsGained = 1;
             } else if (ev.tipo_evento === 'punto_1') {
@@ -140,24 +385,39 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                 team.goals += 2; team.pts2 += 1; pointsGained = 2;
             } else if (ev.tipo_evento === 'punto_3') {
                 team.goals += 3; team.pts3 += 1; pointsGained = 3;
+            } else if (ev.tipo_evento === 'ace') {
+                team.aces += 1; 
+                if (isVolleyball) { team.goals += 1; pointsGained = 1; }
+            } else if (ev.tipo_evento === 'bloqueo') {
+                team.bloqueos += 1;
+                if (isVolleyball) { team.goals += 1; pointsGained = 1; }
+            } else if (ev.tipo_evento === 'ataque_directo') {
+                team.ataquesDirectos += 1;
+                if (isVolleyball) { team.goals += 1; pointsGained = 1; }
             } else if (ev.tipo_evento === 'falta') {
-                team.fouls += 1;
-            } else if (ev.tipo_evento === 'tarjeta_amarilla') {
-                team.yellowCards += 1;
-            } else if (ev.tipo_evento === 'tarjeta_roja') {
-                team.redCards += 1;
+                team.rebotes += 1;
+            } else if (ev.tipo_evento === 'robo') {
+                team.robos += 1;
+            } else if (ev.tipo_evento === 'asistencia') {
+                team.asistencias += 1;
             }
 
             if (ev.jugadores) {
                 const pId = ev.jugadores.id;
                 if (!team.players[pId]) {
-                    team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, profile: ev.jugadores };
+                    team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, rebotes: 0, robos: 0, asistencias: 0, aces: 0, bloqueos: 0, ataquesDirectos: 0, profile: ev.jugadores };
                 }
                 team.players[pId].points += pointsGained;
                 if (['gol', 'anotacion'].includes(ev.tipo_evento)) team.players[pId].goals += 1;
                 if (ev.tipo_evento === 'punto_1') team.players[pId].pts1 += 1;
                 if (ev.tipo_evento === 'punto_2') team.players[pId].pts2 += 1;
                 if (ev.tipo_evento === 'punto_3') team.players[pId].pts3 += 1;
+                if (ev.tipo_evento === 'rebote') team.players[pId].rebotes += 1;
+                if (ev.tipo_evento === 'robo') team.players[pId].robos += 1;
+                if (ev.tipo_evento === 'asistencia') team.players[pId].asistencias += 1;
+                if (ev.tipo_evento === 'ace') team.players[pId].aces += 1;
+                if (ev.tipo_evento === 'bloqueo') team.players[pId].bloqueos += 1;
+                if (ev.tipo_evento === 'ataque_directo') team.players[pId].ataquesDirectos += 1;
 
                 if (team.players[pId].points > mvpPoints) {
                     mvpPoints = team.players[pId].points;
@@ -181,6 +441,12 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
         const leaderFreeThrows_B = allPlayersB.filter(p => p.pts1 > 0).sort((a, b) => b.pts1 - a.pts1)[0] || null;
         const leaderPoints_B = allPlayersB.filter(p => p.points > 0).sort((a, b) => b.points - a.points)[0] || null;
 
+        const posesionEvt = [...eventos].reverse().find(e => e.tipo_evento === 'posesion');
+        let posesion: { equipo_a: number; equipo_b: number } | null = null;
+        if (posesionEvt?.descripcion) {
+            try { posesion = JSON.parse(posesionEvt.descripcion); } catch {}
+        }
+
         const md = match.marcador_detalle || {};
         const manualMvp = resolveManualMvp(match, eventos, md.mvp_jugador_id);
         const effectiveMvp = manualMvp ?? mvp;
@@ -194,6 +460,9 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
             effectiveMvp,
             mvpIsManual,
             effectiveMvpPoints,
+            teamAPlayersSorted: Object.values(teamA.players).sort((a: any, b: any) => b.points - a.points || b.rebotes - a.rebotes),
+            teamBPlayersSorted: Object.values(teamB.players).sort((a: any, b: any) => b.points - a.points || b.rebotes - a.rebotes),
+            posesion,
         };
     }, [eventos, match.equipo_a, match.marcador_detalle, match.roster, (match as Partido & { mvp_jugador?: unknown }).mvp_jugador]);
 
@@ -305,7 +574,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
 
                 {/* Per-set detail — Dynamic list */}
                 <div className="relative z-10 grid grid-cols-1 gap-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 mb-2 px-1">Desglose Técnico</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 mb-2 px-1">Desglose por Sets</p>
                     {(() => {
                         const existingSets = Object.keys(detalle.sets || {}).map(Number);
                         const currentSet = detalle.set_actual || 1;
@@ -345,6 +614,33 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                             </div>
                         );
                     })}
+                </div>
+
+                {(
+                    isStatVisible('ace') ||
+                    isStatVisible('bloqueo') ||
+                    isStatVisible('ataque_directo')
+                ) && (
+                    <div className="relative z-10 bg-white/[0.04] rounded-[2rem] p-6 border border-white/10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-5 px-1 underline decoration-white/10 underline-offset-8">Desglose Técnico</p>
+                        {isStatVisible('ace') && <SimpleStatRow label="Aces" valueA={stats.teamA.aces} valueB={stats.teamB.aces} colorA={sportColorVoli} />}
+                        {isStatVisible('bloqueo') && <SimpleStatRow label="Bloqueos" valueA={stats.teamA.bloqueos} valueB={stats.teamB.bloqueos} colorA={sportColorVoli} />}
+                        {isStatVisible('ataque_directo') && <SimpleStatRow label="Ataques Directos" valueA={stats.teamA.ataquesDirectos} valueB={stats.teamB.ataquesDirectos} colorA={sportColorVoli} />}
+                    </div>
+                )}
+
+                {/* ═══ TABLAS DE JUGADORES — VOLEIBOL ═══ */}
+                <div className="relative z-10 flex flex-col gap-8 mt-4">
+                    <VolleyballPlayerTable 
+                        teamName={match.equipo_a} 
+                        players={stats.teamAPlayersSorted} 
+                        color={sportColorVoli}
+                    />
+                    <VolleyballPlayerTable 
+                        teamName={match.equipo_b} 
+                        players={stats.teamBPlayersSorted} 
+                        color={teamBColorVoli}
+                    />
                 </div>
 
                 {effectiveMvp && (
@@ -522,11 +818,39 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
             {/* ═══ BASKETBALL SECTION ═══ */}
             {isBasketball && (
                 <div className="relative z-10 flex flex-col gap-6">
-                    <div className="bg-white/[0.03] rounded-2xl p-5 border border-white/5">
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-5 px-1 underline decoration-white/10 underline-offset-8">Desglose de Tiros</p>
-                        <StatRow label="Triples" valueA={teamA.pts3} valueB={teamB.pts3} colorA={sportColor} colorB={teamBColor} />
-                        <StatRow label="Dobles" valueA={teamA.pts2} valueB={teamB.pts2} colorA={sportColor} colorB={teamBColor} />
-                        <StatRow label="T. Libres" valueA={teamA.pts1} valueB={teamB.pts1} colorA={sportColor} colorB={teamBColor} />
+                    {/* --- Technical Breakdown: List Style (Like Football) --- */}
+                    <div className="bg-white/[0.04] rounded-[2rem] p-6 border border-white/10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-5 px-1 underline decoration-white/10 underline-offset-8">Desglose Técnico</p>
+                        <div className="flex flex-col">
+                            <SimpleStatRow label="Triples" valueA={teamA.pts3} valueB={teamB.pts3} colorA={sportColor} />
+                            <SimpleStatRow label="Dobles" valueA={teamA.pts2} valueB={teamB.pts2} colorA={sportColor} />
+                            <SimpleStatRow label="Tiros Libres" valueA={teamA.pts1} valueB={teamB.pts1} colorA={sportColor} />
+                            
+                            {(isStatVisible('rebote') || isStatVisible('robo') || isStatVisible('asistencia') || isStatVisible('bloqueo') || isStatVisible('falta')) && (
+                                <div className="mt-4 pt-4 border-t border-white/5 space-y-1">
+                                    {isStatVisible('rebote') && <SimpleStatRow label="Rebotes" valueA={teamA.rebotes} valueB={teamB.rebotes} colorA={sportColor} />}
+                                    {isStatVisible('robo') && <SimpleStatRow label="Robos" valueA={teamA.robos} valueB={teamB.robos} colorA={sportColor} />}
+                                    {isStatVisible('asistencia') && <SimpleStatRow label="Asistencias" valueA={teamA.asistencias} valueB={teamB.asistencias} colorA={sportColor} />}
+                                    {isStatVisible('bloqueo') && <SimpleStatRow label="Bloqueos" valueA={teamA.bloqueos} valueB={teamB.bloqueos} colorA={sportColor} />}
+                                    {isStatVisible('falta') && <SimpleStatRow label="Faltas" valueA={teamA.fouls} valueB={teamB.fouls} colorA={sportColor} />}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ═══ TABLA DE ESTADÍSTICAS INDIVIDUALES ═══ */}
+                    <div className="flex flex-col gap-8 mt-4">
+                        <BasketballPlayerTable 
+                            teamName={match.equipo_a} 
+                            players={stats.teamAPlayersSorted} 
+                            color={sportColor}
+                        />
+                        <BasketballPlayerTable 
+                            teamName={match.equipo_b} 
+                            players={stats.teamBPlayersSorted} 
+                            color={teamBColor}
+                            isGuest
+                        />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -547,18 +871,39 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                     </div>
                 </div>
             )}
-
             {/* ═══ FOOTBALL SECTION ═══ */}
             {isFootball && (
-                <div className="relative z-10 space-y-2 bg-white/5 rounded-[2rem] p-6 border border-white/10 transition-all hover:bg-white/[0.07]">
-                    <div className="flex items-center gap-3 mb-6 px-1">
-                        <div className="w-1 h-4 rounded-full" style={{ backgroundColor: sportColor }} />
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/80 font-sans">Disciplina</p>
+                <div className="relative z-10 flex flex-col gap-6">
+                    <div className="bg-white/[0.04] rounded-[2rem] p-6 border border-white/10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-5 px-1 underline decoration-white/10 underline-offset-8">Desglose Técnico</p>
+                        {/* --- Possession Hero: always first --- */}
+                    {isStatVisible('posesion') && stats.posesion && (
+                        <PossessionHeroBanner
+                            valueA={stats.posesion.equipo_a}
+                            valueB={stats.posesion.equipo_b}
+                            colorA={sportColor}
+                        />
+                    )}
+
+                    {/* --- Rest of stats in clean row format --- */}
+                    <div className="pt-2">
+                        {isStatVisible('tiro') && (
+                            <SimpleStatRow label="Tiros totales" valueA={teamA.tiros} valueB={teamB.tiros} colorA={sportColor} />
+                        )}
+                        {isStatVisible('tiro_al_arco') && (
+                            <SimpleStatRow label="Disparos a puerta" valueA={teamA.tirosAlArco} valueB={teamB.tirosAlArco} colorA={sportColor} />
+                        )}
+                        {isStatVisible('falta_cometida') && (
+                            <SimpleStatRow label="Faltas" valueA={teamA.faltasCometidas} valueB={teamB.faltasCometidas} colorA={sportColor} />
+                        )}
+                        {isStatVisible('tiro_esquina') && (
+                            <SimpleStatRow label="Saques de esquina" valueA={teamA.tirosEsquina} valueB={teamB.tirosEsquina} colorA={sportColor} />
+                        )}
+                        <SimpleStatRow label="Tarjetas amarillas" valueA={teamA.yellowCards} valueB={teamB.yellowCards} colorA="#D97706" />
+                        <SimpleStatRow label="Tarjetas rojas" valueA={teamA.redCards} valueB={teamB.redCards} colorA="#DC2626" />
                     </div>
-                    <StatRow label="Faltas" valueA={teamA.fouls} valueB={teamB.fouls} colorA={sportColor} colorB={teamBColor} />
-                    <StatRow label="Amarillas" valueA={teamA.yellowCards} valueB={teamB.yellowCards} colorA="#FFD700" colorB="#FFD700" />
-                    <StatRow label="Rojas" valueA={teamA.redCards} valueB={teamB.redCards} colorA="#FF3B30" colorB="#FF3B30" />
                 </div>
+            </div>
             )}
 
             {/* ═══ PERFORMANCE SECTION ═══ */}
@@ -623,7 +968,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {statsConfig?.enabled && <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {/* Team A */}
                     <div className="bg-white/[0.02] border border-white/10 rounded-[2rem] p-6 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.05] shadow-xl">
                         <div className="flex items-center justify-between mb-6 px-1">
@@ -735,7 +1080,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                             )}
                         </div>
                     </div>
-                </div>
+                </div>}
             </div>
         </div>
     );

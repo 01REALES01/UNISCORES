@@ -92,6 +92,20 @@ export type TipoEvento =
   | 'falta_tecnica'
   | 'falta_antideportiva'
   | 'sistema'
+  // Voleibol stats
+  | 'ace'
+  | 'bloqueo'
+  | 'ataque_directo'
+  // Fútbol stats
+  | 'tiro'
+  | 'tiro_al_arco'
+  | 'falta_cometida'
+  | 'tiro_esquina'
+  | 'posesion'
+  // Baloncesto stats
+  | 'rebote'
+  | 'robo'
+  | 'asistencia'
   | string; // fallback para tipos no catalogados
 
 export type Evento = {

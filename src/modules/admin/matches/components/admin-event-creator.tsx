@@ -6,6 +6,10 @@ import { getDisplayName } from "@/lib/sport-helpers";
 import { SPORT_COLORS } from "@/lib/constants";
 import { PlayerSearchForm } from "./player-search-form";
 
+const TEAM_ONLY_EVENTS = new Set(['falta_cometida', 'tiro_esquina', 'posesion']);
+const PLAYER_REQUIRED_STATS = new Set(['ace', 'bloqueo', 'ataque_directo', 'tiro', 'tiro_al_arco']);
+const PLAYER_OPTIONAL_STATS = new Set(['rebote', 'robo', 'asistencia']);
+
 interface AdminEventCreatorProps {
   match: any;
   actions: any[];
@@ -40,14 +44,19 @@ export const AdminEventCreator = ({
     equipo: '',
     jugador_id: null as number | null,
   });
+  const [posesionA, setPosesionA] = useState(50);
   const [addingPlayerTeam, setAddingPlayerTeam] = useState<string | null>(null);
 
   const sportColor = SPORT_COLORS[disciplinaName] || '#6366f1';
   const isIndividualSport = ['Ajedrez', 'Tenis', 'Tenis de Mesa'].includes(disciplinaName);
   const isVolleyball = disciplinaName === 'Voleibol';
   const isFutbol = disciplinaName === 'Fútbol';
-  const needsPlayer = !isIndividualSport;
-  const playerOptional = isVolleyball;
+  const isPosesion = nuevoEvento.tipo === 'posesion';
+  const isTeamOnly = TEAM_ONLY_EVENTS.has(nuevoEvento.tipo);
+  const isPlayerRequired = PLAYER_REQUIRED_STATS.has(nuevoEvento.tipo);
+  const isPlayerOptionalStat = PLAYER_OPTIONAL_STATS.has(nuevoEvento.tipo);
+  const needsPlayer = !isIndividualSport && !isTeamOnly && !isPosesion;
+  const playerOptional = (isVolleyball && !isPlayerRequired) || isPlayerOptionalStat;
   const isCardEvent =
     nuevoEvento.tipo === 'tarjeta_amarilla' || nuevoEvento.tipo === 'tarjeta_roja' ||
     nuevoEvento.tipo === 'falta_tecnica' || nuevoEvento.tipo === 'falta_antideportiva';
@@ -62,19 +71,31 @@ export const AdminEventCreator = ({
       : []
   );
 
-  const canConfirm = Boolean(nuevoEvento.tipo && nuevoEvento.equipo) && (
-    isIndividualSport
+  const canConfirm = isPosesion
+    ? true
+    : Boolean(nuevoEvento.tipo && (isTeamOnly ? nuevoEvento.equipo : nuevoEvento.equipo)) && (
+    isIndividualSport || isTeamOnly
       ? true
-      : isCardEvent
+      : isCardEvent || isPlayerRequired
         ? Boolean(nuevoEvento.jugador_id && nuevoEvento.jugador_id !== -1)
         : Boolean(
             nuevoEvento.jugador_id ||
-            (playerOptional && nuevoEvento.jugador_id === -1)
+            ((playerOptional) && nuevoEvento.jugador_id === -1)
           )
   );
 
   const handleConfirm = () => {
-    if (playerOptional && nuevoEvento.jugador_id === -1) {
+    if (isPosesion) {
+      onAddEvent({
+        tipo: 'posesion',
+        equipo: 'sistema',
+        jugador_id: null,
+        descripcion: JSON.stringify({ equipo_a: posesionA, equipo_b: 100 - posesionA }),
+      });
+      setNuevoEvento({ tipo: '', equipo: '', jugador_id: null });
+      return;
+    }
+    if ((playerOptional || isTeamOnly) && (nuevoEvento.jugador_id === -1 || !nuevoEvento.jugador_id)) {
       onAddEvent({ ...nuevoEvento, jugador_id: null });
     } else {
       onAddEvent(nuevoEvento);
@@ -91,7 +112,7 @@ export const AdminEventCreator = ({
     }
   };
 
-  const step = !nuevoEvento.tipo ? 1 : !nuevoEvento.equipo ? 2 : 3;
+  const step = !nuevoEvento.tipo ? 1 : isPosesion ? 2 : !nuevoEvento.equipo ? 2 : 3;
 
   return (
     <div className="rounded-[2rem] border overflow-hidden backdrop-blur-sm relative"
@@ -144,34 +165,61 @@ export const AdminEventCreator = ({
           </div>
         </div>
 
-        {/* Step 2: Team */}
-        <div className={cn("transition-all duration-300", nuevoEvento.tipo ? "opacity-100" : "opacity-20 pointer-events-none blur-[1px]")}>
-          <p className="text-[9px] font-black uppercase text-white/25 mb-3 tracking-[0.25em] flex items-center gap-2">
-            <StepBadge n={2} active={step === 2} sportColor={sportColor} /> Competidor
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {['equipo_a', 'equipo_b'].map(tid => (
-              <button
-                key={tid}
-                onClick={() => setNuevoEvento({ ...nuevoEvento, equipo: tid, jugador_id: null })}
-                className="py-4 px-4 rounded-xl border-2 transition-all flex items-center gap-3"
-                style={nuevoEvento.equipo === tid
-                  ? { borderColor: `${sportColor}40`, background: `${sportColor}08`, boxShadow: `0 4px 20px ${sportColor}08` }
-                  : { borderColor: `${sportColor}08`, background: `${sportColor}03` }
-                }
-              >
-                <Avatar
-                  name={getDisplayName(match, tid === 'equipo_a' ? 'a' : 'b')}
-                  src={tid === 'equipo_a' ? match.carrera_a?.escudo_url : match.carrera_b?.escudo_url}
-                  className={cn("w-8 h-8 border shrink-0", nuevoEvento.equipo === tid ? "border-white/30" : "border-white/10")}
-                />
-                <span className={cn("font-black text-[10px] uppercase tracking-tight truncate", nuevoEvento.equipo === tid ? "text-white/90" : "text-white/40")}>
-                  {getDisplayName(match, tid === 'equipo_a' ? 'a' : 'b')}
-                </span>
-              </button>
-            ))}
+        {/* Step 2: Team or Posesión */}
+        {isPosesion ? (
+          <div className={cn("transition-all duration-300", nuevoEvento.tipo ? "opacity-100" : "opacity-20 pointer-events-none blur-[1px]")}>
+            <p className="text-[9px] font-black uppercase text-white/25 mb-3 tracking-[0.25em] flex items-center gap-2">
+              <StepBadge n={2} active={step === 2} sportColor={sportColor} /> Posesión (%)
+            </p>
+            <div className="flex items-center gap-4 mb-3">
+              <div className="flex-1 text-center">
+                <p className="text-[9px] font-black uppercase text-white/40 mb-1 truncate">{getDisplayName(match, 'a')}</p>
+                <span className="text-2xl font-black" style={{ color: sportColor }}>{posesionA}%</span>
+              </div>
+              <div className="flex-1 text-center">
+                <p className="text-[9px] font-black uppercase text-white/40 mb-1 truncate">{getDisplayName(match, 'b')}</p>
+                <span className="text-2xl font-black text-white/60">{100 - posesionA}%</span>
+              </div>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={posesionA}
+              onChange={(e) => setPosesionA(Number(e.target.value))}
+              className="w-full accent-current h-2 rounded-full appearance-none bg-white/10 cursor-pointer"
+              style={{ accentColor: sportColor }}
+            />
           </div>
-        </div>
+        ) : (
+          <div className={cn("transition-all duration-300", nuevoEvento.tipo ? "opacity-100" : "opacity-20 pointer-events-none blur-[1px]")}>
+            <p className="text-[9px] font-black uppercase text-white/25 mb-3 tracking-[0.25em] flex items-center gap-2">
+              <StepBadge n={2} active={step === 2} sportColor={sportColor} /> Competidor
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {['equipo_a', 'equipo_b'].map(tid => (
+                <button
+                  key={tid}
+                  onClick={() => setNuevoEvento({ ...nuevoEvento, equipo: tid, jugador_id: isTeamOnly ? -1 : null })}
+                  className="py-4 px-4 rounded-xl border-2 transition-all flex items-center gap-3"
+                  style={nuevoEvento.equipo === tid
+                    ? { borderColor: `${sportColor}40`, background: `${sportColor}08`, boxShadow: `0 4px 20px ${sportColor}08` }
+                    : { borderColor: `${sportColor}08`, background: `${sportColor}03` }
+                  }
+                >
+                  <Avatar
+                    name={getDisplayName(match, tid === 'equipo_a' ? 'a' : 'b')}
+                    src={tid === 'equipo_a' ? match.carrera_a?.escudo_url : match.carrera_b?.escudo_url}
+                    className={cn("w-8 h-8 border shrink-0", nuevoEvento.equipo === tid ? "border-white/30" : "border-white/10")}
+                  />
+                  <span className={cn("font-black text-[10px] uppercase tracking-tight truncate", nuevoEvento.equipo === tid ? "text-white/90" : "text-white/40")}>
+                    {getDisplayName(match, tid === 'equipo_a' ? 'a' : 'b')}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Step 3: Player */}
         {needsPlayer && (
