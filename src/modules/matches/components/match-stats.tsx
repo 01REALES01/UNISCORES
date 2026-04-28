@@ -222,11 +222,8 @@ const BasketballPlayerTable = ({
                                             )}
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors">
-                                                {p.profile.nombre.split(' ').slice(-1)[0]} {p.profile.numero ? `#${p.profile.numero}` : ''}
-                                            </span>
-                                            <span className="text-[8px] font-medium text-white/30 uppercase truncate">
-                                                {p.profile.nombre.split(' ').slice(0, 1)[0]}
+                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight">
+                                                {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
                                             </span>
                                         </div>
                                     </div>
@@ -311,8 +308,8 @@ const VolleyballPlayerTable = ({
                                             )}
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors">
-                                                {p.profile.nombre.split(' ').slice(-1)[0]} {p.profile.numero ? `#${p.profile.numero}` : ''}
+                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight">
+                                                {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
                                             </span>
                                         </div>
                                     </div>
