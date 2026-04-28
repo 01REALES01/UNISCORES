@@ -210,8 +210,8 @@ const BasketballPlayerTable = ({
                                 <td className="py-3 px-4">
                                     <div className="flex items-center gap-3">
                                         <div className="relative flex-shrink-0">
-                                            <Avatar
-                                                src={p.profile.avatar_url || p.profile.profile_id}
+                                            <Avatar 
+                                                src={p.profile.avatar_url} 
                                                 name={p.profile.nombre}
                                                 className="w-8 h-8 border border-white/10"
                                             />
@@ -296,8 +296,8 @@ const VolleyballPlayerTable = ({
                                 <td className="py-3 px-4">
                                     <div className="flex items-center gap-3">
                                         <div className="relative flex-shrink-0">
-                                            <Avatar
-                                                src={p.profile.avatar_url || p.profile.profile_id}
+                                            <Avatar 
+                                                src={p.profile.avatar_url} 
                                                 name={p.profile.nombre}
                                                 className="w-8 h-8 border border-white/10"
                                             />
