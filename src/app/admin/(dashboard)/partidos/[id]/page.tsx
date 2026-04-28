@@ -667,9 +667,11 @@ export default function MatchControlPage() {
                         <div className="mt-8 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center">
                             <AlertCircle size={20} className="shrink-0 text-white/30" />
                             <p className="text-sm font-bold text-white/40 uppercase tracking-widest">
-                                {disciplinaName === 'Fútbol' || disciplinaName === 'Futsal' || disciplinaName === 'Voleibol'
-                                    ? 'Partido finalizado — el marcador está cerrado; abajo podés registrar tarjetas (fair play).'
-                                    : 'Partido finalizado — no se pueden registrar eventos desde acá'}
+                                {disciplinaName === 'Voleibol'
+                                    ? 'Partido finalizado — podés registrar acciones y estadísticas (aces, bloqueos, ataques) y tarjetas de fair play.'
+                                    : disciplinaName === 'Fútbol' || disciplinaName === 'Futsal'
+                                        ? 'Partido finalizado — el marcador está cerrado; abajo podés registrar tarjetas (fair play).'
+                                        : 'Partido finalizado — no se pueden registrar eventos desde acá'}
                             </p>
                         </div>
                         <AdminMvpPicker
@@ -686,7 +688,11 @@ export default function MatchControlPage() {
                             <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 mt-8">
                                 <AdminEventCreator
                                     match={match}
-                                    actions={[...FAIR_PLAY_CARD_ACTIONS]}
+                                    actions={
+                                        disciplinaName === 'Voleibol'
+                                            ? [...actions] // all volleyball actions: punto, tarjetas, ace, bloqueo, ataque_directo
+                                            : [...FAIR_PLAY_CARD_ACTIONS] // fútbol/futsal: only cards
+                                    }
                                     jugadoresA={jugadoresA}
                                     jugadoresB={jugadoresB}
                                     eventos={eventos}
