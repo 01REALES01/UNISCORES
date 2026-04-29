@@ -56,10 +56,11 @@ export function AdminMvpPicker({
         n.includes("sala");
     const isDrawFutbol = isFutbolLike && golesA === 0 && golesB === 0;
     const isVolley = disciplinaName === "Voleibol";
+    const isBasquet = disciplinaName === "Baloncesto";
 
-    // Vóley: MVP siempre manual al finalizar. Fútbol (y similares): manual opcional en cualquier
+    // Vóley: MVP siempre manual al finalizar. Fútbol/Básquet: manual opcional en cualquier
     // marcador — si no guardás nada, la ficha pública sigue usando el MVP inferido por eventos.
-    const visible = estado === "finalizado" && (isVolley || isFutbolLike);
+    const visible = estado === "finalizado" && (isVolley || isFutbolLike || isBasquet);
 
     if (!visible) return null;
 
