@@ -39,7 +39,7 @@ export function ClausuraPopup() {
 
         <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
           <Image
-            src="/images/clausura-popup.png"
+            src="/images/clausura-popup.jpeg"
             alt="Clausura Olimpiadas Deportivas"
             fill
             className="object-contain sm:object-cover"
