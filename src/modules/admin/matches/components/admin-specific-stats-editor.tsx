@@ -77,8 +77,6 @@ export function AdminSpecificStatsEditor({
     const [search, setSearch] = useState('');
     const [lastAction, setLastAction] = useState<{ player: string, stat: string } | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    // Local counter to increment optimistically after each event
-    const [localAdded, setLocalAdded] = useState<{ tipo: string; jugador_id: number | null }[]>([]);
 
     const sportColor = SPORT_COLORS[disciplinaName] || '#6366f1';
     const currentJugadores = selectedTeam === 'equipo_a' ? jugadoresA : jugadoresB;
@@ -90,20 +88,17 @@ export function AdminSpecificStatsEditor({
         j.numero?.toString().includes(search)
     );
 
-    // Build a map of player_id → { stat_type: count } combining server eventos + local optimistic
+    // Build a map of player_id → { stat_type: count } from server eventos only
     const playerStatCounts = useMemo(() => {
         const counts: Record<number, Record<string, number>> = {};
-        const allEvents = [
-            ...eventos.map(e => ({ tipo: e.tipo_evento, jugador_id: e.jugador_id_normalized })),
-            ...localAdded,
-        ];
-        for (const e of allEvents) {
-            if (e.jugador_id == null) continue;
-            if (!counts[e.jugador_id]) counts[e.jugador_id] = {};
-            counts[e.jugador_id][e.tipo] = (counts[e.jugador_id][e.tipo] || 0) + 1;
+        for (const e of eventos) {
+            if (e.jugador_id_normalized == null) continue;
+            const pid = e.jugador_id_normalized;
+            if (!counts[pid]) counts[pid] = {};
+            counts[pid][e.tipo_evento] = (counts[pid][e.tipo_evento] || 0) + 1;
         }
         return counts;
-    }, [eventos, localAdded]);
+    }, [eventos]);
 
     // Count for selected stat specifically per player (for the highlighted badge)
     const getPlayerSelectedStatCount = (playerId: number): number => {
@@ -115,8 +110,6 @@ export function AdminSpecificStatsEditor({
         setIsSubmitting(true);
         const ok = await onAddEvent(selectedStat, selectedTeam, jugadorId);
         if (ok) {
-            // Optimistic local increment
-            setLocalAdded(prev => [...prev, { tipo: selectedStat, jugador_id: jugadorId }]);
             setLastAction({ player: nombre, stat: STAT_LABELS[selectedStat]?.label || selectedStat });
             setTimeout(() => setLastAction(null), 2000);
         }
