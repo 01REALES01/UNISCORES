@@ -98,27 +98,27 @@ const SimpleStatRow = ({ label, valueA, valueB, colorA }: { label: string; value
     const aIsHigher = valueA > valueB;
     const bIsHigher = valueB > valueA;
     return (
-        <div className="flex items-center py-3 gap-2">
-            <div className="w-20 flex justify-start items-center shrink-0">
+        <div className="flex items-center py-2.5 gap-2">
+            <div className="w-14 sm:w-20 flex justify-start items-center shrink-0">
                 {aIsHigher ? (
                     <span
-                        className="inline-flex items-center justify-center min-w-[38px] px-3 py-1 rounded-full text-white font-black text-sm shadow-lg"
+                        className="inline-flex items-center justify-center min-w-[32px] sm:min-w-[38px] px-2 sm:px-3 py-1 rounded-full text-white font-black text-xs sm:text-sm shadow-lg"
                         style={{ backgroundColor: colorA }}
                     >
                         {valueA}
                     </span>
                 ) : (
-                    <span className="text-white/75 font-semibold text-sm">{valueA}</span>
+                    <span className="text-white/75 font-semibold text-xs sm:text-sm">{valueA}</span>
                 )}
             </div>
-            <span className="flex-1 text-center text-[12px] sm:text-[13px] text-white/50 font-medium tracking-wide">{label}</span>
-            <div className="w-20 flex justify-end items-center shrink-0">
+            <span className="flex-1 text-center text-[11px] sm:text-[13px] text-white/50 font-medium tracking-wide truncate px-1">{label}</span>
+            <div className="w-14 sm:w-20 flex justify-end items-center shrink-0">
                 {bIsHigher ? (
-                    <span className="inline-flex items-center justify-center min-w-[38px] px-3 py-1 rounded-full bg-white text-black font-black text-sm shadow-lg">
+                    <span className="inline-flex items-center justify-center min-w-[32px] sm:min-w-[38px] px-2 sm:px-3 py-1 rounded-full bg-white text-black font-black text-xs sm:text-sm shadow-lg">
                         {valueB}
                     </span>
                 ) : (
-                    <span className="text-white/75 font-semibold text-sm">{valueB}</span>
+                    <span className="text-white/75 font-semibold text-xs sm:text-sm">{valueB}</span>
                 )}
             </div>
         </div>
@@ -192,26 +192,26 @@ const BasketballPlayerTable = ({
                 <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{players.length} JUGADORES</span>
             </div>
             
-            <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
-                <table className="w-full text-left border-collapse">
+            <div className="overflow-x-auto rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
+                <table className="min-w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-white/[0.04] border-b border-white/5">
-                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40">Jugador</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12">PTS</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10">REB</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10">AST</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10 text-amber-400/80">BLQ</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10 pr-4 text-emerald-400">ROB</th>
+                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40 sticky left-0 bg-zinc-900/95 backdrop-blur-sm z-10 min-w-[140px]">Jugador</th>
+                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/40 text-center whitespace-nowrap">PTS</th>
+                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/40 text-center whitespace-nowrap">REB</th>
+                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/40 text-center whitespace-nowrap">AST</th>
+                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-amber-400/80 text-center whitespace-nowrap">BLQ</th>
+                            <th className="py-3 px-3 pr-4 text-[9px] font-black uppercase tracking-widest text-emerald-400 text-center whitespace-nowrap">ROB</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/[0.03]">
                         {displayedPlayers.map((p, idx) => (
                             <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
-                                <td className="py-3 px-4">
+                                <td className="py-3 px-4 sticky left-0 bg-zinc-900/95 backdrop-blur-sm z-10">
                                     <div className="flex items-center gap-3">
                                         <div className="relative flex-shrink-0">
-                                            <Avatar 
-                                                src={p.profile.avatar_url} 
+                                            <Avatar
+                                                src={p.profile.avatar_url}
                                                 name={p.profile.nombre}
                                                 className="w-8 h-8 border border-white/10"
                                             />
@@ -222,17 +222,17 @@ const BasketballPlayerTable = ({
                                             )}
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight">
+                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight max-w-[100px] sm:max-w-[160px]">
                                                 {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
                                             </span>
                                         </div>
                                     </div>
                                 </td>
-                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-white">{p.points}</td>
-                                <td className="py-3 px-2 text-xs font-bold tabular-nums text-center text-white/60">{p.rebotes}</td>
-                                <td className="py-3 px-2 text-xs font-bold tabular-nums text-center text-white/60">{p.asistencias}</td>
-                                <td className="py-3 px-2 text-xs font-black tabular-nums text-center text-amber-500/60">{p.bloqueos}</td>
-                                <td className="py-3 px-2 text-xs font-black tabular-nums text-center pr-4 text-emerald-500/80">{p.robos}</td>
+                                <td className="py-3 px-3 text-sm font-black tabular-nums text-center text-white">{p.points}</td>
+                                <td className="py-3 px-3 text-xs font-bold tabular-nums text-center text-white/60">{p.rebotes}</td>
+                                <td className="py-3 px-3 text-xs font-bold tabular-nums text-center text-white/60">{p.asistencias}</td>
+                                <td className="py-3 px-3 text-xs font-black tabular-nums text-center text-amber-500/60">{p.bloqueos}</td>
+                                <td className="py-3 px-3 pr-4 text-xs font-black tabular-nums text-center text-emerald-500/80">{p.robos}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -280,24 +280,24 @@ const VolleyballPlayerTable = ({
                 <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{players.length} JUGADORES</span>
             </div>
             
-            <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
-                <table className="w-full text-left border-collapse">
+            <div className="overflow-x-auto rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
+                <table className="min-w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-white/[0.04] border-b border-white/5">
-                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40">Jugador</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 text-emerald-400">ACE</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 text-amber-400">BLQ</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 pr-4 text-sky-400">ATA</th>
+                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40 sticky left-0 bg-zinc-900/95 backdrop-blur-sm z-10 min-w-[140px]">Jugador</th>
+                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-emerald-400 text-center whitespace-nowrap">ACE</th>
+                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-amber-400 text-center whitespace-nowrap">BLQ</th>
+                            <th className="py-3 px-3 pr-4 text-[9px] font-black uppercase tracking-widest text-sky-400 text-center whitespace-nowrap">ATA</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/[0.03]">
                         {displayedPlayers.map((p, idx) => (
                             <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
-                                <td className="py-3 px-4">
+                                <td className="py-3 px-4 sticky left-0 bg-zinc-900/95 backdrop-blur-sm z-10">
                                     <div className="flex items-center gap-3">
                                         <div className="relative flex-shrink-0">
-                                            <Avatar 
-                                                src={p.profile.avatar_url} 
+                                            <Avatar
+                                                src={p.profile.avatar_url}
                                                 name={p.profile.nombre}
                                                 className="w-8 h-8 border border-white/10"
                                             />
@@ -308,15 +308,15 @@ const VolleyballPlayerTable = ({
                                             )}
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight">
+                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight max-w-[100px] sm:max-w-[160px]">
                                                 {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
                                             </span>
                                         </div>
                                     </div>
                                 </td>
-                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-emerald-500/80">{p.aces}</td>
-                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-amber-500/80">{p.bloqueos}</td>
-                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center pr-4 text-sky-500/80">{p.ataquesDirectos}</td>
+                                <td className="py-3 px-3 text-sm font-black tabular-nums text-center text-emerald-500/80">{p.aces}</td>
+                                <td className="py-3 px-3 text-sm font-black tabular-nums text-center text-amber-500/80">{p.bloqueos}</td>
+                                <td className="py-3 px-3 pr-4 text-sm font-black tabular-nums text-center text-sky-500/80">{p.ataquesDirectos}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -521,12 +521,12 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                                         e.stopPropagation();
                                         router.push(finalTarget);
                                     }} 
-                                    className="truncate max-w-[120px] sm:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
+                                    className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
                                 >
                                     {nameA}
                                 </Link>
                             ) : (
-                                <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{nameA}</span>
+                                <span className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90">{nameA}</span>
                             );
                         })()}
                         <div className="flex items-center gap-3">
@@ -546,12 +546,12 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                                         e.stopPropagation();
                                         router.push(finalTarget);
                                     }} 
-                                    className="truncate max-w-[120px] sm:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
+                                    className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
                                 >
                                     {nameB}
                                 </Link>
                             ) : (
-                                <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{nameB}</span>
+                                <span className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90">{nameB}</span>
                             );
                         })()}
                     </div>
@@ -720,7 +720,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
     const totalFouls = teamA.fouls + teamB.fouls || 1;
 
     return (
-        <div className="relative overflow-hidden rounded-[2.5rem] max-w-4xl mx-auto bg-white/[0.04] backdrop-blur-3xl border border-white/10 p-7 sm:p-10 mt-10 shadow-3xl flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="relative overflow-hidden rounded-[1.5rem] sm:rounded-[2.5rem] max-w-4xl mx-auto bg-white/[0.04] backdrop-blur-3xl border border-white/10 p-4 sm:p-7 lg:p-10 mt-6 sm:mt-10 shadow-3xl flex flex-col gap-6 sm:gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
             {/* Internal Glow Mesh */}
             <div className="absolute inset-0 p-[1px] bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
             
@@ -750,8 +750,8 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
             </div>
 
             {/* Score Bar - Institutional Style */}
-            <div className="relative z-10 w-full bg-black/20 rounded-3xl p-6 border border-white/5 shadow-inner">
-                <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-[0.25em] text-white/40 mb-5 px-2">
+            <div className="relative z-10 w-full bg-black/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/5 shadow-inner">
+                <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-[0.15em] sm:tracking-[0.25em] text-white/40 mb-4 sm:mb-5 px-1 sm:px-2 gap-2">
                     {(() => {
                         const dId = (match as any).delegacion_a_id;
                         const cId = match.carrera_a_id || (match.carrera_a as any)?.id;
@@ -764,12 +764,12 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                                     e.stopPropagation();
                                     router.push(finalTarget);
                                 }} 
-                                className="truncate max-w-[120px] sm:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
+                                className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
                             >
                                 {match.equipo_a}
                             </Link>
                         ) : (
-                            <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{match.equipo_a}</span>
+                            <span className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90">{match.equipo_a}</span>
                         );
                     })()}
                     <div className="flex items-center gap-3">
@@ -789,18 +789,18 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                                     e.stopPropagation();
                                     router.push(finalTarget);
                                 }} 
-                                className="truncate max-w-[120px] sm:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
+                                className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
                             >
                                 {match.equipo_b}
                             </Link>
                         ) : (
-                            <span className="truncate max-w-[120px] sm:max-w-none text-white/90">{match.equipo_b}</span>
+                            <span className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90">{match.equipo_b}</span>
                         );
                     })()}
                 </div>
-                <div className="flex items-center gap-6 sm:gap-10">
-                    <span className="text-5xl sm:text-7xl font-black tabular-nums text-white drop-shadow-2xl">{teamA.goals}</span>
-                    <div className="flex-1 h-4 bg-black/40 rounded-full overflow-hidden flex shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] border border-white/5 p-[2px]">
+                <div className="flex items-center gap-3 sm:gap-6 lg:gap-10">
+                    <span className="text-4xl sm:text-5xl lg:text-7xl font-black tabular-nums text-white drop-shadow-2xl">{teamA.goals}</span>
+                    <div className="flex-1 h-3 sm:h-4 bg-black/40 rounded-full overflow-hidden flex shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] border border-white/5 p-[2px]">
                         <div className="h-full rounded-full transition-all duration-1000 relative overflow-hidden" style={{ width: `${(teamA.goals / totalGoals) * 100}%`, backgroundColor: sportColor }}>
                             <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent" />
                         </div>
@@ -808,7 +808,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                             <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
                         </div>
                     </div>
-                    <span className="text-5xl sm:text-7xl font-black tabular-nums text-white/90 drop-shadow-2xl">{teamB.goals}</span>
+                    <span className="text-4xl sm:text-5xl lg:text-7xl font-black tabular-nums text-white/90 drop-shadow-2xl">{teamB.goals}</span>
                 </div>
             </div>
 
@@ -816,8 +816,8 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
             {isBasketball && (
                 <div className="relative z-10 flex flex-col gap-6">
                     {/* --- Technical Breakdown: List Style (Like Football) --- */}
-                    <div className="bg-white/[0.04] rounded-[2rem] p-6 border border-white/10">
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-5 px-1 underline decoration-white/10 underline-offset-8">Desglose Técnico</p>
+                    <div className="bg-white/[0.04] rounded-xl sm:rounded-[2rem] p-4 sm:p-6 border border-white/10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-4 sm:mb-5 px-1 underline decoration-white/10 underline-offset-8">Desglose Técnico</p>
                         <div className="flex flex-col">
                             <SimpleStatRow label="Triples" valueA={teamA.pts3} valueB={teamB.pts3} colorA={sportColor} />
                             <SimpleStatRow label="Dobles" valueA={teamA.pts2} valueB={teamB.pts2} colorA={sportColor} />
@@ -850,15 +850,15 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <div className="flex flex-col gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
+                        <div className="flex flex-col gap-3 sm:gap-4">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate px-1" style={{ color: sportColor }}>{match.equipo_a} — Líderes</p>
                             <LeaderCard label="Líder en Puntos" player={leaderPoints_A} count={leaderPoints_A?.points || 0} color={sportColor} />
                             <LeaderCard label="Líder en Triples" player={leaderTriples_A} count={leaderTriples_A?.pts3 || 0} color={sportColor} />
                             <LeaderCard label="Líder en Dobles" player={leaderDoubles_A} count={leaderDoubles_A?.pts2 || 0} color={sportColor} />
                             <LeaderCard label="Líder en T. Libres" player={leaderFreeThrows_A} count={leaderFreeThrows_A?.pts1 || 0} color={sportColor} />
                         </div>
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-3 sm:gap-4">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate px-1" style={{ color: teamBColor }}>{match.equipo_b} — Líderes</p>
                             <LeaderCard label="Líder en Puntos" player={leaderPoints_B} count={leaderPoints_B?.points || 0} color={teamBColor} />
                             <LeaderCard label="Líder en Triples" player={leaderTriples_B} count={leaderTriples_B?.pts3 || 0} color={teamBColor} />
@@ -871,8 +871,8 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
             {/* ═══ FOOTBALL SECTION ═══ */}
             {isFootball && (
                 <div className="relative z-10 flex flex-col gap-6">
-                    <div className="bg-white/[0.04] rounded-[2rem] p-6 border border-white/10">
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-5 px-1 underline decoration-white/10 underline-offset-8">Desglose Técnico</p>
+                    <div className="bg-white/[0.04] rounded-xl sm:rounded-[2rem] p-4 sm:p-6 border border-white/10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-4 sm:mb-5 px-1 underline decoration-white/10 underline-offset-8">Desglose Técnico</p>
                         {/* --- Possession Hero: always first --- */}
                     {isStatVisible('posesion') && stats.posesion && (
                         <PossessionHeroBanner
@@ -965,9 +965,9 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                     </div>
                 )}
 
-                {statsConfig?.enabled && <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {statsConfig?.enabled && <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     {/* Team A */}
-                    <div className="bg-white/[0.02] border border-white/10 rounded-[2rem] p-6 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.05] shadow-xl">
+                    <div className="bg-white/[0.02] border border-white/10 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.05] shadow-xl">
                         <div className="flex items-center justify-between mb-6 px-1">
                             <div className="flex items-center gap-3">
                                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sportColor }} />
@@ -1023,7 +1023,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                     </div>
 
                     {/* Team B */}
-                    <div className="bg-white/[0.02] border border-white/10 rounded-[2rem] p-6 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.05] shadow-xl">
+                    <div className="bg-white/[0.02] border border-white/10 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.05] shadow-xl">
                         <div className="flex items-center justify-between mb-6 px-1">
                             <div className="flex items-center gap-3">
                                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teamBColor }} />
