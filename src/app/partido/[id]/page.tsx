@@ -32,6 +32,7 @@ import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
 import { MatchStream } from "@/modules/matches/components/match-stream";
 import { LineupDisplay } from "@/modules/matches/components/lineup-display";
 import { BasketballLineupDisplay } from "@/modules/matches/components/basketball-lineup-display";
+import { BasketballShotChart } from "@/modules/matches/components/basketball-shot-chart";
 
 import UniqueLoading from "@/components/ui/morph-loading";
 
@@ -1120,6 +1121,11 @@ export default function PublicMatchDetail() {
                         match={m}
                         eventos={eventos}
                         sportName={sportName}
+                    />
+                    <BasketballShotChart
+                        match={m}
+                        eventos={eventos}
+                        sportColor={sportColor}
                     />
                 </div>
                 )}

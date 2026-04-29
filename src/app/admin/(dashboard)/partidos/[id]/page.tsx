@@ -22,6 +22,7 @@ import { BasquetEditor } from "@/modules/admin/matches/components/basquet-score-
 import { TenisEditor } from "@/modules/admin/matches/components/tenis-editor";
 import { MatchMetaEditor } from "@/modules/admin/matches/components/match-meta-editor";
 import { BasketballBulkStats } from "@/modules/admin/matches/components/basketball-bulk-stats";
+import { BasketballCourtRecorder } from "@/modules/admin/matches/components/basketball-court-recorder";
 import { AdminMvpPicker } from "@/modules/admin/matches/components/admin-mvp-picker";
 import { AdminQuickBench } from "@/modules/admin/matches/components/admin-quick-bench";
 import { AdminSpecificStatsEditor } from "@/modules/admin/matches/components/admin-specific-stats-editor";
@@ -185,7 +186,7 @@ export default function MatchControlPage() {
     const [confirmingDeleteMatch, setConfirmingDeleteMatch] = useState(false);
     const [deletingMatch, setDeletingMatch] = useState(false);
     const [showFullEditor, setShowFullEditor] = useState(false);
-    const [fullEditorTab, setFullEditorTab] = useState<'marcador' | 'eventos' | 'jugadores' | 'deporte_integral'>('marcador');
+    const [fullEditorTab, setFullEditorTab] = useState<'marcador' | 'eventos' | 'jugadores' | 'deporte_integral' | 'cancha'>('marcador');
     const [showMetaEditor, setShowMetaEditor] = useState(false);
     const [showReview, setShowReview] = useState(false);
     const [showStatsConfig, setShowStatsConfig] = useState(false);
@@ -1155,11 +1156,14 @@ export default function MatchControlPage() {
 
             {showFullEditor && (() => {
                 const tabLabel = disciplinaName === 'Baloncesto' ? 'Cuartos' : (disciplinaName === 'Fútbol' || disciplinaName === 'Futsal') ? 'Tiempos' : 'Sets / Marcador';
-                const tabs: { id: 'marcador' | 'eventos' | 'jugadores' | 'deporte_integral'; label: string }[] = [
+                const tabs: { id: 'marcador' | 'eventos' | 'jugadores' | 'deporte_integral' | 'cancha'; label: string }[] = [
                     { id: 'marcador' as const, label: tabLabel },
                     { id: 'eventos' as const, label: 'Eventos' },
                     { id: 'jugadores' as const, label: 'Jugadores' },
-                    ...(disciplinaName === 'Baloncesto' ? [{ id: 'deporte_integral' as const, label: 'Dep. Integral' }] : []),
+                    ...(disciplinaName === 'Baloncesto' ? [
+                        { id: 'cancha' as const, label: '🏀 Cancha' },
+                        { id: 'deporte_integral' as const, label: 'Dep. Integral' },
+                    ] : []),
                 ];
                 const activeTab = fullEditorTab;
 
@@ -1325,6 +1329,44 @@ export default function MatchControlPage() {
                                         onPlayersUpdated={() => void fetchJugadores(match)}
                                         disciplinaName={disciplinaName}
                                         onAddPlayer={handleAddPlayer}
+                                    />
+                                </div>
+                            )}
+
+                            {activeTab === 'cancha' && disciplinaName === 'Baloncesto' && (
+                                <div className="max-w-lg mx-auto pt-4 px-2">
+                                    <BasketballCourtRecorder
+                                        match={match}
+                                        jugadoresA={jugadoresA}
+                                        jugadoresB={jugadoresB}
+                                        existingShots={eventos
+                                            .filter(e => ['punto_2', 'punto_3', 'tiro_fallado'].includes(e.tipo_evento))
+                                            .map(e => {
+                                                let coords: any = null;
+                                                try { if (e.descripcion) coords = JSON.parse(e.descripcion); } catch {}
+                                                if (!coords?.x) return null;
+                                                return {
+                                                    x: coords.x,
+                                                    y: coords.y,
+                                                    resultado: coords.resultado || 'anotado',
+                                                    tipo_tiro: coords.tipo_tiro || (e.tipo_evento === 'punto_3' ? '3pt' : '2pt'),
+                                                    equipo: e.equipo as 'equipo_a' | 'equipo_b',
+                                                };
+                                            })
+                                            .filter(Boolean) as any[]
+                                        }
+                                        onAddShot={async (tipo_evento, equipo, jugador_id, coords) => {
+                                            const desc = JSON.stringify({
+                                                x: coords.x,
+                                                y: coords.y,
+                                                resultado: coords.resultado,
+                                                tipo_tiro: coords.tipo_tiro,
+                                                autor: profile ? { nombre: profile.full_name || profile.email, email: profile.email, role: (profile.roles || ['public']).join(', ') } : null,
+                                                fecha: new Date().toISOString(),
+                                                texto: '',
+                                            });
+                                            return handleNuevoEvento(tipo_evento, equipo, jugador_id, false, { descripcion: desc });
+                                        }}
                                     />
                                 </div>
                             )}

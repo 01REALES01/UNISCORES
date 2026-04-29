@@ -165,17 +165,18 @@ const LeaderCard = ({ label, player, count, color }: { label: string, player: an
     );
 };
 
-// Basketball Team Stats Table Component
 const BasketballPlayerTable = ({ 
     teamName, 
     players, 
     color,
-    isGuest = false 
+    isGuest = false,
+    isStatVisible
 }: { 
     teamName: string, 
     players: any[], 
     color: string,
-    isGuest?: boolean
+    isGuest?: boolean,
+    isStatVisible?: (stat: string) => boolean
 }) => {
     const [isExpanded, setIsExpanded] = React.useState(false);
     const displayedPlayers = isExpanded ? players : players.slice(0, 5);
@@ -196,8 +197,11 @@ const BasketballPlayerTable = ({
                 <table className="min-w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-white/[0.04] border-b border-white/5">
-                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40 sticky left-0 bg-zinc-900/95 backdrop-blur-sm z-10 min-w-[140px]">Jugador</th>
+                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40 min-w-[140px]">Jugador</th>
                             <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/40 text-center whitespace-nowrap">PTS</th>
+                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/50 text-center whitespace-nowrap">2P</th>
+                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/50 text-center whitespace-nowrap">3P</th>
+                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/50 text-center whitespace-nowrap">TL</th>
                             <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/40 text-center whitespace-nowrap">REB</th>
                             <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/40 text-center whitespace-nowrap">AST</th>
                             <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-amber-400/80 text-center whitespace-nowrap">BLQ</th>
@@ -207,7 +211,7 @@ const BasketballPlayerTable = ({
                     <tbody className="divide-y divide-white/[0.03]">
                         {displayedPlayers.map((p, idx) => (
                             <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
-                                <td className="py-3 px-4 sticky left-0 bg-zinc-900/95 backdrop-blur-sm z-10">
+                                <td className="py-3 px-4">
                                     <div className="flex items-center gap-3">
                                         <div className="relative flex-shrink-0">
                                             <Avatar
@@ -229,6 +233,9 @@ const BasketballPlayerTable = ({
                                     </div>
                                 </td>
                                 <td className="py-3 px-3 text-sm font-black tabular-nums text-center text-white">{p.points}</td>
+                                <td className="py-3 px-3 text-[11px] font-bold tabular-nums text-center text-white/60 whitespace-nowrap">{p.pts2}/{p.pt2a}</td>
+                                <td className="py-3 px-3 text-[11px] font-bold tabular-nums text-center text-white/60 whitespace-nowrap">{p.pts3}/{p.pt3a}</td>
+                                <td className="py-3 px-3 text-[11px] font-bold tabular-nums text-center text-white/60 whitespace-nowrap">{p.pts1}/{p.tla}</td>
                                 <td className="py-3 px-3 text-xs font-bold tabular-nums text-center text-white/60">{p.rebotes}</td>
                                 <td className="py-3 px-3 text-xs font-bold tabular-nums text-center text-white/60">{p.asistencias}</td>
                                 <td className="py-3 px-3 text-xs font-black tabular-nums text-center text-amber-500/60">{p.bloqueos}</td>
@@ -255,15 +262,16 @@ const BasketballPlayerTable = ({
     );
 };
 
-// Volleyball Team Stats Table Component
 const VolleyballPlayerTable = ({ 
     teamName, 
     players, 
-    color 
+    color,
+    isStatVisible 
 }: { 
     teamName: string, 
     players: any[], 
-    color: string 
+    color: string,
+    isStatVisible?: (stat: string) => boolean
 }) => {
     const [isExpanded, setIsExpanded] = React.useState(false);
     const displayedPlayers = isExpanded ? players : players.slice(0, 5);
@@ -284,16 +292,16 @@ const VolleyballPlayerTable = ({
                 <table className="min-w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-white/[0.04] border-b border-white/5">
-                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40 sticky left-0 bg-zinc-900/95 backdrop-blur-sm z-10 min-w-[140px]">Jugador</th>
-                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-emerald-400 text-center whitespace-nowrap">ACE</th>
-                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-amber-400 text-center whitespace-nowrap">BLQ</th>
-                            <th className="py-3 px-3 pr-4 text-[9px] font-black uppercase tracking-widest text-sky-400 text-center whitespace-nowrap">ATA</th>
+                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40 min-w-[140px]">Jugador</th>
+                            {(!isStatVisible || isStatVisible('ace')) && <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-emerald-400 text-center whitespace-nowrap">ACE</th>}
+                            {(!isStatVisible || isStatVisible('bloqueo')) && <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-amber-400 text-center whitespace-nowrap">BLQ</th>}
+                            {(!isStatVisible || isStatVisible('ataque_directo')) && <th className="py-3 px-3 pr-4 text-[9px] font-black uppercase tracking-widest text-sky-400 text-center whitespace-nowrap">ATA</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/[0.03]">
                         {displayedPlayers.map((p, idx) => (
                             <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
-                                <td className="py-3 px-4 sticky left-0 bg-zinc-900/95 backdrop-blur-sm z-10">
+                                <td className="py-3 px-4">
                                     <div className="flex items-center gap-3">
                                         <div className="relative flex-shrink-0">
                                             <Avatar
@@ -314,9 +322,9 @@ const VolleyballPlayerTable = ({
                                         </div>
                                     </div>
                                 </td>
-                                <td className="py-3 px-3 text-sm font-black tabular-nums text-center text-emerald-500/80">{p.aces}</td>
-                                <td className="py-3 px-3 text-sm font-black tabular-nums text-center text-amber-500/80">{p.bloqueos}</td>
-                                <td className="py-3 px-3 pr-4 text-sm font-black tabular-nums text-center text-sky-500/80">{p.ataquesDirectos}</td>
+                                {(!isStatVisible || isStatVisible('ace')) && <td className="py-3 px-3 text-sm font-black tabular-nums text-center text-emerald-500/80">{p.aces}</td>}
+                                {(!isStatVisible || isStatVisible('bloqueo')) && <td className="py-3 px-3 text-sm font-black tabular-nums text-center text-amber-500/80">{p.bloqueos}</td>}
+                                {(!isStatVisible || isStatVisible('ataque_directo')) && <td className="py-3 px-3 pr-4 text-sm font-black tabular-nums text-center text-sky-500/80">{p.ataquesDirectos}</td>}
                             </tr>
                         ))}
                     </tbody>
@@ -345,22 +353,31 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
     const isFootball = sportName?.toLowerCase().includes('futbol') || sportName?.toLowerCase().includes('fútbol') || sportName?.toLowerCase().includes('micro') || sportName?.toLowerCase().includes('sala');
     const isVolleyball = sportName === 'Voleibol';
     const statsConfig = match.marcador_detalle?.stats_config as { enabled: boolean; visible: string[] } | undefined;
-    const isStatVisible = (stat: string) => statsConfig?.enabled && statsConfig.visible.includes(stat);
+    
+    // Mostramos estadística si la config no existe, si está habilitada pero no hay array visible, 
+    // o si específicamente está en el array 'visible'.
+    const isStatVisible = (stat: string) => {
+        if (!statsConfig) return true;
+        if (!statsConfig.enabled) return false;
+        if (!statsConfig.visible) return true;
+        return statsConfig.visible.includes(stat);
+    };
 
     const stats = useMemo(() => {
+        type PlayerStats = { points: number; goals: number; pts1: number; pts2: number; pts3: number; pt2a: number; pt3a: number; tla: number; rebotes: number; robos: number; asistencias: number; aces: number; bloqueos: number; ataquesDirectos: number; profile: any };
         const teamA = {
             goals: 0, fouls: 0, yellowCards: 0, redCards: 0, pts1: 0, pts2: 0, pts3: 0,
             tiros: 0, tirosAlArco: 0, faltasCometidas: 0, tirosEsquina: 0,
             aces: 0, bloqueos: 0, ataquesDirectos: 0,
             rebotes: 0, robos: 0, asistencias: 0,
-            players: {} as Record<string, { points: number, goals: number, pts1: number, pts2: number, pts3: number, rebotes: number, robos: number, asistencias: number, aces: number, bloqueos: number, ataquesDirectos: number, profile: any }>
+            players: {} as Record<string, PlayerStats>
         };
         const teamB = {
             goals: 0, fouls: 0, yellowCards: 0, redCards: 0, pts1: 0, pts2: 0, pts3: 0,
             tiros: 0, tirosAlArco: 0, faltasCometidas: 0, tirosEsquina: 0,
             aces: 0, bloqueos: 0, ataquesDirectos: 0,
             rebotes: 0, robos: 0, asistencias: 0,
-            players: {} as Record<string, { points: number, goals: number, pts1: number, pts2: number, pts3: number, rebotes: number, robos: number, asistencias: number, aces: number, bloqueos: number, ataquesDirectos: number, profile: any }>
+            players: {} as Record<string, PlayerStats>
         };
 
         let mvp: any = null;
@@ -399,16 +416,33 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                 team.asistencias += 1;
             }
 
+            // tiro_fallado: count attempts but no points
+            if (ev.tipo_evento === 'tiro_fallado') {
+                try {
+                    const coords = ev.descripcion ? JSON.parse(ev.descripcion) : null;
+                    const tipo = coords?.tipo_tiro;
+                    if (ev.jugadores) {
+                        const pId = ev.jugadores.id;
+                        if (!team.players[pId]) {
+                            team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, pt2a: 0, pt3a: 0, tla: 0, rebotes: 0, robos: 0, asistencias: 0, aces: 0, bloqueos: 0, ataquesDirectos: 0, profile: ev.jugadores };
+                        }
+                        if (tipo === '3pt') team.players[pId].pt3a += 1;
+                        else if (tipo === 'tl') team.players[pId].tla += 1;
+                        else team.players[pId].pt2a += 1;
+                    }
+                } catch {}
+            }
+
             if (ev.jugadores) {
                 const pId = ev.jugadores.id;
                 if (!team.players[pId]) {
-                    team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, rebotes: 0, robos: 0, asistencias: 0, aces: 0, bloqueos: 0, ataquesDirectos: 0, profile: ev.jugadores };
+                    team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, pt2a: 0, pt3a: 0, tla: 0, rebotes: 0, robos: 0, asistencias: 0, aces: 0, bloqueos: 0, ataquesDirectos: 0, profile: ev.jugadores };
                 }
                 team.players[pId].points += pointsGained;
                 if (['gol', 'anotacion'].includes(ev.tipo_evento)) team.players[pId].goals += 1;
-                if (ev.tipo_evento === 'punto_1') team.players[pId].pts1 += 1;
-                if (ev.tipo_evento === 'punto_2') team.players[pId].pts2 += 1;
-                if (ev.tipo_evento === 'punto_3') team.players[pId].pts3 += 1;
+                if (ev.tipo_evento === 'punto_1') { team.players[pId].pts1 += 1; team.players[pId].tla += 1; }
+                if (ev.tipo_evento === 'punto_2') { team.players[pId].pts2 += 1; team.players[pId].pt2a += 1; }
+                if (ev.tipo_evento === 'punto_3') { team.players[pId].pts3 += 1; team.players[pId].pt3a += 1; }
                 if (ev.tipo_evento === 'rebote') team.players[pId].rebotes += 1;
                 if (ev.tipo_evento === 'robo') team.players[pId].robos += 1;
                 if (ev.tipo_evento === 'asistencia') team.players[pId].asistencias += 1;
@@ -627,18 +661,22 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                 )}
 
                 {/* ═══ TABLAS DE JUGADORES — VOLEIBOL ═══ */}
-                <div className="relative z-10 flex flex-col gap-8 mt-4">
-                    <VolleyballPlayerTable 
-                        teamName={match.equipo_a} 
-                        players={stats.teamAPlayersSorted} 
-                        color={sportColorVoli}
-                    />
-                    <VolleyballPlayerTable 
-                        teamName={match.equipo_b} 
-                        players={stats.teamBPlayersSorted} 
-                        color={teamBColorVoli}
-                    />
-                </div>
+                {statsConfig?.enabled !== false && (
+                    <div className="relative z-10 flex flex-col gap-8 mt-4">
+                        <VolleyballPlayerTable 
+                            teamName={match.equipo_a} 
+                            players={stats.teamAPlayersSorted} 
+                            color={sportColorVoli}
+                            isStatVisible={isStatVisible}
+                        />
+                        <VolleyballPlayerTable 
+                            teamName={match.equipo_b} 
+                            players={stats.teamBPlayersSorted} 
+                            color={teamBColorVoli}
+                            isStatVisible={isStatVisible}
+                        />
+                    </div>
+                )}
 
                 {effectiveMvp && (
                     <div className="relative z-10 w-full pt-10 mt-2 border-t border-white/10">
@@ -749,8 +787,8 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                 )}
             </div>
 
-            {/* Score Bar - Institutional Style */}
-            <div className="relative z-10 w-full bg-black/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/5 shadow-inner">
+            {/* Score Bar - Standardized Style */}
+            <div className="relative z-10 w-full bg-white/[0.04] rounded-xl sm:rounded-[2rem] p-4 sm:p-6 border border-white/10 shadow-inner">
                 <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-[0.15em] sm:tracking-[0.25em] text-white/40 mb-4 sm:mb-5 px-1 sm:px-2 gap-2">
                     {(() => {
                         const dId = (match as any).delegacion_a_id;
@@ -764,19 +802,15 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                                     e.stopPropagation();
                                     router.push(finalTarget);
                                 }} 
-                                className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
+                                className="truncate max-w-[100px] sm:max-w-[200px] lg:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
                             >
                                 {match.equipo_a}
                             </Link>
                         ) : (
-                            <span className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90">{match.equipo_a}</span>
+                            <span className="truncate max-w-[100px] sm:max-w-[200px] lg:max-w-none text-white/90">{match.equipo_a}</span>
                         );
                     })()}
-                    <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sportColor }} />
-                        <span style={{ color: sportColor }}>{isBasketball ? 'PUNTOS' : 'GOLES'}</span>
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sportColor }} />
-                    </div>
+                    <span className="text-[8px] sm:text-[9px] text-white/20 tracking-[0.3em]">VS</span>
                     {(() => {
                         const dId = (match as any).delegacion_b_id;
                         const cId = match.carrera_b_id || (match.carrera_b as any)?.id;
@@ -789,18 +823,27 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                                     e.stopPropagation();
                                     router.push(finalTarget);
                                 }} 
-                                className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer"
+                                className="truncate max-w-[100px] sm:max-w-[200px] lg:max-w-none text-white/90 hover:text-emerald-400 transition-colors cursor-pointer text-right"
                             >
                                 {match.equipo_b}
                             </Link>
                         ) : (
-                            <span className="truncate max-w-[80px] sm:max-w-[160px] lg:max-w-none text-white/90">{match.equipo_b}</span>
+                            <span className="truncate max-w-[100px] sm:max-w-[200px] lg:max-w-none text-white/90 text-right">{match.equipo_b}</span>
                         );
                     })()}
                 </div>
-                <div className="flex items-center gap-3 sm:gap-6 lg:gap-10">
-                    <span className="text-4xl sm:text-5xl lg:text-7xl font-black tabular-nums text-white drop-shadow-2xl">{teamA.goals}</span>
-                    <div className="flex-1 h-3 sm:h-4 bg-black/40 rounded-full overflow-hidden flex shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] border border-white/5 p-[2px]">
+
+                <div className="flex flex-col group p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-colors bg-black/20 border border-white/5">
+                    <div className="flex items-center justify-between mb-3 px-1">
+                        <span className="text-lg sm:text-xl font-black tabular-nums text-white drop-shadow-md">{teamA.goals}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em]" style={{ color: sportColor }}>
+                                {isBasketball ? 'PUNTOS' : 'GOLES'}
+                            </span>
+                        </div>
+                        <span className="text-lg sm:text-xl font-black tabular-nums text-white/90 drop-shadow-md">{teamB.goals}</span>
+                    </div>
+                    <div className="flex-1 h-1.5 sm:h-2 bg-black/60 rounded-full overflow-hidden flex shadow-inner border border-white/5 p-[1px]">
                         <div className="h-full rounded-full transition-all duration-1000 relative overflow-hidden" style={{ width: `${(teamA.goals / totalGoals) * 100}%`, backgroundColor: sportColor }}>
                             <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent" />
                         </div>
@@ -808,7 +851,6 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                             <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
                         </div>
                     </div>
-                    <span className="text-4xl sm:text-5xl lg:text-7xl font-black tabular-nums text-white/90 drop-shadow-2xl">{teamB.goals}</span>
                 </div>
             </div>
 
@@ -836,36 +878,42 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                     </div>
 
                     {/* ═══ TABLA DE ESTADÍSTICAS INDIVIDUALES ═══ */}
-                    <div className="flex flex-col gap-8 mt-4">
-                        <BasketballPlayerTable 
-                            teamName={match.equipo_a} 
-                            players={stats.teamAPlayersSorted} 
-                            color={sportColor}
-                        />
-                        <BasketballPlayerTable 
-                            teamName={match.equipo_b} 
-                            players={stats.teamBPlayersSorted} 
-                            color={teamBColor}
-                            isGuest
-                        />
-                    </div>
+                    {statsConfig?.enabled !== false && (
+                        <div className="flex flex-col gap-8 mt-4">
+                            <BasketballPlayerTable 
+                                teamName={match.equipo_a} 
+                                players={stats.teamAPlayersSorted} 
+                                color={sportColor}
+                                isStatVisible={isStatVisible}
+                            />
+                            <BasketballPlayerTable 
+                                teamName={match.equipo_b} 
+                                players={stats.teamBPlayersSorted} 
+                                color={teamBColor}
+                                isGuest
+                                isStatVisible={isStatVisible}
+                            />
+                        </div>
+                    )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
-                        <div className="flex flex-col gap-3 sm:gap-4">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate px-1" style={{ color: sportColor }}>{match.equipo_a} — Líderes</p>
-                            <LeaderCard label="Líder en Puntos" player={leaderPoints_A} count={leaderPoints_A?.points || 0} color={sportColor} />
-                            <LeaderCard label="Líder en Triples" player={leaderTriples_A} count={leaderTriples_A?.pts3 || 0} color={sportColor} />
-                            <LeaderCard label="Líder en Dobles" player={leaderDoubles_A} count={leaderDoubles_A?.pts2 || 0} color={sportColor} />
-                            <LeaderCard label="Líder en T. Libres" player={leaderFreeThrows_A} count={leaderFreeThrows_A?.pts1 || 0} color={sportColor} />
+                    {!(statsConfig?.enabled !== false && (stats.teamAPlayersSorted.length > 0 || stats.teamBPlayersSorted.length > 0)) && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5 mt-4">
+                            <div className="flex flex-col gap-3 sm:gap-4">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate px-1" style={{ color: sportColor }}>{match.equipo_a} — Líderes</p>
+                                <LeaderCard label="Líder en Puntos" player={leaderPoints_A} count={leaderPoints_A?.points || 0} color={sportColor} />
+                                <LeaderCard label="Líder en Triples" player={leaderTriples_A} count={leaderTriples_A?.pts3 || 0} color={sportColor} />
+                                <LeaderCard label="Líder en Dobles" player={leaderDoubles_A} count={leaderDoubles_A?.pts2 || 0} color={sportColor} />
+                                <LeaderCard label="Líder en T. Libres" player={leaderFreeThrows_A} count={leaderFreeThrows_A?.pts1 || 0} color={sportColor} />
+                            </div>
+                            <div className="flex flex-col gap-3 sm:gap-4">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate px-1" style={{ color: teamBColor }}>{match.equipo_b} — Líderes</p>
+                                <LeaderCard label="Líder en Puntos" player={leaderPoints_B} count={leaderPoints_B?.points || 0} color={teamBColor} />
+                                <LeaderCard label="Líder en Triples" player={leaderTriples_B} count={leaderTriples_B?.pts3 || 0} color={teamBColor} />
+                                <LeaderCard label="Líder en Dobles" player={leaderDoubles_B} count={leaderDoubles_B?.pts2 || 0} color={teamBColor} />
+                                <LeaderCard label="Líder en T. Libres" player={leaderFreeThrows_B} count={leaderFreeThrows_B?.pts1 || 0} color={teamBColor} />
+                            </div>
                         </div>
-                        <div className="flex flex-col gap-3 sm:gap-4">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate px-1" style={{ color: teamBColor }}>{match.equipo_b} — Líderes</p>
-                            <LeaderCard label="Líder en Puntos" player={leaderPoints_B} count={leaderPoints_B?.points || 0} color={teamBColor} />
-                            <LeaderCard label="Líder en Triples" player={leaderTriples_B} count={leaderTriples_B?.pts3 || 0} color={teamBColor} />
-                            <LeaderCard label="Líder en Dobles" player={leaderDoubles_B} count={leaderDoubles_B?.pts2 || 0} color={teamBColor} />
-                            <LeaderCard label="Líder en T. Libres" player={leaderFreeThrows_B} count={leaderFreeThrows_B?.pts1 || 0} color={teamBColor} />
-                        </div>
-                    </div>
+                    )}
                 </div>
             )}
             {/* ═══ FOOTBALL SECTION ═══ */}
@@ -906,66 +954,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
             {/* ═══ PERFORMANCE SECTION ═══ */}
             <div className="flex flex-col gap-10 relative z-10 w-full pt-8 border-t border-white/5">
                 
-                {/* MVP Player Card - Hero Position */}
-                {effectiveMvp ? (
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-5 px-4 flex items-center gap-3">
-                             <Trophy size={14} className="text-amber-500" /> RECONOCIMIENTO INDIVIDUAL
-                        </p>
-                        <div className="relative group overflow-hidden p-[1.5px] rounded-[2.5rem] bg-gradient-to-br from-amber-200 via-amber-500 to-amber-900 shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:-translate-y-1">
-                            <Link href={effectiveMvp.profile_id ? `/perfil/${effectiveMvp.profile_id}` : `/jugador/${effectiveMvp.id}`} className="block h-full relative z-10">
-                                <div className="relative bg-gradient-to-br from-[#1a1409] via-[#0D0A05] to-black rounded-[2.4rem] p-6 sm:p-10 flex flex-col justify-between h-full min-h-[260px] sm:min-h-[240px] overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                                    
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 sm:mb-8 relative z-10">
-                                        <div className="px-4 sm:px-5 py-2 rounded-2xl bg-amber-500 text-black text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] shadow-[0_0_25px_rgba(245,158,11,0.4)] flex items-center gap-2 max-w-full">
-                                            <Crown size={14} className="shrink-0" /> <span className="leading-tight">JUGADOR MÁS VALIOSO</span>
-                                        </div>
-                                        <Trophy size={28} className="text-amber-500/20 group-hover:scale-125 group-hover:text-amber-500/40 transition-all duration-500 shrink-0 hidden sm:block" />
-                                    </div>
-                                    
-                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 relative z-10 w-full">
-                                        <div className="relative shrink-0 mx-auto sm:mx-0">
-                                            <div className="absolute -inset-4 bg-amber-500/20 rounded-full blur-2xl animate-pulse" />
-                                            <Avatar name={effectiveMvp.nombre} className="w-28 h-28 sm:w-32 sm:h-32 border-[6px] border-amber-500/40 shadow-2xl bg-black ring-2 ring-amber-500/20" />
-                                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg border-4 border-black">
-                                                <Star className="fill-black text-black" size={16} />
-                                            </div>
-                                        </div>
-                                        <div className="flex-1 min-w-0 w-full text-center sm:text-left pb-1">
-                                            <p
-                                                lang="es"
-                                                className="text-2xl min-[400px]:text-3xl sm:text-4xl md:text-5xl font-black text-white leading-[1.1] mb-3 sm:mb-4 drop-shadow-2xl uppercase tracking-tight break-words hyphens-auto text-balance px-1 sm:px-0"
-                                            >
-                                                {effectiveMvp.nombre}
-                                            </p>
-                                            <div className="inline-flex flex-wrap items-center justify-center sm:justify-start gap-3 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md max-w-full">
-                                                {mvpIsManual ? (
-                                                    <span className="text-[10px] sm:text-xs font-black text-amber-500/80 uppercase tracking-widest leading-snug text-center sm:text-left">
-                                                        {isFootball ? 'Designación oficial · Fútbol' : 'Designación oficial'}
-                                                    </span>
-                                                ) : (
-                                                    <>
-                                                        <span className="text-2xl font-black tabular-nums text-amber-500 leading-none">{effectiveMvpPoints}</span>
-                                                        <span className="text-[10px] font-black text-amber-500/60 uppercase tracking-widest">{isBasketball ? 'PUNTOS TOTALES' : (isFootball ? 'GOLES MARCADOS' : 'IMPACTO')}</span>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="relative group overflow-hidden rounded-[2.5rem] bg-white/[0.02] border border-white/5 min-h-[220px] flex flex-col items-center justify-center text-center p-8 grayscale opacity-20">
-                        <Trophy size={40} className="text-white/20 mb-4" />
-                        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40 mb-2">MVP AWARDS</p>
-                        <p className="text-xs text-white/20 font-medium max-w-[160px]">Pendiente de inicio</p>
-                    </div>
-                )}
-
-                {statsConfig?.enabled && <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                {!(statsConfig?.enabled !== false && (stats.teamAPlayersSorted.length > 0 || stats.teamBPlayersSorted.length > 0)) && <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     {/* Team A */}
                     <div className="bg-white/[0.02] border border-white/10 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 flex flex-col relative overflow-hidden transition-all hover:bg-white/[0.05] shadow-xl">
                         <div className="flex items-center justify-between mb-6 px-1">
@@ -1078,6 +1067,160 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                         </div>
                     </div>
                 </div>}
+
+                {/* MVP Player Card - Hero Position */}
+                {effectiveMvp ? (
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-5 px-4 flex items-center gap-3">
+                             <Trophy size={14} className="text-amber-500" /> RECONOCIMIENTO INDIVIDUAL
+                        </p>
+                        <div className="relative group overflow-hidden p-[1.5px] rounded-[2.5rem] bg-gradient-to-br from-amber-200 via-amber-500 to-amber-900 shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:-translate-y-1">
+                            <Link href={effectiveMvp.profile_id ? `/perfil/${effectiveMvp.profile_id}` : `/jugador/${effectiveMvp.id}`} className="block h-full relative z-10">
+                                <div className="relative bg-gradient-to-br from-[#1a1409] via-[#0D0A05] to-black rounded-[2.4rem] p-6 sm:p-10 flex flex-col justify-between h-full min-h-[260px] sm:min-h-[240px] overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                                    
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 sm:mb-8 relative z-10">
+                                        <div className="px-4 sm:px-5 py-2 rounded-2xl bg-amber-500 text-black text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] shadow-[0_0_25px_rgba(245,158,11,0.4)] flex items-center gap-2 max-w-full">
+                                            <Crown size={14} className="shrink-0" /> <span className="leading-tight">JUGADOR MÁS VALIOSO</span>
+                                        </div>
+                                        <Trophy size={28} className="text-amber-500/20 group-hover:scale-125 group-hover:text-amber-500/40 transition-all duration-500 shrink-0 hidden sm:block" />
+                                    </div>
+                                    
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 relative z-10 w-full">
+                                        <div className="relative shrink-0 mx-auto sm:mx-0">
+                                            <div className="absolute -inset-4 bg-amber-500/20 rounded-full blur-2xl animate-pulse" />
+                                            <Avatar name={effectiveMvp.nombre} className="w-28 h-28 sm:w-32 sm:h-32 border-[6px] border-amber-500/40 shadow-2xl bg-black ring-2 ring-amber-500/20" />
+                                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg border-4 border-black">
+                                                <Star className="fill-black text-black" size={16} />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 min-w-0 w-full text-center sm:text-left pb-1">
+                                            <p
+                                                lang="es"
+                                                className="text-2xl min-[400px]:text-3xl sm:text-4xl md:text-5xl font-black text-white leading-[1.1] mb-3 sm:mb-4 drop-shadow-2xl uppercase tracking-tight break-words hyphens-auto text-balance px-1 sm:px-0"
+                                            >
+                                                {effectiveMvp.nombre}
+                                            </p>
+                                            
+                                            {(() => {
+                                                const mvpFullStats = topScorersA.find(p => p.profile.id === effectiveMvp.id || p.profile.profile_id === effectiveMvp.profile_id) || 
+                                                                     topScorersB.find(p => p.profile.id === effectiveMvp.id || p.profile.profile_id === effectiveMvp.profile_id);
+                                                
+                                                if (mvpFullStats && isBasketball) {
+                                                    return (
+                                                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4">
+                                                            {mvpFullStats.points > 0 && (
+                                                                <div className="px-3 py-2 rounded-xl bg-amber-500/20 border border-amber-500/30 flex flex-col items-center min-w-[50px]">
+                                                                    <span className="text-xl font-black text-amber-500">{mvpFullStats.points}</span>
+                                                                    <span className="text-[8px] font-black text-amber-500/80 uppercase tracking-widest">PTS</span>
+                                                                </div>
+                                                            )}
+                                                            {(mvpFullStats.pts2 > 0 || mvpFullStats.pt2a > 0) && (
+                                                                <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center min-w-[50px]">
+                                                                    <span className="text-xl font-black text-white">{mvpFullStats.pts2}/{mvpFullStats.pt2a}</span>
+                                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">2P</span>
+                                                                </div>
+                                                            )}
+                                                            {(mvpFullStats.pts3 > 0 || mvpFullStats.pt3a > 0) && (
+                                                                <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center min-w-[50px]">
+                                                                    <span className="text-xl font-black text-white">{mvpFullStats.pts3}/{mvpFullStats.pt3a}</span>
+                                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">3P</span>
+                                                                </div>
+                                                            )}
+                                                            {(mvpFullStats.pts1 > 0 || mvpFullStats.tla > 0) && (
+                                                                <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center min-w-[50px]">
+                                                                    <span className="text-xl font-black text-white">{mvpFullStats.pts1}/{mvpFullStats.tla}</span>
+                                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">TL</span>
+                                                                </div>
+                                                            )}
+                                                            {mvpFullStats.rebotes > 0 && (
+                                                                <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center min-w-[50px]">
+                                                                    <span className="text-xl font-black text-white">{mvpFullStats.rebotes}</span>
+                                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">REB</span>
+                                                                </div>
+                                                            )}
+                                                            {mvpFullStats.asistencias > 0 && (
+                                                                <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center min-w-[50px]">
+                                                                    <span className="text-xl font-black text-white">{mvpFullStats.asistencias}</span>
+                                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">AST</span>
+                                                                </div>
+                                                            )}
+                                                            {mvpFullStats.bloqueos > 0 && (
+                                                                <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center min-w-[50px]">
+                                                                    <span className="text-xl font-black text-amber-500/80">{mvpFullStats.bloqueos}</span>
+                                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">BLQ</span>
+                                                                </div>
+                                                            )}
+                                                            {mvpFullStats.robos > 0 && (
+                                                                <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center min-w-[50px]">
+                                                                    <span className="text-xl font-black text-emerald-400">{mvpFullStats.robos}</span>
+                                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">ROB</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                }
+                                                
+                                                if (mvpFullStats && isFootball) {
+                                                    return (
+                                                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4">
+                                                            {mvpFullStats.goals > 0 && (
+                                                                <div className="px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/30 flex flex-col items-center min-w-[60px]">
+                                                                    <span className="text-xl font-black text-amber-500">{mvpFullStats.goals}</span>
+                                                                    <span className="text-[8px] font-black text-amber-500/80 uppercase tracking-widest">GOLES</span>
+                                                                </div>
+                                                            )}
+                                                            {mvpFullStats.asistencias > 0 && (
+                                                                <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center min-w-[60px]">
+                                                                    <span className="text-xl font-black text-white">{mvpFullStats.asistencias}</span>
+                                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">AST</span>
+                                                                </div>
+                                                            )}
+                                                            {mvpFullStats.yellowCards > 0 && (
+                                                                <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center min-w-[60px]">
+                                                                    <span className="text-xl font-black text-amber-500">{mvpFullStats.yellowCards}</span>
+                                                                    <span className="text-[8px] font-black text-amber-500/60 uppercase tracking-widest">TA</span>
+                                                                </div>
+                                                            )}
+                                                            {mvpFullStats.redCards > 0 && (
+                                                                <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center min-w-[60px]">
+                                                                    <span className="text-xl font-black text-red-500">{mvpFullStats.redCards}</span>
+                                                                    <span className="text-[8px] font-black text-red-500/60 uppercase tracking-widest">TR</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                }
+
+                                                // Fallback to basic tag
+                                                return (
+                                                    <div className="inline-flex flex-wrap items-center justify-center sm:justify-start gap-3 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md max-w-full">
+                                                        {mvpIsManual ? (
+                                                            <span className="text-[10px] sm:text-xs font-black text-amber-500/80 uppercase tracking-widest leading-snug text-center sm:text-left">
+                                                                {isFootball ? 'Designación oficial · Fútbol' : 'Designación oficial'}
+                                                            </span>
+                                                        ) : (
+                                                            <>
+                                                                <span className="text-2xl font-black tabular-nums text-amber-500 leading-none">{effectiveMvpPoints}</span>
+                                                                <span className="text-[10px] font-black text-amber-500/60 uppercase tracking-widest">{isBasketball ? 'PUNTOS TOTALES' : (isFootball ? 'GOLES MARCADOS' : 'IMPACTO')}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="relative group overflow-hidden rounded-[2.5rem] bg-white/[0.02] border border-white/5 min-h-[220px] flex flex-col items-center justify-center text-center p-8 grayscale opacity-20">
+                        <Trophy size={40} className="text-white/20 mb-4" />
+                        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40 mb-2">MVP AWARDS</p>
+                        <p className="text-xs text-white/20 font-medium max-w-[160px]">Pendiente de inicio</p>
+                    </div>
+                )}
             </div>
         </div>
     );

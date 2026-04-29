@@ -123,7 +123,8 @@ export function formatUltimaEdicionAdmin(match: {
  */
 export function stampEventAudit(
     text: string | null | undefined,
-    profile: Profile | null | undefined
+    profile: Profile | null | undefined,
+    extra?: Record<string, unknown>
 ): string {
     const auditObj = {
         autor: profile ? {
@@ -133,9 +134,22 @@ export function stampEventAudit(
         } : null,
         fecha: new Date().toISOString(),
         texto: text || '',
+        ...extra,
     };
 
     return JSON.stringify(auditObj);
+}
+
+/** Extrae coordenadas de tiro del campo `descripcion` de un evento. */
+export function parseShotCoords(descripcion: string | null | undefined): { x: number; y: number; resultado: 'anotado' | 'fallado'; tipo_tiro: '2pt' | '3pt' | 'tl' } | null {
+    if (!descripcion) return null;
+    try {
+        const parsed = JSON.parse(descripcion);
+        if (parsed.x !== undefined && parsed.y !== undefined && parsed.resultado) {
+            return { x: parsed.x, y: parsed.y, resultado: parsed.resultado, tipo_tiro: parsed.tipo_tiro || '2pt' };
+        }
+    } catch {}
+    return null;
 }
 
 export type EventAudit = {

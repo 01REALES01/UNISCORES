@@ -106,7 +106,17 @@ export type TipoEvento =
   | 'rebote'
   | 'robo'
   | 'asistencia'
+  // Baloncesto shot tracking
+  | 'tiro_fallado'
   | string; // fallback para tipos no catalogados
+
+// Coordenadas de tiro en cancha (sistema 0-100 normalizado, media cancha)
+export type ShotCoords = {
+  x: number; // 0-100, izquierda a derecha
+  y: number; // 0-100, arriba a abajo
+  resultado: 'anotado' | 'fallado';
+  tipo_tiro: '2pt' | '3pt' | 'tl';
+};
 
 export type Evento = {
   id: number;
