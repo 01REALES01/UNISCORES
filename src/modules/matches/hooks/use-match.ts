@@ -33,7 +33,7 @@ async function fetchMvpJugadorRow(
 // Nota: jugador_a_id / jugador_b_id NO existen en partidos.
 //       Los jugadores nominales se obtienen vía roster_partido.
 const MATCH_COLUMNS = [
-    'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, athlete_a_id, athlete_b_id, stream_url',
+    'id, equipo_a, equipo_b, fecha, estado, lugar, genero, marcador_detalle, categoria, fase, grupo, bracket_order, delegacion_a, delegacion_b, delegacion_a_id, delegacion_b_id, carrera_a_id, carrera_b_id, carrera_a_ids, carrera_b_ids, athlete_a_id, athlete_b_id, stream_url, formacion_a, formacion_b',
     'disciplinas:disciplina_id(id, name)',
     'carrera_a:carreras!carrera_a_id(id, nombre, escudo_url)',
     'carrera_b:carreras!carrera_b_id(id, nombre, escudo_url)',
@@ -41,7 +41,7 @@ const MATCH_COLUMNS = [
     'atleta_b:profiles!athlete_b_id(id, full_name, avatar_url, carrera:carrera_id(id, nombre, escudo_url))',
     'delegacion_a_info:delegaciones!delegacion_a_id(id, escudo_url)',
     'delegacion_b_info:delegaciones!delegacion_b_id(id, escudo_url)',
-    'roster:roster_partido(id, equipo_a_or_b, es_titular, jugador:jugadores(id, nombre, numero, profile_id))'
+    'roster:roster_partido(id, equipo_a_or_b, es_titular, posicion, jugador:jugadores(id, nombre, numero, profile_id))'
 ].join(', ');
 
 /** Por `id`: evita que un fetch lento del detalle pise uno más reciente (mismo síntoma que lista global). */

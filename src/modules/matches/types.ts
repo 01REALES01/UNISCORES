@@ -38,6 +38,8 @@ export type Partido = {
   stream_url?: string | null;
   updated_at?: string;
   created_at?: string;
+  formacion_a?: string | null;
+  formacion_b?: string | null;
 };
 
 // ── Partido con relaciones (joins de Supabase) ────────────────────────────────
@@ -54,6 +56,7 @@ export type PartidoWithRelations = Partido & {
     id: number;
     equipo_a_or_b: string;
     es_titular: boolean;
+    posicion?: string | null;
     jugador?: { id: number; nombre: string; numero?: number | null; profile_id?: string | null } | null;
   }> | null;
   /** Resuelto en cliente cuando existe `marcador_detalle.mvp_jugador_id` (p. ej. vóley sin eventos del jugador). */

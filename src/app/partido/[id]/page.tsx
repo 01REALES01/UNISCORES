@@ -30,8 +30,8 @@ import { BasketballScoreboard } from '@/modules/matches/components/basketball-sc
 import { getMatchResult, isPartidoQuinielaEligible } from "@/modules/quiniela/helpers";
 import { formatVolleyballSetsLine } from "@/lib/volleyball-card";
 import { MatchStream } from "@/modules/matches/components/match-stream";
-import { LineupDisplay } from "@/modules/matches/components/lineup-display";
-import { BasketballLineupDisplay } from "@/modules/matches/components/basketball-lineup-display";
+import { SoccerLineupDisplay } from "@/modules/matches/components/soccer-lineup-display";
+import { BasketballCourtDisplay } from "@/modules/matches/components/basketball-court-display";
 import { BasketballShotChart } from "@/modules/matches/components/basketball-shot-chart";
 
 import UniqueLoading from "@/components/ui/morph-loading";
@@ -1100,8 +1100,8 @@ export default function PublicMatchDetail() {
                     )}
                 </div>
 
-                {isBasketball && !isAsync && m.fase?.toLowerCase() === 'final' && (
-                    <BasketballLineupDisplay
+                {isBasketball && !isAsync && (
+                    <BasketballCourtDisplay
                         match={m}
                         eventos={eventos}
                         sportColor={SPORT_COLORS['Baloncesto'] || '#F59E0B'}
@@ -1154,8 +1154,8 @@ export default function PublicMatchDetail() {
                     </>
                 )}
 
-                {sportName === 'Fútbol' && m.fase?.toLowerCase() === 'final' && (
-                    <LineupDisplay match={m} sportColor={sportColor} />
+                {sportName === 'Fútbol' && (
+                    <SoccerLineupDisplay match={m} sportColor={sportColor} />
                 )}
 
                 {sportName !== 'Voleibol' && !isBasketball && !isAsync && (

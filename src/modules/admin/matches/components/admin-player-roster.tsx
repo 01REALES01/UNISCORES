@@ -6,6 +6,13 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { SPORT_COLORS } from "@/lib/constants";
+import {
+    FOOTBALL_FORMATIONS,
+    FOOTBALL_FORMATION_KEYS,
+    FOOTBALL_POSITION_LABELS,
+    BASKETBALL_POSITIONS,
+    BASKETBALL_POSITION_KEYS,
+} from "@/lib/formation-config";
 import { PlayerSearchForm } from "./player-search-form";
 
 interface AdminPlayerRosterProps {
@@ -17,6 +24,9 @@ interface AdminPlayerRosterProps {
     disciplinaName: string;
     onAddPlayer?: (team: string, data: any) => Promise<number | null>;
 }
+
+const FOOTBALL_SPORTS = ["Fútbol", "Futsal"];
+const BASKETBALL_SPORTS = ["Baloncesto"];
 
 export const AdminPlayerRoster = ({
     match,
@@ -32,24 +42,34 @@ export const AdminPlayerRoster = ({
     const [addingTeam, setAddingTeam] = useState<string | null>(null);
 
     const sportColor = SPORT_COLORS[disciplinaName] || "#6366f1";
-    const isColectivo = ["Fútbol", "Baloncesto", "Voleibol"].includes(disciplinaName);
+    const isColectivo = ["Fútbol", "Futsal", "Baloncesto", "Voleibol"].includes(disciplinaName);
+    const isFootball = FOOTBALL_SPORTS.includes(disciplinaName);
+    const isBasketball = BASKETBALL_SPORTS.includes(disciplinaName);
+    const showPositions = isFootball || isBasketball;
 
-    const resetAddForm = () => {
-        setAddingTeam(null);
-    };
+    const resetAddForm = () => setAddingTeam(null);
 
     const handleToggleTitular = async (player: any) => {
         const rosterId = player.roster_id;
-        if (!rosterId) return;
+        if (!rosterId) {
+            const { error } = await supabase
+                .from("roster_partido")
+                .insert({
+                    partido_id: match.id,
+                    jugador_id: player.id,
+                    equipo_a_or_b: player.equipo,
+                    es_titular: true,
+                });
+            if (!error) onPlayersUpdated();
+            else toast.error(`Error: ${error.message}`);
+            return;
+        }
         const { error } = await supabase
             .from("roster_partido")
             .update({ es_titular: !player.es_titular })
             .eq("id", rosterId);
-        if (!error) {
-            onPlayersUpdated();
-        } else {
-            toast.error(`Error: ${error.message}`);
-        }
+        if (!error) onPlayersUpdated();
+        else toast.error(`Error: ${error.message}`);
     };
 
     const handleDelete = async (player: any) => {
@@ -58,7 +78,6 @@ export const AdminPlayerRoster = ({
             toast.error("Error: ID de roster no encontrado");
             return;
         }
-
         const { error } = await supabase.from("roster_partido").delete().eq("id", rosterId);
         if (!error) {
             toast.success("Jugador eliminado del partido");
@@ -68,14 +87,67 @@ export const AdminPlayerRoster = ({
         }
     };
 
+    const handleSetPosicion = async (player: any, posicion: string) => {
+        if (!player.roster_id) {
+            const { error } = await supabase
+                .from("roster_partido")
+                .insert({
+                    partido_id: match.id,
+                    jugador_id: player.id,
+                    equipo_a_or_b: player.equipo,
+                    es_titular: player.es_titular ?? false,
+                    posicion: posicion || null,
+                });
+            if (!error) onPlayersUpdated();
+            else toast.error(`Error: ${error.message}`);
+            return;
+        }
+        const { error } = await supabase
+            .from("roster_partido")
+            .update({ posicion: posicion || null })
+            .eq("id", player.roster_id);
+        if (!error) onPlayersUpdated();
+        else toast.error(`Error: ${error.message}`);
+    };
+
+    const handleFormacionChange = async (side: "a" | "b", formacion: string) => {
+        const field = side === "a" ? "formacion_a" : "formacion_b";
+        const { error } = await supabase
+            .from("partidos")
+            .update({ [field]: formacion || null })
+            .eq("id", match.id);
+        if (!error) onPlayersUpdated();
+        else toast.error(`Error guardando formación: ${error.message}`);
+    };
+
+    const getPositionOptions = (side: "a" | "b"): { key: string; label: string }[] => {
+        if (isBasketball) {
+            return BASKETBALL_POSITION_KEYS.map(k => ({ key: k, label: BASKETBALL_POSITIONS[k].label }));
+        }
+        if (isFootball) {
+            const formacion = side === "a" ? match.formacion_a : match.formacion_b;
+            if (!formacion || !FOOTBALL_FORMATIONS[formacion]) return [];
+            return Object.keys(FOOTBALL_FORMATIONS[formacion]).map(k => ({
+                key: k,
+                label: FOOTBALL_POSITION_LABELS[k] ?? k,
+            }));
+        }
+        return [];
+    };
+
     const TeamColumn = ({ players, side }: { players: any[]; side: "a" | "b" }) => {
         const teamKey = side === "a" ? "equipo_a" : "equipo_b";
         const isAdding = addingTeam === teamKey;
+        const formacion = side === "a" ? match.formacion_a : match.formacion_b;
+        const positionOptions = getPositionOptions(side);
+        const takenPositions = new Set(
+            players.filter(p => p.es_titular && p.posicion).map((p: any) => p.posicion)
+        );
 
         return (
             <div className="min-w-0 flex-1">
                 <div
-                    className="mb-4 flex items-center gap-2.5 border-b pb-3"
+                    className="mb-3 flex items-center gap-2.5 border-b pb-3"
                     style={{ borderColor: `${sportColor}15` }}
                 >
                     <Avatar
@@ -91,56 +163,100 @@ export const AdminPlayerRoster = ({
                     </div>
                 </div>
 
+                {isFootball && (
+                    <div className="mb-3">
+                        <label className="mb-1 block text-[8px] font-black uppercase tracking-widest text-white/25">
+                            Formación
+                        </label>
+                        <select
+                            value={formacion ?? ""}
+                            onChange={e => void handleFormacionChange(side, e.target.value)}
+                            className="w-full rounded-xl border px-3 py-2 text-[10px] font-bold text-white/70 outline-none transition-colors"
+                            style={{ borderColor: `${sportColor}20`, background: `${sportColor}08` }}
+                        >
+                            <option value="">Sin formación</option>
+                            {FOOTBALL_FORMATION_KEYS.map(f => (
+                                <option key={f} value={f}>{f}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
                 <div className="mb-3 space-y-1">
                     {players.map((p, idx) => (
                         <div
                             key={p.id}
-                            className="group/p flex items-center gap-2 rounded-xl border px-3 py-2 transition-all hover:bg-white/[0.04]"
+                            className="group/p rounded-xl border px-3 py-2 transition-all hover:bg-white/[0.04]"
                             style={{ borderColor: `${sportColor}08`, background: `${sportColor}03` }}
                         >
-                            <div
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border font-mono text-[10px] font-black"
-                                style={{
-                                    borderColor: `${sportColor}20`,
-                                    background: `${sportColor}08`,
-                                    color: `${sportColor}90`,
-                                }}
-                            >
-                                {p.numero || idx + 1}
+                            <div className="flex items-center gap-2">
+                                <div
+                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border font-mono text-[10px] font-black"
+                                    style={{
+                                        borderColor: `${sportColor}20`,
+                                        background: `${sportColor}08`,
+                                        color: `${sportColor}90`,
+                                    }}
+                                >
+                                    {p.numero || idx + 1}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <span className="block truncate text-[11px] font-bold text-white/70">{p.nombre}</span>
+                                    {p.profile_id && (
+                                        <span
+                                            className="flex items-center gap-0.5 text-[8px] font-bold"
+                                            style={{ color: `${sportColor}80` }}
+                                        >
+                                            <UserCheck size={7} /> Perfil vinculado
+                                        </span>
+                                    )}
+                                </div>
+                                <button
+                                    type="button"
+                                    title={p.es_titular ? "Quitar titular" : "Marcar titular"}
+                                    onClick={() => void handleToggleTitular(p)}
+                                    className={cn(
+                                        "shrink-0 rounded-lg p-1.5 transition-all",
+                                        p.es_titular
+                                            ? "text-emerald-400 hover:text-emerald-300"
+                                            : "text-white/0 group-hover/p:text-white/20 hover:!text-white/50"
+                                    )}
+                                >
+                                    <Star size={12} className={p.es_titular ? "fill-current" : ""} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => void handleDelete(p)}
+                                    className="shrink-0 rounded-lg p-1.5 text-white/0 transition-all hover:bg-rose-500/10 group-hover/p:text-white/20 hover:!text-rose-500"
+                                >
+                                    <Trash2 size={12} />
+                                </button>
                             </div>
-                            <div className="min-w-0 flex-1">
-                                <span className="block truncate text-[11px] font-bold text-white/70">{p.nombre}</span>
-                                {p.profile_id && (
-                                    <span
-                                        className="flex items-center gap-0.5 text-[8px] font-bold"
-                                        style={{ color: `${sportColor}80` }}
+
+                            {showPositions && p.es_titular && positionOptions.length > 0 && (
+                                <div className="mt-2 pl-9">
+                                    <select
+                                        value={p.posicion ?? ""}
+                                        onChange={e => void handleSetPosicion(p, e.target.value)}
+                                        className="w-full rounded-lg border px-2 py-1 text-[9px] font-bold text-white/60 outline-none transition-colors"
+                                        style={{ borderColor: `${sportColor}15`, background: `${sportColor}06` }}
                                     >
-                                        <UserCheck size={7} /> Perfil vinculado
-                                    </span>
-                                )}
-                            </div>
-                            <button
-                                type="button"
-                                title={p.es_titular ? "Quitar titular" : "Marcar titular"}
-                                onClick={() => void handleToggleTitular(p)}
-                                className={cn(
-                                    "shrink-0 rounded-lg p-1.5 transition-all",
-                                    p.es_titular
-                                        ? "text-emerald-400 hover:text-emerald-300"
-                                        : "text-white/0 group-hover/p:text-white/20 hover:!text-white/50"
-                                )}
-                            >
-                                <Star size={12} className={p.es_titular ? "fill-current" : ""} />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => void handleDelete(p)}
-                                className="shrink-0 rounded-lg p-1.5 text-white/0 transition-all hover:bg-rose-500/10 group-hover/p:text-white/20 hover:!text-rose-500"
-                            >
-                                <Trash2 size={12} />
-                            </button>
+                                        <option value="">Sin posición</option>
+                                        {positionOptions.map(opt => (
+                                            <option
+                                                key={opt.key}
+                                                value={opt.key}
+                                                disabled={takenPositions.has(opt.key) && p.posicion !== opt.key}
+                                            >
+                                                {opt.label}{takenPositions.has(opt.key) && p.posicion !== opt.key ? " ✓" : ""}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         </div>
                     ))}
+
                     {players.length === 0 && (
                         <div
                             className="rounded-xl border border-dashed py-6 text-center"

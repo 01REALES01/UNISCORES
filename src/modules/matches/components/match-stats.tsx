@@ -364,7 +364,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
     };
 
     const stats = useMemo(() => {
-        type PlayerStats = { points: number; goals: number; pts1: number; pts2: number; pts3: number; pt2a: number; pt3a: number; tla: number; rebotes: number; robos: number; asistencias: number; aces: number; bloqueos: number; ataquesDirectos: number; profile: any };
+        type PlayerStats = { points: number; goals: number; pts1: number; pts2: number; pts3: number; pt2a: number; pt3a: number; tla: number; rebotes: number; robos: number; asistencias: number; aces: number; bloqueos: number; ataquesDirectos: number; yellowCards: number; redCards: number; profile: any };
         const teamA = {
             goals: 0, fouls: 0, yellowCards: 0, redCards: 0, pts1: 0, pts2: 0, pts3: 0,
             tiros: 0, tirosAlArco: 0, faltasCometidas: 0, tirosEsquina: 0,
@@ -424,7 +424,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
                     if (ev.jugadores) {
                         const pId = ev.jugadores.id;
                         if (!team.players[pId]) {
-                            team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, pt2a: 0, pt3a: 0, tla: 0, rebotes: 0, robos: 0, asistencias: 0, aces: 0, bloqueos: 0, ataquesDirectos: 0, profile: ev.jugadores };
+                            team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, pt2a: 0, pt3a: 0, tla: 0, rebotes: 0, robos: 0, asistencias: 0, aces: 0, bloqueos: 0, ataquesDirectos: 0, yellowCards: 0, redCards: 0, profile: ev.jugadores };
                         }
                         if (tipo === '3pt') team.players[pId].pt3a += 1;
                         else if (tipo === 'tl') team.players[pId].tla += 1;
@@ -436,7 +436,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
             if (ev.jugadores) {
                 const pId = ev.jugadores.id;
                 if (!team.players[pId]) {
-                    team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, pt2a: 0, pt3a: 0, tla: 0, rebotes: 0, robos: 0, asistencias: 0, aces: 0, bloqueos: 0, ataquesDirectos: 0, profile: ev.jugadores };
+                    team.players[pId] = { points: 0, goals: 0, pts1: 0, pts2: 0, pts3: 0, pt2a: 0, pt3a: 0, tla: 0, rebotes: 0, robos: 0, asistencias: 0, aces: 0, bloqueos: 0, ataquesDirectos: 0, yellowCards: 0, redCards: 0, profile: ev.jugadores };
                 }
                 team.players[pId].points += pointsGained;
                 if (['gol', 'anotacion'].includes(ev.tipo_evento)) team.players[pId].goals += 1;
