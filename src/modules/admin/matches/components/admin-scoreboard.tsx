@@ -15,6 +15,7 @@ interface AdminScoreboardProps {
   onToggleModo?: () => void;
   onFinalizar: () => void;
   onCambiarPeriodo?: () => void;
+  onCambiarPeriodoDirecto?: (q: number) => void;
   onCambiarSet?: (setNum: number, puntosA: number, puntosB: number) => void;
   onCambiarFaseFutbol?: (fase: 'primer_tiempo' | 'entretiempo' | 'segundo_tiempo') => void;
 }
@@ -27,6 +28,7 @@ export const AdminScoreboard = ({
   onToggleModo,
   onFinalizar,
   onCambiarPeriodo,
+  onCambiarPeriodoDirecto,
   onCambiarSet,
   onCambiarFaseFutbol,
 }: AdminScoreboardProps) => {
@@ -207,9 +209,18 @@ export const AdminScoreboard = ({
                       const isActive = (detalle.cuarto_actual || 1) === q;
                       const isPast = (detalle.cuarto_actual || 1) > q;
                       return (
-                        <div
+                        <button
                           key={q}
-                          className="flex-1 h-9 rounded-xl font-black text-[9px] uppercase tracking-widest border flex items-center justify-center transition-all"
+                          type="button"
+                          onClick={() => {
+                            if (!isActive && onCambiarPeriodoDirecto) {
+                              onCambiarPeriodoDirecto(q);
+                            }
+                          }}
+                          className={cn(
+                            "flex-1 h-9 rounded-xl font-black text-[9px] uppercase tracking-widest border flex items-center justify-center transition-all",
+                            !isActive && "active:scale-95 cursor-pointer hover:opacity-80"
+                          )}
                           style={isActive
                             ? { background: sportColor, color: '#000', borderColor: 'transparent', boxShadow: `0 2px 10px ${sportColor}40` }
                             : isPast
@@ -218,7 +229,7 @@ export const AdminScoreboard = ({
                           }
                         >
                           Q{q}
-                        </div>
+                        </button>
                       );
                     })}
                     {detalle.cuarto_actual > 4 && (
