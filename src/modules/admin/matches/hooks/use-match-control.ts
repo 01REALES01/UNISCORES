@@ -528,7 +528,23 @@ export function useMatchControl(matchId: string) {
                 let puntos = 1;
                 if (tipo === 'punto_2') puntos = 2;
                 if (tipo === 'punto_3') puntos = 3;
-                nuevoMarcador = addPoints(disciplinaName, currentDetalle, equipo as any, puntos);
+
+                // If the caller specified a period override (e.g. BasquetEditor selecting a
+                // specific quarter), temporarily set cuarto_actual / set_actual / tiempo_actual
+                // so addPoints routes the points to the correct sub-period.
+                let detalleForAdd = currentDetalle;
+                if (overrides?.periodo != null) {
+                    detalleForAdd = { ...currentDetalle };
+                    if (disciplinaName === 'Baloncesto') {
+                        detalleForAdd.cuarto_actual = overrides.periodo;
+                    } else if (disciplinaName === 'Voleibol') {
+                        detalleForAdd.set_actual = overrides.periodo;
+                    } else if (disciplinaName === 'Fútbol' || disciplinaName === 'Futsal') {
+                        detalleForAdd.tiempo_actual = overrides.periodo;
+                    }
+                }
+
+                nuevoMarcador = addPoints(disciplinaName, detalleForAdd, equipo as any, puntos);
                 
                 wasProgramadoAutoInicio = currentEstado === 'programado' &&
                     (
@@ -760,6 +776,24 @@ export function useMatchControl(matchId: string) {
             toast.success(`Set ${setNum}`);
         } catch (err: any) {
             toast.error('Error al cambiar set: ' + err.message);
+        }
+    };
+
+    /** Salta directamente a un cuarto específico (Baloncesto). */
+    const handleCambiarPeriodoDirecto = async (targetQuarter: number) => {
+        if (!match || !profile) return;
+        try {
+            const { data: freshMatch } = await supabase.from('partidos').select('marcador_detalle').eq('id', matchId).single();
+            const detalle = { ...(freshMatch?.marcador_detalle || match.marcador_detalle || {}) };
+            detalle.cuarto_actual = targetQuarter;
+            const audited = auditDetalle(detalle);
+            const { error } = await supabase.from('partidos').update({ marcador_detalle: audited }).eq('id', matchId);
+            if (error) throw error;
+            setMatch((prev: any) => prev ? ({ ...prev, marcador_detalle: audited }) : null);
+            const label = targetQuarter > 4 ? `Prórroga ${targetQuarter - 4}` : `${targetQuarter}º Cuarto`;
+            toast.success(`Cuarto activo: ${label}`);
+        } catch (err: any) {
+            toast.error('Error al cambiar cuarto: ' + err.message);
         }
     };
 
@@ -1080,6 +1114,7 @@ export function useMatchControl(matchId: string) {
         handleBulkBasketballStats,
         handleManualScoreUpdate,
         handleCambiarPeriodo,
+        handleCambiarPeriodoDirecto,
         handleCambiarFaseFutbol,
         handleCambiarSetDirecto,
         confirmarFinalizar,

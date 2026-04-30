@@ -193,60 +193,62 @@ const BasketballPlayerTable = ({
                 <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{players.length} JUGADORES</span>
             </div>
             
-            <div className="overflow-x-auto rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
-                <table className="min-w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-white/[0.04] border-b border-white/5">
-                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40 min-w-[140px]">Jugador</th>
-                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/40 text-center whitespace-nowrap">PTS</th>
-                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/50 text-center whitespace-nowrap">2P</th>
-                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/50 text-center whitespace-nowrap">3P</th>
-                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/50 text-center whitespace-nowrap">TL</th>
-                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/40 text-center whitespace-nowrap">REB</th>
-                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-white/40 text-center whitespace-nowrap">AST</th>
-                            <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-amber-400/80 text-center whitespace-nowrap">BLQ</th>
-                            <th className="py-3 px-3 pr-4 text-[9px] font-black uppercase tracking-widest text-emerald-400 text-center whitespace-nowrap">ROB</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/[0.03]">
-                        {displayedPlayers.map((p, idx) => (
-                            <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
-                                <td className="py-3 px-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <Avatar
-                                                src={p.profile.avatar_url}
-                                                name={p.profile.nombre}
-                                                className="w-8 h-8 border border-white/10"
-                                            />
-                                            {idx === 0 && !isExpanded && (
-                                                <div className="absolute -top-1 -left-1 bg-amber-500 rounded-full p-0.5 shadow-lg border border-black/50">
-                                                    <Crown size={8} className="text-black" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight max-w-[100px] sm:max-w-[160px]">
-                                                {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="py-3 px-3 text-sm font-black tabular-nums text-center text-white">{p.points}</td>
-                                <td className="py-3 px-3 text-[11px] font-bold tabular-nums text-center text-white/60 whitespace-nowrap">{p.pts2}/{p.pt2a}</td>
-                                <td className="py-3 px-3 text-[11px] font-bold tabular-nums text-center text-white/60 whitespace-nowrap">{p.pts3}/{p.pt3a}</td>
-                                <td className="py-3 px-3 text-[11px] font-bold tabular-nums text-center text-white/60 whitespace-nowrap">{p.pts1}/{p.tla}</td>
-                                <td className="py-3 px-3 text-xs font-bold tabular-nums text-center text-white/60">{p.rebotes}</td>
-                                <td className="py-3 px-3 text-xs font-bold tabular-nums text-center text-white/60">{p.asistencias}</td>
-                                <td className="py-3 px-3 text-xs font-black tabular-nums text-center text-amber-500/60">{p.bloqueos}</td>
-                                <td className="py-3 px-3 pr-4 text-xs font-black tabular-nums text-center text-emerald-500/80">{p.robos}</td>
+            <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
+                <div className="overflow-x-auto custom-scrollbar w-full">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
+                        <thead>
+                            <tr className="bg-white/[0.04] border-b border-white/5">
+                                <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40">Jugador</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12">PTS</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/50 text-center w-10">2P</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/50 text-center w-10">3P</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/50 text-center w-10">TL</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10">REB</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10">AST</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-amber-400/80 text-center w-10">BLQ</th>
+                                <th className="py-3 px-2 pr-4 text-[9px] font-black uppercase tracking-widest text-emerald-400 text-center w-10">ROB</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-                
+                        </thead>
+                        <tbody className="divide-y divide-white/[0.03]">
+                            {displayedPlayers.map((p, idx) => (
+                                <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
+                                    <td className="py-3 px-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative flex-shrink-0">
+                                                <Avatar
+                                                    src={p.profile.avatar_url}
+                                                    name={p.profile.nombre}
+                                                    className="w-8 h-8 border border-white/10"
+                                                />
+                                                {idx === 0 && !isExpanded && (
+                                                    <div className="absolute -top-1 -left-1 bg-amber-500 rounded-full p-0.5 shadow-lg border border-black/50">
+                                                        <Crown size={8} className="text-black" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight max-w-[120px] sm:max-w-[200px]">
+                                                    {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-white">{p.points}</td>
+                                    <td className="py-3 px-2 text-[11px] font-bold tabular-nums text-center text-white/60 whitespace-nowrap">{p.pts2}/{p.pt2a}</td>
+                                    <td className="py-3 px-2 text-[11px] font-bold tabular-nums text-center text-white/60 whitespace-nowrap">{p.pts3}/{p.pt3a}</td>
+                                    <td className="py-3 px-2 text-[11px] font-bold tabular-nums text-center text-white/60 whitespace-nowrap">{p.pts1}/{p.tla}</td>
+                                    <td className="py-3 px-2 text-xs font-bold tabular-nums text-center text-white/60">{p.rebotes}</td>
+                                    <td className="py-3 px-2 text-xs font-bold tabular-nums text-center text-white/60">{p.asistencias}</td>
+                                    <td className="py-3 px-2 text-xs font-black tabular-nums text-center text-amber-500/60">{p.bloqueos}</td>
+                                    <td className="py-3 px-2 pr-4 text-xs font-black tabular-nums text-center text-emerald-500/80">{p.robos}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
                 {players.length > 5 && (
-                    <button 
+                    <button
                         onClick={() => setIsExpanded(!isExpanded)}
                         className="w-full py-3 bg-white/[0.03] hover:bg-white/[0.06] transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white border-t border-white/5"
                     >
@@ -288,50 +290,52 @@ const VolleyballPlayerTable = ({
                 <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{players.length} JUGADORES</span>
             </div>
             
-            <div className="overflow-x-auto rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
-                <table className="min-w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-white/[0.04] border-b border-white/5">
-                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40 min-w-[140px]">Jugador</th>
-                            {(!isStatVisible || isStatVisible('ace')) && <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-emerald-400 text-center whitespace-nowrap">ACE</th>}
-                            {(!isStatVisible || isStatVisible('bloqueo')) && <th className="py-3 px-3 text-[9px] font-black uppercase tracking-widest text-amber-400 text-center whitespace-nowrap">BLQ</th>}
-                            {(!isStatVisible || isStatVisible('ataque_directo')) && <th className="py-3 px-3 pr-4 text-[9px] font-black uppercase tracking-widest text-sky-400 text-center whitespace-nowrap">ATA</th>}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/[0.03]">
-                        {displayedPlayers.map((p, idx) => (
-                            <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
-                                <td className="py-3 px-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <Avatar
-                                                src={p.profile.avatar_url}
-                                                name={p.profile.nombre}
-                                                className="w-8 h-8 border border-white/10"
-                                            />
-                                            {idx === 0 && !isExpanded && (
-                                                <div className="absolute -top-1 -left-1 bg-amber-500 rounded-full p-0.5 shadow-lg border border-black/50">
-                                                    <Crown size={8} className="text-black" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight max-w-[100px] sm:max-w-[160px]">
-                                                {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </td>
-                                {(!isStatVisible || isStatVisible('ace')) && <td className="py-3 px-3 text-sm font-black tabular-nums text-center text-emerald-500/80">{p.aces}</td>}
-                                {(!isStatVisible || isStatVisible('bloqueo')) && <td className="py-3 px-3 text-sm font-black tabular-nums text-center text-amber-500/80">{p.bloqueos}</td>}
-                                {(!isStatVisible || isStatVisible('ataque_directo')) && <td className="py-3 px-3 pr-4 text-sm font-black tabular-nums text-center text-sky-500/80">{p.ataquesDirectos}</td>}
+            <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
+                <div className="overflow-x-auto custom-scrollbar w-full">
+                    <table className="w-full text-left border-collapse min-w-[400px]">
+                        <thead>
+                            <tr className="bg-white/[0.04] border-b border-white/5">
+                                <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40">Jugador</th>
+                                {(!isStatVisible || isStatVisible('ace')) && <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-emerald-400 text-center w-12">ACE</th>}
+                                {(!isStatVisible || isStatVisible('bloqueo')) && <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-amber-400 text-center w-12">BLQ</th>}
+                                {(!isStatVisible || isStatVisible('ataque_directo')) && <th className="py-3 px-2 pr-4 text-[9px] font-black uppercase tracking-widest text-sky-400 text-center w-12">ATA</th>}
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-                
+                        </thead>
+                        <tbody className="divide-y divide-white/[0.03]">
+                            {displayedPlayers.map((p, idx) => (
+                                <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
+                                    <td className="py-3 px-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative flex-shrink-0">
+                                                <Avatar
+                                                    src={p.profile.avatar_url}
+                                                    name={p.profile.nombre}
+                                                    className="w-8 h-8 border border-white/10"
+                                                />
+                                                {idx === 0 && !isExpanded && (
+                                                    <div className="absolute -top-1 -left-1 bg-amber-500 rounded-full p-0.5 shadow-lg border border-black/50">
+                                                        <Crown size={8} className="text-black" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight max-w-[120px] sm:max-w-[200px]">
+                                                    {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    {(!isStatVisible || isStatVisible('ace')) && <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-emerald-500/80">{p.aces}</td>}
+                                    {(!isStatVisible || isStatVisible('bloqueo')) && <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-amber-500/80">{p.bloqueos}</td>}
+                                    {(!isStatVisible || isStatVisible('ataque_directo')) && <td className="py-3 px-2 pr-4 text-sm font-black tabular-nums text-center text-sky-500/80">{p.ataquesDirectos}</td>}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
                 {players.length > 5 && (
-                    <button 
+                    <button
                         onClick={() => setIsExpanded(!isExpanded)}
                         className="w-full py-3 bg-white/[0.03] hover:bg-white/[0.06] transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white border-t border-white/5"
                     >

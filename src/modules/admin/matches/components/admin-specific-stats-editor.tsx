@@ -1,17 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { X, Check, Users, Search, Target } from "lucide-react";
 import { Avatar, Button, Card } from "@/components/ui-primitives";
 import { cn } from "@/lib/utils";
 import { getDisplayName } from "@/lib/sport-helpers";
 import { SPORT_COLORS } from "@/lib/constants";
 
+interface Evento {
+    tipo_evento: string;
+    jugador_id_normalized?: number | null;
+    equipo?: string;
+}
+
 interface AdminSpecificStatsEditorProps {
     match: any;
     jugadoresA: any[];
     jugadoresB: any[];
     disciplinaName: string;
+    eventos: Evento[];
     onClose: () => void;
     onAddEvent: (tipo: string, equipo: 'equipo_a' | 'equipo_b', jugadorId: number | null) => Promise<boolean>;
 }
@@ -47,11 +54,20 @@ const SPORT_STATS: Record<string, string[]> = {
 
 const TEAM_ONLY_STATS = ['falta_cometida', 'tiro_esquina', 'falta', 'posesion', 'punto'];
 
+// Stats that are meaningful to show per player (skip team-only and generic events)
+const PLAYER_STAT_TYPES: Record<string, string[]> = {
+    'Fútbol': ['gol', 'tiro', 'tiro_al_arco', 'tarjeta_amarilla', 'tarjeta_roja'],
+    'Futsal': ['gol', 'tiro', 'tiro_al_arco', 'tarjeta_amarilla', 'tarjeta_roja'],
+    'Baloncesto': ['punto_1', 'punto_2', 'punto_3', 'rebote', 'robo', 'asistencia', 'bloqueo', 'falta'],
+    'Voleibol': ['ace', 'bloqueo', 'ataque_directo', 'tarjeta_amarilla', 'tarjeta_roja'],
+};
+
 export function AdminSpecificStatsEditor({
     match,
     jugadoresA,
     jugadoresB,
     disciplinaName,
+    eventos,
     onClose,
     onAddEvent
 }: AdminSpecificStatsEditorProps) {
@@ -65,11 +81,29 @@ export function AdminSpecificStatsEditor({
     const sportColor = SPORT_COLORS[disciplinaName] || '#6366f1';
     const currentJugadores = selectedTeam === 'equipo_a' ? jugadoresA : jugadoresB;
     const isTeamOnly = TEAM_ONLY_STATS.includes(selectedStat);
+    const playerStatTypes = PLAYER_STAT_TYPES[disciplinaName] || [];
 
     const filteredJugadores = currentJugadores.filter(j => 
         j.nombre?.toLowerCase().includes(search.toLowerCase()) || 
         j.numero?.toString().includes(search)
     );
+
+    // Build a map of player_id → { stat_type: count } from server eventos only
+    const playerStatCounts = useMemo(() => {
+        const counts: Record<number, Record<string, number>> = {};
+        for (const e of eventos) {
+            if (e.jugador_id_normalized == null) continue;
+            const pid = e.jugador_id_normalized;
+            if (!counts[pid]) counts[pid] = {};
+            counts[pid][e.tipo_evento] = (counts[pid][e.tipo_evento] || 0) + 1;
+        }
+        return counts;
+    }, [eventos]);
+
+    // Count for selected stat specifically per player (for the highlighted badge)
+    const getPlayerSelectedStatCount = (playerId: number): number => {
+        return playerStatCounts[playerId]?.[selectedStat] || 0;
+    };
 
     const handleAction = async (jugadorId: number | null, nombre: string) => {
         if (isSubmitting) return;
@@ -80,6 +114,40 @@ export function AdminSpecificStatsEditor({
             setTimeout(() => setLastAction(null), 2000);
         }
         setIsSubmitting(false);
+    };
+
+    // Render small stat badges for a player
+    const renderPlayerBadges = (playerId: number) => {
+        const counts = playerStatCounts[playerId];
+        if (!counts) return null;
+        const badges = playerStatTypes
+            .filter(t => (counts[t] || 0) > 0)
+            .map(t => ({
+                type: t,
+                count: counts[t],
+                icon: STAT_LABELS[t]?.icon || '📊',
+                label: STAT_LABELS[t]?.label || t,
+            }));
+        if (badges.length === 0) return null;
+        return (
+            <div className="flex flex-wrap items-center justify-center gap-1 mt-1.5">
+                {badges.map(b => (
+                    <span
+                        key={b.type}
+                        className={cn(
+                            "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums",
+                            b.type === selectedStat
+                                ? "bg-white/20 text-white ring-1 ring-white/30"
+                                : "bg-white/5 text-white/40"
+                        )}
+                        title={b.label}
+                    >
+                        <span className="text-[10px] leading-none">{b.icon}</span>
+                        {b.count}
+                    </span>
+                ))}
+            </div>
+        );
     };
 
     return (
@@ -180,26 +248,46 @@ export function AdminSpecificStatsEditor({
                     {/* Player Grid */}
                     <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
                         <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                            {filteredJugadores.map(j => (
-                                <button
-                                    key={j.id}
-                                    onClick={() => handleAction(j.id, j.nombre)}
-                                    className="group relative flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/[0.03] border border-white/5 hover:border-white/20 hover:bg-white/[0.06] transition-all active:scale-95"
-                                >
-                                    <div className="relative">
-                                        {j.numero != null ? (
-                                            <div className="w-14 h-14 rounded-full border-2 border-white/10 group-hover:border-white/30 transition-all shadow-xl bg-white/5 flex items-center justify-center font-mono font-black text-white text-xl">
-                                                {j.numero}
+                            {filteredJugadores.map(j => {
+                                const selectedCount = getPlayerSelectedStatCount(j.id);
+                                return (
+                                    <button
+                                        key={j.id}
+                                        onClick={() => handleAction(j.id, j.nombre)}
+                                        className="group relative flex flex-col items-center gap-2 p-4 rounded-3xl bg-white/[0.03] border border-white/5 hover:border-white/20 hover:bg-white/[0.06] transition-all active:scale-95"
+                                    >
+                                        {/* Selected stat count badge (top-right) */}
+                                        {selectedCount > 0 && (
+                                            <div
+                                                className="absolute -top-1.5 -right-1.5 min-w-[24px] h-6 rounded-full flex items-center justify-center text-[11px] font-black tabular-nums px-1.5 shadow-lg z-10 border"
+                                                style={{
+                                                    backgroundColor: sportColor,
+                                                    borderColor: `${sportColor}cc`,
+                                                    color: '#000',
+                                                }}
+                                            >
+                                                {selectedCount}
                                             </div>
-                                        ) : (
-                                            <Avatar name={j.nombre} className="w-14 h-14 border-2 border-white/10 group-hover:border-white/30 transition-all shadow-xl" />
                                         )}
-                                    </div>
-                                    <span className="text-[10px] font-black uppercase text-center text-white/60 group-hover:text-white transition-colors line-clamp-2 leading-tight">
-                                        {j.nombre}
-                                    </span>
-                                </button>
-                            ))}
+
+                                        <div className="relative">
+                                            {j.numero != null ? (
+                                                <div className="w-14 h-14 rounded-full border-2 border-white/10 group-hover:border-white/30 transition-all shadow-xl bg-white/5 flex items-center justify-center font-mono font-black text-white text-xl">
+                                                    {j.numero}
+                                                </div>
+                                            ) : (
+                                                <Avatar name={j.nombre} className="w-14 h-14 border-2 border-white/10 group-hover:border-white/30 transition-all shadow-xl" />
+                                            )}
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase text-center text-white/60 group-hover:text-white transition-colors line-clamp-2 leading-tight">
+                                            {j.nombre}
+                                        </span>
+
+                                        {/* All stat badges */}
+                                        {renderPlayerBadges(j.id)}
+                                    </button>
+                                );
+                            })}
                             {filteredJugadores.length === 0 && (
                                 <div className="col-span-full py-20 text-center">
                                     <Users size={40} className="mx-auto text-white/5 mb-4" />

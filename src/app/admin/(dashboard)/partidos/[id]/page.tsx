@@ -163,6 +163,7 @@ export default function MatchControlPage() {
         handleBulkBasketballStats,
         handleManualScoreUpdate,
         handleCambiarPeriodo,
+        handleCambiarPeriodoDirecto,
         handleCambiarFaseFutbol,
         handleCambiarSetDirecto,
         confirmarFinalizar,
@@ -644,6 +645,7 @@ export default function MatchControlPage() {
                         onToggleModo={toggleModoRegistro}
                         onFinalizar={() => setIsEndingMatch(true)}
                         onCambiarPeriodo={handleCambiarPeriodo}
+                        onCambiarPeriodoDirecto={handleCambiarPeriodoDirecto}
                         onCambiarSet={(setNum, pA, pB) => handleCambiarSetDirecto(setNum, pA, pB)}
                         onCambiarFaseFutbol={handleCambiarFaseFutbol}
                     />
@@ -1146,6 +1148,7 @@ export default function MatchControlPage() {
                     jugadoresA={jugadoresA}
                     jugadoresB={jugadoresB}
                     disciplinaName={disciplinaName}
+                    eventos={eventos}
                     onClose={() => setShowSpecificStatsEditor(false)}
                     onAddEvent={async (tipo, equipo, jugadorId) => {
                         const ok = await handleNuevoEvento(tipo, equipo, jugadorId, true);
