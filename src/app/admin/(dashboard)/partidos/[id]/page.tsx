@@ -657,7 +657,7 @@ export default function MatchControlPage() {
                             jugadoresA={jugadoresA}
                             jugadoresB={jugadoresB}
                             matchId={matchId}
-                            onPlayersUpdated={() => void fetchJugadores(match)}
+                            onPlayersUpdated={refreshMatchSilently}
                             disciplinaName={disciplinaName}
                             onAddPlayer={handleAddPlayer}
                         />
@@ -1326,7 +1326,7 @@ export default function MatchControlPage() {
                                         jugadoresA={jugadoresA}
                                         jugadoresB={jugadoresB}
                                         matchId={matchId}
-                                        onPlayersUpdated={() => void fetchJugadores(match)}
+                                        onPlayersUpdated={refreshMatchSilently}
                                         disciplinaName={disciplinaName}
                                         onAddPlayer={handleAddPlayer}
                                     />

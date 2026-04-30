@@ -65,12 +65,14 @@ export function useMatchControl(matchId: string) {
 
         const explicitProcessed = (explicitRoster || []).map((r: any) => ({
             id: r.jugador?.id,
-            roster_id: r.id, 
+            roster_id: r.id,
             nombre: r.jugador?.nombre,
             numero: r.jugador?.numero,
             equipo: r.equipo_a_or_b as 'equipo_a' | 'equipo_b',
-            profile_id: r.jugador?.profile_id
-        })).filter(j => j.id); // Filter out potential broken links
+            profile_id: r.jugador?.profile_id,
+            es_titular: r.es_titular ?? false,
+            posicion: r.posicion ?? null,
+        })).filter(j => j.id);
 
         if (!isColectivo) {
             setJugadoresA(explicitProcessed.filter(j => j.equipo === 'equipo_a'));
