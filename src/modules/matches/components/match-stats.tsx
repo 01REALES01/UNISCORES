@@ -193,50 +193,52 @@ const BasketballPlayerTable = ({
             </div>
             
             <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-white/[0.04] border-b border-white/5">
-                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40">Jugador</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12">PTS</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10">REB</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10">AST</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10 text-amber-400/80">BLQ</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10 pr-4 text-emerald-400">ROB</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/[0.03]">
-                        {displayedPlayers.map((p, idx) => (
-                            <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
-                                <td className="py-3 px-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <Avatar 
-                                                src={p.profile.avatar_url} 
-                                                name={p.profile.nombre}
-                                                className="w-8 h-8 border border-white/10"
-                                            />
-                                            {idx === 0 && !isExpanded && (
-                                                <div className="absolute -top-1 -left-1 bg-amber-500 rounded-full p-0.5 shadow-lg border border-black/50">
-                                                    <Crown size={8} className="text-black" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight">
-                                                {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-white">{p.points}</td>
-                                <td className="py-3 px-2 text-xs font-bold tabular-nums text-center text-white/60">{p.rebotes}</td>
-                                <td className="py-3 px-2 text-xs font-bold tabular-nums text-center text-white/60">{p.asistencias}</td>
-                                <td className="py-3 px-2 text-xs font-black tabular-nums text-center text-amber-500/60">{p.bloqueos}</td>
-                                <td className="py-3 px-2 text-xs font-black tabular-nums text-center pr-4 text-emerald-500/80">{p.robos}</td>
+                <div className="overflow-x-auto custom-scrollbar w-full">
+                    <table className="w-full text-left border-collapse min-w-[500px]">
+                        <thead>
+                            <tr className="bg-white/[0.04] border-b border-white/5">
+                                <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40">Jugador</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12">PTS</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10">REB</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10">AST</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10 text-amber-400/80">BLQ</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-10 pr-4 text-emerald-400">ROB</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-white/[0.03]">
+                            {displayedPlayers.map((p, idx) => (
+                                <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
+                                    <td className="py-3 px-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative flex-shrink-0">
+                                                <Avatar 
+                                                    src={p.profile.avatar_url} 
+                                                    name={p.profile.nombre}
+                                                    className="w-8 h-8 border border-white/10"
+                                                />
+                                                {idx === 0 && !isExpanded && (
+                                                    <div className="absolute -top-1 -left-1 bg-amber-500 rounded-full p-0.5 shadow-lg border border-black/50">
+                                                        <Crown size={8} className="text-black" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight max-w-[120px] sm:max-w-[200px]">
+                                                    {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-white">{p.points}</td>
+                                    <td className="py-3 px-2 text-xs font-bold tabular-nums text-center text-white/60">{p.rebotes}</td>
+                                    <td className="py-3 px-2 text-xs font-bold tabular-nums text-center text-white/60">{p.asistencias}</td>
+                                    <td className="py-3 px-2 text-xs font-black tabular-nums text-center text-amber-500/60">{p.bloqueos}</td>
+                                    <td className="py-3 px-2 text-xs font-black tabular-nums text-center pr-4 text-emerald-500/80">{p.robos}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
                 
                 {players.length > 5 && (
                     <button 
@@ -281,46 +283,48 @@ const VolleyballPlayerTable = ({
             </div>
             
             <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-white/[0.04] border-b border-white/5">
-                            <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40">Jugador</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 text-emerald-400">ACE</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 text-amber-400">BLQ</th>
-                            <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 pr-4 text-sky-400">ATA</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/[0.03]">
-                        {displayedPlayers.map((p, idx) => (
-                            <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
-                                <td className="py-3 px-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <Avatar 
-                                                src={p.profile.avatar_url} 
-                                                name={p.profile.nombre}
-                                                className="w-8 h-8 border border-white/10"
-                                            />
-                                            {idx === 0 && !isExpanded && (
-                                                <div className="absolute -top-1 -left-1 bg-amber-500 rounded-full p-0.5 shadow-lg border border-black/50">
-                                                    <Crown size={8} className="text-black" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight">
-                                                {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-emerald-500/80">{p.aces}</td>
-                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-amber-500/80">{p.bloqueos}</td>
-                                <td className="py-3 px-2 text-sm font-black tabular-nums text-center pr-4 text-sky-500/80">{p.ataquesDirectos}</td>
+                <div className="overflow-x-auto custom-scrollbar w-full">
+                    <table className="w-full text-left border-collapse min-w-[500px]">
+                        <thead>
+                            <tr className="bg-white/[0.04] border-b border-white/5">
+                                <th className="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-white/40">Jugador</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 text-emerald-400">ACE</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 text-amber-400">BLQ</th>
+                                <th className="py-3 px-2 text-[9px] font-black uppercase tracking-widest text-white/40 text-center w-12 pr-4 text-sky-400">ATA</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-white/[0.03]">
+                            {displayedPlayers.map((p, idx) => (
+                                <tr key={p.profile.id} className="hover:bg-white/[0.02] transition-colors group">
+                                    <td className="py-3 px-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative flex-shrink-0">
+                                                <Avatar 
+                                                    src={p.profile.avatar_url} 
+                                                    name={p.profile.nombre}
+                                                    className="w-8 h-8 border border-white/10"
+                                                />
+                                                {idx === 0 && !isExpanded && (
+                                                    <div className="absolute -top-1 -left-1 bg-amber-500 rounded-full p-0.5 shadow-lg border border-black/50">
+                                                        <Crown size={8} className="text-black" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-xs font-bold text-white/90 truncate group-hover:text-white transition-colors uppercase tracking-tight max-w-[120px] sm:max-w-[200px]">
+                                                    {p.profile.nombre} {p.profile.numero ? `#${p.profile.numero}` : ''}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-emerald-500/80">{p.aces}</td>
+                                    <td className="py-3 px-2 text-sm font-black tabular-nums text-center text-amber-500/80">{p.bloqueos}</td>
+                                    <td className="py-3 px-2 text-sm font-black tabular-nums text-center pr-4 text-sky-500/80">{p.ataquesDirectos}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
                 
                 {players.length > 5 && (
                     <button 
