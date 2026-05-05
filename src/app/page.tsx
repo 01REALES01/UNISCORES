@@ -80,7 +80,6 @@ import { LiveMatchesSection } from '@/modules/matches/components/live-matches-se
 import { LiveStreamBanner } from '@/modules/matches/components/live-stream-banner';
 import { AboutFooter } from '@/shared/components/about-footer';
 import { InstitutionalBanner } from '@/shared/components/institutional-banner';
-import { ClausuraPopup } from "@/components/home/clausura-popup";
 
 export default function Home() {
   const { user, profile, isStaff, signOut } = useAuth();
@@ -397,7 +396,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-white font-sans selection:bg-violet-500/30">
       <SplashScreen />
-      <ClausuraPopup />
 
       <MainNavbar user={user} profile={profile} isStaff={isStaff} />
 
