@@ -28,6 +28,215 @@ interface AdminPlayerRosterProps {
 const FOOTBALL_SPORTS = ["Fútbol", "Futsal"];
 const BASKETBALL_SPORTS = ["Baloncesto"];
 
+
+interface TeamColumnProps {
+    players: any[];
+    side: "a" | "b";
+    match: any;
+    sportColor: string;
+    isFootball: boolean;
+    isColectivo: boolean;
+    showPositions: boolean;
+    addingTeam: string | null;
+    setAddingTeam: (team: string | null) => void;
+    resetAddForm: () => void;
+    getPositionOptions: (side: "a" | "b") => { key: string; label: string }[];
+    handleFormacionChange: (side: "a" | "b", formacion: string) => Promise<void>;
+    handleToggleTitular: (player: any) => Promise<void>;
+    handleDelete: (player: any) => Promise<void>;
+    handleSetPosicion: (player: any, posicion: string) => Promise<void>;
+    onAddPlayer?: (team: string, data: any) => Promise<number | null>;
+}
+
+const TeamColumn = ({
+    players,
+    side,
+    match,
+    sportColor,
+    isFootball,
+    isColectivo,
+    showPositions,
+    addingTeam,
+    setAddingTeam,
+    resetAddForm,
+    getPositionOptions,
+    handleFormacionChange,
+    handleToggleTitular,
+    handleDelete,
+    handleSetPosicion,
+    onAddPlayer,
+}: TeamColumnProps) => {
+    const teamKey = side === "a" ? "equipo_a" : "equipo_b";
+    const isAdding = addingTeam === teamKey;
+    const formacion = side === "a" ? match.formacion_a : match.formacion_b;
+    const positionOptions = getPositionOptions(side);
+    const takenPositions = new Set(
+        players.filter(p => p.es_titular && p.posicion).map((p: any) => p.posicion)
+    );
+
+    return (
+        <div className="min-w-0 flex-1">
+            <div
+                className="mb-3 flex items-center gap-2.5 border-b pb-3"
+                style={{ borderColor: `${sportColor}15` }}
+            >
+                <Avatar
+                    name={getDisplayName(match, side)}
+                    src={side === "a" ? match.carrera_a?.escudo_url : match.carrera_b?.escudo_url}
+                    className="h-7 w-7 shrink-0 border border-white/20"
+                />
+                <div className="min-w-0 flex-1">
+                    <span className="block truncate text-[11px] font-black uppercase tracking-wider text-white/70">
+                        {getDisplayName(match, side)}
+                    </span>
+                    <span className="text-[9px] font-bold text-white/20">{players.length} jugadores</span>
+                </div>
+            </div>
+
+            {isFootball && (
+                <div className="mb-3">
+                    <label className="mb-1 block text-[8px] font-black uppercase tracking-widest text-white/25">
+                        Formación
+                    </label>
+                    <select
+                        value={formacion ?? ""}
+                        onChange={e => void handleFormacionChange(side, e.target.value)}
+                        className="w-full rounded-xl border px-3 py-2 text-[10px] font-bold text-white/70 outline-none transition-colors"
+                        style={{ borderColor: `${sportColor}20`, background: `${sportColor}08` }}
+                    >
+                        <option value="">Sin formación</option>
+                        {FOOTBALL_FORMATION_KEYS.map(f => (
+                            <option key={f} value={f}>{f}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            <div className="mb-3 space-y-1">
+                {players.map((p, idx) => (
+                    <div
+                        key={p.id}
+                        className="group/p rounded-xl border px-3 py-2 transition-all hover:bg-white/[0.04]"
+                        style={{ borderColor: `${sportColor}08`, background: `${sportColor}03` }}
+                    >
+                        <div className="flex items-center gap-2">
+                            <div
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border font-mono text-[10px] font-black"
+                                style={{
+                                    borderColor: `${sportColor}20`,
+                                    background: `${sportColor}08`,
+                                    color: `${sportColor}90`,
+                                }}
+                            >
+                                {p.numero || idx + 1}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <span className="block truncate text-[11px] font-bold text-white/70">{p.nombre}</span>
+                                {p.profile_id && (
+                                    <span
+                                        className="flex items-center gap-0.5 text-[8px] font-bold"
+                                        style={{ color: `${sportColor}80` }}
+                                    >
+                                        <UserCheck size={7} /> Perfil vinculado
+                                    </span>
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                title={p.es_titular ? "Quitar titular" : "Marcar titular"}
+                                onClick={() => void handleToggleTitular(p)}
+                                className={cn(
+                                    "shrink-0 rounded-lg p-1.5 transition-all",
+                                    p.es_titular
+                                        ? "text-emerald-400 hover:text-emerald-300"
+                                        : "text-white/0 group-hover/p:text-white/20 hover:!text-white/50"
+                                )}
+                            >
+                                <Star size={12} className={p.es_titular ? "fill-current" : ""} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleDelete(p)}
+                                className="shrink-0 rounded-lg p-1.5 text-white/0 transition-all hover:bg-rose-500/10 group-hover/p:text-white/20 hover:!text-rose-500"
+                            >
+                                <Trash2 size={12} />
+                            </button>
+                        </div>
+
+                        {showPositions && p.es_titular && positionOptions.length > 0 && (
+                            <div className="mt-2 pl-9">
+                                <select
+                                    value={p.posicion ?? ""}
+                                    onChange={e => void handleSetPosicion(p, e.target.value)}
+                                    className="w-full rounded-lg border px-2 py-1 text-[9px] font-bold text-white/60 outline-none transition-colors"
+                                    style={{ borderColor: `${sportColor}15`, background: `${sportColor}06` }}
+                                >
+                                    <option value="">Sin posición</option>
+                                    {positionOptions.map(opt => (
+                                        <option
+                                            key={opt.key}
+                                            value={opt.key}
+                                            disabled={takenPositions.has(opt.key) && p.posicion !== opt.key}
+                                        >
+                                            {opt.label}{takenPositions.has(opt.key) && p.posicion !== opt.key ? " ✓" : ""}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+                ))}
+
+                {players.length === 0 && (
+                    <div
+                        className="rounded-xl border border-dashed py-6 text-center"
+                        style={{ borderColor: `${sportColor}10` }}
+                    >
+                        <Users size={16} className="mx-auto mb-1.5 text-white/10" />
+                        <p className="text-[9px] font-bold text-white/15">Sin jugadores</p>
+                    </div>
+                )}
+            </div>
+
+            {!isColectivo &&
+                (isAdding ? (
+                    <div className="animate-in fade-in zoom-in-95 duration-200">
+                        <PlayerSearchForm
+                            match={match}
+                            team={teamKey}
+                            sportColor={sportColor}
+                            onSelect={async (data) => {
+                                await onAddPlayer?.(teamKey, data);
+                                resetAddForm();
+                            }}
+                            onCancel={resetAddForm}
+                            autoFocus
+                        />
+                    </div>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => setAddingTeam(teamKey)}
+                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed py-2.5 text-[9px] font-black uppercase tracking-widest text-white/20 transition-all"
+                        style={{ borderColor: `${sportColor}15` }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = `${sportColor}40`;
+                            e.currentTarget.style.color = sportColor;
+                            e.currentTarget.style.background = `${sportColor}08`;
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = `${sportColor}15`;
+                            e.currentTarget.style.color = "";
+                            e.currentTarget.style.background = "";
+                        }}
+                    >
+                        <Plus size={10} /> Añadir Jugador
+                    </button>
+                ))}
+        </div>
+    );
+};
+
 export const AdminPlayerRoster = ({
     match,
     jugadoresA,
@@ -135,177 +344,6 @@ export const AdminPlayerRoster = ({
         return [];
     };
 
-    const TeamColumn = ({ players, side }: { players: any[]; side: "a" | "b" }) => {
-        const teamKey = side === "a" ? "equipo_a" : "equipo_b";
-        const isAdding = addingTeam === teamKey;
-        const formacion = side === "a" ? match.formacion_a : match.formacion_b;
-        const positionOptions = getPositionOptions(side);
-        const takenPositions = new Set(
-            players.filter(p => p.es_titular && p.posicion).map((p: any) => p.posicion)
-        );
-
-        return (
-            <div className="min-w-0 flex-1">
-                <div
-                    className="mb-3 flex items-center gap-2.5 border-b pb-3"
-                    style={{ borderColor: `${sportColor}15` }}
-                >
-                    <Avatar
-                        name={getDisplayName(match, side)}
-                        src={side === "a" ? match.carrera_a?.escudo_url : match.carrera_b?.escudo_url}
-                        className="h-7 w-7 shrink-0 border border-white/20"
-                    />
-                    <div className="min-w-0 flex-1">
-                        <span className="block truncate text-[11px] font-black uppercase tracking-wider text-white/70">
-                            {getDisplayName(match, side)}
-                        </span>
-                        <span className="text-[9px] font-bold text-white/20">{players.length} jugadores</span>
-                    </div>
-                </div>
-
-                {isFootball && (
-                    <div className="mb-3">
-                        <label className="mb-1 block text-[8px] font-black uppercase tracking-widest text-white/25">
-                            Formación
-                        </label>
-                        <select
-                            value={formacion ?? ""}
-                            onChange={e => void handleFormacionChange(side, e.target.value)}
-                            className="w-full rounded-xl border px-3 py-2 text-[10px] font-bold text-white/70 outline-none transition-colors"
-                            style={{ borderColor: `${sportColor}20`, background: `${sportColor}08` }}
-                        >
-                            <option value="">Sin formación</option>
-                            {FOOTBALL_FORMATION_KEYS.map(f => (
-                                <option key={f} value={f}>{f}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
-
-                <div className="mb-3 space-y-1">
-                    {players.map((p, idx) => (
-                        <div
-                            key={p.id}
-                            className="group/p rounded-xl border px-3 py-2 transition-all hover:bg-white/[0.04]"
-                            style={{ borderColor: `${sportColor}08`, background: `${sportColor}03` }}
-                        >
-                            <div className="flex items-center gap-2">
-                                <div
-                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border font-mono text-[10px] font-black"
-                                    style={{
-                                        borderColor: `${sportColor}20`,
-                                        background: `${sportColor}08`,
-                                        color: `${sportColor}90`,
-                                    }}
-                                >
-                                    {p.numero || idx + 1}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <span className="block truncate text-[11px] font-bold text-white/70">{p.nombre}</span>
-                                    {p.profile_id && (
-                                        <span
-                                            className="flex items-center gap-0.5 text-[8px] font-bold"
-                                            style={{ color: `${sportColor}80` }}
-                                        >
-                                            <UserCheck size={7} /> Perfil vinculado
-                                        </span>
-                                    )}
-                                </div>
-                                <button
-                                    type="button"
-                                    title={p.es_titular ? "Quitar titular" : "Marcar titular"}
-                                    onClick={() => void handleToggleTitular(p)}
-                                    className={cn(
-                                        "shrink-0 rounded-lg p-1.5 transition-all",
-                                        p.es_titular
-                                            ? "text-emerald-400 hover:text-emerald-300"
-                                            : "text-white/0 group-hover/p:text-white/20 hover:!text-white/50"
-                                    )}
-                                >
-                                    <Star size={12} className={p.es_titular ? "fill-current" : ""} />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => void handleDelete(p)}
-                                    className="shrink-0 rounded-lg p-1.5 text-white/0 transition-all hover:bg-rose-500/10 group-hover/p:text-white/20 hover:!text-rose-500"
-                                >
-                                    <Trash2 size={12} />
-                                </button>
-                            </div>
-
-                            {showPositions && p.es_titular && positionOptions.length > 0 && (
-                                <div className="mt-2 pl-9">
-                                    <select
-                                        value={p.posicion ?? ""}
-                                        onChange={e => void handleSetPosicion(p, e.target.value)}
-                                        className="w-full rounded-lg border px-2 py-1 text-[9px] font-bold text-white/60 outline-none transition-colors"
-                                        style={{ borderColor: `${sportColor}15`, background: `${sportColor}06` }}
-                                    >
-                                        <option value="">Sin posición</option>
-                                        {positionOptions.map(opt => (
-                                            <option
-                                                key={opt.key}
-                                                value={opt.key}
-                                                disabled={takenPositions.has(opt.key) && p.posicion !== opt.key}
-                                            >
-                                                {opt.label}{takenPositions.has(opt.key) && p.posicion !== opt.key ? " ✓" : ""}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-                        </div>
-                    ))}
-
-                    {players.length === 0 && (
-                        <div
-                            className="rounded-xl border border-dashed py-6 text-center"
-                            style={{ borderColor: `${sportColor}10` }}
-                        >
-                            <Users size={16} className="mx-auto mb-1.5 text-white/10" />
-                            <p className="text-[9px] font-bold text-white/15">Sin jugadores</p>
-                        </div>
-                    )}
-                </div>
-
-                {!isColectivo &&
-                    (isAdding ? (
-                        <div className="animate-in fade-in zoom-in-95 duration-200">
-                            <PlayerSearchForm
-                                match={match}
-                                team={teamKey}
-                                sportColor={sportColor}
-                                onSelect={async (data) => {
-                                    await onAddPlayer?.(teamKey, data);
-                                    resetAddForm();
-                                }}
-                                onCancel={resetAddForm}
-                                autoFocus
-                            />
-                        </div>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => setAddingTeam(teamKey)}
-                            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed py-2.5 text-[9px] font-black uppercase tracking-widest text-white/20 transition-all"
-                            style={{ borderColor: `${sportColor}15` }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.borderColor = `${sportColor}40`;
-                                e.currentTarget.style.color = sportColor;
-                                e.currentTarget.style.background = `${sportColor}08`;
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.borderColor = `${sportColor}15`;
-                                e.currentTarget.style.color = "";
-                                e.currentTarget.style.background = "";
-                            }}
-                        >
-                            <Plus size={10} /> Añadir Jugador
-                        </button>
-                    ))}
-            </div>
-        );
-    };
 
     return (
         <div
@@ -354,8 +392,42 @@ export const AdminPlayerRoster = ({
                         className="grid grid-cols-1 gap-6 border-t pt-2 sm:grid-cols-2"
                         style={{ borderColor: `${sportColor}08` }}
                     >
-                        <TeamColumn players={jugadoresA} side="a" />
-                        <TeamColumn players={jugadoresB} side="b" />
+                        <TeamColumn
+                            players={jugadoresA}
+                            side="a"
+                            match={match}
+                            sportColor={sportColor}
+                            isFootball={isFootball}
+                            isColectivo={isColectivo}
+                            showPositions={showPositions}
+                            addingTeam={addingTeam}
+                            setAddingTeam={setAddingTeam}
+                            resetAddForm={resetAddForm}
+                            getPositionOptions={getPositionOptions}
+                            handleFormacionChange={handleFormacionChange}
+                            handleToggleTitular={handleToggleTitular}
+                            handleDelete={handleDelete}
+                            handleSetPosicion={handleSetPosicion}
+                            onAddPlayer={onAddPlayer}
+                        />
+                        <TeamColumn
+                            players={jugadoresB}
+                            side="b"
+                            match={match}
+                            sportColor={sportColor}
+                            isFootball={isFootball}
+                            isColectivo={isColectivo}
+                            showPositions={showPositions}
+                            addingTeam={addingTeam}
+                            setAddingTeam={setAddingTeam}
+                            resetAddForm={resetAddForm}
+                            getPositionOptions={getPositionOptions}
+                            handleFormacionChange={handleFormacionChange}
+                            handleToggleTitular={handleToggleTitular}
+                            handleDelete={handleDelete}
+                            handleSetPosicion={handleSetPosicion}
+                            onAddPlayer={onAddPlayer}
+                        />
                     </div>
                 </div>
             )}

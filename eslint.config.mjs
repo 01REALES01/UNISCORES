@@ -12,8 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Root-level utility scripts (CommonJS)
+    // Utility/codemod scripts (CommonJS, one-off, not shipped)
     "*.js",
+    "scripts/**",
   ]),
   {
     rules: {

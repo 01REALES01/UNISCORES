@@ -10,29 +10,20 @@ interface LineupDisplayProps {
     sportColor?: string;
 }
 
-export function LineupDisplay({ match, sportColor = "#10b981" }: LineupDisplayProps) {
-    const roster = match.roster ?? [];
-    const titularesA = roster
-        .filter(r => r.equipo_a_or_b === "equipo_a" && r.es_titular && r.jugador)
-        .sort((a, b) => (a.jugador?.numero ?? 99) - (b.jugador?.numero ?? 99));
-    const titularesB = roster
-        .filter(r => r.equipo_a_or_b === "equipo_b" && r.es_titular && r.jugador)
-        .sort((a, b) => (a.jugador?.numero ?? 99) - (b.jugador?.numero ?? 99));
+type RosterEntry = NonNullable<PartidoWithRelations["roster"]>[number];
 
-    if (titularesA.length === 0 && titularesB.length === 0) return null;
-
-    const nameA = getDisplayName(match, "a");
-    const nameB = getDisplayName(match, "b");
-
-    const TeamList = ({
-        players,
-        name,
-        incomplete,
-    }: {
-        players: typeof titularesA;
-        name: string;
-        incomplete: boolean;
-    }) => (
+function TeamList({
+    players,
+    name,
+    incomplete,
+    sportColor,
+}: {
+    players: RosterEntry[];
+    name: string;
+    incomplete: boolean;
+    sportColor: string;
+}) {
+    return (
         <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-3">
                 <span
@@ -85,6 +76,21 @@ export function LineupDisplay({ match, sportColor = "#10b981" }: LineupDisplayPr
             )}
         </div>
     );
+}
+
+export function LineupDisplay({ match, sportColor = "#10b981" }: LineupDisplayProps) {
+    const roster = match.roster ?? [];
+    const titularesA = roster
+        .filter(r => r.equipo_a_or_b === "equipo_a" && r.es_titular && r.jugador)
+        .sort((a, b) => (a.jugador?.numero ?? 99) - (b.jugador?.numero ?? 99));
+    const titularesB = roster
+        .filter(r => r.equipo_a_or_b === "equipo_b" && r.es_titular && r.jugador)
+        .sort((a, b) => (a.jugador?.numero ?? 99) - (b.jugador?.numero ?? 99));
+
+    if (titularesA.length === 0 && titularesB.length === 0) return null;
+
+    const nameA = getDisplayName(match, "a");
+    const nameB = getDisplayName(match, "b");
 
     return (
         <div
@@ -120,12 +126,14 @@ export function LineupDisplay({ match, sportColor = "#10b981" }: LineupDisplayPr
                         players={titularesA}
                         name={nameA}
                         incomplete={titularesA.length > 0 && titularesA.length < 11}
+                        sportColor={sportColor}
                     />
                     <div className="hidden sm:block w-px self-stretch" style={{ background: `${sportColor}08` }} />
                     <TeamList
                         players={titularesB}
                         name={nameB}
                         incomplete={titularesB.length > 0 && titularesB.length < 11}
+                        sportColor={sportColor}
                     />
                 </div>
             </div>
