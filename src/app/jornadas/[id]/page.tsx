@@ -53,6 +53,20 @@ function estadoLabel(estado: string) {
     return 'Programado';
 }
 
+// Logical ordering for fases
+const FASE_ORDER: Record<string, number> = {
+    grupos: 0, primera_ronda: 1, dieciseisavos: 2, octavos: 3,
+    cuartos: 4, semifinal: 5, tercer_puesto: 6, final: 7,
+};
+const FASE_LABELS: Record<string, string> = {
+    grupos: 'Fase de Grupos', primera_ronda: '32avos de Final',
+    dieciseisavos: '16avos de Final', octavos: 'Octavos de Final',
+    cuartos: 'Cuartos de Final', semifinal: 'Semifinal',
+    tercer_puesto: 'Tercer Puesto', final: 'Final',
+};
+const faseOrder = (f: string) => FASE_ORDER[f] ?? (parseInt(f.replace(/\D/g, '')) || 99);
+const faseLabel = (f: string) => FASE_LABELS[f] ?? f;
+
 export default function JornadaPublicPage() {
     const { id } = useParams<{ id: string }>();
     const { user, profile, isStaff } = useAuth();
@@ -145,31 +159,17 @@ export default function JornadaPublicPage() {
         ? [...jornada.jornada_resultados].sort((a, b) => a.posicion - b.posicion)
         : [];
 
-    // Logical ordering for fases
-    const FASE_ORDER: Record<string, number> = {
-        grupos: 0, primera_ronda: 1, dieciseisavos: 2, octavos: 3,
-        cuartos: 4, semifinal: 5, tercer_puesto: 6, final: 7,
-    };
-    const FASE_LABELS: Record<string, string> = {
-        grupos: 'Fase de Grupos', primera_ronda: '32avos de Final',
-        dieciseisavos: '16avos de Final', octavos: 'Octavos de Final',
-        cuartos: 'Cuartos de Final', semifinal: 'Semifinal',
-        tercer_puesto: 'Tercer Puesto', final: 'Final',
-    };
-    const faseOrder = (f: string) => FASE_ORDER[f] ?? (parseInt(f.replace(/\D/g, '')) || 99);
-    const faseLabel = (f: string) => FASE_LABELS[f] ?? f;
-
     // All fases available (for filter pills)
     const allFases = isJornadaSport
         ? [...new Set(partidos.map(p => (p as any).fase ?? 'Ronda 1'))].sort((a, b) => faseOrder(a) - faseOrder(b))
         : [];
 
     // Apply filters
-    const filteredPartidos = partidos.filter(p => {
+    const filteredPartidos = useMemo(() => partidos.filter(p => {
         if (filterGenero && (p as any).genero !== filterGenero) return false;
         if (filterFase && ((p as any).fase ?? 'Ronda 1') !== filterFase) return false;
         return true;
-    });
+    }), [partidos, filterGenero, filterFase]);
 
     // Group matches: for "grupos" fase, sub-group by grupo number; otherwise by fase
     const sections = useMemo(() => {

@@ -367,6 +367,8 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
         return statsConfig.visible.includes(stat);
     };
 
+    const preloadedMvp = (match as Partido & { mvp_jugador?: unknown }).mvp_jugador;
+
     const stats = useMemo(() => {
         type PlayerStats = { points: number; goals: number; pts1: number; pts2: number; pts3: number; pt2a: number; pt3a: number; tla: number; rebotes: number; robos: number; asistencias: number; aces: number; bloqueos: number; ataquesDirectos: number; yellowCards: number; redCards: number; profile: any };
         const teamA = {
@@ -499,7 +501,7 @@ export const MatchStats = ({ match, eventos, sportName }: MatchStatsProps) => {
             teamBPlayersSorted: Object.values(teamB.players).sort((a: any, b: any) => b.points - a.points || b.rebotes - a.rebotes),
             posesion,
         };
-    }, [eventos, match.equipo_a, match.marcador_detalle, match.roster, (match as Partido & { mvp_jugador?: unknown }).mvp_jugador]);
+    }, [eventos, match, preloadedMvp, isVolleyball]);
 
     const hasEvents = eventos.length > 0;
 
